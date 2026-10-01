@@ -4,13 +4,15 @@
   "title": "基于中心 Git 仓库的 Spec 与 Change 只读工作台",
   "size": "large",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "change/spec-change-workbench",
-  "confirmations": {},
-  "tasks": {},
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "用户已明确认可归档原型的 UI 框架，并选择只读工作台及中心 Git 仓库已推送分支；待确认 requirement.md 的完整范围和验收标准。"
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-02T07:35:59+08:00",
+      "summary": "用户在审阅已推送的需求范围与验收标准后回复“继续吧”，确认以认可的 C 方案外壳实现中心 Git 已推送分支上的 Spec 与 Change 只读工作台，暂不实现原型管理。",
+      "source": "本会话用户对需求确认请求的回复：继续吧。需求版本：12773df。"
+    }
   },
+  "tasks": {},
   "closure": {}
 }
