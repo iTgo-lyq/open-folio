@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-change-workbench",
+  "title": "基于中心 Git 仓库的 Spec 与 Change 只读工作台",
+  "size": "large",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "change/spec-change-workbench",
+  "confirmations": {},
+  "tasks": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "用户已明确认可归档原型的 UI 框架，并选择只读工作台及中心 Git 仓库已推送分支；待确认 requirement.md 的完整范围和验收标准。"
+  },
+  "closure": {}
+}
