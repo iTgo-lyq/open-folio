@@ -14,5 +14,9 @@
     }
   },
   "tasks": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案和关键读取／解析实验已准备：待确认单实例 Next.js 服务、服务端 HTTPS 项目配置、独立 Git／快照缓存、主分支归属及证据不足时待核实的处理；确认后进入 large Change 的计划阶段。"
+  },
   "closure": {}
 }

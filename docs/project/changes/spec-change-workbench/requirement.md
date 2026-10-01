@@ -112,6 +112,7 @@
 
 - [当前 SpecTrail](../../../../.agents/skills/spec-trail/SKILL.md)，读取于 2026-10-02：本次数据与行为规则依据。流程状态、正文和 Git 来源须保持职责分离。
 - [归档原型说明](/home/tiger/workspace/open-folio-prototype-archive-20260930/ARCHIVE.md)与[实现说明](/home/tiger/workspace/open-folio-prototype-archive-20260930/README.md)，读取于 2026-10-02：用户认可 UI 框架，内容按当前 skill 重新设计。原型浏览器测试本次复跑 18 项通过，仅证明既有前端交互。
-- 本会话用户指令：认可原型 UI；实现 Spec 与 Change；暂不实现原型管理；随后明确选择“只读工作台”和“中心 Git 仓库的已推送分支”。这些选择确定启动方向，不代替对本文件新增细化范围和验收标准的确认。
+- 本会话用户指令：认可原型 UI；实现 Spec 与 Change；暂不实现原型管理；随后明确选择“只读工作台”和“中心 Git 仓库的已推送分支”。
+- 技术阶段一手资料（2026-10-02）：[Git fetch](https://git-scm.com/docs/git-fetch)、[Git cat-file](https://git-scm.com/docs/git-cat-file)、[react-markdown 安全说明](https://github.com/remarkjs/react-markdown#security)、[Next 自托管说明](https://nextjs.org/docs/app/guides/self-hosting)。支持固定提交读取、安全正文和持久服务的方案选择；实验与限制见 Research，不代表产品已接通或验收。
 
 调查依据、复用边界及待技术阶段验证事项见 [Research](./research.md)。
