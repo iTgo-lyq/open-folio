@@ -68,7 +68,9 @@
     },
     "T8": {
       "title": "按执行结果标记阶段完成",
-      "status": "doing"
+      "status": "done",
+      "verification": "7 项 Change 浏览器回归、类型/格式检查及生产构建通过；真实桌面/手机执行勾选核验及独立 30 项执行边界检查通过。",
+      "commitTitle": "spec-change-workbench T8: mark execution complete from delivery facts"
     }
   },
   "closure": {},

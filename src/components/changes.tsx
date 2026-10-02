@@ -764,7 +764,7 @@ function ChangeDrawer() {
                 <Badge tone="warning">{quality(g).length} 项来源提示</Badge>
               )}
             </div>
-            {s && <Flow state={s} />}
+            {s && <Flow state={s} relations={g!.relations} />}
           </div>
           <div
             className="drawer-tabs"
@@ -930,7 +930,28 @@ function formatTime(at: string) {
     hour12: false,
   });
 }
-function Flow({ state: s }: { state: ChangeState }) {
+function Flow({
+  state: s,
+  relations,
+}: {
+  state: ChangeState;
+  relations: Relation[];
+}) {
+  const tasks = Object.values(s.tasks),
+    children = s.children ?? [],
+    executionDone =
+      ["execution", "close"].includes(s.stage) &&
+      (s.size === "xlarge"
+        ? children.length > 0 &&
+          children.every((id) =>
+            relations.some(
+              (r) =>
+                r.kind === "child" &&
+                r.target === id &&
+                r.process === "satisfied",
+            ),
+          )
+        : tasks.length > 0 && tasks.every((t) => t.status === "done"));
   const route =
     s.size === "small"
       ? [
@@ -953,18 +974,20 @@ function Flow({ state: s }: { state: ChangeState }) {
   return (
     <div className="stage-flow">
       {route.map((v, i) => {
-        const confirmed =
-          v.keys.length > 0 &&
-          v.keys.every(
-            (k) => s.confirmations[k as keyof ChangeState["confirmations"]],
-          );
+        const recorded =
+          v.id === "execution"
+            ? executionDone
+            : v.keys.length > 0 &&
+              v.keys.every(
+                (k) => s.confirmations[k as keyof ChangeState["confirmations"]],
+              );
         return (
           <div
-            className={`${v.id === s.stage ? "current" : ""} ${confirmed ? "recorded" : ""}`}
+            className={`${v.id === s.stage ? "current" : ""} ${recorded ? "recorded" : ""}`}
             key={v.id}
           >
             <span className="flow-dot">
-              {confirmed ? <Check size={10} /> : i + 1}
+              {recorded ? <Check size={10} /> : i + 1}
             </span>
             <span>{v.label}</span>
             {i < route.length - 1 && <span className="flow-line" />}
