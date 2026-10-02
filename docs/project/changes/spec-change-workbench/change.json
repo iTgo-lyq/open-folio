@@ -44,11 +44,13 @@
     },
     "T4": {
       "title": "浏览 Change、任务及依赖",
-      "status": "doing"
+      "status": "done",
+      "verification": "3 项 Change 浏览器场景和类型检查通过；列表/看板/任务/依赖、父子取消归档、嵌套弹层与手机布局均有交互证据。",
+      "commitTitle": "spec-change-workbench T4: browse changes tasks and delivery evidence"
     },
     "T5": {
       "title": "完成真实项目接入与交付验证",
-      "status": "todo"
+      "status": "doing"
     },
     "T6": {
       "title": "完成独立评审与复验",

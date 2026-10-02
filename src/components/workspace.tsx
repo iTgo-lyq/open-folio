@@ -6,6 +6,7 @@ import type { SearchResult } from '@/lib/model';
 import { api, useWorkspace, WorkspaceProvider } from './context';
 import { DocumentModal, Empty, ErrorNotice } from './document';
 import Specs from './specs';
+import Changes from './changes';
 function Shell() {
   const { q, nav, projects, projectId, data, loading, refreshing, error, refresh, message, notice } = useWorkspace();
   const [collapsed, setCollapsed] = useState(false), [search, setSearch] = useState(false);
@@ -18,7 +19,7 @@ function Shell() {
     <div className="workspace-source"><div className="row"><GitBranch size={14}/>{module === 'specs' ? <select aria-label="Specs 来源分支" value={data?.selectedBranch ?? q.branch ?? ''} onChange={e => nav({branch: e.target.value || null, s: null, anchor: null, doc: null})}><option value="">选择来源分支</option>{data?.branches.map(b => <option key={b.name} value={b.name}>{b.name}{data.protectedBranches.includes(b.name) ? ' · 守护分支' : ''}</option>)}</select> : <span>全部已推送分支 <span className="source-separator">/</span> 各 Change 主来源</span>}</div><span className="snapshot-time">{refreshing ? '正在读取…' : data ? `读取于 ${new Date(data.capturedAt).toLocaleTimeString('zh-CN', {timeZone: 'Asia/Shanghai', hour12: false})}` : '尚未读取'}</span></div>
     {error && <ErrorNotice>{error}{data && ' 当前继续显示上次成功版本。'}<button className="text-button" onClick={() => void refresh()}>重试</button></ErrorNotice>}
     {data?.diagnostics.map((d,i) => <div className="source-warning" key={i}>{d.message}</div>)}
-    <div className="workspace-body">{loading && !data ? <Empty title={refreshing ? '正在读取中心仓库…' : '正在打开工作台…'} icon={<LoaderCircle className="spin"/>}/> : !projects.length ? <Empty title="连接你的中心 Git 仓库"><p>尚未登记项目。请在服务端配置项目后重新打开工作台。</p><code>OPENFOLIO_CONFIG</code></Empty> : !data ? <Empty title="暂时没有可读取的版本"><p>检查仓库访问权限后重新读取。</p><button className="button" onClick={() => void refresh()} disabled={refreshing}>读取中心仓库</button></Empty> : module === 'specs' ? <Specs/> : <Empty title="Change 阅读界面接入中"><p>已读取 {data.changes.length} 项真实 Change。</p></Empty>}</div>
+    <div className="workspace-body">{loading && !data ? <Empty title={refreshing ? '正在读取中心仓库…' : '正在打开工作台…'} icon={<LoaderCircle className="spin"/>}/> : !projects.length ? <Empty title="连接你的中心 Git 仓库"><p>尚未登记项目。请在服务端配置项目后重新打开工作台。</p><code>OPENFOLIO_CONFIG</code></Empty> : !data ? <Empty title="暂时没有可读取的版本"><p>检查仓库访问权限后重新读取。</p><button className="button" onClick={() => void refresh()} disabled={refreshing}>读取中心仓库</button></Empty> : module === 'specs' ? <Specs/> : <Changes/>}</div>
     </main><div className="mobile-navigation">{navigation}</div><SearchDialog open={search} setOpen={setSearch}/><DocumentModal/>{message && <div className="toast" role="status">{message}<button aria-label="关闭提示" className="icon-button" onClick={() => notice('')}><X size={14}/></button></div>}</div>;
 }
 function SearchDialog({open, setOpen}: {open: boolean; setOpen: (v: boolean) => void}) {

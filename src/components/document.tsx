@@ -12,16 +12,17 @@ export function ErrorNotice({ children }: { children: React.ReactNode }) { retur
 export function Source({ document }: {document: DocumentRef}) { return <div className="source-block"><span><GitBranch size={13}/>{document.branch}</span><span><Hash size={13}/><code title={document.commit}>{document.commit.slice(0, 10)}</code></span><code className="source-path">{document.path}</code></div>; }
 export function Markdown({ body, document }: { body: string; document: DocumentRef }) {
   const { data, projectId, openDocument, notice, nav, q } = useWorkspace();
+  const prose = useRef<HTMLDivElement>(null);
   const follow = (href: string) => {
     const link = resolveDocumentLink(document.path, href);
     if (link.kind !== 'internal') { notice('此链接不在可读取的工程文档范围内。'); return; }
     const target = data?.documents.find(d => d.path === link.path && d.branch === document.branch && d.commit === document.commit);
     if (!target) { notice(`当前提交中找不到 ${link.path}`); return; }
-    if (target.id === document.id) { const el = window.document.getElementById(link.hash); if (el) el.scrollIntoView({ block: 'start' }); else if (link.hash) notice('当前文档中未找到该章节。'); nav(q.doc ? { da: link.hash || null } : { anchor: link.hash || null }); }
+    if (target.id === document.id) { const el = link.hash ? prose.current?.querySelector(`#${CSS.escape(link.hash)}`) : prose.current; if (el) el.scrollIntoView({ block: 'start' }); else if (link.hash) notice('当前文档中未找到该章节。'); nav(q.doc ? { da: link.hash || null } : { anchor: link.hash || null }); }
     else if (!target.readable) notice(target.diagnostics[0]?.message ?? '此文件不支持预览。');
     else openDocument(target.id, link.hash);
   };
-  return <div className="prose"><ReactMarkdown remarkPlugins={[remarkGfm, remarkHeadings]} skipHtml components={{
+  return <div className="prose" ref={prose}><ReactMarkdown remarkPlugins={[remarkGfm, remarkHeadings]} skipHtml components={{
     a: ({ href, children }) => { const link = resolveDocumentLink(document.path, href ?? ''); return link.kind === 'external' ? <a href={link.url} target="_blank" rel="noopener noreferrer">{children}<ArrowUpRight size={11} className="inline-icon"/></a> : <a href={href || '#'} onClick={e => { e.preventDefault(); follow(href ?? ''); }}>{children}</a>; },
     img: ({ src, alt }) => {
       const link = resolveDocumentLink(document.path, typeof src === 'string' ? src : '');
@@ -49,9 +50,8 @@ export function DocumentContent({ id, raw = false, anchor, compact = false }: { 
 export function DocumentModal() {
   const { q, nav, data } = useWorkspace(), open = !!q.doc;
   const previousFocus = useRef<HTMLElement | null>(null);
-  useEffect(() => { if (open) previousFocus.current = window.document.activeElement as HTMLElement; }, [open]);
   const ref = data?.documents.find(d => d.id === q.doc);
-  return <Dialog.Root open={open} onOpenChange={v => { if (!v) nav({doc: null, da: null, raw: null}); }}><Dialog.Portal><Dialog.Overlay className="modal-overlay"/><Dialog.Content className="document-modal" onCloseAutoFocus={e => { e.preventDefault(); previousFocus.current?.focus(); }} aria-describedby={undefined}>
+  return <Dialog.Root open={open} onOpenChange={v => { if (!v) nav({doc: null, da: null, raw: null}); }}><Dialog.Portal><Dialog.Overlay className="modal-overlay"/><Dialog.Content className="document-modal" onOpenAutoFocus={() => { previousFocus.current = window.document.activeElement as HTMLElement; }} onCloseAutoFocus={e => { e.preventDefault(); previousFocus.current?.focus(); }} aria-describedby={undefined}>
     <header className="modal-header"><Dialog.Title>{ref?.path.split('/').at(-1) ?? '文档'}</Dialog.Title><div className="row"><button className="text-button" onClick={() => nav({raw: q.raw ? null : '1'})}><Braces size={14}/>{q.raw ? '阅读' : '原文'}</button><Dialog.Close className="icon-button" aria-label="关闭文档"><X size={19}/></Dialog.Close></div></header>
     {ref?.kind === 'image' ? <ImageDocument doc={ref}/> : q.doc && <DocumentContent id={q.doc} raw={q.raw === '1'} anchor={q.da} compact/>}
   </Dialog.Content></Dialog.Portal></Dialog.Root>;
