@@ -4,7 +4,7 @@
 
 ### 总体路径
 
-依据 [Requirement](./requirement.md)，原型是项目内一个 Git 跟踪的 monorepo 包。用户 Agent 在其中开发并生成静态产物，`change.json.previews` 引用输出目录；OpenFolio 从已推送提交读取并通过独立 origin 展示。
+依据 [Requirement](./requirement.md)，原型是项目内一个 Git 跟踪的 monorepo 包。用户 Agent 在其中开发并生成静态产物，`change.json.previews` 引用输出目录；OpenFolio 从已推送提交读取并通过同一域名下的沙箱 iframe 展示。
 
 ```text
 技术方案讨论 → 读取项目选择 → SpecTrail prototype 子 skill
@@ -13,7 +13,7 @@
                                                      ↓
 Change 主来源提交 → 关联与包配置校验 → Git blob 静态读取
                                                      ↓
-工作台 Change 详情 ← 版本与入口元数据     独立 origin iframe
+工作台 Change 详情 ← 版本与入口元数据     同域沙箱 iframe
 ```
 
 服务端不 checkout 运行用户工程，不执行安装、构建、Git hooks 或 submodule 初始化。Git 是持久来源，磁盘缓存是可重建派生数据，不引入数据库。以下 JSON 是待实现契约示例，本次文档准备不把新字段写入现行配置或当前 Change 状态。
@@ -61,15 +61,16 @@ packages/prototype/
   DESIGN.md                    # 引用项目规范，补充原型特有约束
   src/                         # 用户自行组织；页面、组件、主题可复用
   preview/
-    assets/                    # 多入口共享的构建资源
     order-list/index.html
     order-detail/index.html
     price-card/index.html
 ```
 
-源码目录和构建工具不属于运行时协议。基础示例可使用 Vite 多入口构建和相对 base；现有工程只需符合相同输出约定。普通 HTML 也有效，不强制 React、组件库或 Impeccable。
+源码目录和构建工具不属于运行时协议。基础示例直接生成自包含 HTML；使用 Vite 或其他构建器的工程在用户侧完成离线导出，按入口将脚本、样式与素材内联。普通 HTML 也有效，不强制 React、组件库或 Impeccable。共享源码和依赖仍在一个包内管理，导出多个 HTML 不等于复制多个原型工程。
 
-所有运行依赖均在 preview 根内，使用相对 URL；允许 `../assets/` 等经浏览器解析后仍在根内的引用。使用 hash/memory 路由或真实静态 HTML，服务不实现任意路径回退。模拟数据内联或随包输出，禁止依赖开发服务器、真实业务接口、外部 CDN、密钥和环境变量注入。产物必须能脱离源码目录运行。
+每个关联目录的 `index.html` 是自包含交付物：JavaScript 与 CSS 内联，图片与字体使用 data URL，mock 数据内联。源码可以正常引用共享资源、组件、ES modules 和 JSON；导出时合入 HTML，不能遗留外部 import、动态 chunk、fetch/XHR、相对资源请求或 CSS @import。无外部导入的内联 module 脚本可运行，构建产物不需要改成特定框架。
+
+入口内使用 hash/memory 路由或本地状态切换；多个独立 HTML 由工作台入口选择器切换，不能依赖沙箱内部导航到另一个受认证页面。服务不实现任意路径回退，不负责打包或改写用户脚本。子 skill 的本地交付检查应验证在阻断子资源网络请求时仍能工作，指出不兼容的导出依赖；不能仅删除引用以使检查通过。禁止依赖开发服务器、真实业务接口、外部 CDN、密钥和环境变量注入。
 
 Git 跟踪源码、锁文件、必要设计文档和 preview 输出；不跟踪 node_modules、工具缓存、开发日志和 sourcemap。构建后由 Agent 检查关联目录、资源与已声明视口，并提交源码和产物。未改动的输出可以沿用；服务不能仅根据提交时间判断构建过期，也不声称证明了源码与产物一致。整包构建时保留仍被其他活动 Change 引用的入口；删除入口前检查引用，历史版本由归档提交保留。
 
@@ -118,37 +119,35 @@ Git 跟踪源码、锁文件、必要设计文档和 preview 输出；不跟踪 
 
 ### Git 资源采集与缓存
 
-采用两阶段读取：先沿用文档快照确定配置和 Change 关联，再按有效关联收集对应提交中的完整 preview 树。保留共同资源根，不把单个入口目录当资源边界，否则 `../assets/` 会失效。不会为了预览抓取源码、依赖或整个仓库文件系统。
+采用两阶段读取：先沿用文档快照确定配置和 Change 关联，再按有效关联读取同一提交中的各个 `<path>/index.html`。只读取被关联的交付 HTML，不暴露通用目录浏览或资源代理，也不为了预览抓取源码、依赖或整个仓库文件系统。共享源码及素材已在用户侧导出时内联。
 
-仅读取常规 Git blob，拒绝 symlink、gitlink 和 Git LFS 指针代替实际资源。资源类型明确允许 HTML、CSS、JS/MJS、JSON、常见图片及 WOFF/WOFF2/TTF/OTF 字体；不提供任意文本、源码、配置、压缩包、执行文件或目录列表。SVG 作为受限图片资源，直接打开同样施加文档安全头。类型与 nosniff 一起保证浏览器不猜测执行格式。
+仅读取常规 Git HTML blob，拒绝 symlink、gitlink 和 Git LFS 指针代替实际内容。关联外的 CSS、JS、JSON、图片、源码及其他路径不能通过预览路由读取。内联图像作为 HTML 中的数据资源呈现，不提供 SVG 等独立可执行文档入口。HTML MIME 与 nosniff 一起明确执行格式。
 
-增加可配置的资源限额，初始默认单 blob 10 MiB、单提交 preview 根 100 MiB、2000 个文件；超限只使对应原型不可用，不拖垮全部文档刷新。读取受现有 Git 超时、并发与错误脱敏约束。入口缺失、LFS 指针、非法资源和超限均给出项目/入口级诊断。
+增加可配置的资源限额，初始默认单 HTML blob 10 MiB、单项目单提交被关联的 HTML 合计 100 MiB、2000 个入口；重复引用同一 blob 不重复计费。超限只使对应原型不可用，不拖垮全部文档刷新。读取受现有 Git 超时、并发与错误脱敏约束。入口缺失、LFS 指针、非法资源和超限均给出项目/入口级诊断。
 
 缓存键包含仓库指纹、完整提交、包根、blob id 和缓存格式版本，文件权限沿用私有缓存。新旧快照原子切换。历史预览缓存可按容量回收，需要时从仍可达的 Git 引用重建，不依赖当前仅保留三个文档快照的策略。每次响应先核对项目仍配置、原型功能仍允许、提交仍属于合法来源；撤销配置、仓库替换和最新成功刷新确认的引用删除优先于缓存命中。刷新失败可保留先前成功快照并标记时间，不宣称获得最新撤销信息。
 
 ### 内建静态服务与浏览器隔离
 
-复用一个 OpenFolio 应用和 Git 缓存，通过独立 origin 提供只读资源，不另发一个原型服务包。服务端配置新增可选 `preview.origin`，必须与所有工作台 origin 不同。工作台 Host 只提供现有 UI/API；预览 Host 只提供预览路由和必要健康检查，其他路径包括工作台、`/_next` 与 `/api` 均拒绝。必须在路由之前按受信配置分流，不能仅靠某个 API 的 Origin 校验。反向代理不得把两类 Host 归一为同一个浏览器 origin。
+工作台与预览复用同一个域名、端口、OpenFolio 进程和私有访问网关。取消 `preview.origin`、双 Host 分流、额外域名/端口及第二套登录配置。部署认证继续覆盖所有预览请求；不提供绕过网关认证的资源通道。本地无认证模式继续只绑定 loopback。
 
-本地开发可将 `127.0.0.1:10681` 作为工作台，`localhost:10681` 作为显式预览 Host，二者到达同一个进程；启用后预览 Host 从工作台默认允许列表移除，启动检查冲突。云端采用两个 HTTPS 主机名指向同一应用。外部 `Host`/转发头的信任边界写入部署约定，不接受客户端任意伪造的转发 origin。没有有效隔离配置时文档功能仍可用，原型显示配置缺失，不降级成同源执行。
+iframe 通过同站页面导航加载 `/preview/<project>/<revision>/<change>/<preview-id>/index.html`。路由只接受 GET/HEAD，按关联 id 在固定提交解析真实路径，浏览器不能传任意文件路径或仓库 URL。沿用 Host 白名单及同站请求校验，保留项目配置、功能开关、提交可达性和关联存在性检查。非法参数、编码越界和不匹配的跨项目版本/入口均拒绝，不进行跨边界重定向。
 
-私有云部署必须让两个 Host 经过认证，且采用 host-only、HttpOnly 的认证 cookie，不向原型泄露工作台凭据；当前单用户实例内的项目共用既有访问边界，不新增租户权限模型。本地无认证模式仅绑定 loopback。跨站点第三方 cookie 限制可能使嵌入登录失败，部署推荐同站点不同子域；必要时提供由工作台发起的预览域登录入口，不能开放匿名资源来绕过登录问题。
-
-工作台 API 继续拒绝预览 origin 和跨站写入，不为预览放宽 CORS。静态路由仅接受 GET/HEAD，不提供修改操作；直接访问也经过部署认证与资源范围校验。URL 形如 `/preview/<project>/<revision>/<change>/<preview-id>/<root-relative-asset>`，入口描述返回落在该前缀下的 `order-list/index.html`，相对共享路径落在同一前缀。目录归一化与校验先于缓存读取；原始编码越界、双重编码、反斜杠等单独拒绝，不进行跨边界重定向。
-
-iframe 使用 `sandbox="allow-scripts allow-same-origin"`，只在与工作台不同的 origin 上允许脚本保持其自身 origin，以支持标准构建的 module、字体及同源 mock 读取。HTML 响应同时设置 CSP sandbox，不能仅由 iframe 属性保证。CSP 基线如下，实际来源由部署配置精确生成：
+iframe 使用 `sandbox="allow-scripts"`，绝不加入 allow-same-origin。虽然请求 URL 与工作台同域，浏览器将沙箱文档视为 opaque origin，无法访问工作台 DOM、Cookie、localStorage 等。HTML 响应同时设置 CSP sandbox，让直接打开原型 URL 也保留这一限制。CSP 基线为：
 
 ```text
-sandbox allow-scripts allow-same-origin;
-default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';
-img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self';
+sandbox allow-scripts;
+default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';
+img-src data:; font-src data:; connect-src 'none';
 object-src 'none'; frame-src 'none'; worker-src 'none';
-base-uri 'none'; form-action 'none'; frame-ancestors <workbench-origins>;
+base-uri 'none'; form-action 'none'; frame-ancestors 'self';
 ```
 
-不启用 unsafe-eval、弹窗、下载、顶层导航、业务网络调用或 Service Worker；资源端额外拒绝 Service Worker 脚本请求。Permissions-Policy 禁用相机、麦克风、定位等设备能力。全部静态响应使用正确 MIME、`X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer` 和 `Cache-Control: private, no-store`，不放入 Next public 目录或公共 CDN。Git 缓存可以复用，浏览器与代理不得绕过访问门槛缓存私有产物。
+这一选择要求自包含 HTML。实际浏览器探针表明，去掉 allow-same-origin 后子资源请求的 Origin 为 null，SameSite=Lax 登录 Cookie 不随模块、字体和 fetch 子请求发送，即使请求声明 credentials: include。只给资源增加 CORS 不能解决私有网关认证问题。将运行资源内联后，只有 iframe 文档导航请求需要认证，不再依赖匿名资源路由、短期访问令牌或跨 origin CORS。来源与实验边界见 [Research](./research.md)。
 
-此隔离保护工作台，不把任意原型变成可信应用，也不承诺阻止原型自身在 iframe 内导航或防御浏览器漏洞。原型包不得放秘密；界面不接收原型消息来执行父页面操作。预览域只提供同一私有实例授权范围内的静态产物。
+不启用 unsafe-eval、弹窗、下载、表单提交、顶层导航、网络访问或 Service Worker。Permissions-Policy 禁用相机、麦克风、定位等设备能力。响应使用 `text/html; charset=utf-8`、`X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer` 和 `Cache-Control: private, no-store`，不放入 Next public 目录或公共 CDN。工作台 API 仍拒绝 Origin:null，不给沙箱开放 CORS，不接受原型消息来执行导航、读写文件或调用父页面 API。
+
+该模式只授予内联脚本完成局部交互的能力，不给原型持久存储和后端访问能力。运行中 mock 状态保存在页面内存，重载后重置。沙箱内自身导航可能发生，不能以 CSP 宣称完全杜绝出站导航；原型产物不得包含秘密。不承诺防御浏览器漏洞，但原型不能借当前应用同域的 URL 获得工作台 origin 的权限。原型 HTML 包含的内容对有项目访问权限的用户可见，属于预期交付。
 
 ### 工作台入口与可读错误
 
@@ -156,13 +155,13 @@ base-uri 'none'; form-action 'none'; frame-ancestors <workbench-origins>;
 
 页面固定 iframe 的 CSS 宽高，再通过外层缩放适应画布。工具栏同时显示设备/自定义尺寸和缩放比例，提供适应画布与 100% 查看；组件居中，超过容器可滚动。使用可访问的 iframe title 和键盘控件，保留原抽屉的返回与焦点行为。
 
-入口描述由受保护的主 API 返回：包含提交、关联、视口和经过校验的预览 URL/不可用原因。先完成元数据和资源存在性检查，再创建 iframe。iframe load 不作为构建成功或运行验证的证据；运行错误由浏览器验证与原型包交付检查发现。入口加载、认证失败、配置缺失、产物不可用分别展示，不自动构建或改写 Change。
+入口描述由受保护的主 API 返回：包含提交、关联、视口和经过校验的预览 URL/不可用原因。先完成元数据和资源存在性检查，再创建 iframe。iframe load 不作为构建成功或运行验证的证据；运行错误由浏览器验证与原型包交付检查发现。入口加载、认证失败、配置缺失、产物不可用分别展示，不自动构建或改写 Change。导出校验检查静态外链并在浏览器中捕获网络请求/CSP 违规，不能只靠正则断言动态脚本没有网络依赖。正式预览可由服务在 HTML 起始处加入固定的 CSP 诊断引导，向父页面发送受限错误码；父页面仅在消息来自当前 iframe 且与当前加载实例匹配时显示转义后的提示，不执行消息指定的动作。不把诊断消息或 iframe load 当作验收证明。
 
 ## 影响与取舍
 
 原有 `schemaVersion: 1` 增加可选字段，新客户端读取旧数据；旧版本严格 schema 不兼容新增字段，发布需先升级主 skill、hook 和服务，再启用配置并写入关联。回退旧应用前移除或恢复旧契约提交，不能声称任意降级兼容。缓存格式升级可丢弃旧派生缓存重建，归档 Git 引用保留。
 
-项目级启用基线与 Change 来源分支分开，避免一个旧分支重启被拒绝的功能；代价是首次接入需把配置发布到服务认定的基线。独立 origin 增加一个主机名配置，但复用同一服务与认证设施，避免同源执行风险及 opaque origin 对模块、字体和认证的额外兼容问题。
+项目级启用基线与 Change 来源分支分开，避免一个旧分支重启被拒绝的功能；代价是首次接入需把配置发布到服务认定的基线。同域沙箱避免新增部署配置；代价是导出物必须自包含，不能直接预览仍依赖外部文件的普通构建目录。用户继续自由组织源码和复用组件，离线导出责任在用户侧 Agent。多个入口可能重复内联共用代码和字体，需要遵守 HTML 大小限制；首版不通过放开沙箱权限来换取外部资源兼容。
 
 归档标签保留一次交付的所有静态资源，也保留整包当时的源码；代价是 Git 历史持续占用空间。首版不引入制品清理、存储去重产品、构建证明清单或原型版本数据库。服务可做 blob 缓存去重，不改变仓库协议。
 
@@ -170,14 +169,14 @@ base-uri 'none'; form-action 'none'; frame-ancestors <workbench-origins>;
 
 ## 验证
 
-| 对应验收 | 验证路径                                                                                                                                                                                                |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A1、A2   | 用临时 Git 仓库覆盖缺省、拒绝、pending、初始化成功/失败、重复初始化、已有设计库和显式重新同意；检查状态依据及无意覆盖。验证旧分支不能绕过配置基线。                                                     |
-| A3、A9   | 同一组有效/非法 fixtures 同时检查 skill 示例、staged hook 和服务解析；覆盖多入口、跨 Change 复用、重复 id、空列表、两种组件模式互斥、旧无字段文档和原型局部错误。                                       |
-| A4       | 浏览器实际测量 iframe innerWidth/innerHeight，验证设备切换、方向、组件固定尺寸、外层缩放、深链接及抽屉键盘行为，不以截图替代断言。                                                                      |
-| A5       | 用真实构建产物验证多 HTML 入口、ES module、共享 chunk、CSS、图片、字体、相对 JSON mock、hash 路由和静态深路径；在本地及带认证双 Host 部署各运行一次。                                                   |
-| A6       | 临时中心仓库完整走提交推送、固定版本、更新共享组件、归档标签、删分支、冷缓存重启；验证所有 blob 属于同一提交。另测标签冲突、推送失败、引用删除、旧快照淘汰与不可达 SHA。                                |
-| A7、A8   | 覆盖路径编码穿越、symlink、LFS、任意源码/仓库请求、项目移除、资源限额、刷新失败。双 origin 验证父 DOM/存储/API/刷新隔离、主 Host 禁预览、预览 Host 禁主应用、匿名认证失败、CSP 与 Service Worker 拦截。 |
-| A9       | 回归现有 Spec/Change 核心与浏览器测试、类型检查和生产构建；对严格 schema 的升级顺序做兼容 fixture 验证。                                                                                                |
+| 对应验收 | 验证路径                                                                                                                                                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A1、A2   | 用临时 Git 仓库覆盖缺省、拒绝、pending、初始化成功/失败、重复初始化、已有设计库和显式重新同意；检查状态依据及无意覆盖。验证旧分支不能绕过配置基线。                                                                                  |
+| A3、A9   | 同一组有效/非法 fixtures 同时检查 skill 示例、staged hook 和服务解析；覆盖多入口、跨 Change 复用、重复 id、空列表、两种组件模式互斥、旧无字段文档和原型局部错误。                                                                    |
+| A4       | 浏览器实际测量 iframe innerWidth/innerHeight，验证设备切换、方向、组件固定尺寸、外层缩放、深链接及抽屉键盘行为，不以截图替代断言。                                                                                                   |
+| A5       | 用真实离线导出产物验证多 HTML 入口、共享组件打包、内联 module、CSS、data 图片/字体、内联 mock 和 hash 路由；断开子资源网络仍能运行。覆盖不兼容外部 import/fetch 的明确报错，在本地及带认证单域名部署各运行一次。                     |
+| A6       | 临时中心仓库完整走提交推送、固定版本、更新共享组件、归档标签、删分支、冷缓存重启；验证所有 blob 属于同一提交。另测标签冲突、推送失败、引用删除、旧快照淘汰与不可达 SHA。                                                             |
+| A7、A8   | 覆盖路径编码穿越、symlink、LFS、任意源码/仓库请求、项目移除、资源限额、刷新失败。同域 opaque 沙箱验证父 DOM/存储/Cookie/API/刷新隔离、直接打开时响应头沙箱、匿名认证失败、CSP 与 Service Worker 拦截；确认没有 CORS 或网关认证例外。 |
+| A9       | 回归现有 Spec/Change 核心与浏览器测试、类型检查和生产构建；对严格 schema 的升级顺序做兼容 fixture 验证。                                                                                                                             |
 
-实现前先完成双 Host 的实际浏览器与私有认证验证；若部署网关不允许所需 Host/认证分流，保留功能未启用并修订部署方案，不以同源放宽作为替代。当前协议调研支持方案可行，但该部署验证尚未发生，证据边界见 [Research](./research.md)。large Change 的独立评审覆盖字段一致性、历史可达性和安全边界，问题解决后再进入人工验收；不把本次文档检查登记为产品验证通过。
+本地同域沙箱机制已通过带 HttpOnly/SameSite=Lax Cookie 认证的 Chromium 探针验证；后续实现仍需验证正式导出工具、Next 路由、现有私有网关和完整 Git 读取链路。若产物依赖外部资源，修复用户侧导出而非移除 sandbox 或开放匿名读取。证据边界见 [Research](./research.md)。large Change 的独立评审覆盖字段一致性、历史可达性和安全边界，问题解决后再进入人工验收；不把本次文档检查登记为产品验证通过。
