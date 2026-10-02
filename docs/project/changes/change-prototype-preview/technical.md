@@ -16,7 +16,7 @@ Change 主来源提交 → 关联与包配置校验 → Git blob 静态读取
 工作台 Change 详情 ← 版本与入口元数据     同域沙箱 iframe
 ```
 
-服务端不 checkout 运行用户工程，不执行安装、构建、Git hooks 或 submodule 初始化。Git 是持久来源，磁盘缓存是可重建派生数据，不引入数据库。以下 JSON 是待实现契约示例，本次文档准备不把新字段写入现行配置或当前 Change 状态。
+服务端不 checkout 运行用户工程，不执行安装、构建、Git hooks 或 submodule 初始化。Git 是持久来源，磁盘缓存是可重建派生数据，不引入数据库。以下 JSON 定义项目接入与 Change 关联契约。
 
 ### 项目接入配置与子 skill
 
@@ -165,7 +165,7 @@ base-uri 'none'; form-action 'none'; frame-ancestors 'self';
 
 归档标签保留一次交付的所有静态资源，也保留整包当时的源码；代价是 Git 历史持续占用空间。首版不引入制品清理、存储去重产品、构建证明清单或原型版本数据库。服务可做 blob 缓存去重，不改变仓库协议。
 
-停用原型功能时只关闭入口和资源响应，保留现有文档读取；源码、产物和关联不自动删除。正式实现完成并验收后再同步 Specs；本次不将计划能力写成已实现事实。
+停用原型功能时只关闭入口和资源响应，保留现有文档读取；源码、产物和关联不自动删除。正式实现经用户验收后再同步 Specs。
 
 ## 验证
 
@@ -179,4 +179,4 @@ base-uri 'none'; form-action 'none'; frame-ancestors 'self';
 | A7、A8   | 覆盖路径编码穿越、symlink、LFS、任意源码/仓库请求、项目移除、资源限额、刷新失败。同域 opaque 沙箱验证父 DOM/存储/Cookie/API/刷新隔离、直接打开时响应头沙箱、匿名认证失败、CSP 与 Service Worker 拦截；确认没有 CORS 或网关认证例外。 |
 | A9       | 回归现有 Spec/Change 核心与浏览器测试、类型检查和生产构建；对严格 schema 的升级顺序做兼容 fixture 验证。                                                                                                                             |
 
-本地同域沙箱机制已通过带 HttpOnly/SameSite=Lax Cookie 认证的 Chromium 探针验证；后续实现仍需验证正式导出工具、Next 路由、现有私有网关和完整 Git 读取链路。若产物依赖外部资源，修复用户侧导出而非移除 sandbox 或开放匿名读取。证据边界见 [Research](./research.md)。large Change 的独立评审覆盖字段一致性、历史可达性和安全边界，问题解决后再进入人工验收；不把本次文档检查登记为产品验证通过。
+本地同域沙箱机制通过带 HttpOnly/SameSite=Lax Cookie 认证的 Chromium 探针验证；正式导出工具、Next 路由和完整 Git 读取链路的结果见 Execution，真实网关已登录会话的体验留待用户验收。若产物依赖外部资源，修复用户侧导出而非移除 sandbox 或开放匿名读取。证据边界见 [Research](./research.md)。large Change 的独立评审覆盖字段一致性、历史可达性和安全边界，问题解决后再进入人工验收；独立评审及复验结论见 Review。

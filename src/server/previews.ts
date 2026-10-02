@@ -153,6 +153,14 @@ export async function resolvePreview(
   const group = source.changes.find((g) => g.id === changeId),
     candidate = group && primaryRecord(group);
   let revision = requestedRevision ?? candidate?.commit;
+  if (
+    !requestedRevision &&
+    candidate?.archived &&
+    candidate.state &&
+    !candidate.state.previews?.length &&
+    !candidate.diagnostics.some((d) => d.code === "PREVIEWS_INVALID")
+  )
+    return fail("这个 Change 还没有关联原型。");
   if (!requestedRevision && candidate?.archived) {
     const ref = latest.archiveRefs.find((r) => r.id === changeId);
     if (!ref)
@@ -208,6 +216,11 @@ export async function resolvePreview(
     const { previews: ignored, ...core } = raw;
     const state = changeSchema.parse(core);
     if (state.id !== changeId) throw Error();
+    if (
+      raw.previews === undefined ||
+      (Array.isArray(raw.previews) && !raw.previews.length)
+    )
+      return fail("这个 Change 还没有关联原型。");
     if (stateFiles[0].path.startsWith("docs/project/archive/")) {
       const ref = latest.archiveRefs.find((r) => r.id === changeId);
       if (

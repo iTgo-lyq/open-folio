@@ -200,3 +200,68 @@ test("archive publishes a retained tag atomically, is idempotent and never overw
     revision,
   );
 });
+
+test("archive accepts an existing annotated tag that retains the same completed commit", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  assert.equal(
+    run(f.author, "setup.mjs", ["--accept", "--summary", "用户同意"]).status,
+    0,
+  );
+  const path = "docs/project/archive/2026-10-03-annotated",
+    at = "2026-10-03T01:30:00+08:00";
+  const step = (result: string) => ({ at, summary: "verified", result });
+  await f.put(
+    `${path}/change.json`,
+    JSON.stringify({
+      schemaVersion: 1,
+      id: "annotated",
+      title: "Annotated",
+      branch: "main",
+      size: "small",
+      status: "completed",
+      stage: "close",
+      confirmations: {},
+      tasks: { T1: { title: "交付", status: "done" } },
+      closure: {
+        verification: step("passed"),
+        acceptance: step("accepted"),
+        specs: step("not_needed"),
+        archive: { ...step("done"), path },
+      },
+      previews: [
+        {
+          id: "welcome",
+          title: "Welcome",
+          path: "packages/prototype/preview/welcome",
+          kind: "page",
+          devices: ["pc-web"],
+        },
+      ],
+    }),
+  );
+  const revision = f.commit(),
+    ref = "refs/tags/spec-trail/archive/annotated";
+  f.git([
+    "tag",
+    "-a",
+    "spec-trail/archive/annotated",
+    "-m",
+    "Retain completed prototype",
+    revision,
+  ]);
+  const result = run(f.author, "archive.mjs", [
+    "--change",
+    "annotated",
+    "--push",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    f.git(["ls-remote", "origin", `${ref}^{}`]),
+    new RegExp(`^${revision}\\t`),
+  );
+  assert.equal(
+    run(f.author, "archive.mjs", ["--change", "annotated", "--push"]).status,
+    0,
+  );
+});

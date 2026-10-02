@@ -227,3 +227,76 @@ test("previews reject unreachable revisions, invalid entries, symlinks, LFS and 
   assert.match(partial.html!, /valid/);
   assert.equal(partial.descriptor.entries[1].available, false);
 });
+
+test("legacy archives without previews need no retention tag, including fixed revision links", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.put("docs/project/workflow.json", JSON.stringify(workflow));
+  const at = decision.at,
+    step = (result: string) => ({ at, summary: "已验证", result });
+  const directory = "docs/project/archive/2026-10-03-legacy";
+  const legacy = {
+    ...state,
+    id: "legacy",
+    branch: "main",
+    status: "completed",
+    stage: "close",
+    previews: undefined,
+    tasks: { T1: { title: "交付", status: "done" } },
+    closure: {
+      verification: step("passed"),
+      acceptance: step("accepted"),
+      specs: step("not_needed"),
+      archive: { ...step("done"), path: directory },
+    },
+  };
+  for (const previews of [undefined, []]) {
+    await f.put(
+      `${directory}/change.json`,
+      JSON.stringify({ ...legacy, previews }),
+    );
+    const revision = f.commit();
+    await f.store.refresh(f.project, DEFAULT_LIMITS);
+    for (const version of [undefined, revision]) {
+      const result = await f.store.preview(
+        f.project,
+        "legacy",
+        version,
+        DEFAULT_LIMITS,
+      );
+      assert.equal(result.html, undefined);
+      assert.match(result.descriptor.message!, /没有关联原型/);
+    }
+  }
+});
+
+test("two Changes can share one exported entry without a separate prototype manifest", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  f.git(["checkout", "-b", "change/shared-consumer"]);
+  await f.put(
+    "docs/project/changes/shared-consumer/change.json",
+    JSON.stringify({
+      ...state,
+      id: "shared-consumer",
+      branch: "change/shared-consumer",
+    }),
+  );
+  const revision = f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const original = await preview(f),
+    reused = await f.store.preview(
+      f.project,
+      "shared-consumer",
+      undefined,
+      DEFAULT_LIMITS,
+      undefined,
+      entry.id,
+    );
+  assert.equal(reused.html, original.html);
+  assert.equal(reused.descriptor.revision, revision);
+  assert.equal(
+    reused.descriptor.entries[0].path,
+    original.descriptor.entries[0].path,
+  );
+});

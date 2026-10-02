@@ -29,8 +29,9 @@ try{
    const refspecs=[`HEAD:refs/heads/${branch}`,`${ref}:${ref}`];
    const result=spawnSync('git',['-C',cwd,'push','--atomic',remote,...refspecs],{encoding:'utf8'});
    if(result.status!==0){if(/does not support.*atomic|atomic.*not supported/i.test(result.stderr||'')){git(['push',remote,refspecs[0]]);git(['push',remote,refspecs[1]]);}else throw Error('Atomic archive push failed; local tag is retained for retry.');}
-   const heads=git(['ls-remote',remote,`refs/heads/${branch}`,ref]);
-   if(!heads.includes(`${revision}\trefs/heads/${branch}`)||!heads.includes(`${revision}\t${ref}`))throw Error('Remote branch/tag verification failed; archive delivery is incomplete.');
+   const heads=git(['ls-remote',remote,`refs/heads/${branch}`,ref,`${ref}^{}`]).split('\n');
+   const pinned=heads.find(r=>r.endsWith(`${ref}^{}`))?.split('\t')[0]||heads.find(r=>r.endsWith(`\t${ref}`))?.split('\t')[0];
+   if(!heads.includes(`${revision}\trefs/heads/${branch}`)||pinned!==revision)throw Error('Remote branch/tag verification failed; archive delivery is incomplete.');
    console.log(`Archive branch and ${tag} published at ${revision}.`);
  }else console.log(`Local tag ${tag} created; archive delivery is NOT complete until --push succeeds.`);
 }catch(e){console.error(`Prototype archive: ${e.message}`);process.exitCode=1;}
