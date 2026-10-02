@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "impeccable-submodule",
+  "title": "Impeccable fork 与源码接入",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/impeccable-submodule",
+  "dependsOn": ["spec-change-workbench"],
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "创建个人 fork 并以固定提交子模块接入当前项目",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
