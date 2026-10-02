@@ -1168,7 +1168,7 @@ function TaskDetails({ c }: { c: ChangeCandidate }) {
 function Closure({ state: s }: { state: ChangeState }) {
   const labels = {
       verification: "整体验证",
-      acceptance: "人工验收",
+      acceptance: "验收",
       specs: "Specs 同步",
       archive: "归档提交",
     },
