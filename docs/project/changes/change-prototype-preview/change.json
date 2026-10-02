@@ -33,7 +33,9 @@
     },
     "T2": {
       "title": "交付原型子 skill 与本地交付工具",
-      "status": "todo"
+      "status": "done",
+      "verification": "子 skill、幂等接入、共享源码导出、静态与 Chromium 校验、归档标签工具完成。4 项真实临时仓库工具测试、skill 校验和类型检查通过。",
+      "commitTitle": "change-prototype-preview T2: deliver prototype subskill and local tooling"
     },
     "T3": {
       "title": "读取固定 Git 原型并提供同域隔离预览",
