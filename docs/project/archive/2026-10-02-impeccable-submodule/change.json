@@ -3,7 +3,7 @@
   "id": "impeccable-submodule",
   "title": "Impeccable fork 与源码接入",
   "size": "small",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/impeccable-submodule",
   "dependsOn": [
@@ -23,10 +23,23 @@
       "result": "passed",
       "at": "2026-10-02T06:58:03.742Z",
       "summary": "small Change 自查通过：验收标准逐项核对，fork 身份与远端可获取性、gitlink 固定提交、独立初始化、TypeScript 范围及类型/格式检查均通过。实现及任务记录已由 9407807 提交并推送；父仓库和子模块工作区干净，无源码或应用行为变更。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-02T15:13:35+08:00",
+      "summary": "用户在交付结果后明确授权本次 small Change 直接归档。",
+      "source": "当前会话用户原话：这种小型 change 做完直接归档就行了。优化一下 skill。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-02T15:13:35+08:00",
+      "summary": "只登记第三方源码子模块及开发说明，没有产品行为或长期核心方案变化，无需修改 Specs。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-02T15:13:35+08:00",
+      "summary": "完整 Change 材料移入归档目录，保留原任务和验证记录。",
+      "path": "docs/project/archive/2026-10-02-impeccable-submodule"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "源码接入已验证并推送，等待用户验收 fork 与 submodule 接入结果。"
   }
 }
