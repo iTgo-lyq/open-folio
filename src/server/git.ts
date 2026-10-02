@@ -67,6 +67,7 @@ export class GitReader {
         [
           "-C",
           this.directory,
+          "--literal-pathspecs",
           "-c",
           "core.hooksPath=/dev/null",
           "-c",
@@ -125,6 +126,7 @@ export class GitReader {
         "--no-recurse-submodules",
         "origin",
         "+refs/heads/*:refs/remotes/origin/*",
+        "+refs/tags/spec-trail/archive/*:refs/openfolio/archive/*",
       ],
       signal,
     );
@@ -151,10 +153,50 @@ export class GitReader {
         "SOURCE_LIMIT",
         "远端分支数量超过配置限制，已保留上次快照。",
       );
+    const archiveRows = (
+      await this.run(
+        ["for-each-ref", "--format=%(refname)", "refs/openfolio/archive/"],
+        signal,
+      )
+    )
+      .toString()
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+    if (archiveRows.length > limits.previewEntries)
+      throw new AppError(
+        "SOURCE_LIMIT",
+        "归档引用数量超过限制，请调整 previewEntries。",
+      );
+    const archiveRefs: { id: string; commit: string }[] = [];
+    for (const ref of archiveRows) {
+      const id = ref.slice("refs/openfolio/archive/".length);
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) continue;
+      try {
+        archiveRefs.push({
+          id,
+          commit: (
+            await this.run(["rev-parse", "--verify", `${ref}^{commit}`], signal)
+          )
+            .toString()
+            .trim(),
+        });
+      } catch {
+        /* A tag to a non-commit is not a preview revision. */
+      }
+    }
     const documents: DocumentRef[] = [],
       blobs = new Map<string, Buffer>();
     let total = 0;
-    for (const branch of branches) {
+    const sources = [
+      ...branches.map((b) => ({ ...b, archiveId: "" })),
+      ...archiveRefs.map((r) => ({
+        name: `refs/tags/spec-trail/archive/${r.id}`,
+        commit: r.commit,
+        archiveId: r.id,
+      })),
+    ];
+    for (const branch of sources) {
       const raw = (
         await this.run(
           [
@@ -174,6 +216,13 @@ export class GitReader {
           [mode, kind, blob] = row.slice(0, tab).split(" "),
           path = row.slice(tab + 1);
         if (!safePath(path)) continue;
+        if (
+          branch.archiveId &&
+          !new RegExp(
+            `^docs/project/archive/[0-9]{4}-[0-9]{2}-[0-9]{2}-${branch.archiveId}/`,
+          ).test(path)
+        )
+          continue;
         if (documents.length >= limits.documents)
           throw new AppError(
             "SOURCE_LIMIT",
@@ -277,7 +326,7 @@ export class GitReader {
         }
       }
     }
-    return { defaultBranch, branches, documents, blobs };
+    return { defaultBranch, branches, archiveRefs, documents, blobs };
   }
   async ancestor(base: string, tip: string, signal?: AbortSignal) {
     try {

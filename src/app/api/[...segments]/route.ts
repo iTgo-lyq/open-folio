@@ -49,6 +49,18 @@ async function handle(request: Request, context: Context) {
       branch = url.searchParams.get("branch") ?? undefined;
     if (s.length === 3 && s[2] === "workbench")
       return json(await store.workbench(p, snapshot, branch));
+    if (s.length === 4 && s[2] === "previews")
+      return json(
+        (
+          await store.preview(
+            p,
+            s[3],
+            url.searchParams.get("revision") ?? undefined,
+            limitsFor(config),
+            snapshot,
+          )
+        ).descriptor,
+      );
     if (!snapshot)
       throw new AppError(
         "INVALID_PARAMETER",

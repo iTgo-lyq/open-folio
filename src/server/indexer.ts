@@ -1,7 +1,6 @@
 import type { DocumentRef, ProjectConfig, Snapshot } from "../lib/model.ts";
 import type { GitReader } from "./git.ts";
-import { z } from "zod";
-import { prototypeSchema } from "./schema.ts";
+import { workflowCoreSchema } from "./schema.ts";
 export type Collected = Awaited<ReturnType<GitReader["collect"]>>;
 export function indexBase(data: Collected, project: ProjectConfig) {
   const diagnostics: Snapshot["diagnostics"] = [];
@@ -11,28 +10,7 @@ export function indexBase(data: Collected, project: ProjectConfig) {
       d.path === "docs/project/workflow.json",
   );
   let protectedBranches: string[] = [];
-  const schema = z
-    .object({
-      schemaVersion: z.literal(1),
-      prototype: prototypeSchema.optional(),
-      protectedBranches: z
-        .array(
-          z
-            .string()
-            .min(1)
-            .refine(
-              (s) =>
-                !s.startsWith("refs/") &&
-                !s.startsWith("origin/") &&
-                !/[\s~^:?*\[\\]|\.\.|@\{|\/\/|^\/|\/$|\.$|\.lock(?:\/|$)/.test(
-                  s,
-                ),
-            ),
-        )
-        .nonempty()
-        .refine((a) => new Set(a).size === a.length),
-    })
-    .strict();
+  const schema = workflowCoreSchema;
   try {
     protectedBranches = schema.parse(
       JSON.parse(

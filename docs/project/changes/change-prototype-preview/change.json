@@ -39,7 +39,9 @@
     },
     "T3": {
       "title": "读取固定 Git 原型并提供同域隔离预览",
-      "status": "todo"
+      "status": "done",
+      "verification": "固定提交读取、配置基线开关、归档引用和同域 HTML 端点完成；24 项核心/工具测试、3 项浏览器访问隔离测试及类型检查通过，覆盖删分支、冷缓存、改写标签和越权参数。",
+      "commitTitle": "change-prototype-preview T3: serve pinned Git previews in same-origin sandbox"
     },
     "T4": {
       "title": "在 Change 详情浏览页面与组件",

@@ -169,3 +169,27 @@ export const changeSchema = z
 export function validDate(s: string) {
   return validTimestamp(`${s}T00:00:00Z`);
 }
+
+export const workflowCoreSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    protectedBranches: z
+      .array(
+        z
+          .string()
+          .min(1)
+          .refine(
+            (s) =>
+              !s.startsWith("refs/") &&
+              !s.startsWith("origin/") &&
+              !/[\s~^:?*\[\\]|\.\.|@\{|\/\/|^\/|\/$|\.$|\.lock(?:\/|$)/.test(s),
+          ),
+      )
+      .nonempty()
+      .refine((a) => new Set(a).size === a.length),
+    prototype: z.unknown().optional(),
+  })
+  .strict();
+export const workflowSchema = workflowCoreSchema.extend({
+  prototype: prototypeSchema.optional(),
+});

@@ -283,6 +283,20 @@ export async function indexChanges(
     if (owns.length === 1) {
       g.primary = owns[0].key;
       g.title = owns[0].title;
+    } else if (
+      !owns.length &&
+      g.candidates.filter(
+        (c) =>
+          c.archived &&
+          c.validCompleted &&
+          c.branch === `refs/tags/spec-trail/archive/${g.id}`,
+      ).length === 1
+    ) {
+      const pinned = g.candidates.find(
+        (c) => c.branch === `refs/tags/spec-trail/archive/${g.id}`,
+      )!;
+      g.primary = pinned.key;
+      g.title = pinned.title;
     } else
       g.diagnostics.push(
         issue(

@@ -35,6 +35,9 @@ export type Limits = {
   branches: number;
   documents: number;
   totalBytes: number;
+  previewBytes: number;
+  previewTotalBytes: number;
+  previewEntries: number;
 };
 export const DEFAULT_LIMITS: Limits = {
   refreshMs: 120_000,
@@ -44,6 +47,9 @@ export const DEFAULT_LIMITS: Limits = {
   branches: 256,
   documents: 10_000,
   totalBytes: 64 * 1024 * 1024,
+  previewBytes: 10 * 1024 * 1024,
+  previewTotalBytes: 100 * 1024 * 1024,
+  previewEntries: 2000,
 };
 export type AppConfig = {
   schemaVersion: 1;
@@ -161,7 +167,15 @@ export type ChangeGroup = {
   relations: Relation[];
 };
 export type Snapshot = {
-  cacheSchemaVersion: 1;
+  cacheSchemaVersion: 2;
+  archiveRefs: { id: string; commit: string }[];
+  archivePins: Record<string, string>;
+  prototype: {
+    status: "unconfigured" | "disabled" | "pending" | "enabled" | "invalid";
+    branch: string | null;
+    commit?: string;
+    message: string;
+  };
   id: string;
   projectId: string;
   fingerprint: string;
@@ -229,3 +243,17 @@ export const WAIT_LABELS = {
 };
 export const primaryRecord = (g: ChangeGroup) =>
   g.candidates.find((c) => c.key === g.primary) ?? null;
+
+export type PreviewDescriptor = {
+  changeId: string;
+  revision: string | null;
+  pinned: boolean;
+  policy: Snapshot["prototype"];
+  message?: string;
+  entries: (PreviewEntry & {
+    available: boolean;
+    message?: string;
+    bytes?: number;
+    url?: string;
+  })[];
+};

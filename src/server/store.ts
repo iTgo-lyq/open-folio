@@ -22,6 +22,7 @@ import { GitReader, hash } from "./git.ts";
 import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
+import { prototypePolicy, resolvePreview } from "./previews.ts";
 
 const snapshotPattern = /^[a-f0-9-]{36}$/;
 const alive = (pid: number) => {
@@ -116,7 +117,7 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 1 ||
+        s.cacheSchemaVersion !== 2 ||
         s.id !== target ||
         s.projectId !== p.id ||
         s.fingerprint !== this.fingerprint(p)
@@ -172,7 +173,12 @@ export class SnapshotStore {
       const reader = this.readerFactory(join(dir, "git"), p);
       const data = await reader.collect(limits, signal);
       const s: Snapshot = {
-        cacheSchemaVersion: 1,
+        cacheSchemaVersion: 2,
+        archiveRefs: data.archiveRefs,
+        archivePins: {
+          ...(await this.snapshot(p).catch(() => null))?.archivePins,
+        },
+        prototype: prototypePolicy(data, p),
         id: randomUUID(),
         projectId: p.id,
         fingerprint: this.fingerprint(p),
@@ -183,6 +189,7 @@ export class SnapshotStore {
         changes: await indexChanges(data, reader, signal),
         ...indexBase(data, p),
       };
+      for (const ref of s.archiveRefs) s.archivePins[ref.id] ??= ref.commit;
       for (const [blob, body] of data.blobs) {
         signal.throwIfAborted();
         await atomic(join(dir, "blobs", blob), body);
@@ -252,6 +259,28 @@ export class SnapshotStore {
       selectedBranch,
       projectName: p.name,
     };
+  }
+  async preview(
+    p: ProjectConfig,
+    change: string,
+    revision: string | undefined,
+    limits: Limits,
+    snapshotId?: string,
+    entry?: string,
+  ) {
+    const latest = await this.snapshot(p);
+    const source =
+      snapshotId && !revision ? await this.snapshot(p, snapshotId) : latest;
+    const reader = this.readerFactory(join(this.directory(p), "git"), p);
+    return resolvePreview(
+      reader,
+      latest,
+      source,
+      change,
+      revision,
+      limits,
+      entry,
+    );
   }
   async document(p: ProjectConfig, id: string, snapshot: string) {
     const s = await this.snapshot(p, snapshot),

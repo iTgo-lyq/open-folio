@@ -54,11 +54,53 @@ export async function seed() {
     "docs/project/specs/delivery/history/record/spec.md",
     "# 交付记录\n\n## 归档\n\n保留确认、验证与人工验收记录。",
   );
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      protectedBranches: ["main"],
+      prototype: {
+        status: "enabled",
+        packagePath: "packages/prototype",
+        decision: confirmed,
+      },
+    }),
+  );
   f.commit();
   const plan =
     "# 实施计划\n\n## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | T1 |\n| T3 | T2 |\n";
   const records = [
     make("document-reader", "让工程文档成为清晰的阅读体验", {
+      previews: [
+        {
+          id: "orders",
+          title: "订单列表",
+          kind: "page",
+          path: "packages/prototype/preview/orders",
+          devices: ["pc-web", "ipad", "mobile"],
+        },
+        {
+          id: "detail",
+          title: "订单详情",
+          kind: "page",
+          path: "packages/prototype/preview/detail",
+          devices: ["pc-web"],
+        },
+        {
+          id: "card",
+          title: "价格卡片",
+          kind: "component",
+          path: "packages/prototype/preview/card",
+          viewport: { width: 640, height: 320 },
+        },
+        {
+          id: "missing",
+          title: "待导出页面",
+          kind: "page",
+          path: "packages/prototype/preview/missing",
+          devices: ["mobile"],
+        },
+      ],
       dependsOn: ["source-connect"],
       waitingFor: { kind: "confirmation", summary: "等待阅读样式验收" },
       rework: {
@@ -156,6 +198,13 @@ export async function seed() {
       );
     if (record.id === "document-reader")
       await symlink("missing-review.md", join(f.author, dir, "review.md"));
+    if (record.id === "document-reader") {
+      for (const id of ["orders", "detail", "card"])
+        await f.put(
+          `packages/prototype/preview/${id}/index.html`,
+          `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:24px;font:16px system-ui;background:#f5f4ef;color:#123}button{padding:12px}h1{font-size:28px}@media(max-width:500px){h1{font-size:20px}}</style></head><body><h1>${id === "orders" ? "订单列表原型" : id === "detail" ? "订单详情原型" : "价格卡片原型"}</h1><button id="increment">0</button><output id="value"></output><script type="module">document.querySelector('button').onclick=e=>{e.target.textContent=Number(e.target.textContent)+1};window.previewReady=true;</script></body></html>`,
+        );
+    }
     f.commit();
   }
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
