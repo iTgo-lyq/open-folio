@@ -4,7 +4,7 @@
   "title": "Change 关联项目原型包与静态预览",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-prototype-preview",
   "dependsOn": [
     "spec-change-workbench"
@@ -64,7 +64,13 @@
       "commitTitle": "change-prototype-preview T6: complete independent review and production verification"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-03T02:17:57+08:00",
+      "summary": "完成隔离上下文独立评审及子 skill 真实临时仓库验证，问题全部修复。31 项核心、5 项 hook、21 项完整浏览器回归及修正后 6 项原型浏览器复验通过；类型、格式、skill 校验、生产构建与真实已推送原型验证通过。私有入口已更新，登录态最终体验等待用户验收。"
+    }
+  },
   "rework": {
     "at": "2026-10-03T01:02:22+08:00",
     "reason": "用户明确要求不使用独立域名，并接受归档保留 Git 标签、项目开关以配置基线分支为准。",
@@ -103,5 +109,9 @@
         "height": 320
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立评审已完成，等待用户验收 Change 内的原型浏览、设备/组件尺寸、固定版本链接及子 skill 接入交付；验收后再同步 Specs 和归档。"
+  }
 }
