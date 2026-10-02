@@ -4,9 +4,11 @@
   "title": "Impeccable fork 与源码接入",
   "size": "small",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/impeccable-submodule",
-  "dependsOn": ["spec-change-workbench"],
+  "dependsOn": [
+    "spec-change-workbench"
+  ],
   "confirmations": {},
   "tasks": {
     "T1": {
@@ -16,5 +18,15 @@
       "commitTitle": "impeccable-submodule T1: add personal fork as pinned submodule"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-02T06:58:03.742Z",
+      "summary": "small Change 自查通过：验收标准逐项核对，fork 身份与远端可获取性、gitlink 固定提交、独立初始化、TypeScript 范围及类型/格式检查均通过。实现及任务记录已由 9407807 提交并推送；父仓库和子模块工作区干净，无源码或应用行为变更。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "源码接入已验证并推送，等待用户验收 fork 与 submodule 接入结果。"
+  }
 }
