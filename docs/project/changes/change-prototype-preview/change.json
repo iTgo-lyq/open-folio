@@ -59,7 +59,9 @@
     },
     "T6": {
       "title": "完成独立评审与交付复验",
-      "status": "doing"
+      "status": "done",
+      "verification": "隔离上下文独立评审和子 skill 正向验证完成，六项独立发现及旧归档空态问题均修复并复验。31 项核心、5 项 hook、21 项完整浏览器及修正后 6 项原型浏览器测试通过；生产构建和真实 Git 入口复验通过，无剩余可行动问题。",
+      "commitTitle": "change-prototype-preview T6: complete independent review and production verification"
     }
   },
   "closure": {},
