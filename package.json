@@ -1,0 +1,37 @@
+{
+  "name": "open-folio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 10681",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 10681",
+    "typecheck": "tsc --noEmit",
+    "test": "node --conditions=react-server --test tests/*.test.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "16.3.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "radix-ui": "1.6.7",
+    "lucide-react": "0.577.0",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5",
+    "zod": "3.25.76",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@playwright/test": "1.63.0",
+    "tailwindcss": "4.3.3",
+    "@tailwindcss/postcss": "4.3.3"
+  }
+}

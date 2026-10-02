@@ -20,13 +20,15 @@
     "plan": {
       "at": "2026-10-02T07:54:05+08:00",
       "summary": "用户明确要求开始实现，授权在已确认方案范围内直接推进；计划将该范围拆为采集、状态关系、Spec 界面、Change 界面、交付验证及独立评审六项，不新增取舍。",
-      "source": "本会话“行，没问题。开始实现吧”；按该明确实施指令不另设计划确认等待。"
+      "source": "本会话明确授权：不用再让我确认 plan 了，一直推进到等待我验收。"
     }
   },
   "tasks": {
     "T1": {
       "title": "读取中心 Git 并保存一致快照",
-      "status": "todo"
+      "status": "done",
+      "verification": "5 项 Node 测试及 Next 生产构建通过；真实临时 Git 验证已推送边界、原子快照、失败恢复和保留策略。",
+      "commitTitle": "spec-change-workbench T1: collect pushed Git snapshots and expose read-only APIs"
     },
     "T2": {
       "title": "按 SpecTrail 解析 Change 与关系",

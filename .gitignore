@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.env*
+!.env.example
+.openfolio/
+openfolio.local.json
+artifacts/
+test-results/
+playwright-report/
