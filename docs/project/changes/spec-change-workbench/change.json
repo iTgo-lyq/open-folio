@@ -62,7 +62,9 @@
     },
     "T7": {
       "title": "修正待验收 Change 的阶段展示",
-      "status": "doing"
+      "status": "done",
+      "verification": "7 项 Change 浏览器回归、类型/格式检查与生产构建通过；真实列表/看板/详情/手机复核和独立阶段边界验证通过。",
+      "commitTitle": "spec-change-workbench T7: show pending acceptance accurately"
     }
   },
   "closure": {},

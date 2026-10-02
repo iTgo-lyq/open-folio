@@ -60,6 +60,13 @@ export function quality(g: ChangeGroup) {
   ];
 }
 function stageText(s: ChangeState) {
+  if (
+    s.stage === "close" &&
+    s.status === "active" &&
+    s.closure.verification?.result === "passed" &&
+    !s.closure.acceptance
+  )
+    return "验收中";
   return s.stage === "technical" && ["medium", "xlarge"].includes(s.size)
     ? "技术 · 计划"
     : STAGE_LABELS[s.stage];
@@ -929,7 +936,7 @@ function Flow({ state: s }: { state: ChangeState }) {
       ? [
           { id: "requirement", label: "需求", keys: [] },
           { id: "execution", label: "执行", keys: [] },
-          { id: "close", label: "关闭", keys: [] },
+          { id: "close", label: STAGE_LABELS.close, keys: [] },
         ]
       : s.size === "large"
         ? STAGES.map((id) => ({ id, label: STAGE_LABELS[id], keys: [id] }))
@@ -941,7 +948,7 @@ function Flow({ state: s }: { state: ChangeState }) {
               keys: ["technical", "plan"],
             },
             { id: "execution", label: "执行", keys: [] },
-            { id: "close", label: "关闭", keys: [] },
+            { id: "close", label: STAGE_LABELS.close, keys: [] },
           ];
   return (
     <div className="stage-flow">
@@ -1152,7 +1159,7 @@ function Closure({ state: s }: { state: ChangeState }) {
     };
   return (
     <>
-      <SectionTitle>关闭记录</SectionTitle>
+      <SectionTitle>验收与归档</SectionTitle>
       <div className="closure-steps">
         {Object.entries(labels).map(([key, label], i) => {
           const step = s.closure[key as keyof ChangeState["closure"]];

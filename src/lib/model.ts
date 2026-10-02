@@ -194,7 +194,7 @@ export const STAGE_LABELS: Record<ChangeState["stage"], string> = {
   technical: "技术方案",
   plan: "计划",
   execution: "执行",
-  close: "关闭",
+  close: "验收",
 };
 export const STATUS_LABELS = {
   active: "进行中",
