@@ -4,14 +4,16 @@
   "title": "Impeccable fork 与源码接入",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/impeccable-submodule",
   "dependsOn": ["spec-change-workbench"],
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "创建个人 fork 并以固定提交子模块接入当前项目",
-      "status": "todo"
+      "status": "done",
+      "verification": "GitHub 确认 iTgo-lyq/impeccable 的父仓库为 pbakaus/impeccable；gitlink 固定 508d7e8955de3b3caf2d8676e85206723d41a887，与 fork/upstream main 一致。独立临时父仓库按 .gitmodules 与 gitlink 初始化成功，子模块干净；类型检查、格式检查、diff 检查通过，TS 清单包含 43 个父项目文件且不含 Impeccable 文件。",
+      "commitTitle": "impeccable-submodule T1: add personal fork as pinned submodule"
     }
   },
   "closure": {}
