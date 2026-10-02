@@ -1,6 +1,6 @@
 # OpenFolio
 
-基于中心 Git 已推送记录的 Specs 与 Changes 只读工作台。界面沿用雾蓝设计室，流程继续由仓库内的 SpecTrail skill 推进；当前版本不提供原型管理或流程写入。
+基于中心 Git 已推送记录的 Specs 与 Changes 只读工作台。界面沿用雾蓝设计室，流程继续由仓库内的 SpecTrail skill 推进；Change 内可查看页面与组件原型，工作台不写入流程或构建原型。
 
 ## 启动
 
@@ -59,6 +59,29 @@ Specs 从所选分支的 `docs/project/specs/<能力路径>/spec.md` 建立任�
 Change 前置关系与父子关系来自 JSON，任务前置来自 Plan 的唯一“执行顺序”表。流程前提与 Git 祖先证据分开展示；未获得证据、squash 或缺失来源都不会被推定为交付可用。祖先存在也不证明代码未在之后撤销。
 
 Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工程文档清单中解析，支持普通文本和经过签名检查的仓库图片；外部图片、SVG 和未知文件不嵌入。URL 保存浏览条件，链接重新打开后读取该来源的最新缓存，而非永久固定历史。
+
+## Change 原型预览
+
+项目只维护一个 Git 跟踪的 monorepo 原型包，默认 `packages/prototype/`。通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 接入，复用用户的设计规范和组件库；不提供模板服务。拒绝选择记入 `docs/project/workflow.json.prototype`，不会反复启用。当前仓库包含两个页面和一个组件作为交付样例：
+
+```bash
+npm run build --workspace prototype
+node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
+```
+
+`change.json.previews` 直接记录入口 id、标题、`<packagePath>/preview/<entry>` 文件夹、页面/组件类型和适配信息。页面声明 `pc-web`、`ipad`、`mobile` 中的设备；组件也可声明 `viewport: {width, height}`。工作台按真实 CSS 尺寸渲染，再缩放适应画布；设备选项是尺寸预设，不是硬件模拟器。
+
+每个目录必须提供自包含 `index.html`：脚本、样式和 mock 内联，图片/字体为 data URL。基础包支持共享文件内联；用户可以用自己的开发框架完成导出。普通多文件构建需要额外打包，不支持外链、动态 chunk、网络接口、持久存储或真实后端。提交源码、关联与产物后，工作台从已推送的固定提交读取，不运行仓库构建脚本。
+
+原型与工作台共用域名、端口和私有认证。iframe 仅授予 `allow-scripts`，响应头也强制沙箱；不给 `allow-same-origin` 或 CORS。局部交互运行在页面内存中，重载即重置。直接打开原型 URL 同样不能访问工作台存储与接口。
+
+功能开关取服务项目 `specBranch`（未配置时为远端默认分支）的最新成功采集配置，固定版本中的配置决定当时的包路径。当前基线停用后，旧链接也停止预览。验收环境可以显式把 `specBranch` 指向验证分支；Specs 的默认基线仍遵守上面的守护分支规则，不因此把验证分支认作已发布 Specs。开关变化需要刷新采集，失败时保留旧快照并显示原成功时间。
+
+固定链接记录完整 revision，不受最近三份文档快照的保留数量限制。带原型的 Change 归档后，由 skill 推送 `spec-trail/archive/<change-id>` 标签保留交付提交；分支删除后仍可回看。标签丢失或已观察的标签被改写会明确报错，不回退最新页面。标签与关联产物都要保留在中心仓库。
+
+默认限制为 `previewBytes: 10485760`（单 HTML）、`previewTotalBytes: 104857600`（同提交 preview 根下所有 HTML 的去重合计）和 `previewEntries: 2000`；可在服务 `limits` 调整。超限、LFS 指针、符号链接或错误导出只影响原型，已有文档继续可读。
+
+本版缓存格式升级为 2。升级服务后执行一次项目刷新重建快照；旧缓存格式错误不是原始文档丢失。原型字段需配套升级 skill、hook 和工作台，再推送启用配置；旧客户端的严格 schema 不支持直接读取这些新字段。
 
 ## Impeccable 源码
 

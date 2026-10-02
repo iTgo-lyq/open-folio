@@ -25,3 +25,9 @@
 新增原型标签、多入口、声明设备和旋转、自定义组件视口、画布适应与 100%、固定 Git 版本链接；保留现有抽屉和文档阅读。缩放只作用于展示，不改变 iframe 的布局尺寸。错误入口、失效版本、当前禁用、沙箱运行异常均给出可读提示。
 
 `npx playwright test tests/browser/previews.spec.ts tests/browser/changes.spec.ts` 的 10 项测试通过；`npm run typecheck` 通过。测量实际 iframe 视口，覆盖 PC/iPad/移动端与 640px 局部组件、方向切换、深链接恢复、错误入口及移动端抽屉滚动。
+
+## T5：真实包与运行环境集成
+
+通过子 skill 初始化本仓库的 `packages/prototype` npm workspace，引用主应用设计规则。两个页面和一个 640×320 组件复用共享样式、页头与内联品牌素材，三个入口直接关联当前 Change。新增运行、配置基线、导出限制、归档保留和缓存升级说明。
+
+真实接入发现本地 Playwright 的 CommonJS 入口只有 default 导出；修正 T2 浏览器校验工具的模块解包，回归改为使用项目内默认解析，原有 ESM 指定路径仍由运行时网络失败用例覆盖。`npm run build --workspace prototype` 和默认参数的 `validate.mjs --browser` 已验证三个真实产物。生产环境与完整验证结果后续补充。

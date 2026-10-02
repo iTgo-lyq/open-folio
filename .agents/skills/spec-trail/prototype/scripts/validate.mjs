@@ -28,7 +28,8 @@ try {
  if(options['--browser']){
   const req=createRequire(join(root,'package.json'));
   const modulePath=options['--playwright']||req.resolve('@playwright/test');
-  const {chromium}=await import(pathToFileURL(resolve(modulePath)).href);
+  const playwright=await import(pathToFileURL(resolve(modulePath)).href);
+  const {chromium}=playwright.chromium ? playwright : playwright.default;
   browser=await chromium.launch({headless:true});
   let current;
   server=createServer((request,response)=>{

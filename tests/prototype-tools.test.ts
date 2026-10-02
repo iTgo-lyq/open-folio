@@ -72,11 +72,8 @@ test("setup persists refusal, initializes one package, reuses design and preserv
     ]).status,
     1,
   );
-  result = run(f.author, "validate.mjs", [
-    "--browser",
-    "--playwright",
-    resolve("node_modules/@playwright/test/index.mjs"),
-  ]);
+  await symlink(resolve("node_modules"), join(f.author, "node_modules"), "dir");
+  result = run(f.author, "validate.mjs", ["--browser"]);
   assert.equal(result.status, 0, result.stderr);
 });
 
