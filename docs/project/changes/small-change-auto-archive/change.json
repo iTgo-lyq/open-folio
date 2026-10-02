@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "small-change-auto-archive",
+  "title": "small Change 自验收后直接归档",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/small-change-auto-archive",
+  "dependsOn": ["impeccable-submodule"],
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "调整 small 关闭规则并对齐工作台验收标签",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
