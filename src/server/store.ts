@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile, rename, unlink, readdir, open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { primaryRecord } from '../lib/model.ts';
 import type { Limits, ProjectConfig, ProjectSummary, Snapshot, Workbench, SearchResult } from '../lib/model.ts';
 import { GitReader, hash } from './git.ts';
+import { indexChanges } from './changes.ts';
 import { indexBase } from './indexer.ts';
 import { AppError, publicError } from './errors.ts';
 
@@ -72,7 +74,7 @@ export class SnapshotStore {
       const signal = AbortSignal.timeout(limits.refreshMs);
       const reader = this.readerFactory(join(dir, 'git'), p);
       const data = await reader.collect(limits, signal);
-      const s: Snapshot = { cacheSchemaVersion: 1, id: randomUUID(), projectId: p.id, fingerprint: this.fingerprint(p), capturedAt: new Date().toISOString(), defaultBranch: data.defaultBranch, branches: data.branches, documents: data.documents, changes: [], ...indexBase(data, p) };
+      const s: Snapshot = { cacheSchemaVersion: 1, id: randomUUID(), projectId: p.id, fingerprint: this.fingerprint(p), capturedAt: new Date().toISOString(), defaultBranch: data.defaultBranch, branches: data.branches, documents: data.documents, changes: await indexChanges(data, reader, signal), ...indexBase(data, p) };
       for (const [blob, body] of data.blobs) { signal.throwIfAborted(); await atomic(join(dir, 'blobs', blob), body); }
       signal.throwIfAborted();
       await atomic(join(dir, 'snapshots', `${s.id}.json`), JSON.stringify(s));
@@ -111,6 +113,12 @@ export class SnapshotStore {
     const s = await this.workbench(p, snapshot, branch), q = query.trim().toLocaleLowerCase();
     if (!q || q.length > 200) return [];
     const results: SearchResult[] = [];
+    if (kind === 'changes') for (const group of s.changes) {
+      const c = primaryRecord(group);
+      if (!c?.state) continue;
+      if (`${group.id} ${group.title}`.toLocaleLowerCase().includes(q)) results.push({ changeId: group.id, title: group.title, path: c.directory, excerpt: group.id, branch: c.branch });
+      for (const [taskId, task] of Object.entries(c.state.tasks)) if (`${taskId} ${task.title}`.toLocaleLowerCase().includes(q)) results.push({ changeId: group.id, taskId, title: `${taskId} · ${task.title}`, path: c.directory, excerpt: group.title, branch: c.branch });
+    }
     const refs = kind === 'specs' ? new Set(s.specs.map(x => x.documentId)) : new Set(s.changes.flatMap(g => g.candidates.filter(c => c.key === g.primary || !g.primary).flatMap(c => c.documentIds)));
     for (const d of s.documents.filter(d => refs.has(d.id) && d.readable && ['markdown', 'json'].includes(d.kind))) {
       const body = (await this.document(p, d.id, snapshot)).body.toString(), at = body.toLocaleLowerCase().indexOf(q);
@@ -119,6 +127,6 @@ export class SnapshotStore {
       results.push({ documentId: d.id, changeId: change?.id, specId: s.specs.find(v => v.documentId === d.id)?.id, title: d.title, path: d.path, branch: d.branch, excerpt: body.slice(Math.max(0, at - 40), Math.max(0, at - 40) + 160) });
       if (results.length >= 100) break;
     }
-    return results;
+    return results.slice(0, 100);
   }
 }

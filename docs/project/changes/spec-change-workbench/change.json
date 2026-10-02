@@ -32,11 +32,13 @@
     },
     "T2": {
       "title": "按 SpecTrail 解析 Change 与关系",
-      "status": "doing"
+      "status": "done",
+      "verification": "10 项 Node 测试与类型检查通过，覆盖 schema/hook 一致性、主来源、Plan 和 Change 依赖、归档语义。",
+      "commitTitle": "spec-change-workbench T2: interpret SpecTrail state and provenance"
     },
     "T3": {
       "title": "用认可外壳阅读真实 Specs",
-      "status": "todo"
+      "status": "doing"
     },
     "T4": {
       "title": "浏览 Change、任务及依赖",

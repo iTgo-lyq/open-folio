@@ -28,7 +28,7 @@ export type TaskGraph = { status: 'valid' | 'missing' | 'invalid' | 'not-applica
 export type ChangeCandidate = {
   key: string; id: string; owner?: string; title: string; branch: string; commit: string; directory: string;
   archived: boolean; jsonDocumentId: string; documentIds: string[]; state: ChangeState | null;
-  diagnostics: Diagnostic[]; validCompleted: boolean; taskGraph: TaskGraph; relatedSpecs: string[];
+  diagnostics: Diagnostic[]; validCompleted: boolean; taskGraph: TaskGraph; relatedSpecs: string[]; specReferences: { specId: string; documentId: string; line: number }[];
 };
 export type Relation = { kind: 'dependency' | 'child' | 'parent'; target: string; exists: boolean; process: 'satisfied' | 'unsatisfied' | 'unknown'; ancestry: 'found' | 'unknown'; diagnostics: string[] };
 export type ChangeGroup = { id: string; title: string; primary: string | null; candidates: ChangeCandidate[]; diagnostics: Diagnostic[]; relations: Relation[] };
