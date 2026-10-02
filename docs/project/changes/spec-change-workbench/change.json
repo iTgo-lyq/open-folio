@@ -4,7 +4,7 @@
   "title": "基于中心 Git 仓库的 Spec 与 Change 只读工作台",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/spec-change-workbench",
   "confirmations": {
     "requirement": {
@@ -61,5 +61,15 @@
       "commitTitle": "spec-change-workbench T6: resolve independent review findings and verify fixes"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-02T09:02:11+08:00",
+      "summary": "整体验证通过：隔离上下文独立 subagent 完成全差异评审，7 项发现已修复并独立复验闭合；14 项核心测试、15 项浏览器场景、类型/格式检查和最终生产构建通过。当前私有中心仓库读取及桌面/手机页面已验证，详见 Execution 与 Review。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收私有工作台中的 Spec/Change 阅读、筛选、任务与依赖追踪；收到验收后再同步 Specs 并归档。"
+  }
 }
