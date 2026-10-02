@@ -64,7 +64,7 @@ test('configuration and request boundaries reject unregistered origins and unsaf
   for (const url of ['file:///tmp/repo', 'https://user:token@example.test/repo', 'ssh://example.test/repo', 'https://example.test/repo?token=x']) assert.throws(() => parseConfig({ ...good, projects: [{ ...good.projects[0], repositoryUrl: url }] }));
   assert.throws(() => parseConfig({ ...good, projects: [...good.projects, ...good.projects] }));
   checkRequest(new Request('http://localhost:10681/api/projects'), config);
-  for (const headers of [{ host: 'evil.test' }, { origin: 'https://evil.test' }, { 'sec-fetch-site': 'cross-site' }]) assert.throws(() => checkRequest(new Request('http://localhost:10681/api/projects', { headers: headers as Record<string, string> }), config));
+  for (const headers of ([{ host: 'evil.test' }, { origin: 'https://evil.test' }, { 'sec-fetch-site': 'cross-site' }] as HeadersInit[])) assert.throws(() => checkRequest(new Request('http://localhost:10681/api/projects', { headers }), config));
   assert.throws(() => checkRequest(new Request('http://localhost:10681/api/projects'), config, true));
 });
 

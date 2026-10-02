@@ -27,12 +27,12 @@
     "T1": {
       "title": "读取中心 Git 并保存一致快照",
       "status": "done",
-      "verification": "5 项 Node 测试及 Next 生产构建通过；真实临时 Git 验证已推送边界、原子快照、失败恢复和保留策略。",
-      "commitTitle": "spec-change-workbench T1: collect pushed Git snapshots and expose read-only APIs"
+      "verification": "5 项 Node 测试通过；修正测试 HeadersInit 类型后，Next 生产构建与 TypeScript 检查通过。",
+      "commitTitle": "spec-change-workbench T1: fix test header typing and verify production build"
     },
     "T2": {
       "title": "按 SpecTrail 解析 Change 与关系",
-      "status": "todo"
+      "status": "doing"
     },
     "T3": {
       "title": "用认可外壳阅读真实 Specs",
