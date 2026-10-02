@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+test('Specs tree, body search, anchors, raw view and safe links', async ({page}) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/?project=fixture&m=specs&s=platform');
+  await expect(page.getByRole('heading', {name: '工程协作', exact: true})).toBeVisible();
+  await expect(page.getByRole('navigation', {name: '能力目录'}).getByRole('button', {name: '访问与来源'})).toBeVisible();
+  await page.getByRole('navigation', {name: '文档章节'}).getByRole('link', {name: '重复标题', exact: true}).nth(1).click();
+  await expect(page).toHaveURL(/anchor=/); await expect(page.locator('h2#重复标题-1')).toBeVisible();
+  await page.getByRole('button', {name: '查看原文'}).click();
+  await expect(page.getByRole('dialog').locator('pre')).toContainText('<script>');
+  await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('link', {name: '缺失文档'}).click(); await expect(page.getByRole('status')).toContainText('找不到');
+  await page.getByRole('link', {name: '阅读权限能力'}).click();
+  await expect(page.getByRole('dialog').getByRole('heading', {name: '访问与来源', exact: true})).toBeVisible(); await page.keyboard.press('Escape');
+  await page.getByRole('button', {name: '搜索工作台'}).click(); await page.getByRole('textbox', {name: '全文搜索'}).fill('星河检索');
+  await page.getByRole('button', {name: /访问与来源.*星河检索/}).click();
+  await expect(page).toHaveURL(/s=platform%2Faccess/); await expect(page.getByRole('heading', {name: '访问与来源', exact: true})).toBeVisible();
+  await page.goBack(); await expect(page.getByRole('heading', {name: '工程协作', exact: true})).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as {injected?: boolean}).injected)).toBeUndefined(); expect(errors).toEqual([]);
+  await page.screenshot({path: 'artifacts/specs-desktop.png', fullPage: true});
+});
+test('deep namespace, invalid selection and mobile navigation remain usable', async ({page}) => {
+  await page.setViewportSize({width: 390, height: 844}); await page.goto('/?project=fixture&m=specs&s=platform');
+  await expect(page.getByRole('heading', {name: '工程协作', exact: true})).toBeVisible();
+  await page.getByRole('button', {name: '打开能力目录'}).click();
+  await page.getByRole('navigation', {name: '能力目录'}).getByRole('button', {name: '交付记录'}).click();
+  await expect(page.getByRole('heading', {name: '交付记录', exact: true})).toBeVisible();
+  await page.screenshot({path: 'artifacts/specs-mobile.png', fullPage: true});
+  await page.setViewportSize({width: 320, height: 740}); expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.goto('/?project=fixture&m=specs&s=missing'); await expect(page.getByText('此来源中没有这项能力')).toBeVisible();
+  await page.getByRole('button', {name: '返回能力目录'}).click(); await expect(page.getByRole('heading', {name: '交付记录', exact: true})).toBeVisible();
+});

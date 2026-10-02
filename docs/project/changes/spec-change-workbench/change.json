@@ -38,11 +38,13 @@
     },
     "T3": {
       "title": "用认可外壳阅读真实 Specs",
-      "status": "doing"
+      "status": "done",
+      "verification": "2 项浏览器场景通过，覆盖 Spec 全文检索、目录和安全阅读；桌面/390px 截图检查、320px 溢出检查及生产构建通过。",
+      "commitTitle": "spec-change-workbench T3: build the approved shell and Spec reader"
     },
     "T4": {
       "title": "浏览 Change、任务及依赖",
-      "status": "todo"
+      "status": "doing"
     },
     "T5": {
       "title": "完成真实项目接入与交付验证",

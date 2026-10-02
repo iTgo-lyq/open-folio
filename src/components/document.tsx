@@ -1,0 +1,59 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Dialog } from 'radix-ui';
+import { AlertCircle, ArrowUpRight, Braces, Check, Copy, FileText, GitBranch, Hash, X } from 'lucide-react';
+import { remarkHeadings, resolveDocumentLink } from '@/lib/markdown';
+import type { DocumentRef } from '@/lib/model';
+import { useDocument, useSavedScroll, useWorkspace } from './context';
+export function Empty({ title, children, icon = <FileText size={27}/> }: {title: string; children?: React.ReactNode; icon?: React.ReactNode}) { return <div className="empty"><div className="empty-icon">{icon}</div><h2>{title}</h2>{children && <div>{children}</div>}</div>; }
+export function ErrorNotice({ children }: { children: React.ReactNode }) { return <div className="error-notice" role="alert"><AlertCircle size={16}/><span>{children}</span></div>; }
+export function Source({ document }: {document: DocumentRef}) { return <div className="source-block"><span><GitBranch size={13}/>{document.branch}</span><span><Hash size={13}/><code title={document.commit}>{document.commit.slice(0, 10)}</code></span><code className="source-path">{document.path}</code></div>; }
+export function Markdown({ body, document }: { body: string; document: DocumentRef }) {
+  const { data, projectId, openDocument, notice, nav, q } = useWorkspace();
+  const follow = (href: string) => {
+    const link = resolveDocumentLink(document.path, href);
+    if (link.kind !== 'internal') { notice('此链接不在可读取的工程文档范围内。'); return; }
+    const target = data?.documents.find(d => d.path === link.path && d.branch === document.branch && d.commit === document.commit);
+    if (!target) { notice(`当前提交中找不到 ${link.path}`); return; }
+    if (target.id === document.id) { const el = window.document.getElementById(link.hash); if (el) el.scrollIntoView({ block: 'start' }); else if (link.hash) notice('当前文档中未找到该章节。'); nav(q.doc ? { da: link.hash || null } : { anchor: link.hash || null }); }
+    else if (!target.readable) notice(target.diagnostics[0]?.message ?? '此文件不支持预览。');
+    else openDocument(target.id, link.hash);
+  };
+  return <div className="prose"><ReactMarkdown remarkPlugins={[remarkGfm, remarkHeadings]} skipHtml components={{
+    a: ({ href, children }) => { const link = resolveDocumentLink(document.path, href ?? ''); return link.kind === 'external' ? <a href={link.url} target="_blank" rel="noopener noreferrer">{children}<ArrowUpRight size={11} className="inline-icon"/></a> : <a href={href || '#'} onClick={e => { e.preventDefault(); follow(href ?? ''); }}>{children}</a>; },
+    img: ({ src, alt }) => {
+      const link = resolveDocumentLink(document.path, typeof src === 'string' ? src : '');
+      const ref = link.kind === 'internal' ? data?.documents.find(d => d.path === link.path && d.branch === document.branch && d.commit === document.commit && d.kind === 'image' && d.readable) : undefined;
+      return ref ? <img alt={alt ?? ''} loading="lazy" src={`/api/projects/${encodeURIComponent(projectId)}/assets/${ref.id}?snapshot=${data!.id}`}/> : <span className="image-unavailable">图片未预览：{alt || '仅支持同一提交内的仓库图片'}</span>;
+    },
+    input: props => <input {...props} disabled/>,
+  }}>{body}</ReactMarkdown></div>;
+}
+export function DocumentContent({ id, raw = false, anchor, compact = false }: { id: string; raw?: boolean; anchor?: string; compact?: boolean }) {
+  const { data, projectId, openDocument, nav, q, refresh } = useWorkspace(), { value, error, loading } = useDocument(id);
+  const scroll = useSavedScroll(`${projectId}.${value?.document.branch}.${id}.${raw ? 'raw' : 'rendered'}.${value ? 'loaded' : 'pending'}`, anchor);
+  return <div className={`document-layout ${compact ? 'compact' : ''}`}>
+    <div className="document-scroll" ref={scroll}>
+      {error ? <Empty title="暂时无法读取文档" icon={<AlertCircle/>}><p>{error}</p><button className="button" onClick={() => void refresh()}>读取最新版本</button></Empty> : !value ? <Empty title={loading ? '正在读取文档…' : '选择一份文档'}/> : <>
+        <div className="document-topline"><span className="eyebrow">{value.document.kind === 'json' ? 'SOURCE RECORD' : value.document.path.includes('/specs/') ? 'CAPABILITY SPEC' : 'CHANGE DOCUMENT'}</span><button className="text-button" onClick={() => openDocument(id, '', !raw)}><Braces size={14}/>{raw ? '阅读文档' : '查看原文'}</button></div>
+        {!raw && value.document.headings.length > 0 && <select className="compact-toc" aria-label="跳转到章节" value={anchor ?? ''} onChange={e => { const id = e.target.value; nav(q.doc ? {da: id} : {anchor: id}); scroll.current?.querySelector(`#${CSS.escape(id)}`)?.scrollIntoView({block: 'start'}); }}><option value="">本页目录</option>{value.document.headings.map(h => <option key={h.id} value={h.id}>{h.text}</option>)}</select>}
+        {(raw || value.document.kind === 'json') ? <><h1 className="raw-title">{value.document.title}</h1><pre className="raw-document">{value.body}</pre></> : <Markdown body={value.body} document={value.document}/>}
+        <footer className="document-footer"><span>来自已推送提交</span><Source document={value.document}/></footer>
+      </>}
+    </div>
+    {value && !compact && <aside className="document-aside"><span className="eyebrow">本页目录</span><nav aria-label="文档章节">{value.document.headings.map(h => <a key={h.id} href={`#${encodeURIComponent(h.id)}`} style={{paddingLeft: Math.max(0, h.depth - 1) * 12}} onClick={e => { e.preventDefault(); nav({ anchor: h.id }); scroll.current?.querySelector(`#${CSS.escape(h.id)}`)?.scrollIntoView({ block: 'start' }); }}>{h.text}</a>)}</nav><div className="aside-source"><span className="eyebrow">来源</span><Source document={value.document}/><span className="muted">读取于 {data && new Date(data.capturedAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai', hour12: false})}</span></div></aside>}
+  </div>;
+}
+export function DocumentModal() {
+  const { q, nav, data } = useWorkspace(), open = !!q.doc;
+  const previousFocus = useRef<HTMLElement | null>(null);
+  useEffect(() => { if (open) previousFocus.current = window.document.activeElement as HTMLElement; }, [open]);
+  const ref = data?.documents.find(d => d.id === q.doc);
+  return <Dialog.Root open={open} onOpenChange={v => { if (!v) nav({doc: null, da: null, raw: null}); }}><Dialog.Portal><Dialog.Overlay className="modal-overlay"/><Dialog.Content className="document-modal" onCloseAutoFocus={e => { e.preventDefault(); previousFocus.current?.focus(); }} aria-describedby={undefined}>
+    <header className="modal-header"><Dialog.Title>{ref?.path.split('/').at(-1) ?? '文档'}</Dialog.Title><div className="row"><button className="text-button" onClick={() => nav({raw: q.raw ? null : '1'})}><Braces size={14}/>{q.raw ? '阅读' : '原文'}</button><Dialog.Close className="icon-button" aria-label="关闭文档"><X size={19}/></Dialog.Close></div></header>
+    {ref?.kind === 'image' ? <ImageDocument doc={ref}/> : q.doc && <DocumentContent id={q.doc} raw={q.raw === '1'} anchor={q.da} compact/>}
+  </Dialog.Content></Dialog.Portal></Dialog.Root>;
+}
+function ImageDocument({doc}: {doc: DocumentRef}) { const {projectId, data} = useWorkspace(); return <div className="image-document"><img alt={doc.title} src={`/api/projects/${encodeURIComponent(projectId)}/assets/${doc.id}?snapshot=${data?.id}`}/><Source document={doc}/></div>; }
