@@ -38,6 +38,7 @@ import {
 import { useSavedScroll, useWorkspace } from "./context";
 import { documentExpectation } from "@/lib/workflow";
 import { Empty, Source, CopyPageLink } from "./document";
+import { ChangePreviews } from "./previews";
 const sizes = {
   small: "Small",
   medium: "Medium",
@@ -169,7 +170,16 @@ export default function Changes() {
   const scroll = useSavedScroll(
     `${projectId}.changes.${scope}.${view}.${level}`,
   );
-  const open = (id: string, tab = "overview") => nav({ c: id, ct: tab });
+  const open = (id: string, tab = "overview") =>
+    nav({
+      c: id,
+      ct: tab,
+      preview: null,
+      device: null,
+      orientation: null,
+      revision: null,
+      zoom: null,
+    });
   return (
     <section className="changes-workspace">
       <div className="changes-heading">
@@ -635,7 +645,17 @@ function RelationRow({ relation: r }: { relation: Relation }) {
       <button
         className="relation-target"
         disabled={!target}
-        onClick={() => nav({ c: r.target, ct: "overview" })}
+        onClick={() =>
+          nav({
+            c: r.target,
+            ct: "overview",
+            preview: null,
+            device: null,
+            orientation: null,
+            revision: null,
+            zoom: null,
+          })
+        }
       >
         {target?.title ?? r.target}
         <code>{r.target}</code>
@@ -712,20 +732,35 @@ function ChangeDrawer() {
     g = data?.changes.find((g) => g.id === q.c),
     c = g ? primaryRecord(g) : null,
     s = c?.state;
-  const tab = ["overview", "tasks", "documents", "evidence"].includes(q.ct)
+  const tab = [
+    "overview",
+    "tasks",
+    "documents",
+    "evidence",
+    "previews",
+  ].includes(q.ct)
     ? q.ct
     : "overview";
   return (
     <Dialog.Root
       open={!!q.c}
       onOpenChange={(open) => {
-        if (!open) nav({ c: null, ct: null });
+        if (!open)
+          nav({
+            c: null,
+            ct: null,
+            preview: null,
+            device: null,
+            orientation: null,
+            revision: null,
+            zoom: null,
+          });
       }}
     >
       <Dialog.Portal>
         <Dialog.Overlay className="drawer-overlay" />
         <Dialog.Content
-          className="change-drawer"
+          className={`change-drawer${tab === "previews" ? " with-preview" : ""}`}
           aria-describedby={undefined}
           onOpenAutoFocus={() => {
             focus.current = document.activeElement as HTMLElement;
@@ -775,6 +810,7 @@ function ChangeDrawer() {
               ["overview", "概览"],
               ["tasks", s?.size === "xlarge" ? "子项" : "任务"],
               ["documents", "文档"],
+              ["previews", "原型"],
               ["evidence", "依据"],
             ].map(([id, title]) => (
               <button
@@ -797,6 +833,8 @@ function ChangeDrawer() {
                 <Diagnostics items={g.diagnostics} />
                 <CandidateSources group={g} />
               </>
+            ) : tab === "previews" ? (
+              <ChangePreviews change={c} />
             ) : tab === "documents" ? (
               <DocumentList c={c} />
             ) : tab === "evidence" ? (

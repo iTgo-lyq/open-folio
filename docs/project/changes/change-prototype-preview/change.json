@@ -6,7 +6,9 @@
   "status": "active",
   "stage": "execution",
   "branch": "codex/change-prototype-preview",
-  "dependsOn": ["spec-change-workbench"],
+  "dependsOn": [
+    "spec-change-workbench"
+  ],
   "confirmations": {
     "requirement": {
       "at": "2026-10-03T00:35:35+08:00",
@@ -45,7 +47,9 @@
     },
     "T4": {
       "title": "在 Change 详情浏览页面与组件",
-      "status": "todo"
+      "status": "done",
+      "verification": "原型标签、多入口、设备与方向、自定义组件视口、适应/100% 和固定版本链接完成。3 项原型 UI 与 7 项既有 Change 浏览器测试、类型检查通过。",
+      "commitTitle": "change-prototype-preview T4: browse responsive previews inside Change details"
     },
     "T5": {
       "title": "完成真实原型接入与整体验证",

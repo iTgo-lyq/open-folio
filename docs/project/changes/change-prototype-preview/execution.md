@@ -19,3 +19,9 @@
 新增主 API 入口描述和 GET/HEAD HTML 路由，复用同域认证；CSP sandbox 不含 allow-same-origin，禁用网络、父页面访问和持久存储，预览响应覆盖全局 X-Frame-Options: DENY 为 SAMEORIGIN。缓存格式升级为 2，旧缓存可重新读取重建。
 
 `npm test` 的 24 项核心/工具测试通过；`npx playwright test tests/browser/previews-api.spec.ts` 的 3 项通过；`npm run typecheck` 通过。实测固定历史提交跨文档快照淘汰、删除归档开发分支后冷缓存重建、标签改写/删除拒绝、当前停用撤销历史预览、同域 iframe 交互与父 DOM/Cookie/存储/API 隔离、直接打开响应头沙箱、资源限额和项目配置移除。
+
+## T4：Change 内原型浏览
+
+新增原型标签、多入口、声明设备和旋转、自定义组件视口、画布适应与 100%、固定 Git 版本链接；保留现有抽屉和文档阅读。缩放只作用于展示，不改变 iframe 的布局尺寸。错误入口、失效版本、当前禁用、沙箱运行异常均给出可读提示。
+
+`npx playwright test tests/browser/previews.spec.ts tests/browser/changes.spec.ts` 的 10 项测试通过；`npm run typecheck` 通过。测量实际 iframe 视口，覆盖 PC/iPad/移动端与 640px 局部组件、方向切换、深链接恢复、错误入口及移动端抽屉滚动。
