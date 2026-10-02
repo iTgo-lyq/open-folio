@@ -4,7 +4,7 @@
   "title": "基于中心 Git 仓库的 Spec 与 Change 只读工作台",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/spec-change-workbench",
   "confirmations": {
     "requirement": {
@@ -59,17 +59,16 @@
       "status": "done",
       "verification": "隔离上下文独立评审的7项问题已修复并复验闭合；14项核心测试、15项浏览器场景、类型/格式检查与最终生产构建通过。",
       "commitTitle": "spec-change-workbench T6: resolve independent review findings and verify fixes"
+    },
+    "T7": {
+      "title": "修正待验收 Change 的阶段展示",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-02T09:02:11+08:00",
-      "summary": "整体验证通过：隔离上下文独立 subagent 完成全差异评审，7 项发现已修复并独立复验闭合；14 项核心测试、15 项浏览器场景、类型/格式检查和最终生产构建通过。当前私有中心仓库读取及桌面/手机页面已验证，详见 Execution 与 Review。"
-    }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收私有工作台中的 Spec/Change 阅读、筛选、任务与依赖追踪；收到验收后再同步 Specs 并归档。"
+  "closure": {},
+  "rework": {
+    "at": "2026-10-02T12:49:48+08:00",
+    "reason": "用户验收反馈：当前等待人工验收的 Change 被展示为“关闭”，应显示为“验收中”。",
+    "approach": "保留有效确认与既有任务，追加 T7，统一阶段和验收记录文案；根据已有验证与验收事实展示当前进度，复验后继续等待人工验收。"
   }
 }
