@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "small-change-auto-archive",
+  "title": "small Change 自验收后直接归档",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/small-change-auto-archive",
+  "dependsOn": [
+    "impeccable-submodule"
+  ],
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "调整 small 关闭规则并对齐工作台验收标签",
+      "status": "done",
+      "verification": "skill-creator quick_validate 通过；状态 schema 与 hook 一致性、规模路线及关闭顺序测试 2/2 通过；归档依据浏览器场景 1/1 通过；类型、格式、diff 检查及隔离目录生产构建通过。自查 small 成功、失败、未满足验收项、明确要求人工验收及其余规模路径，规则无矛盾，JSON 契约保持兼容。",
+      "commitTitle": "small-change-auto-archive T1: let small changes self-accept and archive"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-02T07:20:19.080Z",
+      "summary": "small Change Agent 自查通过：Requirement 四项验收标准逐项核对；skill、现有 schema/hook 与关闭语义、类型/格式、归档依据浏览器场景及生产构建均通过。实现与任务记录已通过 60c486d 提交推送。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-02T07:20:19.080Z",
+      "summary": "Agent 自验收通过：small 成功路径直接关闭，失败及显式人工验收路径保留；其余规模规则未变；记录兼容现有 schema，工作台验收标签准确。本次按用户授权的新规则直接完成关闭。",
+      "source": "SpecTrail small 自验收直接归档规则；当前会话用户授权：这种小型 change 做完直接归档就行了。优化一下 skill。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-02T15:20:19+08:00",
+      "summary": "同步 docs/project/specs/project-knowledge/change-tracking/spec.md 的验收展示与实际记录规则，说明 small 自验收和人工验收均以来源为准。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-02T15:20:19+08:00",
+      "summary": "按 small 直接归档规则保留完整 Requirement、Execution 和状态记录，原 Change 目录已移除。",
+      "path": "docs/project/archive/2026-10-02-small-change-auto-archive"
+    }
+  }
+}
