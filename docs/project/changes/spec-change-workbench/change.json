@@ -50,11 +50,13 @@
     },
     "T5": {
       "title": "完成真实项目接入与交付验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "11 项核心测试、8 项浏览器场景、类型/格式检查和生产构建通过；当前私有仓库真实读取与生产页面截图完成，私有验收入口已建立。",
+      "commitTitle": "spec-change-workbench T5: verify real repository integration and delivery"
     },
     "T6": {
       "title": "完成独立评审与复验",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {}

@@ -9,3 +9,5 @@ openfolio.local.json
 artifacts/
 test-results/
 playwright-report/
+
+next-env.d.ts
