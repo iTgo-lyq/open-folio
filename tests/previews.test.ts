@@ -300,3 +300,92 @@ test("two Changes can share one exported entry without a separate prototype mani
     original.descriptor.entries[0].path,
   );
 });
+
+test("per-commit preview entry limits do not cap lifetime archive tags or block document refresh", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  for (const id of ["first-archive", "second-archive"]) {
+    const directory = `docs/project/archive/2026-10-03-${id}`,
+      at = decision.at;
+    const step = (result: string) => ({ at, summary: "已验证", result });
+    await f.put(
+      `${directory}/change.json`,
+      JSON.stringify({
+        ...state,
+        id,
+        status: "completed",
+        stage: "close",
+        tasks: { T1: { title: "交付", status: "done" } },
+        closure: {
+          verification: step("passed"),
+          acceptance: step("accepted"),
+          specs: step("not_needed"),
+          archive: { ...step("done"), path: directory },
+        },
+      }),
+    );
+    const revision = f.commit();
+    const tag = `refs/tags/spec-trail/archive/${id}`;
+    f.git(["tag", tag.slice(10), revision]);
+    f.git(["push", "origin", tag]);
+  }
+  const limits = { ...DEFAULT_LIMITS, previewEntries: 1 };
+  const snapshot = await f.store.refresh(f.project, limits);
+  assert.equal(snapshot.archiveRefs.length, 2);
+  assert(snapshot.specs.length);
+  assert.equal(snapshot.changes.length, 3);
+  for (const id of ["first-archive", "second-archive"]) {
+    const result = await f.store.preview(
+      f.project,
+      id,
+      undefined,
+      limits,
+      undefined,
+      entry.id,
+    );
+    assert.match(result.html!, /first/);
+  }
+});
+
+test("archive pins treat constructor as an ordinary valid Change id across refresh and restart", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  const id = "constructor",
+    directory = `docs/project/archive/2026-10-03-${id}`,
+    at = decision.at;
+  const step = (result: string) => ({ at, summary: "已验证", result });
+  await f.put(
+    `${directory}/change.json`,
+    JSON.stringify({
+      ...state,
+      id,
+      status: "completed",
+      stage: "close",
+      tasks: { T1: { title: "交付", status: "done" } },
+      closure: {
+        verification: step("passed"),
+        acceptance: step("accepted"),
+        specs: step("not_needed"),
+        archive: { ...step("done"), path: directory },
+      },
+    }),
+  );
+  const revision = f.commit(),
+    tag = `refs/tags/spec-trail/archive/${id}`;
+  f.git(["tag", tag.slice(10), revision]);
+  f.git(["push", "origin", tag]);
+  for (const store of [f.store, f.makeStore()]) {
+    const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
+    assert(Object.hasOwn(snapshot.archivePins, id));
+    assert.equal(snapshot.archivePins[id], revision);
+    const result = await store.preview(
+      f.project,
+      id,
+      undefined,
+      DEFAULT_LIMITS,
+      undefined,
+      entry.id,
+    );
+    assert.match(result.html!, /first/);
+  }
+});

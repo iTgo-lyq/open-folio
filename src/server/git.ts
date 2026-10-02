@@ -163,11 +163,6 @@ export class GitReader {
       .trim()
       .split("\n")
       .filter(Boolean);
-    if (archiveRows.length > limits.previewEntries)
-      throw new AppError(
-        "SOURCE_LIMIT",
-        "归档引用数量超过限制，请调整 previewEntries。",
-      );
     const archiveRefs: { id: string; commit: string }[] = [];
     for (const ref of archiveRows) {
       const id = ref.slice("refs/openfolio/archive/".length);

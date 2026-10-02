@@ -189,7 +189,9 @@ export class SnapshotStore {
         changes: await indexChanges(data, reader, signal),
         ...indexBase(data, p),
       };
-      for (const ref of s.archiveRefs) s.archivePins[ref.id] ??= ref.commit;
+      for (const ref of s.archiveRefs)
+        if (!Object.hasOwn(s.archivePins, ref.id))
+          s.archivePins[ref.id] = ref.commit;
       for (const [blob, body] of data.blobs) {
         signal.throwIfAborted();
         await atomic(join(dir, "blobs", blob), body);

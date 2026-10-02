@@ -265,3 +265,60 @@ test("archive accepts an existing annotated tag that retains the same completed 
     0,
   );
 });
+
+test("pnpm workspace integration respects matching exclusions while preserving unrelated rules", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const yaml =
+    "packages:\n  - 'packages/*'\n  - '!**/test/**'\nonlyBuiltDependencies:\n  - esbuild\n";
+  await f.put("pnpm-workspace.yaml", yaml);
+  let result = run(f.author, "setup.mjs", [
+    "--accept",
+    "--summary",
+    "用户同意",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    await readFile(join(f.author, "pnpm-workspace.yaml"), "utf8"),
+    yaml,
+  );
+  assert.equal(run(f.author, "setup.mjs", ["--enable"]).status, 0);
+  await f.put(
+    "pnpm-workspace.yaml",
+    "packages:\n  - 'packages/*'\n  - '!packages/prototype'\n",
+  );
+  result = run(f.author, "setup.mjs", ["--enable"]);
+  assert.equal(result.status, 1);
+  assert.equal((await config(f.author)).prototype.status, "pending");
+  await f.put("pnpm-workspace.yaml", yaml);
+  assert.equal(run(f.author, "setup.mjs", ["--enable"]).status, 0);
+});
+
+test("shared source inlining preserves JavaScript replacement strings verbatim", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  assert.equal(
+    run(f.author, "setup.mjs", ["--accept", "--summary", "用户同意"]).status,
+    0,
+  );
+  const source = "window.render = 'abc'.replace(/b/g, '[$&]');";
+  await f.put("packages/prototype/src/shared/replace.js", source);
+  await f.put(
+    "packages/prototype/src/pages/replace.html",
+    "<!doctype html><html><script>{{include:../shared/replace.js}}</script></html>",
+  );
+  const result = spawnSync(
+    process.execPath,
+    [join(f.author, "packages/prototype/build.mjs")],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const output = await readFile(
+    join(f.author, "packages/prototype/preview/replace/index.html"),
+    "utf8",
+  );
+  const { runInNewContext } = await import("node:vm");
+  const context = { window: { render: "" } };
+  runInNewContext(/<script>([\s\S]*?)<\/script>/.exec(output)![1], context);
+  assert.equal(context.window.render, "a[b]c");
+});

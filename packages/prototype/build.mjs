@@ -22,7 +22,7 @@ async function expand(path, parents = []) {
       if (!type) throw Error(`不支持内联素材类型：${target}`);
       replacement = `data:${type};base64,${(await read(target)).toString('base64')}`;
     }
-    text = text.replace(token, replacement);
+    text = text.replace(token, () => replacement);
   }
   return text;
 }

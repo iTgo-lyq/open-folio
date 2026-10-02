@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { cp, mkdir, readFile, writeFile, lstat, realpath, readdir } from 'node:fs/promises';
-import { join, dirname, resolve, relative } from 'node:path';
+import { join, dirname, resolve, relative, matchesGlob } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packagePath, validatePrototype } from './contract.mjs';
 import { htmlIssues } from './html.mjs';
@@ -67,9 +67,19 @@ try {
    const rootPackage=join(root,'package.json');
    if(await exists(join(root,'pnpm-workspace.yaml'))) {
      const yaml=await readFile(join(root,'pnpm-workspace.yaml'),'utf8');
-     const patterns=[...yaml.matchAll(/^\s*-\s*['"]?([^'"\s#]+)['"]?\s*(?:#.*)?$/gm)].map(m=>m[1]);
-     const included=patterns.some(p=>p===location||(p.endsWith('/*') && location.startsWith(p.slice(0,-1)) && !location.slice(p.length-1).includes('/')));
-     if(!included || patterns.some(p=>p.startsWith('!'))) throw Error('Existing pnpm workspace preserved: verify and add this package to its packages list, then retry --enable.');
+     // Read only the top-level packages list; preserve the rest of the YAML verbatim.
+     const block=/^packages:[ \t]*(?:#.*)?\r?\n((?:(?:[ \t]+[^\r\n]*|[ \t]*)(?:\r?\n|$))*)/m.exec(yaml)?.[1];
+     if(!block) throw Error('Existing pnpm workspace preserved: use a multiline packages glob list, then retry --enable.');
+     const patterns=[];
+     for(const line of block.split(/\r?\n/)) {
+       if(!line.trim() || line.trim().startsWith('#')) continue;
+       const match=/^\s*-\s*(?:"([^"\\]*)"|'([^']*)'|([^\s#'"\[\]{},]+))\s*(?:#.*)?$/.exec(line);
+       if(!match) throw Error('Existing pnpm packages list uses unsupported YAML; preserve it and normalize only that list before --enable.');
+       patterns.push(match[1]??match[2]??match[3]);
+     }
+     const included=patterns.some(pattern=>!pattern.startsWith('!')&&matchesGlob(location,pattern));
+     const excluded=patterns.some(pattern=>pattern.startsWith('!')&&matchesGlob(location,pattern.slice(1)));
+     if(!included || excluded) throw Error('Existing pnpm workspace preserved: include this package and remove any matching exclusion, then retry --enable.');
    } else if(await exists(rootPackage)) {
      const value=await json(rootPackage);
      const entries=Array.isArray(value.workspaces)?value.workspaces:value.workspaces?.packages;

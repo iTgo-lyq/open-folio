@@ -127,6 +127,7 @@ async function main() {
   prototypeContract = await import("../../prototype/scripts/contract.mjs");
   // Dynamic import works in both CommonJS and ESM projects.
   const { execFileSync } = await import("node:child_process");
+  const { isDeepStrictEqual } = await import("node:util");
   const git = (args) => execFileSync("git", args, {
     encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 32 * 1024 * 1024,
   });
@@ -166,7 +167,7 @@ async function main() {
     const previous = readState(`HEAD:${path}`)?.previews;
     const errors = [];
     if (config?.status !== "enabled") {
-      if (changed && JSON.stringify(previous) !== JSON.stringify(value.previews)) errors.push("/previews: project prototype tracking is not enabled; remove associations or complete setup first");
+      if (changed && (!Array.isArray(previous) || !value.previews.every(preview => previous.some(old => isDeepStrictEqual(old, preview))))) errors.push("/previews: project prototype tracking is not enabled; remove associations or complete setup first");
     } else {
       for (const [i, preview] of value.previews.entries()) {
         const entry = prototypeContract.entryPath(preview, config);

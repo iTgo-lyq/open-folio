@@ -115,7 +115,8 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
       prototype: enabled,
     }),
   );
-  await f.put(path, JSON.stringify(state([entry])));
+  const retained = [entry, { ...entry, id: "detail", title: "详情" }];
+  await f.put(path, JSON.stringify(state(retained)));
   stage();
   await f.put(`${entry.path}/index.html`, "<!doctype html><h1>not staged</h1>");
   assert.equal(run().status, 1);
@@ -153,11 +154,14 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   );
   await f.put(
     path,
-    JSON.stringify({ ...state([entry]), title: "只修改流程正文" }),
+    JSON.stringify({ ...state(retained), title: "只修改流程正文" }),
   );
   stage();
   assert.equal(run().status, 0);
   f.commit();
+  await f.put(path, JSON.stringify(state([entry])));
+  stage();
+  assert.equal(run().status, 0); // Removing only one old association remains allowed.
   await f.put(path, JSON.stringify(state([{ ...entry, title: "新关联" }])));
   stage();
   assert.equal(run().status, 1);

@@ -18,7 +18,7 @@ description: SpecTrail 的原型子 skill。在用户同意后接入项目内单
 
 本子 skill 随主 skill 分发，未安装时补齐 `prototype/` 子目录，不创建独立顶层 skill。详细契约由 [contract.mjs](./scripts/contract.mjs) 与主 skill 的状态类型共同约束。
 
-在仓库根运行（脚本路径均相对此 skill）：
+本地辅助脚本使用 Node.js 24 或更新版本，不安装第三方运行依赖。在仓库根运行（脚本路径均相对此 skill）：
 
 ```bash
 node .agents/skills/spec-trail/prototype/scripts/setup.mjs --accept --summary '用户本次明确同意的依据' --package packages/prototype --design docs/design.md
