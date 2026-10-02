@@ -1,4 +1,17 @@
 import { z } from "zod";
+import type { PreviewEntry, PrototypeConfig } from "../lib/model.ts";
+import {
+  validatePreviews,
+  validatePrototype,
+} from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+export const previewsSchema = z.custom<PreviewEntry[]>(
+  (v) => !validatePreviews(v).length,
+  "原型关联格式不合法",
+);
+export const prototypeSchema = z.custom<PrototypeConfig>(
+  (v) => !validatePrototype(v).length,
+  "原型项目配置不合法",
+);
 export const identity = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 const text = z.string().refine((s) => /\S/.test(s), "不能为空白文本");
 export const branchName = z.string().regex(/^[^\s~^:?*\[\\]+$/);
@@ -62,6 +75,7 @@ export const changeSchema = z
     status: z.enum(["active", "completed", "cancelled"]),
     stage: z.enum(["requirement", "technical", "plan", "execution", "close"]),
     branch: branchName,
+    previews: previewsSchema.optional(),
     dependsOn: list.optional(),
     parent: identity.optional(),
     children: list.optional(),

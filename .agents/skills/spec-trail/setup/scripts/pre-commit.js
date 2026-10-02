@@ -83,17 +83,21 @@ function tasks(value, path, errors) {
   }
 }
 
+let prototypeContract;
+const prototypeRule = (value, path, errors) => errors.push(...prototypeContract.validatePrototype(value, path));
+const previewsRule = (value, path, errors) => errors.push(...prototypeContract.validatePreviews(value, path));
 const workflow = object({
   schemaVersion: oneOf(1),
+  prototype: prototypeRule,
   protectedBranches: list(stringRule(/^[^\s*?\[]+$/, "must be a non-empty branch name without whitespace or wildcards"), true),
-});
+}, ["schemaVersion", "protectedBranches"]);
 
 const changeFields = object({
   schemaVersion: oneOf(1), id, title: text,
   size: oneOf("small", "medium", "large", "xlarge"),
   status: oneOf("active", "completed", "cancelled"),
   stage: oneOf("requirement", "technical", "plan", "execution", "close"),
-  branch, parent: id, children: list(id), dependsOn: list(id),
+  branch, parent: id, children: list(id), dependsOn: list(id), previews: previewsRule,
   confirmations: object({
     requirement: confirmation, technical: confirmation, plan: confirmation,
     merge: object({ at: timestamp, summary: text, source: text, sourceCommit: commit, targetCommit: commit, baseCommit: commit }, ["at", "summary"]),
@@ -120,6 +124,7 @@ function change(value, path, errors) {
 }
 
 async function main() {
+  prototypeContract = await import("../../prototype/scripts/contract.mjs");
   // Dynamic import works in both CommonJS and ESM projects.
   const { execFileSync } = await import("node:child_process");
   const git = (args) => execFileSync("git", args, {
@@ -145,6 +150,30 @@ async function main() {
       errors.push("/: cannot read valid JSON from the index");
     }
     if (!errors.length) validate(value, "", errors);
+    for (const error of errors) console.error(`${path}: ${error}`);
+    failed ||= errors.length > 0;
+  }
+  // Cross-file checks always use the index, including GIT_INDEX_FILE for partial commits.
+  const rows = git(["ls-files", "--stage", "-z"]).split("\0").filter(Boolean);
+  const indexed = new Map(rows.map(row => { const tab = row.indexOf("\t"); return [row.slice(tab + 1), row.slice(0, tab).split(" ")]; }));
+  const readState = (ref) => { try { return JSON.parse(git(["show", ref])); } catch { return null; } };
+  const config = readState(":docs/project/workflow.json")?.prototype;
+  for (const [path] of indexed) {
+    if (!/^docs\/project\/changes\/[^/]+\/change\.json$/.test(path)) continue;
+    const value = readState(`:${path}`);
+    if (!Array.isArray(value?.previews) || !value.previews.length) continue;
+    const changed = paths.includes(path);
+    const previous = readState(`HEAD:${path}`)?.previews;
+    const errors = [];
+    if (config?.status !== "enabled") {
+      if (changed && JSON.stringify(previous) !== JSON.stringify(value.previews)) errors.push("/previews: project prototype tracking is not enabled; remove associations or complete setup first");
+    } else {
+      for (const [i, preview] of value.previews.entries()) {
+        const entry = prototypeContract.entryPath(preview, config);
+        const indexedEntry = entry && indexed.get(entry);
+        if (!entry || !indexedEntry || !["100644", "100755"].includes(indexedEntry[0]) || indexedEntry[2] !== "0") errors.push(`/previews/${i}/path: entry must be a staged regular index.html inside the configured preview directory`);
+      }
+    }
     for (const error of errors) console.error(`${path}: ${error}`);
     failed ||= errors.length > 0;
   }

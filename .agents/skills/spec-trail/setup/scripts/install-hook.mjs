@@ -25,6 +25,14 @@ try {
   }).trim();
   if (git(["rev-parse", "--is-bare-repository"]) === "true") throw new Error("Choose a repository with a working tree.");
   cwd = git(["rev-parse", "--show-toplevel"]);
+  const contractSource = fileURLToPath(new URL("../../prototype/scripts/contract.mjs", import.meta.url));
+  const contractPath = join(cwd, ".agents/skills/spec-trail/prototype/scripts/contract.mjs");
+  const contractBody = readFileSync(contractSource, "utf8");
+  const existingContract = readHook(contractPath);
+  if (existingContract !== undefined && existingContract !== contractBody) {
+    console.log(`INTEGRATION_REQUIRED: existing prototype contract preserved: ${contractPath}`);
+    process.exit(2);
+  }
   const scriptBody = readFileSync(source, "utf8");
   const script = join(cwd, scriptPath);
   const existingScript = readHook(script);
@@ -37,6 +45,8 @@ try {
     console.log(`INTEGRATION_REQUIRED: existing tracked hook preserved: ${hook}\nInspect it and append the validation command after existing checks:\n${command}`);
     process.exitCode = 2;
   } else {
+    mkdirSync(dirname(contractPath), { recursive: true });
+    if (existingContract === undefined) writeFileSync(contractPath, contractBody, { flag: "wx", mode: 0o644 });
     mkdirSync(dirname(script), { recursive: true });
     if (existingScript === undefined) writeFileSync(script, scriptBody, { flag: "wx", mode: 0o644 });
     mkdirSync(dirname(hook), { recursive: true });

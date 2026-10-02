@@ -27,7 +27,9 @@
   "tasks": {
     "T1": {
       "title": "统一原型关联与项目配置校验",
-      "status": "doing"
+      "status": "done",
+      "verification": "共享原型契约与 staged hook 校验完成；11 项核心/契约测试、5 项 hook 回归和 TypeScript 检查通过。非法原型关联保留核心 Change 内容。",
+      "commitTitle": "change-prototype-preview T1: unify prototype contracts and staged validation"
     },
     "T2": {
       "title": "交付原型子 skill 与本地交付工具",

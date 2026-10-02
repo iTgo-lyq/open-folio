@@ -69,6 +69,21 @@ type ISODateTime = string; // 含时区的 ISO 8601 时间
 interface WorkflowConfig {
   schemaVersion: 1;
   protectedBranches: string[]; // 非空、去重；实际本地分支名，不带远程前缀或通配符
+  prototype?: PrototypeConfig; // 可选原型接入；缺失表示未选择
+}
+
+interface PrototypeConfig {
+  status: "disabled" | "pending" | "enabled";
+  packagePath?: string; // pending/enabled 必填，disabled 省略；每项目一个包
+  decision: Confirmation;
+}
+interface PreviewEntry {
+  id: string;
+  title: string;
+  path: string; // 配置包下 preview 的入口目录，内含自包含 index.html
+  kind: "page" | "component";
+  devices?: ("pc-web" | "ipad" | "mobile")[]; // page 必填；去重、非空
+  viewport?: { width: number; height: number }; // component 与 devices 二选一，1–4096 CSS px
 }
 
 interface Confirmation {
@@ -100,6 +115,7 @@ interface ChangeState {
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string; // 实际 Change 分支，默认 change/<id>
+  previews?: PreviewEntry[]; // 可省略；id 在当前 Change 内唯一；不使用独立原型清单
   dependsOn?: string[]; // 前置 Change id，去重；全部满足后执行，xlarge 父 Change 不填
   parent?: string; // 所属 xlarge 父 Change 的 id
   children?: string[]; // 子 Change id，按 Plan 展示顺序排列且不重复；不表示串行依赖

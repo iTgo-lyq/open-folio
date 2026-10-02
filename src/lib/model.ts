@@ -73,6 +73,20 @@ export type ClosureStep = {
   source?: string;
   path?: string;
 };
+export type PrototypeConfig = {
+  status: "disabled" | "pending" | "enabled";
+  packagePath?: string;
+  decision: Confirmation;
+};
+export type Device = "pc-web" | "ipad" | "mobile";
+export type PreviewEntry = {
+  id: string;
+  title: string;
+  path: string;
+  kind: "page" | "component";
+  devices?: Device[];
+  viewport?: { width: number; height: number };
+};
 export type ChangeState = {
   schemaVersion: 1;
   id: string;
@@ -81,6 +95,7 @@ export type ChangeState = {
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string;
+  previews?: PreviewEntry[];
   dependsOn?: string[];
   parent?: string;
   children?: string[];

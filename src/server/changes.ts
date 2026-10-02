@@ -168,7 +168,23 @@ export async function indexChanges(
     const owner = branchName.safeParse(object.branch).success
       ? (object.branch as string)
       : undefined;
-    const parsed = changeSchema.safeParse(raw);
+    // Keep core workflow readable when the optional prototype extension is invalid.
+    let parsed = changeSchema.safeParse(raw);
+    if (!parsed.success && Object.hasOwn(object, "previews")) {
+      const { previews: invalidPreviews, ...core } = object;
+      const fallback = changeSchema.safeParse(core);
+      if (fallback.success) {
+        diagnostics.push({
+          ...issue(
+            "PREVIEWS_INVALID",
+            "原型关联格式不合法，请检查 previews；其余流程仍可阅读。",
+            `${doc.path}#/previews`,
+          ),
+          severity: "warning",
+        });
+        parsed = fallback;
+      }
+    }
     if (!parsed.success && raw !== undefined)
       for (const e of parsed.error.issues)
         diagnostics.push(

@@ -1,6 +1,7 @@
 import type { DocumentRef, ProjectConfig, Snapshot } from "../lib/model.ts";
 import type { GitReader } from "./git.ts";
 import { z } from "zod";
+import { prototypeSchema } from "./schema.ts";
 export type Collected = Awaited<ReturnType<GitReader["collect"]>>;
 export function indexBase(data: Collected, project: ProjectConfig) {
   const diagnostics: Snapshot["diagnostics"] = [];
@@ -13,6 +14,7 @@ export function indexBase(data: Collected, project: ProjectConfig) {
   const schema = z
     .object({
       schemaVersion: z.literal(1),
+      prototype: prototypeSchema.optional(),
       protectedBranches: z
         .array(
           z
