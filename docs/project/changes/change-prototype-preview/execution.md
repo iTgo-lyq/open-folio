@@ -30,4 +30,8 @@
 
 通过子 skill 初始化本仓库的 `packages/prototype` npm workspace，引用主应用设计规则。两个页面和一个 640×320 组件复用共享样式、页头与内联品牌素材，三个入口直接关联当前 Change。新增运行、配置基线、导出限制、归档保留和缓存升级说明。
 
-真实接入发现本地 Playwright 的 CommonJS 入口只有 default 导出；修正 T2 浏览器校验工具的模块解包，回归改为使用项目内默认解析，原有 ESM 指定路径仍由运行时网络失败用例覆盖。`npm run build --workspace prototype` 和默认参数的 `validate.mjs --browser` 已验证三个真实产物。生产环境与完整验证结果后续补充。
+真实接入发现本地 Playwright 的 CommonJS 入口只有 default 导出；修正 T2 浏览器校验工具的模块解包，回归改为使用项目内默认解析，原有 ESM 指定路径仍由运行时网络失败用例覆盖。`npm run build --workspace prototype` 和默认参数的 `validate.mjs --browser` 已验证三个真实产物。完整验证：`npm test` 24 项、setup hook 5 项、`npm run test:e2e` 21 项全部通过；`npm run typecheck`、`npm run format:check`、子 skill `quick_validate.py`、`OPENFOLIO_BUILD_DIR=.next-prototype-preview npm run build` 通过。
+
+生产构建先在独立端口和新缓存读取中心 Git 的 `ee2a2bc`。三个入口均可读取；真实样例验证 PC 1440、iPad 834、移动 390 和组件 640 CSS px，搜索/筛选、hash 状态、展开步骤、组件选择均正常，内联品牌图片和 data 字体可加载，没有额外子资源请求或运行错误。验证使用本地带 HttpOnly/SameSite=Lax Cookie 的认证代理；真实私有网关的匿名请求返回 401，未持有用户登录态，已登录网关的最终体验留给用户验收。
+
+验收实例已切换到新构建，仍由 10681 经原 11356 私有代理提供服务。切换后重新执行三个真实入口交互与尺寸验证通过，代理转发读取正常。运行目录使用独立的新格式缓存，旧缓存保留用于回退；服务配置的原型基线为当前 Change 分支，未修改远端 main。

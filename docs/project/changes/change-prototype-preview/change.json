@@ -53,7 +53,9 @@
     },
     "T5": {
       "title": "完成真实原型接入与整体验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "真实项目已接入一个原型包、两个页面和一个组件；中心 Git 读取与生产服务验证通过。24 项核心测试、5 项 hook、21 项浏览器回归、类型/格式/skill 校验和生产构建通过。私有地址保持不变，匿名请求为 401。",
+      "commitTitle": "change-prototype-preview T5: verify production integration and sample interactions"
     },
     "T6": {
       "title": "完成独立评审与交付复验",
