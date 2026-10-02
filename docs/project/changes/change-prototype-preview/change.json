@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "change-prototype-preview",
+  "title": "Change 关联项目原型包与静态预览",
+  "size": "large",
+  "status": "active",
+  "stage": "technical",
+  "branch": "codex/change-prototype-preview",
+  "dependsOn": ["spec-change-workbench"],
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-03T00:35:35+08:00",
+      "summary": "沿用本会话已收敛的目标与范围：项目内单一 monorepo 原型包、Git 跟踪源码和静态产物、change.json 关联多个页面或组件及适配声明、OpenFolio 只读预览、不要求截图、不提供运行时模板服务。用户最终指定原型能力作为 SpecTrail 内的子 skill，并授权新建 Change 细化需求和技术方案。",
+      "source": "本会话最新指示：算了，还是不要独立 skill 了。像之前的 setup 一样，直接写在这个 skill 内，作为子skill吧。方案基本已经定了，你可以新建 change 细化需求和技术方案了。时间为本次确认依据的登记时间；新细化的技术契约尚未确认。"
+    }
+  },
+  "tasks": {},
+  "closure": {}
+}
