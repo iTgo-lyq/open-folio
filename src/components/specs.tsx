@@ -35,7 +35,7 @@ function treeOf(specs: SpecRef[]) {
   return root;
 }
 export default function Specs() {
-  const { data, q, nav, projectId } = useWorkspace(),
+  const { data, q, nav, projectId, revealVersion } = useWorkspace(),
     [filter, setFilter] = useState(""),
     [mobileTree, setMobileTree] = useState(false),
     [closed, setClosed] = useState<string[]>([]);
@@ -49,6 +49,17 @@ export default function Specs() {
       setClosed([]);
     }
   }, [storageKey]);
+  useEffect(() => {
+    setFilter("");
+    if (!selected?.id) return;
+    setClosed((prev) => {
+      const next = prev.filter((path) => !selected.id.startsWith(`${path}/`));
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, [selected?.id, storageKey, revealVersion]);
   const toggle = (path: string) =>
     setClosed((prev) => {
       const next = prev.includes(path)

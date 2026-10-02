@@ -113,7 +113,16 @@ function Shell() {
                     c: null,
                     doc: null,
                     anchor: null,
-                    search: null,
+                    filter: null,
+                    spec: null,
+                    stage: null,
+                    size: null,
+                    wait: null,
+                    taskStatus: null,
+                    scope: null,
+                    ct: null,
+                    da: null,
+                    raw: null,
                   })
                 }
               >
@@ -270,6 +279,8 @@ function SearchDialog({
   useEffect(() => {
     if (!open || !data || !term.trim()) {
       setResults([]);
+      setBusy(false);
+      setError("");
       return;
     }
     const c = new AbortController();
@@ -297,7 +308,13 @@ function SearchDialog({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="modal-overlay" />
-        <Dialog.Content className="search-dialog" aria-describedby={undefined}>
+        <Dialog.Content
+          className="search-dialog"
+          aria-describedby={undefined}
+          onCloseAutoFocus={(e) => {
+            if (q.c || q.doc) e.preventDefault();
+          }}
+        >
           <Dialog.Title className="sr-only">
             搜索 {kind === "specs" ? "Specs" : "Changes"}
           </Dialog.Title>
@@ -327,6 +344,15 @@ function SearchDialog({
                     setOpen(false);
                     if (r.specId)
                       nav({ m: "specs", s: r.specId, anchor: null });
+                    else if (r.documentId && r.changeId)
+                      nav({
+                        m: "changes",
+                        c: r.changeId,
+                        ct: "documents",
+                        doc: r.documentId,
+                        da: null,
+                        raw: null,
+                      });
                     else if (r.changeId)
                       nav({
                         m: "changes",

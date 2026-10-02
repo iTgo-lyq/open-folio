@@ -297,3 +297,51 @@ test("cycle detection includes every member of overlapping cycles", () => {
     ["A", "B", "C"],
   );
 });
+
+test("invalid archived relationships propagate through consumers and closing parents regardless of order", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  f.git(["checkout", "-b", "change/relations"]);
+  const records = [
+    state("constructor-consumer", { dependsOn: ["constructor"] }),
+    {
+      ...completed("a-parent"),
+      size: "xlarge",
+      children: ["b-consumer"],
+      tasks: {},
+      confirmations,
+    },
+    { ...completed("b-consumer"), parent: "a-parent", dependsOn: ["c-broken"] },
+    {
+      ...completed("c-broken"),
+      parent: "missing-parent",
+      dependsOn: ["missing-upstream"],
+    },
+    state("downstream", { dependsOn: ["a-parent", "b-consumer", "c-broken"] }),
+  ];
+  for (const s of records)
+    await f.put(
+      `${s.status === "completed" ? s.closure.archive!.path : `docs/project/changes/${s.id}`}/change.json`,
+      JSON.stringify({ ...s, branch: "change/relations" }),
+    );
+  f.commit();
+  const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (const id of ["a-parent", "b-consumer", "c-broken"]) {
+    const g = snap.changes.find((g) => g.id === id)!;
+    assert.equal(primaryRecord(g)?.validCompleted, false, id);
+    assert(g.diagnostics.length || primaryRecord(g)!.diagnostics.length, id);
+  }
+  for (const r of snap.changes.find((g) => g.id === "downstream")!.relations) {
+    assert.notEqual(r.process, "satisfied");
+    assert.equal(r.ancestry, "unknown");
+  }
+  assert(
+    primaryRecord(
+      snap.changes.find((g) => g.id === "a-parent")!,
+    )!.diagnostics.some((d) => d.code === "CHILDREN_UNFINISHED"),
+  );
+});
+
+test("missing prototype-named targets remain local diagnostics", () => {
+  assert.deepEqual([...cyclicNodes({ alpha: ["constructor"] })], []);
+});

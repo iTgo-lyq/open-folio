@@ -2774,3 +2774,43 @@ input {
     font-size: 10px;
   }
 }
+
+.document-missing {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 15px;
+  border-bottom: 1px solid #eff3f6;
+  color: #aabac6;
+  background: #fcfdfe;
+}
+.document-missing > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+}
+.document-missing strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #92a9ba;
+}
+.document-missing code {
+  display: block;
+  font-size: 9px;
+  margin-top: 4px;
+  color: #b1bfc9;
+}
+.document-missing:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 760px) {
+  .document-topline .row {
+    gap: 4px;
+  }
+  .document-topline .row .text-button span {
+    display: none;
+  }
+  .document-missing .badge {
+    font-size: 8px;
+  }
+}

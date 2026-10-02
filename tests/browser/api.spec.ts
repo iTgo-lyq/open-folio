@@ -107,6 +107,10 @@ test("failed refresh retains the readable snapshot and deleted branch links reco
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".error-notice[role=alert]")).toContainText(
+    "当前继续显示上次成功版本",
+  );
   await page.goto("/?project=fixture&m=specs&branch=deleted-branch&s=platform");
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),

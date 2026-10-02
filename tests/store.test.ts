@@ -193,3 +193,12 @@ test("Markdown headings and link boundaries handle Chinese and duplicate ids", (
   ])
     assert.equal(resolveDocumentLink(from, href).kind, "invalid");
 });
+
+test("reference style links retain their actual citation location", () => {
+  assert.deepEqual(
+    inspectMarkdown(
+      "# Example\n[能力][cap]\n\n[cap]: ../../specs/platform/spec.md",
+    ).links,
+    [{ url: "../../specs/platform/spec.md", line: 2 }],
+  );
+});

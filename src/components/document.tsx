@@ -154,6 +154,36 @@ export function Markdown({
     </div>
   );
 }
+export function CopyPageLink({ document: doc }: { document?: DocumentRef }) {
+  const { projectId, data, notice, q } = useWorkspace();
+  return (
+    <button
+      className="text-button"
+      aria-label="复制页面链接"
+      onClick={async () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("project", projectId);
+        if (doc && !q.doc) {
+          const spec = data?.specs.find((s) => s.documentId === doc.id);
+          if (spec) {
+            url.searchParams.set("m", "specs");
+            url.searchParams.set("s", spec.id);
+            url.searchParams.set("branch", doc.branch);
+          }
+        }
+        try {
+          await navigator.clipboard.writeText(url.href);
+          notice("页面链接已复制。");
+        } catch {
+          notice("未能复制，请从浏览器地址栏复制链接。");
+        }
+      }}
+    >
+      <Copy size={13} />
+      <span>复制链接</span>
+    </button>
+  );
+}
 export function DocumentContent({
   id,
   raw = false,
@@ -193,13 +223,16 @@ export function DocumentContent({
                     ? "CAPABILITY SPEC"
                     : "CHANGE DOCUMENT"}
               </span>
-              <button
-                className="text-button"
-                onClick={() => openDocument(id, "", !raw)}
-              >
-                <Braces size={14} />
-                {raw ? "阅读文档" : "查看原文"}
-              </button>
+              <div className="row">
+                <CopyPageLink document={value.document} />
+                <button
+                  className="text-button"
+                  onClick={() => openDocument(id, "", !raw)}
+                >
+                  <Braces size={14} />
+                  {raw ? "阅读文档" : "查看原文"}
+                </button>
+              </div>
             </div>
             {!raw && value.document.headings.length > 0 && (
               <select
@@ -276,8 +309,31 @@ export function DocumentContent({
   );
 }
 export function DocumentModal() {
-  const { q, nav, data } = useWorkspace(),
-    open = !!q.doc;
+  const { q, nav, data } = useWorkspace();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!q.doc || !data) {
+      setReady(false);
+      return;
+    }
+    let frame: number;
+    const show = () => {
+      // Mount the parent focus scope before opening a document from a deep link
+      // or search result. Simultaneous modal roots can hide one another from AT.
+      if (
+        q.m === "changes" &&
+        q.c &&
+        !window.document.querySelector(".change-drawer")
+      ) {
+        frame = requestAnimationFrame(show);
+        return;
+      }
+      setReady(true);
+    };
+    frame = requestAnimationFrame(show);
+    return () => cancelAnimationFrame(frame);
+  }, [q.doc, q.c, q.m, data?.id]);
+  const open = !!q.doc && !!data && ready;
   const previousFocus = useRef<HTMLElement | null>(null);
   const ref = data?.documents.find((d) => d.id === q.doc);
   return (

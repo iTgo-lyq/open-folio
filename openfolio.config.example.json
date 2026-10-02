@@ -1,6 +1,10 @@
 {
   "schemaVersion": 1,
   "projects": [
-    { "id": "open-folio", "name": "OpenFolio", "repositoryUrl": "https://github.com/iTgo-lyq/open-folio.git" }
+    {
+      "id": "open-folio",
+      "name": "OpenFolio",
+      "repositoryUrl": "https://github.com/iTgo-lyq/open-folio.git"
+    }
   ]
 }

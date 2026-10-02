@@ -56,7 +56,9 @@
     },
     "T6": {
       "title": "完成独立评审与复验",
-      "status": "doing"
+      "status": "done",
+      "verification": "隔离上下文独立评审的7项问题已修复并复验闭合；14项核心测试、15项浏览器场景、类型/格式检查与最终生产构建通过。",
+      "commitTitle": "spec-change-workbench T6: resolve independent review findings and verify fixes"
     }
   },
   "closure": {}

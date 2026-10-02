@@ -324,54 +324,100 @@ export async function indexChanges(
         r.diagnostics.push("子项不能依赖等待自己完成的父项。");
       if (kind === "child" && t?.state?.size === "xlarge")
         r.diagnostics.push("不能嵌套 xlarge。");
-      if (r.diagnostics.length) r.process = "unknown";
-      if (kind === "parent") r.process = "unknown";
-      if (
-        kind !== "parent" &&
-        t?.validCompleted &&
-        (await reader.ancestor(t.commit, c.commit, signal))
-      )
-        r.ancestry = "found";
+      if (r.diagnostics.length)
+        g.diagnostics.push(
+          issue(
+            "RELATION_INVALID",
+            `${kind === "dependency" ? "前置" : kind === "child" ? "子项" : "父项"} ${target}：${r.diagnostics.join(" ")}`,
+            `${c.directory}/change.json#/${kind === "dependency" ? "dependsOn" : kind === "child" ? "children" : "parent"}`,
+          ),
+        );
       g.relations.push(r);
     }
   }
   const cycles = cyclicNodes(edges);
   for (const g of groups.values()) {
-    if (cycles.has(g.id)) {
+    if (cycles.has(g.id))
       g.diagnostics.push(
         issue("RELATION_CYCLE", "前置与父等子关系构成循环，不能判为可执行。"),
       );
-      for (const r of g.relations)
-        if (r.kind !== "parent" && cycles.has(r.target)) {
-          r.process = "unknown";
-          r.diagnostics.push("该关系位于循环中。");
-        }
-    }
     const c = primaryRecord(g);
     if (c && g.diagnostics.length) c.validCompleted = false;
+  }
+  const prerequisite = (r: Relation) => {
+    const target = groups.get(r.target),
+      c = target ? primaryRecord(target) : null;
+    if (
+      r.diagnostics.length ||
+      !target ||
+      target.diagnostics.length ||
+      !c?.state ||
+      c.diagnostics.some((d) => d.severity === "error")
+    )
+      return "unknown" as const;
+    return c.validCompleted ||
+      (r.kind === "child" && c.state.status === "cancelled")
+      ? ("satisfied" as const)
+      : ("unsatisfied" as const);
+  };
+  // Completion can only lose validity. Settle the entire graph before displaying
+  // a dependent's prerequisite; traversal order must not change the conclusion.
+  let changed: boolean;
+  do {
+    changed = false;
+    for (const g of groups.values()) {
+      const c = primaryRecord(g);
+      if (!c?.validCompleted) continue;
+      if (
+        g.relations.some(
+          (r) => r.kind !== "parent" && prerequisite(r) !== "satisfied",
+        )
+      ) {
+        c.validCompleted = false;
+        changed = true;
+        c.diagnostics.push(
+          issue(
+            "COMPLETION_RELATIONS",
+            "完成声明仍有未满足或不可判定的前置／子项关系。",
+            `${c.directory}/change.json`,
+          ),
+        );
+      }
+    }
+  } while (changed);
+  for (const g of groups.values()) {
+    const c = primaryRecord(g);
     if (
       c?.state?.size === "xlarge" &&
       c.state.stage === "close" &&
-      g.relations.some((r) => r.kind === "child" && r.process !== "satisfied")
+      g.relations.some(
+        (r) => r.kind === "child" && prerequisite(r) !== "satisfied",
+      )
     ) {
       c.diagnostics.push(
         issue(
           "CHILDREN_UNFINISHED",
           "关闭中的父 Change 仍有未完成或不可判定的子项。",
+          `${c.directory}/change.json#/children`,
         ),
       );
       c.validCompleted = false;
     }
   }
-  // Re-evaluate prerequisites after the complete relation graph has been checked.
-  for (const g of groups.values())
+  for (const g of groups.values()) {
+    const c = primaryRecord(g);
     for (const r of g.relations) {
+      r.process = r.kind === "parent" ? "unknown" : prerequisite(r);
       const target = groups.get(r.target),
-        c = target ? primaryRecord(target) : null;
-      if (target?.diagnostics.length || (c && c.diagnostics.length)) {
-        r.process = "unknown";
-        r.ancestry = "unknown";
-      }
+        t = target ? primaryRecord(target) : null;
+      if (
+        r.process === "satisfied" &&
+        t?.validCompleted &&
+        c &&
+        (await reader.ancestor(t.commit, c.commit, signal))
+      )
+        r.ancestry = "found";
     }
+  }
   return [...groups.values()].sort((a, b) => a.id.localeCompare(b.id));
 }

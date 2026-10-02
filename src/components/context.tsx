@@ -29,6 +29,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export type Query = Record<string, string>;
 type Value = {
   q: Query;
+  revealVersion: number;
   nav: (patch: Record<string, string | null>, replace?: boolean) => void;
   projects: ProjectSummary[];
   projectId: string;
@@ -45,7 +46,9 @@ const Context = createContext<Value | null>(null);
 export const useWorkspace = () => useContext(Context)!;
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [q, setQ] = useState<Query>({}),
+    [revealVersion, setRevealVersion] = useState(0),
     [ready, setReady] = useState(false),
+    [configured, setConfigured] = useState(false),
     [projects, setProjects] = useState<ProjectSummary[]>([]),
     [data, setData] = useState<Workbench | null>(null),
     [loading, setLoading] = useState(true),
@@ -66,6 +69,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         `?${params}`,
       );
       setQ(Object.fromEntries(params));
+      if (Object.hasOwn(patch, "s")) setRevealVersion((v) => v + 1);
     },
     [],
   );
@@ -82,6 +86,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     api<{ projects: ProjectSummary[] }>("/api/projects", { signal: c.signal })
       .then((r) => {
         setProjects(r.projects);
+        setConfigured(true);
         if (!r.projects.length) setLoading(false);
       })
       .catch((e) => {
@@ -94,13 +99,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const projectId = q.project || projects[0]?.id || "";
   useEffect(() => {
-    if (!ready || !projectId) return;
+    if (!ready || !configured || !projectId) return;
     const version = ++generation.current,
       controller = new AbortController();
     ++refreshGeneration.current;
     setRefreshing(false);
     setLoading(true);
-    setError("");
+    setError(projects.find((p) => p.id === projectId)?.lastError ?? "");
     setData(null);
     const run = async () => {
       const path = `/api/projects/${encodeURIComponent(projectId)}`;
@@ -154,7 +159,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       controller.abort();
       generation.current++;
     };
-  }, [ready, projectId, q.branch, nav]);
+  }, [ready, configured, projectId, q.branch, nav]);
   const refresh = useCallback(async () => {
     if (!projectId || refreshing) return;
     const version = ++refreshGeneration.current,
@@ -222,6 +227,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     <Context.Provider
       value={{
         q,
+        revealVersion,
         nav,
         projects,
         projectId,

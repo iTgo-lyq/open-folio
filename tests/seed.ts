@@ -1,3 +1,5 @@
+import { symlink } from "node:fs/promises";
+import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, type ChangeState } from "../src/lib/model.ts";
 export async function seed() {
@@ -152,6 +154,8 @@ export async function seed() {
         `${dir}/technical.md`,
         "# 技术方案\n\n## 数据来源\n\n从已推送提交建立一致的文档快照。",
       );
+    if (record.id === "document-reader")
+      await symlink("missing-review.md", join(f.author, dir, "review.md"));
     f.commit();
   }
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);

@@ -36,7 +36,8 @@ import {
   type Task,
 } from "@/lib/model";
 import { useSavedScroll, useWorkspace } from "./context";
-import { Empty, Source } from "./document";
+import { documentExpectation } from "@/lib/workflow";
+import { Empty, Source, CopyPageLink } from "./document";
 const sizes = {
   small: "Small",
   medium: "Medium",
@@ -141,8 +142,8 @@ export default function Changes() {
     return (
       inScope(g, scope) &&
       (!q.filter ||
-        `${g.id} ${g.title} ${Object.values(s?.tasks ?? {})
-          .map((t) => t.title)
+        `${g.id} ${g.title} ${Object.entries(s?.tasks ?? {})
+          .map(([id, t]) => `${id} ${t.title}`)
           .join(" ")}`
           .toLowerCase()
           .includes(q.filter.toLowerCase())) &&
@@ -732,9 +733,12 @@ function ChangeDrawer() {
               <GitPullRequest size={15} />
               Change 详情
             </span>
-            <Dialog.Close className="icon-button" aria-label="关闭变更详情">
-              <X size={19} />
-            </Dialog.Close>
+            <div className="row">
+              <CopyPageLink />
+              <Dialog.Close className="icon-button" aria-label="关闭变更详情">
+                <X size={19} />
+              </Dialog.Close>
+            </div>
           </div>
           <div className="drawer-summary">
             <code className="drawer-id">{g?.id ?? q.c}</code>
@@ -913,6 +917,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="section-title">{children}</h3>;
 }
 function formatTime(at: string) {
+  if (Number.isNaN(new Date(at).getTime())) return at;
   return new Date(at).toLocaleString("zh-CN", {
     timeZone: "Asia/Shanghai",
     hour12: false,
@@ -1045,9 +1050,37 @@ function DocumentList({
             <strong>{names[d.path.split("/").at(-1)!] ?? d.title}</strong>
             <code>{d.path.split("/").at(-1)}</code>
           </span>
+          {!d.readable && <Badge tone="warning">不可读</Badge>}
           <ChevronRight size={13} />
         </button>
       ))}
+      {!shortlist &&
+        [
+          "requirement.md",
+          "technical.md",
+          "plan.md",
+          "execution.md",
+          "review.md",
+        ]
+          .filter(
+            (name) => !docs.some((d) => d.path === `${c.directory}/${name}`),
+          )
+          .map((name) => (
+            <div className="document-missing" key={name}>
+              <FileText size={16} />
+              <span>
+                <strong>{names[name]}</strong>
+                <code>{name}</code>
+              </span>
+              <Badge
+                tone={
+                  documentExpectation(c.state, name) === "缺失" ? "warning" : ""
+                }
+              >
+                {documentExpectation(c.state, name)}
+              </Badge>
+            </div>
+          ))}
       {!docs.length && <p className="muted">尚无已推送的正文材料。</p>}
     </div>
   );

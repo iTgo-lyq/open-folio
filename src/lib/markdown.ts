@@ -7,6 +7,7 @@ type AstNode = {
   value?: string;
   depth?: number;
   url?: string;
+  identifier?: string;
   children?: AstNode[];
   position?: { start: { line: number } };
   data?: Record<string, unknown>;
@@ -31,6 +32,18 @@ export function inspectMarkdown(body: string) {
   const tree = parser().parse(body) as AstNode;
   const headings: Heading[] = [],
     links: { url: string; line: number }[] = [];
+  const definitions = new Map<string, string>();
+  function collect(n: AstNode) {
+    if (
+      n.type === "definition" &&
+      n.identifier &&
+      n.url &&
+      !definitions.has(n.identifier)
+    )
+      definitions.set(n.identifier, n.url);
+    n.children?.forEach(collect);
+  }
+  collect(tree);
   const seen = new Map<string, number>();
   function visit(n: AstNode) {
     if (n.type === "heading")
@@ -42,6 +55,15 @@ export function inspectMarkdown(body: string) {
       });
     if (n.type === "link" && n.url)
       links.push({ url: n.url, line: n.position?.start.line ?? 1 });
+    if (
+      n.type === "linkReference" &&
+      n.identifier &&
+      definitions.has(n.identifier)
+    )
+      links.push({
+        url: definitions.get(n.identifier)!,
+        line: n.position?.start.line ?? 1,
+      });
     n.children?.forEach(visit);
   }
   visit(tree);

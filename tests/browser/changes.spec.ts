@@ -125,3 +125,111 @@ test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
     ),
   ).toBe(true);
 });
+
+test("task numbers remain searchable at task granularity", async ({ page }) => {
+  await page.goto("/?project=fixture&m=changes&level=tasks");
+  await page.getByRole("textbox", { name: "筛选变更或任务" }).fill("T2");
+  await expect(
+    page.getByRole("button", {
+      name: "查看任务 T2 完成文档阅读体验",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /查看任务 T1/ })).toHaveCount(
+    0,
+  );
+});
+
+test("Change body search opens the exact document and keeps its Change context", async ({
+  page,
+}) => {
+  await page.goto("/?project=fixture&m=changes");
+  await page.getByRole("button", { name: "搜索工作台" }).click();
+  await page.getByRole("textbox", { name: "全文搜索" }).fill("一致的文档快照");
+  await page
+    .getByRole("button", { name: /技术方案.*一致的文档快照/ })
+    .first()
+    .click();
+  await expect(
+    page
+      .locator(".document-modal")
+      .getByRole("heading", { name: "技术方案", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("[role=dialog]")).toHaveCount(2);
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("tab", { name: "文档", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+});
+
+test("changing projects clears filters that belong to the previous project", async ({
+  page,
+  request,
+}) => {
+  const original = await (
+    await request.get("/api/projects/fixture/workbench")
+  ).json();
+  const second = {
+    ...original,
+    projectId: "second",
+    projectName: "第二项目",
+    changes: original.changes.map((g: { candidates: object[] }) => ({
+      ...g,
+      candidates: g.candidates.map((c) => ({
+        ...c,
+        relatedSpecs: [],
+        specReferences: [],
+      })),
+    })),
+  };
+  await page.route("**/api/projects", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    await route.fulfill({
+      json: {
+        projects: [
+          ...body.projects,
+          { id: "second", name: "第二项目", snapshotId: original.id },
+        ],
+      },
+    });
+  });
+  await page.route("**/api/projects/second/workbench*", (route) =>
+    route.fulfill({ json: second }),
+  );
+  await page.goto("/?project=fixture&m=changes&spec=platform&filter=阅读");
+  await expect(
+    page.getByRole("button", {
+      name: "打开 让工程文档成为清晰的阅读体验",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("combobox", { name: "当前项目" }).selectOption("second");
+  await expect(page).not.toHaveURL(/spec=|filter=/);
+  await expect(
+    page.getByRole("button", {
+      name: "打开 让工程文档成为清晰的阅读体验",
+      exact: true,
+    }),
+  ).toBeVisible();
+});
+
+test("document list distinguishes missing, unreadable and not required material", async ({
+  page,
+}) => {
+  await page.goto("/?project=fixture&m=changes&c=document-reader&ct=documents");
+  await expect(
+    page.locator(".document-missing").filter({ hasText: "execution.md" }),
+  ).toContainText("缺失");
+  await expect(
+    page.getByRole("button", { name: /独立评审.*review.md/ }),
+  ).toContainText("不可读");
+  await page.goto("/?project=fixture&m=changes&c=mobile-reading&ct=documents");
+  await expect(
+    page.locator(".document-missing").filter({ hasText: "plan.md" }),
+  ).toContainText("当前规模不要求");
+  await page.goto("/?project=fixture&m=changes&c=delivery-review&ct=documents");
+  await expect(
+    page.locator(".document-missing").filter({ hasText: "technical.md" }),
+  ).toContainText("当前阶段尚未要求");
+});

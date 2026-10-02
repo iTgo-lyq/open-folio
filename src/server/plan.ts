@@ -6,13 +6,14 @@ export function cyclicNodes(edges: Record<string, string[]>) {
     stack: string[] = [],
     active = new Set<string>(),
     cycles = new Set<string>();
+  const adjacent = (id: string) => (Object.hasOwn(edges, id) ? edges[id] : []);
   let next = 0;
   function visit(id: string) {
     index.set(id, next);
     low.set(id, next++);
     stack.push(id);
     active.add(id);
-    for (const target of edges[id] ?? []) {
+    for (const target of adjacent(id)) {
       if (!index.has(target)) {
         visit(target);
         low.set(id, Math.min(low.get(id)!, low.get(target)!));
@@ -27,7 +28,7 @@ export function cyclicNodes(edges: Record<string, string[]>) {
       active.delete(node);
       component.push(node);
     } while (node !== id);
-    if (component.length > 1 || (edges[id] ?? []).includes(id))
+    if (component.length > 1 || adjacent(id).includes(id))
       component.forEach((n) => cycles.add(n));
   }
   Object.keys(edges).forEach((id) => {
