@@ -3,7 +3,7 @@
   "id": "spec-change-workbench",
   "title": "基于中心 Git 仓库的 Spec 与 Change 只读工作台",
   "size": "large",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/spec-change-workbench",
   "confirmations": {
@@ -78,15 +78,28 @@
       "result": "passed",
       "at": "2026-10-02T12:59:15+08:00",
       "summary": "T8 执行完成标记复验通过：7 项 Change 浏览器回归、类型/格式检查及生产构建通过，真实桌面与手机执行勾选和验收当前状态已核验。隔离上下文独立 reviewer 执行 30 项任务与子项边界并只读核验生产页面，无可行动问题；前轮全差异评审和未变范围的验证证据继续有效，详见 Execution 与 Review。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-02T13:45:17+08:00",
+      "summary": "用户审阅当前版本、两项展示修正及运行部署说明后，明确要求“这个版本先归档吧”，接受当前版本并授权归档。",
+      "source": "本会话用户原话：这个版本先归档吧。对应实现与验证检查点：55a267b。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-02T13:46:36+08:00",
+      "summary": "首次建立 project-knowledge、project-knowledge/spec-reading、project-knowledge/change-tracking 三项已实现能力 Specs，覆盖只读工作台、中心 Git 快照、Spec 阅读、Change 状态与任务关系及运行访问边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-02T13:46:37+08:00",
+      "summary": "验收与 Specs 同步后，将完整 Change 材料移入归档目录；原 changes 目录已移除，T1–T8 的实现、验证及独立评审记录完整保留。",
+      "path": "docs/project/archive/2026-10-02-spec-change-workbench"
     }
   },
   "rework": {
     "at": "2026-10-02T12:56:58+08:00",
     "reason": "用户验收反馈：详情中任务已全部完成，但执行阶段没有打勾。",
     "approach": "保留有效确认及 T1–T7 历史记录，追加 T8；执行阶段按任务完成事实判断，父 Change 按子项关系结果判断，复验后继续等待人工验收。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收私有工作台中的 Spec/Change 阅读、筛选和追踪；当前执行任务全部完成，阶段为验收中，收到验收后再同步 Specs 并归档。"
   }
 }
