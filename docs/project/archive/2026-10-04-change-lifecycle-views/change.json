@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "change-lifecycle-views",
+  "title": "按 Change 状态简化浏览视图",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/change-lifecycle-views",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "简化状态范围、列表与详情并验证交付",
+      "status": "done",
+      "verification": "Change 浏览器 11/11、原型 9/9、类型检查、生产构建与真实仓库桌面/320px 复核通过；自查与边界证据见 execution.md。",
+      "commitTitle": "change-lifecycle-views T1: focus Change views on lifecycle results"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-03T21:37:00.346Z",
+      "summary": "Agent 自查完成：Requirement A1–A4 均有浏览器与真实仓库验证依据；Change 11/11、原型 9/9、类型检查和生产构建通过，无未解决问题。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-03T21:37:00.403Z",
+      "summary": "Agent 自验收通过：取消全部范围，仅进行中显示阶段；归档、取消和来源异常按结果呈现。旧链接、筛选、历史证据、原型与320px布局验证通过。",
+      "source": "用户已明确要求此类小型 Change 做完直接归档；按 SpecTrail small 自验收规则执行，未记作用户人工验收。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-03T21:37:40.400Z",
+      "summary": "同步 Change 追踪 Spec：四种状态范围、仅 active 阶段展示、结果列表与详情、历史证据和旧链接兼容。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-03T21:37:40.457Z",
+      "summary": "small 自验收通过；状态浏览优化已完成，验证、Spec 与完整材料归档。",
+      "path": "docs/project/archive/2026-10-04-change-lifecycle-views"
+    }
+  },
+  "dependsOn": [
+    "change-prototype-preview"
+  ]
+}
