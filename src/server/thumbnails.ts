@@ -17,7 +17,7 @@ export async function thumbnailResponse(
   const snapshot = url.searchParams.get("snapshot") ?? undefined;
   const device = url.searchParams.get("device") ?? undefined;
   const resolve = () =>
-    store.preview(project, change, undefined, limits, snapshot, entryId);
+    store.preview(project, change, undefined, limits, snapshot, entryId, true);
   const { descriptor, html } = await resolve();
   const entry = descriptor.entries.find((e) => e.id === entryId);
   if (!entry?.available || html === undefined)

@@ -10,6 +10,8 @@ import { renderThumbnail } from "../src/server/thumbnail-renderer.ts";
 import { thumbnailResponse } from "../src/server/thumbnails.ts";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
+import { SnapshotStore } from "../src/server/store.ts";
+import { GitReader } from "../src/server/git.ts";
 const viewport = { width: 390, height: 844 };
 const jpeg = Buffer.from([0xff, 0xd8, ...new Array(58).fill(0)]);
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -214,15 +216,40 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     confirmations: {},
     tasks: { T1: { title: "交付", status: "doing" } },
     closure: {},
-    previews: [entry],
+    previews: [
+      entry,
+      { ...entry, id: "other", path: "packages/prototype/preview/other" },
+    ],
   };
   await f.put("docs/project/changes/demo/change.json", JSON.stringify(state));
   await f.put(
     `${entry.path}/index.html`,
     "<!doctype html><html><body>first</body></html>",
   );
+  await f.put(
+    "packages/prototype/preview/other/index.html",
+    "<!doctype html><html><body>Unrelated page</body></html>",
+  );
   f.commit();
   let snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const otherBlob = f.git([
+    "rev-parse",
+    "HEAD:packages/prototype/preview/other/index.html",
+  ]);
+  let unrelatedReads = 0;
+  let blobReads = 0;
+  const store = new SnapshotStore(join(f.root, "cache"), (directory) => {
+    const reader = new GitReader(directory, f.remote, "file");
+    const run = reader.run.bind(reader);
+    reader.run = (...args: Parameters<GitReader["run"]>) => {
+      if (args[0][0] === "cat-file") {
+        blobReads++;
+        if (args[0][2] === otherBlob) unrelatedReads++;
+      }
+      return run(...args);
+    };
+    return reader;
+  });
   let renders = 0;
   const cache = new ThumbnailCache(join(f.root, "thumbnails"), async () => {
     renders++;
@@ -234,17 +261,33 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
         headers: etag ? { "if-none-match": etag } : {},
       }),
       f.project,
-      f.store,
+      store,
       cache,
       DEFAULT_LIMITS,
       "demo",
       "page",
     );
   const first = await response("&device=mobile");
+  assert.equal(unrelatedReads, 0);
+  assert.equal(blobReads, 6); // core, workflow and selected HTML, checked twice
   assert.equal(first.headers.get("content-type"), "image/jpeg");
   assert.match(first.headers.get("cache-control")!, /private.*must-revalidate/);
   const etag = first.headers.get("etag")!;
   assert.equal((await response("&device=mobile", etag)).status, 304);
+  assert.equal(unrelatedReads, 0);
+  assert.equal(blobReads, 12);
+  await assert.rejects(
+    thumbnailResponse(
+      new Request("http://localhost/image?snapshot=" + snapshot.id),
+      f.project,
+      store,
+      cache,
+      { ...DEFAULT_LIMITS, previewTotalBytes: 10 },
+      "demo",
+      "page",
+    ),
+    { code: "THUMBNAIL_UNAVAILABLE" },
+  );
   await f.put(
     "docs/project/changes/demo/requirement.md",
     "# Unrelated documentation",

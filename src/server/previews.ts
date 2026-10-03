@@ -130,6 +130,7 @@ export async function resolvePreview(
   requestedRevision: string | undefined,
   limits: Limits,
   selectedId?: string,
+  selectedOnly = false,
 ) {
   if (
     !identity.safeParse(changeId).success ||
@@ -285,6 +286,9 @@ export async function resolvePreview(
     return fail("原型包的入口数量或静态 HTML 总量超过服务限制。");
   let selectedHtml: string | undefined;
   for (const [index, value] of raw.previews.entries()) {
+    // Thumbnail requests need one body, while the descriptor API validates all
+    // entries. Keep the package-wide tree limits above for both read paths.
+    if (selectedOnly && value?.id !== selectedId) continue;
     const parsed = previewsSchema.safeParse([value]);
     const duplicate =
       value?.id && raw.previews.filter((p) => p?.id === value.id).length > 1;

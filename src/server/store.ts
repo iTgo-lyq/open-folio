@@ -282,6 +282,7 @@ export class SnapshotStore {
     limits: Limits,
     snapshotId?: string,
     entry?: string,
+    selectedOnly = false,
   ) {
     const latest = await this.snapshot(p);
     const source =
@@ -295,6 +296,7 @@ export class SnapshotStore {
       revision,
       limits,
       entry,
+      selectedOnly,
     );
   }
   async document(p: ProjectConfig, id: string, snapshot: string) {
