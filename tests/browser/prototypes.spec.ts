@@ -236,3 +236,45 @@ test("catalog API enforces project, snapshot and same-origin access boundaries",
     ).status(),
   ).toBe(403);
 });
+
+test("association-only failures show a source problem instead of an empty project", async ({
+  page,
+  request,
+}) => {
+  const catalog = await (
+    await request.get("/api/projects/fixture/prototypes")
+  ).json();
+  await page.route("**/api/projects/fixture/prototypes?*", (route) =>
+    route.fulfill({
+      json: {
+        ...catalog,
+        items: [],
+        issues: [
+          {
+            changeId: "document-reader",
+            changeTitle: "来源待核对的 Change",
+            message: "无法确定 Change 主来源，请先核对来源记录。",
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto(path);
+  const region = inventory(page);
+  await expect(
+    region.getByRole("heading", { name: "暂时没有可统计的原型" }),
+  ).toBeVisible();
+  await expect(
+    region.getByRole("heading", { name: "项目还没有关联原型" }),
+  ).toHaveCount(0);
+  await region
+    .getByText("1 个 Change 的原型关联需检查", { exact: true })
+    .click();
+  await expect(
+    region.getByText("无法确定 Change 主来源", { exact: false }),
+  ).toBeVisible();
+  await region.getByRole("button", { name: "来源待核对的 Change" }).click();
+  await expect(page).toHaveURL(/m=changes/);
+  await expect(page).toHaveURL(/c=document-reader/);
+  await expect(page.getByRole("dialog")).toBeVisible();
+});

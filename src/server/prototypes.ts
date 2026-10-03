@@ -16,14 +16,33 @@ export async function prototypeCatalog(
     const report = (message: string) =>
       issues.push({ changeId: group.id, changeTitle: group.title, message });
     if (!candidate) {
-      if (
-        group.candidates.some(
-          (c) =>
-            c.state?.previews?.length ||
-            c.diagnostics.some((d) => d.code === "PREVIEWS_INVALID"),
-        )
-      )
-        report("无法确定 Change 主来源，请先核对来源记录。");
+      let hasAssociations = false;
+      let unreadable = false;
+      for (const source of group.candidates) {
+        if (
+          source.state?.previews?.length ||
+          source.diagnostics.some((d) => d.code === "PREVIEWS_INVALID")
+        ) {
+          hasAssociations = true;
+          break;
+        }
+        if (source.state) continue;
+        try {
+          const value = await read(source);
+          if (value && typeof value === "object" && "previews" in value) {
+            const raw = value.previews;
+            if (!Array.isArray(raw) || raw.length > 0) {
+              hasAssociations = true;
+              break;
+            }
+          }
+        } catch {
+          unreadable = true;
+        }
+      }
+      if (hasAssociations) report("无法确定 Change 主来源，请先核对来源记录。");
+      else if (unreadable)
+        report("Change 来源记录无法读取，无法确认是否存在原型关联。");
       continue;
     }
     let raw: unknown = candidate.state?.previews;

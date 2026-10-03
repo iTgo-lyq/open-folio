@@ -151,3 +151,49 @@ test("inventory reports unresolved prototype sources without inventing duplicate
     code: "NO_SNAPSHOT",
   });
 });
+
+test("invalid core records with unresolved ownership do not hide prototype associations", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      protectedBranches: ["main"],
+      prototype: {
+        status: "enabled",
+        packagePath: "packages/prototype",
+        decision,
+      },
+    }),
+  );
+  for (const [id, previews] of [
+    ["associated", [entry]],
+    ["malformed", null],
+    ["empty", []],
+    ["unrelated", undefined],
+  ] as const)
+    await f.put(
+      `docs/project/changes/${id}/change.json`,
+      JSON.stringify({ ...state(id, previews), schemaVersion: 2 }),
+    );
+  await f.put("docs/project/changes/unreadable/change.json", "{invalid");
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const catalog = await f.store.prototypes(f.project);
+  assert.equal(catalog.policy.status, "enabled");
+  assert.equal(catalog.items.length, 0);
+  assert.deepEqual(catalog.issues.map((issue) => issue.changeId).sort(), [
+    "associated",
+    "malformed",
+    "unreadable",
+  ]);
+  assert.match(
+    catalog.issues.find((issue) => issue.changeId === "associated")!.message,
+    /主来源/,
+  );
+  assert.match(
+    catalog.issues.find((issue) => issue.changeId === "unreadable")!.message,
+    /无法确认/,
+  );
+});
