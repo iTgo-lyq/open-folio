@@ -4,7 +4,7 @@
   "title": "Change 关联项目原型包与静态预览",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-prototype-preview",
   "dependsOn": [
     "spec-change-workbench"
@@ -94,7 +94,13 @@
       "commitTitle": "change-prototype-preview T11: verify content-focused cards and delivery"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-03T14:07:50+08:00",
+      "summary": "T1–T11 已验证并推送。A12 卡片精简经9项受影响浏览器、类型/格式/生产构建、真实 Git 实例与隔离独立评审通过，3个额外交互探针验证焦点、长文案、手机和停用，无可行动问题。A1–A11 未改动部分沿用既有完整验证。原私有地址已更新，等待人工验收。"
+    }
+  },
   "rework": {
     "at": "2026-10-03T13:57:45+08:00",
     "reason": "用户反馈原型卡片额外信息过多，应聚焦原型内容。",
@@ -133,5 +139,9 @@
         "height": 320
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "原型卡片已聚焦截图与名称，来源、路径和适配移入更多信息面板；原私有验收页已更新。请验收卡片内容层级与预览体验；保持 active，人工验收前不归档。"
+  }
 }
