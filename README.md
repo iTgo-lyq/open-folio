@@ -4,10 +4,11 @@
 
 ## 启动
 
-需要 Node.js 24、Git、持久磁盘和仓库读取权限。
+需要 Node.js 24、Git、持久磁盘和仓库读取权限；原型卡片截图还需要 Playwright Chromium 与可用的 OS 沙箱。
 
 ```bash
 npm ci
+npx playwright install --with-deps chromium
 cp openfolio.config.example.json openfolio.local.json
 export OPENFOLIO_CONFIG="$PWD/openfolio.local.json"
 export OPENFOLIO_DATA_DIR="$HOME/.local/share/open-folio"
@@ -62,7 +63,7 @@ Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工�
 
 ## Change 原型预览
 
-工作台提供与 Specs、Changes 并列的「原型」页面，汇总项目已关联的页面、组件和 Change 数量，支持名称/路径/Change 搜索与适配筛选。共享入口按路径与类型合并，卡片可切换关联版本、打开预览或进入 Change；Change 内的预览继续保留。列表统计关联元数据，产物是否可用在打开时检查。
+工作台提供与 Specs、Changes 并列的「原型」页面，汇总项目已关联的页面、组件和 Change 数量，支持名称/路径/Change 搜索与适配筛选。共享入口按路径与类型合并，卡片可切换关联版本、打开预览或进入 Change；Change 内的预览继续保留。列表统计关联元数据，卡片显示服务自动生成的首屏截图；缺失产物或截图失败有独立提示，不影响打开预览。
 
 项目只维护一个 Git 跟踪的 monorepo 原型包，默认 `packages/prototype/`。通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 接入，复用用户的设计规范和组件库；不提供模板服务。拒绝选择记入 `docs/project/workflow.json.prototype`，不会反复启用。当前仓库包含两个页面和一个组件作为交付样例：
 
@@ -116,3 +117,11 @@ npm run format:check
 ```
 
 浏览器测试用临时作者仓库、中心 bare 远端和独立缓存建立真实读取链路，运行在 10682，不依赖用户凭据。测试用 file 协议只能通过内部构造器注入，生产配置无法启用。已有 Chromium 时可用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` 指定其路径。截图输出到忽略目录 `artifacts/`，测试数据不会出现在真实项目中。
+
+### 原型截图缓存
+
+卡片进入可视区域后，服务从同一固定 Git 版本读取 HTML，在空白、离线的 Chromium 沙箱中截图。页面按首个声明设备，组件按声明尺寸；设备筛选和关联来源切换会同步图片与打开预览的尺寸。图片保持原始比例，仅显示首屏，不执行交互验收或整页长截图。截图不写回 Git，也不要求 Agent 提交图片。
+
+服务按项目/仓库、HTML 内容、视口与渲染器版本缓存 JPEG，因此无关文档提交和服务重启可复用结果，内容或尺寸变化自动生成新图。同键请求合并，最多 2 个浏览器、24 个排队任务，排队 30 秒或生成 12 秒超时后可重试。失败退避 5 秒，单图最多 4 MiB；`OPENFOLIO_DATA_DIR/thumbnails` 为私有可重建缓存，总上限 100 MiB、闲置 7 天后按需清理。删去该目录可重建；缓存清理不改变原型历史。
+
+图片响应使用私有 ETag 再验证。每次请求和生成完成后检查当前开关、关联与历史引用，缓存不绕过停用或项目权限。浏览器不带用户登录态，阻断网络、文件导航和持久存储，不运行仓库安装/构建脚本。Chromium 缺失或 OS 沙箱不可用时只显示截图失败，禁止改用 `--no-sandbox`；部署需安装浏览器依赖并允许非 root Chromium 沙箱。更新 Playwright/渲染设置时同步提升截图渲染器版本使旧缓存失效。

@@ -1,0 +1,59 @@
+import type { ProjectConfig, Limits } from "../lib/model.ts";
+import { previewViewport } from "../lib/preview-viewport.ts";
+import type { SnapshotStore } from "./store.ts";
+import { ThumbnailCache } from "./thumbnail-cache.ts";
+import { AppError } from "./errors.ts";
+
+export async function thumbnailResponse(
+  request: Request,
+  project: ProjectConfig,
+  store: SnapshotStore,
+  cache: ThumbnailCache,
+  limits: Limits,
+  change: string,
+  entryId: string,
+) {
+  const url = new URL(request.url);
+  const snapshot = url.searchParams.get("snapshot") ?? undefined;
+  const device = url.searchParams.get("device") ?? undefined;
+  const resolve = () =>
+    store.preview(project, change, undefined, limits, snapshot, entryId);
+  const { descriptor, html } = await resolve();
+  const entry = descriptor.entries.find((e) => e.id === entryId);
+  if (!entry?.available || html === undefined)
+    throw new AppError(
+      "THUMBNAIL_UNAVAILABLE",
+      descriptor.message ?? entry?.message ?? "原型入口不可用。",
+      404,
+    );
+  if (device && !entry.devices?.some((value) => value === device))
+    throw new AppError("INVALID_PARAMETER", "截图设备未在该入口声明。", 400);
+  const { viewport } = previewViewport(entry, device);
+  const result = await cache.get(
+    JSON.stringify([project.id, project.repositoryUrl]),
+    html,
+    viewport,
+  );
+  // Generation may outlive a refresh: never serve a cached image after revocation.
+  const current = await resolve();
+  if (
+    current.html !== html ||
+    current.descriptor.revision !== descriptor.revision
+  )
+    throw new AppError(
+      "THUMBNAIL_UNAVAILABLE",
+      "原型来源已更新或停用，请刷新后重试。",
+      409,
+    );
+  const headers = {
+    "Content-Type": "image/jpeg",
+    "Cache-Control": "private, no-cache, must-revalidate",
+    ETag: result.etag,
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'none'; sandbox",
+    "X-OpenFolio-Thumbnail-Cache": result.cached ? "hit" : "miss",
+  };
+  return request.headers.get("if-none-match") === result.etag
+    ? new Response(null, { status: 304, headers })
+    : new Response(new Uint8Array(result.body), { headers });
+}

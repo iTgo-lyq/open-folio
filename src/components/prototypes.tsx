@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   GitPullRequest,
+  ImageOff,
+  LoaderCircle,
   Monitor,
   PanelsTopLeft,
   Search,
@@ -11,6 +13,7 @@ import {
   Tablet,
 } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/model";
+import { previewViewport } from "@/lib/preview-viewport";
 import {
   DEVICE_LABELS,
   matchingPrototypeReferences,
@@ -283,13 +286,17 @@ function PrototypeCard({
   references: PrototypeReference[];
   enabled: boolean;
 }) {
-  const { nav } = useWorkspace();
+  const { nav, q, projectId, data } = useWorkspace();
   const [selection, setSelection] = useState("");
   const identity = (ref: PrototypeReference) =>
     `${ref.changeId}/${ref.entry.id}`;
   const ref =
     references.find((ref) => identity(ref) === selection) ?? references[0];
   const { entry } = ref;
+  const { device, viewport } = previewViewport(entry, q.pdevice);
+  const params = new URLSearchParams({ snapshot: data!.id });
+  if (device) params.set("device", device);
+  const imageUrl = `/api/projects/${encodeURIComponent(projectId)}/thumbnails/${encodeURIComponent(ref.changeId)}/${encodeURIComponent(entry.id)}?${params}`;
   const related = new Set(item.references.map((ref) => ref.changeId)).size;
   const open = () =>
     nav({
@@ -297,11 +304,20 @@ function PrototypeCard({
       c: ref.changeId,
       ct: "previews",
       preview: entry.id,
+      device: device ?? null,
     });
   const Icon = item.kind === "page" ? PanelsTopLeft : Square;
   const deviceIcons = { "pc-web": Monitor, ipad: Tablet, mobile: Smartphone };
   return (
     <li className="prototype-tile">
+      <PrototypeThumbnail
+        key={imageUrl + enabled}
+        url={imageUrl}
+        title={entry.title}
+        viewport={viewport}
+        enabled={enabled}
+        open={open}
+      />
       <div className="prototype-tile-title">
         <span className={`prototype-kind-icon ${item.kind}`}>
           <Icon size={23} />
@@ -381,5 +397,90 @@ function PrototypeCard({
         </button>
       </div>
     </li>
+  );
+}
+
+function PrototypeThumbnail({
+  url,
+  title,
+  viewport,
+  enabled,
+  open,
+}: {
+  url: string;
+  title: string;
+  viewport: { width: number; height: number };
+  enabled: boolean;
+  open: () => void;
+}) {
+  const root = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "160px" },
+    );
+    if (root.current) observer.observe(root.current);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div className={`prototype-thumbnail ${status}`} ref={root}>
+      {enabled && visible && status !== "error" && (
+        <button
+          className="prototype-thumbnail-open"
+          aria-label={`预览${title}`}
+          onClick={open}
+        >
+          <img
+            key={attempt}
+            src={`${url}&attempt=${attempt}`}
+            alt={`${title}的首屏截图`}
+            width={viewport.width}
+            height={viewport.height}
+            onLoad={() => setStatus("ready")}
+            onError={() => setStatus("error")}
+          />
+        </button>
+      )}
+      {(!enabled || status !== "ready") && (
+        <div className="prototype-thumbnail-state" role="status">
+          {enabled && status === "loading" ? (
+            <LoaderCircle size={20} className="spin" />
+          ) : (
+            <ImageOff size={20} />
+          )}
+          <span>
+            {!enabled
+              ? "截图未启用"
+              : status === "error"
+                ? "截图暂不可用"
+                : "正在准备截图…"}
+          </span>
+          {enabled && status === "error" && (
+            <button
+              className="text-button"
+              onClick={() => {
+                setStatus("loading");
+                setAttempt((value) => value + 1);
+              }}
+            >
+              重试截图
+            </button>
+          )}
+        </div>
+      )}
+      <span className="prototype-thumbnail-size">
+        {viewport.width} × {viewport.height} · 首屏
+      </span>
+    </div>
   );
 }

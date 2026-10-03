@@ -77,7 +77,9 @@
     },
     "T9": {
       "title": "展示真实原型截图并缓存",
-      "status": "doing"
+      "status": "done",
+      "verification": "真实首屏截图、声明视口、懒加载和私有持久缓存交付；39 项核心、30 项完整浏览器、类型/格式与生产构建通过。覆盖重启复用、内容/尺寸更新、合并/限流/淘汰/退避、网络/存储隔离、脚本超时及生成期间停用。",
+      "commitTitle": "change-prototype-preview T9: show cached screenshots in prototype cards"
     },
     "T10": {
       "title": "独立复核截图并更新验收环境",

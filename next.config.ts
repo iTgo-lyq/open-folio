@@ -3,6 +3,7 @@ const config: NextConfig = {
   distDir: process.env.OPENFOLIO_BUILD_DIR || ".next",
   devIndicators: false,
   poweredByHeader: false,
+  serverExternalPackages: ["playwright"],
   async headers() {
     return [
       {

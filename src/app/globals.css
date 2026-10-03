@@ -3077,10 +3077,11 @@ input {
   margin: 0;
 }
 .prototype-tile {
+  --tile-padding: 23px;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 23px;
+  padding: var(--tile-padding);
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
@@ -3273,7 +3274,7 @@ input {
     width: 100%;
   }
   .prototype-tile {
-    padding: 20px;
+    --tile-padding: 20px;
   }
   .prototype-grid {
     gap: 14px;
@@ -3281,6 +3282,74 @@ input {
 }
 @media (prefers-reduced-motion: reduce) {
   .prototype-tile {
+    transition: none;
+  }
+}
+
+/* Rendered prototype covers keep their declared viewport and intrinsic ratio. */
+.prototype-thumbnail {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  margin: calc(-1 * var(--tile-padding)) calc(-1 * var(--tile-padding)) 22px;
+  overflow: hidden;
+  border-radius: 15px 15px 0 0;
+  border-bottom: 1px solid var(--line);
+  background: #f1f5f8;
+}
+.prototype-thumbnail-open {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.prototype-thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: top center;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.prototype-thumbnail.ready img {
+  opacity: 1;
+}
+.prototype-thumbnail-open:focus-visible {
+  outline: 3px solid #477595;
+  outline-offset: -4px;
+}
+.prototype-thumbnail-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+.prototype-thumbnail-state button {
+  pointer-events: auto;
+}
+.prototype-thumbnail-size {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 4px 7px;
+  border: 1px solid #dbe5ed;
+  border-radius: 5px;
+  color: #486478;
+  background: #fffffff0;
+  font-size: 10px;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prototype-thumbnail img {
     transition: none;
   }
 }

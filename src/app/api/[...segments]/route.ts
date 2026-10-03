@@ -1,5 +1,6 @@
 import { readConfig, checkRequest, limitsFor } from "@/server/config";
-import { service } from "@/server/service";
+import { service, thumbnails } from "@/server/service";
+import { thumbnailResponse } from "@/server/thumbnails";
 import { AppError, publicError } from "@/server/errors";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +52,16 @@ async function handle(request: Request, context: Context) {
       return json(await store.workbench(p, snapshot, branch));
     if (s.length === 3 && s[2] === "prototypes")
       return json(await store.prototypes(p, snapshot));
+    if (s.length === 5 && s[2] === "thumbnails")
+      return await thumbnailResponse(
+        request,
+        p,
+        store,
+        thumbnails(),
+        limitsFor(config),
+        s[3],
+        s[4],
+      );
     if (s.length === 4 && s[2] === "previews")
       return json(
         (

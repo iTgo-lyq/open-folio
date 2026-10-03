@@ -12,12 +12,13 @@ import {
   PanelsTopLeft,
 } from "lucide-react";
 import type { ChangeCandidate, Device, PreviewDescriptor } from "@/lib/model";
+import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
 import { api, useWorkspace } from "./context";
 import { Empty } from "./document";
 const devices = {
-  "pc-web": { label: "PC Web", width: 1440, height: 900, icon: Monitor },
-  ipad: { label: "iPad", width: 834, height: 1194, icon: Tablet },
-  mobile: { label: "移动设备", width: 390, height: 844, icon: Smartphone },
+  "pc-web": { label: "PC Web", ...DEVICE_VIEWPORTS["pc-web"], icon: Monitor },
+  ipad: { label: "iPad", ...DEVICE_VIEWPORTS.ipad, icon: Tablet },
+  mobile: { label: "移动设备", ...DEVICE_VIEWPORTS.mobile, icon: Smartphone },
 };
 export function ChangePreviews({ change }: { change: ChangeCandidate }) {
   const { projectId, data, q, nav, notice } = useWorkspace();
