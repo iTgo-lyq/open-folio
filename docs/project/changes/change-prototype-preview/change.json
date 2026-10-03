@@ -89,7 +89,9 @@
     },
     "T11": {
       "title": "精简原型卡片并复核交付",
-      "status": "doing"
+      "status": "done",
+      "verification": "卡片精简为截图、名称和轻量类型，次要信息按需展开。9项受影响浏览器、类型/格式与生产构建通过；隔离独立评审及3个附加交互探针通过，无可行动问题。真实私有实例桌面/手机、三个原型与来源跳转验证通过。",
+      "commitTitle": "change-prototype-preview T11: verify content-focused cards and delivery"
     }
   },
   "closure": {},
