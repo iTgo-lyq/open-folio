@@ -20,7 +20,10 @@ test("prototype cards show actual viewport screenshots and switch source/device 
   const card = region.getByRole("listitem").filter({
     has: page.getByRole("heading", { name: "订单列表", exact: true }),
   });
-  await card.getByRole("combobox").selectOption("mobile-reading/mobile-orders");
+  await card.getByRole("button", { name: "订单列表的原型信息" }).click();
+  const info = page.getByRole("dialog", { name: /的原型信息$/ });
+  await info.getByRole("combobox").selectOption("mobile-reading/mobile-orders");
+  await info.getByRole("button", { name: "关闭原型信息" }).click();
   const mobile = region.getByRole("img", {
     name: "订单列表 · 手机适配的首屏截图",
     exact: true,
@@ -79,8 +82,11 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   const region = page.getByRole("region", { name: "项目原型总览" });
   await expect(region.getByText("截图暂不可用", { exact: true })).toBeVisible();
   await expect(
-    region.getByRole("button", { name: "打开预览", exact: true }),
+    region.getByRole("button", { name: /^打开预览：/ }),
   ).toBeEnabled();
+  await region.getByRole("button", { name: /^打开预览：/ }).click();
+  await expect(page.locator("iframe")).toHaveAttribute("width", "640");
+  await page.getByRole("button", { name: "关闭变更详情" }).click();
   failed = false;
   await region.getByRole("button", { name: "重试截图" }).click();
   await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(1);

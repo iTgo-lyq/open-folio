@@ -33,8 +33,19 @@ test("project prototypes have their own module, unique totals and selectable Cha
   const card = region.getByRole("listitem").filter({
     has: page.getByRole("heading", { name: "订单列表", exact: true }),
   });
-  await expect(card.getByText("2 个 Change", { exact: true })).toBeVisible();
-  await card.getByRole("combobox").selectOption("mobile-reading/mobile-orders");
+  await expect(card.getByRole("combobox")).toHaveCount(0);
+  await expect(card.locator(".prototype-path")).toHaveCount(0);
+  const infoTrigger = card.getByRole("button", { name: "订单列表的原型信息" });
+  await infoTrigger.focus();
+  await page.keyboard.press("Enter");
+  const info = page.getByRole("dialog", { name: /的原型信息$/ });
+  await expect(info.getByText("关联版本 · 2 个 Change")).toBeVisible();
+  await info.getByRole("combobox").selectOption("mobile-reading/mobile-orders");
+  await page.keyboard.press("Escape");
+  await expect(info).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "订单列表 · 手机适配的原型信息" }),
+  ).toBeFocused();
   await region
     .getByRole("listitem")
     .filter({
@@ -43,7 +54,7 @@ test("project prototypes have their own module, unique totals and selectable Cha
         exact: true,
       }),
     })
-    .getByRole("button", { name: "打开预览" })
+    .getByRole("button", { name: /^打开预览：/ })
     .click();
   await expect(
     page.locator('iframe[title="原型：订单列表 · 手机适配"]'),
@@ -76,7 +87,7 @@ test("catalog filters, matching versions, fixed links and browser history preser
     .getByRole("combobox", { name: "筛选原型适配" })
     .selectOption("mobile");
   await expect(region.getByRole("listitem")).toHaveCount(1);
-  await region.getByRole("button", { name: "打开预览" }).click();
+  await region.getByRole("button", { name: /^打开预览：/ }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await page.getByRole("button", { name: "复制固定版本链接" }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
@@ -116,10 +127,18 @@ test("mobile catalog and source navigation keep a component at its declared size
     ),
   ).toBe(true);
   await page.screenshot({ path: "artifacts/prototype-catalog-mobile.png" });
-  await region.getByRole("button", { name: "打开预览" }).click();
+  await region.getByRole("button", { name: /^打开预览：/ }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
   await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await region.getByRole("button", { name: "查看 Change" }).click();
+  await region.getByRole("button", { name: "价格卡片的原型信息" }).click();
+  const info = page.getByRole("dialog", { name: "价格卡片的原型信息" });
+  await expect(
+    info.getByText("640 × 320 · 自定义", { exact: true }),
+  ).toBeVisible();
+  const bounds = await info.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+  await info.getByRole("button", { name: "查看 Change" }).click();
   await expect(page).toHaveURL(/m=changes/);
   await expect(
     page.getByRole("tab", { name: "概览", exact: true }),
@@ -160,7 +179,9 @@ test("catalog distinguishes disabled tracking, association issues, empty project
     inventory(page).getByRole("heading", { level: 1, name: "原型 4" }),
   ).toBeVisible();
   await expect(
-    inventory(page).getByRole("button", { name: "预览未启用" }).first(),
+    inventory(page)
+      .getByRole("button", { name: /^预览未启用：/ })
+      .first(),
   ).toBeDisabled();
   await expect(page.locator("iframe")).toHaveCount(0);
   await inventory(page)

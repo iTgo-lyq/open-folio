@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Popover } from "radix-ui";
 import {
   ArrowUpRight,
-  GitPullRequest,
+  Ellipsis,
   ImageOff,
   LoaderCircle,
   Monitor,
@@ -11,6 +12,7 @@ import {
   Smartphone,
   Square,
   Tablet,
+  X,
 } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/model";
 import { previewViewport } from "@/lib/preview-viewport";
@@ -306,7 +308,6 @@ function PrototypeCard({
       preview: entry.id,
       device: device ?? null,
     });
-  const Icon = item.kind === "page" ? PanelsTopLeft : Square;
   const deviceIcons = { "pc-web": Monitor, ipad: Tablet, mobile: Smartphone };
   return (
     <li className="prototype-tile">
@@ -318,83 +319,117 @@ function PrototypeCard({
         enabled={enabled}
         open={open}
       />
-      <div className="prototype-tile-title">
-        <span className={`prototype-kind-icon ${item.kind}`}>
-          <Icon size={23} />
+      <div className="prototype-tile-caption">
+        <h2 aria-label={entry.title}>
+          <button
+            className="prototype-title-open"
+            disabled={!enabled}
+            aria-label={`${enabled ? "打开预览" : "预览未启用"}：${entry.title}`}
+            onClick={open}
+          >
+            {entry.title}
+          </button>
+        </h2>
+        <span className="prototype-kind-label">
+          {item.kind === "page" ? "页面" : "组件"}
         </span>
-        <div>
-          <span className="prototype-kind-label">
-            {item.kind === "page" ? "页面" : "组件"}
-          </span>
-          <h2>{entry.title}</h2>
-        </div>
-        <span className="prototype-reference-count">{related} 个 Change</span>
-      </div>
-      <code className="prototype-path" title={item.path}>
-        {item.path}
-      </code>
-      <div className="prototype-adaptations" aria-label="声明适配">
-        {entry.devices?.map((device) => {
-          const DeviceIcon = deviceIcons[device];
-          return (
-            <span key={device}>
-              <DeviceIcon size={13} />
-              {DEVICE_LABELS[device]}
-            </span>
-          );
-        })}
-        {entry.viewport && (
-          <span>
-            <Square size={13} />
-            {entry.viewport.width} × {entry.viewport.height} · 自定义
-          </span>
-        )}
-      </div>
-      <div className="prototype-tile-source">
-        <label>
-          <GitPullRequest size={14} />
-          <span>关联版本</span>
-          {references.length > 1 ? (
-            <select
-              aria-label={`${entry.title}的关联版本`}
-              value={identity(ref)}
-              onChange={(e) => setSelection(e.target.value)}
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <button
+              className="prototype-info-trigger"
+              aria-label={`${entry.title}的原型信息`}
+              title="原型信息"
             >
-              {references.map((source) => (
-                <option key={identity(source)} value={identity(source)}>
-                  {source.changeTitle} · {STATUS_LABELS[source.status]} ·{" "}
-                  {source.entry.id}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="prototype-source-name">{ref.changeTitle}</span>
-          )}
-        </label>
-        <div>
-          <code>{ref.changeId}</code>
-          <span className={`badge ${ref.status}`}>
-            {ref.archived ? "已归档" : STATUS_LABELS[ref.status]}
-          </span>
-        </div>
-      </div>
-      <div className="prototype-tile-actions">
-        <button
-          className="text-button"
-          onClick={() =>
-            nav({
-              ...clearPreview,
-              m: "changes",
-              c: ref.changeId,
-              ct: "overview",
-            })
-          }
-        >
-          查看 Change <ArrowUpRight size={14} />
-        </button>
-        <button className="button" disabled={!enabled} onClick={open}>
-          {enabled ? "打开预览" : "预览未启用"}
-        </button>
+              <Ellipsis size={20} />
+            </button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              className="prototype-info"
+              align="end"
+              sideOffset={8}
+              collisionPadding={16}
+              aria-label={`${entry.title}的原型信息`}
+            >
+              <div className="prototype-info-header">
+                <h3>原型信息</h3>
+                <Popover.Close asChild>
+                  <button
+                    className="prototype-info-close"
+                    aria-label="关闭原型信息"
+                  >
+                    <X size={17} />
+                  </button>
+                </Popover.Close>
+              </div>
+              <div className="prototype-tile-source">
+                <label>
+                  <span>关联版本 · {related} 个 Change</span>
+                  {references.length > 1 ? (
+                    <select
+                      aria-label={`${entry.title}的关联版本`}
+                      value={identity(ref)}
+                      onChange={(e) => setSelection(e.target.value)}
+                    >
+                      {references.map((source) => (
+                        <option key={identity(source)} value={identity(source)}>
+                          {source.changeTitle} · {STATUS_LABELS[source.status]}{" "}
+                          · {source.entry.id}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="prototype-source-name">
+                      {ref.changeTitle}
+                    </span>
+                  )}
+                </label>
+                <div>
+                  <code>{ref.changeId}</code>
+                  <span className={`badge ${ref.status}`}>
+                    {ref.archived ? "已归档" : STATUS_LABELS[ref.status]}
+                  </span>
+                </div>
+              </div>
+              <div className="prototype-adaptations" aria-label="声明适配">
+                {entry.devices?.map((device) => {
+                  const DeviceIcon = deviceIcons[device];
+                  return (
+                    <span key={device}>
+                      <DeviceIcon size={13} />
+                      {DEVICE_LABELS[device]}
+                    </span>
+                  );
+                })}
+                {entry.viewport && (
+                  <span>
+                    <Square size={13} />
+                    {entry.viewport.width} × {entry.viewport.height} · 自定义
+                  </span>
+                )}
+              </div>
+              <p className="prototype-capture-size">
+                截图视口 {viewport.width} × {viewport.height} · 首屏
+              </p>
+              <code className="prototype-path">{item.path}</code>
+              <Popover.Close asChild>
+                <button
+                  className="text-button prototype-source-link"
+                  onClick={() =>
+                    nav({
+                      ...clearPreview,
+                      m: "changes",
+                      c: ref.changeId,
+                      ct: "overview",
+                    })
+                  }
+                >
+                  查看 Change <ArrowUpRight size={14} />
+                </button>
+              </Popover.Close>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
       </div>
     </li>
   );
@@ -478,9 +513,6 @@ function PrototypeThumbnail({
           )}
         </div>
       )}
-      <span className="prototype-thumbnail-size">
-        {viewport.width} × {viewport.height} · 首屏
-      </span>
     </div>
   );
 }
