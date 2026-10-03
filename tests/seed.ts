@@ -157,6 +157,15 @@ export async function seed() {
       tasks: {},
     }),
     make("mobile-reading", "支持手机端连续阅读", {
+      previews: [
+        {
+          id: "mobile-orders",
+          title: "订单列表 · 手机适配",
+          kind: "page",
+          path: "packages/prototype/preview/orders",
+          devices: ["mobile"],
+        },
+      ],
       size: "small",
       parent: "workspace-rollout",
       tasks: {
@@ -198,8 +207,10 @@ export async function seed() {
       );
     if (record.id === "document-reader")
       await symlink("missing-review.md", join(f.author, dir, "review.md"));
-    if (record.id === "document-reader") {
-      for (const id of ["orders", "detail", "card"])
+    if (["document-reader", "mobile-reading"].includes(record.id)) {
+      for (const id of record.id === "document-reader"
+        ? ["orders", "detail", "card"]
+        : ["orders"])
         await f.put(
           `packages/prototype/preview/${id}/index.html`,
           `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:24px;font:16px system-ui;background:#f5f4ef;color:#123}button{padding:12px}h1{font-size:28px}@media(max-width:500px){h1{font-size:20px}}</style></head><body><h1>${id === "orders" ? "订单列表原型" : id === "detail" ? "订单详情原型" : "价格卡片原型"}</h1><button id="increment">0</button><output id="value"></output><script type="module">document.querySelector('button').onclick=e=>{e.target.textContent=Number(e.target.textContent)+1};window.previewReady=true;</script></body></html>`,

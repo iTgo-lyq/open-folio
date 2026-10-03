@@ -23,6 +23,7 @@ import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
+import { prototypeCatalog } from "./prototypes.ts";
 
 const snapshotPattern = /^[a-f0-9-]{36}$/;
 const alive = (pid: number) => {
@@ -261,6 +262,18 @@ export class SnapshotStore {
       selectedBranch,
       projectName: p.name,
     };
+  }
+  async prototypes(p: ProjectConfig, snapshotId?: string) {
+    const latest = await this.snapshot(p);
+    const source = snapshotId ? await this.snapshot(p, snapshotId) : latest;
+    return prototypeCatalog(source, latest.prototype, async (candidate) => {
+      const { body } = await this.document(
+        p,
+        candidate.jsonDocumentId,
+        source.id,
+      );
+      return JSON.parse(body.toString("utf8"));
+    });
   }
   async preview(
     p: ProjectConfig,

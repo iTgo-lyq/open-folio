@@ -49,6 +49,8 @@ async function handle(request: Request, context: Context) {
       branch = url.searchParams.get("branch") ?? undefined;
     if (s.length === 3 && s[2] === "workbench")
       return json(await store.workbench(p, snapshot, branch));
+    if (s.length === 3 && s[2] === "prototypes")
+      return json(await store.prototypes(p, snapshot));
     if (s.length === 4 && s[2] === "previews")
       return json(
         (

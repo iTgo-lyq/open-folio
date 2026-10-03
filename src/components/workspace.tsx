@@ -8,6 +8,7 @@ import {
   GitPullRequest,
   LoaderCircle,
   PanelLeftClose,
+  PanelsTopLeft,
   RefreshCw,
   Search,
   X,
@@ -17,6 +18,7 @@ import { api, useWorkspace, WorkspaceProvider } from "./context";
 import { DocumentModal, Empty, ErrorNotice } from "./document";
 import Specs from "./specs";
 import Changes from "./changes";
+import Prototypes from "./prototypes";
 function Shell() {
   const {
     q,
@@ -33,7 +35,18 @@ function Shell() {
   } = useWorkspace();
   const [collapsed, setCollapsed] = useState(false),
     [search, setSearch] = useState(false);
-  const module = q.m === "changes" ? "changes" : "specs";
+  const module =
+    q.m === "prototypes"
+      ? "prototypes"
+      : q.m === "changes"
+        ? "changes"
+        : "specs";
+  const moduleTitle =
+    module === "prototypes"
+      ? "原型"
+      : module === "changes"
+        ? "Changes"
+        : "Specs";
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem("openfolio.rail") === "closed");
@@ -59,6 +72,7 @@ function Shell() {
       {[
         { id: "specs", title: "Specs", icon: BookOpen },
         { id: "changes", title: "Changes", icon: GitPullRequest },
+        { id: "prototypes", title: "原型", icon: PanelsTopLeft },
       ].map((item) => (
         <a
           key={item.id}
@@ -67,7 +81,17 @@ function Shell() {
           aria-current={module === item.id ? "page" : undefined}
           onClick={(e) => {
             e.preventDefault();
-            nav({ m: item.id, doc: null, c: null });
+            nav({
+              m: item.id,
+              doc: null,
+              c: null,
+              ct: null,
+              preview: null,
+              device: null,
+              orientation: null,
+              revision: null,
+              zoom: null,
+            });
           }}
         >
           <item.icon size={20} />
@@ -123,6 +147,14 @@ function Shell() {
                     ct: null,
                     da: null,
                     raw: null,
+                    preview: null,
+                    device: null,
+                    orientation: null,
+                    revision: null,
+                    zoom: null,
+                    pq: null,
+                    pkind: null,
+                    pdevice: null,
                   })
                 }
               >
@@ -135,9 +167,7 @@ function Shell() {
               </select>
             </label>
             <ChevronRight size={14} className="header-chevron" />
-            <span className="header-module">
-              {module === "specs" ? "Specs" : "Changes"}
-            </span>
+            <span className="header-module">{moduleTitle}</span>
             <span className="read-only">只读</span>
           </div>
           <div className="header-actions">
@@ -240,6 +270,8 @@ function Shell() {
             </Empty>
           ) : module === "specs" ? (
             <Specs />
+          ) : module === "prototypes" ? (
+            <Prototypes />
           ) : (
             <Changes />
           )}
@@ -275,7 +307,7 @@ function SearchDialog({
     [results, setResults] = useState<SearchResult[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const kind = q.m === "changes" ? "changes" : "specs";
+  const kind = ["changes", "prototypes"].includes(q.m) ? "changes" : "specs";
   useEffect(() => {
     if (!open || !data || !term.trim()) {
       setResults([]);

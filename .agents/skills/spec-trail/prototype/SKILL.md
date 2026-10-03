@@ -5,7 +5,7 @@ description: SpecTrail 的原型子 skill。在用户同意后接入项目内单
 
 # SpecTrail Prototype
 
-原型与 Change 一起管理。每项目一个 monorepo 包，默认 `packages/prototype/`；源码自由组织，页面和组件共用设计标准及依赖。工作台只读已推送静态产物，不编辑、不构建、不调度 Agent。无模板服务、原型 Hub、单独原型清单或截图要求。
+原型与 Change 一起管理。每项目一个 monorepo 包，默认 `packages/prototype/`；源码自由组织，页面和组件共用设计标准及依赖。工作台只读已推送静态产物，不编辑、不构建、不调度 Agent。工作台以 Change 关联提供项目原型总览。无模板服务、单独原型清单或截图要求。
 
 ## 接入选择
 

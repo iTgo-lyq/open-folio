@@ -145,7 +145,7 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
     const link = new URL(window.location.href);
     for (const [key, value] of Object.entries({
       project: projectId,
-      m: "changes",
+      m: q.m === "prototypes" ? "prototypes" : "changes",
       c: change.id,
       ct: "previews",
       preview: entry.id,

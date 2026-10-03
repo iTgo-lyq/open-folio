@@ -62,6 +62,8 @@ Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工�
 
 ## Change 原型预览
 
+工作台提供与 Specs、Changes 并列的「原型」页面，汇总项目已关联的页面、组件和 Change 数量，支持名称/路径/Change 搜索与适配筛选。共享入口按路径与类型合并，卡片可切换关联版本、打开预览或进入 Change；Change 内的预览继续保留。列表统计关联元数据，产物是否可用在打开时检查。
+
 项目只维护一个 Git 跟踪的 monorepo 原型包，默认 `packages/prototype/`。通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 接入，复用用户的设计规范和组件库；不提供模板服务。拒绝选择记入 `docs/project/workflow.json.prototype`，不会反复启用。当前仓库包含两个页面和一个组件作为交付样例：
 
 ```bash

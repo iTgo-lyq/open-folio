@@ -726,7 +726,7 @@ function TaskDependencies({ c }: { c: ChangeCandidate }) {
     </div>
   );
 }
-function ChangeDrawer() {
+export function ChangeDrawer() {
   const { data, q, nav, openDocument } = useWorkspace(),
     focus = useRef<HTMLElement | null>(null),
     g = data?.changes.find((g) => g.id === q.c),

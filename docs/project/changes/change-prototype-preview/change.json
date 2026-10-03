@@ -65,7 +65,9 @@
     },
     "T7": {
       "title": "补齐项目级原型总览",
-      "status": "doing"
+      "status": "done",
+      "verification": "项目级原型总览、去重统计、搜索/类型/适配筛选、关联版本选择和复用 Change 预览完成；33 项核心测试、26 项完整浏览器测试、类型及格式检查通过。320px 手机无横向溢出，固定链接保留总览入口。",
+      "commitTitle": "change-prototype-preview T7: add project prototype overview"
     },
     "T8": {
       "title": "复核原型总览并更新验收环境",
