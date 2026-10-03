@@ -4,7 +4,7 @@
   "title": "Change 关联项目原型包与静态预览",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-prototype-preview",
   "dependsOn": [
     "spec-change-workbench"
@@ -88,7 +88,13 @@
       "commitTitle": "change-prototype-preview T10: verify screenshot caching and production delivery"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-03T13:27:43+08:00",
+      "summary": "T1–T10 已验证并推送。A1–A10 沿用既有交付和受影响回归，A11 经隔离上下文独立评审及 R9 最终复验，无剩余可行动问题。39项核心、30项完整浏览器及修正后12项核心/9项浏览器、类型/格式、生产构建和真实 Git 截图/缓存联调通过。私有网关已登录体验等待人工验收。"
+    }
+  },
   "rework": {
     "at": "2026-10-03T12:54:06+08:00",
     "reason": "用户要求总览展示页面截图，并做好缓存。",
@@ -127,5 +133,9 @@
         "height": 320
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "原型总览已展示真实首屏截图并支持持久缓存，已更新原私有验收地址。请验收图片效果、设备/来源切换和预览；保持 active，人工验收前不归档。"
+  }
 }
