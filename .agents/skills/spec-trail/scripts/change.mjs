@@ -32,14 +32,14 @@ const commands = {
   "task-block": ["task", "reason"],
   "task-complete": ["task", "verification", "commit-title"],
   "task-retry": ["task"],
-  execute: [],
+  execute: ["availability-note"],
   wait: ["kind", "summary"],
   resume: [],
   rework: ["stage", "reason", "approach"],
-  verify: ["result", "summary"],
-  accept: ["summary", "source", "mode"],
+  verify: ["result", "summary", "availability-note"],
+  accept: ["summary", "source", "mode", "availability-note"],
   specs: ["result", "summary"],
-  archive: ["summary", "date"],
+  archive: ["summary", "date", "availability-note"],
   cancel: ["reason"],
   "previews-set": ["file"],
 };
@@ -264,6 +264,7 @@ function main() {
         ),
         "Another Change is already executing/closing on this branch",
       );
+    const availability = [];
     const dependency = (target, allowCancelled = false) => {
       const candidates = all.filter((r) => r.state.id === target);
       assert(
@@ -276,7 +277,18 @@ function main() {
         (allowCancelled && source.status === "cancelled") ||
           (record.archived &&
             source.status === "completed" &&
-            source.closure?.archive?.result === "done"),
+            !validateChange(source).length &&
+            source.closure?.verification?.result === "passed" &&
+            steps.every((key) => source.closure[key]) &&
+            source.closure.archive.path ===
+              relative(root, dirname(record.file)) &&
+            !source.waitingFor &&
+            steps.every(
+              (key, i) =>
+                !i ||
+                Date.parse(source.closure[key].at) >=
+                  Date.parse(source.closure[steps[i - 1]].at),
+            )),
         `Dependency/child ${target} is not closed`,
       );
       const remote = `refs/remotes/origin/${source.branch}`;
@@ -287,8 +299,22 @@ function main() {
         isDeepStrictEqual(remoteState, source),
         `Dependency/child ${target} has unpushed or divergent state; fetch origin and inspect`,
       );
-      if (source.status !== "cancelled")
-        git(["merge-base", "--is-ancestor", remote, "HEAD"]);
+      if (source.status !== "cancelled") {
+        try {
+          git(["merge-base", "--is-ancestor", remote, "HEAD"]);
+        } catch {
+          assert(
+            opts["availability-note"]?.trim(),
+            `Cannot establish ${target} by ancestry (for example after squash). Verify its delivery in this branch, document the evidence, then pass --availability-note.`,
+          );
+          availability.push({
+            change: target,
+            sourceCommit: git(["rev-parse", remote]),
+            targetCommit: git(["rev-parse", "HEAD"]),
+            evidence: opts["availability-note"],
+          });
+        }
+      }
     };
     const completeTasks = () => {
       if (state.size === "xlarge") {
@@ -324,7 +350,7 @@ function main() {
         ...extra,
       };
     };
-    let archiveDir;
+    let archiveDir, indexRecovery;
     switch (command) {
       case "create":
         break;
@@ -420,6 +446,37 @@ function main() {
         state.tasks[taskId].status = "doing";
         delete state.tasks[taskId].verification;
         delete state.tasks[taskId].commitTitle;
+        const indexed = git([
+          "ls-files",
+          "--stage",
+          "--",
+          relative(root, file),
+        ]);
+        if (indexed) {
+          const rows = indexed.split("\n");
+          const [mode, blob, stage] = rows[0].split(/\s+/);
+          assert(
+            rows.length === 1 &&
+              stage === "0" &&
+              ["100644", "100755"].includes(mode),
+            "Resolve the index conflict before retrying a task",
+          );
+          const staged = JSON.parse(git(["show", `:${relative(root, file)}`]));
+          assert(
+            !validateChange(staged).length,
+            "Invalid staged Change; inspect the index first",
+          );
+          // Preserve partial staging: change this task only, never stage the whole working file.
+          if (
+            Object.hasOwn(staged.tasks, taskId) &&
+            staged.tasks[taskId].status === "done"
+          ) {
+            staged.tasks[taskId].status = "doing";
+            delete staged.tasks[taskId].verification;
+            delete staged.tasks[taskId].commitTitle;
+            indexRecovery = { indexed, mode, blob, content: json(staged) };
+          }
+        }
         break;
       }
       case "task-start":
@@ -605,6 +662,7 @@ function main() {
       dryRun: opts["dry-run"],
       path: relative(root, archiveDir ? join(archiveDir, "change.json") : file),
       state,
+      ...(availability.length ? { availability } : {}),
     };
     if (opts["dry-run"]) {
       console.log(json(result));
@@ -618,11 +676,40 @@ function main() {
     );
     if (original === null) mkdirSync(liveDir, { recursive: true });
     const temporary = join(dirname(file), `.change-${randomUUID()}.tmp`);
+    let updatedBlob;
     try {
       writeFileSync(temporary, json(state), {
         flag: "wx",
         mode: original === null ? 0o644 : lstatSync(file).mode & 0o777,
       });
+      assert(
+        git(["symbolic-ref", "--short", "HEAD"]) === branch,
+        "Branch changed during the operation",
+      );
+      if (indexRecovery) {
+        assert(
+          git(["ls-files", "--stage", "--", relative(root, file)]) ===
+            indexRecovery.indexed,
+          "Index changed during task recovery",
+        );
+        const blob = execFileSync(
+          "git",
+          ["-C", cwd, "hash-object", "-w", "--stdin"],
+          {
+            input: indexRecovery.content,
+            encoding: "utf8",
+            stdio: ["pipe", "pipe", "pipe"],
+          },
+        ).trim();
+        git([
+          "update-index",
+          "--cacheinfo",
+          indexRecovery.mode,
+          blob,
+          relative(root, file),
+        ]);
+        updatedBlob = blob;
+      }
       if (archiveDir) {
         mkdirSync(archiveRoot, { recursive: true });
         renameSync(liveDir, archiveDir);
@@ -636,6 +723,19 @@ function main() {
           throw error;
         }
       } else renameSync(temporary, file);
+    } catch (error) {
+      if (
+        updatedBlob &&
+        git(["rev-parse", `:${relative(root, file)}`]) === updatedBlob
+      )
+        git([
+          "update-index",
+          "--cacheinfo",
+          indexRecovery.mode,
+          indexRecovery.blob,
+          relative(root, file),
+        ]);
+      throw error;
     } finally {
       rmSync(temporary, { force: true });
     }

@@ -78,13 +78,22 @@ node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 
 原型与工作台共用域名、端口和私有认证。iframe 仅授予 `allow-scripts`，响应头也强制沙箱；不给 `allow-same-origin` 或 CORS。局部交互运行在页面内存中，重载即重置。直接打开原型 URL 同样不能访问工作台存储与接口。
 
-功能开关取服务项目 `specBranch`（未配置时为远端默认分支）的最新成功采集配置，固定版本中的配置决定当时的包路径。当前基线停用后，旧链接也停止预览。验收环境可以显式把 `specBranch` 指向验证分支；Specs 的默认基线仍遵守上面的守护分支规则，不因此把验证分支认作已发布 Specs。开关变化需要刷新采集，失败时保留旧快照并显示原成功时间。
+功能开关取服务项目 `specBranch`（未配置时为远端默认分支）的最新成功采集配置，固定版本中的配置决定当时的包路径。当前基线停用后，旧链接也停止预览。Specs 与原型功能开关统一使用已登记的守护分支，正常部署指向 `main`。开关变化需要刷新采集，失败时保留旧快照并显示原成功时间。
 
 固定链接记录完整 revision，不受最近三份文档快照的保留数量限制。带原型的 Change 归档后，由 skill 推送 `spec-trail/archive/<change-id>` 标签保留交付提交；分支删除后仍可回看。标签丢失或已观察的标签被改写会明确报错，不回退最新页面。标签与关联产物都要保留在中心仓库。
 
 默认限制为 `previewBytes: 10485760`（单 HTML）、`previewTotalBytes: 104857600`（同提交 preview 根下所有 HTML 的去重合计）和 `previewEntries: 2000`；可在服务 `limits` 调整。超限、LFS 指针、符号链接或错误导出只影响原型，已有文档继续可读。
 
 本版缓存格式升级为 2。升级服务后执行一次项目刷新重建快照；旧缓存格式错误不是原始文档丢失。原型字段需配套升级 skill、hook 和工作台，再推送启用配置；旧客户端的严格 schema 不支持直接读取这些新字段。
+
+## Change 状态操作
+
+Agent 使用主 skill 的语义脚本维护 `change.json`，由脚本生成统一的 UTC 毫秒时间、检查阶段前置并写入状态；工作台继续只读。完整命令与实际确认/验证要求见 [状态操作说明](.agents/skills/spec-trail/references/state-commands.md)。
+
+```bash
+node .agents/skills/spec-trail/scripts/change.mjs --help
+node .agents/skills/spec-trail/scripts/change.mjs show --change 实际-change-id
+```
 
 ## Impeccable 源码
 

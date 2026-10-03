@@ -2,7 +2,7 @@
 
 常规状态修改使用 `node .agents/skills/spec-trail/scripts/change.mjs <命令> --change <id>`，在 Change 主分支运行。Node.js 20+，仅使用内置模块，无需安装依赖。`--repo <仓库>` 可显式指定工作区；`--dry-run` 只输出拟写状态，不修改文档。`show` 可读取活动或归档记录。
 
-脚本写入现有 `change.json`，不会替用户确认、运行测试、验证 Markdown 正文含义或自动提交/推送。摘要和来源由 Agent 根据真实证据填写；调用成功仅代表本地状态更新。Plan 的任务定义/依赖与 JSON 仍需核对。依赖读取本地及 `origin` 跟踪分支，调用前按主 skill fetch；缺少推送记录或所需提交不在当前分支时拒绝执行。
+脚本写入现有 `change.json`，不会替用户确认、运行测试、验证 Markdown 正文含义或自动提交/推送。摘要和来源由 Agent 根据真实证据填写；调用成功仅代表本地状态更新。Plan 的任务定义/依赖与 JSON 仍需核对。依赖读取本地及 `origin` 跟踪分支，调用前按主 skill fetch；缺少已推送关闭记录时拒绝执行；若因 squash 等原因无法从祖先关系证明交付已集成，先核对所需代码/验证并写入 Execution，再用 `--availability-note '具体集成依据'` 继续。execute 及 xlarge 的 verify/accept/archive 接受该参数，输出前置主分支与当前 HEAD 的提交身份和依据，不把人工核对冒充祖先证明。
 
 | 命令 | 参数与语义 |
 | --- | --- |
@@ -12,7 +12,7 @@
 | `task-start` | `--task Tn`；todo/blocked → doing，并移除旧阻塞原因。 |
 | `task-block` | `--task Tn --reason`；保留任务定义，说明实际阻塞。 |
 | `task-complete` | `--task Tn --verification`，可附 `--commit-title`；doing → done。先完成验证，再和实现一起提交推送。 |
-| `task-retry` | `--task Tn`；只恢复尚未提交的 done 为 doing，移除验证/提交线索，用于提交失败。HEAD 中已 done 的任务不可回退；推送失败保留提交并重试推送。 |
+| `task-retry` | `--task Tn`；只恢复尚未提交的 done 为 doing，移除验证/提交线索，用于提交失败；若同一任务已暂存为 done，同时只修正该任务的暂存内容，保留其余部分暂存差异。HEAD 中已 done 的任务不可回退；推送失败保留提交并重试推送。 |
 | `execute` | 检查正文、规模确认、前置归档与推送、单分支执行冲突，再进入 execution。 |
 | `wait` / `resume` | wait 要求 `--kind confirmation/dependency/pause --summary`；实际等待条件解除后 resume 清除等待。resume 本身不授予确认或撤销取消。 |
 | `rework` | `--stage requirement/technical/plan/execution --reason --approach`；返回最早受影响阶段，清除该阶段及之后的确认、merge 确认、关闭结果和等待；保留已完成任务。 |

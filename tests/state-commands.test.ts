@@ -248,7 +248,26 @@ test("retry only repairs an uncommitted done task; waiting, blocking, failed ver
   f.begin();
   f.commit();
   f.done();
+  const staged = f.state();
+  staged.title = "Staged title";
+  writeFileSync(f.path(), JSON.stringify(staged));
+  f.git("add", "docs/project/changes/sample/change.json");
+  writeFileSync(
+    f.path(),
+    JSON.stringify({ ...staged, title: "Unstaged title" }),
+  );
+  const hook = join(f.root, ".git/hooks/pre-commit");
+  writeFileSync(hook, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+  assert.throws(() => f.git("commit", "-m", "Rejected checkpoint"));
+  rmSync(hook);
   f.run("task-retry", ["--task", "T1"]);
+  const recoveredIndex = JSON.parse(
+    f.git("show", ":docs/project/changes/sample/change.json"),
+  );
+  assert.equal(recoveredIndex.tasks.T1.status, "doing");
+  assert(!recoveredIndex.tasks.T1.verification);
+  assert.equal(recoveredIndex.title, "Staged title");
+  assert.equal(f.state().title, "Unstaged title");
   assert.equal(f.state().tasks.T1.status, "doing");
   assert(!f.state().tasks.T1.verification);
   f.run("task-block", ["--task", "T1", "--reason", "External data missing"]);
@@ -368,4 +387,34 @@ test("execution requires a published archived dependency already integrated in t
   f.git("push", "-u", "origin", "HEAD");
   f.run("execute", [], 0, "next");
   assert.equal(f.state("next").stage, "execution");
+});
+
+test("squash integration accepts explicit delivery evidence without inventing ancestry", (t) => {
+  const f = fixture(t);
+  const remote = join(f.root, "remote.git");
+  execFileSync("git", ["init", "--bare", remote], { stdio: "ignore" });
+  f.git("remote", "add", "origin", remote);
+  f.create();
+  f.begin();
+  f.done();
+  f.verify();
+  f.accept();
+  f.archive();
+  writeFileSync(join(f.root, ".gitignore"), "remote.git/\n");
+  writeFileSync(join(f.root, "delivery.txt"), "upstream delivery\n");
+  f.commit();
+  f.git("push", "-u", "origin", "HEAD");
+  const sourceCommit = f.git("rev-parse", "HEAD");
+  f.git("switch", "main");
+  f.git("merge", "--squash", "codex/testing");
+  f.git("commit", "-m", "Squash accepted upstream");
+  f.git("switch", "-c", "codex/downstream");
+  f.create("small", "next", ["--depends-on", "sample"]);
+  f.run("task-add", ["--title", "Use upstream"], 0, "next");
+  f.run("execute", [], 1, "next");
+  const note = `Verified delivery.txt and archived sample after squash ${f.git("rev-parse", "HEAD")}`;
+  const result = f.run("execute", ["--availability-note", note], 0, "next");
+  assert.equal(result.state.stage, "execution");
+  assert.equal(result.availability[0].sourceCommit, sourceCommit);
+  assert.equal(result.availability[0].evidence, note);
 });
