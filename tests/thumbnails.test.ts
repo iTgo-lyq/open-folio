@@ -242,7 +242,7 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     const reader = new GitReader(directory, f.remote, "file");
     const run = reader.run.bind(reader);
     reader.run = (...args: Parameters<GitReader["run"]>) => {
-      if (args[0][0] === "cat-file") {
+      if (args[0][0] === "cat-file" && args[0][1] === "blob") {
         blobReads++;
         if (args[0][2] === otherBlob) unrelatedReads++;
       }
