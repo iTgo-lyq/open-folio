@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "change-lifecycle-views",
+  "title": "按 Change 状态简化浏览视图",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/change-lifecycle-views",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "简化状态范围、列表与详情并验证交付",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "dependsOn": [
+    "change-prototype-preview"
+  ]
+}
