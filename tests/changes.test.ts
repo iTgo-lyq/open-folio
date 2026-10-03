@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, rm, mkdir, rename } from "node:fs/promises";
+import { rm, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
-import vm from "node:vm";
+import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
 import { changeSchema } from "../src/server/schema.ts";
 import { parsePlan, cyclicNodes } from "../src/server/plan.ts";
 import {
@@ -55,16 +55,6 @@ const completed = (id: string): ChangeState =>
   });
 
 test("strict schema agrees with current skill hook on shared structural examples", async () => {
-  const hook = await readFile(
-    ".agents/skills/spec-trail/setup/scripts/pre-commit.js",
-    "utf8",
-  );
-  const context = vm.createContext({});
-  vm.runInContext(
-    hook.slice(0, hook.indexOf("async function main()")) +
-      '\nglobalThis.validate = (v) => { const e = []; change(v, "", e); return e; };',
-    context,
-  );
   const samples: unknown[] = [
     state("normal"),
     state("cancelled", {
@@ -109,7 +99,7 @@ test("strict schema agrees with current skill hook on shared structural examples
   for (const sample of samples)
     assert.equal(
       changeSchema.safeParse(sample).success,
-      context.validate(sample).length === 0,
+      validateChange(sample).length === 0,
       JSON.stringify(sample),
     );
 });

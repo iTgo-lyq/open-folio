@@ -95,7 +95,9 @@
     },
     "T12": {
       "title": "封装 Change 状态操作并修正历史记录",
-      "status": "doing"
+      "status": "done",
+      "verification": "语义命令与共享 hook 校验完成；47项核心（含8项真实Git流程测试）、5项setup/hook、类型/格式及三个skill校验通过。历史时间已在所属分支更正推送，严格时间校验保留。",
+      "commitTitle": "change-prototype-preview T12: add semantic Change state commands"
     },
     "T13": {
       "title": "独立复核状态工具与合入准备",

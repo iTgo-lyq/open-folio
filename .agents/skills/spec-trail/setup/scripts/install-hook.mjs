@@ -25,14 +25,15 @@ try {
   }).trim();
   if (git(["rev-parse", "--is-bare-repository"]) === "true") throw new Error("Choose a repository with a working tree.");
   cwd = git(["rev-parse", "--show-toplevel"]);
-  const contractSource = fileURLToPath(new URL("../../prototype/scripts/contract.mjs", import.meta.url));
-  const contractPath = join(cwd, ".agents/skills/spec-trail/prototype/scripts/contract.mjs");
-  const contractBody = readFileSync(contractSource, "utf8");
-  const existingContract = readHook(contractPath);
-  if (existingContract !== undefined && existingContract !== contractBody) {
-    console.log(`INTEGRATION_REQUIRED: existing prototype contract preserved: ${contractPath}`);
-    process.exit(2);
-  }
+  const resources = ["prototype/scripts/contract.mjs", "scripts/state-schema.mjs"];
+  const copies = resources.map(relative => {
+    const sourcePath = fileURLToPath(new URL(`../../${relative}`, import.meta.url));
+    const path = join(cwd, ".agents/skills/spec-trail", relative);
+    const body = readFileSync(sourcePath, "utf8");
+    const existing = readHook(path);
+    if (existing !== undefined && existing !== body) throw Error(`INTEGRATION_REQUIRED: existing shared validator preserved: ${path}`);
+    return { path, body, existing };
+  });
   const scriptBody = readFileSync(source, "utf8");
   const script = join(cwd, scriptPath);
   const existingScript = readHook(script);
@@ -45,8 +46,10 @@ try {
     console.log(`INTEGRATION_REQUIRED: existing tracked hook preserved: ${hook}\nInspect it and append the validation command after existing checks:\n${command}`);
     process.exitCode = 2;
   } else {
-    mkdirSync(dirname(contractPath), { recursive: true });
-    if (existingContract === undefined) writeFileSync(contractPath, contractBody, { flag: "wx", mode: 0o644 });
+    for (const { path, body, existing } of copies) {
+      mkdirSync(dirname(path), { recursive: true });
+      if (existing === undefined) writeFileSync(path, body, { flag: "wx", mode: 0o644 });
+    }
     mkdirSync(dirname(script), { recursive: true });
     if (existingScript === undefined) writeFileSync(script, scriptBody, { flag: "wx", mode: 0o644 });
     mkdirSync(dirname(hook), { recursive: true });
@@ -73,5 +76,5 @@ try {
   }
 } catch (error) {
   console.error(`SpecTrail setup: ${error.message}`);
-  process.exitCode = 1;
+  process.exitCode = error.message.startsWith("INTEGRATION_REQUIRED:") ? 2 : 1;
 }

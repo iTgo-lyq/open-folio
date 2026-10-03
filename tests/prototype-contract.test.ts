@@ -1,10 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, symlink } from "node:fs/promises";
+import { symlink } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { resolve, join } from "node:path";
-import vm from "node:vm";
-import * as contract from "../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
 import { changeSchema, prototypeSchema } from "../src/server/schema.ts";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
@@ -36,16 +35,6 @@ const state = (previews?: unknown) => ({
 });
 
 test("prototype contract and hook agree for page/component variants and reject malformed extensions", async () => {
-  const context = vm.createContext({ shared: contract });
-  const hook = await readFile(
-    ".agents/skills/spec-trail/setup/scripts/pre-commit.js",
-    "utf8",
-  );
-  vm.runInContext(
-    hook.slice(0, hook.indexOf("async function main()")) +
-      '\nprototypeContract = shared; globalThis.check = v => { const e=[]; change(v,"",e); return e; };',
-    context,
-  );
   const cases = [
     undefined,
     [],
@@ -81,7 +70,7 @@ test("prototype contract and hook agree for page/component variants and reject m
     const value = state(previews);
     assert.equal(
       changeSchema.safeParse(value).success,
-      context.check(value).length === 0,
+      validateChange(value).length === 0,
       JSON.stringify(previews),
     );
   }

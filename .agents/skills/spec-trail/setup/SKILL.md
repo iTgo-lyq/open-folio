@@ -32,7 +32,7 @@ description: 首次在 Git 仓库持久化接入 SpecTrail 时，登记守护分
 ## 校验范围
 
 - 只检查暂存区中本次新增、修改的 `docs/project/workflow.json`、`docs/project/changes/<id>/change.json` 和 `docs/project/archive/<date>-<id>/change.json`。重命名按目标文件检查，删除和未改动的历史文件不检查。
-- 按主 skill 的 TypeScript 声明检查必需字段、类型、枚举、非空文本、带时区的有效时间、任务编号、未知字段及数组重复项，包含 `dependsOn`。
+- 共享主 skill 的 `scripts/state-schema.mjs`，按主 skill 的 TypeScript 声明检查必需字段、类型、枚举、非空文本、带时区的有效时间、任务编号、未知字段及数组重复项，包含 `dependsOn`。
 - 只保留明确的字段关联：`blocked` 任务需要 `reason`，`cancelled` Change 需要 `cancellation`。
 - 读取 Git 本次实际提交的暂存区版本，保留 `GIT_INDEX_FILE`。失败输出文件、字段和原因并阻止提交；不修改文件或暂存区。
 - 确认是否有效、依赖是否满足、任务是否真正完成以及合码条件由 Agent 按主工作流判断。hook 不解析 Markdown，也不增加开发、归档或合码门禁。

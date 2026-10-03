@@ -105,3 +105,13 @@
 原 10681/11356 私有验收入口已切换到新构建并刷新中心 Git。正式实例经本地认证代理验证三个真实入口的截图、桌面与 320px 手机卡片、浮层边界及来源跳转，原有 1440/834/390/640 CSS px 预览、局部交互和内联资源正常；无浏览器异常或额外子资源请求。实际截图留在本地 artifacts/prototype-content-live-desktop.png、prototype-content-live-mobile.png 和 prototype-content-info-mobile.png，不提交到 Git。真实网关匿名请求仍为 401，登录体验沿用人工验收边界。
 
 独立增量评审无可行动问题，3 个隔离附加浏览器探针覆盖焦点、长文案、多来源和停用，详见 Review。A12 与受影响 A10/A11 已核对，T1–T10 的既有记录与未修改部分证据保持有效。
+
+## T12：状态语义命令与历史时间修正
+
+新增主 skill 的零依赖 change.mjs，覆盖创建、确认、任务推进/阻塞/提交失败恢复、执行、等待/恢复、返工、验证/验收/Specs/归档、取消及原型关联。共用抽出的 state-schema.mjs 与 staged hook 字段校验；setup 安装器同步共享校验，保持 ESM/CommonJS 及无 package.json 仓库可用。主 skill 和 prototype 子 skill 改为语义调用，正文仍直接编辑，不新增远端写入权限。
+
+时间统一 Date.toISOString 的 UTC 三位毫秒格式，关闭步骤按真实时钟与前步严格比较，不加容差。当前 small-change-auto-archive 的 specs/archive 原记录截断了 .080 毫秒，按用户明确指令在其所属分支以 aba24ee 更正为与前步一致的记录时刻并推送，再普通 merge 到本分支；未改写 Git 历史，未把原事件改为当前日期。
+
+命令限定 Change 主分支、当前项目路径和活动状态；仓库锁、原文复查和同目录 rename 避免并发覆盖及部分 JSON。完成任务冻结，提交失败仅可恢复未提交 done；归档目标冲突、字段/参数错误、暂停未解除、越级关闭、符号链接和已取消/归档写入均明确拒绝。归档含两次文件系统操作，常规异常回退，强制终止后的恢复边界已在命令说明写明。
+
+验证：npm test 的 47 项核心（含 8 项新真实临时 Git 生命周期）通过；setup 的 5 项安装/hook 回归、类型/格式/diff 与三个 skill quick_validate 通过。流程覆盖 small、medium/large 确认与返工、显式验收、任务/取消/等待、历史时间精度、原型关联及已推送依赖。实际 T12 完成状态已用新命令生成，后续关闭继续用脚本。

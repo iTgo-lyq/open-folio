@@ -52,7 +52,7 @@ node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 
 ## 关联 Change
 
-直接编辑 `change.json.previews`，保留其他状态字段；不生成 prototype.json。关联只在项目 enabled 后新增；id 为当前 Change 内唯一 kebab-case，标题非空，path 是包内 preview 入口目录。多个 Change 可以复用同一入口。
+将关联数组写入临时 JSON 文件，调用主 skill 的 `change.mjs previews-set --change <id> --file <临时文件>`；脚本仅更新 `change.json.previews` 并保留其他状态字段，不生成 prototype.json。关联只在项目 enabled 后新增；id 为当前 Change 内唯一 kebab-case，标题非空，path 是包内 preview 入口目录。多个 Change 可以复用同一入口。
 
 ```json
 [
