@@ -32,12 +32,12 @@
     },
     "specs": {
       "result": "synced",
-      "at": "2026-10-02T15:20:19+08:00",
+      "at": "2026-10-02T07:20:19.080Z",
       "summary": "同步 docs/project/specs/project-knowledge/change-tracking/spec.md 的验收展示与实际记录规则，说明 small 自验收和人工验收均以来源为准。"
     },
     "archive": {
       "result": "done",
-      "at": "2026-10-02T15:20:19+08:00",
+      "at": "2026-10-02T07:20:19.080Z",
       "summary": "按 small 直接归档规则保留完整 Requirement、Execution 和状态记录，原 Change 目录已移除。",
       "path": "docs/project/archive/2026-10-02-small-change-auto-archive"
     }
