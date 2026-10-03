@@ -4,7 +4,7 @@
   "title": "Change 关联项目原型包与静态预览",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-prototype-preview",
   "dependsOn": [
     "spec-change-workbench"
@@ -106,7 +106,19 @@
       "commitTitle": "change-prototype-preview T13: complete independent workflow review"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-03T16:41:43.033Z",
+      "summary": "T1–T13已验证推送；原型与缓存沿用完整核心/浏览器及真实实例证据；状态工具经47项核心、5项hook、修正后9项命令测试、独立forward-test与R10/R11复验、类型/格式/skill校验通过。生产构建通过，无剩余可行动问题；main集成在归档后执行并核对运行结果。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-03T16:41:43.094Z",
+      "summary": "用户明确要求当前交付合入main，按此交付授权完成验收与关闭；本轮语义脚本与历史时间修正已验证，后续无需验收分支特例。",
+      "source": "本会话2026-10-04：把change.json修改操作封装为js脚本；直接修改历史时间记录；合入main吧，不需要为了验收搞特殊逻辑。"
+    }
+  },
   "rework": {
     "at": "2026-10-03T16:18:26.247Z",
     "reason": "用户要求用语义 JS 脚本维护 Change 状态、直接更正历史时间，并将交付合入 main。",
