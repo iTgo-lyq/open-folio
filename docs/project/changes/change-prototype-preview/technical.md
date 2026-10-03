@@ -203,3 +203,10 @@ base-uri 'none'; form-action 'none'; frame-ancestors 'self';
 | A9       | 回归现有 Spec/Change 核心与浏览器测试、类型检查和生产构建；对严格 schema 的升级顺序做兼容 fixture 验证。                                                                                                                             |
 
 本地同域沙箱机制通过带 HttpOnly/SameSite=Lax Cookie 认证的 Chromium 探针验证；正式导出工具、Next 路由和完整 Git 读取链路的结果见 Execution，真实网关已登录会话的体验留待用户验收。若产物依赖外部资源，修复用户侧导出而非移除 sandbox 或开放匿名读取。证据边界见 [Research](./research.md)。large Change 的独立评审覆盖字段一致性、历史可达性和安全边界，问题解决后再进入人工验收；独立评审及复验结论见 Review。
+
+
+## 状态语义脚本
+
+主 skill 增加本地 change.mjs CLI，通过明确命令更新现有 JSON 契约，不引入通用任意字段 patch。共享字段校验与 hook 保持一致；每次 mutation 检查当前 Change 主分支、守护分支和状态，创建不覆盖，已完成任务保留，取消/归档默认不可编辑。时间由脚本用 Date.toISOString 统一生成；时钟早于已有关闭步骤时拒绝，不伪造未来时间。写入采用同目录临时文件与 rename，仓库级锁避免并发丢失更新；失败保留原文。归档移动既有目录，冲突拒绝，原型保留标签沿用现有工具。命令记录的确认/验收摘要仍由 Agent 根据真实授权提供，不把脚本成功冒充测试通过或远端持久化。
+
+当前历史勘误在所属分支按用户授权将 specs/archive 从截断到秒的时间恢复为与前步骤一致的毫秒时间，通过普通提交和 merge 同步，不改写 Git 历史。验收后原型能力与工具约定写入 Specs，归档与标签推送完成再合入 main，配置切回 main 并刷新；不拆分或新增配置来源字段。

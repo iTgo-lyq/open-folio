@@ -109,3 +109,12 @@ OpenFolio 自动按需生成截图并保存为可重建缓存；用户无需提�
 | [Git fetch 文档](https://git-scm.com/docs/git-fetch)                                                                                                                                     | 2026-10-03 | 历史引用需明确拉取和保留；当前只拉分支的实现不足以兑现归档回看。              |
 
 截图实现参考：[Playwright 截图](https://playwright.dev/docs/api/class-page#page-screenshot)、[浏览器上下文](https://playwright.dev/docs/api/class-browser#browser-new-context)及 [Chromium 启动沙箱](https://playwright.dev/docs/api/class-browsertype#browser-type-launch)，2026-10-03 核对。运行环境已实测 chromiumSandbox 启动；浏览器为新增运行依赖，截图缓存为派生文件，不是 Change 交付物。
+
+
+## 补充：Change 状态操作与正式分支交付
+
+按用户 2026-10-04 指令，将常用 change.json 修改封装成主 skill 自带的零依赖 JS 命令：创建、确认、任务推进、执行、等待/恢复、返工、关闭四步、取消及原型关联。Agent 传语义和证据，脚本维护阶段、清理失效状态、生成统一时间并校验写入；正文继续由 Agent 编辑。脚本不替用户作确认或验收决定，不自动提交推送；历史纠错仅按用户本次明确授权更正既有记录，不放宽读取端校验。
+
+A13：真实临时 Git 仓库完成 small 和 medium/large 流程、返工/取消及原型关联，错误参数、错分支、归档修改、越级关闭和重复操作不能破坏文件；毫秒时间统一、关闭顺序有效；skill 给出直接可用的调用入口。
+
+A14：依用户明确合入授权，完成验证、Specs 同步及归档保留引用后合入 main，服务 specBranch 恢复 main；原型预览与截图继续可用，历史时间和守护分支两条诊断消失。不新增验收环境专用逻辑。
