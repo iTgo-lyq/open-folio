@@ -1,10 +1,10 @@
 # 项目知识工作台
 
-OpenFolio 从已配置中心 Git 仓库的已推送记录提供 [Spec 阅读](./spec-reading/spec.md)与 [Change 追踪](./change-tracking/spec.md)。工程文档和流程继续由 SpecTrail 维护，工作台只读展示，不创建或修改工程记录。
+OpenFolio 从已配置中心 Git 仓库的已推送记录提供 [Spec 阅读](./spec-reading/spec.md)、[Change 追踪](./change-tracking/spec.md)与[原型浏览](./prototype-preview/spec.md)。工程文档和流程继续由 SpecTrail 维护，工作台只读展示，不创建或修改工程记录。
 
 ## 能力边界
 
-- 主导航包含 Specs 与 Changes，默认进入 Specs；没有原型管理、Agent 调度或流程写入功能。
+- 主导航包含 Specs、Changes 与原型，默认进入 Specs；提供原型总览和静态预览，没有在线编辑、Agent 调度或工作台流程写入。
 - 用户可以切换已配置项目、选择 Specs 来源分支、搜索文档和刷新远端记录。空项目显示真实空状态，不填充演示数据。
 - 页面展示来源分支、提交、文件路径和快照读取时间。本地工作区、暂存区及未推送提交不属于采集来源。
 - 蓝紫背景、可收起侧栏和内嵌阅读区组成统一外壳。桌面提供详情抽屉，手机提供可返回的阅读区域；键盘与 Escape 支持导航、关闭最上层弹层和恢复焦点。
@@ -20,7 +20,7 @@ Change 列表跨已推送分支聚合，主来源按 Change 自身的 `branch` �
 
 ## 快照与恢复
 
-服务在私有持久目录维护独立 bare Git 缓存、按 blob 保存的正文和不可变快照，不使用数据库。采集只 fetch 已推送分支，不 checkout 来源工作区、运行仓库脚本或初始化子模块；普通文件以固定 commit、tree 和 blob 读取，符号链接和子模块不作为正文。
+服务在私有持久目录维护独立 bare Git 缓存、按 blob 保存的正文和不可变快照，不使用数据库。采集 fetch 已推送分支及原型归档保留标签，不 checkout 来源工作区、运行仓库脚本或初始化子模块；普通文件以固定 commit、tree 和 blob 读取，符号链接和子模块不作为正文。
 
 完整采集后原子发布快照，每份快照固定各分支的提交及对应文档、Change 和关系索引。同一分支的 JSON 与正文不能混用不同提交；不假设多分支具有同时提交的事务语义。
 
@@ -36,4 +36,4 @@ Change 列表跨已推送分支聚合，主来源按 Change 自身的 `branch` �
 
 默认监听 loopback，远程访问由具有访问控制的 HTTPS 入口提供，实际浏览器来源登记在 `allowedOrigins` 中。应用没有内置团队登录；配置与含私有仓库内容的缓存由运行环境保护。
 
-API 按已配置项目、快照和文档清单检查读取范围，不接收任意本地路径或 Git ref。响应采用 `private, no-store`；刷新接口要求允许的 Host、Origin 和空请求体。凭据与完整 Git 错误输出不返回浏览器。
+API 按已配置项目、快照和文档清单检查读取范围，不接收任意本地路径或 Git ref。文档和流程响应采用 `private, no-store`，原型截图使用私有缓存并强制校验，详见[原型浏览](./prototype-preview/spec.md)；刷新接口要求允许的 Host、Origin 和空请求体。凭据与完整 Git 错误输出不返回浏览器。

@@ -3,7 +3,7 @@
   "id": "change-prototype-preview",
   "title": "Change 关联项目原型包与静态预览",
   "size": "large",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/change-prototype-preview",
   "dependsOn": [
@@ -117,6 +117,17 @@
       "at": "2026-10-03T16:41:43.094Z",
       "summary": "用户明确要求当前交付合入main，按此交付授权完成验收与关闭；本轮语义脚本与历史时间修正已验证，后续无需验收分支特例。",
       "source": "本会话2026-10-04：把change.json修改操作封装为js脚本；直接修改历史时间记录；合入main吧，不需要为了验收搞特殊逻辑。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-03T16:43:58.544Z",
+      "summary": "同步项目工作台/Change追踪的原型入口与授权说明，新增prototype-preview能力（关联、总览、固定预览、隔离与截图缓存）及change-workflow能力（语义命令、时间和失败恢复）。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-03T16:43:58.603Z",
+      "summary": "按用户明确合入main授权关闭并归档完整Change；源码、静态入口与关联保留，提交后发布原型保留标签，随后合入main并将服务基线切回main。",
+      "path": "docs/project/archive/2026-10-04-change-prototype-preview"
     }
   },
   "rework": {
