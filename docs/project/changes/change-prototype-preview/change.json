@@ -4,7 +4,7 @@
   "title": "Change 关联项目原型包与静态预览",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-prototype-preview",
   "dependsOn": [
     "spec-change-workbench"
@@ -76,7 +76,13 @@
       "commitTitle": "change-prototype-preview T8: complete catalog review and production verification"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-03T12:43:01+08:00",
+      "summary": "T1–T8 已提交推送；A1–A9 沿用 T6 独立评审与验证，A10 总览经新隔离上下文 reviewer 审查并复验 R8，无剩余可行动问题。34 项核心、26 项完整浏览器及修正后 6 项总览浏览器、类型/格式、生产构建和真实 Git 正式实例联调通过。已登录私有网关体验留待人工验收。"
+    }
+  },
   "rework": {
     "at": "2026-10-03T12:17:22+08:00",
     "reason": "用户验收反馈要求工作台还应有项目级原型独立页面，方便总览项目已有内容。",
@@ -115,5 +121,9 @@
         "height": 320
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "项目原型独立页面已补齐并更新到原私有验收地址；请验收原型数量、搜索筛选、直接预览和关联 Change 导航。人工验收前保持 active，不归档。"
+  }
 }
