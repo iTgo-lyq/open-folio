@@ -83,7 +83,9 @@
     },
     "T10": {
       "title": "独立复核截图并更新验收环境",
-      "status": "doing"
+      "status": "done",
+      "verification": "独立审阅及最终复验通过，R9 缓存命中重复读取全包的问题已修正；百入口探针单图204→6次blob读取，6张1224→36次。12项核心及9项截图/预览浏览器复验、类型/格式及最终生产构建通过，真实私有实例三个截图和重启缓存复用正常。",
+      "commitTitle": "change-prototype-preview T10: verify screenshot caching and production delivery"
     }
   },
   "closure": {},
