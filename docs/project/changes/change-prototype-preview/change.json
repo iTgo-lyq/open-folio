@@ -101,7 +101,9 @@
     },
     "T13": {
       "title": "独立复核状态工具与合入准备",
-      "status": "doing"
+      "status": "done",
+      "verification": "隔离独立forward-test及R10/R11复验通过，无剩余可行动问题；修正后9项命令测试、类型/格式与生产构建通过。T12既有47项核心/5项hook证据保留，main合入准备就绪。",
+      "commitTitle": "change-prototype-preview T13: complete independent workflow review"
     }
   },
   "closure": {},

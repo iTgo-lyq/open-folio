@@ -106,3 +106,7 @@ reviewer 对 `b89da57` 在隔离副本复验：同一 100×250 KB 样例的单�
 独立复现：任务 done 已暂存、hook 拒绝提交，task-retry 只恢复工作区，暂存仍为 done，未满足主 skill 的失败恢复约定。
 
 修正：task-retry 检查 HEAD 尚未完成，只对当前任务在 index 中的 done 状态恢复 doing 并移除失败提交线索/验证；不重新暂存整份文件，保留其他部分暂存差异。index 冲突或变更拒绝，普通写入失败回退 index。回归通过真实失败 hook，断言工作区与 index 的该任务均 doing、其他不同标题仍保持原部分暂存内容。
+
+### R10/R11 独立复验
+
+reviewer 对 d607f16 在原隔离仓库复验通过，无新增可行动问题：squash 无依据拒绝、提供依据后输出准确源/目标提交并继续，缺少远端关闭记录仍拒绝；task-retry 的工作区/index 均恢复 doing，同时保留不同 title 等部分暂存差异。额外探针验证 dry-run 无修改、注入工作区写入失败后 index 回退、尊重 GIT_INDEX_FILE。未修改共享工作区或真实运行实例。
