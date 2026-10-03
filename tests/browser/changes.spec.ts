@@ -233,3 +233,192 @@ test("document list distinguishes missing, unreadable and not required material"
     page.locator(".document-missing").filter({ hasText: "technical.md" }),
   ).toContainText("当前阶段尚未要求");
 });
+
+test("only active Changes use stage filters and the stage board", async ({
+  page,
+}) => {
+  await page.goto(
+    "/?project=fixture&m=changes&view=board&stage=execution&wait=confirmation",
+  );
+  const scopes = page.getByRole("tablist", {
+    name: "Change 状态",
+    exact: true,
+  });
+  await expect(scopes.getByRole("tab")).toHaveCount(4);
+  await expect(scopes.getByRole("tab", { name: /全部/ })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveValue(
+    "execution",
+  );
+  await page
+    .getByRole("button", {
+      name: "打开 让工程文档成为清晰的阅读体验",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".stage-flow")).toBeVisible();
+  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await scopes.getByRole("tab", { name: /已归档/ }).click();
+  await expect(page).toHaveURL(/scope=completed/);
+  await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
+  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveCount(0);
+  await expect(
+    page.getByRole("combobox", { name: "筛选等待事项" }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "看板视图" })).toHaveCount(0);
+  const row = page.getByRole("button", {
+    name: "打开 接入中心仓库与来源追踪",
+    exact: true,
+  });
+  await expect(row).toContainText("人工验收通过");
+  await expect(row.locator("time")).toHaveAttribute(
+    "datetime",
+    "2026-10-02T08:00:00+08:00",
+  );
+  await expect(row.locator(".task-progress, .badge")).toHaveCount(0);
+  await page.screenshot({
+    path: "artifacts/changes-archived-desktop.png",
+    fullPage: true,
+  });
+  await row.click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.locator(".stage-flow, .overview-progress")).toHaveCount(
+    0,
+  );
+  await expect(drawer.locator(".drawer-badges")).toHaveText("已归档Small");
+  await expect(drawer.locator(".archive-outcome")).toContainText(
+    "人工验收通过",
+  );
+  await page.screenshot({
+    path: "artifacts/change-archived-detail.png",
+    fullPage: true,
+  });
+  await drawer.getByRole("button", { name: "查看验收依据" }).click();
+  await expect(
+    drawer.getByText("归档前阶段：验收", { exact: true }),
+  ).toBeVisible();
+  await expect(drawer.getByText("归档目录完整", { exact: true })).toBeVisible();
+  await drawer.getByRole("tab", { name: "任务", exact: true }).click();
+  await expect(drawer.locator(".task-detail")).toContainText("已完成");
+  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await page.getByRole("button", { name: "任务", exact: true }).click();
+  await page.getByRole("button", { name: "看板视图" }).click();
+  await expect(page.locator(".board-column")).toHaveCount(4);
+  await page.getByRole("button", { name: "变更", exact: true }).click();
+  await expect(page).toHaveURL(/view=list/);
+  await expect(row).toBeVisible();
+});
+
+test("legacy scopes preserve Change deep links and inactive filters normalize", async ({
+  page,
+}) => {
+  await page.goto("/?project=fixture&m=changes&scope=all&c=source-connect");
+  await expect(page).toHaveURL(/scope=active/);
+  await expect(page).toHaveURL(/c=source-connect/);
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("heading", { name: "接入中心仓库与来源追踪", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".stage-flow")).toHaveCount(0);
+  await page.goto(
+    "/?project=fixture&m=changes&scope=completed&stage=execution&wait=pause&view=board",
+  );
+  await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
+  await expect(page.locator(".outcome-list .change-row")).toHaveCount(1);
+  await page
+    .getByRole("textbox", { name: "筛选变更或任务" })
+    .fill("不存在的变更");
+  await expect(
+    page.getByText("没有符合条件的记录", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "清除筛选", exact: true }).click();
+  await expect(page).toHaveURL(/scope=completed/);
+  await expect(page.locator(".outcome-list .change-row")).toHaveCount(1);
+  await page.getByRole("tab", { name: /进行中/ }).click();
+  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("tab", { name: /已归档/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveCount(0);
+});
+
+test("cancelled and invalid records focus on reasons and retain history at 320px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto("/?project=fixture&m=changes&scope=cancelled");
+  const cancelled = page.getByRole("button", {
+    name: "打开 旧版导航实验",
+    exact: true,
+  });
+  await expect(cancelled).toContainText("收敛为统一工作台");
+  await expect(cancelled.locator("time")).toHaveAttribute(
+    "datetime",
+    "2026-10-02T08:00:00+08:00",
+  );
+  await page.screenshot({
+    path: "artifacts/changes-cancelled-mobile.png",
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await cancelled.click();
+  await expect(page.locator(".stage-flow, .overview-progress")).toHaveCount(0);
+  await expect(page.locator(".drawer-badges")).toHaveText("已取消Large");
+  await page.getByRole("tab", { name: "依据", exact: true }).click();
+  await expect(
+    page.getByText("取消时阶段：执行", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await page.getByRole("tab", { name: /来源异常/ }).click();
+  const invalid = page.getByRole("button", {
+    name: "打开 需要核对的来源记录",
+    exact: true,
+  });
+  await expect(invalid).toContainText("schemaVersion");
+  await expect(page.getByRole("button", { name: "看板视图" })).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await invalid.click();
+  await expect(page.locator(".stage-flow, .overview-progress")).toHaveCount(0);
+  await expect(page.locator(".drawer-badges")).toContainText("来源待核对");
+});
+
+test("empty status scopes describe the scope without offering to reset it", async ({
+  page,
+  request,
+}) => {
+  const data = await (
+    await request.get("/api/projects/fixture/workbench")
+  ).json();
+  data.changes = data.changes.filter(
+    (group: { id: string }) => group.id === "source-connect",
+  );
+  await page.route("**/api/projects/fixture/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto("/?project=fixture&m=changes");
+  await expect(
+    page.getByText("暂无进行中的 Change", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "清除筛选" })).toHaveCount(0);
+  await page.getByRole("tab", { name: /来源异常/ }).click();
+  await expect(
+    page.getByText("目前没有来源异常", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: /已归档/ }).click();
+  await expect(
+    page.getByRole("button", {
+      name: "打开 接入中心仓库与来源追踪",
+      exact: true,
+    }),
+  ).toBeVisible();
+});

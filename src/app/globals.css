@@ -1513,6 +1513,30 @@ input {
 .change-row > svg {
   color: #b2c0cb;
 }
+.outcome-list .change-list-head,
+.outcome-list .change-row {
+  grid-template-columns: minmax(220px, 1.1fr) 60px 145px minmax(180px, 1fr) 14px;
+}
+.outcome-time,
+.outcome-source {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #92a4b1;
+  overflow-wrap: anywhere;
+}
+.outcome-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #789080;
+}
+.cancelled .outcome-summary {
+  color: #9c8a80;
+}
 .change-row-title {
   display: flex;
   align-items: center;
@@ -2147,6 +2171,42 @@ input {
   border-color: #eee4dd;
   color: #b99e8a;
 }
+.archive-outcome {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid #e4eee7;
+  background: #f7faf8;
+  border-radius: 8px;
+  padding: 16px 17px;
+  color: #83a18e;
+  margin-bottom: 21px;
+}
+.archive-outcome > svg {
+  flex-shrink: 0;
+}
+.archive-outcome > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.archive-outcome strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.archive-outcome p {
+  color: #789080;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 8px 0;
+}
+.archive-outcome time {
+  display: block;
+  font-size: 10px;
+  color: #93a89b;
+}
+.archive-outcome .text-button {
+  margin-top: 12px;
+}
 .document-list {
   display: flex;
   flex-direction: column;
@@ -2594,6 +2654,17 @@ input {
   }
   .change-row > .size-label {
     font-size: 9px;
+  }
+  .outcome-time,
+  .outcome-source {
+    font-size: 10px;
+    max-width: calc(100% - 38px);
+  }
+  .outcome-summary {
+    flex-basis: calc(100% - 38px);
+    margin-left: 38px;
+    font-size: 11px;
+    -webkit-line-clamp: 3;
   }
   .change-row .task-progress {
     font-size: 9px;

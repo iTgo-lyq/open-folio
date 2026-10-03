@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Dialog } from "radix-ui";
 import {
   AlertCircle,
@@ -50,8 +50,8 @@ const scopes = [
   ["cancelled", "已取消"],
   ["completed", "已归档"],
   ["issues", "来源异常"],
-  ["all", "全部"],
 ] as const;
+type ChangeScope = (typeof scopes)[number][0];
 export function quality(g: ChangeGroup) {
   const c = primaryRecord(g);
   return [
@@ -130,14 +130,31 @@ function Progress({ c }: { c: ChangeCandidate }) {
 }
 export default function Changes() {
   const { data, q, nav, projectId } = useWorkspace();
-  const scope = scopes.some(([key]) => key === q.scope) ? q.scope : "active",
-    view = ["list", "board", "dependencies"].includes(q.view) ? q.view : "list",
-    level = q.level === "tasks" ? "tasks" : "changes";
+  const scope: ChangeScope = scopes.some(([key]) => key === q.scope)
+    ? (q.scope as ChangeScope)
+    : "active";
+  const activeScope = scope === "active";
+  const level = q.level === "tasks" ? "tasks" : "changes";
+  const canBoard = activeScope || level === "tasks";
+  const view =
+    ["list", "board", "dependencies"].includes(q.view) &&
+    (q.view !== "board" || canBoard)
+      ? q.view
+      : "list";
+  useEffect(() => {
+    const patch: Record<string, string | null> = {};
+    if (q.scope && q.scope !== scope) patch.scope = scope;
+    if (!activeScope) {
+      if (q.stage) patch.stage = null;
+      if (q.wait) patch.wait = null;
+    }
+    if (!canBoard && q.view === "board") patch.view = "list";
+    if (Object.keys(patch).length) nav(patch, true);
+  }, [q.scope, q.stage, q.wait, q.view, scope, activeScope, canBoard, nav]);
   const groups = data!.changes;
   const inScope = (g: ChangeGroup, value: string) => {
     const c = primaryRecord(g);
     return (
-      value === "all" ||
       (value === "issues" && quality(g).length > 0) ||
       (value === "completed" && c?.validCompleted) ||
       (value === "active" && c?.state?.status === "active") ||
@@ -155,15 +172,30 @@ export default function Changes() {
           .join(" ")}`
           .toLowerCase()
           .includes(q.filter.toLowerCase())) &&
-      (!q.stage || s?.stage === q.stage) &&
+      (!activeScope || !q.stage || s?.stage === q.stage) &&
       (!q.size || s?.size === q.size) &&
-      (!q.wait ||
+      (!activeScope ||
+        !q.wait ||
         (q.wait === "blocked"
           ? Object.values(s?.tasks ?? {}).some((t) => t.status === "blocked")
           : s?.waitingFor?.kind === q.wait)) &&
       (!q.spec || c?.relatedSpecs.includes(q.spec))
     );
   });
+  const scopeCount = groups.filter((g) => inScope(g, scope)).length;
+  const hasFilters = !!(
+    q.filter ||
+    q.size ||
+    q.spec ||
+    (activeScope && (q.stage || q.wait)) ||
+    (level === "tasks" && q.taskStatus)
+  );
+  const emptyScope = {
+    active: "暂无进行中的 Change",
+    completed: "暂无已归档的 Change",
+    cancelled: "暂无已取消的 Change",
+    issues: "目前没有来源异常",
+  }[scope];
   const specs = [
     ...new Set(groups.flatMap((g) => primaryRecord(g)?.relatedSpecs ?? [])),
   ];
@@ -213,7 +245,18 @@ export default function Changes() {
             role="tab"
             aria-selected={scope === key}
             key={key}
-            onClick={() => nav({ scope: key, c: null })}
+            onClick={() =>
+              nav({
+                scope: key,
+                c: null,
+                stage: null,
+                wait: null,
+                view:
+                  key !== "active" && level === "changes" && view === "board"
+                    ? "list"
+                    : view,
+              })
+            }
           >
             {label}
             <span>{groups.filter((g) => inScope(g, key)).length}</span>
@@ -245,18 +288,20 @@ export default function Changes() {
               ))}
             </select>
           )}
-          <select
-            aria-label="筛选阶段"
-            value={q.stage ?? ""}
-            onChange={(e) => nav({ stage: e.target.value || null })}
-          >
-            <option value="">所有阶段</option>
-            {STAGES.map((s) => (
-              <option value={s} key={s}>
-                {STAGE_LABELS[s]}
-              </option>
-            ))}
-          </select>
+          {activeScope && (
+            <select
+              aria-label="筛选阶段"
+              value={q.stage ?? ""}
+              onChange={(e) => nav({ stage: e.target.value || null })}
+            >
+              <option value="">所有阶段</option>
+              {STAGES.map((s) => (
+                <option value={s} key={s}>
+                  {STAGE_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             aria-label="筛选规模"
             value={q.size ?? ""}
@@ -269,19 +314,21 @@ export default function Changes() {
               </option>
             ))}
           </select>
-          <select
-            aria-label="筛选等待事项"
-            value={q.wait ?? ""}
-            onChange={(e) => nav({ wait: e.target.value || null })}
-          >
-            <option value="">等待 / 阻塞</option>
-            {Object.entries(WAIT_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-            <option value="blocked">任务阻塞</option>
-          </select>
+          {activeScope && (
+            <select
+              aria-label="筛选等待事项"
+              value={q.wait ?? ""}
+              onChange={(e) => nav({ wait: e.target.value || null })}
+            >
+              <option value="">等待 / 阻塞</option>
+              {Object.entries(WAIT_LABELS).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+              <option value="blocked">任务阻塞</option>
+            </select>
+          )}
           {specs.length > 0 && (
             <select
               aria-label="筛选关联能力"
@@ -302,36 +349,43 @@ export default function Changes() {
             { id: "list", title: "列表视图", icon: List },
             { id: "board", title: "看板视图", icon: LayoutGrid },
             { id: "dependencies", title: "依赖视图", icon: Network },
-          ].map((v) => (
-            <button
-              key={v.id}
-              aria-label={v.title}
-              aria-pressed={view === v.id}
-              onClick={() => nav({ view: v.id })}
-            >
-              <v.icon size={15} />
-            </button>
-          ))}
+          ]
+            .filter((v) => v.id !== "board" || canBoard)
+            .map((v) => (
+              <button
+                key={v.id}
+                aria-label={v.title}
+                aria-pressed={view === v.id}
+                onClick={() => nav({ view: v.id })}
+              >
+                <v.icon size={15} />
+              </button>
+            ))}
         </div>
       </div>
       <div className="changes-scroll" ref={scroll}>
         {!filtered.length ? (
           <Empty
             title={
-              groups.length ? "没有符合条件的记录" : "还没有已推送的 Change"
+              !groups.length
+                ? "还没有已推送的 Change"
+                : scopeCount
+                  ? "没有符合条件的记录"
+                  : emptyScope
             }
           >
             <p>
-              {groups.length
-                ? "调整筛选条件，查看其他变更。"
-                : "通过工程流程建立 Change 并推送后，将在这里呈现。"}
+              {!groups.length
+                ? "通过工程流程建立 Change 并推送后，将在这里呈现。"
+                : scopeCount
+                  ? "调整筛选条件，查看此类变更。"
+                  : "可切换状态标签查看其他变更。"}
             </p>
-            {groups.length > 0 && (
+            {hasFilters && (
               <button
                 className="button"
                 onClick={() =>
                   nav({
-                    scope: "all",
                     stage: null,
                     size: null,
                     wait: null,
@@ -355,6 +409,8 @@ export default function Changes() {
           <TasksView groups={filtered} board={view === "board"} open={open} />
         ) : view === "board" ? (
           <ChangeBoard groups={filtered} open={open} />
+        ) : !activeScope ? (
+          <OutcomeList groups={filtered} scope={scope} open={open} />
         ) : (
           <div className="change-list">
             <div className="change-list-head">
@@ -385,14 +441,14 @@ export default function Changes() {
                     </div>
                   </div>
                   <span>
-                    {s ? (
+                    {s && activeFlow(g) ? (
                       <Badge tone={s.stage}>{stageText(s)}</Badge>
                     ) : (
                       <Badge tone="warning">来源待核对</Badge>
                     )}
                   </span>
                   <span className="size-label">{s && sizes[s.size]}</span>
-                  <span>{c && <Progress c={c} />}</span>
+                  <span>{c && activeFlow(g) && <Progress c={c} />}</span>
                   <span className="row-context">
                     {quality(g).length ? (
                       <span className="warning-text">
@@ -429,6 +485,106 @@ export default function Changes() {
     </section>
   );
 }
+function activeFlow(group: ChangeGroup) {
+  return (
+    primaryRecord(group)?.state?.status === "active" &&
+    !quality(group).some((diagnostic) => diagnostic.severity === "error")
+  );
+}
+function OutcomeList({
+  groups,
+  scope,
+  open,
+}: {
+  groups: ChangeGroup[];
+  scope: Exclude<ChangeScope, "active">;
+  open: (id: string) => void;
+}) {
+  return (
+    <div className={`change-list outcome-list ${scope}`}>
+      <div className="change-list-head">
+        <span>变更</span>
+        <span>规模</span>
+        <span>
+          {scope === "completed"
+            ? "归档时间"
+            : scope === "cancelled"
+              ? "取消时间"
+              : "主来源"}
+        </span>
+        <span>
+          {scope === "completed"
+            ? "完成结果"
+            : scope === "cancelled"
+              ? "取消原因"
+              : "来源问题"}
+        </span>
+        <span />
+      </div>
+      {groups.map((group) => {
+        const c = primaryRecord(group),
+          state = c?.state;
+        const at =
+          scope === "completed"
+            ? state?.closure.archive?.at
+            : state?.cancellation?.at;
+        const messages = quality(group);
+        const summary =
+          scope === "completed"
+            ? (state?.closure.acceptance?.summary ??
+              state?.closure.verification?.summary)
+            : scope === "cancelled"
+              ? state?.cancellation?.reason
+              : messages.map((d) => d.message).join("；");
+        return (
+          <button
+            className="change-row"
+            key={group.id}
+            onClick={() => open(group.id)}
+            aria-label={`打开 ${group.title}`}
+          >
+            <div className="change-row-title">
+              <span
+                className={`change-symbol ${scope === "issues" ? "unknown" : (state?.status ?? "unknown")}`}
+              >
+                {scope === "issues" ? (
+                  <AlertCircle size={16} />
+                ) : (
+                  <GitPullRequest size={16} />
+                )}
+              </span>
+              <div>
+                <strong>{group.title}</strong>
+                <code>{group.id}</code>
+              </div>
+            </div>
+            <span className="size-label">
+              {state ? sizes[state.size] : "—"}
+            </span>
+            {scope === "issues" ? (
+              <span className="outcome-source">
+                {c?.branch ?? "主来源未确定"}
+              </span>
+            ) : at ? (
+              <time className="outcome-time" dateTime={at}>
+                {formatTime(at)}
+              </time>
+            ) : (
+              <span className="muted">未记录</span>
+            )}
+            <span
+              className={`outcome-summary${scope === "issues" ? " warning-text" : ""}`}
+              title={summary}
+            >
+              {summary || "未记录"}
+            </span>
+            <ChevronRight size={14} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 function ChangeBoard({
   groups,
   open,
@@ -436,14 +592,16 @@ function ChangeBoard({
   groups: ChangeGroup[];
   open: (id: string, tab?: string) => void;
 }) {
-  const unknown = groups.filter((g) => !primaryRecord(g)?.state);
+  const unknown = groups.filter((g) => !activeFlow(g));
   return (
     <div className="board">
       {[
         ...STAGES.map((s) => ({
           id: s,
           title: STAGE_LABELS[s],
-          groups: groups.filter((g) => primaryRecord(g)?.state?.stage === s),
+          groups: groups.filter(
+            (g) => activeFlow(g) && primaryRecord(g)?.state?.stage === s,
+          ),
         })),
         ...(unknown.length
           ? [{ id: "unknown", title: "来源待核对", groups: unknown }]
@@ -475,7 +633,7 @@ function ChangeBoard({
                   {s?.status !== "active" && s && (
                     <Badge>{STATUS_LABELS[s.status]}</Badge>
                   )}
-                  {s?.waitingFor && (
+                  {activeFlow(g) && s?.waitingFor && (
                     <div className="card-wait">
                       <Clock3 size={12} />
                       {WAIT_LABELS[s.waitingFor.kind]}
@@ -488,7 +646,7 @@ function ChangeBoard({
                     </div>
                   )}
                   <div className="card-bottom">
-                    {c && <Progress c={c} />}
+                    {c && activeFlow(g) && <Progress c={c} />}
                     <ChevronRight size={13} />
                   </div>
                 </button>
@@ -732,6 +890,9 @@ export function ChangeDrawer() {
     g = data?.changes.find((g) => g.id === q.c),
     c = g ? primaryRecord(g) : null,
     s = c?.state;
+  const ongoing = !!g && activeFlow(g);
+  const sourceIssue =
+    !!g && quality(g).some((diagnostic) => diagnostic.severity === "error");
   const tab = [
     "overview",
     "tasks",
@@ -788,9 +949,15 @@ export function ChangeDrawer() {
             <div className="drawer-badges">
               {s ? (
                 <>
-                  <Badge tone={s.status}>{STATUS_LABELS[s.status]}</Badge>
+                  <Badge tone={sourceIssue ? "warning" : s.status}>
+                    {sourceIssue
+                      ? "来源待核对"
+                      : c?.validCompleted
+                        ? "已归档"
+                        : STATUS_LABELS[s.status]}
+                  </Badge>
                   <Badge>{sizes[s.size]}</Badge>
-                  <Badge tone={s.stage}>{stageText(s)}</Badge>
+                  {ongoing && <Badge tone={s.stage}>{stageText(s)}</Badge>}
                 </>
               ) : (
                 <Badge tone="warning">来源待核对</Badge>
@@ -799,7 +966,7 @@ export function ChangeDrawer() {
                 <Badge tone="warning">{quality(g).length} 项来源提示</Badge>
               )}
             </div>
-            {s && <Flow state={s} relations={g!.relations} />}
+            {s && ongoing && <Flow state={s} relations={g!.relations} />}
           </div>
           <div
             className="drawer-tabs"
@@ -861,7 +1028,7 @@ export function ChangeDrawer() {
             ) : (
               <>
                 <Diagnostics items={quality(g)} />
-                {s?.waitingFor && (
+                {ongoing && s?.waitingFor && (
                   <div className="waiting-card">
                     <Clock3 size={17} />
                     <div>
@@ -880,12 +1047,30 @@ export function ChangeDrawer() {
                     </div>
                   </div>
                 )}
+                {s && c.validCompleted && (
+                  <div className="archive-outcome">
+                    <CheckCircle2 size={18} />
+                    <div>
+                      <strong>交付已归档</strong>
+                      <p>{s.closure.acceptance?.summary}</p>
+                      <time dateTime={s.closure.archive!.at}>
+                        归档于 {formatTime(s.closure.archive!.at)}
+                      </time>
+                      <button
+                        className="text-button"
+                        onClick={() => nav({ ct: "evidence" })}
+                      >
+                        查看验收依据 <ChevronRight size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <SectionTitle>目标与材料</SectionTitle>
                 <p className="subtle-note">
                   目标和验收以 Requirement 正文为准。
                 </p>
                 <DocumentList c={c} shortlist />
-                {s && (
+                {s && ongoing && (
                   <>
                     <SectionTitle>
                       {s.size === "xlarge" ? "子项进展" : "任务进展"}
@@ -941,6 +1126,7 @@ export function ChangeDrawer() {
                   </>
                 )}
                 {s &&
+                  ongoing &&
                   (s.stage === "close" ||
                     Object.keys(s.closure).length > 0) && <Closure state={s} />}
                 <SectionTitle>主来源</SectionTitle>
@@ -1262,6 +1448,19 @@ function Evidence({ c, group: g }: { c: ChangeCandidate; group: ChangeGroup }) {
   return (
     <>
       <Diagnostics items={quality(g)} />
+      {s && !activeFlow(g) && (
+        <>
+          <SectionTitle>流程记录</SectionTitle>
+          <p className="subtle-note">
+            {s.status === "cancelled"
+              ? "取消时阶段"
+              : c.validCompleted
+                ? "归档前阶段"
+                : "记录阶段"}
+            ：{stageText(s)}
+          </p>
+        </>
+      )}
       <SectionTitle>确认记录</SectionTitle>
       {s ? (
         Object.entries(s.confirmations).length ? (
