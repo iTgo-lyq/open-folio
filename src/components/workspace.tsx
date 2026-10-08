@@ -108,7 +108,7 @@ function Shell() {
           onClick={toggle}
           aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
         >
-          <img src="/brand/openfolio-mark-deep-blue.png" alt="OpenFolio" />
+          <img src="/brand/openfolio-mark.png" alt="OpenFolio" />
           <span className="restore-handle" />
         </button>
         {navigation}
