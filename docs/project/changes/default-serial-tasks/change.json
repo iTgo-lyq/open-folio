@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "default-serial-tasks",
+  "title": "任务默认串行与显式执行顺序统一校验",
+  "size": "medium",
+  "status": "active",
+  "stage": "execution",
+  "branch": "codex/default-serial-tasks",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-09T07:59:01.591Z",
+      "summary": "用户确认默认按任务编号串行，执行顺序表可选；显式无效安排报错，并同步流程命令与工作台。",
+      "source": "本会话：默认就是每个任务串行就好了；优化吧"
+    },
+    "technical": {
+      "at": "2026-10-09T07:59:01.653Z",
+      "summary": "沿用已确认方向，通过共享零依赖任务顺序模块统一写入约束和读取展示，关闭前复核，不扩展 hook 门禁。",
+      "source": "本会话：优化吧"
+    },
+    "plan": {
+      "at": "2026-10-09T07:59:01.712Z",
+      "summary": "交付共享顺序、流程约束、工作台展示和回归，按已确认串行及显式覆盖规则验证。",
+      "source": "本会话：优化吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "默认串行及显式顺序统一校验",
+      "status": "doing"
+    }
+  },
+  "closure": {}
+}
