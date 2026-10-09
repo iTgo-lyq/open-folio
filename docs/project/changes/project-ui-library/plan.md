@@ -6,7 +6,7 @@
 
 ## T1 建立基础 UI 包与前端开发规范
 
-交付：增加 `@open-folio/ui` workspace，抽取 Button、IconButton、Badge、EmptyState 与共享 token，供主应用真实消费；建立项目级前端开发指引及协作入口，明确组件职责、公共导出、样式、状态、无障碍与质量命令。
+交付：增加 `@open-folio/ui` workspace，抽取 Button、IconButton、Badge、EmptyState 与共享 token，供主应用真实消费；在 AGENTS.md 维护精简的前端开发规范，明确组件职责、公共导出、样式、状态、无障碍与质量命令。
 
 验收：至少一个组件在主应用使用公共包入口；业务状态映射仍由主应用决定；公共主题只有一个来源；类型和样式边界符合指引。指引可用于定位组件及完成维护，不要求个人环境配置。覆盖需求验收 1、2、4、6–8 中与共享实现有关的部分。
 
