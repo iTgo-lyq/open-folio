@@ -4,7 +4,7 @@
   "title": "SpecTrail setup 检查与业务 hook 接入解耦",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/spec-trail-setup-check",
   "confirmations": {
     "requirement": {
@@ -31,5 +31,15 @@
       "commitTitle": "spec-trail-setup-check T1: separate readiness checks from hook integration"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-09T07:39:17.852Z",
+      "summary": "setup 10 项与项目 48 项测试通过，主/setup skill 校验通过；独立 Agent 完整评审及共享模块导出缺口修正复验通过。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立评审已通过，等待用户验收；验收后同步 Specs 并归档。"
+  }
 }
