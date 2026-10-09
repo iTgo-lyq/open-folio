@@ -22,4 +22,6 @@ Markdown 回归覆盖数字编号、文字 Plan、显式并行、缺表/损坏�
 
 # 验收与后续
 
-本 Change 为 medium，等待用户验收。验收后更新 Change 工作流和 Change 读取的 Specs，再归档；当前未同步 Specs，未合入 main。此前 setup 检查 Change 保留在原分支，不改写其完成任务或验收记录。
+用户明确要求“两个change都归档吧，然后合入 main”，据此记录本 Change 的用户验收与合码授权。同步 change-workflow 的任务执行安排、project-knowledge/change-tracking 的顺序读取契约，以及 README 的阅读规则。
+
+归档前已普通 merge 接入 setup 检查的已归档交付，无文本或行为冲突。组合版本的 setup 10 项测试、项目 54 项测试、类型检查、主/setup skill 校验均通过；不改写此前 setup 的完成任务或归档材料。两个 Change 全部归档后合入 main，最终集成记录保留在 Git。
