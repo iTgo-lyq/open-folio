@@ -4,7 +4,7 @@
   "title": "任务默认串行与显式执行顺序统一校验",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/default-serial-tasks",
   "confirmations": {
     "requirement": {
@@ -31,5 +31,15 @@
       "commitTitle": "default-serial-tasks T1: default serial scheduling and shared order validation"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-09T08:29:10.796Z",
+      "summary": "54 项项目测试和 12 项 Change 浏览器测试通过，类型检查、生产构建及 skill 校验通过；隔离上下文 Agent 完整独立评审和 23 项聚焦复验通过，四类解析兼容问题已修复；本地原 Change 的来源警告已消失。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "默认串行及流程校验实现、整体验证与独立评审已通过，等待用户验收；验收后同步 Specs 并归档。"
+  }
 }
