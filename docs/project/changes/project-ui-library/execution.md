@@ -37,3 +37,11 @@ Vite 独立入口在 10683 提供组件导航、主题色、按钮状态、图�
 按用户追加指令，删除 PreviewEntry 顶层 path 的共享校验、类型及读取分支；离线一次性 migrate.mjs 负责旧格式转换，工作台只接受 artifact。迁移实际 archive/change-prototype-preview 的 3 个产物，从原保留提交 4aa15437403153400624d59a4402dc2137862af5 读取字节，复制到该归档的 previews 目录，保留其他关闭事实。新保留标签使用 archive-v2 命名空间，原 archive 标签不改写；新 pin 使用完整命名空间键，旧缓存 pin 原样留存。
 
 验证：61 项现有单元测试全部通过；新增迁移端到端测试通过，覆盖重复执行、原字节/原标签保留、拒绝覆盖后续内容、新归档固定预览及旧格式链接拒绝。真实 3 个文件逐字节核对通过；类型检查和 11 项相关浏览器场景通过。旧格式固定链接需要改为迁移后生成的新链接，这是用户要求移除兼容后的明确行为。
+
+## T8 全局工具、组件引入及预览优化
+
+全局安装官方 shadcn skill，配置 shadcn stdio MCP 与 shadcnuikit HTTPS MCP；前者完成 initialize/tools/list/registry 调用，后者完成目录检索和 card5/tabs1 源码获取。认证仅在个人配置中。按项目普通 CSS/共享 token 适配 Card、Tabs 和 TabbedCard，保留 Radix 客户端与键盘语义；独立预览增加搜索、预览/代码切换、完整卡片与选项示例，来源和许可入库。
+
+验证：`npm run ui:build`、`npm run ui:test`、`npm run typecheck`、`npm run format:check`、`npm run build` 全部通过。预览测试覆盖方向键、跳过禁用项、代码切换、搜索无结果恢复及原有按钮/空态，320px 无横向溢出；已查看桌面、移动截图。单元测试 62 项通过。扫描仓库候选文件与两类构建产物共 430 个文件，无密钥匹配。工具 CLI add 受本机 npm 用户级 allow-scripts 限制，改用官方 CLI view 源码完成适配；项目不依赖该个人安装配置。
+
+整体验证补充：完整 `npm run test:e2e` 34 项通过（57 秒），覆盖 Changes/Specs、托管和 Git 预览、main 总览、缩略图及窄屏路径。fetch 后本分支对 origin/main 为 19 ahead / 0 behind。

@@ -19,6 +19,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 前端开发
 
 - 先查看 `@open-folio/ui` 的公共导出和独立预览；基础组件放 `packages/ui`，业务组合放 `src/components`，路由和服务端读取留在主应用。通过包入口复用，不复制实现或反向依赖应用。
-- 公共样式和 token 由 UI 包维护，组件类名加 `of-ui-` 前缀；页面负责布局与 reset。主应用和预览使用同一实现，示例及 mock 留在预览侧。
+- 公共样式和 token 由 UI 包维护，组件类名加 `of-ui-` 前缀；页面负责布局与 reset。主应用和预览使用同一实现，示例及 mock 留在预览侧。外部组件先检查来源和现有实现，适配公共接口与 token 后再导出，保留必要来源及许可。
 - 保留原生语义、可访问名称、键盘操作和可见焦点；按需展示加载、禁用、空态、错误及窄屏状态。业务数据由调用方传入，有状态的交互明确 React 客户端边界。
 - 改动后运行相关类型、格式、构建与交互检查；公共组件同时查看主应用和 UI 预览。命令见根 package.json 与 UI 包 README，不为低影响样式或文档修改新增重复测试。

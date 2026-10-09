@@ -62,7 +62,9 @@
     },
     "T8": {
       "title": "接入全局 shadcn 工具并用 shadcnuikit 优化 UI 预览",
-      "status": "todo"
+      "status": "done",
+      "verification": "官方全局 skill/MCP 与 shadcnuikit 真实调用成功；Card/Tabs/TabbedCard 入库并用于独立预览；类型、格式、两端生产构建、UI 交互、62 单元及34浏览器测试通过，产物扫描无密钥。",
+      "commitTitle": "project-ui-library T8: integrate shadcn tooling and component preview"
     }
   },
   "closure": {},

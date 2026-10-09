@@ -21,3 +21,21 @@ Button 支持 default/primary/text、loading 和原生 button 属性；IconButto
 根目录运行 `npm run ui:dev`，在 http://127.0.0.1:10683 查看组件导航和交互。`npm run ui:build` 生成包内 dist，`npm run ui:preview` 查看生产结果，`npm run ui:test` 验证生产预览的交互与窄屏布局；无需配置或启动 OpenFolio 服务，dist 不入 Git。
 
 日常修改共享实现后更新相应示例，运行 `npm run typecheck`、`npm run format:check`、`npm run build` 与 `npm run ui:build`，再查看主应用和预览的适用状态。示例只提供参数、局部状态与 mock；公共入口不导出示例。
+
+## Card、Tabs 与组合示例
+
+新增 Card/Header/Title/Description/Action/Content/Footer、Tabs/List/Trigger/Content，以及 TabbedCard；均从包入口导入。Tabs 保留 Radix 的受控 value、defaultValue、onValueChange、orientation 和键盘操作；TabsList 支持 default/line。TabbedCard 接收带唯一 value 的 items（label、content、可选 disabled）和必填的选项组 label，也支持受控 value。
+
+```tsx
+<TabbedCard
+  label="示例视图"
+  items={[
+    { value: "preview", label: "预览", content: <Example /> },
+    { value: "code", label: "代码", content: <pre>用法</pre> },
+  ]}
+/>
+```
+
+来源和许可见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。新增组件先运行 `npx shadcn@latest info -c packages/ui --json`，再通过 CLI dry-run/view 检查来源与差异；生成代码须适配本包 token、公共接口和相对导入，不直接覆盖已有实现。包有意使用普通 CSS，组件安装后的 Tailwind 类需要转换后才可供两个消费方共用。
+
+shadcn skill/MCP 与 shadcnuikit MCP 配置属于个人全局环境；构建及使用这个包不需要它们或 API key。

@@ -84,3 +84,19 @@ export function EmptyState({
     </div>
   );
 }
+
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "./components/card";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/tabs";
+export {
+  TabbedCard,
+  type TabbedCardProps,
+  type TabbedCardItem,
+} from "./components/tabbed-card";

@@ -55,4 +55,14 @@ npm view @vitejs/plugin-react@6.1.2 peerDependenciesMeta --json
 
 宿主上传协议可使用独立测试宿主验证，但不能将该测试等同于某个生产存储已经接通；实际部署者需配置静态资源访问、允许嵌入的工作台来源、版本保留策略。任意私有登录系统与第三方 Cookie 流程不属于已经验证的能力。
 
-用户已明确将个人素材工具与接入放在个人环境处理；该部分移出本次调查和验收，不再保留相关待输入或外部依赖。当前基础组件来源为项目已有实现。
+基础阶段未依赖个人素材；后续用户追加授权试用 shadcn/shadcnuikit，结果见下。
+
+# 2026-10-09 全局工具与组件适配实证
+
+已确认：按 [官方 shadcn skill 指引](https://ui.shadcn.com/docs/skills) 安装 `shadcn-ui/ui@shadcn` 至个人全局 skills；按 [官方 MCP 指引](https://ui.shadcn.com/docs/mcp) 配置 stdio 服务。真实 initialize、tools/list、get_project_registries 调用成功。CLI info 定位 packages/ui，docs/view 返回 Card、Tabs；add 因本机 npm 用户级 allow-scripts 配置拒绝项目安装，使用 CLI view 的源代码适配入库。包的 Radix 依赖用独立 npm 用户配置安装成功，未修改用户 npm 配置。
+
+已确认：[shadcnuikit MCP](https://shadcnuikit.com/mcp) 的 HTTPS/Bearer 接入成功，真实检索并取得 [card5](https://shadcnuikit.com/components/card/5) 和 [tabs1](https://shadcnuikit.com/components/tabs/1) 源码。这是组件区的基础示例，未导入付费 dashboard。源码适配后保留公共主题、可访问语义和来源；工具返回的 kit style 与项目不同，依其说明使用项目基础组件。个人配置中保存认证，仓库及产物扫描无密钥。
+
+[Codex MCP 配置文档](https://developers.openai.com/codex/mcp) 确认个人配置由 App/CLI 共用。配置成功后，新会话或重启加载 MCP；本会话通过同一协议直接完成真实调用验证，不宣称工具已热加载至会话工具列表。
+
+已验证：新增组件与独立预览生产构建通过；预览实际操作覆盖搜索、代码切换、方向键、跳过禁用项、异步状态和 320px 布局。Next 主应用生产构建和类型检查通过，确认公共入口中的客户端组件没有破坏主应用消费。
