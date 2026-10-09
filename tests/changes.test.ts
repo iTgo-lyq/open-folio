@@ -104,7 +104,7 @@ test("strict schema agrees with current skill hook on shared structural examples
     );
 });
 
-test("Plan AST only uses complete unambiguous execution tables and detects cycles", () => {
+test("explicit task order overrides defaults and rejects ambiguous or invalid declarations", () => {
   const s = state("plan", {
     size: "large",
     tasks: {
@@ -116,20 +116,107 @@ test("Plan AST only uses complete unambiguous execution tables and detects cycle
     "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| **T1** | 无 |\n| [T2](#two) | `T1` |\n";
   assert.deepEqual(parsePlan(s, good).edges, { T1: [], T2: ["T1"] });
   assert.equal(parsePlan(s, good).status, "valid");
+  assert.equal(parsePlan(s, good).source, "plan");
   for (const bad of [
     good + good,
-    "```md\n" + good + "```",
     good.replace("| **T1** | 无 |", "| **T1** | T2 |"),
     good.replace("| [T2](#two) | `T1` |", ""),
     good.replace("`T1`", "T8"),
     good.replace("| 无 |", "| |"),
     good.replace("## 执行顺序", "## 顺序"),
+    good.replace("| --- | --- |\n", ""),
+    good.replace("前置任务", "执行安排"),
+    good.replace("| **T1** | 无 |", "| **T1** | 无 |\n| T1 | 无 |"),
+    good.replace("`T1`", "`[T1][one]`") + "\n[one]: #t1\n",
   ])
     assert.equal(parsePlan(s, bad).status, "invalid");
   assert.equal(parsePlan(s).status, "missing");
   assert.equal(
     parsePlan({ ...s, size: "xlarge" }, good).status,
     "not-applicable",
+  );
+});
+
+test("default task order is numeric, includes narrative Plans and ignores Markdown examples", () => {
+  const s = state("default", {
+    size: "medium",
+    tasks: {
+      T10: { title: "十", status: "todo" },
+      T2: { title: "二", status: "todo" },
+      T1: { title: "一", status: "done" },
+    },
+  });
+  const table =
+    "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | 无 |\n| T10 | 无 |\n";
+  for (const body of [
+    "# 交付计划\n\n按默认顺序交付。",
+    "# 执行顺序\n\nT1 独立完成，无前置任务。",
+    "```md\n" + table + "```",
+    "~~~md\n" + table + "~~~",
+    table
+      .split("\n")
+      .map((line) => "> " + line)
+      .join("\n"),
+    table
+      .split("\n")
+      .map((line) => "    " + line)
+      .join("\n"),
+    "<!--\n" + table + "-->\n",
+    "<?php\n" + table + "?>\n",
+    "<![CDATA[\n" + table + "]]>\n",
+    "<!CUSTOM\n" + table + ">\n",
+    '<pre\n class="example">\n' + table + "</pre>\n",
+    '<div\n class="example">\n' +
+      table.replace("顺序\n\n", "顺序\n") +
+      "</div>\n",
+    "- 示例：\n\n" +
+      table
+        .split("\n")
+        .map((line) => "  " + line)
+        .join("\n"),
+  ]) {
+    const graph = parsePlan(s, body);
+    assert.equal(graph.status, "valid", body);
+    assert.equal(graph.source, "default", body);
+    assert.deepEqual(graph.edges, { T1: [], T2: ["T1"], T10: ["T2"] });
+    assert.deepEqual(graph.diagnostics, []);
+  }
+  assert.equal(parsePlan(s).status, "missing");
+  assert.equal(parsePlan({ ...s, size: "small" }).source, "default");
+  const setext = table.replace("## 执行顺序", "执行顺序\n--------");
+  assert.equal(parsePlan(s, setext).status, "valid");
+  assert.deepEqual(parsePlan(s, setext).edges, { T1: [], T2: [], T10: [] });
+  assert.equal(parsePlan(s, table.replaceAll("\n", "\r\n")).status, "valid");
+  const afterList = table
+    .replace("顺序\n\n", "顺序\n\n- 特殊安排。\n\n")
+    .replaceAll("\n|", "\n |");
+  assert.equal(parsePlan(s, afterList).source, "plan");
+  assert.deepEqual(parsePlan(s, afterList).edges, { T1: [], T2: [], T10: [] });
+  for (const prefix of [
+    "<https://example.com>\n",
+    "<script>code</script>\n",
+    "<em>说明</em>\n",
+    "文字\n<span>\n",
+  ]) {
+    const graph = parsePlan(s, prefix + table.replace("顺序\n\n", "顺序\n"));
+    assert.equal(graph.status, "valid", prefix);
+    assert.equal(graph.source, "plan", prefix);
+    assert.deepEqual(graph.edges, { T1: [], T2: [], T10: [] });
+  }
+  assert.equal(parsePlan(s, table + "## T1 | 交付\n").status, "valid");
+  const referenceTable =
+    table
+      .replace("## 执行顺序", "## [执行顺序][order]")
+      .replace("| 任务 | 前置任务 |", "| [任务][] | [前置任务] |")
+      .replace("| T1 | 无 |", "| [T1][one] | 无 |")
+      .replace("| T2 | 无 |", "| T2 | [T1][one] |") +
+    "\n[order]: #order\n[任务]: #task\n[前置任务]: #previous\n[one]: #t1\n";
+  const graph = parsePlan(s, referenceTable);
+  assert.equal(graph.status, "valid");
+  assert.deepEqual(graph.edges, { T1: [], T2: ["T1"], T10: [] });
+  assert.equal(
+    parsePlan(s, referenceTable.replace("[one]: #t1", "")).status,
+    "invalid",
   );
 });
 
@@ -286,6 +373,33 @@ test("cycle detection includes every member of overlapping cycles", () => {
     [...cyclicNodes({ A: ["B", "C"], B: ["A"], C: ["B"], D: ["A"] })].sort(),
     ["A", "B", "C"],
   );
+});
+
+test("completed small Changes reject invalid explicit order and keep the no-Plan default valid", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  f.git(["checkout", "-b", "change/small-order"]);
+  for (const id of ["invalid-small", "default-small"]) {
+    const s = { ...completed(id), branch: "change/small-order" };
+    await f.put(`${s.closure.archive!.path}/change.json`, JSON.stringify(s));
+  }
+  await f.put(
+    "docs/project/archive/2026-10-02-invalid-small/plan.md",
+    "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | T8 |\n",
+  );
+  f.commit();
+  const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const invalid = primaryRecord(
+    snap.changes.find((g) => g.id === "invalid-small")!,
+  )!;
+  assert.equal(invalid.taskGraph.status, "invalid");
+  assert.equal(invalid.validCompleted, false);
+  assert(invalid.diagnostics.some((d) => d.code === "PLAN_INVALID"));
+  const valid = primaryRecord(
+    snap.changes.find((g) => g.id === "default-small")!,
+  )!;
+  assert.equal(valid.taskGraph.source, "default");
+  assert.equal(valid.validCompleted, true);
 });
 
 test("invalid archived relationships propagate through consumers and closing parents regardless of order", async (t) => {

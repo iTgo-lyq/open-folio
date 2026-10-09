@@ -1,5 +1,7 @@
 # 交付目标
 
+依据 [Requirement](./requirement.md) 与 [Technical](./technical.md) 推进。
+
 让默认串行和显式执行顺序成为流程命令与工作台共同遵循的任务安排。
 
 # T1：默认串行及显式顺序统一校验

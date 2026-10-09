@@ -127,6 +127,7 @@ export type ChangeState = {
 };
 export type TaskGraph = {
   status: "valid" | "missing" | "invalid" | "not-applicable";
+  source?: "default" | "plan";
   edges: Record<string, string[]>;
   diagnostics: Diagnostic[];
   documentId?: string;

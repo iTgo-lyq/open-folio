@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual, parseArgs } from "node:util";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
+import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
 
 const commands = {
   create: ["title", "size", "depends-on", "parent", "children"],
@@ -251,6 +252,30 @@ function main() {
       if (state.size !== "small")
         for (const phase of ["requirement", "technical", "plan"])
           assert(state.confirmations[phase], `Missing ${phase} confirmation`);
+    };
+    const requireTaskOrder = () => {
+      const plan = safe(`${relative(root, liveDir)}/plan.md`);
+      const order = parseTaskOrder(
+        state,
+        existsSync(plan) ? readFileSync(plan, "utf8") : undefined,
+      );
+      assert(
+        ["valid", "not-applicable"].includes(order.status),
+        order.status === "missing"
+          ? "Missing plan.md"
+          : order.diagnostics
+              .map((d) => `${d.message}${d.line ? ` (line ${d.line})` : ""}`)
+              .join("; "),
+      );
+      return order;
+    };
+    const requirePredecessors = (taskId) => {
+      const order = requireTaskOrder();
+      const pending = unfinishedPredecessors(state.tasks, order.edges, taskId);
+      assert(
+        !pending.length,
+        `Complete predecessor tasks before ${taskId}: ${pending.join(", ")}`,
+      );
     };
     const uniqueActive = () =>
       assert(
@@ -496,6 +521,7 @@ function main() {
             ["todo", "blocked"].includes(task.status),
             "Task is already running",
           );
+          requirePredecessors(taskId);
           task.status = "doing";
           delete task.reason;
         }
@@ -508,6 +534,7 @@ function main() {
             task.status === "doing",
             "Start the task before completing it",
           );
+          requirePredecessors(taskId);
           task.status = "done";
           task.verification = need("verification");
           if (opts["commit-title"]) task.commitTitle = opts["commit-title"];
@@ -521,6 +548,7 @@ function main() {
         requireDocs();
         requireConfirmations();
         uniqueActive();
+        requireTaskOrder();
         if (state.size !== "xlarge")
           assert(
             Object.keys(state.tasks).length,
@@ -566,6 +594,7 @@ function main() {
         requireDocs();
         requireConfirmations();
         completeTasks();
+        requireTaskOrder();
         assert(
           ["passed", "failed"].includes(need("result")),
           "Invalid verification result",
@@ -577,6 +606,7 @@ function main() {
         requireStage("close");
         unblocked();
         completeTasks();
+        requireTaskOrder();
         assert(
           ["user", "agent"].includes(need("mode")),
           "--mode must be user or agent",
@@ -590,6 +620,7 @@ function main() {
       case "specs":
         requireStage("close");
         unblocked();
+        requireTaskOrder();
         assert(
           ["synced", "not_needed"].includes(need("result")),
           "Invalid Specs result",
@@ -600,6 +631,7 @@ function main() {
         requireStage("close");
         unblocked();
         completeTasks();
+        requireTaskOrder();
         const date = need("date");
         assert(
           /^\d{4}-\d{2}-\d{2}$/.test(date) &&

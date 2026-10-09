@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "默认串行及显式顺序统一校验",
-      "status": "doing"
+      "status": "done",
+      "verification": "54 项项目测试、12 项 Change 浏览器测试、类型检查、生产构建及 skill 校验通过；独立评审与 23 项聚焦复验通过；本地原 Change 无来源警告。",
+      "commitTitle": "default-serial-tasks T1: default serial scheduling and shared order validation"
     }
   },
   "closure": {}
