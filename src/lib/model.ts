@@ -26,6 +26,7 @@ export type ProjectConfig = {
   name: string;
   repositoryUrl: string;
   specBranch?: string;
+  prototypeOrigins?: string[];
 };
 export type Limits = {
   refreshMs: number;
@@ -85,10 +86,22 @@ export type PrototypeConfig = {
   decision: Confirmation;
 };
 export type Device = "pc-web" | "ipad" | "mobile";
+export type PreviewThumbnail = { device?: Device; url: string };
+export type PreviewArtifact =
+  | {
+      type: "hosted";
+      version: string;
+      url: string;
+      sourceCommit: string;
+      digest: string;
+      thumbnails?: PreviewThumbnail[];
+    }
+  | { type: "git"; path: string; sourceCommit: string };
 export type PreviewEntry = {
   id: string;
   title: string;
-  path: string;
+  path?: string;
+  artifact?: PreviewArtifact;
   kind: "page" | "component";
   devices?: Device[];
   viewport?: { width: number; height: number };
@@ -256,5 +269,7 @@ export type PreviewDescriptor = {
     message?: string;
     bytes?: number;
     url?: string;
+    thumbnails?: PreviewThumbnail[];
+    sourceAvailable?: boolean;
   })[];
 };

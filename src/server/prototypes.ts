@@ -78,10 +78,14 @@ export async function prototypeCatalog(
         continue;
       }
       const entry = result.data[0] as PreviewEntry;
-      const key = `${entry.kind}:${entry.path}`;
+      const key = `${entry.kind}:${entry.path ?? (entry.artifact?.type === "hosted" ? entry.artifact.url : entry.artifact?.path)}`;
       const item = items.get(key) ?? {
         key,
-        path: entry.path,
+        path:
+          entry.path ??
+          (entry.artifact?.type === "hosted"
+            ? entry.artifact.url
+            : (entry.artifact?.path ?? "")),
         kind: entry.kind,
         title: entry.title,
         references: [],

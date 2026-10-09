@@ -10,6 +10,7 @@ import {
   RefreshCw,
   GitCommitHorizontal,
   PanelsTopLeft,
+  ExternalLink,
 } from "lucide-react";
 import type { ChangeCandidate, Device, PreviewDescriptor } from "@/lib/model";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
@@ -83,12 +84,28 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
     () => (entry?.available && entry.url ? crypto.randomUUID() : ""),
     [entry?.available, entry?.url, attempt],
   );
-  const url = entry?.url && load ? `${entry.url}?load=${load}` : undefined;
+  const hosted =
+    entry?.artifact?.type === "hosted" ? entry.artifact : undefined;
+  const [hostStatus, setHostStatus] = useState("pending");
+  const url =
+    entry?.url && load
+      ? hosted
+        ? entry.url
+        : `${entry.url}?load=${load}`
+      : undefined;
   useEffect(() => {
     setReady("");
     setLoadError("");
     setRuntimeError("");
     if (!url) return;
+    if (hosted) {
+      if (new URL(url).origin === window.location.origin) {
+        setLoadError("原型托管来源必须与工作台来源分离。");
+        return;
+      }
+      setReady(load);
+      return;
+    }
     const controller = new AbortController();
     fetch(url, { method: "HEAD", cache: "no-store", signal: controller.signal })
       .then((r) => {
@@ -104,7 +121,7 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
         if (!controller.signal.aborted) setLoadError(e.message);
       });
     return () => controller.abort();
-  }, [url, load]);
+  }, [url, load, hosted]);
   useEffect(() => {
     if (!canvas.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -133,6 +150,40 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
     window.addEventListener("message", report);
     return () => window.removeEventListener("message", report);
   }, [load]);
+  useEffect(() => {
+    setHostStatus("pending");
+    if (!hosted || !load) return;
+    let confirmed = false;
+    const send = () =>
+      frame.current?.contentWindow?.postMessage(
+        { type: "openfolio:preview:init", requestId: load },
+        "*",
+      );
+    const timer = window.setTimeout(() => {
+      if (!confirmed) setHostStatus("unconfirmed");
+    }, 5000);
+    const interval = window.setInterval(send, 500);
+    const report = (event: MessageEvent) => {
+      if (
+        event.source !== frame.current?.contentWindow ||
+        event.data?.type !== "openfolio:preview:status" ||
+        event.data.requestId !== load ||
+        event.data.version !== hosted.version ||
+        !["ready", "error"].includes(event.data.status)
+      )
+        return;
+      confirmed = true;
+      setHostStatus(event.data.status);
+      window.clearInterval(interval);
+      window.clearTimeout(timer);
+    };
+    window.addEventListener("message", report);
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(timer);
+      window.removeEventListener("message", report);
+    };
+  }, [hosted, load]);
   const scale =
     q.zoom === "actual"
       ? 1
@@ -315,6 +366,27 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
           {runtimeError}
         </div>
       )}
+      {hosted && entry?.available && !loadError && (
+        <div className="preview-host-status" role="status">
+          <span>
+            {hostStatus === "ready"
+              ? "页面已就绪"
+              : hostStatus === "error"
+                ? "宿主报告页面运行失败，请在独立页面检查。"
+                : hostStatus === "unconfirmed"
+                  ? "尚未确认页面就绪；若画布空白，可在独立页面查看。"
+                  : "正在等待页面就绪…"}
+          </span>
+          <a
+            href={hosted.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            referrerPolicy="no-referrer"
+          >
+            <ExternalLink size={13} /> 独立打开
+          </a>
+        </div>
+      )}
       <div className="preview-canvas" ref={canvas} data-testid="preview-canvas">
         {!entry?.available ? (
           <Empty title="暂时无法预览">
@@ -340,6 +412,7 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
                 title={`原型：${entry.title}`}
                 src={url}
                 sandbox="allow-scripts"
+                allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
                 referrerPolicy="no-referrer"
                 width={size.width}
                 height={size.height}
@@ -374,7 +447,12 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
         </button>
       )}
       <p className="preview-footnote">
-        {entry?.path} · 适配范围由项目声明，画布缩放不改变布局尺寸。
+        {hosted
+          ? `产物 ${hosted.version} · 源码 ${hosted.sourceCommit.slice(0, 12)}${entry?.sourceAvailable === false ? "（源码提交已不可用）" : ""}`
+          : entry?.artifact?.type === "git"
+            ? entry.artifact.path
+            : entry?.path}
+        {" · "}适配范围由项目声明，画布缩放不改变布局尺寸。
       </p>
     </section>
   );

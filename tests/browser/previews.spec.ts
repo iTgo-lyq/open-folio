@@ -110,3 +110,47 @@ test("narrow screens keep component dimensions and unsupported links recover to 
     page.getByRole("dialog").getByText("Requirement", { exact: false }).first(),
   ).toBeVisible();
 });
+
+test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted URLs never get HEAD or load query", async ({
+  page,
+}) => {
+  const requests: { method: string; url: string }[] = [];
+  page.on("request", (r) => {
+    if (r.url().startsWith("https://127.0.0.1:10685"))
+      requests.push({ method: r.method(), url: r.url() });
+  });
+  await page.goto(path + "&preview=hosted");
+  const frame = page.frameLocator('iframe[title="原型：托管 React"]');
+  await expect(
+    frame.getByRole("heading", { name: "托管 React 页面" }),
+  ).toBeVisible();
+  await frame.getByRole("button", { name: "已添加 0 次" }).click();
+  await expect(
+    frame.getByRole("button", { name: "已添加 1 次" }),
+  ).toBeVisible();
+  await expect(page.getByText("页面已就绪", { exact: true })).toBeVisible();
+  await expect(
+    page.locator('iframe[title="原型：托管 React"]'),
+  ).toHaveAttribute("sandbox", "allow-scripts");
+  expect(requests.some((r) => r.url.endsWith(".js"))).toBe(true);
+  expect(
+    requests.every((r) => r.method === "GET" && !r.url.includes("load=")),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "未接就绪回报 页面", exact: true })
+    .click();
+  await expect(
+    page.getByText("尚未确认页面就绪；若画布空白，可在独立页面查看。", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page
+      .frameLocator('iframe[title="原型：未接就绪回报"]')
+      .getByRole("heading"),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "独立打开" })).toHaveAttribute(
+    "href",
+    /#no-bridge$/,
+  );
+});

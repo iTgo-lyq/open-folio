@@ -3357,3 +3357,22 @@ input {
     transition: none;
   }
 }
+
+.preview-host-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--blue-soft);
+  border-radius: 8px;
+}
+.preview-host-status a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--blue);
+}

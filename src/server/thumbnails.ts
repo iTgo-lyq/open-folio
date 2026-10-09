@@ -20,6 +20,30 @@ export async function thumbnailResponse(
     store.preview(project, change, undefined, limits, snapshot, entryId, true);
   const { descriptor, html } = await resolve();
   const entry = descriptor.entries.find((e) => e.id === entryId);
+  if (entry?.available && entry.artifact?.type === "hosted") {
+    if (
+      device &&
+      !entry.devices?.includes(device as import("../lib/model.ts").Device)
+    )
+      throw new AppError("INVALID_PARAMETER", "截图设备未在该入口声明。", 400);
+    const thumbnail = entry.thumbnails?.find(
+      (t) => t.device === (device ?? entry.devices?.[0]),
+    );
+    if (!thumbnail)
+      throw new AppError(
+        "THUMBNAIL_UNAVAILABLE",
+        "宿主尚未提供此视口的截图。",
+        404,
+      );
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: thumbnail.url,
+        "Referrer-Policy": "no-referrer",
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
   if (!entry?.available || html === undefined)
     throw new AppError(
       "THUMBNAIL_UNAVAILABLE",

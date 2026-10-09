@@ -1,5 +1,6 @@
 // Optional browser-only host helper. Call after the prototype is interactive.
-export function connectPreview({ version, status = "ready", message } = {}) {
+/** @param {{version: string, status?: "ready" | "error", message?: string}} options */
+export function connectPreview({ version, status = "ready", message }) {
   const listener = (event) => {
     const data = event.data;
     if (

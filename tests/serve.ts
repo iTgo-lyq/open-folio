@@ -2,8 +2,10 @@ import { spawn } from "node:child_process";
 import { writeFile, unlink, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { seed } from "./seed.ts";
+import { hostedServer } from "./hosted-server.ts";
 const f = await seed(),
   config = join(f.root, "config.json");
+const host = await hostedServer(f.root);
 await writeFile(
   config,
   JSON.stringify({
@@ -43,6 +45,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const)
     child.kill(signal);
   });
 child.on("exit", async (code) => {
+  host.close();
   await f.cleanup();
   process.exit(code ?? 0);
 });

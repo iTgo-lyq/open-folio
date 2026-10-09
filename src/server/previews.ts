@@ -131,6 +131,7 @@ export async function resolvePreview(
   limits: Limits,
   selectedId?: string,
   selectedOnly = false,
+  project?: ProjectConfig,
 ) {
   if (
     !identity.safeParse(changeId).success ||
@@ -264,12 +265,18 @@ export async function resolvePreview(
     return fail("这个 Change 还没有关联原型。");
   if (!Array.isArray(raw.previews))
     return fail("previews 必须是页面或组件关联数组。");
-  const files = await tree(
-    reader,
-    revision,
-    `${configuration.packagePath}/preview/`,
-    signal,
-  );
+  const changeDirectory = stateFiles[0].path.slice(0, -12);
+  const files = [
+    ...(await tree(
+      reader,
+      revision,
+      `${configuration.packagePath}/preview/`,
+      signal,
+    )),
+    ...documents.filter((f) =>
+      f.path.startsWith(`${changeDirectory}/previews/`),
+    ),
+  ];
   const htmlFiles = files.filter(
     (f) =>
       f.path.endsWith("/index.html") &&
@@ -312,7 +319,29 @@ export async function resolvePreview(
       available: false,
     };
     descriptor.entries.push(info);
-    const path = entryPath(entry, configuration),
+    if (entry.artifact?.type === "hosted") {
+      const artifact = entry.artifact;
+      if (!project?.prototypeOrigins?.includes(new URL(artifact.url).origin)) {
+        info.message =
+          "托管地址来源未获允许，请联系服务管理员配置 prototypeOrigins。";
+        continue;
+      }
+      info.available = true;
+      info.url = artifact.url;
+      info.thumbnails = artifact.thumbnails?.filter((t) =>
+        project.prototypeOrigins?.includes(new URL(t.url).origin),
+      );
+      try {
+        info.sourceAvailable =
+          (await reader.run(["cat-file", "-t", artifact.sourceCommit], signal))
+            .toString()
+            .trim() === "commit";
+      } catch {
+        info.sourceAvailable = false;
+      }
+      continue;
+    }
+    const path = entryPath(entry, configuration, changeDirectory),
       file = files.find((f) => f.path === path);
     if (!path) {
       info.message = "入口路径不属于该提交配置的 prototype/preview 目录。";

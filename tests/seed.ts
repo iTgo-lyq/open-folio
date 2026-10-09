@@ -66,7 +66,11 @@ export async function seed() {
       },
     }),
   );
-  f.commit();
+  const sourceCommit = f.commit();
+  const project = {
+    ...f.project,
+    prototypeOrigins: ["https://127.0.0.1:10685"],
+  };
   const plan =
     "# 实施计划\n\n## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | T1 |\n| T3 | T2 |\n";
   const records = [
@@ -99,6 +103,32 @@ export async function seed() {
           kind: "page",
           path: "packages/prototype/preview/missing",
           devices: ["mobile"],
+        },
+        {
+          id: "hosted",
+          title: "托管 React",
+          kind: "page",
+          devices: ["pc-web", "mobile"],
+          artifact: {
+            type: "hosted",
+            version: "v1",
+            url: "https://127.0.0.1:10685/v1/index.html",
+            sourceCommit,
+            digest: "sha256:" + "a".repeat(64),
+          },
+        },
+        {
+          id: "no-bridge",
+          title: "未接就绪回报",
+          kind: "page",
+          devices: ["pc-web"],
+          artifact: {
+            type: "hosted",
+            version: "v1",
+            url: "https://127.0.0.1:10685/v1/index.html#no-bridge",
+            sourceCommit,
+            digest: "sha256:" + "a".repeat(64),
+          },
         },
       ],
       dependsOn: ["source-connect"],
@@ -239,6 +269,6 @@ export async function seed() {
     }
     f.commit();
   }
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  return { ...f, snapshot };
+  const snapshot = await f.store.refresh(project, DEFAULT_LIMITS);
+  return { ...f, project, snapshot };
 }

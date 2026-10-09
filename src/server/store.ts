@@ -297,6 +297,7 @@ export class SnapshotStore {
       limits,
       entry,
       selectedOnly,
+      p,
     );
   }
   async document(p: ProjectConfig, id: string, snapshot: string) {

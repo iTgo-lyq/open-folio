@@ -42,7 +42,8 @@
     },
     "T4": {
       "title": "支持托管预览与固定 Change 分享",
-      "status": "todo"
+      "status": "done",
+      "verification": "9 项预览单测、类型检查、10 项相关浏览器场景通过；真实 HTTPS React 多资源及共享组件交互已验证。旧格式移除按用户追加要求在 T7 完成。"
     },
     "T5": {
       "title": "以 main 当前清单重建原型总览",

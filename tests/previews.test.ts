@@ -389,3 +389,85 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
     assert.match(result.html!, /first/);
   }
 });
+
+test("hosted Change references are fixed, origin controlled, and do not require retained source commits", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  const { path: ignored, ...base } = entry;
+  const artifact = {
+    type: "hosted",
+    version: "v1",
+    url: "https://preview.example.test/v1/index.html#orders",
+    sourceCommit: f.revision,
+    digest: "sha256:" + "a".repeat(64),
+    thumbnails: [
+      { device: "pc-web", url: "https://preview.example.test/v1/pc.png" },
+    ],
+  };
+  await f.put(
+    changePath,
+    JSON.stringify({ ...state, previews: [{ ...base, artifact }] }),
+  );
+  const first = f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.equal((await preview(f)).descriptor.entries[0].available, false);
+  const project = {
+    ...f.project,
+    prototypeOrigins: ["https://preview.example.test"],
+  };
+  const read = (revision?: string) =>
+    f.store.preview(project, state.id, revision, DEFAULT_LIMITS);
+  const initial = await read();
+  assert.equal(initial.html, undefined);
+  assert.equal(initial.descriptor.entries[0].url, artifact.url);
+  assert.equal(initial.descriptor.entries[0].sourceAvailable, true);
+  await f.put(
+    changePath,
+    JSON.stringify({
+      ...state,
+      previews: [
+        {
+          ...base,
+          artifact: {
+            ...artifact,
+            version: "v2",
+            url: "https://preview.example.test/v2/index.html",
+            sourceCommit: "0".repeat(40),
+          },
+        },
+      ],
+    }),
+  );
+  f.commit();
+  await f.store.refresh(project, DEFAULT_LIMITS);
+  assert.equal((await read()).descriptor.entries[0].sourceAvailable, false);
+  assert.equal((await read(first)).descriptor.entries[0].url, artifact.url);
+});
+
+test("new Git fallback reads its Change-owned snapshot independently from current package output", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  const { path: ignored, ...base } = entry;
+  const path = "docs/project/changes/preview-demo/previews/page";
+  await f.put(`${path}/index.html`, html("change snapshot"));
+  await f.put(
+    changePath,
+    JSON.stringify({
+      ...state,
+      previews: [
+        {
+          ...base,
+          artifact: {
+            type: "git",
+            path,
+            sourceCommit: f.revision,
+          },
+        },
+      ],
+    }),
+  );
+  await f.put(`${entry.path}/index.html`, html("current output"));
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.match((await preview(f)).html!, /change snapshot/);
+});

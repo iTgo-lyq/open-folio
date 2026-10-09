@@ -8,6 +8,7 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:10682",
     browserName: "chromium",
+    ignoreHTTPSErrors: true,
     launchOptions: {
       ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
         ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }

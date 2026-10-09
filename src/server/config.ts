@@ -30,6 +30,22 @@ const configSchema = z
           name: z.string().trim().min(1),
           repositoryUrl: remoteUrl,
           specBranch: z.string().min(1).optional(),
+          prototypeOrigins: z
+            .array(
+              z
+                .string()
+                .url()
+                .refine((value) => {
+                  const u = new URL(value);
+                  return (
+                    u.protocol === "https:" &&
+                    u.origin === value &&
+                    !u.username &&
+                    !u.password
+                  );
+                }),
+            )
+            .optional(),
         })
         .strict(),
     ),
@@ -69,6 +85,13 @@ export function parseConfig(value: unknown): AppConfig {
     result.data.projects.length
   )
     throw new AppError("CONFIG_INVALID", "配置中存在重复的项目 id。");
+  const workbenchOrigins = new Set(result.data.allowedOrigins ?? []);
+  if (
+    result.data.projects.some((p) =>
+      p.prototypeOrigins?.some((origin) => workbenchOrigins.has(origin)),
+    )
+  )
+    throw new AppError("CONFIG_INVALID", "原型托管来源必须与工作台来源分离。");
   return result.data as AppConfig;
 }
 export async function readConfig(): Promise<AppConfig> {

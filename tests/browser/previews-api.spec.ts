@@ -13,7 +13,7 @@ test("same-origin preview serves only associated HTML with sandbox headers and n
   request,
 }) => {
   const data = await description(request);
-  expect(data.entries).toHaveLength(4);
+  expect(data.entries).toHaveLength(6);
   expect(data.entries[3].available).toBe(false);
   const url = data.entries[0].url;
   const page = await request.get(url);
