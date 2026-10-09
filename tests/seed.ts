@@ -112,6 +112,16 @@ export async function seed() {
           artifact: {
             type: "hosted",
             version: "v1",
+            thumbnails: [
+              {
+                device: "pc-web",
+                url: "https://127.0.0.1:10685/v1/pc-web.png",
+              },
+              {
+                device: "mobile",
+                url: "https://127.0.0.1:10685/v1/mobile.png",
+              },
+            ],
             url: "https://127.0.0.1:10685/v1/index.html",
             sourceCommit,
             digest: "sha256:" + "a".repeat(64),
@@ -269,6 +279,37 @@ export async function seed() {
     }
     f.commit();
   }
+  f.git(["checkout", "main"]);
+  f.git([
+    "checkout",
+    "change/document-reader",
+    "--",
+    "packages/prototype/preview",
+  ]);
+  const currentEntries = records[0]
+    .previews!.filter((e) => e.id !== "no-bridge")
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      kind: e.kind,
+      devices: e.devices,
+      viewport: e.viewport,
+      sourcePath: `packages/prototype/src/${e.id}.tsx`,
+      description:
+        e.id === "orders"
+          ? "订单检索、手机适配与批量操作"
+          : `${e.title}的页面细节`,
+      artifact:
+        e.artifact ??
+        (e.id === "missing"
+          ? undefined
+          : { type: "git", path: e.path, sourceCommit }),
+    }));
+  await f.put(
+    "packages/prototype/prototype.json",
+    JSON.stringify({ schemaVersion: 1, entries: currentEntries }),
+  );
+  f.commit();
   const snapshot = await f.store.refresh(project, DEFAULT_LIMITS);
   return { ...f, project, snapshot };
 }

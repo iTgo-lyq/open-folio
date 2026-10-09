@@ -86,6 +86,7 @@ function Shell() {
               doc: null,
               c: null,
               ct: null,
+              prototype: null,
               preview: null,
               device: null,
               orientation: null,
@@ -147,6 +148,7 @@ function Shell() {
                     ct: null,
                     da: null,
                     raw: null,
+                    prototype: null,
                     preview: null,
                     device: null,
                     orientation: null,
@@ -217,6 +219,10 @@ function Shell() {
                   </option>
                 ))}
               </select>
+            ) : module === "prototypes" ? (
+              <span>
+                main <span className="source-separator">/</span> 当前页面
+              </span>
             ) : (
               <span>
                 全部已推送分支 <span className="source-separator">/</span> 各

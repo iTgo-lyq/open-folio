@@ -1,151 +1,92 @@
 import { test, expect } from "@playwright/test";
 const path = "/?project=fixture&m=prototypes";
-const inventory = (page: import("@playwright/test").Page) =>
-  page.getByRole("region", { name: "项目原型总览" });
-
-test("project prototypes have their own module, unique totals and selectable Change versions", async ({
-  page,
-  request,
-}) => {
-  const response = await request.get("/api/projects/fixture/prototypes");
-  expect(response.ok()).toBe(true);
-  expect(response.headers()["cache-control"]).toContain("no-store");
-  const catalog = await response.json();
-  expect(catalog.items).toHaveLength(4);
-  expect(
-    catalog.items.find((i: { path: string }) => i.path.endsWith("/orders"))
-      .references,
-  ).toHaveLength(2);
-  await page.goto("/?project=fixture&m=changes");
-  await page.getByRole("link", { name: "原型", exact: true }).click();
-  const region = inventory(page);
-  await expect(
-    region.getByRole("heading", { level: 1, name: "原型 4" }),
-  ).toBeVisible();
-  await expect(
-    region.getByRole("list", { name: "项目原型列表" }).locator(":scope > li"),
-  ).toHaveCount(4);
-  await expect(region.locator(".prototype-totals")).toContainText(
-    "页面3组件1关联 Change2",
-  );
-  await expect(page.locator("iframe")).toHaveCount(0);
-  await page.screenshot({ path: "artifacts/prototype-catalog-desktop.png" });
-  const card = region.getByRole("listitem").filter({
-    has: page.getByRole("heading", { name: "订单列表", exact: true }),
-  });
-  await expect(card.getByRole("combobox")).toHaveCount(0);
-  await expect(card.locator(".prototype-path")).toHaveCount(0);
-  const infoTrigger = card.getByRole("button", { name: "订单列表的原型信息" });
-  await infoTrigger.focus();
-  await page.keyboard.press("Enter");
-  const info = page.getByRole("dialog", { name: /的原型信息$/ });
-  await expect(info.getByText("关联版本 · 2 个 Change")).toBeVisible();
-  await info.getByRole("combobox").selectOption("mobile-reading/mobile-orders");
-  await page.keyboard.press("Escape");
-  await expect(info).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "订单列表 · 手机适配的原型信息" }),
-  ).toBeFocused();
-  await region
-    .getByRole("listitem")
-    .filter({
-      has: page.getByRole("heading", {
-        name: "订单列表 · 手机适配",
-        exact: true,
-      }),
-    })
-    .getByRole("button", { name: /^打开预览：/ })
-    .click();
-  await expect(
-    page.locator('iframe[title="原型：订单列表 · 手机适配"]'),
-  ).toHaveAttribute("width", "390");
-  await expect(
-    page.frameLocator("iframe").getByRole("heading", { name: "订单列表原型" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await expect(page).toHaveURL(/m=prototypes/);
-  await expect(region.getByRole("heading", { level: 1 })).toBeVisible();
-});
-
-test("catalog filters, matching versions, fixed links and browser history preserve preview context", async ({
+test("main gallery opens current pages directly without Change/version selectors", async ({
   page,
   context,
+  request,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const catalog = await (
+    await request.get("/api/projects/fixture/prototypes")
+  ).json();
+  expect(catalog.items).toHaveLength(5);
+  expect(catalog.items[0].references).toBeUndefined();
   await page.goto(path);
-  const region = inventory(page);
-  await region
-    .getByRole("combobox", { name: "筛选原型适配" })
-    .selectOption("custom");
-  await expect(region.getByRole("listitem")).toHaveCount(1);
+  const region = page.getByRole("region", { name: "项目原型总览" });
+  await expect(region.getByRole("heading", { level: 1 })).toHaveText(
+    "项目里的页面 5",
+  );
   await expect(
-    region.getByRole("heading", { name: "价格卡片", exact: true }),
-  ).toBeVisible();
-  await region.getByRole("button", { name: "清除筛选" }).click();
-  await region.getByRole("textbox", { name: "筛选原型" }).fill("手机适配");
+    page.getByRole("combobox", { name: "Specs 来源分支" }),
+  ).toHaveCount(0);
+  await expect(page.locator("iframe")).toHaveCount(0);
+  await region.getByRole("textbox", { name: "筛选原型" }).fill("批量操作");
   await region
     .getByRole("combobox", { name: "筛选原型适配" })
     .selectOption("mobile");
   await expect(region.getByRole("listitem")).toHaveCount(1);
-  await region.getByRole("button", { name: /^打开预览：/ }).click();
+  await region.getByRole("button", { name: "打开预览：订单列表" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
+  await expect(page.frameLocator("iframe").getByRole("heading")).toHaveText(
+    "订单列表原型",
+  );
   await page.getByRole("button", { name: "复制固定版本链接" }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
-  expect(new URL(link).searchParams.get("m")).toBe("prototypes");
-  expect(new URL(link).searchParams.get("revision")).toMatch(/^[0-9a-f]{40}$/);
+  expect(new URL(link).searchParams.has("c")).toBe(false);
+  expect(new URL(link).searchParams.get("prototype")).toBe("orders");
   await page.goto(link);
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await page.getByRole("button", { name: "关闭页面预览" }).click();
   await expect(region.getByRole("textbox", { name: "筛选原型" })).toHaveValue(
-    "手机适配",
+    "批量操作",
   );
   await page.goBack();
-  await expect(page.locator("iframe")).toHaveAttribute("width", "390");
+  await expect(page.locator("iframe")).toBeVisible();
   await page.goForward();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await region.getByRole("textbox", { name: "筛选原型" }).fill("无匹配词");
-  await expect(
-    region.getByRole("heading", { name: "没有匹配的原型" }),
-  ).toBeVisible();
-  await expect(
-    region.getByRole("heading", { level: 1, name: "原型 4" }),
-  ).toBeVisible();
 });
-
-test("mobile catalog and source navigation keep a component at its declared size", async ({
+test("current gallery has responsive cards, missing artifact placeholders and hosted page entry", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 320, height: 720 });
-  await page.goto(path + "&pkind=component");
-  const region = inventory(page);
+  await page.goto(path);
+  await page.getByRole("button", { name: "打开预览：托管 React" }).click();
   await expect(
-    region.getByRole("heading", { name: "价格卡片", exact: true }),
+    page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await page.getByRole("button", { name: "打开预览：待导出页面" }).click();
+  await expect(
+    page.getByText("此页面尚未登记已发布产物。", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
+  await page.locator(".prototype-gallery-scroll").evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: "artifacts/prototype-catalog-desktop.png" });
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.getByRole("button", { name: "组件 1", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "价格卡片", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(1);
+  await page.locator(".prototype-gallery-scroll").evaluate((el) => {
+    el.scrollTop = 0;
+  });
   await page.screenshot({ path: "artifacts/prototype-catalog-mobile.png" });
-  await region.getByRole("button", { name: /^打开预览：/ }).click();
+  await page.getByRole("button", { name: "打开预览：价格卡片" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await region.getByRole("button", { name: "价格卡片的原型信息" }).click();
-  const info = page.getByRole("dialog", { name: "价格卡片的原型信息" });
+  await page.keyboard.press("Escape");
   await expect(
-    info.getByText("640 × 320 · 自定义", { exact: true }),
-  ).toBeVisible();
-  const bounds = await info.boundingBox();
-  expect(bounds!.x).toBeGreaterThanOrEqual(0);
-  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
-  await info.getByRole("button", { name: "查看 Change" }).click();
-  await expect(page).toHaveURL(/m=changes/);
-  await expect(
-    page.getByRole("tab", { name: "概览", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+    page.getByRole("button", { name: "打开预览：价格卡片" }),
+  ).toBeFocused();
 });
-
-test("catalog distinguishes disabled tracking, association issues, empty projects and project changes", async ({
+test("missing manifest and invalid entries remain explicit, separate from filtering", async ({
   page,
   request,
 }) => {
@@ -156,79 +97,24 @@ test("catalog distinguishes disabled tracking, association issues, empty project
     route.fulfill({
       json: {
         ...catalog,
-        policy: {
-          ...catalog.policy,
-          status: "disabled",
-          message: "项目已停用原型追踪。",
-        },
-        issues: [
-          {
-            changeId: "document-reader",
-            changeTitle: "需检查的关联",
-            message: "一项关联有误",
-          },
-        ],
+        items: [],
+        message: "main 尚未登记 prototype.json",
+        issues: ["第 1 项格式不合法"],
       },
     }),
   );
   await page.goto(path);
   await expect(
-    inventory(page).getByText("原型追踪未启用", { exact: true }),
+    page.getByText("main 尚未登记 prototype.json", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("1 项清单内容需检查", { exact: true }).click();
+  await expect(
+    page.getByText("第 1 项格式不合法", { exact: true }),
   ).toBeVisible();
   await expect(
-    inventory(page).getByRole("heading", { level: 1, name: "原型 4" }),
-  ).toBeVisible();
-  await expect(
-    inventory(page)
-      .getByRole("button", { name: /^预览未启用：/ })
-      .first(),
-  ).toBeDisabled();
-  await expect(page.locator("iframe")).toHaveCount(0);
-  await inventory(page)
-    .getByText("1 个 Change 的原型关联需检查", { exact: true })
-    .click();
-  await expect(inventory(page).getByText("一项关联有误")).toBeVisible();
-  const workbench = await (
-    await request.get("/api/projects/fixture/workbench")
-  ).json();
-  await page.route("**/api/projects", async (route) =>
-    route.fulfill({
-      json: {
-        projects: [
-          { id: "fixture", name: "测试项目" },
-          { id: "second", name: "空项目" },
-        ],
-      },
-    }),
-  );
-  await page.route("**/api/projects/second/workbench*", (route) =>
-    route.fulfill({
-      json: {
-        ...workbench,
-        projectId: "second",
-        projectName: "空项目",
-        changes: [],
-      },
-    }),
-  );
-  await page.route("**/api/projects/second/prototypes?*", (route) =>
-    route.fulfill({ json: { ...catalog, items: [], issues: [] } }),
-  );
-  await page.goto(
-    path +
-      "&pq=订单&pkind=page&pdevice=mobile&preview=obsolete&revision=" +
-      "0".repeat(40),
-  );
-  await page.getByRole("combobox", { name: "当前项目" }).selectOption("second");
-  await expect(page).not.toHaveURL(/pq=|pkind=|pdevice=|preview=|revision=/);
-  await expect(
-    inventory(page).getByRole("heading", { name: "项目还没有关联原型" }),
-  ).toBeVisible();
-  await expect(
-    inventory(page).getByRole("heading", { level: 1, name: "原型 0" }),
+    page.getByRole("heading", { name: "暂无当前页面" }),
   ).toBeVisible();
 });
-
 test("catalog API enforces project, snapshot and same-origin access boundaries", async ({
   request,
 }) => {
@@ -256,46 +142,4 @@ test("catalog API enforces project, snapshot and same-origin access boundaries",
       })
     ).status(),
   ).toBe(403);
-});
-
-test("association-only failures show a source problem instead of an empty project", async ({
-  page,
-  request,
-}) => {
-  const catalog = await (
-    await request.get("/api/projects/fixture/prototypes")
-  ).json();
-  await page.route("**/api/projects/fixture/prototypes?*", (route) =>
-    route.fulfill({
-      json: {
-        ...catalog,
-        items: [],
-        issues: [
-          {
-            changeId: "document-reader",
-            changeTitle: "来源待核对的 Change",
-            message: "无法确定 Change 主来源，请先核对来源记录。",
-          },
-        ],
-      },
-    }),
-  );
-  await page.goto(path);
-  const region = inventory(page);
-  await expect(
-    region.getByRole("heading", { name: "暂时没有可统计的原型" }),
-  ).toBeVisible();
-  await expect(
-    region.getByRole("heading", { name: "项目还没有关联原型" }),
-  ).toHaveCount(0);
-  await region
-    .getByText("1 个 Change 的原型关联需检查", { exact: true })
-    .click();
-  await expect(
-    region.getByText("无法确定 Change 主来源", { exact: false }),
-  ).toBeVisible();
-  await region.getByRole("button", { name: "来源待核对的 Change" }).click();
-  await expect(page).toHaveURL(/m=changes/);
-  await expect(page).toHaveURL(/c=document-reader/);
-  await expect(page.getByRole("dialog")).toBeVisible();
 });

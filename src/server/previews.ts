@@ -6,6 +6,7 @@ import type {
   Snapshot,
   PreviewDescriptor,
   PreviewEntry,
+  PrototypeConfig,
 } from "../lib/model.ts";
 import { primaryRecord } from "../lib/model.ts";
 import {
@@ -21,7 +22,7 @@ export function prototypePolicy(
   data: Collected,
   project: ProjectConfig,
 ): Snapshot["prototype"] {
-  const branch = project.specBranch ?? data.defaultBranch;
+  const branch = "main";
   const doc = data.documents.find(
     (d) => d.branch === branch && d.path === "docs/project/workflow.json",
   );
@@ -58,7 +59,7 @@ type TreeEntry = {
   bytes: number;
   path: string;
 };
-async function tree(
+export async function tree(
   reader: GitReader,
   revision: string,
   path: string,
@@ -85,7 +86,7 @@ async function tree(
       };
     });
 }
-async function body(
+export async function body(
   reader: GitReader,
   file: TreeEntry | undefined,
   limit: number,
@@ -265,7 +266,38 @@ export async function resolvePreview(
     return fail("这个 Change 还没有关联原型。");
   if (!Array.isArray(raw.previews))
     return fail("previews 必须是页面或组件关联数组。");
-  const changeDirectory = stateFiles[0].path.slice(0, -12);
+  return resolveEntries(
+    reader,
+    latest.projectId,
+    descriptor,
+    revision,
+    configuration,
+    raw.previews,
+    limits,
+    project,
+    selectedId,
+    selectedOnly,
+    stateFiles[0].path.slice(0, -12),
+  );
+}
+export async function resolveEntries(
+  reader: GitReader,
+  projectId: string,
+  descriptor: PreviewDescriptor,
+  revision: string,
+  configuration: PrototypeConfig,
+  rawEntries: unknown[],
+  limits: Limits,
+  project?: ProjectConfig,
+  selectedId?: string,
+  selectedOnly = false,
+  changeDirectory?: string,
+) {
+  const signal = AbortSignal.timeout(limits.refreshMs);
+  const fail = (message: string) => ({
+    descriptor: { ...descriptor, message },
+    html: undefined,
+  });
   const files = [
     ...(await tree(
       reader,
@@ -273,9 +305,9 @@ export async function resolvePreview(
       `${configuration.packagePath}/preview/`,
       signal,
     )),
-    ...documents.filter((f) =>
-      f.path.startsWith(`${changeDirectory}/previews/`),
-    ),
+    ...(changeDirectory
+      ? await tree(reader, revision, `${changeDirectory}/previews/`, signal)
+      : []),
   ];
   const htmlFiles = files.filter(
     (f) =>
@@ -285,26 +317,29 @@ export async function resolvePreview(
   );
   const unique = new Map(htmlFiles.map((f) => [f.blob, f.bytes]));
   if (
-    raw.previews.length > limits.previewEntries ||
+    rawEntries.length > limits.previewEntries ||
     htmlFiles.length > limits.previewEntries ||
     [...unique.values()].some((n) => !Number.isSafeInteger(n)) ||
     [...unique.values()].reduce((a, b) => a + b, 0) > limits.previewTotalBytes
   )
     return fail("原型包的入口数量或静态 HTML 总量超过服务限制。");
   let selectedHtml: string | undefined;
-  for (const [index, value] of raw.previews.entries()) {
+  for (const [index, value] of rawEntries.entries()) {
     // Thumbnail requests need one body, while the descriptor API validates all
     // entries. Keep the package-wide tree limits above for both read paths.
-    if (selectedOnly && value?.id !== selectedId) continue;
+    if (selectedOnly && (value as PreviewEntry)?.id !== selectedId) continue;
     const parsed = previewsSchema.safeParse([value]);
     const duplicate =
-      value?.id && raw.previews.filter((p) => p?.id === value.id).length > 1;
+      (value as PreviewEntry)?.id &&
+      rawEntries.filter(
+        (p) => (p as PreviewEntry)?.id === (value as PreviewEntry).id,
+      ).length > 1;
     if (!parsed.success || duplicate) {
       descriptor.entries.push({
         id: `invalid-${index}`,
         title:
-          typeof value?.title === "string"
-            ? value.title
+          typeof (value as PreviewEntry)?.title === "string"
+            ? (value as PreviewEntry).title
             : `无效入口 ${index + 1}`,
         path: "",
         kind: "component",
@@ -356,7 +391,9 @@ export async function resolvePreview(
       }
       info.available = true;
       info.bytes = file!.bytes;
-      info.url = `/preview/${encodeURIComponent(latest.projectId)}/${revision}/${changeId}/${entry.id}/index.html`;
+      info.url = changeDirectory
+        ? `/preview/${encodeURIComponent(projectId)}/${revision}/${descriptor.changeId}/${entry.id}/index.html`
+        : `/current-preview/${encodeURIComponent(projectId)}/${revision}/${entry.id}/index.html`;
       if (entry.id === selectedId) selectedHtml = html;
     } catch (e) {
       info.message =

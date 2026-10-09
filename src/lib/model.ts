@@ -180,8 +180,21 @@ export type ChangeGroup = {
   diagnostics: Diagnostic[];
   relations: Relation[];
 };
+export type CurrentPrototypeEntry = PreviewEntry & {
+  sourcePath: string;
+  description?: string;
+};
+export type CurrentPrototype = {
+  configuration?: PrototypeConfig;
+  revision: string | null;
+  packagePath?: string;
+  entries: CurrentPrototypeEntry[];
+  issues: string[];
+  message?: string;
+};
 export type Snapshot = {
-  cacheSchemaVersion: 2;
+  cacheSchemaVersion: 3;
+  currentPrototype: CurrentPrototype;
   archiveRefs: { id: string; commit: string }[];
   archivePins: Record<string, string>;
   prototype: {

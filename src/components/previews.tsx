@@ -21,9 +21,15 @@ const devices = {
   ipad: { label: "iPad", ...DEVICE_VIEWPORTS.ipad, icon: Tablet },
   mobile: { label: "移动设备", ...DEVICE_VIEWPORTS.mobile, icon: Smartphone },
 };
-export function ChangePreviews({ change }: { change: ChangeCandidate }) {
+export function ChangePreviews({
+  change,
+  current = false,
+}: {
+  change?: ChangeCandidate;
+  current?: boolean;
+}) {
   const { projectId, data, q, nav, notice } = useWorkspace();
-  const requestKey = `${projectId}:${change.id}:${data?.id}:${q.revision ?? ""}`;
+  const requestKey = `${projectId}:${change?.id ?? ""}:${data?.id}:${q.revision ?? ""}`;
   const [response, setResponse] = useState<{
     key: string;
     value?: PreviewDescriptor;
@@ -41,7 +47,7 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
     const params = new URLSearchParams({ snapshot: data!.id });
     if (q.revision) params.set("revision", q.revision);
     api<PreviewDescriptor>(
-      `/api/projects/${encodeURIComponent(projectId)}/previews/${encodeURIComponent(change.id)}?${params}`,
+      `/api/projects/${encodeURIComponent(projectId)}/${current ? "current-preview" : `previews/${encodeURIComponent(change?.id ?? "")}`}?${params}`,
       { signal: controller.signal },
     )
       .then((value) => setResponse({ key: requestKey, value }))
@@ -50,10 +56,12 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
           setResponse({ key: requestKey, error: e.message });
       });
     return () => controller.abort();
-  }, [requestKey, projectId, change.id, data, q.revision]);
+  }, [requestKey, projectId, change?.id, current, data, q.revision]);
   const result = response.key === requestKey ? response.value : undefined;
   const entry =
-    result?.entries.find((e) => e.id === q.preview) ??
+    result?.entries.find(
+      (e) => e.id === (q.preview || (current ? q.prototype : undefined)),
+    ) ??
     result?.entries.find((e) => e.available) ??
     result?.entries[0];
   const chosenDevice = (
@@ -198,13 +206,15 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
     for (const [key, value] of Object.entries({
       project: projectId,
       m: q.m === "prototypes" ? "prototypes" : "changes",
-      c: change.id,
-      ct: "previews",
+      c: change?.id ?? "",
+      ct: current ? "" : "previews",
+      prototype: current ? entry.id : "",
       preview: entry.id,
       revision: result.revision,
       orientation,
     }))
-      link.searchParams.set(key, value);
+      if (value) link.searchParams.set(key, value);
+      else link.searchParams.delete(key);
     link.searchParams.delete("branch");
     if (chosenDevice) link.searchParams.set("device", chosenDevice);
     else link.searchParams.delete("device");
@@ -243,7 +253,10 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
       </Empty>
     );
   return (
-    <section className="prototype-panel" aria-label="Change 原型预览">
+    <section
+      className="prototype-panel"
+      aria-label={current ? "当前页面预览" : "Change 原型预览"}
+    >
       <div className="preview-heading">
         <div>
           <span className="preview-eyebrow">PROTOTYPE</span>
@@ -277,9 +290,14 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
           </button>
         ))}
       </div>
-      {q.preview && !result.entries.some((e) => e.id === q.preview) && (
-        <p className="warning-text">链接中的入口不存在，已显示首个可用入口。</p>
-      )}
+      {q.preview &&
+        !result.entries.some(
+          (e) => e.id === (q.preview || (current ? q.prototype : undefined)),
+        ) && (
+          <p className="warning-text">
+            链接中的入口不存在，已显示首个可用入口。
+          </p>
+        )}
       {q.device &&
         entry?.devices &&
         !entry.devices.includes(q.device as Device) && (
@@ -443,7 +461,7 @@ export function ChangePreviews({ change }: { change: ChangeCandidate }) {
           className="text-button"
           onClick={() => nav({ revision: null })}
         >
-          返回当前 Change 版本
+          {current ? "返回 main 当前版本" : "返回当前 Change 版本"}
         </button>
       )}
       <p className="preview-footnote">

@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { join, resolve, extname } from "node:path";
 import { build } from "vite";
+import { chromium } from "playwright";
 // Test host owns its React build, CORS and TLS. OpenFolio only reads its reference.
 export async function hostedServer(root: string) {
   const dist = join(root, "hosted-dist");
@@ -55,6 +56,7 @@ export async function hostedServer(root: string) {
                 ".html": "text/html; charset=utf-8",
                 ".js": "text/javascript",
                 ".css": "text/css",
+                ".png": "image/png",
               } as Record<string, string>
             )[extname(relative)] ?? "application/octet-stream",
           "Access-Control-Allow-Origin": "*",
@@ -70,5 +72,28 @@ export async function hostedServer(root: string) {
   await new Promise<void>((resolve) =>
     server.listen(10685, "127.0.0.1", resolve),
   );
+  const browser = await chromium.launch({
+    chromiumSandbox: true,
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+      : {}),
+  });
+  try {
+    for (const [device, width, height] of [
+      ["pc-web", 1440, 900],
+      ["mobile", 390, 844],
+    ] as const) {
+      const page = await browser.newPage({
+        ignoreHTTPSErrors: true,
+        viewport: { width, height },
+      });
+      await page.goto("https://127.0.0.1:10685/v1/index.html");
+      await page.getByRole("button", { name: "已添加 0 次" }).waitFor();
+      await page.screenshot({ path: join(dist, `${device}.png`) });
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
   return server;
 }

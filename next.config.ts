@@ -15,6 +15,10 @@ const config: NextConfig = {
         ],
       },
       {
+        source: "/current-preview/:path*",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
+      {
         source: "/preview/:path*",
         headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
       },

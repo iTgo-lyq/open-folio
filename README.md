@@ -32,7 +32,8 @@ npm start
       "id": "example",
       "name": "Example",
       "repositoryUrl": "https://github.com/owner/example.git",
-      "specBranch": "main"
+      "specBranch": "main",
+      "prototypeOrigins": ["https://static.example.com"]
     }
   ],
   "allowedOrigins": ["https://your-private-preview.example"],
@@ -61,30 +62,30 @@ Change 前置关系与父子关系来自 JSON，任务默认按编号数值递�
 
 Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工程文档清单中解析，支持普通文本和经过签名检查的仓库图片；外部图片、SVG 和未知文件不嵌入。URL 保存浏览条件，链接重新打开后读取该来源的最新缓存，而非永久固定历史。
 
-## Change 原型预览
+## UI 组件库
 
-工作台提供与 Specs、Changes 并列的「原型」页面，汇总项目已关联的页面、组件和 Change 数量，支持名称/路径/Change 搜索与适配筛选。共享入口按路径与类型合并，卡片可切换关联版本、打开预览或进入 Change；Change 内的预览继续保留。列表统计关联元数据，卡片显示服务自动生成的首屏截图；缺失产物或截图失败有独立提示，不影响打开预览。
+`packages/ui` 导出 `@open-folio/ui` 组件与公共样式，主应用和独立组件预览共用源码。运行 `npm run ui:dev` 浏览组件，`npm run ui:build` 构建，`npm run ui:preview` 查看产物。预览无需 OpenFolio 服务或项目配置，也不进入原型总览；维护规则在根 AGENTS.md，包用法见 [UI README](packages/ui/README.md)。
 
-项目只维护一个 Git 跟踪的 monorepo 原型包，默认 `packages/prototype/`。通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 接入，复用用户的设计规范和组件库；不提供模板服务。拒绝选择记入 `docs/project/workflow.json.prototype`，不会反复启用。当前仓库包含两个页面和一个组件作为交付样例：
+## 项目页面与 Change 预览
+
+「原型」总览只读取被管理项目 main 的 `<packagePath>/prototype.json`，按名称、说明和设备发现当前页面并直接打开。入口不需要关联 Change；删除 main 清单项后移出总览，开发分支和单独上传不会改变当前展示。无 main、配置未启用、清单缺失或损坏时明确提示，不从 Change 拼接列表。
+
+原型协作通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 可选接入。宿主维护原型源码、mock 和构建，可使用 React 及自己的组件库；宿主实现发布协议并维护版本保留。OpenFolio 只读固定地址、版本、digest 和 sourceCommit，不安装依赖、不运行第三方构建、不接收上传。已登记参考原型不会因源码或样式变化而自动重新发布。
+
+宿主地址必须是无凭据、无查询令牌的固定 HTTPS URL，并在服务项目的 `prototypeOrigins` 中批准；它与工作台 `allowedOrigins` 分离。iframe 仅授予 `allow-scripts`，不开放同源、存储、弹窗或顶层跳转，使用 no-referrer。宿主须允许嵌入，并为 ESM、动态模块和字体提供适配不透明来源的 CORS；演示使用内存状态和 hash/memory 路由。工作台不代理登录或资源请求。可选就绪桥接确认应用可交互；超时仅提示未确认，保留画布及独立打开入口。
+
+宿主可发布每个声明视口的 PNG/WebP 缩略图；浏览器直接加载批准来源，缺失或失败显示占位，仍可打开页面。OpenFolio 服务不联网截图远端页面。Git 自包含 HTML 是显式兜底：当前产物保存在包内 preview，Change 复制一份到自身 previews 目录，归档时一同移动。普通多文件 React dist 使用托管链路。
+
+Change 页面的原型模块展示本次固定交付，未合入 main 也可分享。固定链接含记录提交和入口；总览的固定链接定位 main 历史中的清单提交。归档标签保留 Git 记录，宿主另行保证外部版本持续可用。当前 main 停用原型后，旧链接也停止展示；标签被改写不重新信任。
+
+当前仓库已登记三个既有 Git 原型作为示例，合入 main 后进入总览；UI 预览单独维护。宿主侧验证命令：
 
 ```bash
 npm run build --workspace prototype
 node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 ```
 
-`change.json.previews` 直接记录入口 id、标题、`<packagePath>/preview/<entry>` 文件夹、页面/组件类型和适配信息。页面声明 `pc-web`、`ipad`、`mobile` 中的设备；组件也可声明 `viewport: {width, height}`。工作台按真实 CSS 尺寸渲染，再缩放适应画布；设备选项是尺寸预设，不是硬件模拟器。
-
-每个目录必须提供自包含 `index.html`：脚本、样式和 mock 内联，图片/字体为 data URL。基础包支持共享文件内联；用户可以用自己的开发框架完成导出。普通多文件构建需要额外打包，不支持外链、动态 chunk、网络接口、持久存储或真实后端。提交源码、关联与产物后，工作台从已推送的固定提交读取，不运行仓库构建脚本。
-
-原型与工作台共用域名、端口和私有认证。iframe 仅授予 `allow-scripts`，响应头也强制沙箱；不给 `allow-same-origin` 或 CORS。局部交互运行在页面内存中，重载即重置。直接打开原型 URL 同样不能访问工作台存储与接口。
-
-功能开关取服务项目 `specBranch`（未配置时为远端默认分支）的最新成功采集配置，固定版本中的配置决定当时的包路径。当前基线停用后，旧链接也停止预览。Specs 与原型功能开关统一使用已登记的守护分支，正常部署指向 `main`。开关变化需要刷新采集，失败时保留旧快照并显示原成功时间。
-
-固定链接记录完整 revision，不受最近三份文档快照的保留数量限制。带原型的 Change 归档后，由 skill 推送 `spec-trail/archive/<change-id>` 标签保留交付提交；分支删除后仍可回看。标签丢失或已观察的标签被改写会明确报错，不回退最新页面。标签与关联产物都要保留在中心仓库。
-
-默认限制为 `previewBytes: 10485760`（单 HTML）、`previewTotalBytes: 104857600`（同提交 preview 根下所有 HTML 的去重合计）和 `previewEntries: 2000`；可在服务 `limits` 调整。超限、LFS 指针、符号链接或错误导出只影响原型，已有文档继续可读。
-
-本版缓存格式升级为 2。升级服务后执行一次项目刷新重建快照；旧缓存格式错误不是原始文档丢失。原型字段需配套升级 skill、hook 和工作台，再推送启用配置；旧客户端的严格 schema 不支持直接读取这些新字段。
+默认限制：`previewBytes` 单 HTML 10 MiB、`previewTotalBytes` 同提交相关目录去重 HTML 合计 100 MiB、`previewEntries` 2000；JSON 清单沿用受限读取。超限、LFS 指针和符号链接均不给可执行预览。快照格式为 3；版本 2 缓存升级时保留已观察的 archivePins，刷新后建立 main 清单，不清空 pin 来重新接受标签。
 
 ## Change 状态操作
 
@@ -110,7 +111,7 @@ npm run format:check
 
 ### 原型截图缓存
 
-卡片进入可视区域后，服务从同一固定 Git 版本读取 HTML，在空白、离线的 Chromium 沙箱中截图。页面按首个声明设备，组件按声明尺寸；设备筛选和关联来源切换会同步图片与打开预览的尺寸。图片保持原始比例，仅显示首屏，不执行交互验收或整页长截图。截图不写回 Git，也不要求 Agent 提交图片。
+Git 兜底卡片进入可视区域后，服务从同一固定 Git 版本读取 HTML，在空白、离线的 Chromium 沙箱中截图。页面按首个声明设备，组件按声明尺寸；设备筛选会同步图片与打开预览的尺寸。图片保持原始比例，仅显示首屏，不执行交互验收或整页长截图。截图不写回 Git，也不要求 Agent 提交图片。
 
 服务按项目/仓库、HTML 内容、视口与渲染器版本缓存 JPEG，因此无关文档提交和服务重启可复用结果，内容或尺寸变化自动生成新图。同键请求合并，最多 2 个浏览器、24 个排队任务，排队 30 秒或生成 12 秒超时后可重试。失败退避 5 秒，单图最多 4 MiB；`OPENFOLIO_DATA_DIR/thumbnails` 为私有可重建缓存，总上限 100 MiB、闲置 7 天后按需清理。删去该目录可重建；缓存清理不改变原型历史。
 

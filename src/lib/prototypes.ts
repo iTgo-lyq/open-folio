@@ -1,49 +1,32 @@
-import type { ChangeState, PreviewEntry, Snapshot } from "./model";
-
-export type PrototypeReference = {
-  changeId: string;
-  changeTitle: string;
-  status: ChangeState["status"];
-  archived: boolean;
-  recordCommit: string;
-  entry: PreviewEntry;
-};
-export type PrototypeItem = {
-  key: string;
-  path: string;
-  kind: PreviewEntry["kind"];
-  title: string;
-  references: PrototypeReference[];
-};
+import type { CurrentPrototypeEntry, Snapshot } from "./model";
+export type PrototypeItem = CurrentPrototypeEntry & { thumbnail?: string };
 export type PrototypeCatalog = {
   snapshotId: string;
+  revision: string | null;
   policy: Snapshot["prototype"];
   items: PrototypeItem[];
-  issues: { changeId: string; changeTitle: string; message: string }[];
+  issues: string[];
+  message?: string;
 };
 export const DEVICE_LABELS = {
   "pc-web": "PC Web",
   ipad: "iPad",
   mobile: "移动设备",
 };
-export function matchingPrototypeReferences(
+export function matchesPrototype(
   item: PrototypeItem,
   query: string,
   device: string,
 ) {
   const term = query.trim().toLocaleLowerCase();
-  return item.references.filter(({ entry, changeId, changeTitle }) => {
-    const supports =
-      !device ||
+  return (
+    (!device ||
       (device === "custom"
-        ? !!entry.viewport
-        : entry.devices?.some((d) => d === device));
-    return (
-      supports &&
-      (!term ||
-        `${entry.title} ${entry.id} ${item.path} ${changeId} ${changeTitle}`
-          .toLocaleLowerCase()
-          .includes(term))
-    );
-  });
+        ? !!item.viewport
+        : item.devices?.some((d) => d === device))) &&
+    (!term ||
+      `${item.title} ${item.description ?? ""} ${item.id}`
+        .toLocaleLowerCase()
+        .includes(term))
+  );
 }

@@ -23,7 +23,11 @@ import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
-import { prototypeCatalog } from "./prototypes.ts";
+import {
+  prototypeCatalog,
+  readCurrentPrototype,
+  resolveCurrentPreview,
+} from "./prototypes.ts";
 
 const snapshotPattern = /^[a-f0-9-]{36}$/;
 const alive = (pid: number) => {
@@ -118,12 +122,26 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 2 ||
+        ![2, 3].includes(s.cacheSchemaVersion) ||
         s.id !== target ||
         s.projectId !== p.id ||
         s.fingerprint !== this.fingerprint(p)
       )
         throw new Error();
+      if (Number(s.cacheSchemaVersion) === 2) {
+        s.cacheSchemaVersion = 3;
+        s.currentPrototype = {
+          revision: null,
+          entries: [],
+          issues: [],
+          message: "请重新读取中心仓库以建立 main 当前清单。",
+        };
+        s.prototype = {
+          status: "invalid",
+          branch: "main",
+          message: "请重新读取中心仓库以载入 main 原型配置。",
+        };
+      }
       return s;
     } catch {
       throw new AppError(
@@ -174,7 +192,20 @@ export class SnapshotStore {
       const reader = this.readerFactory(join(dir, "git"), p);
       const data = await reader.collect(limits, signal);
       const s: Snapshot = {
-        cacheSchemaVersion: 2,
+        cacheSchemaVersion: 3,
+        currentPrototype: await readCurrentPrototype(
+          reader,
+          data.branches.find((b) => b.name === "main")?.commit,
+          {
+            ...limits,
+            totalBytes: Math.max(
+              0,
+              limits.totalBytes -
+                [...data.blobs.values()].reduce((sum, b) => sum + b.length, 0),
+            ),
+          },
+          signal,
+        ),
         archiveRefs: data.archiveRefs,
         archivePins: {
           ...(await this.snapshot(p).catch(() => null))?.archivePins,
@@ -266,15 +297,31 @@ export class SnapshotStore {
   async prototypes(p: ProjectConfig, snapshotId?: string) {
     const latest = await this.snapshot(p);
     const source = snapshotId ? await this.snapshot(p, snapshotId) : latest;
-    return prototypeCatalog(source, latest.prototype, async (candidate) => {
-      const { body } = await this.document(
-        p,
-        candidate.jsonDocumentId,
-        source.id,
-      );
-      return JSON.parse(body.toString("utf8"));
-    });
+    return prototypeCatalog(source, latest.prototype);
   }
+  async currentPreview(
+    p: ProjectConfig,
+    revision: string | undefined,
+    limits: Limits,
+    snapshotId?: string,
+    entry?: string,
+    selectedOnly = false,
+  ) {
+    const latest = await this.snapshot(p);
+    const source =
+      snapshotId && !revision ? await this.snapshot(p, snapshotId) : latest;
+    return resolveCurrentPreview(
+      this.readerFactory(join(this.directory(p), "git"), p),
+      latest,
+      source,
+      p,
+      revision,
+      limits,
+      entry,
+      selectedOnly,
+    );
+  }
+
   async preview(
     p: ProjectConfig,
     change: string,

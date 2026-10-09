@@ -12,12 +12,30 @@ export async function thumbnailResponse(
   limits: Limits,
   change: string,
   entryId: string,
+  currentEntry = false,
 ) {
   const url = new URL(request.url);
   const snapshot = url.searchParams.get("snapshot") ?? undefined;
   const device = url.searchParams.get("device") ?? undefined;
   const resolve = () =>
-    store.preview(project, change, undefined, limits, snapshot, entryId, true);
+    currentEntry
+      ? store.currentPreview(
+          project,
+          url.searchParams.get("revision") ?? undefined,
+          limits,
+          snapshot,
+          entryId,
+          true,
+        )
+      : store.preview(
+          project,
+          change,
+          undefined,
+          limits,
+          snapshot,
+          entryId,
+          true,
+        );
   const { descriptor, html } = await resolve();
   const entry = descriptor.entries.find((e) => e.id === entryId);
   if (entry?.available && entry.artifact?.type === "hosted") {

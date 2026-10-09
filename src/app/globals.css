@@ -3305,6 +3305,8 @@ input {
 
 /* Rendered prototype covers keep their declared viewport and intrinsic ratio. */
 .prototype-thumbnail {
+  flex: none;
+  width: 100%;
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
@@ -3313,6 +3315,8 @@ input {
   background: #f1f5f8;
 }
 .prototype-thumbnail-open {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -3375,4 +3379,17 @@ input {
   align-items: center;
   gap: 5px;
   color: var(--blue);
+}
+.current-preview-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+}
+.prototype-description {
+  margin: 0;
+  padding: 0 16px 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
 }

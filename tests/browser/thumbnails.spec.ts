@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 const path = "/?project=fixture&m=prototypes";
 
-test("prototype cards show actual viewport screenshots and switch source/device consistently", async ({
+test("current cards show actual viewport screenshots and switch device consistently", async ({
   page,
 }) => {
   await page.goto(path);
@@ -17,34 +17,19 @@ test("prototype cards show actual viewport screenshots and switch source/device 
   expect(
     await image.evaluate((img: HTMLImageElement) => img.naturalHeight),
   ).toBe(900);
-  const card = region.getByRole("listitem").filter({
-    has: page.getByRole("heading", { name: "订单列表", exact: true }),
-  });
-  await card.getByRole("button", { name: "订单列表的原型信息" }).click();
-  const info = page.getByRole("dialog", { name: /的原型信息$/ });
-  await info.getByRole("combobox").selectOption("mobile-reading/mobile-orders");
-  await info.getByRole("button", { name: "关闭原型信息" }).click();
-  const mobile = region.getByRole("img", {
-    name: "订单列表 · 手机适配的首屏截图",
-    exact: true,
-  });
-  await expect
-    .poll(() => mobile.evaluate((img: HTMLImageElement) => img.naturalWidth))
-    .toBe(390);
-  await expect(image).toHaveCount(0);
   await region
     .getByRole("combobox", { name: "筛选原型适配" })
     .selectOption("mobile");
   await region
-    .getByRole("button", { name: "预览订单列表 · 手机适配", exact: true })
+    .getByRole("button", { name: "预览订单列表", exact: true })
     .click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await page.getByRole("button", { name: "关闭页面预览" }).click();
   await region.getByRole("button", { name: "清除筛选" }).click();
   await region
     .getByRole("heading", { name: "价格卡片", exact: true })
     .scrollIntoViewIfNeeded();
-  await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(3);
+  await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(4);
   await region.locator(".prototype-gallery-scroll").evaluate((el) => {
     el.scrollTop = 0;
   });
@@ -71,7 +56,7 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
 }) => {
   let failed = true;
   await page.route(
-    "**/api/projects/fixture/thumbnails/document-reader/card?*",
+    "**/api/projects/fixture/current-thumbnails/card?*",
     async (route) => {
       if (failed)
         await route.fulfill({ status: 503, body: "temporarily unavailable" });
@@ -86,7 +71,7 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   ).toBeEnabled();
   await region.getByRole("button", { name: /^打开预览：/ }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await page.getByRole("button", { name: "关闭页面预览" }).click();
   failed = false;
   await region.getByRole("button", { name: "重试截图" }).click();
   await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(1);

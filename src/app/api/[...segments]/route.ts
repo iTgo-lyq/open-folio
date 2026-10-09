@@ -52,6 +52,28 @@ async function handle(request: Request, context: Context) {
       return json(await store.workbench(p, snapshot, branch));
     if (s.length === 3 && s[2] === "prototypes")
       return json(await store.prototypes(p, snapshot));
+    if (s.length === 3 && s[2] === "current-preview")
+      return json(
+        (
+          await store.currentPreview(
+            p,
+            url.searchParams.get("revision") ?? undefined,
+            limitsFor(config),
+            snapshot,
+          )
+        ).descriptor,
+      );
+    if (s.length === 4 && s[2] === "current-thumbnails")
+      return thumbnailResponse(
+        request,
+        p,
+        store,
+        thumbnails(),
+        limitsFor(config),
+        "",
+        s[3],
+        true,
+      );
     if (s.length === 5 && s[2] === "thumbnails")
       return await thumbnailResponse(
         request,
