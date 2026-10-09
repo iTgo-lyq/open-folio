@@ -95,25 +95,6 @@ node .agents/skills/spec-trail/scripts/change.mjs --help
 node .agents/skills/spec-trail/scripts/change.mjs show --change 实际-change-id
 ```
 
-## Impeccable 源码
-
-`vendor/impeccable` 是 [个人 fork](https://github.com/iTgo-lyq/impeccable) 的 Git submodule，上游为 [pbakaus/impeccable](https://github.com/pbakaus/impeccable)。父仓库固定具体提交，拉取项目后初始化：
-
-```bash
-git submodule update --init --recursive
-git submodule status
-```
-
-子模块的 `origin` 指向个人 fork。`upstream` 是本地 Git 配置，不随克隆复制；需要追踪上游时，在尚未配置该 remote 的检出中执行一次：
-
-```bash
-git -C vendor/impeccable remote add upstream https://github.com/pbakaus/impeccable.git
-```
-
-初始化后子模块按父仓库记录的提交检出。修改时先在子模块创建工作分支，将补丁提交并推送至个人 fork，再在父仓库提交更新后的 gitlink；升级同样需要显式审阅并更新固定提交。`git submodule update --init --recursive` 用于恢复已记录版本，不自动追踪远端分支最新提交。
-
-当前只接入源码，未安装 Impeccable 依赖或运行 Live / Agent。其源码、许可及声明保持原样，并排除在 OpenFolio 自身的 TypeScript 检查范围之外。
-
 ## 验证
 
 ```bash
