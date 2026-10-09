@@ -172,7 +172,11 @@ test("archive publishes a retained tag atomically, is idempotent and never overw
         {
           id: "welcome",
           title: "Welcome",
-          path: "packages/prototype/preview/welcome",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/welcome",
+            sourceCommit: f.git(["rev-parse", "HEAD"]),
+          },
           kind: "page",
           devices: ["pc-web"],
         },
@@ -183,7 +187,7 @@ test("archive publishes a retained tag atomically, is idempotent and never overw
   let result = run(f.author, "archive.mjs", ["--change", "demo", "--push"]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
-    f.git(["rev-parse", "refs/tags/spec-trail/archive/demo"]),
+    f.git(["rev-parse", "refs/tags/spec-trail/archive-v2/demo"]),
     revision,
   );
   assert.equal(
@@ -196,7 +200,7 @@ test("archive publishes a retained tag atomically, is idempotent and never overw
   assert.equal(result.status, 1);
   assert.match(result.stderr, /never overwrite/);
   assert.equal(
-    f.git(["rev-parse", "refs/tags/spec-trail/archive/demo"]),
+    f.git(["rev-parse", "refs/tags/spec-trail/archive-v2/demo"]),
     revision,
   );
 });
@@ -233,7 +237,11 @@ test("archive accepts an existing annotated tag that retains the same completed 
         {
           id: "welcome",
           title: "Welcome",
-          path: "packages/prototype/preview/welcome",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/welcome",
+            sourceCommit: f.git(["rev-parse", "HEAD"]),
+          },
           kind: "page",
           devices: ["pc-web"],
         },
@@ -241,11 +249,11 @@ test("archive accepts an existing annotated tag that retains the same completed 
     }),
   );
   const revision = f.commit(),
-    ref = "refs/tags/spec-trail/archive/annotated";
+    ref = "refs/tags/spec-trail/archive-v2/annotated";
   f.git([
     "tag",
     "-a",
-    "spec-trail/archive/annotated",
+    "spec-trail/archive-v2/annotated",
     "-m",
     "Retain completed prototype",
     revision,

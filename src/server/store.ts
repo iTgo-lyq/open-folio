@@ -222,8 +222,8 @@ export class SnapshotStore {
         ...indexBase(data, p),
       };
       for (const ref of s.archiveRefs)
-        if (!Object.hasOwn(s.archivePins, ref.id))
-          s.archivePins[ref.id] = ref.commit;
+        if (!Object.hasOwn(s.archivePins, `spec-trail/archive-v2/${ref.id}`))
+          s.archivePins[`spec-trail/archive-v2/${ref.id}`] = ref.commit;
       for (const [blob, body] of data.blobs) {
         signal.throwIfAborted();
         await atomic(join(dir, "blobs", blob), body);

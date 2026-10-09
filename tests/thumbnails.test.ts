@@ -202,7 +202,11 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     id: "page",
     title: "页面",
     kind: "page",
-    path: "packages/prototype/preview/page",
+    artifact: {
+      type: "git",
+      path: "packages/prototype/preview/page",
+      sourceCommit: f.git(["rev-parse", "HEAD"]),
+    },
     devices: ["pc-web", "mobile"],
   };
   const state = {
@@ -218,12 +222,19 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     closure: {},
     previews: [
       entry,
-      { ...entry, id: "other", path: "packages/prototype/preview/other" },
+      {
+        ...entry,
+        id: "other",
+        artifact: {
+          ...entry.artifact,
+          path: "packages/prototype/preview/other",
+        },
+      },
     ],
   };
   await f.put("docs/project/changes/demo/change.json", JSON.stringify(state));
   await f.put(
-    `${entry.path}/index.html`,
+    `${entry.artifact.path}/index.html`,
     "<!doctype html><html><body>first</body></html>",
   );
   await f.put(
@@ -299,7 +310,7 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
   await assert.rejects(response("&device=ipad"), { code: "INVALID_PARAMETER" });
   assert.notEqual((await response("&device=pc-web")).headers.get("etag"), etag);
   await f.put(
-    `${entry.path}/index.html`,
+    `${entry.artifact.path}/index.html`,
     "<!doctype html><html><body>second</body></html>",
   );
   f.commit();

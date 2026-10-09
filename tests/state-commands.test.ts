@@ -479,7 +479,14 @@ test("preview association command preserves unrelated state and enforces configu
     id: "page",
     title: "Page",
     kind: "page",
-    path: "packages/prototype/preview/page",
+    artifact: {
+      type: "git",
+      path: "packages/prototype/preview/page",
+      sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: f.root,
+        encoding: "utf8",
+      }).trim(),
+    },
     devices: ["mobile"],
   };
   writeFileSync(entries, JSON.stringify([entry]));
@@ -497,8 +504,11 @@ test("preview association command preserves unrelated state and enforces configu
     }),
   );
   f.run("previews-set", ["--file", entries], 1);
-  mkdirSync(join(f.root, entry.path), { recursive: true });
-  writeFileSync(join(f.root, entry.path, "index.html"), "<h1>Page</h1>");
+  mkdirSync(join(f.root, entry.artifact.path), { recursive: true });
+  writeFileSync(
+    join(f.root, entry.artifact.path, "index.html"),
+    "<h1>Page</h1>",
+  );
   const before = f.state();
   f.run("previews-set", ["--file", entries]);
   assert.deepEqual(f.state(), { ...before, previews: [entry] });

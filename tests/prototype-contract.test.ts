@@ -16,7 +16,11 @@ const enabled = {
 const entry = {
   id: "list",
   title: "列表",
-  path: "packages/prototype/preview/list",
+  artifact: {
+    type: "git",
+    path: "packages/prototype/preview/list",
+    sourceCommit: "a".repeat(40),
+  },
   kind: "page",
   devices: ["mobile", "pc-web"],
 };
@@ -45,7 +49,11 @@ test("prototype contract and hook agree for page/component variants and reject m
         id: "card",
         title: "卡片",
         kind: "component",
-        path: "packages/prototype/preview/card",
+        artifact: {
+          type: "git",
+          path: "packages/prototype/preview/card",
+          sourceCommit: "a".repeat(40),
+        },
         viewport: { width: 640, height: 320 },
       },
     ],
@@ -74,6 +82,17 @@ test("prototype contract and hook agree for page/component variants and reject m
       JSON.stringify(previews),
     );
   }
+  assert(
+    !changeSchema.safeParse(
+      state([
+        {
+          ...entry,
+          artifact: undefined,
+          path: "packages/prototype/preview/list",
+        },
+      ]),
+    ).success,
+  );
   assert(prototypeSchema.safeParse(enabled).success);
   assert(prototypeSchema.safeParse({ status: "disabled", decision }).success);
   for (const value of [
@@ -104,26 +123,33 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
       prototype: enabled,
     }),
   );
+  entry.artifact.sourceCommit = f.git(["rev-parse", "HEAD"]);
   const retained = [entry, { ...entry, id: "detail", title: "详情" }];
   await f.put(path, JSON.stringify(state(retained)));
   stage();
-  await f.put(`${entry.path}/index.html`, "<!doctype html><h1>not staged</h1>");
+  await f.put(
+    `${entry.artifact.path}/index.html`,
+    "<!doctype html><h1>not staged</h1>",
+  );
   assert.equal(run().status, 1);
   stage();
   assert.equal(run().status, 0);
   f.commit();
-  f.git(["rm", `${entry.path}/index.html`]);
+  f.git(["rm", `${entry.artifact.path}/index.html`]);
   assert.equal(run().status, 1);
   f.git([
     "restore",
     "--source=HEAD",
     "--staged",
     "--worktree",
-    `${entry.path}/index.html`,
+    `${entry.artifact.path}/index.html`,
   ]);
   const { rm } = await import("node:fs/promises");
-  await rm(join(f.author, entry.path, "index.html"));
-  await symlink("/etc/passwd", join(f.author, entry.path, "index.html"));
+  await rm(join(f.author, entry.artifact.path, "index.html"));
+  await symlink(
+    "/etc/passwd",
+    join(f.author, entry.artifact.path, "index.html"),
+  );
   stage();
   assert.equal(run().status, 1);
   f.git([
@@ -131,7 +157,7 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     "--source=HEAD",
     "--staged",
     "--worktree",
-    `${entry.path}/index.html`,
+    `${entry.artifact.path}/index.html`,
   ]);
   await f.put(
     "docs/project/workflow.json",

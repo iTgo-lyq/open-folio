@@ -469,7 +469,7 @@ export function ChangePreviews({
           ? `产物 ${hosted.version} · 源码 ${hosted.sourceCommit.slice(0, 12)}${entry?.sourceAvailable === false ? "（源码提交已不可用）" : ""}`
           : entry?.artifact?.type === "git"
             ? entry.artifact.path
-            : entry?.path}
+            : ""}
         {" · "}适配范围由项目声明，画布缩放不改变布局尺寸。
       </p>
     </section>

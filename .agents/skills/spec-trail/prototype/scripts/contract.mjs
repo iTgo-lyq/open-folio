@@ -171,7 +171,6 @@ export function validateArtifact(value, path = "/artifact") {
 function entryIssues(p, at, current) {
   const errors = [],
     common = ["id", "title", "kind", "devices", "viewport"];
-  const legacy = !current && isObject(p) && Object.hasOwn(p, "path");
   if (
     !fields(
       p,
@@ -179,15 +178,13 @@ function entryIssues(p, at, current) {
         ...common,
         ...(current
           ? ["sourcePath", "description", "artifact"]
-          : legacy
-            ? ["path"]
-            : ["artifact"]),
+          : ["artifact"]),
       ],
       [
         "id",
         "title",
         "kind",
-        ...(current ? ["sourcePath"] : legacy ? ["path"] : ["artifact"]),
+        ...(current ? ["sourcePath"] : ["artifact"]),
       ],
       at,
       errors,
@@ -198,8 +195,6 @@ function entryIssues(p, at, current) {
     errors.push(`${at}/id: requires a lowercase kebab-case id`);
   if (!nonempty(p.title) || p.title.length > 256)
     errors.push(`${at}/title: must contain at most 256 characters`);
-  if (legacy && !safePath(p.path))
-    errors.push(`${at}/path: requires a safe repository-relative directory`);
   if (current) {
     if (!safePath(p.sourcePath))
       errors.push(`${at}/sourcePath: requires a safe source path`);
@@ -297,7 +292,7 @@ export function entryPath(preview, config, changeDirectory) {
   )
     return null;
   const path =
-    preview.artifact?.type === "git" ? preview.artifact.path : preview.path;
+    preview.artifact?.type === "git" ? preview.artifact.path : undefined;
   if (!path) return null;
   if (path.startsWith(`${config.packagePath}/preview/`))
     return `${path}/index.html`;

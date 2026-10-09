@@ -100,7 +100,6 @@ export type PreviewArtifact =
 export type PreviewEntry = {
   id: string;
   title: string;
-  path?: string;
   artifact?: PreviewArtifact;
   kind: "page" | "component";
   devices?: Device[];

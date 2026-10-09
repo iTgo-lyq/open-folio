@@ -139,33 +139,45 @@
     {
       "id": "change-overview",
       "title": "Change 概览",
-      "path": "packages/prototype/preview/change-overview",
       "kind": "page",
       "devices": [
         "pc-web",
         "ipad",
         "mobile"
-      ]
+      ],
+      "artifact": {
+        "type": "git",
+        "path": "docs/project/archive/2026-10-04-change-prototype-preview/previews/change-overview",
+        "sourceCommit": "4aa15437403153400624d59a4402dc2137862af5"
+      }
     },
     {
       "id": "empty-state",
       "title": "原型空态",
-      "path": "packages/prototype/preview/empty-state",
       "kind": "page",
       "devices": [
         "pc-web",
         "ipad",
         "mobile"
-      ]
+      ],
+      "artifact": {
+        "type": "git",
+        "path": "docs/project/archive/2026-10-04-change-prototype-preview/previews/empty-state",
+        "sourceCommit": "4aa15437403153400624d59a4402dc2137862af5"
+      }
     },
     {
       "id": "preview-toolbar",
       "title": "设备选择组件",
-      "path": "packages/prototype/preview/preview-toolbar",
       "kind": "component",
       "viewport": {
         "width": 640,
         "height": 320
+      },
+      "artifact": {
+        "type": "git",
+        "path": "docs/project/archive/2026-10-04-change-prototype-preview/previews/preview-toolbar",
+        "sourceCommit": "4aa15437403153400624d59a4402dc2137862af5"
       }
     }
   ]

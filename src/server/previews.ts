@@ -167,8 +167,10 @@ export async function resolvePreview(
   if (!requestedRevision && candidate?.archived) {
     const ref = latest.archiveRefs.find((r) => r.id === changeId);
     if (!ref)
-      return fail("归档预览缺少保留标签 spec-trail/archive/" + changeId + "。");
-    if (latest.archivePins[changeId] !== ref.commit)
+      return fail(
+        "归档预览缺少保留标签 spec-trail/archive-v2/" + changeId + "。",
+      );
+    if (latest.archivePins[`spec-trail/archive-v2/${changeId}`] !== ref.commit)
       return fail("归档标签被改写，已停止预览；请恢复原交付引用。");
     revision = ref.commit;
     descriptor.pinned = true;
@@ -180,7 +182,9 @@ export async function resolvePreview(
   const tips = [
     ...latest.branches.map((b) => b.commit),
     ...latest.archiveRefs
-      .filter((r) => latest.archivePins[r.id] === r.commit)
+      .filter(
+        (r) => latest.archivePins[`spec-trail/archive-v2/${r.id}`] === r.commit,
+      )
       .map((r) => r.commit),
   ];
   try {
@@ -229,7 +233,7 @@ export async function resolvePreview(
       if (
         !ref ||
         ref.commit !== revision ||
-        latest.archivePins[changeId] !== revision
+        latest.archivePins[`spec-trail/archive-v2/${changeId}`] !== revision
       )
         return fail("该归档版本没有一致的保留标签，不能替换为其他版本。");
       if (
@@ -341,7 +345,6 @@ export async function resolveEntries(
           typeof (value as PreviewEntry)?.title === "string"
             ? (value as PreviewEntry).title
             : `无效入口 ${index + 1}`,
-        path: "",
         kind: "component",
         available: false,
         message: "关联字段不合法或 id 重复，请检查 change.json。",

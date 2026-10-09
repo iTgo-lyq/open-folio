@@ -57,7 +57,8 @@
     },
     "T7": {
       "title": "迁移旧 HTML 存档并移除旧格式兼容",
-      "status": "todo"
+      "status": "done",
+      "verification": "61 项既有单测、新增迁移端到端、11 项浏览器、类型/格式检查通过；实际 3 个 HTML 与原标签提交字节一致。新 archive-v2 标签随迁移检查点推送。"
     },
     "T8": {
       "title": "接入全局 shadcn 工具并用 shadcnuikit 优化 UI 预览",

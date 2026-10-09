@@ -80,28 +80,44 @@ export async function seed() {
           id: "orders",
           title: "订单列表",
           kind: "page",
-          path: "packages/prototype/preview/orders",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/orders",
+            sourceCommit,
+          },
           devices: ["pc-web", "ipad", "mobile"],
         },
         {
           id: "detail",
           title: "订单详情",
           kind: "page",
-          path: "packages/prototype/preview/detail",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/detail",
+            sourceCommit,
+          },
           devices: ["pc-web"],
         },
         {
           id: "card",
           title: "价格卡片",
           kind: "component",
-          path: "packages/prototype/preview/card",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/card",
+            sourceCommit,
+          },
           viewport: { width: 640, height: 320 },
         },
         {
           id: "missing",
           title: "待导出页面",
           kind: "page",
-          path: "packages/prototype/preview/missing",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/missing",
+            sourceCommit,
+          },
           devices: ["mobile"],
         },
         {
@@ -217,7 +233,11 @@ export async function seed() {
           id: "mobile-orders",
           title: "订单列表 · 手机适配",
           kind: "page",
-          path: "packages/prototype/preview/orders",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/orders",
+            sourceCommit,
+          },
           devices: ["mobile"],
         },
       ],
@@ -299,11 +319,7 @@ export async function seed() {
         e.id === "orders"
           ? "订单检索、手机适配与批量操作"
           : `${e.title}的页面细节`,
-      artifact:
-        e.artifact ??
-        (e.id === "missing"
-          ? undefined
-          : { type: "git", path: e.path, sourceCommit }),
+      artifact: e.id === "missing" ? undefined : e.artifact,
     }));
   await f.put(
     "packages/prototype/prototype.json",

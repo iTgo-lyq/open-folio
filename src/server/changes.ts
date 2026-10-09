@@ -289,11 +289,11 @@ export async function indexChanges(
         (c) =>
           c.archived &&
           c.validCompleted &&
-          c.branch === `refs/tags/spec-trail/archive/${g.id}`,
+          c.branch === `refs/tags/spec-trail/archive-v2/${g.id}`,
       ).length === 1
     ) {
       const pinned = g.candidates.find(
-        (c) => c.branch === `refs/tags/spec-trail/archive/${g.id}`,
+        (c) => c.branch === `refs/tags/spec-trail/archive-v2/${g.id}`,
       )!;
       g.primary = pinned.key;
       g.title = pinned.title;

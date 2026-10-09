@@ -14,7 +14,11 @@ const entry = {
   id: "page",
   title: "页面",
   kind: "page",
-  path: "packages/prototype/preview/page",
+  artifact: {
+    type: "git",
+    path: "packages/prototype/preview/page",
+    sourceCommit: "a".repeat(40),
+  },
   devices: ["pc-web", "mobile"],
 };
 const state = {
@@ -39,7 +43,7 @@ async function source() {
   f.commit();
   f.git(["checkout", "-b", state.branch]);
   await f.put(changePath, JSON.stringify(state));
-  await f.put(`${entry.path}/index.html`, html("first"));
+  await f.put(`${entry.artifact.path}/index.html`, html("first"));
   const revision = f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   return { ...f, revision };
@@ -57,7 +61,7 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
   const initial = await preview(f);
   assert.equal(initial.descriptor.revision, f.revision);
   assert.match(initial.html!, /first/);
-  await f.put(`${entry.path}/index.html`, html("not pushed"));
+  await f.put(`${entry.artifact.path}/index.html`, html("not pushed"));
   const next = f.commit(false);
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.match((await preview(f)).html!, /first/);
@@ -121,7 +125,7 @@ test("archive tag preserves source and HTML after branch deletion and cold rebui
     }),
   );
   const archived = f.commit(),
-    tag = "spec-trail/archive/preview-demo";
+    tag = "spec-trail/archive-v2/preview-demo";
   f.git(["tag", tag, archived]);
   f.git(["push", "origin", `refs/tags/${tag}`]);
   f.git(["push", "origin", "--delete", state.branch]);
@@ -150,7 +154,7 @@ test("archive tag preserves source and HTML after branch deletion and cold rebui
     ).html!,
     /first/,
   );
-  await f.put(`${entry.path}/index.html`, html("rewritten"));
+  await f.put(`${entry.artifact.path}/index.html`, html("rewritten"));
   const changed = f.commit(false);
   f.git(["tag", "-f", tag, changed]);
   f.git(["push", "--force", "origin", `refs/tags/${tag}`]);
@@ -193,27 +197,30 @@ test("previews reject unreachable revisions, invalid entries, symlinks, LFS and 
   assert.equal(limited.html, undefined);
   assert.match(limited.descriptor.entries[0].message!, /大小/);
   assert((await f.store.snapshot(f.project)).specs.length);
-  await rm(join(f.author, entry.path, "index.html"));
-  await symlink("/etc/passwd", join(f.author, entry.path, "index.html"));
+  await rm(join(f.author, entry.artifact.path, "index.html"));
+  await symlink(
+    "/etc/passwd",
+    join(f.author, entry.artifact.path, "index.html"),
+  );
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.equal((await preview(f)).html, undefined);
-  await rm(join(f.author, entry.path, "index.html"));
+  await rm(join(f.author, entry.artifact.path, "index.html"));
   await f.put(
-    `${entry.path}/index.html`,
+    `${entry.artifact.path}/index.html`,
     "version https://git-lfs.github.com/spec/v1\noid sha256:123\nsize 200\n",
   );
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.match((await preview(f)).descriptor.entries[0].message!, /LFS/);
   await f.put(
-    `${entry.path}/index.html`,
+    `${entry.artifact.path}/index.html`,
     '<!doctype html><script src="./chunk.js"></script>',
   );
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.match((await preview(f)).descriptor.entries[0].message!, /自包含/);
-  await f.put(`${entry.path}/index.html`, html("valid"));
+  await f.put(`${entry.artifact.path}/index.html`, html("valid"));
   await f.put(
     changePath,
     JSON.stringify({
@@ -295,9 +302,9 @@ test("two Changes can share one exported entry without a separate prototype mani
     );
   assert.equal(reused.html, original.html);
   assert.equal(reused.descriptor.revision, revision);
-  assert.equal(
-    reused.descriptor.entries[0].path,
-    original.descriptor.entries[0].path,
+  assert.deepEqual(
+    reused.descriptor.entries[0].artifact,
+    original.descriptor.entries[0].artifact,
   );
 });
 
@@ -325,7 +332,7 @@ test("per-commit preview entry limits do not cap lifetime archive tags or block 
       }),
     );
     const revision = f.commit();
-    const tag = `refs/tags/spec-trail/archive/${id}`;
+    const tag = `refs/tags/spec-trail/archive-v2/${id}`;
     f.git(["tag", tag.slice(10), revision]);
     f.git(["push", "origin", tag]);
   }
@@ -371,13 +378,13 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
     }),
   );
   const revision = f.commit(),
-    tag = `refs/tags/spec-trail/archive/${id}`;
+    tag = `refs/tags/spec-trail/archive-v2/${id}`;
   f.git(["tag", tag.slice(10), revision]);
   f.git(["push", "origin", tag]);
   for (const store of [f.store, f.makeStore()]) {
     const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
-    assert(Object.hasOwn(snapshot.archivePins, id));
-    assert.equal(snapshot.archivePins[id], revision);
+    assert(Object.hasOwn(snapshot.archivePins, `spec-trail/archive-v2/${id}`));
+    assert.equal(snapshot.archivePins[`spec-trail/archive-v2/${id}`], revision);
     const result = await store.preview(
       f.project,
       id,
@@ -393,7 +400,7 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
 test("hosted Change references are fixed, origin controlled, and do not require retained source commits", async (t) => {
   const f = await source();
   t.after(f.cleanup);
-  const { path: ignored, ...base } = entry;
+  const { artifact: ignored, ...base } = entry;
   const artifact = {
     type: "hosted",
     version: "v1",
@@ -447,7 +454,7 @@ test("hosted Change references are fixed, origin controlled, and do not require 
 test("new Git fallback reads its Change-owned snapshot independently from current package output", async (t) => {
   const f = await source();
   t.after(f.cleanup);
-  const { path: ignored, ...base } = entry;
+  const { artifact: ignored, ...base } = entry;
   const path = "docs/project/changes/preview-demo/previews/page";
   await f.put(`${path}/index.html`, html("change snapshot"));
   await f.put(
@@ -466,7 +473,7 @@ test("new Git fallback reads its Change-owned snapshot independently from curren
       ],
     }),
   );
-  await f.put(`${entry.path}/index.html`, html("current output"));
+  await f.put(`${entry.artifact.path}/index.html`, html("current output"));
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.match((await preview(f)).html!, /change snapshot/);

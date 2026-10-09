@@ -87,11 +87,10 @@ interface PrototypeConfig {
 interface PreviewEntry {
   id: string;
   title: string;
-  path?: string; // 旧格式：配置包下 preview 入口目录
-  artifact?: { type: "git"; path: string; sourceCommit: string } | {
+  artifact: { type: "git"; path: string; sourceCommit: string } | {
     type: "hosted"; version: string; url: string; sourceCommit: string; digest: string;
     thumbnails?: { device?: "pc-web" | "ipad" | "mobile"; url: string }[];
-  }; // 新格式；与旧 path 互斥，详细契约见原型子 skill
+  }; // 固定产物引用，详细契约见原型子 skill
   kind: "page" | "component";
   devices?: ("pc-web" | "ipad" | "mobile")[]; // page 必填；去重、非空
   viewport?: { width: number; height: number }; // component 与 devices 二选一，1–4096 CSS px

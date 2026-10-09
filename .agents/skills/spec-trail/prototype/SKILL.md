@@ -65,7 +65,7 @@ node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 
 浏览器检查使用宿主安装的 Playwright；可用 --playwright 指向已有模块。静态检查不代替浏览器检查，初始加载也不代替关键交互及各声明视口验证。宿主可按视口提供截图引用，缺失时总览使用占位；不要求 OpenFolio 服务联网截图。
 
-## Git 兜底与旧记录
+## Git 兜底
 
 显式采用 Git 兜底时，宿主生成 `<packagePath>/preview/<id>/index.html` 自包含 UTF-8 HTML，脚本/CSS/mock 内联，图片字体用 data URL；不允许外链资源、存储或真实业务请求。普通 Vite dist 不是单文件兜底，框架内联构建由宿主维护。
 
@@ -73,7 +73,7 @@ node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 node .agents/skills/spec-trail/prototype/scripts/publish.mjs register --git-entry orders --change change-id
 ```
 
-该操作记录源码 commit，当前产物留在包内，并复制一份到 Change 的 previews/id；后续更新当前产物不覆盖旧 Change。归档操作移动快照并更新新式 path；旧式 previews 的包内 path 和固定链接继续读取，不重写旧 archive。不要因为构建一个入口就清空其他入口。
+该操作记录源码 commit，当前产物留在包内，并复制一份到 Change 的 previews/id；后续更新当前产物不覆盖旧 Change。归档操作移动快照并更新 artifact.path。不要因为构建一个入口就清空其他入口。
 
 ## 归档
 
@@ -83,4 +83,20 @@ node .agents/skills/spec-trail/prototype/scripts/publish.mjs register --git-entr
 node .agents/skills/spec-trail/prototype/scripts/archive.mjs --change change-id --push
 ```
 
-分支与 `spec-trail/archive/<id>` 标签均核实后才报告完成。相同提交可重试，不覆盖同名异提交标签。缺少标签或远端产物时明确说明，不回退其他版本。
+分支与 `spec-trail/archive-v2/<id>` 标签均核实后才报告完成。相同提交可重试，不覆盖同名异提交标签。缺少标签或远端产物时明确说明，不回退其他版本。
+
+
+## 一次性旧存档迁移
+
+运行时只接受 artifact 引用，旧 previews.path 格式不再兼容。用户明确要求迁移旧存档后，在非守护分支运行：
+
+```bash
+node .agents/skills/spec-trail/prototype/scripts/migrate.mjs --change old-change
+# 原标签不存在时须提供原交付的完整 --revision。
+# 核对迁移字节与来源，提交推送后：
+node .agents/skills/spec-trail/prototype/scripts/archive.mjs --change old-change --push
+```
+
+迁移只从确定的原交付提交读取 HTML，复制到 Change 的 previews/id 并更新引用；保留其他历史事实，拒绝覆盖不同字节和之后已修改的关联。同参数可重试；中断后用 publish.mjs recover 恢复事务。源码提交采用所迁移的原交付提交，可由该提交核对当时源码及产物。
+
+新保留标签统一为 spec-trail/archive-v2/id，旧标签和 Git 历史不改写；迁移后分享新提交链接，旧格式固定链接不再预览。服务 pin 按新命名空间隔离，并保留旧缓存 pin；新标签一经观察同样禁止替换。

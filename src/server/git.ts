@@ -126,7 +126,7 @@ export class GitReader {
         "--no-recurse-submodules",
         "origin",
         "+refs/heads/*:refs/remotes/origin/*",
-        "+refs/tags/spec-trail/archive/*:refs/openfolio/archive/*",
+        "+refs/tags/spec-trail/archive-v2/*:refs/openfolio/archive-v2/*",
       ],
       signal,
     );
@@ -155,7 +155,7 @@ export class GitReader {
       );
     const archiveRows = (
       await this.run(
-        ["for-each-ref", "--format=%(refname)", "refs/openfolio/archive/"],
+        ["for-each-ref", "--format=%(refname)", "refs/openfolio/archive-v2/"],
         signal,
       )
     )
@@ -165,7 +165,7 @@ export class GitReader {
       .filter(Boolean);
     const archiveRefs: { id: string; commit: string }[] = [];
     for (const ref of archiveRows) {
-      const id = ref.slice("refs/openfolio/archive/".length);
+      const id = ref.slice("refs/openfolio/archive-v2/".length);
       if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) continue;
       try {
         archiveRefs.push({
@@ -186,7 +186,7 @@ export class GitReader {
     const sources = [
       ...branches.map((b) => ({ ...b, archiveId: "" })),
       ...archiveRefs.map((r) => ({
-        name: `refs/tags/spec-trail/archive/${r.id}`,
+        name: `refs/tags/spec-trail/archive-v2/${r.id}`,
         commit: r.commit,
         archiveId: r.id,
       })),

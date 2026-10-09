@@ -74,7 +74,7 @@ try {
     }
   const revision = git(["rev-parse", "HEAD"]),
     branch = git(["symbolic-ref", "--short", "HEAD"]);
-  const tag = `spec-trail/archive/${id}`,
+  const tag = `spec-trail/archive-v2/${id}`,
     ref = `refs/tags/${tag}`;
   let existing;
   try {

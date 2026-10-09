@@ -288,7 +288,7 @@ function paths(root) {
     journal: join(common, "spec-trail-prototype-transaction.json"),
   };
 }
-function withLock(root, fn) {
+export function withLock(root, fn) {
   const { lock } = paths(root);
   mkdirSync(lock);
   try {
@@ -326,7 +326,7 @@ export function recover(root) {
     rmSync(journal);
   });
 }
-function transaction(root, files) {
+export function transaction(root, files) {
   const { journal } = paths(root);
   fail(
     !existsSync(journal),

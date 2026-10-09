@@ -12,7 +12,7 @@ import {
   currentPreview,
   entryPath,
 } from "./contract.mjs";
-import { checkedPath } from "./publishing.mjs";
+import { git, checkedPath } from "./publishing.mjs";
 import { htmlIssues, sandboxCsp } from "./html.mjs";
 let browser, server;
 try {
@@ -39,21 +39,21 @@ try {
     for (const entry of manifest.entries)
       if (entry.artifact) entries.push(currentPreview(entry));
   }
-  // Legacy outputs remain checkable while a project adopts a current manifest.
+  // Check explicit Git build output before registration as well.
   const preview = checkedPath(root, cfg.packagePath + "/preview");
   if (existsSync(preview))
     for (const name of await readdir(preview)) {
       const item = {
         id: name,
         title: name,
-        path: `${cfg.packagePath}/preview/${name}`,
+        artifact: { type: "git", path: `${cfg.packagePath}/preview/${name}`, sourceCommit: git(root, ["rev-parse", "HEAD"]) },
         kind: "page",
         devices: ["pc-web"],
       };
       if (
         entryPath(item, cfg) &&
         !entries.some((e) => e.id === name) &&
-        existsSync(checkedPath(root, item.path + "/index.html"))
+        existsSync(checkedPath(root, item.artifact.path + "/index.html"))
       )
         entries.push(item);
     }
