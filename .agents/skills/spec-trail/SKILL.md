@@ -24,7 +24,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 - 守护分支不直接开发。开始开发前 `git fetch` 并同步落后的分支。当前分支存在已取消 Change 时停止开发，冻结范围与仅规划取消的例外见[取消](#取消-change)。
 - 调查和规划可并行；实现边界独立时可使用分支或 worktree。共享行为、Spec、契约、迁移或核心文件重叠时串行协调，small 也不例外。
 
-首次接入先核实实际默认分支和保护规则，按 `WorkflowConfig` 在 `docs/project/workflow.json` 登记守护分支，完成后再开始产品开发。
+首次接入按 [Setup 子 skill](./setup/SKILL.md) 核实实际默认分支和保护规则、登记 `WorkflowConfig` 并检查校验环境，由业务项目的用户或 Agent 接入提交校验并验证；完成后再开始产品开发。
 
 ## 文档与事实来源
 

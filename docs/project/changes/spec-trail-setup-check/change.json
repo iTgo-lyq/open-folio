@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "解耦 setup 检查与业务 hook 接入",
-      "status": "doing"
+      "status": "done",
+      "verification": "setup 10 项、项目 48 项测试及 skill 校验通过；独立评审发现的共享模块导出缺口已修正并复验通过。",
+      "commitTitle": "spec-trail-setup-check T1: separate readiness checks from hook integration"
     }
   },
   "closure": {}
