@@ -45,3 +45,9 @@ Vite 独立入口在 10683 提供组件导航、主题色、按钮状态、图�
 验证：`npm run ui:build`、`npm run ui:test`、`npm run typecheck`、`npm run format:check`、`npm run build` 全部通过。预览测试覆盖方向键、跳过禁用项、代码切换、搜索无结果恢复及原有按钮/空态，320px 无横向溢出；已查看桌面、移动截图。单元测试 62 项通过。扫描仓库候选文件与两类构建产物共 430 个文件，无密钥匹配。工具 CLI add 受本机 npm 用户级 allow-scripts 限制，改用官方 CLI view 源码完成适配；项目不依赖该个人安装配置。
 
 整体验证补充：完整 `npm run test:e2e` 34 项通过（57 秒），覆盖 Changes/Specs、托管和 Git 预览、main 总览、缩略图及窄屏路径。fetch 后本分支对 origin/main 为 19 ahead / 0 behind。
+
+## T9 独立评审返修
+
+修复 Review R1：当前缩略图 await 异步处理，错误回到公共 JSON 响应。修复 R2：发布共享锁记录持有者，明确异常退出后核对进程、清理已确认失效锁再 recover，保留活跃锁保护。使用真实 SIGKILL 子进程复现并验证恢复。
+
+验证：发布测试 6 项通过；缩略图 3 项原场景回归通过，新增错误契约测试校正入口缺失的预期错误码后单独复验通过；类型、格式与 Next 生产构建通过。没有修改 UI 交付，因此沿用 T8 的 UI 构建和交互证据。

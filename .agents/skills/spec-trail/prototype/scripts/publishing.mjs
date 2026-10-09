@@ -13,6 +13,7 @@ import {
   realpathSync,
 } from "node:fs";
 import { dirname, join, resolve, relative } from "node:path";
+import { hostname } from "node:os";
 import {
   validateManifest,
   validatePreviews,
@@ -290,8 +291,19 @@ function paths(root) {
 }
 export function withLock(root, fn) {
   const { lock } = paths(root);
-  mkdirSync(lock);
   try {
+    mkdirSync(lock);
+  } catch (error) {
+    if (error.code === "EEXIST")
+      throw Error(
+        `Another state operation holds ${lock}. Inspect owner.json (if present), the owning process and worktree; only remove a confirmed stale lock, then run publish.mjs recover. Never remove an active or unverified lock.`,
+      );
+    throw error;
+  }
+  try {
+    writeFileSync(join(lock, "owner.json"), json({
+      pid: process.pid, hostname: hostname(), root: realpathSync(root), startedAt: new Date().toISOString(),
+    }), { flag: "wx", mode: 0o600 });
     return fn();
   } finally {
     rmSync(lock, { recursive: true });

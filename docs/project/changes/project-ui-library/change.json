@@ -65,6 +65,12 @@
       "status": "done",
       "verification": "官方全局 skill/MCP 与 shadcnuikit 真实调用成功；Card/Tabs/TabbedCard 入库并用于独立预览；类型、格式、两端生产构建、UI 交互、62 单元及34浏览器测试通过，产物扫描无密钥。",
       "commitTitle": "project-ui-library T8: integrate shadcn tooling and component preview"
+    },
+    "T9": {
+      "title": "修复独立评审发现的预览与恢复边界",
+      "status": "done",
+      "verification": "独立评审 R1/R2 已复验关闭；发布6项含真实SIGKILL恢复、缩略图3项回归及新增错误契约测试通过；类型格式和Next生产构建通过，无未解决P1/P2。",
+      "commitTitle": "project-ui-library T9: fix preview errors and recovery guidance"
     }
   },
   "closure": {},

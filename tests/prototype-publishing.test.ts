@@ -2,7 +2,7 @@ import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import assert from "node:assert/strict";
-import { readFile, writeFile, mkdir, symlink } from "node:fs/promises";
+import { readFile, writeFile, mkdir, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import {
@@ -10,6 +10,7 @@ import {
   register,
   recover,
   checkedPath,
+  withLock,
   validateResult,
 } from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
 import {
@@ -332,4 +333,45 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "publish-demo",
     "--push",
   ]);
+});
+
+test("crashed publication retains lock evidence and recovers only after verified stale-lock cleanup", async (t) => {
+  const { f } = await publication(t);
+  const path = "packages/prototype/prototype.json";
+  const file = join(f.author, path);
+  const before = await readFile(file, "utf8");
+  const after = before + "\n";
+  const lock = join(f.author, ".git/spec-trail-state.lock");
+  const journal = join(f.author, ".git/spec-trail-prototype-transaction.json");
+  const moduleUrl = new URL(
+    "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
+    import.meta.url,
+  ).href;
+  const crashed = spawnSync(process.execPath, [
+    "--input-type=module",
+    "-e",
+    `
+    import { withLock } from ${JSON.stringify(moduleUrl)};
+    import { writeFileSync } from "node:fs";
+    withLock(${JSON.stringify(f.author)}, () => {
+      writeFileSync(${JSON.stringify(journal)}, ${JSON.stringify(JSON.stringify({ root: f.author, files: [{ path, before: Buffer.from(before).toString("base64"), after: Buffer.from(after).toString("base64") }] }))});
+      writeFileSync(${JSON.stringify(file)}, ${JSON.stringify(after)});
+      process.kill(process.pid, "SIGKILL");
+    });
+  `,
+  ]);
+  assert.equal(crashed.signal, "SIGKILL");
+  const owner = JSON.parse(await readFile(join(lock, "owner.json"), "utf8"));
+  assert.equal(owner.root, f.author);
+  assert.equal(typeof owner.hostname, "string");
+  assert(Number.isFinite(Date.parse(owner.startedAt)));
+  assert.throws(() => recover(f.author), /confirmed stale lock/);
+  assert.equal(await readFile(file, "utf8"), after);
+  assert.throws(() => process.kill(owner.pid, 0), { code: "ESRCH" });
+  await rm(lock, { recursive: true }); // Only this known-dead test child owned it.
+  recover(f.author);
+  assert.equal(await readFile(file, "utf8"), before);
+  withLock(f.author, () => {
+    assert.throws(() => recover(f.author), /Never remove an active/);
+  });
 });

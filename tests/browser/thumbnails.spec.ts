@@ -115,3 +115,21 @@ test("thumbnail endpoint returns private validators and rejects unsupported inpu
     (await request.get(url.replace("/orders?", "/missing?"))).status(),
   ).toBe(404);
 });
+
+test("current thumbnail failures use the public JSON error contract", async ({
+  request,
+}) => {
+  for (const [path, status, code] of [
+    ["orders?device=desktop", 400, "INVALID_PARAMETER"],
+    ["orders?revision=not-a-commit", 400, "INVALID_PARAMETER"],
+    ["absent", 404, "THUMBNAIL_UNAVAILABLE"],
+  ] as const) {
+    const response = await request.get(
+      `/api/projects/fixture/current-thumbnails/${path}`,
+    );
+    expect(response.status()).toBe(status);
+    expect(response.headers()["content-type"]).toContain("application/json");
+    expect(response.headers()["cache-control"]).toBe("private, no-store");
+    expect((await response.json()).error.code).toBe(code);
+  }
+});

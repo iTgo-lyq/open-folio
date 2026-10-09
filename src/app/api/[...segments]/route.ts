@@ -64,7 +64,7 @@ async function handle(request: Request, context: Context) {
         ).descriptor,
       );
     if (s.length === 4 && s[2] === "current-thumbnails")
-      return thumbnailResponse(
+      return await thumbnailResponse(
         request,
         p,
         store,
