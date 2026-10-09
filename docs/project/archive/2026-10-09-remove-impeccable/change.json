@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "remove-impeccable",
+  "title": "移除 Impeccable 源码子模块",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/remove-impeccable",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "移除源码子模块及相关说明和配置",
+      "status": "done",
+      "verification": "子模块目录、gitlink 和 .gitmodules 已移除；README 与当前代码和配置无 Impeccable 引用；npm run typecheck、npm run format:check、git diff --check 通过；既有归档、Specs、AGENTS.md 与 skill 未修改。",
+      "commitTitle": "remove-impeccable: remove unused source submodule"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-09T09:25:38.941Z",
+      "summary": "类型、格式和 diff 检查通过；子模块登记与源码入口已清理，实现和任务状态已提交推送。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-09T09:25:39.003Z",
+      "summary": "Agent 自验收通过：源码子模块及相关说明和配置已移除，既有归档和项目规范保持原样。",
+      "source": "SpecTrail small Change 自验收规则；用户要求删除 Impeccable，且不写入项目规范。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-09T09:25:39.066Z",
+      "summary": "移除未启用的源码子模块，应用行为无变化；用户明确要求不写入项目规范。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-09T09:25:39.126Z",
+      "summary": "移除及验证完成，完整 Change 归档。",
+      "path": "docs/project/archive/2026-10-09-remove-impeccable"
+    }
+  }
+}

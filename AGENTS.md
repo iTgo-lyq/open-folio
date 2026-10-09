@@ -7,3 +7,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## 构建产物
+
+默认使用 `.next`，浏览器测试沿用 `.next-e2e`；仅需保留运行中的生产预览时，验证构建才用 `.next-verify`。同目录的生产构建须串行，禁止按任务名新建 `.next-*`，不得删除或覆盖运行中服务的产物。临时验证目录用后清理，避免遗留临时构建路径或失效的类型引用。
+
+## SpecTrail 同步
+
+`.agents/skills/spec-trail/` 的变更合入 `main` 前，须询问用户是否同步至公开仓库 [iTgo-lyq/spec-trail](https://github.com/iTgo-lyq/spec-trail) 的 `skills/spec-trail/`；用户明确同意后，按最终合入版本同步。
