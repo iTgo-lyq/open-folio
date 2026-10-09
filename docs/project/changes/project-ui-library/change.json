@@ -4,7 +4,7 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
@@ -73,10 +73,20 @@
       "commitTitle": "project-ui-library T9: fix preview errors and recovery guidance"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-09T14:51:20.426Z",
+      "summary": "完整62项单元、34项浏览器、UI独立交互、类型格式和两端生产构建通过；T9增量发布6项与新增缩略图错误回归通过。隔离上下文独立评审覆盖完整差异，R1/R2均复验关闭，无未解决P1/P2。"
+    }
+  },
   "rework": {
     "at": "2026-10-09T14:21:27.132Z",
     "reason": "用户追加旧 HTML 存档迁移并移除兼容，以及全局 shadcn 工具和 shadcnuikit 组件预览适配。",
     "approach": "沿用已完成基础，追加 T7/T8；认证仅个人环境，迁移不改写 Git 历史。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "全部实现和独立评审完成，等待用户人工验收；UI预览10683，测试数据原型工作台10682。尚未验收、同步Specs、归档或合入main。"
   }
 }
