@@ -4,9 +4,15 @@
   "title": "项目组件库、私人 UI 资源协同与原型预览复用",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "codex/project-ui-library",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-09T13:28:20.248Z",
+      "summary": "用户确认当前讨论已明确的需求方向并要求进入下一步：独立 UI 包与预览、可选原型协作、main 页面总览、宿主构建托管及固定发布引用，Git 产物兜底。",
+      "source": "本会话用户：还有问题吗？可以进入下一步了吗？；此前已明确选择宿主托管，OpenFolio 只保存引用。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "rework": {
