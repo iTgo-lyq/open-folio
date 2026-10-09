@@ -137,3 +137,8 @@ OpenFolio 的原型模块服务于所管理的第三方仓库，读取各项目�
 - 2026-10-09 本次讨论：用户明确原型模块也需按此前方向改造，核心是让用户直接看到当前项目的各种页面，不必自己寻找入口；总览只展示 main，进行中 Change 通过 Change 页面分享，HTML 按 Change 保存并追溯产出时源码版本。
 - 2026-10-09 后续澄清：原型协作可选，启用后仅由 skill 建议 UI 明显变更的 Change 优先画原型；原型工程同时保存当前产物并约定目录或项目描述文件，Change 保存当时快照；无需独立导出功能，构建方式须考虑 React 和 UI 组件库复用。
 - 2026-10-09 最新澄清：用户明确宿主自行保证 React 等源码的构建，并负责上传到自己的存储或静态托管；OpenFolio 定义接口并只保存发布引用，Git 内保存产物作为兜底。当前描述和 Change 改为引用已发布版本，宿主不上传文件到 OpenFolio。
+
+# 协作资源
+
+- [Vite 官方入门文档](https://vite.dev/guide/)，2026-10-09 读取：用于核对独立 UI 预览的 React/TypeScript、workspace 与正常构建能力；具体版本通过 npm 元数据核实，证据见 [Research](./research.md)。
+- [MDN iframe 文档](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe)，2026-10-09 读取：用于核对外部托管预览的隔离、嵌入和加载状态限制；本地浏览器实验与拟议访问契约分别见 Research 和 Technical，不代表具体宿主已经接通。
