@@ -14,7 +14,11 @@
     "test": "node --conditions=react-server --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "format:check": "prettier --check src tests *.ts *.json README.md packages/ui",
-    "format": "prettier --write src tests *.ts *.json README.md packages/ui"
+    "format": "prettier --write src tests *.ts *.json README.md packages/ui",
+    "ui:dev": "npm run dev --workspace @open-folio/ui",
+    "ui:build": "npm run build --workspace @open-folio/ui",
+    "ui:preview": "npm run preview --workspace @open-folio/ui",
+    "ui:test": "node tests/ui-preview.mjs"
   },
   "dependencies": {
     "lucide-react": "0.577.0",

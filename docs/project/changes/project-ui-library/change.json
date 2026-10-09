@@ -32,8 +32,8 @@
     },
     "T2": {
       "title": "交付独立组件预览及维护示例",
-      "status": "blocked",
-      "reason": "先修复 T1 复查发现的响应式样式误删，T6 验证后恢复。"
+      "status": "done",
+      "verification": "UI 生产构建、独立浏览器交互、320px、类型与格式检查通过，详见 execution.md。"
     },
     "T3": {
       "title": "建立宿主发布与原型登记协议",
