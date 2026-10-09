@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-trail-setup-check",
+  "title": "SpecTrail setup 检查与业务 hook 接入解耦",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/spec-trail-setup-check",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-09T07:28:04.073Z",
+      "summary": "用户已确认提供校验能力和只读 setup 检查，由业务用户或 Agent 接入 hook。",
+      "source": "本会话：可以，开始优化吧"
+    },
+    "technical": {
+      "at": "2026-10-09T07:28:04.132Z",
+      "summary": "沿用会话已确认的职责边界：取消自动 hook 和 hooksPath 管理，保留校验器，以实际执行验证接入。",
+      "source": "本会话：可以，开始优化吧"
+    },
+    "plan": {
+      "at": "2026-10-09T07:28:04.190Z",
+      "summary": "在已确认范围内完成 setup 检查、接入指引及回归验证。",
+      "source": "本会话：可以，开始优化吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "解耦 setup 检查与业务 hook 接入",
+      "status": "done",
+      "verification": "setup 10 项、项目 48 项测试及 skill 校验通过；独立评审发现的共享模块导出缺口已修正并复验通过。",
+      "commitTitle": "spec-trail-setup-check T1: separate readiness checks from hook integration"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-09T07:39:17.852Z",
+      "summary": "setup 10 项与项目 48 项测试通过，主/setup skill 校验通过；独立 Agent 完整评审及共享模块导出缺口修正复验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-09T08:50:38.823Z",
+      "summary": "用户明确要求两个 Change 归档并合入 main，验收 setup 检查与业务 hook 接入解耦交付。",
+      "source": "本会话：两个change都归档吧，然后合入 main"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-09T08:50:38.935Z",
+      "summary": "同步 change-workflow 能力的接入与提交校验：只读 setup 准备检查、业务方接入职责和实际执行验证；保留暂存区校验边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-09T08:50:39.043Z",
+      "summary": "用户明确验收并授权合入 main；setup 解耦交付与独立评审通过，Specs 已同步，完整材料归档。",
+      "path": "docs/project/archive/2026-10-09-spec-trail-setup-check"
+    }
+  }
+}

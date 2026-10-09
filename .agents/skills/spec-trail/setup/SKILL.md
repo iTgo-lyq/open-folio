@@ -1,33 +1,43 @@
 ---
 name: spec-trail-setup
-description: 首次在 Git 仓库持久化接入 SpecTrail 时，登记守护分支并安装无第三方依赖的提交前规则校验 hook。用于初始化或更新接入；常规 Change 推进使用主 SpecTrail skill。
+description: 首次或更新接入 SpecTrail 时，登记守护分支、只读检查校验环境与文件，并指导用户或业务 Agent 接入提交校验。常规 Change 推进使用主 SpecTrail skill。
 ---
 
 # 接入 SpecTrail
 
-接入结果必须进入版本控制：守护分支配置、只负责调用脚本的 `pre-commit` hook，以及 skill 目录中的校验脚本随仓库交付。本机 Git 配置不提交；只在 `.git/hooks` 安装不算完成接入。
+SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业务项目的 Agent 根据项目现有流程完成 hook 接入，SpecTrail 不规定 hook 目录或管理工具。
 
-校验使用 Node.js 内置模块和 Git，不安装依赖，不创建或修改项目包配置，不添加 `prepare`、`spec-trail:check` 或其他 npm 脚本。
+校验使用 Node.js 20+、Git 和 Node.js 内置模块，无需第三方依赖。守护分支配置、skill 中的校验脚本及业务方维护的接入文件随仓库交付；本机 Git 配置不提交。只在 `.git/hooks` 写本机入口不算完成可共享接入。
 
-## 安装
+## 准备检查
 
-1. 确认目标 Git 仓库、默认分支、实际保护规则及现有 hook 配置。按主工作流的 `WorkflowConfig` 在 `docs/project/workflow.json` 登记实际守护分支，保留已有有效配置。没有 remote 时登记本地约定并说明尚无服务端保护。需要 Node.js 20+ 和 Git。
+1. 确认目标 Git 仓库、默认分支和实际保护规则，按主 skill 的 `WorkflowConfig` 在 `docs/project/workflow.json` 登记实际守护分支，保留已有有效配置。没有 remote 时说明登记的是本地约定，尚无服务端保护。
+   校验器位于 `.agents/skills/spec-trail/setup/scripts/pre-commit.js`，依赖同一 skill 内的 `scripts/state-schema.mjs` 与 `prototype/scripts/contract.mjs`；缺少文件时补齐 skill 交付，不将校验逻辑复制进业务 hook。
 2. 从任意目录运行，`<setup-dir>` 指本文件所在目录：
 
    ```bash
-   node <setup-dir>/scripts/install-hook.mjs <repo-dir>
+   node <setup-dir>/scripts/check-setup.mjs <repo-dir>
    ```
 
-   安装器确保 [无依赖校验脚本](scripts/pre-commit.js) 位于 `.agents/skills/spec-trail/setup/scripts/pre-commit.js`，并创建可执行的 `.githooks/pre-commit`。hook 只调用该脚本，校验逻辑统一在脚本中维护。没有现有 hook 配置时，本机设置 `core.hooksPath=.githooks`；重复接入保留同一入口。无需安装器副本、额外运行时目录或下载步骤。
-3. 若安装器报告 `INTEGRATION_REQUIRED`（退出码 2），读取现有 hook 和管理器配置，保留全部现有逻辑与 `core.hooksPath`，在同一个有效的 `pre-commit` 中追加安装器输出的校验脚本调用；已有调用不重复添加。校验须位于会修改暂存区的步骤之后，并传递失败退出码，不能放在提前退出的代码之后。接入代码须持久化到仓库，不通过修改包配置接入。更新已由 SpecTrail 独占的 hook 或校验脚本时核对内容后替换；不要覆盖用户追加的检查，也不将校验逻辑复制到 hook 中。
-4. Git clone 传递 hook 和校验脚本，不传递本机的 `core.hooksPath`。新克隆在没有其他 hook 配置时执行以下命令即可启用；已有 hook 管理器沿用其实际路径。同仓库 worktree 共用 Git 配置，从各自检出的 hook 调用本工作区的校验脚本。
+   检查器只读取目标仓库，不创建或复制文件、不修改 Git 配置、不执行业务 hook。JSON 输出 `readiness`、资源与配置问题、调用命令和 Git 入口信息；退出码 0 表示准备就绪，1 表示环境或文件需修正。`hook.status` 始终为 `unverified`，准备就绪不代表提交校验已接通。
 
-   ```bash
-   git config --local core.hooksPath .githooks
-   ```
+## 业务方接入与验证
 
-5. 手动执行 `node .agents/skills/spec-trail/setup/scripts/pre-commit.js` 并运行有效 hook，核对权限、调用路径及错误退出码。修改规则或安装器后运行 `node --test <setup-dir>/tests/setup.test.mjs`，验证真实提交、字段规则、暂存区与部分提交、克隆后的启用、已有 hook 和 worktree；不在用户工作区制造无效状态文件。没有目标文件时如实说明“本次无待校验文件”。
-6. 将守护分支配置、hook 和校验脚本的接入文件提交，按已有授权与 remote 配置推送。报告持久化位置、本机启用方式、验证及提交推送状态。未提交、未启用或未推送时不宣称相应步骤已完成。项目 README 只保留项目目标，接入规则统一维护在本 skill。
+由用户或业务 Agent 读取已有 hook 和项目配置，沿实际调用链找到项目维护的入口，保留既有检查和管理方式。Git 的实际入口可能只是生成的转发文件，例如 Husky 的 `.husky/_/pre-commit`；接入应写入项目维护的文件，不修改管理器生成文件。没有现成入口时，由业务方按项目约定选择持久化和本机启用方式，不由检查器设置 `core.hooksPath`。
+
+在会修改暂存区的步骤之后、提前退出之前调用校验器；已有等效调用不重复添加。Shell 入口可使用：
+
+```sh
+node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/setup/scripts/pre-commit.js" || exit $?
+```
+
+其他入口采用等效调用并传播非零退出码。接入只需调用校验器，无需为 SpecTrail 新增 npm 脚本或修改包配置；项目已有管理工具的安装配置继续由业务方维护。
+
+手动运行校验器，并用不污染用户工作区或暂存区的方式验证实际提交入口的成功路径和失败传播；必要时使用临时测试仓库。只有实际执行证据才能确认 hook 已接通，目录存在、字符串匹配或 setup 检查成功均不算验收。没有待校验文件时如实报告，不能据此推定失败路径通过。
+
+Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新克隆沿业务项目既有启用方式接入。同仓库 worktree 默认共用 Git 配置，入口应调用当前工作区的校验脚本。更换管理方式后重新核对实际入口与执行效果。
+
+将接入文件和配置提交，并按已有授权与 remote 配置推送。报告持久化位置、业务启用方式、准备检查、实际 hook 验证及提交推送状态；未验证时明确说明。项目 README 只保留项目目标，SpecTrail 的接入规则维护在本 skill。
 
 ## 校验范围
 
@@ -38,3 +48,5 @@ description: 首次在 Git 仓库持久化接入 SpecTrail 时，登记守护分
 - 确认是否有效、依赖是否满足、任务是否真正完成以及合码条件由 Agent 按主工作流判断。hook 不解析 Markdown，也不增加开发、归档或合码门禁。
 
 更新规则时只修改 skill 中的校验脚本并提交对应更新，使规则与主 skill 的类型声明保持一致；hook 保持对该脚本的调用。
+
+修改校验规则或 setup 检查后运行 `node --test <setup-dir>/tests/setup.test.mjs`，覆盖只读检查、业务方显式接入、字段规则、暂存区、部分提交、clone 和 worktree。
