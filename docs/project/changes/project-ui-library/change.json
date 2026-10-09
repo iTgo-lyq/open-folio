@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "project-ui-library",
-  "title": "项目组件库、私人 UI 资源协同与原型预览复用",
+  "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
   "stage": "execution",
@@ -37,7 +37,8 @@
     },
     "T3": {
       "title": "建立宿主发布与原型登记协议",
-      "status": "todo"
+      "status": "done",
+      "verification": "发布5项、原有协议/工具/状态23项、更新后的setup/validate联合11项验证通过；类型和格式检查通过。"
     },
     "T4": {
       "title": "支持托管预览与固定 Change 分享",
