@@ -68,6 +68,19 @@ function fixture(t: import("node:test").TestContext) {
     run("execute");
     run("task-start", ["--task", "T1"]);
   };
+  const plan = (body: string) =>
+    writeFileSync(join(root, "docs/project/changes/sample/plan.md"), body);
+  const confirm = () => {
+    for (const phase of ["requirement", "technical", "plan"])
+      run("confirm", [
+        "--phase",
+        phase,
+        "--summary",
+        "Fixture confirmation",
+        "--source",
+        "Test fixture",
+      ]);
+  };
   const done = () =>
     run("task-complete", [
       "--task",
@@ -102,6 +115,8 @@ function fixture(t: import("node:test").TestContext) {
     run,
     create,
     begin,
+    plan,
+    confirm,
     done,
     verify,
     accept,
@@ -200,6 +215,136 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
     f.accept("user");
     f.archive();
   }
+});
+
+test("default scheduling enforces numeric serial order for every ordinary size", (t) => {
+  for (const size of ["small", "medium", "large"]) {
+    const f = fixture(t);
+    f.create(size);
+    for (const id of ["T10", "T2", "T1"])
+      f.run("task-add", ["--task", id, "--title", id]);
+    if (size !== "small") f.confirm();
+    f.run("execute");
+    const before = readFileSync(f.path(), "utf8"),
+      index = f.git("ls-files", "--stage");
+    assert.match(f.run("task-start", ["--task", "T2"], 1), /T1/);
+    assert.match(f.run("task-start", ["--task", "T10", "--dry-run"], 1), /T1/);
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+    assert.equal(f.git("ls-files", "--stage"), index);
+    f.run("task-block", ["--task", "T1", "--reason", "Waiting for input"]);
+    f.run("task-start", ["--task", "T2"], 1);
+    for (const id of ["T1", "T2", "T10"]) {
+      f.run("task-start", ["--task", id]);
+      f.run("task-complete", [
+        "--task",
+        id,
+        "--verification",
+        "Fixture result",
+      ]);
+    }
+    f.verify();
+    f.accept(size === "small" ? "agent" : "user");
+    assert.equal(f.archive().state.status, "completed");
+  }
+});
+
+test("explicit parallel order overrides the default and completion rechecks changed predecessors", (t) => {
+  const f = fixture(t);
+  f.create("medium");
+  for (const id of ["T1", "T2"])
+    f.run("task-add", ["--task", id, "--title", id]);
+  f.confirm();
+  const parallel =
+    "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | 无 |\n";
+  f.plan(parallel);
+  f.run("execute");
+  f.run("task-start", ["--task", "T2"]);
+  f.run("task-start", ["--task", "T1"]);
+  assert.equal(f.state().tasks.T1.status, "doing");
+  assert.equal(f.state().tasks.T2.status, "doing");
+  f.plan(parallel.replace("| T2 | 无 |", "| T2 | T1 |"));
+  const before = readFileSync(f.path(), "utf8");
+  f.run(
+    "task-complete",
+    ["--task", "T2", "--verification", "Premature completion"],
+    1,
+  );
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  f.done();
+  f.run("task-complete", [
+    "--task",
+    "T2",
+    "--verification",
+    "After prerequisite",
+  ]);
+  f.verify();
+});
+
+test("invalid explicit orders block execution and every closure step without writing state", (t) => {
+  const f = fixture(t);
+  f.create("medium");
+  f.run("task-add", ["--title", "Implement"]);
+  f.confirm();
+  const good =
+    "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n";
+  const invalid = [
+    good + good,
+    good.replace("| --- | --- |\n", ""),
+    good.replace("| T1 | 无 |", "| T1 | T1 |"),
+    good.replace("T1 | 无", "T2 | 无"),
+  ];
+  const original = readFileSync(f.path(), "utf8");
+  for (const body of invalid) {
+    f.plan(body);
+    f.run("execute", [], 1);
+    assert.equal(readFileSync(f.path(), "utf8"), original);
+  }
+  f.plan(good);
+  f.run("execute");
+  f.plan(invalid[0]);
+  const execution = readFileSync(f.path(), "utf8");
+  f.run("task-start", ["--task", "T1"], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), execution);
+  f.plan(good);
+  f.run("task-start", ["--task", "T1"]);
+  f.done();
+  const checked = (command: string, options: string[], action: () => void) => {
+    f.plan(invalid[0]);
+    const before = readFileSync(f.path(), "utf8"),
+      index = f.git("ls-files", "--stage");
+    f.run(command, options, 1);
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+    assert.equal(f.git("ls-files", "--stage"), index);
+    f.plan(good);
+    action();
+  };
+  checked("verify", ["--result", "passed", "--summary", "Bad order"], f.verify);
+  checked(
+    "accept",
+    ["--mode", "user", "--summary", "Bad order", "--source", "Fixture"],
+    () => f.accept("user"),
+  );
+  checked("specs", ["--result", "not_needed", "--summary", "Bad order"], () =>
+    f.run("specs", ["--result", "not_needed", "--summary", "Fixture"]),
+  );
+  checked("archive", ["--date", "2026-10-09", "--summary", "Bad order"], () => {
+    assert(existsSync(f.path()));
+    assert(!existsSync(join(f.root, "docs/project/archive/2026-10-09-sample")));
+    f.run("archive", ["--date", "2026-10-09", "--summary", "Valid order"]);
+  });
+});
+
+test("serial scheduling checks earlier ancestors even when an intermediate task is already done", (t) => {
+  const f = fixture(t);
+  f.create();
+  for (const id of ["T1", "T2", "T3"])
+    f.run("task-add", ["--task", id, "--title", id]);
+  f.run("execute");
+  const state = f.state();
+  state.tasks.T2.status = "done";
+  writeFileSync(f.path(), JSON.stringify(state));
+  assert.match(f.run("task-start", ["--task", "T3"], 1), /T1/);
+  assert.equal(f.state().tasks.T3.status, "todo");
 });
 
 test("failed operations, dry runs, locks and conflicting files leave source bytes unchanged", (t) => {

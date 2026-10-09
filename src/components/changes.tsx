@@ -750,7 +750,7 @@ function Dependencies({
     <div className="dependencies">
       <p className="dependency-intro">
         {tasks
-          ? "任务前置关系来自 Plan 的执行顺序。未声明或无法解析时，关系保持未知。"
+          ? "任务默认按编号串行；Plan 中的显式执行顺序可覆盖默认安排。"
           : "分别核对流程前提和提交祖先证据；这些记录不替代交付可用性验证。"}
       </p>
       {groups.map((g) => {
@@ -848,6 +848,13 @@ function TaskDependencies({ c }: { c: ChangeCandidate }) {
     g = c.taskGraph;
   return (
     <div className="task-dependencies">
+      {g.status === "valid" && (
+        <p className="muted">
+          {g.source === "default"
+            ? "默认按任务编号串行执行。"
+            : "按 Plan 中的显式执行顺序执行。"}
+        </p>
+      )}
       {g.status === "valid" ? (
         Object.entries(g.edges).map(([id, prev]) => (
           <div className="task-edge" key={id}>
@@ -862,7 +869,7 @@ function TaskDependencies({ c }: { c: ChangeCandidate }) {
           {g.status === "not-applicable"
             ? "父 Change 按子项组织，不解析实现任务表。"
             : g.status === "missing"
-              ? "尚未声明可读取的执行顺序。"
+              ? "缺少可读取的 Plan，无法核对执行安排。"
               : "执行顺序不可判定，请查看 Plan。"}
         </p>
       )}

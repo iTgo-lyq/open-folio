@@ -1,4 +1,33 @@
 import { test, expect } from "@playwright/test";
+test("a narrative Plan uses default serial order without a source warning", async ({
+  page,
+}) => {
+  await page.goto("/?project=fixture&m=changes&c=default-serial&ct=overview");
+  const drawer = page.getByRole("dialog");
+  await expect(
+    drawer.getByRole("heading", { name: "默认串行的任务安排", exact: true }),
+  ).toBeVisible();
+  await expect(drawer.locator(".drawer-badges")).not.toContainText("来源提示");
+  await expect(drawer.getByText("等待默认串行验收")).toBeVisible();
+  await drawer.getByRole("tab", { name: "任务", exact: true }).click();
+  await expect(
+    drawer.getByText("默认按任务编号串行执行。", { exact: true }),
+  ).toBeVisible();
+  await expect(drawer.locator(".task-edge")).toContainText("无前置");
+  await expect(drawer.locator(".task-edge")).toContainText("T1");
+  await page.screenshot({
+    path: "artifacts/default-serial-change.png",
+    fullPage: true,
+  });
+  await drawer.getByRole("button", { name: "关闭变更详情" }).click();
+  await page.goto("/?project=fixture&m=changes&c=document-reader&ct=tasks");
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByText("按 Plan 中的显式执行顺序执行。", { exact: true }),
+  ).toBeVisible();
+});
+
 test("list filters, drawer, tasks and stacked document focus preserve context", async ({
   page,
 }) => {

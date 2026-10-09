@@ -68,10 +68,10 @@ function semantics(c: ChangeCandidate, data: Collected) {
   }
   if (
     s.status === "completed" &&
-    ["medium", "large"].includes(s.size) &&
+    s.size !== "xlarge" &&
     c.taskGraph.status !== "valid"
   )
-    add("PLAN_INVALID", "完成记录缺少可判定的 Plan 执行顺序。");
+    add("PLAN_INVALID", "完成记录缺少 Plan，或显式执行顺序无效。");
   const steps = ["verification", "acceptance", "specs", "archive"] as const;
   for (let i = 0; i < steps.length; i++) {
     const v = s.closure[steps[i]];

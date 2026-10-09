@@ -142,6 +142,21 @@ export async function seed() {
       tasks: {},
       waitingFor: { kind: "confirmation", summary: "等待技术与计划确认" },
     }),
+    make("default-serial", "默认串行的任务安排", {
+      size: "medium",
+      stage: "close",
+      tasks: {
+        T1: {
+          title: "交付默认顺序",
+          status: "done",
+          verification: "默认执行验证通过",
+        },
+      },
+      closure: {
+        verification: { at, result: "passed", summary: "默认串行验证通过" },
+      },
+      waitingFor: { kind: "confirmation", summary: "等待默认串行验收" },
+    }),
     make("delivery-review", "统一交付验收记录", {
       stage: "requirement",
       confirmations: {},
@@ -199,7 +214,13 @@ export async function seed() {
       `${dir}/requirement.md`,
       `# ${record.title}\n\n## 背景与目标\n\n建立清晰、可追溯的工程阅读体验。\n\n## 能力范围\n\n参考 [工程协作](../../specs/platform/spec.md)。\n\n## 验收标准\n\n1. 来源信息完整可读。\n2. 所有状态遵循工程记录。\n`,
     );
-    if (record.size !== "small") await f.put(`${dir}/plan.md`, plan);
+    if (record.size !== "small")
+      await f.put(
+        `${dir}/plan.md`,
+        record.id === "default-serial"
+          ? "# 实施计划\n\n## 执行顺序\n\nT1 独立完成，无前置任务。\n"
+          : plan,
+      );
     if (record.stage !== "requirement")
       await f.put(
         `${dir}/technical.md`,

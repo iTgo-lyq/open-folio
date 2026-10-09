@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "default-serial-tasks",
+  "title": "任务默认串行与显式执行顺序统一校验",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/default-serial-tasks",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-09T07:59:01.591Z",
+      "summary": "用户确认默认按任务编号串行，执行顺序表可选；显式无效安排报错，并同步流程命令与工作台。",
+      "source": "本会话：默认就是每个任务串行就好了；优化吧"
+    },
+    "technical": {
+      "at": "2026-10-09T07:59:01.653Z",
+      "summary": "沿用已确认方向，通过共享零依赖任务顺序模块统一写入约束和读取展示，关闭前复核，不扩展 hook 门禁。",
+      "source": "本会话：优化吧"
+    },
+    "plan": {
+      "at": "2026-10-09T07:59:01.712Z",
+      "summary": "交付共享顺序、流程约束、工作台展示和回归，按已确认串行及显式覆盖规则验证。",
+      "source": "本会话：优化吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "默认串行及显式顺序统一校验",
+      "status": "done",
+      "verification": "54 项项目测试、12 项 Change 浏览器测试、类型检查、生产构建及 skill 校验通过；独立评审与 23 项聚焦复验通过；本地原 Change 无来源警告。",
+      "commitTitle": "default-serial-tasks T1: default serial scheduling and shared order validation"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-09T08:29:10.796Z",
+      "summary": "54 项项目测试和 12 项 Change 浏览器测试通过，类型检查、生产构建及 skill 校验通过；隔离上下文 Agent 完整独立评审和 23 项聚焦复验通过，四类解析兼容问题已修复；本地原 Change 的来源警告已消失。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-09T08:53:23.792Z",
+      "summary": "用户明确要求两个 Change 归档并合入 main，验收默认串行、可选显式安排与流程一致校验交付。",
+      "source": "本会话：两个change都归档吧，然后合入 main"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-09T08:53:23.925Z",
+      "summary": "同步 change-workflow 的默认串行与执行/关闭复查，project-knowledge/change-tracking 的可选表与来源展示；README 阅读规则同步。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-09T08:53:24.041Z",
+      "summary": "用户明确验收并授权合入 main；默认串行交付、独立评审及与 setup 组合验证通过，Specs 已同步，完整材料归档。",
+      "path": "docs/project/archive/2026-10-09-default-serial-tasks"
+    }
+  }
+}
