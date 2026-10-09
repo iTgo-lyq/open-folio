@@ -1,4 +1,5 @@
 "use client";
+import { Button, IconButton, EmptyState } from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,11 +28,9 @@ export function Empty({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="empty">
-      <div className="empty-icon">{icon}</div>
-      <h2>{title}</h2>
-      {children && <div>{children}</div>}
-    </div>
+    <EmptyState title={title} icon={icon}>
+      {children}
+    </EmptyState>
   );
 }
 export function ErrorNotice({ children }: { children: React.ReactNode }) {
@@ -207,9 +206,7 @@ export function DocumentContent({
         {error ? (
           <Empty title="暂时无法读取文档" icon={<AlertCircle />}>
             <p>{error}</p>
-            <button className="button" onClick={() => void refresh()}>
-              读取最新版本
-            </button>
+            <Button onClick={() => void refresh()}>读取最新版本</Button>
           </Empty>
         ) : !value ? (
           <Empty title={loading ? "正在读取文档…" : "选择一份文档"} />
@@ -367,8 +364,10 @@ export function DocumentModal() {
                 <Braces size={14} />
                 {q.raw ? "阅读" : "原文"}
               </button>
-              <Dialog.Close className="icon-button" aria-label="关闭文档">
-                <X size={19} />
+              <Dialog.Close asChild>
+                <IconButton aria-label="关闭文档">
+                  <X size={19} />
+                </IconButton>
               </Dialog.Close>
             </div>
           </header>

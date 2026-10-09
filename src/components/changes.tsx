@@ -1,4 +1,5 @@
 "use client";
+import { Badge as UiBadge, type BadgeTone } from "@open-folio/ui";
 import { useEffect, useMemo, useRef } from "react";
 import { Dialog } from "radix-ui";
 import {
@@ -79,7 +80,20 @@ function Badge({
   children: React.ReactNode;
   tone?: string;
 }) {
-  return <span className={`badge ${tone}`}>{children}</span>;
+  const tones: Record<string, BadgeTone> = {
+    execution: "info",
+    doing: "info",
+    active: "info",
+    technical: "accent",
+    plan: "accent",
+    close: "success",
+    done: "success",
+    completed: "success",
+    warning: "warning",
+    blocked: "warning",
+    cancelled: "danger",
+  };
+  return <UiBadge tone={tones[tone] ?? "neutral"}>{children}</UiBadge>;
 }
 function StateIcon({ status }: { status: string }) {
   return status === "done" || status === "completed" ? (

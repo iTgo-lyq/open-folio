@@ -1,4 +1,5 @@
 "use client";
+import { Badge } from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
 import { Popover } from "radix-ui";
 import {
@@ -386,9 +387,17 @@ function PrototypeCard({
                 </label>
                 <div>
                   <code>{ref.changeId}</code>
-                  <span className={`badge ${ref.status}`}>
+                  <Badge
+                    tone={
+                      ref.status === "completed"
+                        ? "success"
+                        : ref.status === "active"
+                          ? "info"
+                          : "danger"
+                    }
+                  >
                     {ref.archived ? "已归档" : STATUS_LABELS[ref.status]}
-                  </span>
+                  </Badge>
                 </div>
               </div>
               <div className="prototype-adaptations" aria-label="声明适配">
