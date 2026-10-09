@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "project-ui-library",
+  "title": "项目组件库、私人 UI 资源协同与原型预览复用",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/project-ui-library",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求正文已整理，待确认目标、两部分范围及验收标准后进入技术方案；当前仅建立 Change，不开始产品实现。"
+  }
+}
