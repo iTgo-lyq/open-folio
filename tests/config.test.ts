@@ -21,6 +21,7 @@ import {
   readConfigSnapshot,
   saveConfig,
 } from "../src/server/config.ts";
+import { login } from "../src/server/access.ts";
 import { GET, PUT } from "../src/app/api/config/route.ts";
 
 const empty = { schemaVersion: 1, projects: [] };
@@ -31,6 +32,7 @@ const configured = {
       id: "example",
       name: "Example",
       repositoryUrl: "https://example.com/team/repo.git",
+      inviteCode: "test-invitation",
     },
   ],
   limits: { refreshMs: 30000 },
@@ -52,11 +54,12 @@ async function setup(t: TestContext) {
   });
   return root;
 }
+let credential = "";
 const put = (body: unknown) =>
   PUT(
     new Request("http://localhost/api/config", {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", cookie: credential },
       body: JSON.stringify(body),
     }),
   );
@@ -211,7 +214,12 @@ test("an explicitly linked configuration updates its target while preserving the
 
 test("config API reads, saves, rejects stale versions and enforces bounded JSON input", async (t) => {
   await setup(t);
-  const response = await GET();
+  const request = new Request("http://localhost/api/config");
+  const { adminPassword } = await import("../src/server/access.ts");
+  credential = (await login(request, await adminPassword())).split(";")[0];
+  const response = await GET(
+    new Request(request, { headers: { cookie: credential } }),
+  );
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   const first = await response.json();
@@ -245,7 +253,7 @@ test("config API reads, saves, rejects stale versions and enforces bounded JSON 
     const result = await PUT(
       new Request("http://localhost/api/config", {
         method: "PUT",
-        headers: { "content-type": contentType },
+        headers: { "content-type": contentType, cookie: credential },
         body,
       }),
     );

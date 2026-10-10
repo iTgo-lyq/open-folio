@@ -25,6 +25,7 @@ export type ProjectConfig = {
   id: string;
   name: string;
   repositoryUrl: string;
+  inviteCode?: string;
   specBranch?: string;
   prototypeOrigins?: string[];
 };
@@ -220,6 +221,7 @@ export type Snapshot = {
   diagnostics: Diagnostic[];
 };
 export type ProjectSummary = {
+  locked?: boolean;
   id: string;
   name: string;
   snapshotId?: string;

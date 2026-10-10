@@ -1,3 +1,9 @@
+import {
+  accessFor,
+  requireProject,
+  recheckProject,
+  requireSameOrigin,
+} from "@/server/access";
 import { readConfig, limitsFor } from "@/server/config";
 import { service, thumbnails } from "@/server/service";
 import { thumbnailResponse } from "@/server/thumbnails";
@@ -11,23 +17,39 @@ const headers = {
 const json = (data: unknown, status = 200) =>
   Response.json(data, { status, headers });
 type Context = { params: Promise<{ segments: string[] }> };
-async function handle(request: Request, context: Context) {
+async function respond(request: Request, context: Context) {
   try {
+    if (request.method === "POST") requireSameOrigin(request);
     const config = await readConfig();
     const { segments: s } = await context.params,
       url = new URL(request.url),
       store = service();
-    if (request.method === "GET" && s.length === 1 && s[0] === "projects")
-      return json({
-        projects: await Promise.all(
-          config.projects.map((p) => store.summary(p)),
+    if (request.method === "GET" && s.length === 1 && s[0] === "projects") {
+      const access = await accessFor(request);
+      const summaries = await Promise.all(
+        config.projects.map(async (p) =>
+          access.canRead(p)
+            ? { ...(await store.summary(p)), locked: false }
+            : { id: p.id, name: p.name, locked: true },
         ),
+      );
+      const latest = await readConfig();
+      const currentAccess = await accessFor(request);
+      return json({
+        projects: latest.projects.map((p) => {
+          const summary = summaries.find((item) => item.id === p.id);
+          return currentAccess.canRead(p) && summary
+            ? { ...summary, name: p.name }
+            : { id: p.id, name: p.name, locked: true };
+        }),
       });
+    }
     if (s[0] !== "projects" || s.length < 3)
       throw new AppError("NOT_FOUND", "接口不存在。", 404);
     const p = config.projects.find((p) => p.id === s[1]);
     if (!p)
       throw new AppError("PROJECT_NOT_FOUND", "项目未登记或已移除。", 404);
+    await requireProject(request, p);
     if (request.method === "POST" && s.length === 3 && s[2] === "refresh") {
       if (request.body) {
         const reader = request.body.getReader();
@@ -148,6 +170,22 @@ async function handle(request: Request, context: Context) {
       error.status,
     );
   }
+}
+async function handle(request: Request, context: Context) {
+  const response = await respond(request, context);
+  const { segments } = await context.params;
+  if (segments[0] === "projects" && segments.length >= 3) {
+    try {
+      await recheckProject(request, segments[1]);
+    } catch (e) {
+      const error = publicError(e);
+      return json(
+        { error: { code: error.code, message: error.message } },
+        error.status,
+      );
+    }
+  }
+  return response;
 }
 export const GET = handle;
 export const POST = handle;

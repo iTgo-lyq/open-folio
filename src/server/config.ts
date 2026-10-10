@@ -39,6 +39,7 @@ const configSchema = z
           id,
           name: z.string().trim().min(1),
           repositoryUrl: remoteUrl,
+          inviteCode: z.string().trim().min(1).max(256).optional(),
           specBranch: z.string().min(1).optional(),
           prototypeOrigins: z
             .array(
@@ -182,6 +183,8 @@ export async function saveConfig(
   let config: AppConfig;
   try {
     config = parseConfig(value);
+    if (config.projects.some((p) => !p.inviteCode))
+      throw new AppError("CONFIG_INVALID", "每个项目都需要邀请码。");
   } catch (e) {
     if (e instanceof AppError) throw new AppError(e.code, e.message, 400);
     throw e;

@@ -21,6 +21,7 @@ import { DocumentModal, Empty, ErrorNotice } from "./document";
 import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
+import { AccessForm } from "./access";
 import { SettingsDialog } from "./settings";
 import { Button } from "@open-folio/ui";
 function Shell() {
@@ -29,6 +30,8 @@ function Shell() {
     nav,
     projects,
     projectId,
+    locked,
+    accessChanged,
     data,
     loading,
     refreshing,
@@ -341,6 +344,13 @@ function Shell() {
                 配置项目
               </Button>
             </Empty>
+          ) : locked ? (
+            <AccessForm
+              key={projectId}
+              project={projectId}
+              name={projects.find((p) => p.id === projectId)?.name}
+              onSuccess={accessChanged}
+            />
           ) : !data ? (
             <Empty title="暂时没有可读取的版本">
               <p>检查仓库访问权限后重新读取。</p>

@@ -1,3 +1,4 @@
+import { requireProject, recheckProject } from "@/server/access";
 import { readConfig, limitsFor } from "@/server/config";
 import { service } from "@/server/service";
 import { AppError, publicError } from "@/server/errors";
@@ -28,6 +29,7 @@ export async function handlePreview(
     const project = config.projects.find((p) => p.id === s[0]);
     if (!project)
       throw new AppError("PROJECT_NOT_FOUND", "项目未登记或已移除。", 404);
+    await requireProject(request, project);
     const { descriptor, html } = current
       ? await service().currentPreview(
           project,
@@ -64,6 +66,7 @@ export async function handlePreview(
     const output = reporter
       ? html.replace(insertion, (m) => m + reporter)
       : html;
+    await recheckProject(request, project.id);
     return new Response(request.method === "HEAD" ? null : output, { headers });
   } catch (e) {
     const error = publicError(e);

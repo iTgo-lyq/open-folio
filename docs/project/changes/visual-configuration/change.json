@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "用管理密码和项目邀请码控制访问与分享",
-      "status": "todo"
+      "status": "done",
+      "verification": "80 项单元、49 项浏览器全量回归、类型格式及生产构建通过；真实生产首次启动与权限烟测通过；独立评审问题全部修正。详见 execution.md、review.md。",
+      "commitTitle": "visual-configuration T3: protect projects with invitations and admin access"
     }
   },
   "closure": {},

@@ -4,7 +4,8 @@
     {
       "id": "open-folio",
       "name": "OpenFolio",
-      "repositoryUrl": "https://github.com/iTgo-lyq/open-folio.git"
+      "repositoryUrl": "https://github.com/iTgo-lyq/open-folio.git",
+      "inviteCode": "replace-with-a-random-invitation"
     }
   ]
 }

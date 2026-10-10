@@ -1,3 +1,4 @@
+import { requireAdmin, requireSameOrigin } from "../../../server/access.ts";
 import { readConfigSnapshot, saveConfig } from "../../../server/config.ts";
 import { AppError, publicError } from "../../../server/errors.ts";
 
@@ -15,15 +16,20 @@ const failure = (e: unknown) => {
     error.status,
   );
 };
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    return json(await readConfigSnapshot());
+    await requireAdmin(request);
+    const snapshot = await readConfigSnapshot();
+    await requireAdmin(request);
+    return json(snapshot);
   } catch (e) {
     return failure(e);
   }
 }
 export async function PUT(request: Request) {
   try {
+    requireSameOrigin(request);
+    await requireAdmin(request);
     if (
       request.headers
         .get("content-type")
@@ -73,6 +79,7 @@ export async function PUT(request: Request) {
         400,
       );
     const input = body as { config?: unknown; revision?: unknown };
+    await requireAdmin(request);
     return json(await saveConfig(input.config, input.revision));
   } catch (e) {
     return failure(e);

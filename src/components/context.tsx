@@ -24,11 +24,18 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, { ...init, cache: "no-store" });
   const data = await response.json();
-  if (!response.ok)
+  if (!response.ok) {
+    if (data.error?.code === "INVITE_REQUIRED" && typeof window !== "undefined")
+      window.dispatchEvent(
+        new CustomEvent("openfolio-access-expired", {
+          detail: path.split("/")[3],
+        }),
+      );
     throw new ApiError(
       data.error?.code ?? "FAILED",
       data.error?.message ?? "读取失败。",
     );
+  }
   return data;
 }
 export type Query = Record<string, string>;
@@ -43,6 +50,8 @@ type Value = {
   refreshing: boolean;
   error: string;
   refresh: () => Promise<void>;
+  accessChanged: () => void;
+  locked: boolean;
   configurationSaved: (before: AppConfig, after: AppConfig) => void;
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
   notice: (message: string) => void;
@@ -65,6 +74,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const generation = useRef(0),
     auto = useRef(new Set<string>()),
     sources = useRef(new Map<string, string>()),
+    sharing = useRef(false),
     refreshGeneration = useRef(0);
   const nav = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
@@ -81,14 +91,60 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+  const accessChanged = useCallback(() => {
+    generation.current++;
+    refreshGeneration.current++;
+    auto.current.clear();
+    setConfigured(false);
+    setData(null);
+    setLoading(true);
+    setRefreshing(false);
+    setError("");
+    setConfigurationVersion((v) => v + 1);
+  }, []);
   useEffect(() => {
     const read = () =>
       setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
-    read();
-    setReady(true);
+    const share = () => {
+      read();
+      const fragment = new URLSearchParams(window.location.hash.slice(1));
+      const invite = fragment.get("invite");
+      const project = new URLSearchParams(window.location.search).get(
+        "project",
+      );
+      if (invite === null) {
+        if (!sharing.current) setReady(true);
+        return;
+      }
+      sharing.current = true;
+      setReady(false);
+      setLoading(true);
+      setError("");
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + window.location.search,
+      );
+      void api("/api/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project: project ?? "", secret: invite }),
+      })
+        .then(accessChanged)
+        .catch((e) => setError(e.message))
+        .finally(() => {
+          sharing.current = false;
+          setReady(true);
+        });
+    };
+    share();
     window.addEventListener("popstate", read);
-    return () => window.removeEventListener("popstate", read);
-  }, []);
+    window.addEventListener("hashchange", share);
+    return () => {
+      window.removeEventListener("popstate", read);
+      window.removeEventListener("hashchange", share);
+    };
+  }, [accessChanged]);
   useEffect(() => {
     const c = new AbortController();
     api<{ projects: ProjectSummary[] }>("/api/projects", { signal: c.signal })
@@ -107,6 +163,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => c.abort();
   }, [configurationVersion]);
   const projectId = q.project || projects[0]?.id || "";
+  const locked = projects.find((p) => p.id === projectId)?.locked === true;
+  useEffect(() => {
+    const expire = (event: Event) => {
+      if ((event as CustomEvent).detail === encodeURIComponent(projectId))
+        accessChanged();
+    };
+    window.addEventListener("openfolio-access-expired", expire);
+    return () => window.removeEventListener("openfolio-access-expired", expire);
+  }, [projectId, accessChanged]);
   const configurationSaved = useCallback(
     (before: AppConfig, after: AppConfig) => {
       generation.current++;
@@ -143,6 +208,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   );
   useEffect(() => {
     if (!ready || !configured || !projectId) return;
+    if (locked) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
     const version = ++generation.current,
       controller = new AbortController();
     ++refreshGeneration.current;
@@ -165,18 +235,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             e.code === "BRANCH_NOT_FOUND" &&
             version === generation.current
           ) {
-            nav(
-              {
-                branch: null,
-                s: null,
-                doc: null,
-                da: null,
-                raw: null,
-                prototype: null,
-                revision: null,
-              },
-              true,
-            );
+            nav({ branch: null }, true);
             setMessage("原分支不存在，已返回默认来源。");
             return;
           }
@@ -228,7 +287,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       controller.abort();
       generation.current++;
     };
-  }, [ready, configured, projectId, q.branch, nav]);
+  }, [ready, configured, projectId, q.branch, nav, locked]);
   const refresh = useCallback(async () => {
     if (!projectId || refreshing) return;
     const version = ++refreshGeneration.current,
@@ -310,6 +369,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         error,
         refresh,
         configurationSaved,
+        accessChanged,
+        locked,
         openDocument,
         notice: setMessage,
         message,

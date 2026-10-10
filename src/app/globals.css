@@ -3958,3 +3958,33 @@ input {
     gap: 4px;
   }
 }
+
+.access-form {
+  width: min(100%, 420px);
+  margin: auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+}
+.access-form > svg {
+  color: var(--of-blue);
+}
+.access-form h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.access-form p {
+  margin: 0;
+  line-height: 1.6;
+}
+.settings-invite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings-invite input {
+  flex: 1 1 240px;
+  min-width: 0;
+}
