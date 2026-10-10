@@ -4,7 +4,7 @@
   "title": "默认配置与可视化配置管理",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/visual-configuration",
   "confirmations": {
     "requirement": {
@@ -43,10 +43,20 @@
       "commitTitle": "visual-configuration T3: protect projects with invitations and admin access"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T09:27:51.508Z",
+      "summary": "配置、访问与分享完整交付。80 项单元、49 项浏览器、类型格式和生产构建/首次启动烟测通过。独立 Agent 评审四项问题已修正复核，详见 execution.md 和 review.md。"
+    }
+  },
   "rework": {
     "at": "2026-10-10T09:07:09.590Z",
     "reason": "用户追加独立管理密码、每项目长期邀请码及自动验证分享链接，并明确接受换码撤销。",
     "approach": "保留 T1 交付和 T2 不受影响的配置表单，补充权限范围与方案，在原计划后追加完整访问与分享场景 T3。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与整体验证已完成，等待用户人工验收后同步 Specs 并归档。"
   }
 }
