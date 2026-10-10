@@ -1,6 +1,6 @@
 "use client";
 
-// Adapted from shadcn/ui Tabs (MIT); see ../../THIRD_PARTY_NOTICES.md.
+// Adapted from shadcn/ui Tabs (MIT).
 import type { ComponentProps } from "react";
 import { Tabs as TabsPrimitive } from "radix-ui";
 import { cn } from "../utils";

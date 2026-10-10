@@ -332,13 +332,6 @@ function App() {
             <br />
             在这里查看、操作和比较状态。
           </p>
-          <a
-            href="https://shadcnuikit.com/components/card/5"
-            target="_blank"
-            rel="noreferrer"
-          >
-            使用 shadcnuikit 组合 ↗
-          </a>
         </div>
       </aside>
       <main id="top">

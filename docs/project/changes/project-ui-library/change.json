@@ -4,7 +4,7 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
@@ -89,22 +89,18 @@
       "status": "done",
       "verification": "独立评审R3复验关闭；完整39项浏览器、类型、格式及默认.next生产构建通过；Merlin原地址最终版本及Host/Origin交互已核验，临时目录与引用已清理。",
       "commitTitle": "project-ui-library T12: preserve gallery state across preview navigation"
+    },
+    "T13": {
+      "title": "清理 UI 代码引用并精简开发入口",
+      "status": "done",
+      "verification": "UI类型/生产构建、现有预览交互、格式及差异检查通过；源码与dist无目标名称或失效引用；独立增量评审问题已复验关闭，Merlin UI预览已更新。",
+      "commitTitle": "project-ui-library T13: simplify UI guidance and remove provider references"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-10T04:09:11.627Z",
-      "summary": "本轮二级预览、详情抽屉及长列表返回交付完成：39项完整浏览器测试、类型/格式、生产构建通过；隔离Agent覆盖d991622之后完整差异并关闭R3，原基线R1/R2已复验；Merlin原地址已更新，生产Host/Origin核验通过。"
-    }
-  },
+  "closure": {},
   "rework": {
-    "at": "2026-10-10T03:52:27.548Z",
-    "reason": "用户验收反馈要求二级原型预览及卡片截图/详情分离。",
-    "approach": "保留已完成任务，追加T10/T11；复用现有协议，调整浏览交互并更新Merlin验收。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "按用户全部完成等待验收指令，等待验收新版原型二级画布与卡片详情；Merlin原地址已更新，仍使用隔离测试数据。"
+    "at": "2026-10-10T06:20:22.601Z",
+    "reason": "用户要求移除UI代码中的素材供应方标识、精简AGENTS前端开发，并将其已改文档一同提交。",
+    "approach": "保留完成任务，追加T13作局部清理，验证后提交推送并继续等待验收。"
   }
 }

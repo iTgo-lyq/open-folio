@@ -36,6 +36,4 @@ Button 支持 default/primary/text、loading 和原生 button 属性；IconButto
 />
 ```
 
-来源和许可见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。新增组件先运行 `npx shadcn@latest info -c packages/ui --json`，再通过 CLI dry-run/view 检查来源与差异；生成代码须适配本包 token、公共接口和相对导入，不直接覆盖已有实现。包有意使用普通 CSS，组件安装后的 Tailwind 类需要转换后才可供两个消费方共用。
-
-shadcn skill/MCP 与 shadcnuikit MCP 配置属于个人全局环境；构建及使用这个包不需要它们或 API key。
+新增组件先运行 `npx shadcn@latest info -c packages/ui --json`，再通过 CLI dry-run/view 检查来源与差异；生成代码须适配本包 token、公共接口和相对导入，不直接覆盖已有实现。包有意使用普通 CSS，组件安装后的 Tailwind 类需要转换后才可供两个消费方共用。

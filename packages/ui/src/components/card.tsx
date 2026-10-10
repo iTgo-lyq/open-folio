@@ -1,4 +1,4 @@
-// Adapted from shadcn/ui Card (MIT); see ../../THIRD_PARTY_NOTICES.md.
+// Adapted from shadcn/ui Card (MIT).
 import type { ComponentProps } from "react";
 import { cn } from "../utils";
 

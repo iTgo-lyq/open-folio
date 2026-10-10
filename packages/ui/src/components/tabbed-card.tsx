@@ -1,6 +1,5 @@
 "use client";
 
-// Adapted from shadcnuikit card5: https://shadcnuikit.com/components/card/5
 import type { ComponentProps, ReactNode } from "react";
 import { Card, CardContent } from "./card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
