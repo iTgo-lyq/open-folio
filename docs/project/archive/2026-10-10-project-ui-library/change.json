@@ -3,7 +3,7 @@
   "id": "project-ui-library",
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/project-ui-library",
   "confirmations": {
@@ -108,15 +108,28 @@
       "result": "passed",
       "at": "2026-10-10T06:29:18.157Z",
       "summary": "T14 已提交并推送（c33d604）；skill 格式、差异检查、五类静态场景核对及隔离增量评审通过，无待修正问题；产品代码未变，沿用 T12 完整浏览器与构建及 T13 UI 验证。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-10T06:31:22.272Z",
+      "summary": "用户明确要求将本次交付合入 main，并同步公开 SpecTrail 仓库；按显式合入授权记录验收通过。",
+      "source": "2026-10-10 本会话用户：合入main吧，同时同步一下公开仓库吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-10T06:35:40.264Z",
+      "summary": "同步原型 main 当前清单、宿主发布和 Change 固定交付、二级预览及详情、迁移/保留边界；新增共享 UI 与独立预览能力，并更新工作台来源规则及归档后合入/PR 选择。五份 Specs 经独立复核、链接和格式检查通过。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-10T06:35:40.337Z",
+      "summary": "用户明确验收并授权直接合入 main 及同步公开 SpecTrail；T1–T14 全部完成，验证与独立评审通过，Specs 已同步，完整 Change 归档。",
+      "path": "docs/project/archive/2026-10-10-project-ui-library"
     }
   },
   "rework": {
     "at": "2026-10-10T06:27:41.572Z",
     "reason": "用户追加归档提交后主动询问直接合入 main 或发起 PR 的 SpecTrail 指引。",
     "approach": "保留既有交付，追加 T14 修改归档后选择规则；已有明确选择沿用，完成聚焦验证和评审后提交推送。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "新增归档后合入或 PR 选择规则已提交并验证；等待用户确认本次交付及是否同步公开 SpecTrail 仓库，尚未归档或合入 main。"
   }
 }
