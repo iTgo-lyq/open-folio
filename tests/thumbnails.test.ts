@@ -185,14 +185,12 @@ test("rendering blocks network and terminates an unresponsive page without poiso
 test("thumbnail responses reuse content across Git commits and recheck policy before cache hits or 304", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  const decision = { at: "2026-10-03T12:00:00+08:00", summary: "同意" };
   const workflow = {
     schemaVersion: 1,
     protectedBranches: ["main"],
     prototype: {
       status: "enabled",
       packagePath: "packages/prototype",
-      decision,
     },
   };
   await f.put("docs/project/workflow.json", JSON.stringify(workflow));
@@ -345,7 +343,7 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     "docs/project/workflow.json",
     JSON.stringify({
       ...workflow,
-      prototype: { status: "disabled", decision },
+      prototype: { status: "disabled" },
     }),
   );
   f.commit();

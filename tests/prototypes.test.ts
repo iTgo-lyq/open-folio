@@ -12,7 +12,6 @@ const workflow = {
   prototype: {
     status: "enabled",
     packagePath: "packages/prototype",
-    decision: { at: "2026-10-03T02:30:00+08:00", summary: "同意" },
   },
 };
 async function source() {

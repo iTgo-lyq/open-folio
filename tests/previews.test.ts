@@ -4,11 +4,11 @@ import { rm, rename, mkdir, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
-const decision = { at: "2026-10-03T01:50:00+08:00", summary: "用户同意" };
+const confirmedAt = "2026-10-03T01:50:00+08:00";
 const workflow = {
   schemaVersion: 1,
   protectedBranches: ["main"],
-  prototype: { status: "enabled", packagePath: "packages/prototype", decision },
+  prototype: { status: "enabled", packagePath: "packages/prototype" },
 };
 const entry = {
   id: "page",
@@ -88,7 +88,7 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
     "docs/project/workflow.json",
     JSON.stringify({
       ...workflow,
-      prototype: { status: "disabled", decision },
+      prototype: { status: "disabled" },
     }),
   );
   f.commit();
@@ -102,7 +102,7 @@ test("archive tag preserves source and HTML after branch deletion and cold rebui
   const f = await source();
   t.after(f.cleanup);
   const directory = "docs/project/archive/2026-10-03-preview-demo",
-    at = decision.at,
+    at = confirmedAt,
     step = (result: string) => ({ at, summary: "已验证", result });
   await mkdir(join(f.author, "docs/project/archive"), { recursive: true });
   await rename(
@@ -239,7 +239,7 @@ test("legacy archives without previews need no retention tag, including fixed re
   const f = await fixture();
   t.after(f.cleanup);
   await f.put("docs/project/workflow.json", JSON.stringify(workflow));
-  const at = decision.at,
+  const at = confirmedAt,
     step = (result: string) => ({ at, summary: "已验证", result });
   const directory = "docs/project/archive/2026-10-03-legacy";
   const legacy = {
@@ -313,7 +313,7 @@ test("per-commit preview entry limits do not cap lifetime archive tags or block 
   t.after(f.cleanup);
   for (const id of ["first-archive", "second-archive"]) {
     const directory = `docs/project/archive/2026-10-03-${id}`,
-      at = decision.at;
+      at = confirmedAt;
     const step = (result: string) => ({ at, summary: "已验证", result });
     await f.put(
       `${directory}/change.json`,
@@ -359,7 +359,7 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
   t.after(f.cleanup);
   const id = "constructor",
     directory = `docs/project/archive/2026-10-03-${id}`,
-    at = decision.at;
+    at = confirmedAt;
   const step = (result: string) => ({ at, summary: "已验证", result });
   await f.put(
     `${directory}/change.json`,

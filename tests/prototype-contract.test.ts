@@ -7,11 +7,9 @@ import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schem
 import { changeSchema, prototypeSchema } from "../src/server/schema.ts";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
-const decision = { at: "2026-10-03T01:20:00+08:00", summary: "用户同意" };
 const enabled = {
   status: "enabled",
   packagePath: "packages/prototype",
-  decision,
 };
 const entry = {
   id: "list",
@@ -94,12 +92,13 @@ test("prototype contract and hook agree for page/component variants and reject m
     ).success,
   );
   assert(prototypeSchema.safeParse(enabled).success);
-  assert(prototypeSchema.safeParse({ status: "disabled", decision }).success);
+  assert(prototypeSchema.safeParse({ ...enabled, status: "pending" }).success);
+  assert(prototypeSchema.safeParse({ status: "disabled" }).success);
   for (const value of [
     { ...enabled, packagePath: "docs/prototype" },
     { ...enabled, packagePath: "/outside" },
     { ...enabled, status: "disabled" },
-    { ...enabled, decision: { ...decision, at: "2026-02-30T00:00:00Z" } },
+    { ...enabled, extra: true },
   ])
     assert(!prototypeSchema.safeParse(value).success);
 });
@@ -164,7 +163,7 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     JSON.stringify({
       schemaVersion: 1,
       protectedBranches: ["main"],
-      prototype: { status: "disabled", decision },
+      prototype: { status: "disabled" },
     }),
   );
   await f.put(

@@ -83,7 +83,6 @@ export type ClosureStep = {
 export type PrototypeConfig = {
   status: "disabled" | "pending" | "enabled";
   packagePath?: string;
-  decision: Confirmation;
 };
 export type Device = "pc-web" | "ipad" | "mobile";
 export type PreviewThumbnail = { device?: Device; url: string };

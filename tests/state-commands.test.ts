@@ -499,7 +499,6 @@ test("preview association command preserves unrelated state and enforces configu
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",
-        decision: { at: new Date().toISOString(), summary: "User agreed" },
       },
     }),
   );

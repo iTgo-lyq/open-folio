@@ -8,6 +8,8 @@ OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块�
 
 docs/project/workflow.json 的 prototype 记录选择：缺失为未选择，disabled 为拒绝，pending 为接入未完成，enabled 为可用。拒绝后不重复提议或新增关联；已有明确同意直接沿用，初始化失败保留现场。已启用且明显改变 UI 的 Change 建议优先制作或更新原型，未采纳建议或没有 previews 不阻断流程。
 
+原型配置只维护当前 status 和适用的 packagePath，接入决定的历史由 Git 保存。
+
 工作台从已推送 main 的最新成功快照读取开关与包配置，不随 Specs 分支切换。旧版本不能绕过当前停用选择；没有 main、配置不可读或清单损坏时明确说明。
 
 包内 prototype.json 是当前总览唯一清单，schemaVersion 为 1，entries 按稳定 id 声明 title、可选 description、sourcePath、kind、适配和可选 artifact。源码路径位于原型包内，id 在项目内唯一。页面声明 pc-web/ipad/mobile 中非空、去重的设备集合；组件在设备集合和 1–4096 CSS px 的整数 viewport 中二选一。无 artifact 表示尚未交付，不从 Change 历史推算当前版本。

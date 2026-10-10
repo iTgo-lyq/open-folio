@@ -27,7 +27,6 @@ test("legacy archive migration preserves original bytes and tags, rejects confli
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",
-        decision: { at, summary: "agreed" },
       },
     }),
   );

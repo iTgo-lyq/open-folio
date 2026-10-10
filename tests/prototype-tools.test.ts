@@ -26,20 +26,18 @@ test("setup persists refusal, initializes one package, reuses design and preserv
     }),
   );
   await f.put("docs/design.md", "# Existing project design\n");
-  assert.equal(
-    run(f.author, "setup.mjs", ["--decline", "--summary", "用户拒绝"]).status,
-    0,
-  );
-  assert.equal((await config(f.author)).prototype.status, "disabled");
+  assert.equal(run(f.author, "setup.mjs", ["--decline"]).status, 0);
+  assert.deepEqual((await config(f.author)).prototype, { status: "disabled" });
   let result = run(f.author, "setup.mjs", [
     "--accept",
-    "--summary",
-    "用户明确重新同意",
     "--design",
     "docs/design.md",
   ]);
   assert.equal(result.status, 0, result.stderr);
-  assert.equal((await config(f.author)).prototype.status, "enabled");
+  assert.deepEqual((await config(f.author)).prototype, {
+    status: "enabled",
+    packagePath: "packages/prototype",
+  });
   const pkg = join(f.author, "packages/prototype");
   const design = await readFile(join(pkg, "DESIGN.md"), "utf8");
   assert.match(design, /\.\.\/\.\.\/docs\/design.md/);
@@ -47,11 +45,7 @@ test("setup persists refusal, initializes one package, reuses design and preserv
     join(pkg, "AGENTS.md"),
     "Keep my project-specific instructions\n",
   );
-  result = run(f.author, "setup.mjs", [
-    "--accept",
-    "--summary",
-    "用户原有同意",
-  ]);
+  result = run(f.author, "setup.mjs", ["--accept"]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     await readFile(join(pkg, "AGENTS.md"), "utf8"),
@@ -63,13 +57,8 @@ test("setup persists refusal, initializes one package, reuses design and preserv
   assert.equal(root.scripts.build, "existing");
   assert.deepEqual(root.workspaces, ["packages/prototype"]);
   assert.equal(
-    run(f.author, "setup.mjs", [
-      "--accept",
-      "--summary",
-      "不能再创建第二份",
-      "--package",
-      "other/prototype",
-    ]).status,
+    run(f.author, "setup.mjs", ["--accept", "--package", "other/prototype"])
+      .status,
     1,
   );
   await symlink(resolve("node_modules"), join(f.author, "node_modules"), "dir");
@@ -81,26 +70,18 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
   const f = await fixture();
   t.after(f.cleanup);
   await f.put("packages/prototype/notes.md", "existing project\n");
-  const result = run(f.author, "setup.mjs", [
-    "--accept",
-    "--summary",
-    "用户同意",
-  ]);
+  const result = run(f.author, "setup.mjs", ["--accept"]);
   assert.equal(result.status, 1);
-  assert.equal((await config(f.author)).prototype.status, "pending");
+  assert.deepEqual((await config(f.author)).prototype, {
+    status: "pending",
+    packagePath: "packages/prototype",
+  });
   assert.equal(
     await readFile(join(f.author, "packages/prototype/notes.md"), "utf8"),
     "existing project\n",
   );
   await rm(join(f.author, "packages/prototype"), { recursive: true });
-  assert.equal(
-    run(f.author, "setup.mjs", [
-      "--accept",
-      "--summary",
-      "用户同意，修复后重试",
-    ]).status,
-    0,
-  );
+  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
   const target = join(
     f.author,
     "packages/prototype/preview/welcome/index.html",
@@ -122,10 +103,7 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
 test("browser export validation catches runtime network dependencies without relaxing CSP", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  assert.equal(
-    run(f.author, "setup.mjs", ["--accept", "--summary", "用户同意"]).status,
-    0,
-  );
+  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
   await f.put(
     "packages/prototype/preview/welcome/index.html",
     '<!doctype html><h1>Broken export</h1><script>fetch("https://example.invalid/private").catch(()=>{})</script>',
@@ -143,10 +121,7 @@ test("browser export validation catches runtime network dependencies without rel
 test("archive publishes a retained tag atomically, is idempotent and never overwrites a revision", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  assert.equal(
-    run(f.author, "setup.mjs", ["--accept", "--summary", "用户同意"]).status,
-    0,
-  );
+  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
   const at = "2026-10-03T01:30:00+08:00",
     step = (result: string) => ({ at, summary: "verified", result });
   const path = "docs/project/archive/2026-10-03-demo";
@@ -208,10 +183,7 @@ test("archive publishes a retained tag atomically, is idempotent and never overw
 test("archive accepts an existing annotated tag that retains the same completed commit", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  assert.equal(
-    run(f.author, "setup.mjs", ["--accept", "--summary", "用户同意"]).status,
-    0,
-  );
+  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
   const path = "docs/project/archive/2026-10-03-annotated",
     at = "2026-10-03T01:30:00+08:00";
   const step = (result: string) => ({ at, summary: "verified", result });
@@ -280,11 +252,7 @@ test("pnpm workspace integration respects matching exclusions while preserving u
   const yaml =
     "packages:\n  - 'packages/*'\n  - '!**/test/**'\nonlyBuiltDependencies:\n  - esbuild\n";
   await f.put("pnpm-workspace.yaml", yaml);
-  let result = run(f.author, "setup.mjs", [
-    "--accept",
-    "--summary",
-    "用户同意",
-  ]);
+  let result = run(f.author, "setup.mjs", ["--accept"]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     await readFile(join(f.author, "pnpm-workspace.yaml"), "utf8"),
@@ -305,10 +273,7 @@ test("pnpm workspace integration respects matching exclusions while preserving u
 test("shared source inlining preserves JavaScript replacement strings verbatim", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  assert.equal(
-    run(f.author, "setup.mjs", ["--accept", "--summary", "用户同意"]).status,
-    0,
-  );
+  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
   const source = "window.render = 'abc'.replace(/b/g, '[$&]');";
   await f.put("packages/prototype/src/shared/replace.js", source);
   await f.put(

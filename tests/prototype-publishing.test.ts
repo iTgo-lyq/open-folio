@@ -37,7 +37,6 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",
-        decision: { at: "2026-10-01T00:00:00.000Z", summary: "同意" },
       },
     }),
   );

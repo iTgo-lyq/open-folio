@@ -5,11 +5,6 @@
   ],
   "prototype": {
     "status": "enabled",
-    "packagePath": "packages/prototype",
-    "decision": {
-      "at": "2026-10-02T17:55:53.180Z",
-      "summary": "用户已确认本轮项目原型包与 Change 预览方案并要求持续推进至验收；使用本项目验证接入及展示。",
-      "source": "本会话：其他没问题；继续吧。"
-    }
+    "packagePath": "packages/prototype"
   }
 }

@@ -62,7 +62,6 @@ export async function seed() {
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",
-        decision: confirmed,
       },
     }),
   );
