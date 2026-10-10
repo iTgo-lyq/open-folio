@@ -4,13 +4,23 @@
   "title": "默认配置与可视化配置管理",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/visual-configuration",
   "confirmations": {
     "requirement": {
       "at": "2026-10-10T09:07:09.665Z",
       "summary": "用户追加每项目长期邀请码、浏览器记住及免手填分享链接，并选择独立管理密码和换码后旧链接及凭证失效；原默认路径与配置编辑要求继续有效。",
       "source": "本次对话追加需求及两项异步回答"
+    },
+    "technical": {
+      "at": "2026-10-10T09:14:16.459Z",
+      "summary": "用户确认扩充权限方案：环境变量覆盖或自动生成管理密码，项目持久凭证，分享及换码撤销。",
+      "source": "本次异步回答：自动生成，可由环境变量覆盖；确认，继续实现"
+    },
+    "plan": {
+      "at": "2026-10-10T09:14:16.522Z",
+      "summary": "用户确认继续按 T1、T2、T3 顺序实现扩充计划。",
+      "source": "本次异步回答：确认，继续实现"
     }
   },
   "tasks": {
@@ -22,7 +32,9 @@
     },
     "T2": {
       "title": "在工作台可视化维护配置并立即生效",
-      "status": "doing"
+      "status": "done",
+      "verification": "单元 73 项、配置与 API 浏览器 8 项、独立评审修正后配置浏览器 6 项通过；类型、格式、UI 预览和生产构建通过，详见 execution/review。",
+      "commitTitle": "visual-configuration T2: resolve configuration review findings"
     },
     "T3": {
       "title": "用管理密码和项目邀请码控制访问与分享",

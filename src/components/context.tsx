@@ -64,6 +64,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [message, setMessage] = useState("");
   const generation = useRef(0),
     auto = useRef(new Set<string>()),
+    sources = useRef(new Map<string, string>()),
     refreshGeneration = useRef(0);
   const nav = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
@@ -164,7 +165,18 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             e.code === "BRANCH_NOT_FOUND" &&
             version === generation.current
           ) {
-            nav({ branch: null }, true);
+            nav(
+              {
+                branch: null,
+                s: null,
+                doc: null,
+                da: null,
+                raw: null,
+                prototype: null,
+                revision: null,
+              },
+              true,
+            );
             setMessage("原分支不存在，已返回默认来源。");
             return;
           }
@@ -185,7 +197,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             { signal: controller.signal },
           );
         }
-        if (version === generation.current) setData(next);
+        if (version === generation.current) {
+          const previous = sources.current.get(projectId);
+          sources.current.set(projectId, next.fingerprint);
+          if (previous && previous !== next.fingerprint) {
+            const params = new URLSearchParams(window.location.search);
+            nav(
+              Object.fromEntries(
+                [...params.keys()]
+                  .filter((key) => !["project", "m"].includes(key))
+                  .map((key) => [key, null]),
+              ),
+              true,
+            );
+          }
+          setData(next);
+        }
       } catch (e) {
         if (!controller.signal.aborted && version === generation.current)
           setError((e as Error).message);

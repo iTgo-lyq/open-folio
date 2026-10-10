@@ -22,7 +22,7 @@ import type { AppConfig, ConfigSnapshot, Limits } from "@/lib/model";
 import { api, ApiError, useWorkspace } from "./context";
 
 const limitFields: [keyof Limits, string, string, number][] = [
-  ["refreshMs", "最短刷新间隔", "秒", 1000],
+  ["refreshMs", "读取超时", "秒", 1000],
   ["branches", "分支数量", "个", 1],
   ["documents", "文档数量", "份", 1],
   ["markdownBytes", "Markdown 文件", "MiB", 1048576],

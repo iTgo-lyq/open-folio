@@ -11,3 +11,5 @@
 验证：`npx playwright test tests/browser/settings.spec.ts tests/browser/api.spec.ts` 8 项通过，覆盖空配置增删、持久化、限制恢复、冲突、非法输入、仓库替换、未保存退出及 320px 布局；已目视核对 `artifacts/settings-desktop.png` 和 `artifacts/settings-mobile.png`。首轮发现遮罩拦截按钮，已修正为现有弹层层级并复验。`npm run ui:build`、`npm run ui:test`、`npm run typecheck`、`npm run format:check` 通过。生产构建通过，并在临时数据目录下确认构建未创建运行配置。
 
 执行中追加 T3 权限与分享需求，文档已补充，流程回到技术确认；上述 T2 交付基于此前已确认的配置范围，权限行为尚未接入。未将新范围提前记录为实现或验收完成。
+
+独立评审后修正读取超时字段名称，并依据工作台实际已展示 fingerprint 清理外部来源变更后残留选择。新增外部改仓库后只改名称保存的回归；`npx playwright test tests/browser/settings.spec.ts` 6 项通过。

@@ -24,14 +24,14 @@ test("configuration edits persist, update the selected project and restore defau
   const panel = page.getByRole("dialog", { name: "工作台配置", exact: true });
   await panel.getByLabel("项目名称", { exact: true }).fill("团队知识库");
   await panel.locator("summary").filter({ hasText: "资源限制" }).click();
-  await panel.getByLabel("最短刷新间隔（秒）", { exact: true }).fill("60");
+  await panel.getByLabel("读取超时（秒）", { exact: true }).fill("60");
   await panel.getByRole("button", { name: "保存配置", exact: true }).click();
   await expect(panel.getByRole("status")).toHaveText("配置已保存");
   expect(JSON.parse(await readFile(configPath, "utf8")).limits.refreshMs).toBe(
     60000,
   );
   await expect(page.getByLabel("当前项目")).toContainText("团队知识库");
-  await panel.getByLabel("最短刷新间隔（秒）", { exact: true }).fill("");
+  await panel.getByLabel("读取超时（秒）", { exact: true }).fill("");
   await panel.getByRole("button", { name: "保存配置", exact: true }).click();
   await expect(panel.getByRole("status")).toHaveText("配置已保存");
   expect(JSON.parse(await readFile(configPath, "utf8")).limits).toBeUndefined();
@@ -179,4 +179,31 @@ test("replacing a repository clears stale document selection and snapshot", asyn
   await expect(
     page.getByRole("heading", { name: "暂时没有可读取的版本", exact: true }),
   ).toBeVisible();
+});
+
+test("saving after an external repository change clears selections from the displayed source", async ({
+  page,
+}) => {
+  await page.goto("/?project=fixture&m=specs&s=platform");
+  await expect(
+    page.getByRole("heading", { name: "工程协作", exact: true }),
+  ).toBeVisible();
+  const old = await (
+    await page.request.get("/api/projects/fixture/workbench")
+  ).json();
+  const changed = JSON.parse(original);
+  changed.projects[0].repositoryUrl = "https://example.test/another.git";
+  await writeFile(configPath, JSON.stringify(changed));
+  await page.route("**/api/projects/fixture/workbench*", (route) =>
+    route.fulfill({ json: { ...old, fingerprint: "different-source" } }),
+  );
+  await page.getByRole("button", { name: "工作台配置", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "工作台配置", exact: true });
+  await expect(panel.getByLabel("仓库地址", { exact: true })).toHaveValue(
+    changed.projects[0].repositoryUrl,
+  );
+  await panel.getByLabel("项目名称", { exact: true }).fill("新的名称");
+  await panel.getByRole("button", { name: "保存配置", exact: true }).click();
+  await expect(panel.getByRole("status")).toHaveText("配置已保存");
+  await expect(page).not.toHaveURL(/s=platform/);
 });
