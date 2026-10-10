@@ -4,7 +4,7 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
@@ -97,10 +97,20 @@
       "commitTitle": "project-ui-library T13: simplify UI guidance and remove provider references"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T06:23:32.511Z",
+      "summary": "T13 已提交并推送（8a8d494）；UI 类型与生产构建、现有预览交互、格式和差异检查通过，源码及产物无目标名称或失效引用；独立增量评审已关闭全部问题，Merlin UI 预览已更新。"
+    }
+  },
   "rework": {
     "at": "2026-10-10T06:20:22.601Z",
     "reason": "用户要求移除UI代码中的素材供应方标识、精简AGENTS前端开发，并将其已改文档一同提交。",
     "approach": "保留完成任务，追加T13作局部清理，验证后提交推送并继续等待验收。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "T13 代码清理、精简 AGENTS 及用户文档改动已一起提交并推送，验证通过，Merlin 预览已更新；等待用户验收。"
   }
 }
