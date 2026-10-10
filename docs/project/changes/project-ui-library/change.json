@@ -4,7 +4,7 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
@@ -91,10 +91,20 @@
       "commitTitle": "project-ui-library T12: preserve gallery state across preview navigation"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T04:09:11.627Z",
+      "summary": "本轮二级预览、详情抽屉及长列表返回交付完成：39项完整浏览器测试、类型/格式、生产构建通过；隔离Agent覆盖d991622之后完整差异并关闭R3，原基线R1/R2已复验；Merlin原地址已更新，生产Host/Origin核验通过。"
+    }
+  },
   "rework": {
     "at": "2026-10-10T03:52:27.548Z",
     "reason": "用户验收反馈要求二级原型预览及卡片截图/详情分离。",
     "approach": "保留已完成任务，追加T10/T11；复用现有协议，调整浏览交互并更新Merlin验收。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "按用户全部完成等待验收指令，等待验收新版原型二级画布与卡片详情；Merlin原地址已更新，仍使用隔离测试数据。"
   }
 }
