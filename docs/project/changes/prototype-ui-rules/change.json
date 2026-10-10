@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-ui-rules",
+  "title": "按 UI 影响范围选择原型流程",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/prototype-ui-rules",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "精简并统一启用原型后的 UI 变更规则",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
