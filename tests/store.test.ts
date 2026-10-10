@@ -148,9 +148,26 @@ test("configuration and request boundaries reject unregistered origins and unsaf
   assert.throws(() =>
     parseConfig({ ...good, projects: [...good.projects, ...good.projects] }),
   );
-  checkRequest(new Request("http://localhost:10681/api/projects"), config);
+  for (const request of [
+    new Request("http://localhost:10681/api/projects"),
+    new Request("http://folio.internal:8080/api/projects"),
+    new Request("http://localhost:10681/api/projects", {
+      headers: { host: "proxy.internal:9000" },
+    }),
+  ])
+    checkRequest(request, config);
+  checkRequest(
+    new Request("http://folio.internal:8080/api/projects/demo/refresh", {
+      method: "POST",
+      headers: {
+        host: "proxy.internal:9000",
+        origin: "http://localhost:10681",
+      },
+    }),
+    config,
+    true,
+  );
   for (const headers of [
-    { host: "evil.test" },
     { origin: "https://evil.test" },
     { "sec-fetch-site": "cross-site" },
   ] as HeadersInit[])

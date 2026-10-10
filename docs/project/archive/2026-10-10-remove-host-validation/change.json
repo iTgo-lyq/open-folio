@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "remove-host-validation",
+  "title": "取消工作台请求的 Host 校验",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/remove-host-validation",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-10T07:12:30.802Z",
+      "summary": "用户明确要求完全删除 Host 校验，当前阶段不接入多用户管理；仅移除主机名判断，其他请求边界沿用。",
+      "source": "本会话用户：完全删除 `Host` 校验吧，目前不需要；前文明确当前阶段不接入多用户管理。"
+    },
+    "technical": {
+      "at": "2026-10-10T07:12:30.861Z",
+      "summary": "按用户明确删除指令直接移除公共 checkRequest 中的 Host 和 URL 主机名判定，无新增架构或配置取舍。",
+      "source": "本会话用户明确授权完全删除 Host 校验，适用于所有复用公共请求校验的入口。"
+    },
+    "plan": {
+      "at": "2026-10-10T07:12:30.919Z",
+      "summary": "用一个任务完成删除、既有测试更新和部署说明，验证后独立评审并提供验收结果。",
+      "source": "沿用本会话用户明确的实现指令；测试和文档同步是该删除行为的必要交付。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "取消公共 Host 校验并验证请求行为",
+      "status": "done",
+      "verification": "66项单元、6项API/预览集成、类型格式及默认.next生产构建通过；独立subagent评审无待修复问题，详见execution.md。",
+      "commitTitle": "remove-host-validation T1: remove request Host validation"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T07:15:50.074Z",
+      "summary": "66项单元、6项API/预览集成、类型格式、默认.next生产构建全部通过；独立subagent评审确认完整删除Host和URL主机名判断，剩余来源边界无回归。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-10T07:17:47.549Z",
+      "summary": "用户在完整验证和独立评审结果交付后明确回复“合入吧”，确认验收并授权直接合入 main。",
+      "source": "本会话用户：合入吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-10T07:18:05.652Z",
+      "summary": "同步project-knowledge长期访问约束：删除Host和请求URL主机名校验，明确读取Origin、跨站拒绝与刷新Origin/空请求体规则；Spec格式和差异检查通过。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-10T07:18:05.716Z",
+      "summary": "用户明确验收并授权合入main；T1验证及独立评审通过，project-knowledge Spec已同步，完整Change归档。",
+      "path": "docs/project/archive/2026-10-10-remove-host-validation"
+    }
+  }
+}

@@ -43,7 +43,7 @@ npm start
 
 `specBranch` 必须是远端默认分支的 `docs/project/workflow.json` 所声明的守护分支；未配置时尝试远端 HEAD。不能确定基线时给出提示，仍允许显式选择已推送分支阅读。Changes 跨分支聚合，始终采用其声明主分支的记录。
 
-默认仅监听 loopback。远程访问需使用带访问控制的私有反向代理，并将实际浏览器 Origin 登记到 `allowedOrigins`，保留请求 Host／Origin。需要 IPv6 代理时可运行 `npx next start --hostname :: --port 10681`。此应用没有团队登录，不应作为无鉴权公网服务。
+默认仅监听 loopback。远程访问需使用带访问控制的私有反向代理，并将实际浏览器 Origin 登记到 `allowedOrigins`，保留请求 Origin。`allowedOrigins` 仅用于来源校验，不校验请求 Host 或请求 URL 的主机名，也不提供用户鉴权。读取请求可以不携带 Origin，刷新请求必须携带允许的 Origin；跨站请求仍会被拒绝。需要 IPv6 代理时可运行 `npx next start --hostname :: --port 10681`。此应用没有团队登录，不应作为无鉴权公网服务。
 
 ## 数据与运行边界
 

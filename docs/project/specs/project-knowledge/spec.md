@@ -38,4 +38,6 @@ Change 列表跨已推送分支聚合，主来源按 Change 自身的 `branch` �
 
 默认监听 loopback，远程访问由具有访问控制的 HTTPS 入口提供，实际浏览器来源登记在 `allowedOrigins` 中。应用没有内置团队登录；配置与含私有仓库内容的缓存由运行环境保护。
 
-API 按已配置项目、快照和文档清单检查读取范围，不接收任意本地路径或 Git ref。文档和流程响应采用 `private, no-store`，原型截图使用私有缓存并强制校验，详见[原型浏览](./prototype-preview/spec.md)；刷新接口要求允许的 Host、Origin 和空请求体。凭据与完整 Git 错误输出不返回浏览器。
+`allowedOrigins` 仅用于请求 Origin 校验，不校验请求 Host 或请求 URL 的主机名。读取请求可以不携带 Origin，携带时必须来自允许来源；`sec-fetch-site: cross-site` 请求被拒绝。此规则覆盖 API、Git 原型页面和缩略图读取，不提供用户鉴权。
+
+API 按已配置项目、快照和文档清单检查读取范围，不接收任意本地路径或 Git ref。文档和流程响应采用 `private, no-store`，原型截图使用私有缓存并强制校验，详见[原型浏览](./prototype-preview/spec.md)；刷新接口要求允许的 Origin 和空请求体。凭据与完整 Git 错误输出不返回浏览器。

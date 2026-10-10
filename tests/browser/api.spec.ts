@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 const origin = "http://127.0.0.1:10682";
-test("API enforces project, snapshot, document, Host and Origin boundaries", async ({
+test("API accepts unregistered Hosts and enforces project, snapshot, document and Origin boundaries", async ({
   request,
 }) => {
   const projects = await request.get("/api/projects");
@@ -39,9 +39,11 @@ test("API enforces project, snapshot, document, Host and Origin boundaries", asy
     expect((await request.get(path)).status(), path).toBe(status);
   expect(
     (
-      await request.get("/api/projects", { headers: { host: "evil.test" } })
+      await request.get("/api/projects", {
+        headers: { host: "proxy.internal:9000" },
+      })
     ).status(),
-  ).toBe(403);
+  ).toBe(200);
   expect(
     (
       await request.get("/api/projects", {
@@ -55,7 +57,7 @@ test("API enforces project, snapshot, document, Host and Origin boundaries", asy
   expect(
     (
       await request.post("/api/projects/fixture/refresh", {
-        headers: { origin },
+        headers: { origin, host: "proxy.internal:9000" },
         data: "unexpected",
       })
     ).status(),

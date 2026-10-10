@@ -127,9 +127,6 @@ export function checkRequest(
     "http://localhost:10681",
     ...(config.allowedOrigins ?? []),
   ]);
-  const hosts = new Set([...origins].map((o) => new URL(o).host));
-  if (!hosts.has(request.headers.get("host") ?? new URL(request.url).host))
-    throw new AppError("ORIGIN_DENIED", "当前访问地址不在允许列表中。", 403);
   if (request.headers.get("sec-fetch-site") === "cross-site")
     throw new AppError("ORIGIN_DENIED", "不接受跨站点读取。", 403);
   const origin = request.headers.get("origin");
