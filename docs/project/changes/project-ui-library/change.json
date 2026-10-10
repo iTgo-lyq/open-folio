@@ -4,7 +4,7 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
@@ -95,22 +95,18 @@
       "status": "done",
       "verification": "UI类型/生产构建、现有预览交互、格式及差异检查通过；源码与dist无目标名称或失效引用；独立增量评审问题已复验关闭，Merlin UI预览已更新。",
       "commitTitle": "project-ui-library T13: simplify UI guidance and remove provider references"
+    },
+    "T14": {
+      "title": "明确归档后的合入或 PR 选择",
+      "status": "done",
+      "verification": "Skill 格式验证、差异检查及五类静态场景核对通过；隔离增量评审无待修正问题，产品代码未变，沿用 T12/T13 验证。",
+      "commitTitle": "project-ui-library T14: prompt for merge or PR after archiving"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-10T06:23:32.511Z",
-      "summary": "T13 已提交并推送（8a8d494）；UI 类型与生产构建、现有预览交互、格式和差异检查通过，源码及产物无目标名称或失效引用；独立增量评审已关闭全部问题，Merlin UI 预览已更新。"
-    }
-  },
+  "closure": {},
   "rework": {
-    "at": "2026-10-10T06:20:22.601Z",
-    "reason": "用户要求移除UI代码中的素材供应方标识、精简AGENTS前端开发，并将其已改文档一同提交。",
-    "approach": "保留完成任务，追加T13作局部清理，验证后提交推送并继续等待验收。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "T13 代码清理、精简 AGENTS 及用户文档改动已一起提交并推送，验证通过，Merlin 预览已更新；等待用户验收。"
+    "at": "2026-10-10T06:27:41.572Z",
+    "reason": "用户追加归档提交后主动询问直接合入 main 或发起 PR 的 SpecTrail 指引。",
+    "approach": "保留既有交付，追加 T14 修改归档后选择规则；已有明确选择沿用，完成聚焦验证和评审后提交推送。"
   }
 }
