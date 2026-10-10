@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-trail-size-guidance",
+  "title": "按核心契约和实现规模判断 Change 大小",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/spec-trail-size-guidance",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "调整规模判断指引并核对典型场景",
+      "status": "done",
+      "verification": "Skill基础校验、新增正文格式和差异检查通过；七类典型场景对照通过，创建、规模调整与返工中的旧升级条件已统一清理。",
+      "commitTitle": "spec-trail-size-guidance T1: size changes by contracts and implementation scope"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T07:56:26.691Z",
+      "summary": "Agent自查完整规则差异与七类场景，核心契约和实现范围均可说明具体分级依据；Skill基础校验、文档格式及差异检查通过，无自动升级条件残留。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-10T07:56:26.814Z",
+      "summary": "Agent自验收通过：局部清理和机械修改可判small，核心契约变更或较大实现范围才升级；规模调整和返工沿用一致标准，满足全部验收项。",
+      "source": "用户明确要求修改规模规则；按SpecTrail small默认自验收并归档的约定执行。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-10T07:57:09.691Z",
+      "summary": "在change-workflow Spec补充核心契约、实现范围和独立交付数量的规模判断；文档格式与链接目标核对通过。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-10T07:57:09.813Z",
+      "summary": "small已自验收；规则、典型场景核对与长期Spec完整归档，Skill基础校验、格式和差异检查通过。",
+      "path": "docs/project/archive/2026-10-10-spec-trail-size-guidance"
+    }
+  }
+}

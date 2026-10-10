@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-trail-size-thresholds",
+  "title": "明确 Change 实现规模的默认阈值",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/spec-trail-size-guidance",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补充实现规模阈值与计量口径",
+      "status": "done",
+      "verification": "Skill基础校验、正文格式和差异检查通过；250行两模块、300行、120行三模块、1000行、五项分阶段交付及少量核心字段变更的分级逐项核对通过。",
+      "commitTitle": "spec-trail-size-thresholds T1: define practical sizing thresholds"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T08:02:05.488Z",
+      "summary": "Agent自查数值参考线、有效代码口径与模块/任务计数，典型边界均符合需求；Skill、格式、差异检查通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-10T08:02:05.608Z",
+      "summary": "Agent自验收通过：medium和large具有明确参考线，排除辅助及机械改动，核心契约优先级与偏离说明清晰。",
+      "source": "用户追加要求明确变更规模；沿用small默认自验收归档规则。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-10T08:02:26.179Z",
+      "summary": "工作流Spec同步300/1000行、3职责模块和5项分阶段交付任务的默认参考线，并明确有效代码计量与偏离依据；格式检查通过。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-10T08:02:26.299Z",
+      "summary": "small自验收通过，阈值、计量口径和长期Spec已核对并归档。",
+      "path": "docs/project/archive/2026-10-10-spec-trail-size-thresholds"
+    }
+  },
+  "dependsOn": [
+    "spec-trail-size-guidance"
+  ]
+}
