@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-hosting",
+  "title": "OpenFolio 本地原型托管与发布选择",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/prototype-hosting",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "dependsOn": [
+    "visual-configuration",
+    "prototype-ui-rules"
+  ]
+}
