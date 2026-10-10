@@ -57,6 +57,12 @@ export type AppConfig = {
   projects: ProjectConfig[];
   limits?: Partial<Limits>;
 };
+export type ConfigSnapshot = {
+  config: AppConfig;
+  revision: string;
+  path: string;
+  defaults: Limits;
+};
 export type SpecRef = {
   id: string;
   title: string;

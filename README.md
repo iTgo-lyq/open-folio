@@ -9,18 +9,21 @@
 ```bash
 npm ci
 npx playwright install --with-deps chromium
-cp openfolio.config.example.json openfolio.local.json
-export OPENFOLIO_CONFIG="$PWD/openfolio.local.json"
-export OPENFOLIO_DATA_DIR="$HOME/.local/share/open-folio"
 npm run build
 npm start
 ```
 
-打开 `http://127.0.0.1:10681`。开发时使用 `npm run dev`。没有配置时显示连接引导，构建不连接远端仓库。首次打开已配置项目时自动读取一次，此后通过页面刷新获取最新已推送记录。
+打开 `http://127.0.0.1:10681`。开发时使用 `npm run dev`。空配置显示连接引导，构建不创建配置文件，也不连接远端仓库。首次打开已配置项目时自动读取一次，此后通过页面刷新获取最新已推送记录。
 
 仓库地址必须是没有内嵌凭据的 HTTPS URL。认证使用运行服务的 OS 用户已有的 Git credential helper；不将密码、token 或私有配置提交到仓库。页面不接受任意仓库地址。
 
 ## 项目配置
+
+不设置环境变量即可启动。`OPENFOLIO_DATA_DIR` 默认为运行服务用户的 `~/.local/share/open-folio`；配置文件默认位于该目录的 `config.json`。`OPENFOLIO_CONFIG` 可指定其他配置文件路径，相对路径以服务工作目录为基准，仍只接受路径。
+
+首次读取配置时自动创建缺失的父目录和空文件 `{"schemaVersion":1,"projects":[]}`，不会覆盖已存在文件。路径错误、权限不足或已有文件损坏时显示错误，修复后重新加载。配置保存需要文件所在目录可写，采用原子替换；部署时可挂载整个数据目录，同时持久化配置和缓存。
+
+例如：`OPENFOLIO_DATA_DIR=/var/lib/openfolio npm start` 使用 `/var/lib/openfolio/config.json`；同时设置 `OPENFOLIO_CONFIG=/etc/openfolio/config.json` 则使用指定文件，缓存仍在数据目录。
 
 `openfolio.config.example.json` 展示必要字段。可以登记多个项目，`id` 必须唯一。可选配置示例：
 
