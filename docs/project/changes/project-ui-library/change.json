@@ -4,23 +4,23 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
-      "at": "2026-10-09T14:21:27.313Z",
-      "summary": "按用户追加明确指令纳入旧存档直接迁移和 shadcn/shadcnuikit 接入，其他原型与 UI 要求延续。",
-      "source": "本会话追加任务；此前明确无需再次确认，全部完成等待验收。"
+      "at": "2026-10-10T03:52:27.610Z",
+      "summary": "按用户明确两项指令更新原型二级预览、画布控制和卡片详情验收。",
+      "source": "2026-10-10 本会话用户两项验收修改指令；沿用直接推进授权。"
     },
     "technical": {
-      "at": "2026-10-09T14:21:27.370Z",
-      "summary": "沿用既有方案；旧格式一次性迁移后删除，个人工具全局安装，入库组件不依赖凭据。",
-      "source": "用户追加任务并授权直接完成。"
+      "at": "2026-10-10T03:52:27.671Z",
+      "summary": "复用已有路由与预览协议，current模式左目录右画布，详情承载截图及来源，保持Change分享。",
+      "source": "用户明确指定交互，并授权其余实现选择直接推进。"
     },
     "plan": {
-      "at": "2026-10-09T14:21:27.429Z",
-      "summary": "保留已完成任务，T5 后串行 T7 存档迁移、T8 工具与组件预览，再独立评审等待人工验收。",
-      "source": "用户无需进一步确认、直接完成的授权。"
+      "at": "2026-10-10T03:52:27.733Z",
+      "summary": "追加T10二级预览和T11卡片详情，串行验证、评审、更新Merlin后待验收。",
+      "source": "沿用本会话全部完成等待验收、无需再确认的明确授权。"
     }
   },
   "tasks": {
@@ -71,22 +71,20 @@
       "status": "done",
       "verification": "独立评审 R1/R2 已复验关闭；发布6项含真实SIGKILL恢复、缩略图3项回归及新增错误契约测试通过；类型格式和Next生产构建通过，无未解决P1/P2。",
       "commitTitle": "project-ui-library T9: fix preview errors and recovery guidance"
+    },
+    "T10": {
+      "title": "交付原型二级预览工作台",
+      "status": "todo"
+    },
+    "T11": {
+      "title": "区分卡片预览与详情并更新验收入口",
+      "status": "todo"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-09T14:51:20.426Z",
-      "summary": "完整62项单元、34项浏览器、UI独立交互、类型格式和两端生产构建通过；T9增量发布6项与新增缩略图错误回归通过。隔离上下文独立评审覆盖完整差异，R1/R2均复验关闭，无未解决P1/P2。"
-    }
-  },
+  "closure": {},
   "rework": {
-    "at": "2026-10-09T14:21:27.132Z",
-    "reason": "用户追加旧 HTML 存档迁移并移除兼容，以及全局 shadcn 工具和 shadcnuikit 组件预览适配。",
-    "approach": "沿用已完成基础，追加 T7/T8；认证仅个人环境，迁移不改写 Git 历史。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "全部实现和独立评审完成，等待用户人工验收；UI预览10683，测试数据原型工作台10682。尚未验收、同步Specs、归档或合入main。"
+    "at": "2026-10-10T03:52:27.548Z",
+    "reason": "用户验收反馈要求二级原型预览及卡片截图/详情分离。",
+    "approach": "保留已完成任务，追加T10/T11；复用现有协议，调整浏览交互并更新Merlin验收。"
   }
 }
