@@ -14,7 +14,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## SpecTrail 同步
 
-`.agents/skills/spec-trail/` 的变更合入 `main` 前，须询问用户是否同步至公开仓库 [iTgo-lyq/spec-trail](https://github.com/iTgo-lyq/spec-trail) 的 `skills/spec-trail/`；用户明确同意后，按最终合入版本同步。
+`.agents/skills/spec-trail/` 的变更合入 `main` 后，由 [GitHub Actions](.github/workflows/sync-spec-trail.yml) 自动同步至公开仓库 [iTgo-lyq/spec-trail](https://github.com/iTgo-lyq/spec-trail) 的 `skills/spec-trail/`，无需逐次确认。以 `main` 已提交内容为准，保留分发仓库的 `LICENSE`。
 
 ## 前端开发
 
