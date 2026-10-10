@@ -53,7 +53,7 @@ Change 链接固定完整 revision；Git 快照按该提交读取，hosted 使�
 
 ## 托管预览与隔离
 
-项目配置 prototypeOrigins 登记精确 HTTPS origin，用于页面和截图引用。服务端不请求远端地址、不代理登录、下载或转发凭据；引用允许来源不是远端资源或重定向的网络防火墙，宿主负责资源策略、版本保留和允许嵌入。
+项目配置 prototypeOrigins 登记精确 HTTPS origin，用于页面和截图引用。托管页面须使用独立于工作台的静态 origin。服务端不请求远端地址、不代理登录、下载或转发凭据；引用允许来源不是远端资源或重定向的网络防火墙，宿主负责资源策略、版本保留和允许嵌入。
 
 iframe 只授予 allow-scripts，不授予 allow-same-origin，保持 opaque origin。宿主 ESM、动态模块和字体等静态资源须支持无 Cookie 的 CORS，路由使用 hash/memory；不兼容的登录流由用户独立打开宿主页面。宿主响应 CSP 约束其资源和连接，工作台不为兼容而放宽沙箱。
 
@@ -63,7 +63,7 @@ iframe 只授予 allow-scripts，不授予 allow-same-origin，保持 opaque ori
 
 Git 兜底入口是 UTF-8 自包含 index.html，脚本、样式及 mock 内联，图片/字体用 data URL。不依赖外部 import、动态 chunk、网络、真实后端、持久存储、Worker 或 eval；普通 Vite dist 不等于单文件兜底，宿主负责必要的内联构建。
 
-同域 HTML 同时受 iframe 沙箱和响应头 CSP sandbox 限制，直接导航仍受限；CSP 禁止网络连接、外部资源、嵌套 iframe、表单、对象及 worker。API 不接受 Origin:null，不增加 CORS 或匿名资源通道。HTML 响应 private,no-store，只能按已登记入口和固定提交读取；拒绝任意文件路径、符号链接、LFS、超限或非法产物。无 previews 的 Change 正常显示尚未关联。
+同域 HTML 同时受 iframe 沙箱和响应头 CSP sandbox 限制，直接导航仍受限；CSP 禁止网络连接、外部资源、嵌套 iframe、表单、对象及 worker。HTML 响应 private,no-store，只能按已登记入口和固定提交读取；拒绝任意文件路径、符号链接、LFS、超限或非法产物。无 previews 的 Change 正常显示尚未关联。
 
 可见卡片按需加载截图，默认采用第一个声明设备；设备筛选后截图与交互预览尺寸一致。截图保持比例，加载、失败、重试和预览入口独立。托管截图由宿主提供固定 PNG/WebP 地址，通过允许来源及 no-referrer 加载；缺失时使用占位，OpenFolio 不联网为托管地址截图。
 

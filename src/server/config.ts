@@ -49,17 +49,6 @@ const configSchema = z
         })
         .strict(),
     ),
-    allowedOrigins: z
-      .array(
-        z
-          .string()
-          .url()
-          .refine((v) => {
-            const u = new URL(v);
-            return ["http:", "https:"].includes(u.protocol) && u.origin === v;
-          }),
-      )
-      .optional(),
     limits: z
       .object(
         Object.fromEntries(
@@ -85,13 +74,6 @@ export function parseConfig(value: unknown): AppConfig {
     result.data.projects.length
   )
     throw new AppError("CONFIG_INVALID", "配置中存在重复的项目 id。");
-  const workbenchOrigins = new Set(result.data.allowedOrigins ?? []);
-  if (
-    result.data.projects.some((p) =>
-      p.prototypeOrigins?.some((origin) => workbenchOrigins.has(origin)),
-    )
-  )
-    throw new AppError("CONFIG_INVALID", "原型托管来源必须与工作台来源分离。");
   return result.data as AppConfig;
 }
 export async function readConfig(): Promise<AppConfig> {
@@ -117,23 +99,3 @@ export const limitsFor = (config: AppConfig): Limits => ({
   ...DEFAULT_LIMITS,
   ...config.limits,
 });
-export function checkRequest(
-  request: Request,
-  config: AppConfig,
-  write = false,
-) {
-  const origins = new Set([
-    "http://127.0.0.1:10681",
-    "http://localhost:10681",
-    ...(config.allowedOrigins ?? []),
-  ]);
-  if (request.headers.get("sec-fetch-site") === "cross-site")
-    throw new AppError("ORIGIN_DENIED", "不接受跨站点读取。", 403);
-  const origin = request.headers.get("origin");
-  if ((origin && !origins.has(origin)) || (write && !origin))
-    throw new AppError(
-      "ORIGIN_DENIED",
-      "刷新请求必须来自允许的工作台页面。",
-      403,
-    );
-}

@@ -4,7 +4,7 @@ import { rename, rm, symlink, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
-import { parseConfig, checkRequest } from "../src/server/config.ts";
+import { parseConfig } from "../src/server/config.ts";
 import { resolveDocumentLink, inspectMarkdown } from "../src/lib/markdown.ts";
 
 test("only pushed trees are visible, immutable snapshots survive restart and failed refresh", async (t) => {
@@ -121,7 +121,7 @@ test("file limits and symlinks never read outside blobs; overall limit keeps cur
   );
 });
 
-test("configuration and request boundaries reject unregistered origins and unsafe remotes", () => {
+test("configuration rejects unsafe remotes and duplicate project ids", () => {
   const good = {
     schemaVersion: 1,
     projects: [
@@ -132,7 +132,7 @@ test("configuration and request boundaries reject unregistered origins and unsaf
       },
     ],
   };
-  const config = parseConfig(good);
+  parseConfig(good);
   for (const url of [
     "file:///tmp/repo",
     "https://user:token@example.test/repo",
@@ -147,42 +147,6 @@ test("configuration and request boundaries reject unregistered origins and unsaf
     );
   assert.throws(() =>
     parseConfig({ ...good, projects: [...good.projects, ...good.projects] }),
-  );
-  for (const request of [
-    new Request("http://localhost:10681/api/projects"),
-    new Request("http://folio.internal:8080/api/projects"),
-    new Request("http://localhost:10681/api/projects", {
-      headers: { host: "proxy.internal:9000" },
-    }),
-  ])
-    checkRequest(request, config);
-  checkRequest(
-    new Request("http://folio.internal:8080/api/projects/demo/refresh", {
-      method: "POST",
-      headers: {
-        host: "proxy.internal:9000",
-        origin: "http://localhost:10681",
-      },
-    }),
-    config,
-    true,
-  );
-  for (const headers of [
-    { origin: "https://evil.test" },
-    { "sec-fetch-site": "cross-site" },
-  ] as HeadersInit[])
-    assert.throws(() =>
-      checkRequest(
-        new Request("http://localhost:10681/api/projects", { headers }),
-        config,
-      ),
-    );
-  assert.throws(() =>
-    checkRequest(
-      new Request("http://localhost:10681/api/projects"),
-      config,
-      true,
-    ),
   );
 });
 

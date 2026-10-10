@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
-const origin = "http://127.0.0.1:10682";
-test("API accepts unregistered Hosts and enforces project, snapshot, document and Origin boundaries", async ({
+test("API reads configured data, refreshes repositories and enforces input boundaries", async ({
   request,
 }) => {
   const projects = await request.get("/api/projects");
@@ -37,27 +36,23 @@ test("API accepts unregistered Hosts and enforces project, snapshot, document an
     [`/api/projects/fixture/assets/${doc.id}?snapshot=${snapshot}`, 404],
   ] as const)
     expect((await request.get(path)).status(), path).toBe(status);
-  expect(
-    (
-      await request.get("/api/projects", {
-        headers: { host: "proxy.internal:9000" },
-      })
-    ).status(),
-  ).toBe(200);
-  expect(
-    (
-      await request.get("/api/projects", {
-        headers: { origin: "https://evil.test" },
-      })
-    ).status(),
-  ).toBe(403);
-  expect((await request.post("/api/projects/fixture/refresh")).status()).toBe(
-    403,
-  );
+  for (const headers of [
+    {},
+    { host: "proxy.internal:9000", origin: "https://folio.example.test" },
+    { origin: "null", "sec-fetch-site": "cross-site" },
+  ] as Record<string, string>[]) {
+    expect((await request.get("/api/projects", { headers })).status()).toBe(
+      200,
+    );
+    const refresh = await request.post("/api/projects/fixture/refresh", {
+      headers,
+    });
+    expect(refresh.status()).toBe(503);
+    expect((await refresh.json()).error.code).toBe("GIT_READ_FAILED");
+  }
   expect(
     (
       await request.post("/api/projects/fixture/refresh", {
-        headers: { origin, host: "proxy.internal:9000" },
         data: "unexpected",
       })
     ).status(),

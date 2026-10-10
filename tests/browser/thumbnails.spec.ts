@@ -78,7 +78,7 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
 });
 
-test("thumbnail endpoint returns private validators and rejects unsupported inputs and origins", async ({
+test("thumbnail endpoint returns private validators and rejects unsupported inputs", async ({
   request,
 }) => {
   const url =
@@ -98,7 +98,7 @@ test("thumbnail endpoint returns private validators and rejects unsupported inpu
   ).toBe(304);
   expect(
     (await request.get(url, { headers: { origin: "null" } })).status(),
-  ).toBe(403);
+  ).toBe(200);
   expect(
     (
       await request.get(

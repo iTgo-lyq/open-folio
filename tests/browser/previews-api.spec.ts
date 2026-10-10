@@ -39,12 +39,12 @@ test("same-origin preview serves only associated HTML with sandbox headers and n
   ).toBe(404);
   expect(
     (await request.get(url, { headers: { origin: "null" } })).status(),
-  ).toBe(403);
+  ).toBe(200);
   expect(
     (
       await request.get("/api/projects", { headers: { origin: "null" } })
     ).status(),
-  ).toBe(403);
+  ).toBe(200);
   expect(
     (
       await request.get(

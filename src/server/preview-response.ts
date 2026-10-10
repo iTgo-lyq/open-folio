@@ -1,4 +1,4 @@
-import { readConfig, checkRequest, limitsFor } from "@/server/config";
+import { readConfig, limitsFor } from "@/server/config";
 import { service } from "@/server/service";
 import { AppError, publicError } from "@/server/errors";
 import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
@@ -19,7 +19,6 @@ export async function handlePreview(
 ) {
   try {
     const config = await readConfig();
-    checkRequest(request, config);
     const segments = (await context.params).segments;
     const s = current
       ? [segments[0], segments[1], "", ...segments.slice(2)]

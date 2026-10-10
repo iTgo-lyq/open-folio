@@ -14,7 +14,7 @@
     },
     "technical": {
       "at": "2026-10-10T07:12:30.861Z",
-      "summary": "按用户明确删除指令直接移除公共 checkRequest 中的 Host 和 URL 主机名判定，无新增架构或配置取舍。",
+      "summary": "按用户明确删除指令直接移除公共请求处理入口中的 Host 和 URL 主机名判定，无新增架构或配置取舍。",
       "source": "本会话用户明确授权完全删除 Host 校验，适用于所有复用公共请求校验的入口。"
     },
     "plan": {
@@ -35,7 +35,7 @@
     "verification": {
       "result": "passed",
       "at": "2026-10-10T07:15:50.074Z",
-      "summary": "66项单元、6项API/预览集成、类型格式、默认.next生产构建全部通过；独立subagent评审确认完整删除Host和URL主机名判断，剩余来源边界无回归。"
+      "summary": "66项单元、6项API/预览集成、类型格式、默认.next生产构建全部通过；独立subagent评审确认完整删除Host和URL主机名判断，数据范围与沙箱边界无回归。"
     },
     "acceptance": {
       "result": "accepted",
@@ -46,7 +46,7 @@
     "specs": {
       "result": "synced",
       "at": "2026-10-10T07:18:05.652Z",
-      "summary": "同步project-knowledge长期访问约束：删除Host和请求URL主机名校验，明确读取Origin、跨站拒绝与刷新Origin/空请求体规则；Spec格式和差异检查通过。"
+      "summary": "同步project-knowledge长期访问约束：删除Host和请求URL主机名校验，明确刷新空请求体规则；Spec格式和差异检查通过。"
     },
     "archive": {
       "result": "done",

@@ -157,7 +157,7 @@ base-uri 'none'; form-action 'none'; frame-ancestors 'self';
 
 这一选择要求自包含 HTML。实际浏览器探针表明，去掉 allow-same-origin 后子资源请求的 Origin 为 null，SameSite=Lax 登录 Cookie 不随模块、字体和 fetch 子请求发送，即使请求声明 credentials: include。只给资源增加 CORS 不能解决私有网关认证问题。将运行资源内联后，只有 iframe 文档导航请求需要认证，不再依赖匿名资源路由、短期访问令牌或跨 origin CORS。来源与实验边界见 [Research](./research.md)。
 
-不启用 unsafe-eval、弹窗、下载、表单提交、顶层导航、网络访问或 Service Worker。Permissions-Policy 禁用相机、麦克风、定位等设备能力。响应使用 `text/html; charset=utf-8`、`X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer` 和 `Cache-Control: private, no-store`，不放入 Next public 目录或公共 CDN。工作台 API 仍拒绝 Origin:null，不给沙箱开放 CORS，不接受原型消息来执行导航、读写文件或调用父页面 API。
+不启用 unsafe-eval、弹窗、下载、表单提交、顶层导航、网络访问或 Service Worker。Permissions-Policy 禁用相机、麦克风、定位等设备能力。响应使用 `text/html; charset=utf-8`、`X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer` 和 `Cache-Control: private, no-store`，不放入 Next public 目录或公共 CDN。不接受原型消息来执行导航、读写文件或调用父页面 API。
 
 该模式只授予内联脚本完成局部交互的能力，不给原型持久存储和后端访问能力。运行中 mock 状态保存在页面内存，重载后重置。沙箱内自身导航可能发生，不能以 CSP 宣称完全杜绝出站导航；原型产物不得包含秘密。不承诺防御浏览器漏洞，但原型不能借当前应用同域的 URL 获得工作台 origin 的权限。原型 HTML 包含的内容对有项目访问权限的用户可见，属于预期交付。
 

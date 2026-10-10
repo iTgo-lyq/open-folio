@@ -124,7 +124,7 @@ test("missing manifest and invalid entries remain explicit, separate from filter
     page.getByRole("heading", { name: "暂无当前页面" }),
   ).toBeVisible();
 });
-test("catalog API enforces project, snapshot and same-origin access boundaries", async ({
+test("catalog API reads configured projects and enforces snapshot boundaries", async ({
   request,
 }) => {
   expect((await request.get("/api/projects/missing/prototypes")).status()).toBe(
@@ -150,7 +150,7 @@ test("catalog API enforces project, snapshot and same-origin access boundaries",
         headers: { origin: "null" },
       })
     ).status(),
-  ).toBe(403);
+  ).toBe(200);
 });
 
 test("focused viewer keeps directory, viewport controls and history in the workbench", async ({

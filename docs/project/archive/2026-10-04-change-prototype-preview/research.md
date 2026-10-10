@@ -18,7 +18,7 @@
 | `src/server/schema.ts`、`src/server/indexer.ts`                                         | Change 和 workflow 使用严格 schema；增加可选字段也会被旧实现拒绝。原型局部解析错误需与核心流程错误区分。                              |
 | `src/server/git.ts`                                                                     | bare Git 采集只读 `docs/project/`，仅 fetch 分支且使用 no-tags；现有白名单不提供 HTML/JS。扩展须明确 preview 根、资源类型和归档引用。 |
 | `src/server/store.ts`                                                                   | 磁盘原子快照，保留当前及两个旧快照；无法直接承诺长期历史预览。历史资源应从仍可达的 Git 引用重建。                                     |
-| `src/server/config.ts`、`src/app/api/[...segments]/route.ts`                            | 主 API 有 Host/Origin 检查，当前私有访问由部署网关承担；不能将 `Origin: null` 或预览域加入主 API 的允许列表来解决嵌入问题。           |
+| `src/server/config.ts`、`src/app/api/[...segments]/route.ts`                            | 主 API 的私有访问由部署网关承担；原型嵌入需要同时满足沙箱和网关认证条件。           |
 | `src/components/changes.tsx`                                                            | 详情已有概览、任务、文档、证据等区域；新增 Change 内标签即可，不需要单独 Hub。                                                        |
 | 本地 `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md` | 当前安装 Next 文档支持 Route Handlers 自定义 Response；动态路由 params 为 Promise。实际实现仍应按安装版本指南核对路由及响应头。       |
 

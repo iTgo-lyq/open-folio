@@ -155,7 +155,7 @@ digest 对规范化相对路径和文件字节生成确定性的 SHA-256，采�
 
 ## 托管页面的访问与隔离
 
-服务配置在每个项目增加管理员维护的 `prototypeOrigins`，只接受精确 HTTPS origin，默认空；区别于现有工作台自身的 `allowedOrigins`。页面和缩略图 URL 必须命中该列表，且与工作台 origin 不同。仓库内容不能自行扩大允许来源。OpenFolio 后端不下载 URL、不转发访问凭据，避免把展示协议变成通用代理。
+服务配置在每个项目增加管理员维护的 `prototypeOrigins`，只接受精确 HTTPS origin，默认空。页面和缩略图 URL 必须命中该列表，托管页面须使用独立于工作台的静态 origin。仓库内容不能自行扩大允许来源。OpenFolio 后端不下载 URL、不转发访问凭据，避免把展示协议变成通用代理。
 
 托管页面放入 `sandbox="allow-scripts"` 的 iframe，使用 `referrerPolicy="no-referrer"`，不开放存储、弹窗、顶层跳转、表单提交或摄像头等权限。宿主必须允许工作台 iframe 嵌入，为 ESM、动态模块、字体等资源提供适配 opaque origin 的 CORS，静态演示资源不依赖 Cookie；使用 hash/memory 路由和内存 mock。普通构建即可输出多文件，不要求内联成单 HTML。
 

@@ -1,4 +1,4 @@
-import { readConfig, checkRequest, limitsFor } from "@/server/config";
+import { readConfig, limitsFor } from "@/server/config";
 import { service, thumbnails } from "@/server/service";
 import { thumbnailResponse } from "@/server/thumbnails";
 import { AppError, publicError } from "@/server/errors";
@@ -14,7 +14,6 @@ type Context = { params: Promise<{ segments: string[] }> };
 async function handle(request: Request, context: Context) {
   try {
     const config = await readConfig();
-    checkRequest(request, config, request.method === "POST");
     const { segments: s } = await context.params,
       url = new URL(request.url),
       store = service();

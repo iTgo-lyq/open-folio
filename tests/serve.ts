@@ -11,7 +11,6 @@ await writeFile(
   JSON.stringify({
     schemaVersion: 1,
     projects: [f.project],
-    allowedOrigins: ["http://127.0.0.1:10682"],
   }),
 );
 await mkdir("artifacts", { recursive: true });

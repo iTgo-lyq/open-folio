@@ -55,7 +55,6 @@ export const DEFAULT_LIMITS: Limits = {
 export type AppConfig = {
   schemaVersion: 1;
   projects: ProjectConfig[];
-  allowedOrigins?: string[];
   limits?: Partial<Limits>;
 };
 export type SpecRef = {

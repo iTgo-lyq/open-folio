@@ -36,14 +36,13 @@ npm start
       "prototypeOrigins": ["https://static.example.com"]
     }
   ],
-  "allowedOrigins": ["https://your-private-preview.example"],
   "limits": { "refreshMs": 120000, "markdownBytes": 1048576 }
 }
 ```
 
 `specBranch` 必须是远端默认分支的 `docs/project/workflow.json` 所声明的守护分支；未配置时尝试远端 HEAD。不能确定基线时给出提示，仍允许显式选择已推送分支阅读。Changes 跨分支聚合，始终采用其声明主分支的记录。
 
-默认仅监听 loopback。远程访问需使用带访问控制的私有反向代理，并将实际浏览器 Origin 登记到 `allowedOrigins`，保留请求 Origin。`allowedOrigins` 仅用于来源校验，不校验请求 Host 或请求 URL 的主机名，也不提供用户鉴权。读取请求可以不携带 Origin，刷新请求必须携带允许的 Origin；跨站请求仍会被拒绝。需要 IPv6 代理时可运行 `npx next start --hostname :: --port 10681`。此应用没有团队登录，不应作为无鉴权公网服务。
+默认仅监听 loopback。远程访问可通过反向代理提供，需要 IPv6 监听时可运行 `npx next start --hostname :: --port 10681`。此应用没有团队登录，访问控制由部署环境提供。
 
 ## 数据与运行边界
 
@@ -72,7 +71,7 @@ Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工�
 
 原型协作通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 可选接入。宿主维护原型源码、mock 和构建，可使用 React 及自己的组件库；宿主实现发布协议并维护版本保留。OpenFolio 只读固定地址、版本、digest 和 sourceCommit，不安装依赖、不运行第三方构建、不接收上传。已登记参考原型不会因源码或样式变化而自动重新发布。
 
-宿主地址必须是无凭据、无查询令牌的固定 HTTPS URL，并在服务项目的 `prototypeOrigins` 中批准；它与工作台 `allowedOrigins` 分离。iframe 仅授予 `allow-scripts`，不开放同源、存储、弹窗或顶层跳转，使用 no-referrer。宿主须允许嵌入，并为 ESM、动态模块和字体提供适配不透明来源的 CORS；演示使用内存状态和 hash/memory 路由。工作台不代理登录或资源请求。可选就绪桥接确认应用可交互；超时仅提示未确认，保留画布及独立打开入口。
+宿主地址必须是无凭据、无查询令牌的固定 HTTPS URL，并在服务项目的 `prototypeOrigins` 中批准。托管页面须使用独立于工作台的静态 origin。iframe 仅授予 `allow-scripts`，不开放同源、存储、弹窗或顶层跳转，使用 no-referrer。宿主须允许嵌入，并为 ESM、动态模块和字体提供适配不透明来源的 CORS；演示使用内存状态和 hash/memory 路由。工作台不代理登录或资源请求。可选就绪桥接确认应用可交互；超时仅提示未确认，保留画布及独立打开入口。
 
 宿主可发布每个声明视口的 PNG/WebP 缩略图；浏览器直接加载批准来源，缺失或失败显示占位，仍可打开页面。OpenFolio 服务不联网截图远端页面。Git 自包含 HTML 是显式兜底：当前产物保存在包内 preview，Change 复制一份到自身 previews 目录，归档时一同移动。普通多文件 React dist 使用托管链路。
 

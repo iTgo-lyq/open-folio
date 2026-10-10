@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "simplify-deployment-requests",
+  "title": "简化独立部署的读取与刷新",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/simplify-deployment-requests",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-10T07:30:48.150Z",
+      "summary": "用户要求独立部署读取与刷新直接可用，并明确彻底清理相关代码、配置、测试和表述。",
+      "source": "本会话用户两次明确删除指令，后续要求彻底删除干净，不遗留相关表述。"
+    },
+    "technical": {
+      "at": "2026-10-10T07:30:48.215Z",
+      "summary": "按明确删除指令移除公共门禁、配置和调用，清理全部旧文字；保留项目数据范围、空刷新体与原型沙箱。",
+      "source": "沿用本会话用户明确的完整删除授权，无新增产品或架构取舍。"
+    },
+    "plan": {
+      "at": "2026-10-10T07:30:48.272Z",
+      "summary": "以一个任务完成实现、测试和所有相关文字清理，验证后独立评审并提供验收结果。",
+      "source": "测试和文字同步属于用户要求彻底清理的必要交付。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "简化读取与刷新并清理全部遗留",
+      "status": "done",
+      "verification": "66项单元及18项相关浏览器场景通过，类型格式与默认.next生产构建通过；源码文档检索无失效内容，归档流程事实保持原样，独立评审问题修正后关闭。",
+      "commitTitle": "simplify-deployment-requests T1: simplify reads and refreshes"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T07:44:26.185Z",
+      "summary": "66项单元及18项相关浏览器场景均有通过证据；类型格式、默认.next生产构建与差异检查通过。独立subagent只读评审覆盖完整差异，刷新状态码断言问题已修正并关闭；失效字段、入口、错误和文字清理完成，归档流程事实未改写。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-10T08:13:41.323Z",
+      "summary": "沿用本会话合入授权，补齐此前已完成验证的读取与刷新简化交付。",
+      "source": "用户本会话指令：合入吧；前轮只合入规模规则，本轮补齐此前尚未纳入main的已验证交付。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-10T08:13:41.671Z",
+      "summary": "核对project-knowledge和prototype-preview长期规则与最终实现一致，部署说明及旧限制文字已清理，原型静态托管和沙箱语义准确；格式检查通过。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-10T08:13:41.797Z",
+      "summary": "读取与刷新简化交付验收归档；已有测试、构建和独立评审证据适用于同步main后的实现，文档检索和差异复核通过。",
+      "path": "docs/project/archive/2026-10-10-simplify-deployment-requests"
+    }
+  }
+}
