@@ -16,6 +16,16 @@ try {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("http://127.0.0.1:10684");
+  await page.getByLabel("项目名称", { exact: true }).fill("工程协作");
+  await expect(page.getByLabel("项目名称", { exact: true })).toHaveValue(
+    "工程协作",
+  );
+  await page.getByLabel("项目说明", { exact: true }).fill("组件预览");
+  await expect(page.getByLabel("无效输入", { exact: true })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await expect(page.getByLabel("不可编辑字段", { exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "保存更改" }).click();
   assert(await page.getByRole("button", { name: "保存中" }).isDisabled());
   await page.getByText("更改已保存", { exact: true }).waitFor();
@@ -48,7 +58,7 @@ try {
     .fill("no matching component");
   await page.getByRole("heading", { name: "没有找到组件" }).waitFor();
   await page.getByRole("button", { name: "清除搜索" }).click();
-  await expect(page.locator(".component-section")).toHaveCount(6);
+  await expect(page.locator(".component-section")).toHaveCount(7);
   await mkdir("artifacts", { recursive: true });
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.screenshot({ path: "artifacts/ui-desktop.png", fullPage: true });

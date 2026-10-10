@@ -16,6 +16,8 @@ Button 支持 default/primary/text、loading 和原生 button 属性；IconButto
 
 包直接导出 TypeScript 源码，由消费方编译。React 使用 peer dependency；公共样式只在消费方入口导入一次，可覆盖 `--of-*` token。`npm run typecheck --workspace @open-folio/ui` 检查包类型。
 
+表单使用 `FieldGroup`、`Field`、`FieldLabel`、`FieldDescription` 组合 `Input` 或 `Textarea`。控件保留原生属性，标签通过 `htmlFor` 关联 `id`，说明通过 `aria-describedby` 关联；校验状态同时使用 Field 的 `data-invalid` 和控件的 `aria-invalid`。字段值与校验逻辑由调用方维护。
+
 ## 独立预览
 
 根目录运行 `npm run ui:dev`，在 http://127.0.0.1:10683 查看组件导航和交互。`npm run ui:build` 生成包内 dist，`npm run ui:preview` 查看生产结果，`npm run ui:test` 验证生产预览的交互与窄屏布局；无需配置或启动 OpenFolio 服务，dist 不入 Git。

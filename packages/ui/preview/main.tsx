@@ -17,12 +17,24 @@ import {
   TabsTrigger,
   TabsContent,
   TabbedCard,
+  Input,
+  Textarea,
+  FieldGroup,
+  Field,
+  FieldLabel,
+  FieldDescription,
   type BadgeTone,
 } from "@open-folio/ui";
 import "@open-folio/ui/styles.css";
 import "./preview.css";
 
 const sections = [
+  {
+    id: "fields",
+    title: "表单字段",
+    code: "Field · Input · Textarea",
+    description: "带有标签、说明和校验状态的输入控件。",
+  },
   {
     id: "button",
     title: "按钮",
@@ -120,6 +132,48 @@ function App() {
     }, 600);
   };
   const examples: Record<string, ReactNode> = {
+    fields: (
+      <Example
+        title="表单字段"
+        code={
+          '<FieldGroup>\n  <Field>\n    <FieldLabel htmlFor="name">项目名称</FieldLabel>\n    <Input id="name" />\n    <FieldDescription>显示在项目列表中。</FieldDescription>\n  </Field>\n</FieldGroup>'
+        }
+      >
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="sample-name">项目名称</FieldLabel>
+            <Input
+              id="sample-name"
+              placeholder="例如：工程协作"
+              aria-describedby="sample-name-help"
+            />
+            <FieldDescription id="sample-name-help">
+              显示在项目列表中。
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="sample-description">项目说明</FieldLabel>
+            <Textarea id="sample-description" placeholder="描述这个项目" />
+          </Field>
+          <Field data-invalid="true">
+            <FieldLabel htmlFor="sample-invalid">无效输入</FieldLabel>
+            <Input
+              id="sample-invalid"
+              aria-invalid="true"
+              aria-describedby="sample-invalid-help"
+              defaultValue="invalid"
+            />
+            <FieldDescription id="sample-invalid-help">
+              请填写有效的地址。
+            </FieldDescription>
+          </Field>
+          <Field data-disabled="true">
+            <FieldLabel htmlFor="sample-disabled">不可编辑字段</FieldLabel>
+            <Input id="sample-disabled" value="只读示例" disabled />
+          </Field>
+        </FieldGroup>
+      </Example>
+    ),
     button: (
       <Example
         title="按钮"

@@ -322,3 +322,67 @@
 .of-ui-tabbed-card .of-ui-card-content {
   padding-top: var(--of-card-spacing);
 }
+.of-ui-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.of-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font: 13px/1.5 var(--of-font);
+}
+.of-ui-field-label {
+  font-weight: 500;
+  color: var(--of-ink);
+}
+.of-ui-field-description {
+  margin: 0;
+  color: var(--of-muted);
+  font-size: 12px;
+}
+.of-ui-field[data-invalid="true"] .of-ui-field-description {
+  color: var(--of-red);
+}
+.of-ui-field[data-disabled="true"] .of-ui-field-label {
+  opacity: 0.5;
+}
+.of-ui-input,
+.of-ui-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--of-line);
+  border-radius: var(--of-radius);
+  background: var(--of-card, white);
+  color: var(--of-ink);
+  padding: 9px 11px;
+  font: 13px/1.5 var(--of-font);
+}
+.of-ui-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.of-ui-input::placeholder,
+.of-ui-textarea::placeholder {
+  color: var(--of-muted);
+}
+.of-ui-input:focus-visible,
+.of-ui-textarea:focus-visible {
+  border-color: var(--of-focus);
+  outline: 2px solid var(--of-focus);
+  outline-offset: 2px;
+}
+.of-ui-input[aria-invalid="true"],
+.of-ui-textarea[aria-invalid="true"] {
+  border-color: var(--of-red);
+}
+.of-ui-input:disabled,
+.of-ui-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--of-surface);
+}

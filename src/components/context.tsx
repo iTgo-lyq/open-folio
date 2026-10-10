@@ -8,7 +8,12 @@ import {
   useRef,
   useState,
 } from "react";
-import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
+import type {
+  AppConfig,
+  DocumentRef,
+  ProjectSummary,
+  Workbench,
+} from "@/lib/model";
 export class ApiError extends Error {
   code: string;
   constructor(code: string, message: string) {
@@ -38,6 +43,7 @@ type Value = {
   refreshing: boolean;
   error: string;
   refresh: () => Promise<void>;
+  configurationSaved: (before: AppConfig, after: AppConfig) => void;
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
   notice: (message: string) => void;
   message: string;
@@ -49,6 +55,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [revealVersion, setRevealVersion] = useState(0),
     [ready, setReady] = useState(false),
     [configured, setConfigured] = useState(false),
+    [configurationVersion, setConfigurationVersion] = useState(0),
     [projects, setProjects] = useState<ProjectSummary[]>([]),
     [data, setData] = useState<Workbench | null>(null),
     [loading, setLoading] = useState(true),
@@ -85,6 +92,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const c = new AbortController();
     api<{ projects: ProjectSummary[] }>("/api/projects", { signal: c.signal })
       .then((r) => {
+        if (c.signal.aborted) return;
         setProjects(r.projects);
         setConfigured(true);
         if (!r.projects.length) setLoading(false);
@@ -96,8 +104,42 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         }
       });
     return () => c.abort();
-  }, []);
+  }, [configurationVersion]);
   const projectId = q.project || projects[0]?.id || "";
+  const configurationSaved = useCallback(
+    (before: AppConfig, after: AppConfig) => {
+      generation.current++;
+      refreshGeneration.current++;
+      auto.current.clear();
+      setConfigured(false);
+      setData(null);
+      setError("");
+      setRefreshing(false);
+      setLoading(after.projects.length > 0);
+      setProjects(after.projects.map(({ id, name }) => ({ id, name })));
+      const previous = before.projects.find((p) => p.id === projectId);
+      const current = after.projects.find((p) => p.id === projectId);
+      if (
+        !current ||
+        previous?.repositoryUrl !== current.repositoryUrl ||
+        previous?.specBranch !== current.specBranch
+      ) {
+        nav(
+          {
+            ...Object.fromEntries(
+              Object.keys(q)
+                .filter((key) => key !== "m")
+                .map((key) => [key, null]),
+            ),
+            project: current?.id ?? after.projects[0]?.id ?? null,
+          },
+          true,
+        );
+      }
+      setConfigurationVersion((v) => v + 1);
+    },
+    [projectId, q, nav],
+  );
   useEffect(() => {
     if (!ready || !configured || !projectId) return;
     const version = ++generation.current,
@@ -193,12 +235,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         version === refreshGeneration.current &&
         source === generation.current
       ) {
-        setData(next);
-        setProjects(
-          await api<{ projects: ProjectSummary[] }>("/api/projects").then(
-            (r) => r.projects,
-          ),
+        const updated = await api<{ projects: ProjectSummary[] }>(
+          "/api/projects",
         );
+        if (
+          version === refreshGeneration.current &&
+          source === generation.current
+        ) {
+          setData(next);
+          setProjects(updated.projects);
+        }
       }
     } catch (e) {
       if (
@@ -236,6 +282,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         refreshing,
         error,
         refresh,
+        configurationSaved,
         openDocument,
         notice: setMessage,
         message,
