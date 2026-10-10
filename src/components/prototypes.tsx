@@ -16,19 +16,11 @@ import { Empty, ErrorNotice } from "./document";
 import { ChangePreviews } from "./previews";
 const clearPreview = CLEAR_PROTOTYPE_VIEW;
 export default function Prototypes() {
-  const { q } = useWorkspace();
+  const { data, projectId, q } = useWorkspace();
   const previous = useRef("");
   useEffect(() => {
     if (q.prototype) previous.current = q.prototype;
   }, [q.prototype]);
-  return q.prototype ? (
-    <ChangePreviews current />
-  ) : (
-    <PrototypeGallery restoreId={previous.current} />
-  );
-}
-function PrototypeGallery({ restoreId }: { restoreId: string }) {
-  const { data, projectId, q, nav } = useWorkspace();
   const key = `${projectId}:${data!.id}`;
   const [response, setResponse] = useState<{
     key: string;
@@ -36,8 +28,6 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
     error?: string;
   }>({ key: "" });
   const [retry, setRetry] = useState(0);
-  const [page, setPage] = useState({ key: "", limit: 24 });
-  const scroll = useSavedScroll(`${projectId}.prototypes`);
   useEffect(() => {
     const controller = new AbortController();
     api<PrototypeCatalog>(
@@ -54,6 +44,46 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
     return () => controller.abort();
   }, [key, projectId, data, retry]);
   const catalog = response.key === key ? response.value : undefined;
+  const error = response.key === key ? response.error : undefined;
+  if (q.prototype) return <ChangePreviews current />;
+  // Restore scroll only after the complete list exists; keep the fetched catalog
+  // in this parent while the viewer temporarily replaces the gallery.
+  if (!catalog)
+    return (
+      <section className="prototypes-workspace" aria-label="项目原型总览">
+        {error ? (
+          <ErrorNotice>
+            {error}
+            <Button
+              variant="text"
+              onClick={() => setRetry((value) => value + 1)}
+            >
+              重新读取原型列表
+            </Button>
+          </ErrorNotice>
+        ) : (
+          <Empty title="正在读取项目原型…" />
+        )}
+        <PrototypeDetails error={error} />
+      </section>
+    );
+  return (
+    <PrototypeGallery
+      key={key}
+      catalog={catalog}
+      restoreId={previous.current}
+    />
+  );
+}
+function PrototypeGallery({
+  catalog,
+  restoreId,
+}: {
+  catalog: PrototypeCatalog;
+  restoreId: string;
+}) {
+  const { projectId, q, nav } = useWorkspace();
+  const scroll = useSavedScroll(`${projectId}.prototypes`);
   useEffect(() => {
     if (!catalog || !restoreId) return;
     const id = requestAnimationFrame(() => {
@@ -78,10 +108,14 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
     (item) =>
       (!kind || item.kind === kind) && matchesPrototype(item, query, device),
   );
-  const filterKey = `${key}:${query}:${kind}:${device}`,
-    limit = page.key === filterKey ? page.limit : 24;
+  const requestedLimit = Number(q.pcount);
+  const limit =
+    Number.isSafeInteger(requestedLimit) && requestedLimit > 24
+      ? Math.min(requestedLimit, Math.max(24, rows.length))
+      : 24;
   const filtered = !!(query || kind || device);
-  const clear = () => nav({ pq: null, pkind: null, pdevice: null });
+  const clear = () =>
+    nav({ pq: null, pkind: null, pdevice: null, pcount: null });
   return (
     <section className="prototypes-workspace" aria-label="项目原型总览">
       <div className="changes-heading prototype-gallery-heading">
@@ -104,7 +138,7 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
             <button
               key={value}
               aria-pressed={kind === value}
-              onClick={() => nav({ pkind: value || null })}
+              onClick={() => nav({ pkind: value || null, pcount: null })}
             >
               {label}
               <span>
@@ -122,14 +156,18 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
               aria-label="筛选原型"
               placeholder="搜索页面名称或说明…"
               value={query}
-              onChange={(e) => nav({ pq: e.target.value || null }, true)}
+              onChange={(e) =>
+                nav({ pq: e.target.value || null, pcount: null }, true)
+              }
             />
           </label>
           <div className="filter-controls">
             <select
               aria-label="筛选原型适配"
               value={device}
-              onChange={(e) => nav({ pdevice: e.target.value || null })}
+              onChange={(e) =>
+                nav({ pdevice: e.target.value || null, pcount: null })
+              }
             >
               <option value="">所有适配</option>
               {Object.entries(DEVICE_LABELS).map(([value, label]) => (
@@ -148,80 +186,64 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
         </div>
       </div>
       <div className="prototype-gallery-scroll" ref={scroll}>
-        {response.key === key && response.error ? (
-          <ErrorNotice>
-            {response.error}
-            <Button variant="text" onClick={() => setRetry((v) => v + 1)}>
-              重新读取原型列表
-            </Button>
-          </ErrorNotice>
-        ) : !catalog ? (
-          <Empty title="正在读取项目原型…" />
-        ) : (
-          <>
-            {catalog.message && (
-              <div className="prototype-policy" role="status">
-                <p>{catalog.message}</p>
+        <>
+          {catalog.message && (
+            <div className="prototype-policy" role="status">
+              <p>{catalog.message}</p>
+            </div>
+          )}
+          {!!catalog.issues.length && (
+            <details className="prototype-issues">
+              <summary>{catalog.issues.length} 项清单内容需检查</summary>
+              <ul>
+                {catalog.issues.map((issue, i) => (
+                  <li key={i}>{issue}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {!items.length ? (
+            <Empty title="暂无当前页面" icon={<PanelsTopLeft size={28} />}>
+              <p>项目在 main 登记页面预览后，就会展示在这里。</p>
+            </Empty>
+          ) : (
+            <>
+              <div className="prototype-result-line">
+                <span aria-live="polite">
+                  {filtered
+                    ? `找到 ${rows.length} 个原型`
+                    : `${items.length} 个当前入口`}
+                </span>
               </div>
-            )}
-            {!!catalog.issues.length && (
-              <details className="prototype-issues">
-                <summary>{catalog.issues.length} 项清单内容需检查</summary>
-                <ul>
-                  {catalog.issues.map((issue, i) => (
-                    <li key={i}>{issue}</li>
+              {!rows.length ? (
+                <Empty title="没有匹配的原型">
+                  <p>调整搜索词或适配范围，查看其他页面与组件。</p>
+                  <Button onClick={clear}>清除筛选</Button>
+                </Empty>
+              ) : (
+                <ul className="prototype-grid" aria-label="项目原型列表">
+                  {rows.slice(0, limit).map((item) => (
+                    <PrototypeCard
+                      key={item.id}
+                      item={item}
+                      revision={catalog.revision!}
+                    />
                   ))}
                 </ul>
-              </details>
-            )}
-            {!items.length ? (
-              <Empty title="暂无当前页面" icon={<PanelsTopLeft size={28} />}>
-                <p>项目在 main 登记页面预览后，就会展示在这里。</p>
-              </Empty>
-            ) : (
-              <>
-                <div className="prototype-result-line">
-                  <span aria-live="polite">
-                    {filtered
-                      ? `找到 ${rows.length} 个原型`
-                      : `${items.length} 个当前入口`}
-                  </span>
-                </div>
-                {!rows.length ? (
-                  <Empty title="没有匹配的原型">
-                    <p>调整搜索词或适配范围，查看其他页面与组件。</p>
-                    <Button onClick={clear}>清除筛选</Button>
-                  </Empty>
-                ) : (
-                  <ul className="prototype-grid" aria-label="项目原型列表">
-                    {rows.slice(0, limit).map((item) => (
-                      <PrototypeCard
-                        key={item.id}
-                        item={item}
-                        revision={catalog.revision!}
-                      />
-                    ))}
-                  </ul>
-                )}
-                {rows.length > limit && (
-                  <Button
-                    className="prototype-load-more"
-                    onClick={() =>
-                      setPage({ key: filterKey, limit: limit + 24 })
-                    }
-                  >
-                    显示更多原型（已显示 {limit} / {rows.length}）
-                  </Button>
-                )}
-              </>
-            )}
-          </>
-        )}
+              )}
+              {rows.length > limit && (
+                <Button
+                  className="prototype-load-more"
+                  onClick={() => nav({ pcount: String(limit + 24) }, true)}
+                >
+                  显示更多原型（已显示 {limit} / {rows.length}）
+                </Button>
+              )}
+            </>
+          )}
+        </>
       </div>
-      <PrototypeDetails
-        catalog={catalog}
-        error={response.key === key ? response.error : undefined}
-      />
+      <PrototypeDetails catalog={catalog} />
     </section>
   );
 }

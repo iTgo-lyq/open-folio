@@ -86,7 +86,9 @@
     },
     "T12": {
       "title": "修复原型总览返回状态并完成复验",
-      "status": "todo"
+      "status": "done",
+      "verification": "独立评审R3复验关闭；完整39项浏览器、类型、格式及默认.next生产构建通过；Merlin原地址最终版本及Host/Origin交互已核验，临时目录与引用已清理。",
+      "commitTitle": "project-ui-library T12: preserve gallery state across preview navigation"
     }
   },
   "closure": {},

@@ -165,6 +165,7 @@ function Shell() {
                     pq: null,
                     pkind: null,
                     pdevice: null,
+                    pcount: null,
                   })
                 }
               >

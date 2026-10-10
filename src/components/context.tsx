@@ -309,6 +309,9 @@ export function useSavedScroll(key: string, anchor?: string) {
       } catch {}
     }
     const save = () => {
+      // A detached scroll container reports zero during passive cleanup.
+      // Keep the position already captured by its last scroll event.
+      if (!element.isConnected) return;
       try {
         sessionStorage.setItem(
           `openfolio.scroll.${key}`,

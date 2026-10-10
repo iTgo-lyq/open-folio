@@ -345,3 +345,66 @@ test("detail links handle reload, missing entries, image errors and narrow layou
     details.getByText("尚未发布产物", { exact: true }),
   ).toBeVisible();
 });
+
+test("returning from the viewer preserves expanded cards, scroll and focus", async ({
+  page,
+  request,
+}) => {
+  const catalog = await (
+    await request.get("/api/projects/fixture/prototypes")
+  ).json();
+  const orders = catalog.items.find(
+    (item: { id: string }) => item.id === "orders",
+  );
+  await page.route("**/api/projects/fixture/prototypes?*", (route) =>
+    route.fulfill({
+      json: {
+        ...catalog,
+        items: [
+          ...Array.from({ length: 29 }, (_, index) => ({
+            ...orders,
+            id: `placeholder-${index}`,
+            title: `示例页面 ${index + 1}`,
+            artifact: undefined,
+          })),
+          orders,
+        ],
+      },
+    }),
+  );
+  await page.goto(path);
+  const cards = page
+    .getByRole("list", { name: "项目原型列表" })
+    .getByRole("listitem");
+  await expect(cards).toHaveCount(24);
+  await page.getByRole("button", { name: /^显示更多原型/ }).click();
+  await expect(cards).toHaveCount(30);
+  const cover = page.getByRole("button", { name: "预览订单列表", exact: true });
+  await cover.scrollIntoViewIfNeeded();
+  const scroll = page.locator(".prototype-gallery-scroll");
+  const position = await scroll.evaluate((node) => node.scrollTop);
+  expect(position).toBeGreaterThan(500);
+  await cover.click();
+  await expect(page.locator("iframe")).toBeVisible();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
+  await expect(cards).toHaveCount(30);
+  await expect(cover).toBeFocused();
+  await expect
+    .poll(() => scroll.evaluate((node) => node.scrollTop))
+    .toBeCloseTo(position, 0);
+  // A refresh must wait for the asynchronous catalog before restoring scroll.
+  await page.reload();
+  await expect(cards).toHaveCount(30);
+  await expect
+    .poll(() => scroll.evaluate((node) => node.scrollTop))
+    .toBeCloseTo(position, 0);
+  await cover.click();
+  await page.reload();
+  await expect(page.locator("iframe")).toBeVisible();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
+  await expect(cards).toHaveCount(30);
+  await expect(cover).toBeFocused();
+  await expect
+    .poll(() => scroll.evaluate((node) => node.scrollTop))
+    .toBeCloseTo(position, 0);
+});
