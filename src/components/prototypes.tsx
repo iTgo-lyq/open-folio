@@ -1,7 +1,8 @@
 "use client";
-import { Badge, Button } from "@open-folio/ui";
+import { Badge, Button, IconButton } from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
-import { ImageOff, LoaderCircle, PanelsTopLeft, Search } from "lucide-react";
+import { ImageOff, LoaderCircle, PanelsTopLeft, Search, X } from "lucide-react";
+import { Dialog } from "radix-ui";
 import { previewViewport } from "@/lib/preview-viewport";
 import {
   CLEAR_PROTOTYPE_VIEW,
@@ -86,7 +87,9 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
       <div className="changes-heading prototype-gallery-heading">
         <div>
           <div className="eyebrow">EXPLORE THE PROJECT</div>
-          <h1>项目里的页面 {catalog && <span>{items.length}</span>}</h1>
+          <h1 tabIndex={-1}>
+            项目里的页面 {catalog && <span>{items.length}</span>}
+          </h1>
           <p>从一个入口，发现项目的页面、细节与各种状态。</p>
         </div>
         <Badge tone="info">main · 当前状态</Badge>
@@ -215,6 +218,10 @@ function PrototypeGallery({ restoreId }: { restoreId: string }) {
           </>
         )}
       </div>
+      <PrototypeDetails
+        catalog={catalog}
+        error={response.key === key ? response.error : undefined}
+      />
     </section>
   );
 }
@@ -252,24 +259,26 @@ function PrototypeCard({
         enabled={!!hasThumbnail}
         open={open}
       />
-      <div className="prototype-tile-caption">
-        <h2 aria-label={item.title}>
-          <button
-            className="prototype-title-open"
-            aria-label={`打开预览：${item.title}`}
-            onClick={open}
-          >
-            {item.title}
-          </button>
-        </h2>
-        <span className="prototype-kind-label">
-          {item.kind === "page" ? "页面" : "组件"}
-        </span>
+      <div className="prototype-tile-body">
+        <div className="prototype-tile-caption">
+          <h2 aria-label={item.title}>
+            <button
+              className="prototype-title-open"
+              aria-label={`查看原型详情：${item.title}`}
+              onClick={() => nav({ ...clearPreview, pdetail: item.id })}
+            >
+              {item.title}
+            </button>
+          </h2>
+          <span className="prototype-kind-label">
+            {item.kind === "page" ? "页面" : "组件"}
+          </span>
+        </div>
+        <p className="prototype-description">
+          {item.description ??
+            (item.artifact ? "打开查看页面与交互细节" : "尚未发布预览")}
+        </p>
       </div>
-      <p className="prototype-description">
-        {item.description ??
-          (item.artifact ? "打开查看页面与交互细节" : "尚未发布预览")}
-      </p>
     </li>
   );
 }
@@ -279,15 +288,17 @@ function PrototypeThumbnail({
   viewport,
   enabled,
   open,
+  large = false,
 }: {
   url: string;
   title: string;
   viewport: { width: number; height: number };
   enabled: boolean;
-  open: () => void;
+  open?: () => void;
+  large?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false),
+  const [visible, setVisible] = useState(large),
     [status, setStatus] = useState<"loading" | "ready" | "error">("loading"),
     [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -308,26 +319,39 @@ function PrototypeThumbnail({
     const timer = setTimeout(() => setStatus("error"), 12000);
     return () => clearTimeout(timer);
   }, [enabled, visible, status, attempt]);
+  const screenshot = enabled && visible && status !== "error" && (
+    <img
+      key={attempt}
+      src={`${url}&attempt=${attempt}`}
+      alt={`${title}的${large ? "大图" : "首屏截图"}`}
+      referrerPolicy="no-referrer"
+      width={viewport.width}
+      height={viewport.height}
+      onLoad={() => setStatus("ready")}
+      onError={() => setStatus("error")}
+    />
+  );
   return (
-    <div className={`prototype-thumbnail ${status}`} ref={root}>
-      <button
-        className="prototype-thumbnail-open"
-        aria-label={`预览${title}`}
-        onClick={open}
-      >
-        {enabled && visible && status !== "error" && (
-          <img
-            key={attempt}
-            src={`${url}&attempt=${attempt}`}
-            alt={`${title}的首屏截图`}
-            referrerPolicy="no-referrer"
-            width={viewport.width}
-            height={viewport.height}
-            onLoad={() => setStatus("ready")}
-            onError={() => setStatus("error")}
-          />
-        )}
-      </button>
+    <div
+      className={`prototype-thumbnail ${large ? "prototype-detail-image" : ""} ${status}`}
+      style={
+        large
+          ? { aspectRatio: `${viewport.width} / ${viewport.height}` }
+          : undefined
+      }
+      ref={root}
+    >
+      {open ? (
+        <button
+          className="prototype-thumbnail-open"
+          aria-label={`预览${title}`}
+          onClick={open}
+        >
+          {screenshot}
+        </button>
+      ) : (
+        screenshot
+      )}
       {(!enabled || status !== "ready") && (
         <div className="prototype-thumbnail-state" role="status">
           {enabled && status === "loading" ? (
@@ -353,7 +377,8 @@ function PrototypeThumbnail({
               重试截图
             </Button>
           ) : (
-            !enabled && (
+            !enabled &&
+            open && (
               <Button variant="text" onClick={open}>
                 查看页面
               </Button>
@@ -362,5 +387,191 @@ function PrototypeThumbnail({
         </div>
       )}
     </div>
+  );
+}
+
+function PrototypeDetails({
+  catalog,
+  error,
+}: {
+  catalog?: PrototypeCatalog;
+  error?: string;
+}) {
+  const { q, nav } = useWorkspace();
+  const focus = useRef<HTMLElement | null>(null);
+  const item = catalog?.items.find((row) => row.id === q.pdetail);
+  return (
+    <Dialog.Root
+      open={!!q.pdetail}
+      onOpenChange={(open) => {
+        if (!open) nav({ pdetail: null });
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="drawer-overlay" />
+        <Dialog.Content
+          className="change-drawer prototype-detail-drawer"
+          aria-describedby={undefined}
+          onOpenAutoFocus={() => {
+            focus.current = document.activeElement as HTMLElement;
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const target =
+              focus.current?.isConnected && focus.current !== document.body
+                ? focus.current
+                : document.querySelector<HTMLElement>(
+                    ".prototype-gallery-heading h1",
+                  );
+            target?.focus({ preventScroll: true });
+          }}
+        >
+          <div className="drawer-toolbar">
+            <span>
+              <PanelsTopLeft size={15} />
+              原型详情
+            </span>
+            <Dialog.Close asChild>
+              <IconButton aria-label="关闭原型详情">
+                <X size={18} />
+              </IconButton>
+            </Dialog.Close>
+          </div>
+          <div className="prototype-detail-scroll">
+            {item && catalog?.revision ? (
+              <PrototypeDetailBody
+                key={item.id}
+                item={item}
+                revision={catalog.revision}
+              />
+            ) : (
+              <div className="prototype-detail-empty">
+                <Dialog.Title>
+                  {error
+                    ? "原型详情读取失败"
+                    : !catalog
+                      ? "正在读取原型详情…"
+                      : "未找到此原型"}
+                </Dialog.Title>
+                <p>
+                  {error ??
+                    (catalog
+                      ? "这个入口已不在 main 的当前清单中。关闭详情后可查看其他原型。"
+                      : "请稍候")}
+                </p>
+              </div>
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+function PrototypeDetailBody({
+  item,
+  revision,
+}: {
+  item: PrototypeItem;
+  revision: string;
+}) {
+  const { projectId, q, nav } = useWorkspace();
+  const [selectedDevice, setSelectedDevice] = useState(q.pdevice);
+  const { device, viewport } = previewViewport(item, selectedDevice);
+  const params = new URLSearchParams({ revision });
+  if (device) params.set("device", device);
+  const imageUrl = `/api/projects/${encodeURIComponent(projectId)}/current-thumbnails/${encodeURIComponent(item.id)}?${params}`;
+  const hasThumbnail =
+    item.artifact?.type === "git" ||
+    (item.artifact?.type === "hosted" &&
+      item.artifact.thumbnails?.some((t) => t.device === device));
+  return (
+    <>
+      <div className="prototype-detail-heading">
+        <span className="eyebrow">
+          {item.kind === "page" ? "页面" : "组件"}
+        </span>
+        <Dialog.Title>{item.title}</Dialog.Title>
+        {item.description && <p>{item.description}</p>}
+      </div>
+      <div className="prototype-detail-actions">
+        {item.devices ? (
+          <select
+            aria-label="详情截图设备"
+            value={device}
+            onChange={(event) => setSelectedDevice(event.target.value)}
+          >
+            {item.devices.map((value) => (
+              <option key={value} value={value}>
+                {DEVICE_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span>自定义组件</span>
+        )}
+        <span className="prototype-detail-size">
+          {viewport.width} × {viewport.height}
+        </span>
+        <Button
+          onClick={() =>
+            nav({
+              ...clearPreview,
+              prototype: item.id,
+              preview: item.id,
+              revision,
+              device: device ?? null,
+            })
+          }
+        >
+          进入预览
+        </Button>
+      </div>
+      <PrototypeThumbnail
+        key={imageUrl}
+        url={imageUrl}
+        title={item.title}
+        viewport={viewport}
+        enabled={!!hasThumbnail}
+        large
+      />
+      <dl className="prototype-detail-source">
+        <div>
+          <dt>源码位置</dt>
+          <dd>
+            <code>{item.sourcePath}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>源码提交</dt>
+          <dd>
+            <code>{item.artifact?.sourceCommit ?? "尚未发布产物"}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>main 清单提交</dt>
+          <dd>
+            <code>{revision}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>预览产物</dt>
+          <dd>
+            <code>
+              {item.artifact?.type === "hosted"
+                ? item.artifact.url
+                : (item.artifact?.path ?? "尚未发布")}
+            </code>
+          </dd>
+        </div>
+        {item.artifact?.type === "hosted" && (
+          <div>
+            <dt>产物版本</dt>
+            <dd>
+              <code>{item.artifact.version}</code>
+            </dd>
+          </div>
+        )}
+      </dl>
+    </>
   );
 }

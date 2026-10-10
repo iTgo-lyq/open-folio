@@ -3668,3 +3668,110 @@ input {
     gap: 10px;
   }
 }
+
+/* The cover opens the canvas; the full caption opens the details. */
+.prototype-tile-body {
+  position: relative;
+  flex: 1;
+  border-radius: 0 0 13px 13px;
+}
+.prototype-title-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 13px 13px;
+}
+.prototype-title-open:focus-visible {
+  outline: none;
+}
+.prototype-title-open:focus-visible::after {
+  outline: 2px solid var(--blue);
+  outline-offset: -3px;
+}
+.prototype-tile-body:hover {
+  background: #f8fbfd;
+}
+.prototype-detail-drawer {
+  width: min(960px, calc(100vw - 48px));
+}
+.prototype-detail-scroll {
+  overflow: auto;
+  padding: 28px;
+  min-height: 0;
+}
+.prototype-detail-heading h2 {
+  margin: 8px 0;
+  font-size: 24px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.prototype-detail-heading p,
+.prototype-detail-empty p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.prototype-detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 22px 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.prototype-detail-actions select {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px;
+  color: var(--ink);
+}
+.prototype-detail-actions .of-ui-button {
+  margin-left: auto;
+}
+.prototype-detail-size {
+  font-variant-numeric: tabular-nums;
+}
+.prototype-detail-image {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 140px;
+}
+.prototype-detail-source {
+  display: grid;
+  gap: 18px;
+  margin: 24px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.prototype-detail-source > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 16px;
+}
+.prototype-detail-source dt {
+  color: var(--muted);
+}
+.prototype-detail-source dd {
+  margin: 0;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .prototype-detail-drawer {
+    inset: 8px;
+    width: auto;
+  }
+  .prototype-detail-scroll {
+    padding: 20px 16px;
+  }
+  .prototype-detail-heading h2 {
+    font-size: 21px;
+  }
+  .prototype-detail-source > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

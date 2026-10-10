@@ -66,10 +66,8 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   await page.goto(path + "&pkind=component");
   const region = page.getByRole("region", { name: "项目原型总览" });
   await expect(region.getByText("截图暂不可用", { exact: true })).toBeVisible();
-  await expect(
-    region.getByRole("button", { name: /^打开预览：/ }),
-  ).toBeEnabled();
-  await region.getByRole("button", { name: /^打开预览：/ }).click();
+  await expect(region.getByRole("button", { name: /^预览/ })).toBeEnabled();
+  await region.getByRole("button", { name: /^预览/ }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
   await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(region.getByText("截图暂不可用", { exact: true })).toBeVisible();

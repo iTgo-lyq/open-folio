@@ -80,6 +80,12 @@
     },
     "T11": {
       "title": "区分卡片预览与详情并更新验收入口",
+      "status": "done",
+      "verification": "9项原型/截图回归及2项新增详情验证通过，类型格式与生产构建通过，Merlin原地址更新并完成Host/Origin核验；长列表返回评审问题转T12。",
+      "commitTitle": "project-ui-library T11: separate prototype details from canvas preview"
+    },
+    "T12": {
+      "title": "修复原型总览返回状态并完成复验",
       "status": "todo"
     }
   },
