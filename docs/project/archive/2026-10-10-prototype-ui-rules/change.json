@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-ui-rules",
+  "title": "按 UI 影响范围选择原型流程",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/prototype-ui-rules",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "精简并统一启用原型后的 UI 变更规则",
+      "status": "done",
+      "verification": "主 skill 与原型子 skill 的 quick_validate.py 均通过；git diff --check 通过；人工核对 enabled 小型询问与超时跳过、大范围实现前绘制、disabled 不重复提议及沿用既有选择，未新增确认环节。",
+      "commitTitle": "docs: require prototypes for broad UI changes"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T10:01:39.914Z",
+      "summary": "两个 skill 的结构校验和 git diff --check 通过；逐项核对启用状态、UI 影响范围、小型询问与长时间未回复可跳过、大范围先绘制并预览。仅指导文本变更，无需运行应用构建。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-10T10:01:39.981Z",
+      "summary": "Agent 自验收通过：主 skill 对 UI Change 主动检查原型配置，子 skill 区分小型询问和大范围先绘制，超时跳过仅适用于小型变化；结构校验通过，保持精简且不增加审批字段或确认环节。",
+      "source": "small 自验收规则及用户明确要求先优化 skill"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-10T10:01:54.994Z",
+      "summary": "同步 prototype-preview 规格的可选协作规则：按 UI 影响范围分级，小型询问可超时跳过，大范围实现前绘制并预览，拒绝接入与单次原型选择分开。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-10T10:01:55.062Z",
+      "summary": "技能规则已验证并由 Agent 自验收，相关能力规格已同步。",
+      "path": "docs/project/archive/2026-10-10-prototype-ui-rules"
+    }
+  }
+}

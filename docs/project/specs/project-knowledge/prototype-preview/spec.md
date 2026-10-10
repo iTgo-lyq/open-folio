@@ -6,7 +6,7 @@ OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块�
 
 每项目维护一个原型包，默认 packages/prototype，复用项目设计规范与组件库。源码可使用 HTML、React 或其他宿主工具，演示使用局部状态与 mock，不依赖真实业务后端。UI 组件库的独立预览不自动进入项目原型清单。
 
-docs/project/workflow.json 的 prototype 记录选择：缺失为未选择，disabled 为拒绝，pending 为接入未完成，enabled 为可用。拒绝后不重复提议或新增关联；已有明确同意直接沿用，初始化失败保留现场。已启用且明显改变 UI 的 Change 建议优先制作或更新原型，未采纳建议或没有 previews 不阻断流程。
+docs/project/workflow.json 的 prototype 记录选择：缺失为未选择，disabled 为拒绝接入，pending 为接入未完成，enabled 为可用。拒绝接入后不重复提议或新增关联；已有明确同意直接沿用，初始化失败保留现场。已启用时按 UI 影响范围判断：小型变化先询问是否绘制，较长时间未回复可说明后跳过；大范围变化必须在实现前绘制或更新原型并提供预览。
 
 原型配置只维护当前 status 和适用的 packagePath，接入决定的历史由 Git 保存。
 
