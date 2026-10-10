@@ -4,7 +4,7 @@
   "title": "基础 UI 库、前端规范与项目原型展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/project-ui-library",
   "confirmations": {
     "requirement": {
@@ -103,10 +103,20 @@
       "commitTitle": "project-ui-library T14: prompt for merge or PR after archiving"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T06:29:18.157Z",
+      "summary": "T14 已提交并推送（c33d604）；skill 格式、差异检查、五类静态场景核对及隔离增量评审通过，无待修正问题；产品代码未变，沿用 T12 完整浏览器与构建及 T13 UI 验证。"
+    }
+  },
   "rework": {
     "at": "2026-10-10T06:27:41.572Z",
     "reason": "用户追加归档提交后主动询问直接合入 main 或发起 PR 的 SpecTrail 指引。",
     "approach": "保留既有交付，追加 T14 修改归档后选择规则；已有明确选择沿用，完成聚焦验证和评审后提交推送。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "新增归档后合入或 PR 选择规则已提交并验证；等待用户确认本次交付及是否同步公开 SpecTrail 仓库，尚未归档或合入 main。"
   }
 }
