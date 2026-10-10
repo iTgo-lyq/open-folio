@@ -30,3 +30,16 @@ export function matchesPrototype(
         .includes(term))
   );
 }
+
+/** Transient preview/detail routing; catalog filters and scroll remain intact. */
+export const CLEAR_PROTOTYPE_VIEW = {
+  prototype: null,
+  pdetail: null,
+  c: null,
+  ct: null,
+  preview: null,
+  device: null,
+  orientation: null,
+  revision: null,
+  zoom: null,
+};

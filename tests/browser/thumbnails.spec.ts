@@ -24,7 +24,7 @@ test("current cards show actual viewport screenshots and switch device consisten
     .getByRole("button", { name: "预览订单列表", exact: true })
     .click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
-  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
   await region.getByRole("button", { name: "清除筛选" }).click();
   await region
     .getByRole("heading", { name: "价格卡片", exact: true })
@@ -71,7 +71,8 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   ).toBeEnabled();
   await region.getByRole("button", { name: /^打开预览：/ }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
-  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
+  await expect(region.getByText("截图暂不可用", { exact: true })).toBeVisible();
   failed = false;
   await region.getByRole("button", { name: "重试截图" }).click();
   await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(1);

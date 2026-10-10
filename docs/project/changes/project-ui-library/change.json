@@ -74,7 +74,9 @@
     },
     "T10": {
       "title": "交付原型二级预览工作台",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、生产验证构建通过；Change 4项及当前原型/截图9项浏览器验证通过，二级路由、目录、设备、移动布局、返回焦点已核验。",
+      "commitTitle": "project-ui-library T10: open prototypes in a focused workspace"
     },
     "T11": {
       "title": "区分卡片预览与详情并更新验收入口",

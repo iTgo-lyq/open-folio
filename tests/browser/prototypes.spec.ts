@@ -27,16 +27,25 @@ test("main gallery opens current pages directly without Change/version selectors
   await expect(region.getByRole("listitem")).toHaveCount(1);
   await region.getByRole("button", { name: "打开预览：订单列表" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".module-rail")).toHaveCount(0);
+  await expect(page.locator(".workspace-source")).toHaveCount(0);
+  await expect(
+    page.getByRole("complementary", { name: "原型目录" }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".preview-provenance, .preview-footnote"),
+  ).toHaveCount(0);
   await expect(page.frameLocator("iframe").getByRole("heading")).toHaveText(
     "订单列表原型",
   );
-  await page.getByRole("button", { name: "复制固定版本链接" }).click();
+  await page.getByRole("button", { name: "复制预览链接" }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(link).searchParams.has("c")).toBe(false);
   expect(new URL(link).searchParams.get("prototype")).toBe("orders");
   await page.goto(link);
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
-  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(region.getByRole("textbox", { name: "筛选原型" })).toHaveValue(
     "批量操作",
   );
@@ -53,12 +62,12 @@ test("current gallery has responsive cards, missing artifact placeholders and ho
   await expect(
     page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
   await page.getByRole("button", { name: "打开预览：待导出页面" }).click();
   await expect(
     page.getByText("此页面尚未登记已发布产物。", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "关闭页面预览" }).click();
+  await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
   await page.locator(".prototype-gallery-scroll").evaluate((el) => {
     el.scrollTop = 0;
@@ -81,9 +90,9 @@ test("current gallery has responsive cards, missing artifact placeholders and ho
   await page.screenshot({ path: "artifacts/prototype-catalog-mobile.png" });
   await page.getByRole("button", { name: "打开预览：价格卡片" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(
-    page.getByRole("button", { name: "打开预览：价格卡片" }),
+    page.getByRole("button", { name: "预览价格卡片", exact: true }),
   ).toBeFocused();
 });
 test("missing manifest and invalid entries remain explicit, separate from filtering", async ({
@@ -142,4 +151,69 @@ test("catalog API enforces project, snapshot and same-origin access boundaries",
       })
     ).status(),
   ).toBe(403);
+});
+
+test("focused viewer keeps directory, viewport controls and history in the workbench", async ({
+  page,
+}) => {
+  await page.goto(path + "&prototype=orders&preview=orders");
+  const panel = page.getByRole("region", { name: "当前页面预览" });
+  await expect(panel.locator("iframe")).toHaveAttribute("width", "1440");
+  await panel.getByRole("button", { name: "iPad", exact: true }).click();
+  await expect(panel.locator("iframe")).toHaveAttribute("width", "834");
+  await panel.getByRole("button", { name: "移动设备", exact: true }).click();
+  await expect(panel.locator("iframe")).toHaveAttribute("width", "390");
+  await panel.getByRole("button", { name: "100%", exact: true }).click();
+  await expect(panel.locator("iframe")).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)",
+  );
+  await panel
+    .getByRole("button", { name: "订单详情 页面", exact: true })
+    .click();
+  await expect(page).toHaveURL(/prototype=detail/);
+  await expect(panel.locator("iframe")).toHaveAttribute(
+    "title",
+    "原型：订单详情",
+  );
+  await expect(
+    panel.getByRole("button", { name: "移动设备", exact: true }),
+  ).toHaveCount(0);
+  await page.goBack();
+  await expect(panel.locator("iframe")).toHaveAttribute(
+    "title",
+    "原型：订单列表",
+  );
+  await page.reload();
+  await expect(panel.locator("iframe")).toHaveAttribute("width", "390");
+  await panel.getByRole("button", { name: "适应画布", exact: true }).click();
+  await page.screenshot({ path: "artifacts/prototype-viewer-desktop.png" });
+  await page.setViewportSize({ width: 320, height: 720 });
+  await expect(
+    page.getByRole("complementary", { name: "原型目录" }),
+  ).toBeHidden();
+  await panel.getByRole("button", { name: "切换原型目录" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "原型目录" }),
+  ).toBeVisible();
+  await panel
+    .getByRole("button", { name: "价格卡片 组件", exact: true })
+    .click();
+  await expect(panel.locator("iframe")).toHaveAttribute("width", "640");
+  await expect(
+    page.getByRole("complementary", { name: "原型目录" }),
+  ).toBeHidden();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "artifacts/prototype-viewer-mobile.png" });
+  await page
+    .getByRole("combobox", { name: "跳转工作台模块" })
+    .selectOption("specs");
+  await expect(
+    page.getByRole("combobox", { name: "Specs 来源分支" }),
+  ).toBeVisible();
+  expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
 });

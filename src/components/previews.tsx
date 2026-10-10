@@ -11,6 +11,9 @@ import {
   GitCommitHorizontal,
   PanelsTopLeft,
   ExternalLink,
+  List,
+  Search,
+  X,
 } from "lucide-react";
 import type { ChangeCandidate, Device, PreviewDescriptor } from "@/lib/model";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
@@ -39,6 +42,9 @@ export function ChangePreviews({
     [ready, setReady] = useState(""),
     [loadError, setLoadError] = useState(""),
     [runtimeError, setRuntimeError] = useState("");
+  const [directoryQuery, setDirectoryQuery] = useState("");
+  const [directoryOpen, setDirectoryOpen] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 440 });
   const canvas = useRef<HTMLDivElement>(null),
     frame = useRef<HTMLIFrameElement>(null);
@@ -58,6 +64,9 @@ export function ChangePreviews({
     return () => controller.abort();
   }, [requestKey, projectId, change?.id, current, data, q.revision]);
   const result = response.key === requestKey ? response.value : undefined;
+  useEffect(() => {
+    if (current && result?.revision) heading.current?.focus();
+  }, [current, result?.revision]);
   const entry =
     result?.entries.find(
       (e) => e.id === (q.preview || (current ? q.prototype : undefined)),
@@ -216,6 +225,7 @@ export function ChangePreviews({
       if (value) link.searchParams.set(key, value);
       else link.searchParams.delete(key);
     link.searchParams.delete("branch");
+    link.searchParams.delete("pdetail");
     if (chosenDevice) link.searchParams.set("device", chosenDevice);
     else link.searchParams.delete("device");
     try {
@@ -247,231 +257,335 @@ export function ChangePreviews({
         }
       >
         <p>{result.message ?? result.policy.message}</p>
-        {result.policy.branch && (
+        {!current && result.policy.branch && (
           <p className="subtle-note">配置来源：{result.policy.branch}</p>
         )}
       </Empty>
     );
+  const directoryItems = result.entries.filter(
+    (item) =>
+      !current ||
+      `${item.title} ${item.id}`
+        .toLocaleLowerCase()
+        .includes(directoryQuery.trim().toLocaleLowerCase()),
+  );
+  const entries = (
+    <div className="preview-entries" role="group" aria-label="原型入口">
+      {directoryItems.map((item) => (
+        <button
+          type="button"
+          key={item.id}
+          aria-pressed={entry?.id === item.id}
+          className="preview-entry"
+          onClick={() => {
+            nav({
+              preview: item.id,
+              ...(current ? { prototype: item.id, pdetail: null } : {}),
+              device: null,
+              orientation: null,
+            });
+            setDirectoryOpen(false);
+          }}
+        >
+          {item.kind === "page" ? (
+            <PanelsTopLeft size={16} />
+          ) : (
+            <Square size={16} />
+          )}
+          <span>
+            {item.title}
+            <small>
+              {item.kind === "page" ? "页面" : "组件"}
+              {!item.available ? " · 暂不可用" : ""}
+            </small>
+          </span>
+        </button>
+      ))}
+      {current && !directoryItems.length && (
+        <p className="preview-directory-empty">没有匹配的原型</p>
+      )}
+    </div>
+  );
   return (
     <section
-      className="prototype-panel"
+      className={`prototype-panel ${current ? "prototype-viewer" : ""}`}
+      data-directory-open={directoryOpen}
       aria-label={current ? "当前页面预览" : "Change 原型预览"}
     >
-      <div className="preview-heading">
-        <div>
-          <span className="preview-eyebrow">PROTOTYPE</span>
-          <h3>查看设计效果</h3>
-        </div>
-        <span className="subtle-note">{result.entries.length} 个入口</span>
-      </div>
-      <div className="preview-entries" role="group" aria-label="原型入口">
-        {result.entries.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            aria-pressed={entry?.id === item.id}
-            className="preview-entry"
-            onClick={() =>
-              nav({ preview: item.id, device: null, orientation: null })
-            }
-          >
-            {item.kind === "page" ? (
-              <PanelsTopLeft size={16} />
-            ) : (
-              <Square size={16} />
-            )}
-            <span>
-              {item.title}
-              <small>
-                {item.kind === "page" ? "页面" : "组件"}
-                {!item.available ? " · 暂不可用" : ""}
-              </small>
-            </span>
-          </button>
-        ))}
-      </div>
-      {q.preview &&
-        !result.entries.some(
-          (e) => e.id === (q.preview || (current ? q.prototype : undefined)),
-        ) && (
-          <p className="warning-text">
-            链接中的入口不存在，已显示首个可用入口。
-          </p>
-        )}
-      {q.device &&
-        entry?.devices &&
-        !entry.devices.includes(q.device as Device) && (
-          <p className="warning-text">
-            该入口未声明链接中的设备，已选择其支持的尺寸。
-          </p>
-        )}
-      <div className="preview-controls">
-        <div className="preview-devices" role="group" aria-label="预览设备">
-          {entry?.devices?.map((device) => {
-            const d = devices[device],
-              Icon = d.icon;
-            return (
-              <button
-                type="button"
-                key={device}
-                aria-pressed={chosenDevice === device}
-                onClick={() => nav({ device, orientation: null })}
-              >
-                <Icon size={15} />
-                {d.label}
-              </button>
-            );
-          })}
-          {entry?.viewport && (
-            <span className="preview-custom">
-              <Square size={14} />
-              自定义组件
-            </span>
-          )}
-        </div>
-        <div className="preview-tools">
-          {!entry?.viewport && (
+      {current ? (
+        <aside className="preview-directory" aria-label="原型目录">
+          <div className="preview-directory-heading">
+            <span>项目页面</span>
+            <span>{result.entries.length}</span>
+            <button
+              type="button"
+              className="preview-directory-close icon-button"
+              aria-label="关闭原型目录"
+              onClick={() => setDirectoryOpen(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <label className="preview-directory-search">
+            <Search size={14} />
+            <input
+              aria-label="筛选预览目录"
+              placeholder="查找页面…"
+              value={directoryQuery}
+              onChange={(e) => setDirectoryQuery(e.target.value)}
+            />
+          </label>
+          {entries}
+        </aside>
+      ) : (
+        <>
+          <div className="preview-heading">
+            <div>
+              <span className="preview-eyebrow">PROTOTYPE</span>
+              <h3>查看设计效果</h3>
+            </div>
+            <span className="subtle-note">{result.entries.length} 个入口</span>
+          </div>
+          {entries}
+        </>
+      )}
+      <div
+        className="preview-stage"
+        aria-label={current ? "原型画布" : undefined}
+      >
+        {current && (
+          <div className="preview-stage-heading">
+            <h1 ref={heading} tabIndex={-1}>
+              {entry?.title}
+            </h1>
             <button
               type="button"
               className="icon-button"
-              aria-label="切换横竖方向"
-              title="切换横竖方向"
-              onClick={() =>
-                nav({
-                  orientation:
-                    orientation === "landscape" ? "portrait" : "landscape",
-                })
-              }
+              aria-label="复制预览链接"
+              title="复制预览链接"
+              onClick={copy}
             >
-              <RotateCw size={15} />
+              <Link2 size={16} />
+            </button>
+          </div>
+        )}
+        {(q.preview || (current && q.prototype)) &&
+          !result.entries.some((e) => e.id === (q.preview || q.prototype)) && (
+            <p className="warning-text">
+              链接中的入口不存在，已显示首个可用入口。
+            </p>
+          )}
+        {q.device &&
+          entry?.devices &&
+          !entry.devices.includes(q.device as Device) && (
+            <p className="warning-text">
+              该入口未声明链接中的设备，已选择其支持的尺寸。
+            </p>
+          )}
+        <div className="preview-controls">
+          {current && (
+            <button
+              type="button"
+              className="preview-directory-toggle"
+              aria-label="切换原型目录"
+              aria-expanded={directoryOpen}
+              onClick={() => setDirectoryOpen((value) => !value)}
+            >
+              <List size={16} />
+              <span>目录</span>
             </button>
           )}
-          <button
-            type="button"
-            className="preview-zoom"
-            aria-pressed={q.zoom !== "actual"}
-            onClick={() => nav({ zoom: null })}
-          >
-            适应画布
-          </button>
-          <button
-            type="button"
-            className="preview-zoom"
-            aria-pressed={q.zoom === "actual"}
-            onClick={() => nav({ zoom: "actual" })}
-          >
-            100%
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="重新加载原型"
-            title="重新加载原型"
-            onClick={() => setAttempt((v) => v + 1)}
-          >
-            <RefreshCw size={14} />
-          </button>
-        </div>
-      </div>
-      <div className="preview-dimensions">
-        <span>
-          {size.width} × {size.height} CSS px
-        </span>
-        <span>显示比例 {Math.round(scale * 100)}%</span>
-      </div>
-      {runtimeError && (
-        <div className="preview-runtime-error" role="alert">
-          {runtimeError}
-        </div>
-      )}
-      {hosted && entry?.available && !loadError && (
-        <div className="preview-host-status" role="status">
-          <span>
-            {hostStatus === "ready"
-              ? "页面已就绪"
-              : hostStatus === "error"
-                ? "宿主报告页面运行失败，请在独立页面检查。"
-                : hostStatus === "unconfirmed"
-                  ? "尚未确认页面就绪；若画布空白，可在独立页面查看。"
-                  : "正在等待页面就绪…"}
-          </span>
-          <a
-            href={hosted.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            referrerPolicy="no-referrer"
-          >
-            <ExternalLink size={13} /> 独立打开
-          </a>
-        </div>
-      )}
-      <div className="preview-canvas" ref={canvas} data-testid="preview-canvas">
-        {!entry?.available ? (
-          <Empty title="暂时无法预览">
-            <p>{entry?.message}</p>
-          </Empty>
-        ) : loadError ? (
-          <Empty title="预览无法加载">
-            <p>{loadError}</p>
-          </Empty>
-        ) : ready !== load ? (
-          <div className="preview-loading" role="status">
-            正在加载预览…
+          <div className="preview-devices" role="group" aria-label="预览设备">
+            {entry?.devices?.map((device) => {
+              const d = devices[device],
+                Icon = d.icon;
+              return (
+                <button
+                  type="button"
+                  key={device}
+                  aria-pressed={chosenDevice === device}
+                  onClick={() => nav({ device, orientation: null })}
+                >
+                  <Icon size={15} />
+                  {d.label}
+                </button>
+              );
+            })}
+            {entry?.viewport && (
+              <span className="preview-custom">
+                <Square size={14} />
+                自定义组件
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="preview-canvas-inner">
-            <div
-              className="preview-frame-space"
-              style={{ width: size.width * scale, height: size.height * scale }}
+          <div className="preview-tools">
+            {!entry?.viewport && (
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="切换横竖方向"
+                title="切换横竖方向"
+                onClick={() =>
+                  nav({
+                    orientation:
+                      orientation === "landscape" ? "portrait" : "landscape",
+                  })
+                }
+              >
+                <RotateCw size={15} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="preview-zoom"
+              aria-pressed={q.zoom !== "actual"}
+              onClick={() => nav({ zoom: null })}
             >
-              <iframe
-                ref={frame}
-                key={load}
-                title={`原型：${entry.title}`}
-                src={url}
-                sandbox="allow-scripts"
-                allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
+              适应画布
+            </button>
+            <button
+              type="button"
+              className="preview-zoom"
+              aria-pressed={q.zoom === "actual"}
+              onClick={() => nav({ zoom: "actual" })}
+            >
+              100%
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="重新加载原型"
+              title="重新加载原型"
+              onClick={() => setAttempt((v) => v + 1)}
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+        </div>
+        {!current && (
+          <div className="preview-dimensions">
+            <span>
+              {size.width} × {size.height} CSS px
+            </span>
+            <span>显示比例 {Math.round(scale * 100)}%</span>
+          </div>
+        )}
+        {runtimeError && (
+          <div className="preview-runtime-error" role="alert">
+            {runtimeError}
+          </div>
+        )}
+        {hosted &&
+          entry?.available &&
+          !loadError &&
+          (!current || hostStatus !== "ready") && (
+            <div className="preview-host-status" role="status">
+              <span>
+                {hostStatus === "ready"
+                  ? "页面已就绪"
+                  : hostStatus === "error"
+                    ? "宿主报告页面运行失败，请在独立页面检查。"
+                    : hostStatus === "unconfirmed"
+                      ? "尚未确认页面就绪；若画布空白，可在独立页面查看。"
+                      : "正在等待页面就绪…"}
+              </span>
+              <a
+                href={hosted.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 referrerPolicy="no-referrer"
-                width={size.width}
-                height={size.height}
-                style={{
-                  width: size.width,
-                  height: size.height,
-                  transform: `scale(${scale})`,
-                }}
-              />
+              >
+                <ExternalLink size={13} /> 独立打开
+              </a>
             </div>
+          )}
+        <div
+          className="preview-canvas"
+          ref={canvas}
+          data-testid="preview-canvas"
+        >
+          {!entry?.available ? (
+            <Empty title="暂时无法预览">
+              <p>{entry?.message}</p>
+            </Empty>
+          ) : loadError ? (
+            <Empty title="预览无法加载">
+              <p>{loadError}</p>
+            </Empty>
+          ) : ready !== load ? (
+            <div className="preview-loading" role="status">
+              正在加载预览…
+            </div>
+          ) : (
+            <div className="preview-canvas-inner">
+              <div
+                className="preview-frame-space"
+                style={{
+                  width: size.width * scale,
+                  height: size.height * scale,
+                }}
+              >
+                <iframe
+                  ref={frame}
+                  key={load}
+                  title={`原型：${entry.title}`}
+                  src={url}
+                  sandbox="allow-scripts"
+                  allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
+                  referrerPolicy="no-referrer"
+                  width={size.width}
+                  height={size.height}
+                  style={{
+                    width: size.width,
+                    height: size.height,
+                    transform: `scale(${scale})`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        {current && (
+          <div className="preview-canvas-status">
+            <span>
+              {size.width} × {size.height}
+            </span>
+            <span>{Math.round(scale * 100)}%</span>
           </div>
         )}
       </div>
-      <div className="preview-provenance">
-        <span>
-          <GitCommitHorizontal size={14} />
-          <code>{result.revision?.slice(0, 12)}</code>
-          {result.pinned ? "归档版本" : "已推送版本"}
-        </span>
-        <button type="button" className="text-button" onClick={copy}>
-          <Link2 size={13} />
-          复制固定版本链接
-        </button>
-      </div>
-      {q.revision && (
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => nav({ revision: null })}
-        >
-          {current ? "返回 main 当前版本" : "返回当前 Change 版本"}
-        </button>
+      {!current && (
+        <>
+          <div className="preview-provenance">
+            <span>
+              <GitCommitHorizontal size={14} />
+              <code>{result.revision?.slice(0, 12)}</code>
+              {result.pinned ? "归档版本" : "已推送版本"}
+            </span>
+            <button type="button" className="text-button" onClick={copy}>
+              <Link2 size={13} />
+              复制固定版本链接
+            </button>
+          </div>
+          {q.revision && (
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => nav({ revision: null })}
+            >
+              返回当前 Change 版本
+            </button>
+          )}
+          <p className="preview-footnote">
+            {hosted
+              ? `产物 ${hosted.version} · 源码 ${hosted.sourceCommit.slice(0, 12)}${entry?.sourceAvailable === false ? "（源码提交已不可用）" : ""}`
+              : entry?.artifact?.type === "git"
+                ? entry.artifact.path
+                : ""}
+            {" · "}适配范围由项目声明，画布缩放不改变布局尺寸。
+          </p>
+        </>
       )}
-      <p className="preview-footnote">
-        {hosted
-          ? `产物 ${hosted.version} · 源码 ${hosted.sourceCommit.slice(0, 12)}${entry?.sourceAvailable === false ? "（源码提交已不可用）" : ""}`
-          : entry?.artifact?.type === "git"
-            ? entry.artifact.path
-            : ""}
-        {" · "}适配范围由项目声明，画布缩放不改变布局尺寸。
-      </p>
     </section>
   );
 }

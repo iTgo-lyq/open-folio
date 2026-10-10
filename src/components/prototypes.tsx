@@ -1,10 +1,10 @@
 "use client";
-import { Badge, Button, IconButton } from "@open-folio/ui";
+import { Badge, Button } from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
-import { Dialog } from "radix-ui";
-import { ImageOff, LoaderCircle, PanelsTopLeft, Search, X } from "lucide-react";
+import { ImageOff, LoaderCircle, PanelsTopLeft, Search } from "lucide-react";
 import { previewViewport } from "@/lib/preview-viewport";
 import {
+  CLEAR_PROTOTYPE_VIEW,
   DEVICE_LABELS,
   matchesPrototype,
   type PrototypeCatalog,
@@ -13,17 +13,20 @@ import {
 import { api, useSavedScroll, useWorkspace } from "./context";
 import { Empty, ErrorNotice } from "./document";
 import { ChangePreviews } from "./previews";
-const clearPreview = {
-  prototype: null,
-  c: null,
-  ct: null,
-  preview: null,
-  device: null,
-  orientation: null,
-  revision: null,
-  zoom: null,
-};
+const clearPreview = CLEAR_PROTOTYPE_VIEW;
 export default function Prototypes() {
+  const { q } = useWorkspace();
+  const previous = useRef("");
+  useEffect(() => {
+    if (q.prototype) previous.current = q.prototype;
+  }, [q.prototype]);
+  return q.prototype ? (
+    <ChangePreviews current />
+  ) : (
+    <PrototypeGallery restoreId={previous.current} />
+  );
+}
+function PrototypeGallery({ restoreId }: { restoreId: string }) {
   const { data, projectId, q, nav } = useWorkspace();
   const key = `${projectId}:${data!.id}`;
   const [response, setResponse] = useState<{
@@ -34,7 +37,6 @@ export default function Prototypes() {
   const [retry, setRetry] = useState(0);
   const [page, setPage] = useState({ key: "", limit: 24 });
   const scroll = useSavedScroll(`${projectId}.prototypes`);
-  const focus = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     api<PrototypeCatalog>(
@@ -51,6 +53,20 @@ export default function Prototypes() {
     return () => controller.abort();
   }, [key, projectId, data, retry]);
   const catalog = response.key === key ? response.value : undefined;
+  useEffect(() => {
+    if (!catalog || !restoreId) return;
+    const id = requestAnimationFrame(() => {
+      const tile = document.querySelector(
+        `[data-prototype-id="${CSS.escape(restoreId)}"]`,
+      );
+      (
+        tile?.querySelector(
+          ".prototype-thumbnail-open, .prototype-title-open",
+        ) as HTMLElement | null
+      )?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [catalog, restoreId]);
   const kind = ["page", "component"].includes(q.pkind) ? q.pkind : "";
   const device = ["pc-web", "ipad", "mobile", "custom"].includes(q.pdevice)
     ? q.pdevice
@@ -199,39 +215,6 @@ export default function Prototypes() {
           </>
         )}
       </div>
-      <Dialog.Root
-        open={!!q.prototype}
-        onOpenChange={(open) => {
-          if (!open) nav(clearPreview);
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="drawer-overlay" />
-          <Dialog.Content
-            className="change-drawer with-preview"
-            aria-describedby={undefined}
-            onOpenAutoFocus={() => {
-              focus.current = document.activeElement as HTMLElement;
-            }}
-            onCloseAutoFocus={(e) => {
-              e.preventDefault();
-              if (focus.current?.isConnected) focus.current.focus();
-            }}
-          >
-            <header className="drawer-toolbar">
-              <Dialog.Title>页面预览</Dialog.Title>
-              <Dialog.Close asChild>
-                <IconButton aria-label="关闭页面预览">
-                  <X size={19} />
-                </IconButton>
-              </Dialog.Close>
-            </header>
-            <div className="current-preview-body">
-              <ChangePreviews current />
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
     </section>
   );
 }
@@ -260,7 +243,7 @@ function PrototypeCard({
     (item.artifact?.type === "hosted" &&
       item.artifact.thumbnails?.some((t) => t.device === device));
   return (
-    <li className="prototype-tile">
+    <li className="prototype-tile" data-prototype-id={item.id}>
       <PrototypeThumbnail
         key={imageUrl}
         url={imageUrl}
@@ -327,12 +310,12 @@ function PrototypeThumbnail({
   }, [enabled, visible, status, attempt]);
   return (
     <div className={`prototype-thumbnail ${status}`} ref={root}>
-      {enabled && visible && status !== "error" && (
-        <button
-          className="prototype-thumbnail-open"
-          aria-label={`预览${title}`}
-          onClick={open}
-        >
+      <button
+        className="prototype-thumbnail-open"
+        aria-label={`预览${title}`}
+        onClick={open}
+      >
+        {enabled && visible && status !== "error" && (
           <img
             key={attempt}
             src={`${url}&attempt=${attempt}`}
@@ -343,8 +326,8 @@ function PrototypeThumbnail({
             onLoad={() => setStatus("ready")}
             onError={() => setStatus("error")}
           />
-        </button>
-      )}
+        )}
+      </button>
       {(!enabled || status !== "ready") && (
         <div className="prototype-thumbnail-state" role="status">
           {enabled && status === "loading" ? (

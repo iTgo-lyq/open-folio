@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import type { SearchResult } from "@/lib/model";
+import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
 import { api, useWorkspace, WorkspaceProvider } from "./context";
 import { DocumentModal, Empty, ErrorNotice } from "./document";
 import Specs from "./specs";
@@ -41,6 +42,7 @@ function Shell() {
       : q.m === "changes"
         ? "changes"
         : "specs";
+  const focusedPreview = module === "prototypes" && !!q.prototype;
   const moduleTitle =
     module === "prototypes"
       ? "原型"
@@ -86,6 +88,7 @@ function Shell() {
               doc: null,
               c: null,
               ct: null,
+              pdetail: null,
               prototype: null,
               preview: null,
               device: null,
@@ -102,21 +105,25 @@ function Shell() {
     </nav>
   );
   return (
-    <div className={`app-shell ${collapsed ? "rail-collapsed" : ""}`}>
-      <aside className="module-rail">
-        <button
-          className="shell-brand"
-          onClick={toggle}
-          aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
-        >
-          <img src="/brand/openfolio-mark.png" alt="OpenFolio" />
-          <span className="restore-handle" />
-        </button>
-        {navigation}
-        <div className="rail-footer" title="只读工作台">
-          <span>OF</span>
-        </div>
-      </aside>
+    <div
+      className={`app-shell ${collapsed ? "rail-collapsed" : ""} ${focusedPreview ? "preview-focused" : ""}`}
+    >
+      {!focusedPreview && (
+        <aside className="module-rail">
+          <button
+            className="shell-brand"
+            onClick={toggle}
+            aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
+          >
+            <img src="/brand/openfolio-mark.png" alt="OpenFolio" />
+            <span className="restore-handle" />
+          </button>
+          {navigation}
+          <div className="rail-footer" title="只读工作台">
+            <span>OF</span>
+          </div>
+        </aside>
+      )}
       <main className="workspace">
         <header className="workspace-header">
           <div className="header-context">
@@ -148,6 +155,7 @@ function Shell() {
                     ct: null,
                     da: null,
                     raw: null,
+                    pdetail: null,
                     prototype: null,
                     preview: null,
                     device: null,
@@ -169,76 +177,115 @@ function Shell() {
               </select>
             </label>
             <ChevronRight size={14} className="header-chevron" />
-            <span className="header-module">{moduleTitle}</span>
-            <span className="read-only">只读</span>
+            {focusedPreview ? (
+              <>
+                <button
+                  className="preview-back"
+                  onClick={() => nav(CLEAR_PROTOTYPE_VIEW)}
+                  aria-label="返回原型总览"
+                >
+                  原型总览
+                </button>
+                <ChevronRight size={14} className="header-chevron" />
+                <span className="header-module">预览</span>
+              </>
+            ) : (
+              <>
+                <span className="header-module">{moduleTitle}</span>
+                <span className="read-only">只读</span>
+              </>
+            )}
           </div>
           <div className="header-actions">
-            <button
-              className="search-launch"
-              onClick={() => setSearch(true)}
-              aria-label="搜索工作台"
-            >
-              <Search size={16} />
-              <span>搜索文档、变更…</span>
-              <kbd>⌘ K</kbd>
-            </button>
-            <button
-              className="icon-button refresh-button"
-              onClick={() => void refresh()}
-              disabled={!projectId || refreshing}
-              aria-label={refreshing ? "正在读取中心仓库" : "刷新中心仓库"}
-              title="读取最新已推送记录"
-            >
-              <RefreshCw size={17} className={refreshing ? "spin" : ""} />
-            </button>
-          </div>
-        </header>
-        <div className="workspace-source">
-          <div className="row">
-            <GitBranch size={14} />
-            {module === "specs" ? (
+            {focusedPreview ? (
               <select
-                aria-label="Specs 来源分支"
-                value={data?.selectedBranch ?? q.branch ?? ""}
-                onChange={(e) =>
+                aria-label="跳转工作台模块"
+                className="preview-module-select"
+                value={module}
+                onChange={(event) =>
                   nav({
-                    branch: e.target.value || null,
-                    s: null,
-                    anchor: null,
+                    ...CLEAR_PROTOTYPE_VIEW,
                     doc: null,
+                    m: event.target.value,
                   })
                 }
               >
-                <option value="">选择来源分支</option>
-                {data?.branches.map((b) => (
-                  <option key={b.name} value={b.name}>
-                    {b.name}
-                    {data.protectedBranches.includes(b.name)
-                      ? " · 守护分支"
-                      : ""}
-                  </option>
-                ))}
+                <option value="prototypes">原型</option>
+                <option value="specs">Specs</option>
+                <option value="changes">Changes</option>
               </select>
-            ) : module === "prototypes" ? (
-              <span>
-                main <span className="source-separator">/</span> 当前页面
-              </span>
             ) : (
-              <span>
-                全部已推送分支 <span className="source-separator">/</span> 各
-                Change 主来源
-              </span>
+              <>
+                <button
+                  className="search-launch"
+                  onClick={() => setSearch(true)}
+                  aria-label="搜索工作台"
+                >
+                  <Search size={16} />
+                  <span>搜索文档、变更…</span>
+                  <kbd>⌘ K</kbd>
+                </button>
+                <button
+                  className="icon-button refresh-button"
+                  onClick={() => void refresh()}
+                  disabled={!projectId || refreshing}
+                  aria-label={refreshing ? "正在读取中心仓库" : "刷新中心仓库"}
+                  title="读取最新已推送记录"
+                >
+                  <RefreshCw size={17} className={refreshing ? "spin" : ""} />
+                </button>
+              </>
             )}
           </div>
-          <span className="snapshot-time">
-            {refreshing
-              ? "正在读取…"
-              : data
-                ? `读取于 ${new Date(data.capturedAt).toLocaleTimeString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}`
-                : "尚未读取"}
-          </span>
-        </div>
-        {error && (
+        </header>
+        {!focusedPreview && (
+          <div className="workspace-source">
+            <div className="row">
+              <GitBranch size={14} />
+              {module === "specs" ? (
+                <select
+                  aria-label="Specs 来源分支"
+                  value={data?.selectedBranch ?? q.branch ?? ""}
+                  onChange={(e) =>
+                    nav({
+                      branch: e.target.value || null,
+                      s: null,
+                      anchor: null,
+                      doc: null,
+                    })
+                  }
+                >
+                  <option value="">选择来源分支</option>
+                  {data?.branches.map((b) => (
+                    <option key={b.name} value={b.name}>
+                      {b.name}
+                      {data.protectedBranches.includes(b.name)
+                        ? " · 守护分支"
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : module === "prototypes" ? (
+                <span>
+                  main <span className="source-separator">/</span> 当前页面
+                </span>
+              ) : (
+                <span>
+                  全部已推送分支 <span className="source-separator">/</span> 各
+                  Change 主来源
+                </span>
+              )}
+            </div>
+            <span className="snapshot-time">
+              {refreshing
+                ? "正在读取…"
+                : data
+                  ? `读取于 ${new Date(data.capturedAt).toLocaleTimeString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}`
+                  : "尚未读取"}
+            </span>
+          </div>
+        )}
+        {error && (!focusedPreview || !data) && (
           <ErrorNotice>
             {error}
             {data && " 当前继续显示上次成功版本。"}
@@ -247,11 +294,12 @@ function Shell() {
             </button>
           </ErrorNotice>
         )}
-        {data?.diagnostics.map((d, i) => (
-          <div className="source-warning" key={i}>
-            {d.message}
-          </div>
-        ))}
+        {!focusedPreview &&
+          data?.diagnostics.map((d, i) => (
+            <div className="source-warning" key={i}>
+              {d.message}
+            </div>
+          ))}
         <div className="workspace-body">
           {loading && !data ? (
             <Empty
@@ -283,7 +331,7 @@ function Shell() {
           )}
         </div>
       </main>
-      <div className="mobile-navigation">{navigation}</div>
+      {!focusedPreview && <div className="mobile-navigation">{navigation}</div>}
       <SearchDialog open={search} setOpen={setSearch} />
       <DocumentModal />
       {message && (
