@@ -4,13 +4,36 @@
   "title": "OpenFolio 本地原型托管与发布选择",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "codex/prototype-hosting",
-  "confirmations": {},
-  "tasks": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-10T10:13:27.463Z",
+      "summary": "用户明确要求本地无数据库托管、workflow 保存服务地址和三种发布选择，并确认公开读取、凭管理员分发的上传地址上传、取消原型来源配置和校验；小型设置删除直接实现。",
+      "source": "本次用户请求、上传权限异步回答及追加移除原型来源配置的指令；原型询问回答为直接删除字段"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "保存托管选择并取消原型来源限制",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "提供凭地址上传与公开读取的本地静态服务",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "贯通 skill 上传和原型引用登记",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "dependsOn": [
     "visual-configuration",
     "prototype-ui-rules"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求已由用户明确，技术方案与三项计划待确认；实现还需验收并归档 visual-configuration 依赖。"
+  }
 }
