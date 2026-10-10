@@ -9,7 +9,12 @@ description: SpecTrail 的可选原型协作：宿主自行构建和托管，维
 
 ## 接入与设计
 
-读取 AGENTS、设计规范、现有组件及 `workflow.json.prototype`，基线为已推送 main。未选择时按需询问；disabled 不重复建议；pending 修复接入；enabled 复用已有包。已启用且 Change 明显改变 UI 时，建议优先画或更新原型，未采用建议或没有 previews 都不阻断流程。
+读取 AGENTS、设计规范、现有组件及 `workflow.json.prototype`，基线为已推送 main。未选择时按需询问；disabled 不重复建议；pending 修复接入；enabled 复用已有包。
+
+原型已启用时，按 UI 影响范围处理，不以 Change 规模代替判断：
+
+- 小型变化：先询问是否绘制原型；可先推进无关工作，较长时间未回复时说明后跳过。
+- 大范围变化：实现前必须先绘制或更新原型，并提供预览。
 
 ```bash
 node .agents/skills/spec-trail/prototype/scripts/setup.mjs --accept --package packages/prototype

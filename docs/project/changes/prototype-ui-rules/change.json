@@ -4,13 +4,15 @@
   "title": "按 UI 影响范围选择原型流程",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/prototype-ui-rules",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "精简并统一启用原型后的 UI 变更规则",
-      "status": "todo"
+      "status": "done",
+      "verification": "主 skill 与原型子 skill 的 quick_validate.py 均通过；git diff --check 通过；人工核对 enabled 小型询问与超时跳过、大范围实现前绘制、disabled 不重复提议及沿用既有选择，未新增确认环节。",
+      "commitTitle": "docs: require prototypes for broad UI changes"
     }
   },
   "closure": {}
