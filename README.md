@@ -82,6 +82,8 @@ Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工�
 
 「原型」总览只读取被管理项目 main 的 `<packagePath>/prototype.json`，按名称、说明和设备发现当前页面并直接打开。入口不需要关联 Change；删除 main 清单项后移出总览，开发分支和单独上传不会改变当前展示。无 main、配置未启用、清单缺失或损坏时明确提示，不从 Change 拼接列表。
 
+所有预览的配置统一读取最近一次成功刷新得到的 main `workflow.json`。历史版本只提供当时的原型记录、清单和产物；按当前字段与路径读取失败时直接显示失败，不使用旧配置兜底，也不替换为最新产物。
+
 原型协作通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 接入。项目维护源码、mock 和构建，可使用 React 及自己的组件库；产物选择 OpenFolio 内置托管、自建静态托管或 Git 单 HTML 兜底，选择保存到 workflow.json。OpenFolio 不安装项目依赖或运行第三方构建，已登记原型不会因源码或样式变化自动重新发布。
 
 内置托管无需数据库，版本文件保存在 `OPENFOLIO_DATA_DIR/prototype-artifacts`，重启后保留。静态 URL 公开访问，不要求项目邀请码。管理员通过 `GET /api/prototype-hosting` 获取专用上传地址；地址本身授权上传，可保存到仓库供成员使用，不能用于修改服务配置。

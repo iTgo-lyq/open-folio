@@ -123,6 +123,39 @@ export async function body(
     );
   return text;
 }
+export async function readPrototypeConfiguration(
+  reader: GitReader,
+  main: string | undefined,
+  limits: Limits,
+  signal: AbortSignal,
+): Promise<PrototypeConfig> {
+  let configuration;
+  try {
+    if (!main) throw Error();
+    const path = "docs/project/workflow.json";
+    const files = await tree(reader, main, path, signal);
+    configuration = workflowSchema.parse(
+      JSON.parse(
+        await body(
+          reader,
+          files.find((f) => f.path === path),
+          limits.jsonBytes,
+          signal,
+        ),
+      ),
+    ).prototype;
+  } catch {
+    signal.throwIfAborted();
+    throw new AppError(
+      "PROTOTYPE_CONFIG_INVALID",
+      "main 当前 workflow.json 原型配置无效或不可读。",
+      400,
+    );
+  }
+  if (configuration?.status !== "enabled")
+    throw new AppError("PROTOTYPE_DISABLED", "main 尚未启用原型协作。", 400);
+  return configuration;
+}
 export async function resolvePreview(
   reader: GitReader,
   latest: Snapshot,
@@ -147,12 +180,15 @@ export async function resolvePreview(
     policy: latest.prototype,
     entries: [],
   };
-  const fail = (message: string) => ({
-    descriptor: { ...descriptor, message },
+  const fail = (message: string, failed = true) => ({
+    descriptor: { ...descriptor, message, failed },
     html: undefined,
   });
   if (latest.prototype.status !== "enabled")
-    return fail(latest.prototype.message);
+    return fail(
+      latest.prototype.message,
+      latest.prototype.status === "invalid",
+    );
   const group = source.changes.find((g) => g.id === changeId),
     candidate = group && primaryRecord(group);
   let revision = requestedRevision ?? candidate?.commit;
@@ -163,7 +199,7 @@ export async function resolvePreview(
     !candidate.state.previews?.length &&
     !candidate.diagnostics.some((d) => d.code === "PREVIEWS_INVALID")
   )
-    return fail("这个 Change 还没有关联原型。");
+    return fail("这个 Change 还没有关联原型。", false);
   if (!requestedRevision && candidate?.archived) {
     const ref = latest.archiveRefs.find((r) => r.id === changeId);
     if (!ref)
@@ -215,7 +251,6 @@ export async function resolvePreview(
   if (stateFiles.length !== 1)
     return fail("指定版本中缺少唯一的 Change 记录。");
   let raw: Record<string, unknown>;
-  let configuration;
   try {
     raw = JSON.parse(
       await body(reader, stateFiles[0], limits.jsonBytes, signal),
@@ -227,7 +262,7 @@ export async function resolvePreview(
       raw.previews === undefined ||
       (Array.isArray(raw.previews) && !raw.previews.length)
     )
-      return fail("这个 Change 还没有关联原型。");
+      return fail("这个 Change 还没有关联原型。", false);
     if (stateFiles[0].path.startsWith("docs/project/archive/")) {
       const ref = latest.archiveRefs.find((r) => r.id === changeId);
       if (
@@ -248,28 +283,30 @@ export async function resolvePreview(
         return fail("保留标签中的归档状态或目录不一致。");
       descriptor.pinned = true;
     }
-    configuration = workflowSchema.parse(
-      JSON.parse(
-        await body(
-          reader,
-          documents.find((f) => f.path === "docs/project/workflow.json"),
-          limits.jsonBytes,
-          signal,
-        ),
-      ),
-    ).prototype;
-    if (configuration?.status !== "enabled")
-      return fail("该提交中的原型包未启用；当前开关不会改写历史配置。");
   } catch {
-    return fail("指定版本中的 Change 或项目原型配置不合法。");
+    return fail("指定版本中的 Change 记录不合法或不可读。");
   }
   if (
     raw.previews === undefined ||
     (Array.isArray(raw.previews) && !raw.previews.length)
   )
-    return fail("这个 Change 还没有关联原型。");
+    return fail("这个 Change 还没有关联原型。", false);
   if (!Array.isArray(raw.previews))
     return fail("previews 必须是页面或组件关联数组。");
+  let configuration;
+  try {
+    configuration = await readPrototypeConfiguration(
+      reader,
+      latest.branches.find((b) => b.name === "main")?.commit,
+      limits,
+      signal,
+    );
+  } catch (e) {
+    signal.throwIfAborted();
+    return fail(
+      e instanceof AppError ? e.message : "main 当前原型配置读取失败。",
+    );
+  }
   return resolveEntries(
     reader,
     latest.projectId,
@@ -299,7 +336,7 @@ export async function resolveEntries(
 ) {
   const signal = AbortSignal.timeout(limits.refreshMs);
   const fail = (message: string) => ({
-    descriptor: { ...descriptor, message },
+    descriptor: { ...descriptor, message, failed: true },
     html: undefined,
   });
   const files = [
@@ -375,7 +412,8 @@ export async function resolveEntries(
     const path = entryPath(entry, configuration, changeDirectory),
       file = files.find((f) => f.path === path);
     if (!path) {
-      info.message = "入口路径不属于该提交配置的 prototype/preview 目录。";
+      info.message =
+        "入口路径不属于 main 当前配置的原型包或该 Change 的快照目录。";
       continue;
     }
     try {

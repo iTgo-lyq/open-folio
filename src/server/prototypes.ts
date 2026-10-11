@@ -8,8 +8,13 @@ import type {
 } from "../lib/model.ts";
 import type { PrototypeCatalog } from "../lib/prototypes.ts";
 import type { GitReader } from "./git.ts";
-import { body, tree, resolveEntries } from "./previews.ts";
-import { workflowSchema, identity } from "./schema.ts";
+import {
+  body,
+  tree,
+  resolveEntries,
+  readPrototypeConfiguration,
+} from "./previews.ts";
+import { identity } from "./schema.ts";
 import {
   validateManifest,
   currentPreview,
@@ -21,6 +26,7 @@ export async function readCurrentPrototype(
   revision: string | undefined,
   limits: Limits,
   signal: AbortSignal,
+  configurationRevision = revision,
 ): Promise<CurrentPrototype> {
   const base: CurrentPrototype = {
     revision: revision ?? null,
@@ -30,24 +36,12 @@ export async function readCurrentPrototype(
   if (!revision)
     return { ...base, message: "项目没有 main 分支，无法读取当前页面。" };
   try {
-    const files = await tree(
+    const configuration = await readPrototypeConfiguration(
       reader,
-      revision,
-      "docs/project/workflow.json",
+      configurationRevision,
+      limits,
       signal,
     );
-    const configuration = workflowSchema.parse(
-      JSON.parse(
-        await body(
-          reader,
-          files.find((f) => f.path === "docs/project/workflow.json"),
-          limits.jsonBytes,
-          signal,
-        ),
-      ),
-    ).prototype;
-    if (configuration?.status !== "enabled")
-      return { ...base, message: "main 尚未启用原型协作。" };
     base.packagePath = configuration.packagePath;
     base.configuration = configuration;
     const path = `${configuration.packagePath}/prototype.json`;
@@ -55,7 +49,8 @@ export async function readCurrentPrototype(
     if (!entries.length)
       return {
         ...base,
-        message: "main 尚未登记 prototype.json，请在原型工程维护当前页面清单。",
+        message:
+          "该版本在 main 当前配置的原型包路径下尚未登记 prototype.json。",
       };
     const manifest = JSON.parse(
       await body(
@@ -74,7 +69,7 @@ export async function readCurrentPrototype(
     )
       return {
         ...base,
-        message: "main 的 prototype.json 格式或入口数量不合法。",
+        message: "该版本的 prototype.json 格式或入口数量不合法。",
       };
     const seen = new Map<unknown, number>();
     for (const entry of manifest.entries)
@@ -98,9 +93,7 @@ export async function readCurrentPrototype(
     return {
       ...base,
       message:
-        e instanceof AppError
-          ? `当前清单不可读：${e.message}`
-          : "main 的原型配置或清单不是有效 JSON。",
+        e instanceof AppError ? e.message : "该版本的原型清单不是有效 JSON。",
     };
   }
 }
@@ -144,21 +137,32 @@ export async function resolveCurrentPreview(
     policy: latest.prototype,
     entries: [],
   };
-  const fail = (message: string) => ({
-    descriptor: { ...descriptor, message },
+  const fail = (message: string, failed = true) => ({
+    descriptor: { ...descriptor, message, failed },
     html: undefined,
   });
   if (latest.prototype.status !== "enabled")
-    return fail(latest.prototype.message);
+    return fail(
+      latest.prototype.message,
+      latest.prototype.status === "invalid",
+    );
   const main = latest.branches.find((b) => b.name === "main")?.commit;
   const target = revision ?? current.revision;
   if (!main || !target) return fail("项目没有 main 分支，无法读取当前页面。");
   const signal = AbortSignal.timeout(limits.refreshMs);
   if (!(await reader.ancestor(target, main, signal)))
     return fail("该版本不在 main 的已推送历史中。");
-  if (revision)
-    current = await readCurrentPrototype(reader, revision, limits, signal);
+  current =
+    target === main
+      ? latest.currentPrototype
+      : await readCurrentPrototype(reader, target, limits, signal, main);
   if (current.message) return fail(current.message);
+  if (current.issues.length) {
+    descriptor.message = current.issues.join("；");
+    descriptor.failed = true;
+    if (selectedId && !current.entries.some((e) => e.id === selectedId))
+      return fail(descriptor.message);
+  }
   const entries = current.entries.filter(
     (e) => !selectedOnly || e.id === selectedId,
   );

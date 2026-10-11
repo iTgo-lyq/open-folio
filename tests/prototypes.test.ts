@@ -124,6 +124,16 @@ test("current catalog diagnoses missing main/manifest and invalid entries withou
   let catalog = await f.store.prototypes(f.project);
   assert.equal(catalog.items.length, 2);
   assert.equal(catalog.issues.length, 1);
+  const invalidEntry = await f.store.currentPreview(
+    f.project,
+    undefined,
+    DEFAULT_LIMITS,
+    undefined,
+    "broken",
+  );
+  assert.equal(invalidEntry.html, undefined);
+  assert.equal(invalidEntry.descriptor.failed, true);
+  assert.match(invalidEntry.descriptor.message!, /第 2 项字段不合法/);
   const preview = await f.store.currentPreview(
     f.project,
     undefined,
@@ -158,6 +168,96 @@ test("current catalog diagnoses missing main/manifest and invalid entries withou
     (await f.store.snapshot(f.project)).currentPrototype.revision,
     null,
   );
+});
+test("fixed project links and old snapshots use current main config with original artifacts and explicit path failures", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  const historical: { revision: string; snapshot: string }[] = [];
+  for (const oldWorkflow of [
+    JSON.stringify({
+      ...workflow,
+      prototype: { ...workflow.prototype, decision: { summary: "旧配置字段" } },
+    }),
+    "{broken",
+  ]) {
+    await f.put("docs/project/workflow.json", oldWorkflow);
+    const revision = f.commit();
+    const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    historical.push({ revision, snapshot: snapshot.id });
+  }
+  await f.put("docs/project/workflow.json", JSON.stringify(workflow));
+  await f.put(
+    `${f.entry.artifact.path}/index.html`,
+    "<!doctype html><html><body>replacement</body></html>",
+  );
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (const old of historical) {
+    for (const revision of [old.revision, undefined]) {
+      const result = await f.store.currentPreview(
+        f.project,
+        revision,
+        DEFAULT_LIMITS,
+        old.snapshot,
+        f.entry.id,
+      );
+      assert.equal(result.descriptor.revision, old.revision);
+      assert.match(result.html!, /first/);
+      assert.doesNotMatch(result.html!, /replacement/);
+    }
+  }
+  const relocated = "packages/new-prototype";
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      ...workflow,
+      prototype: { ...workflow.prototype, packagePath: relocated },
+    }),
+  );
+  await f.put(
+    `${relocated}/prototype.json`,
+    JSON.stringify({
+      schemaVersion: 1,
+      entries: [
+        {
+          ...f.entry,
+          sourcePath: `${relocated}/src/screen.html`,
+          artifact: {
+            ...f.entry.artifact,
+            path: `${relocated}/preview/screen`,
+          },
+        },
+      ],
+    }),
+  );
+  await f.put(
+    `${relocated}/preview/screen/index.html`,
+    "<!doctype html><html><body>replacement</body></html>",
+  );
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const moved = await f.store.currentPreview(
+    f.project,
+    historical[0].revision,
+    DEFAULT_LIMITS,
+    undefined,
+    f.entry.id,
+  );
+  assert.equal(moved.html, undefined);
+  assert.equal(moved.descriptor.failed, true);
+  assert.match(moved.descriptor.message!, /main 当前配置.*尚未登记/);
+  await f.put("docs/project/workflow.json", "{broken");
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const invalid = await f.store.currentPreview(
+    f.project,
+    historical[0].revision,
+    DEFAULT_LIMITS,
+    undefined,
+    f.entry.id,
+  );
+  assert.equal(invalid.html, undefined);
+  assert.equal(invalid.descriptor.policy.status, "invalid");
 });
 test("v2 cache migration preserves previously observed archive pins across refresh", async (t) => {
   const f = await source();

@@ -1,5 +1,21 @@
 import { test, expect } from "@playwright/test";
 const path = "/?project=fixture&m=changes&c=document-reader&ct=previews";
+test("unreadable fixed versions show a failure instead of an empty inventory or a replacement preview", async ({
+  page,
+}) => {
+  await page.goto(path + "&revision=" + "0".repeat(40));
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("原型读取失败", { exact: true })).toBeVisible();
+  await expect(
+    dialog.getByText("该 Git 版本已不可用，请检查原分支或归档保留引用。", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("暂无可预览的入口", { exact: true }),
+  ).toHaveCount(0);
+  await expect(dialog.locator("iframe")).toHaveCount(0);
+});
 test("Change previews switch declared devices without changing layout dimensions when scaling", async ({
   page,
 }) => {

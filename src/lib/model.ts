@@ -282,6 +282,7 @@ export type PreviewDescriptor = {
   pinned: boolean;
   policy: Snapshot["prototype"];
   message?: string;
+  failed?: boolean;
   entries: (PreviewEntry & {
     available: boolean;
     message?: string;

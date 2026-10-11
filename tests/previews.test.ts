@@ -98,7 +98,7 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
   assert.equal(disabled.descriptor.policy.status, "disabled");
 });
 
-test("archive tag preserves source and HTML after branch deletion and cold rebuild; missing or rewritten tags never fall back", async (t) => {
+test("archive with obsolete workflow preserves HTML using current main config after branch deletion and cold rebuild; missing or rewritten tags never fall back", async (t) => {
   const f = await source();
   t.after(f.cleanup);
   const directory = "docs/project/archive/2026-10-03-preview-demo",
@@ -121,6 +121,16 @@ test("archive tag preserves source and HTML after branch deletion and cold rebui
         acceptance: step("accepted"),
         specs: step("not_needed"),
         archive: { ...step("done"), path: directory },
+      },
+    }),
+  );
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      ...workflow,
+      prototype: {
+        ...workflow.prototype,
+        decision: { at, summary: "历史决定" },
       },
     }),
   );
@@ -181,6 +191,73 @@ test("archive tag preserves source and HTML after branch deletion and cold rebui
   );
   assert.equal(result.html, undefined);
   assert.match(result.descriptor.message!, /引用|版本/);
+});
+
+test("Change previews ignore historical workflow and fail on invalid current config, moved paths or legacy references", async (t) => {
+  const f = await source();
+  t.after(f.cleanup);
+  for (const oldWorkflow of [
+    JSON.stringify({ ...workflow, prototype: { status: "disabled" } }),
+    "{broken",
+    null,
+  ]) {
+    if (oldWorkflow === null) f.git(["rm", "docs/project/workflow.json"]);
+    else await f.put("docs/project/workflow.json", oldWorkflow);
+    const revision = f.commit();
+    await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.match((await preview(f)).html!, /first/);
+    assert.match((await preview(f, revision)).html!, /first/);
+  }
+  const snapshot = await f.store.snapshot(f.project);
+  f.git(["checkout", "main"]);
+  await f.put("docs/project/workflow.json", "{broken");
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const invalid = await f.store.preview(
+    f.project,
+    state.id,
+    f.revision,
+    DEFAULT_LIMITS,
+    snapshot.id,
+    entry.id,
+  );
+  assert.equal(invalid.html, undefined);
+  assert.equal(invalid.descriptor.failed, true);
+  assert.equal(invalid.descriptor.policy.status, "invalid");
+  assert.match(invalid.descriptor.message!, /workflow.json/);
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      ...workflow,
+      prototype: {
+        ...workflow.prototype,
+        packagePath: "packages/new-prototype",
+      },
+    }),
+  );
+  f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const moved = await preview(f, f.revision);
+  assert.equal(moved.html, undefined);
+  assert.equal(moved.descriptor.entries[0].available, false);
+  assert.match(moved.descriptor.entries[0].message!, /main 当前配置/);
+  await f.put("docs/project/workflow.json", JSON.stringify(workflow));
+  f.commit();
+  f.git(["checkout", state.branch]);
+  const { artifact, ...legacy } = entry;
+  await f.put(
+    changePath,
+    JSON.stringify({
+      ...state,
+      previews: [{ ...legacy, path: artifact.path }],
+    }),
+  );
+  const legacyRevision = f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const rejected = await preview(f, legacyRevision);
+  assert.equal(rejected.html, undefined);
+  assert.equal(rejected.descriptor.entries[0].available, false);
+  assert.match(rejected.descriptor.entries[0].message!, /关联字段不合法/);
 });
 
 test("previews reject unreachable revisions, invalid entries, symlinks, LFS and resource limits without losing documents", async (t) => {

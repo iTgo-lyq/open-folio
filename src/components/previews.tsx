@@ -247,9 +247,11 @@ export function ChangePreviews({
     return (
       <Empty
         title={
-          result.policy.status === "enabled"
-            ? "暂无可预览的入口"
-            : "原型追踪未启用"
+          result.failed
+            ? "原型读取失败"
+            : result.policy.status === "enabled"
+              ? "暂无可预览的入口"
+              : "原型追踪未启用"
         }
       >
         <p>{result.message ?? result.policy.message}</p>
