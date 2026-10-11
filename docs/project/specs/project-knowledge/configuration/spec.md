@@ -2,7 +2,7 @@
 
 数据目录由 OPENFOLIO_DATA_DIR 指定，默认 `~/.local/share/open-folio`。配置文件优先使用 OPENFOLIO_CONFIG 路径，否则使用数据目录下的 config.json；不接受内联 JSON。不存在的父目录与文件自动创建，初始配置为 schemaVersion 1、空 projects，已有文件不会被初始化覆盖。
 
-管理员通过左下角配置入口、空项目引导或移动端入口维护项目名称、id、HTTPS 仓库、默认 Specs 分支、原型来源、邀请码和资源限制。页面不能修改服务器文件路径，仓库凭据仍由服务用户的 Git credential helper 提供。
+管理员通过左下角配置入口、空项目引导或移动端入口维护项目名称、id、HTTPS 仓库、默认 Specs 分支、邀请码和资源限制。原型没有来源配置或白名单，旧 prototypeOrigins 读取时忽略，保存时清除。页面不能修改服务器文件路径，仓库凭据仍由服务用户的 Git credential helper 提供。
 
 保存将合法配置写回原文件并立即更新工作台，无需重启。移除当前项目或修改仓库后刷新对应选择与缓存范围；资源限制可清除覆盖值以恢复默认。关闭未保存表单时确认保留或放弃修改。
 

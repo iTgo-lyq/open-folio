@@ -1,6 +1,6 @@
 # 原型浏览与预览
 
-OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块，以及 [Change 详情](../change-tracking/spec.md)内的原型标签。总览展示 main 当前登记的项目页面，Change 保存当时的固定交付。宿主维护源码、构建和托管，OpenFolio 只读取已推送引用及 Git 兜底产物，不编译源码、接收上传或运行宿主命令。
+OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块，以及 [Change 详情](../change-tracking/spec.md)内的原型标签。总览展示 main 当前登记的项目页面，Change 保存当时的固定交付。项目维护源码和构建，产物选择 OpenFolio 内置托管、自建静态托管或 Git 单 HTML 兜底；OpenFolio 不编译项目源码或运行上传内容中的服务端代码。
 
 ## 可选协作与当前清单
 
@@ -8,7 +8,11 @@ OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块�
 
 docs/project/workflow.json 的 prototype 记录选择：缺失为未选择，disabled 为拒绝接入，pending 为接入未完成，enabled 为可用。拒绝接入后不重复提议或新增关联；已有明确同意直接沿用，初始化失败保留现场。已启用时按 UI 影响范围判断：小型变化先询问是否绘制，较长时间未回复可说明后跳过；大范围变化必须在实现前绘制或更新原型并提供预览。
 
-原型配置只维护当前 status 和适用的 packagePath，接入决定的历史由 Git 保存。
+workflow 的可选 openfolioUrl 保存 OpenFolio 服务 HTTP/HTTPS 地址，null 表示无自建实例，缺失表示未记录。prototype 除 status 和适用的 packagePath 外，可保存 hosting.provider（openfolio/custom/git）及适用的 uploadUrl。OpenFolio 方式要求服务地址和专用上传地址，custom 可保存项目适配器使用的上传地址，git 不需要上传地址；旧配置没有托管选择仍可读取。
+
+托管方式尚未选择时，skill 先询问自建 OpenFolio 实例，再询问三种方式并保存选择；已有会话或配置选择直接复用，仅补该方式必需信息。setup 原子保存配置，保留不相关字段及启停前后的托管选择；接入决定的历史由 Git 保存。
+
+原型包 DESIGN.md 记录项目设计依据、视觉方向、色彩角色与数值、字阶、布局断点、组件及交互约定。初始化可引用已有权威规范，没有时提供中立模板和简短编写指南，绘制前依据现有产品补全；不覆盖用户已有文件，不把新设计提案描述为现有事实。
 
 工作台从已推送 main 的最新成功快照读取开关与包配置，不随 Specs 分支切换。旧版本不能绕过当前停用选择；没有 main、配置不可读或清单损坏时明确说明。
 
@@ -20,16 +24,28 @@ Git 保存源码和描述，普通 dist 默认忽略。删除 main 清单项即�
 
 artifact 区分两种交付：
 
-- hosted：记录固定 version、HTTPS url、sourceCommit、digest，以及可选设备截图引用。宿主自行构建并上传到自己的静态托管，支持 React 等多文件产物。
+- hosted：记录固定 version、HTTP/HTTPS url、sourceCommit、digest，以及可选设备截图引用。项目自行构建并上传到 OpenFolio 或自建静态托管，支持 React 等多文件产物。
 - git：记录 path 与 sourceCommit。显式选择兜底时，当前单 HTML 留在包内 preview/id，Change 另保存 previews/id/index.html；归档移动快照并更新路径，后续当前产物更新不覆盖旧 Change。
 
 Change 的 previews 保留自己的入口标题、类型、适配及固定 artifact；项目当前清单与 Change 可引用同一次发布。当前清单后续更新不改变 Change 的固定交付，已归档记录只读。源码提交可用于追溯构建来源。
 
 发布工具 prepare 生成包含仓库、源码提交、目录、内容摘要、入口及 requestId 的请求。宿主负责构建、上传和结果，成功结果回传对应 requestId/sourceCommit/digest、固定版本及各入口 URL；失败结果包含 code、message 和 retryable。宿主完整上传后原子发布，重复请求返回同版本，旧版本内容不可覆盖，历史引用版本由宿主负责保留。
 
+OpenFolio 方式由内置 upload 命令读取 workflow 地址，上传产物、校验并保存结果，再登记引用；上传成功但本地登记失败可使用保存的 request/result 重试 register。自建托管继续由项目适配器完成上传。新建 hosted 包默认输出 dist，可指定其他产物目录；已有包保留原构建命令。
+
 register 校验成功结果后更新当前清单及可选 Change 引用；发布失败保留旧引用，不自动转为 Git 兜底。共享仓库锁、事务日志和原文比对保护多文件登记，recover 遇到后续用户编辑会停止；异常退出遗留锁须核实持有进程已结束后处理。协议、调用和恢复细节见[原型协作 skill](../../../../../.agents/skills/spec-trail/prototype/SKILL.md)。
 
-地址使用无凭据、无 query 的 HTTPS，可包含 hash 路由；不保存临时签名 URL、上传密钥或令牌。staged hook 校验暂存配置、引用及 Git 产物；静态校验不能代替浏览器交互验证。
+预览引用使用无凭据、无 query 的 HTTP/HTTPS，可包含 hash 路由；不包含临时签名 URL、上传密钥或令牌。专用上传地址作为上传凭据保存在 workflow，可提交供仓库成员使用，不复制到 artifact、截图地址或成功日志。staged hook 校验暂存配置、引用及 Git 产物；静态校验不能代替浏览器交互验证。
+
+## OpenFolio 内置静态托管
+
+管理员通过 GET /api/prototype-hosting 获取稳定的专用上传地址；也可在本地设置管理密码环境变量，通过 setup 自动获取并保存。上传密钥私有保存在数据目录的 prototype-upload-key。持有该地址即可上传，不要求管理 Cookie、项目登记或邀请码，也不能凭此地址访问管理接口。轮换上传密钥撤销旧上传地址，不影响已发布静态链接。
+
+服务接收有明确边界的文件流，不解压压缩包、不执行构建。每次上传最多 2000 文件和 100 MiB，请求元数据最多 1 MiB，同时最多两次上传，120 秒超时。文件路径、类型、长度、摘要和入口完整性均校验；错误地址、非法或半截内容不发布可访问版本。
+
+产物与发布元数据存放在数据目录的 prototype-artifacts 下，无数据库。版本使用绑定仓库、源码提交、摘要及入口的 requestId；先写私有临时目录，再原子发布。相同请求重试返回相同版本，并核对既有文件，不覆盖历史内容。服务重启保留版本，历史文件不自动回收，部署者持久化并备份数据目录。
+
+GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验项目权限；支持 HTML、JS、CSS、图片、字体等静态资源、CORS 和固定版本缓存。存储元数据和半成品不暴露。可执行文档受响应 CSP sandbox 约束，直接打开也不能访问工作台 DOM 或凭据；服务只提供静态字节。
 
 ## 总览、详情与二级预览
 
@@ -53,11 +69,11 @@ Change 链接固定完整 revision；Git 快照按该提交读取，hosted 使�
 
 ## 托管预览与隔离
 
-项目配置 prototypeOrigins 登记精确 HTTPS origin，用于页面和截图引用。托管页面须使用独立于工作台的静态 origin。服务端不请求远端地址、不代理登录、下载或转发凭据；引用允许来源不是远端资源或重定向的网络防火墙，宿主负责资源策略、版本保留和允许嵌入。
+页面及截图使用任意 HTTP/HTTPS 来源，可与工作台同源，不需要配置来源白名单。旧 prototypeOrigins 字段读取时忽略，保存配置时移除。服务端不请求远端地址、不代理登录、下载或转发凭据；外部宿主负责资源策略、版本保留和允许嵌入。
 
 iframe 只授予 allow-scripts，不授予 allow-same-origin，保持 opaque origin。宿主 ESM、动态模块和字体等静态资源须支持无 Cookie 的 CORS，路由使用 hash/memory；不兼容的登录流由用户独立打开宿主页面。宿主响应 CSP 约束其资源和连接，工作台不为兼容而放宽沙箱。
 
-宿主可接入 ready/error 桥接握手，iframe load 不代表应用成功，未确认就绪时工作台显示相应提示。缺失引用、不允许来源、资源或嵌入异常保留明确提示及适用的独立打开入口。
+宿主可接入 ready/error 桥接握手，iframe load 不代表应用成功，未确认就绪时工作台显示相应提示。缺失引用、资源或嵌入异常保留明确提示及适用的独立打开入口。
 
 ## Git 兜底与离线截图
 
@@ -65,7 +81,7 @@ Git 兜底入口是 UTF-8 自包含 index.html，脚本、样式及 mock 内联�
 
 同域 HTML 同时受 iframe 沙箱和响应头 CSP sandbox 限制，直接导航仍受限；CSP 禁止网络连接、外部资源、嵌套 iframe、表单、对象及 worker。HTML 响应 private,no-store，只能按已登记入口和固定提交读取；拒绝任意文件路径、符号链接、LFS、超限或非法产物。无 previews 的 Change 正常显示尚未关联。
 
-可见卡片按需加载截图，默认采用第一个声明设备；设备筛选后截图与交互预览尺寸一致。截图保持比例，加载、失败、重试和预览入口独立。托管截图由宿主提供固定 PNG/WebP 地址，通过允许来源及 no-referrer 加载；缺失时使用占位，OpenFolio 不联网为托管地址截图。
+可见卡片按需加载截图，默认采用第一个声明设备；设备筛选后截图与交互预览尺寸一致。截图保持比例，加载、失败、重试和预览入口独立。托管截图由宿主提供固定 PNG/WebP 地址，通过 no-referrer 加载；缺失时使用占位，OpenFolio 不联网为托管地址截图。
 
 Git 截图在启用 OS 沙箱的独立 Chromium 空白上下文离线生成，不携带登录态或宿主凭据，拦截网络/WebSocket。缓存键包含项目/仓库、HTML 摘要、视口及渲染器版本；命中和 304 仍检查权限、开关、关联及历史引用，生成结束再次检查撤销。
 
