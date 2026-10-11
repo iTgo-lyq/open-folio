@@ -4,7 +4,7 @@
   "title": "OpenFolio 本地原型托管与发布选择",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/prototype-hosting",
   "confirmations": {
     "requirement": {
@@ -49,7 +49,13 @@
       "commitTitle": "prototype-hosting T4: deliver the Git workspace shell"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-11T16:56:53.425Z",
+      "summary": "T1–T3 全量测试、浏览器回归、生产构建与独立评审证据继续有效；T4 的 8 项工具测试、构建/沙箱、4 视口交互和截图、格式/skill 校验与独立评审通过。Git 固定预览经生产工作台读取为 200，字节一致，历史归档未改。详见 execution.md。"
+    }
+  },
   "dependsOn": [
     "visual-configuration",
     "prototype-ui-rules"
@@ -75,5 +81,9 @@
         "sourceCommit": "95175dfdcae0fab149a3920c49f2261de24a340d"
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "原型托管与补充的设计规范/模板、Git 页面外壳均已交付并验证，等待用户整体验收后同步 Specs 并归档。"
+  }
 }

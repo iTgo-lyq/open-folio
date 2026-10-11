@@ -41,3 +41,5 @@ setup 可用本地管理密码自动获取并保存上传地址，publish upload
 `npm run build --workspace prototype`、`validate.mjs --browser`、8 项 prototype-tools 测试、格式和 skill 结构检查、diff 检查通过。临时 Playwright 检查 1440×1000、768×1024、390×844、320×740：导航与选中、折叠、搜索过滤、Ctrl+K/Escape、焦点返回、配置入口、减少动态效果和无横向溢出全部通过；无脚本错误及外部网络请求。截图位于忽略目录 artifacts/workspace-shell-*.png，已和现有产品外壳对照。正式应用和 UI 包未改动，沿用 T3 生产构建与整体验证证据。
 
 独立 reviewer 复核 T4 全部差异与四张截图，验证默认模板完整复制、Git 无需服务地址、既有 DESIGN.md 不覆盖，另运行两项 setup 回归通过；未发现待修复问题。源码提交 95175df 后，通过 publish register 登记当前清单和本 Change 的 Git 固定快照，二者字节一致；登记后沙箱复验通过。
+
+08dd87e 推送后，运行中的生产工作台刷新中心仓库成功；本 Change 的 workspace-shell 预览返回 200，服务返回字节与 Git 产物完全一致。当前分支清单只含外壳；总览以 main 为准，待合入后更新。原型交付通过 Git 读取完成，没有写入托管上传目录；原型归档历史差异为空。
