@@ -116,10 +116,6 @@ export function ChangePreviews({
     setRuntimeError("");
     if (!url) return;
     if (hosted) {
-      if (new URL(url).origin === window.location.origin) {
-        setLoadError("原型托管来源必须与工作台来源分离。");
-        return;
-      }
       setReady(load);
       return;
     }

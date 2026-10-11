@@ -68,7 +68,6 @@ export async function seed() {
   const sourceCommit = f.commit();
   const project = {
     ...f.project,
-    prototypeOrigins: ["https://127.0.0.1:10685"],
   };
   const plan =
     "# 实施计划\n\n## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | T1 |\n| T3 | T2 |\n";

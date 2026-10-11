@@ -3,14 +3,82 @@ import assert from "node:assert/strict";
 import { symlink } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { resolve, join } from "node:path";
-import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
-import { changeSchema, prototypeSchema } from "../src/server/schema.ts";
+import {
+  validateChange,
+  validateWorkflow,
+} from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+import {
+  changeSchema,
+  prototypeSchema,
+  workflowSchema,
+} from "../src/server/schema.ts";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
 const enabled = {
   status: "enabled",
   packagePath: "packages/prototype",
 };
+
+test("workflow readers agree on optional hosting choices and service presence", () => {
+  for (const [extra, valid] of [
+    [{}, true],
+    [
+      {
+        openfolioUrl: null,
+        prototype: { ...enabled, hosting: { provider: "git" } },
+      },
+      true,
+    ],
+    [
+      {
+        openfolioUrl: "http://folio.test",
+        prototype: {
+          ...enabled,
+          hosting: {
+            provider: "openfolio",
+            uploadUrl: "http://folio.test/upload/key",
+          },
+        },
+      },
+      true,
+    ],
+    [{ prototype: { ...enabled, hosting: { provider: "custom" } } }, true],
+    [
+      {
+        openfolioUrl: null,
+        prototype: {
+          ...enabled,
+          hosting: {
+            provider: "openfolio",
+            uploadUrl: "http://folio.test/upload/key",
+          },
+        },
+      },
+      false,
+    ],
+    [{ openfolioUrl: "javascript:alert(1)" }, false],
+    [
+      {
+        prototype: {
+          ...enabled,
+          hosting: {
+            provider: "git",
+            uploadUrl: "http://folio.test/upload/key",
+          },
+        },
+      },
+      false,
+    ],
+  ] as const) {
+    const workflow = {
+      schemaVersion: 1,
+      protectedBranches: ["main"],
+      ...extra,
+    };
+    assert.equal(validateWorkflow(workflow).length === 0, valid);
+    assert.equal(workflowSchema.safeParse(workflow).success, valid);
+  }
+});
 const entry = {
   id: "list",
   title: "列表",

@@ -69,10 +69,6 @@ test("empty configuration supports adding and removing projects without restarti
     await panel
       .getByLabel("默认分支（可选）", { exact: true })
       .fill(project.specBranch);
-  if (project.prototypeOrigins)
-    await panel
-      .getByLabel("原型来源（可选）", { exact: true })
-      .fill(project.prototypeOrigins.join("\n"));
   await panel.getByRole("button", { name: "保存配置", exact: true }).click();
   await expect(panel.getByRole("status")).toHaveText("配置已保存");
   await panel.getByRole("button", { name: "关闭配置", exact: true }).click();

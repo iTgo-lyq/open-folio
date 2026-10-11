@@ -359,16 +359,9 @@ export async function resolveEntries(
     descriptor.entries.push(info);
     if (entry.artifact?.type === "hosted") {
       const artifact = entry.artifact;
-      if (!project?.prototypeOrigins?.includes(new URL(artifact.url).origin)) {
-        info.message =
-          "托管地址来源未获允许，请联系服务管理员配置 prototypeOrigins。";
-        continue;
-      }
       info.available = true;
       info.url = artifact.url;
-      info.thumbnails = artifact.thumbnails?.filter((t) =>
-        project.prototypeOrigins?.includes(new URL(t.url).origin),
-      );
+      info.thumbnails = artifact.thumbnails;
       try {
         info.sourceAvailable =
           (await reader.run(["cat-file", "-t", artifact.sourceCommit], signal))

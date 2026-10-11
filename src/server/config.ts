@@ -41,25 +41,10 @@ const configSchema = z
           repositoryUrl: remoteUrl,
           inviteCode: z.string().trim().min(1).max(256).optional(),
           specBranch: z.string().min(1).optional(),
-          prototypeOrigins: z
-            .array(
-              z
-                .string()
-                .url()
-                .refine((value) => {
-                  if (!URL.canParse(value)) return false;
-                  const u = new URL(value);
-                  return (
-                    u.protocol === "https:" &&
-                    u.origin === value &&
-                    !u.username &&
-                    !u.password
-                  );
-                }),
-            )
-            .optional(),
+          prototypeOrigins: z.unknown().optional(), // Legacy field: ignored on read, removed on save.
         })
-        .strict(),
+        .strict()
+        .transform(({ prototypeOrigins: _legacy, ...project }) => project),
     ),
     limits: z
       .object(
@@ -79,7 +64,7 @@ export function parseConfig(value: unknown): AppConfig {
   if (!result.success)
     throw new AppError(
       "CONFIG_INVALID",
-      "配置不合法，请检查项目字段、HTTPS 仓库和原型来源地址，以及资源限制（必须为正整数）。",
+      "配置不合法，请检查项目字段、HTTPS 仓库地址，以及资源限制（必须为正整数）。",
     );
   if (
     new Set(result.data.projects.map((p) => p.id)).size !==

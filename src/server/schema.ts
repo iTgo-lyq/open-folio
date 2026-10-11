@@ -3,6 +3,8 @@ import type { PreviewEntry, PrototypeConfig } from "../lib/model.ts";
 import {
   validatePreviews,
   validatePrototype,
+  serviceUrl,
+  workflowHostingIssues,
 } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 export const previewsSchema = z.custom<PreviewEntry[]>(
   (v) => !validatePreviews(v).length,
@@ -188,8 +190,16 @@ export const workflowCoreSchema = z
       .nonempty()
       .refine((a) => new Set(a).size === a.length),
     prototype: z.unknown().optional(),
+    openfolioUrl: z
+      .custom<string | null>((v) => v === null || serviceUrl(v))
+      .optional(),
   })
   .strict();
-export const workflowSchema = workflowCoreSchema.extend({
-  prototype: prototypeSchema.optional(),
-});
+export const workflowSchema = workflowCoreSchema
+  .extend({
+    prototype: prototypeSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    for (const message of workflowHostingIssues(value))
+      ctx.addIssue({ code: "custom", message });
+  });

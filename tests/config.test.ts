@@ -118,6 +118,29 @@ test("saving persists valid configuration and serializes concurrent edits with t
   assert.deepEqual(await readConfig(), empty);
 });
 
+test("obsolete prototype origins are ignored on read and removed on save", async (t) => {
+  await setup(t);
+  await readConfig();
+  const legacy = {
+    ...configured,
+    projects: [
+      {
+        ...configured.projects[0],
+        prototypeOrigins: ["not an origin", "http://local/path"],
+      },
+    ],
+  };
+  await writeFile(configPath(), JSON.stringify(legacy));
+  const loaded = await readConfigSnapshot();
+  assert.deepEqual(loaded.config, configured);
+  assert.deepEqual(JSON.parse(await readFile(configPath(), "utf8")), legacy);
+  await saveConfig(legacy, loaded.revision);
+  assert.deepEqual(
+    JSON.parse(await readFile(configPath(), "utf8")),
+    configured,
+  );
+});
+
 test("invalid fields and malformed files preserve original bytes, and absent files cannot be silently recreated by save", async (t) => {
   await setup(t);
   const first = await readConfigSnapshot();
@@ -136,15 +159,6 @@ test("invalid fields and malformed files preserve original bytes, and absent fil
     {
       ...configured,
       projects: [{ ...configured.projects[0], repositoryUrl: "invalid url" }],
-    },
-    {
-      ...configured,
-      projects: [
-        {
-          ...configured.projects[0],
-          prototypeOrigins: ["https://example.com/path"],
-        },
-      ],
     },
     { ...configured, limits: { refreshMs: -1 } },
     { ...configured, limits: { refreshMs: 1.5 } },

@@ -295,3 +295,74 @@ test("shared source inlining preserves JavaScript replacement strings verbatim",
   runInNewContext(/<script>([\s\S]*?)<\/script>/.exec(output)![1], context);
   assert.equal(context.window.render, "a[b]c");
 });
+
+test("hosting choices persist through setup and disable, hosted scaffolds build dist, invalid changes preserve workflow", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  let result = run(f.author, "setup.mjs", [
+    "--accept",
+    "--hosting",
+    "openfolio",
+    "--openfolio-url",
+    "http://localhost:10681",
+    "--upload-url",
+    "http://localhost:10681/api/prototype-uploads/test",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  const workflow = await config(f.author);
+  assert.equal(workflow.openfolioUrl, "http://localhost:10681");
+  assert.equal(workflow.prototype.hosting.provider, "openfolio");
+  assert.match(
+    await readFile(
+      join(f.author, "packages/prototype/dist/welcome/index.html"),
+      "utf8",
+    ),
+    /<!doctype html>/i,
+  );
+  const packageBefore = await readFile(
+    join(f.author, "packages/prototype/package.json"),
+    "utf8",
+  );
+  assert.equal(run(f.author, "setup.mjs", ["--decline"]).status, 0);
+  assert.deepEqual(
+    (await config(f.author)).prototype.hosting,
+    workflow.prototype.hosting,
+  );
+  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
+  assert.deepEqual(await config(f.author), workflow);
+  result = run(f.author, "setup.mjs", [
+    "--configure",
+    "--hosting",
+    "custom",
+    "--openfolio-url",
+    "none",
+    "--upload-url",
+    "http://custom.test/upload",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal((await config(f.author)).openfolioUrl, null);
+  assert.equal((await config(f.author)).prototype.hosting.provider, "custom");
+  result = run(f.author, "setup.mjs", ["--configure", "--hosting", "git"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual((await config(f.author)).prototype.hosting, {
+    provider: "git",
+  });
+  const before = await readFile(
+    join(f.author, "docs/project/workflow.json"),
+    "utf8",
+  );
+  result = run(f.author, "setup.mjs", [
+    "--configure",
+    "--hosting",
+    "openfolio",
+  ]);
+  assert.equal(result.status, 1);
+  assert.equal(
+    await readFile(join(f.author, "docs/project/workflow.json"), "utf8"),
+    before,
+  );
+  assert.equal(
+    await readFile(join(f.author, "packages/prototype/package.json"), "utf8"),
+    packageBefore,
+  );
+});

@@ -27,7 +27,6 @@ export type ProjectConfig = {
   repositoryUrl: string;
   inviteCode?: string;
   specBranch?: string;
-  prototypeOrigins?: string[];
 };
 export type Limits = {
   refreshMs: number;
@@ -89,6 +88,7 @@ export type ClosureStep = {
 export type PrototypeConfig = {
   status: "disabled" | "pending" | "enabled";
   packagePath?: string;
+  hosting?: { provider: "openfolio" | "custom" | "git"; uploadUrl?: string };
 };
 export type Device = "pc-web" | "ipad" | "mobile";
 export type PreviewThumbnail = { device?: Device; url: string };

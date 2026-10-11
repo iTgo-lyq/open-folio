@@ -16,7 +16,6 @@ import {
   FieldLabel,
   FieldDescription,
   Input,
-  Textarea,
 } from "@open-folio/ui";
 import type { AppConfig, ConfigSnapshot, Limits } from "@/lib/model";
 import { AccessForm } from "./access";
@@ -40,7 +39,6 @@ type ProjectDraft = {
   name: string;
   repositoryUrl: string;
   specBranch: string;
-  origins: string;
   inviteCode: string;
 };
 type Draft = { projects: ProjectDraft[]; limits: Record<string, string> };
@@ -51,7 +49,6 @@ function draftFor(config: AppConfig): Draft {
       key: crypto.randomUUID(),
       inviteCode: p.inviteCode ?? crypto.randomUUID(),
       specBranch: p.specBranch ?? "",
-      origins: p.prototypeOrigins?.join("\n") ?? "",
     })),
     limits: Object.fromEntries(
       limitFields.map(([key, , , unit]) => [
@@ -80,14 +77,6 @@ function configFor(draft: Draft): AppConfig {
       inviteCode: p.inviteCode.trim(),
       repositoryUrl: p.repositoryUrl.trim(),
       ...(p.specBranch.trim() ? { specBranch: p.specBranch.trim() } : {}),
-      ...(p.origins.trim()
-        ? {
-            prototypeOrigins: p.origins
-              .split("\n")
-              .map((value) => value.trim())
-              .filter(Boolean),
-          }
-        : {}),
     })),
     ...(Object.keys(limits).length ? { limits } : {}),
   };
@@ -269,7 +258,6 @@ export function SettingsDialog({
                                 name: "",
                                 repositoryUrl: "",
                                 specBranch: "",
-                                origins: "",
                                 inviteCode: crypto.randomUUID(),
                               },
                             ],
@@ -439,25 +427,6 @@ export function SettingsDialog({
                                 }
                                 placeholder="使用远端默认分支"
                               />
-                            </Field>
-                            <Field>
-                              <FieldLabel htmlFor={`${p.key}-origins`}>
-                                原型来源（可选）
-                              </FieldLabel>
-                              <Textarea
-                                id={`${p.key}-origins`}
-                                value={p.origins}
-                                onChange={(e) =>
-                                  editProject(p.key, {
-                                    origins: e.target.value,
-                                  })
-                                }
-                                placeholder="https://static.example.com"
-                                aria-describedby={`${p.key}-origins-help`}
-                              />
-                              <FieldDescription id={`${p.key}-origins-help`}>
-                                每行一个 HTTPS 来源，不含路径。
-                              </FieldDescription>
                             </Field>
                           </FieldGroup>
                         </CardContent>

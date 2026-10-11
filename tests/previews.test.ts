@@ -397,14 +397,14 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
   }
 });
 
-test("hosted Change references are fixed, origin controlled, and do not require retained source commits", async (t) => {
+test("hosted Change references are fixed, accept any HTTP/HTTPS source, and do not require retained source commits", async (t) => {
   const f = await source();
   t.after(f.cleanup);
   const { artifact: ignored, ...base } = entry;
   const artifact = {
     type: "hosted",
     version: "v1",
-    url: "https://preview.example.test/v1/index.html#orders",
+    url: "http://preview.example.test/v1/index.html#orders",
     sourceCommit: f.revision,
     digest: "sha256:" + "a".repeat(64),
     thumbnails: [
@@ -417,11 +417,8 @@ test("hosted Change references are fixed, origin controlled, and do not require 
   );
   const first = f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal((await preview(f)).descriptor.entries[0].available, false);
-  const project = {
-    ...f.project,
-    prototypeOrigins: ["https://preview.example.test"],
-  };
+  assert.equal((await preview(f)).descriptor.entries[0].available, true);
+  const project = f.project;
   const read = (revision?: string) =>
     f.store.preview(project, state.id, revision, DEFAULT_LIMITS);
   const initial = await read();

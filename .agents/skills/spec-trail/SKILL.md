@@ -76,12 +76,14 @@ type ISODateTime = string; // 新记录由脚本写 UTC 三位毫秒 ISO 时间�
 interface WorkflowConfig {
   schemaVersion: 1;
   protectedBranches: string[]; // 非空、去重；实际本地分支名，不带远程前缀或通配符
+  openfolioUrl?: string | null; // 缺失为未询问，null 为无自建服务
   prototype?: PrototypeConfig; // 可选原型接入；缺失表示未选择
 }
 
 interface PrototypeConfig {
   status: "disabled" | "pending" | "enabled";
   packagePath?: string; // pending/enabled 必填，disabled 省略；每项目一个包
+  hosting?: { provider: "openfolio" | "custom" | "git"; uploadUrl?: string };
 }
 interface PreviewEntry {
   id: string;

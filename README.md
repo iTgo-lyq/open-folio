@@ -38,8 +38,7 @@ npm start
       "name": "Example",
       "repositoryUrl": "https://github.com/owner/example.git",
       "inviteCode": "replace-with-a-random-invitation",
-      "specBranch": "main",
-      "prototypeOrigins": ["https://static.example.com"]
+      "specBranch": "main"
     }
   ],
   "limits": { "refreshMs": 120000, "markdownBytes": 1048576 }
@@ -85,9 +84,9 @@ Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工�
 
 原型协作通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 可选接入。宿主维护原型源码、mock 和构建，可使用 React 及自己的组件库；宿主实现发布协议并维护版本保留。OpenFolio 只读固定地址、版本、digest 和 sourceCommit，不安装依赖、不运行第三方构建、不接收上传。已登记参考原型不会因源码或样式变化而自动重新发布。
 
-宿主地址必须是无凭据、无查询令牌的固定 HTTPS URL，并在服务项目的 `prototypeOrigins` 中批准。托管页面须使用独立于工作台的静态 origin。iframe 仅授予 `allow-scripts`，不开放同源、存储、弹窗或顶层跳转，使用 no-referrer。宿主须允许嵌入，并为 ESM、动态模块和字体提供适配不透明来源的 CORS；演示使用内存状态和 hash/memory 路由。工作台不代理登录或资源请求。可选就绪桥接确认应用可交互；超时仅提示未确认，保留画布及独立打开入口。
+宿主使用无凭据、无查询令牌的固定 HTTP/HTTPS URL，无需配置来源白名单，支持同源预览。iframe 仅授予 `allow-scripts`，不开放同源、存储、弹窗或顶层跳转，使用 no-referrer。宿主须允许嵌入，并为 ESM、动态模块和字体提供适配不透明来源的 CORS；演示使用内存状态和 hash/memory 路由。工作台不代理登录或资源请求。可选就绪桥接确认应用可交互；超时仅提示未确认，保留画布及独立打开入口。
 
-宿主可发布每个声明视口的 PNG/WebP 缩略图；浏览器直接加载批准来源，缺失或失败显示占位，仍可打开页面。OpenFolio 服务不联网截图远端页面。Git 自包含 HTML 是显式兜底：当前产物保存在包内 preview，Change 复制一份到自身 previews 目录，归档时一同移动。普通多文件 React dist 使用托管链路。
+宿主可发布每个声明视口的 PNG/WebP 缩略图；浏览器直接加载记录的地址，缺失或失败显示占位，仍可打开页面。OpenFolio 服务不联网截图远端页面。Git 自包含 HTML 是显式兜底：当前产物保存在包内 preview，Change 复制一份到自身 previews 目录，归档时一同移动。普通多文件 React dist 使用托管链路。
 
 Change 页面的原型模块展示本次固定交付，未合入 main 也可分享。固定链接含记录提交和入口；总览的固定链接定位 main 历史中的清单提交。`spec-trail/archive-v2/<id>` 归档标签保留 Git 记录，宿主另行保证外部版本持续可用。当前 main 停用原型后，旧链接也停止展示；标签被改写不重新信任。
 

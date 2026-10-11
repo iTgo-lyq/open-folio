@@ -210,7 +210,7 @@ test("strict contracts reject URL credentials, malformed thumbnails and mixed le
   };
   assert.deepEqual(validateArtifact(artifact), []);
   for (const url of [
-    "http://example.test/",
+    "ftp://example.test/",
     "javascript:alert(1)",
     "https://user:secret@example.test/",
     "https://example.test/?token=x",
