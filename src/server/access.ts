@@ -14,7 +14,7 @@ import { AppError } from "./errors.ts";
 const digest = (value: string) => createHash("sha256").update(value).digest();
 const equal = (a: string, b: string) => timingSafeEqual(digest(a), digest(b));
 export const adminPasswordPath = () => join(dataDirectory(), "admin-password");
-async function privateSecret(path: string) {
+export async function privateSecret(path: string) {
   try {
     return await readFile(path, "utf8")
       .catch(async (e: NodeJS.ErrnoException) => {
@@ -42,7 +42,7 @@ async function privateSecret(path: string) {
   } catch {
     throw new AppError(
       "ACCESS_SECRET_UNAVAILABLE",
-      "无法读取或创建访问凭据，请检查数据目录中的 admin-password、access-secret 文件及权限。",
+      "无法读取或创建访问凭据，请检查数据目录及文件权限。",
     );
   }
 }

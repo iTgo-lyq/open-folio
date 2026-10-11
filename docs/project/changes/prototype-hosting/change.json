@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "提供凭地址上传与公开读取的本地静态服务",
-      "status": "todo"
+      "status": "done",
+      "verification": "上传与发布 9 项测试、重启读取复验、真实 Next.js 匿名及同/跨来源浏览器验证、类型与 diff 检查通过，详见 execution.md。",
+      "commitTitle": "prototype-hosting T2: serve immutable local prototype uploads"
     },
     "T3": {
       "title": "贯通 skill 上传和原型引用登记",
