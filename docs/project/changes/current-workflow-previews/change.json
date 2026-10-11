@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "current-workflow-previews",
+  "title": "历史原型统一使用 main 当前配置",
+  "size": "small",
+  "status": "active",
+  "stage": "execution",
+  "branch": "codex/current-workflow-previews",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一当前配置读取并验证历史原型成功与失败路径",
+      "status": "doing"
+    }
+  },
+  "closure": {}
+}
