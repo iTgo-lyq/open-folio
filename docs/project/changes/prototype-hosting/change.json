@@ -4,7 +4,7 @@
   "title": "OpenFolio 本地原型托管与发布选择",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/prototype-hosting",
   "confirmations": {
     "requirement": {
@@ -41,21 +41,20 @@
       "status": "done",
       "verification": "87 项测试、浏览器全部 51 项覆盖（访问等待修正后 4 项复验）、类型/格式/skill 校验、无警告生产构建与生产冒烟通过；独立评审通过，详见 execution.md。",
       "commitTitle": "prototype-hosting T3: publish builds through the built-in service"
+    },
+    "T4": {
+      "title": "整理设计基线、模板与 Git 页面外壳原型",
+      "status": "todo"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-11T11:37:52.437Z",
-      "summary": "87 项测试通过，51 项浏览器场景完成覆盖（分享链接等待竞态修正后访问 4 项复验通过）；类型、格式、skill 校验、无警告生产构建和生产冒烟通过；上下文隔离独立评审及追加复核通过，持久预览已更新。详见 execution.md。"
-    }
-  },
+  "closure": {},
   "dependsOn": [
     "visual-configuration",
     "prototype-ui-rules"
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现、验证、独立评审及持久预览已完成，等待用户验收后同步 Specs 并归档。"
+  "rework": {
+    "at": "2026-10-11T16:46:06.861Z",
+    "reason": "用户补充原型工程整理任务：形成现有项目 DESIGN.md、提供 skill 模板与简短指南、清理测试 demo，仅保留页面外壳，并明确本项目使用 Git。",
+    "approach": "沿用已确认的托管协议与服务实现，追加 T4 完成本项目 Git 原型和设计基线整理；以用户本次明确指令作为新增任务授权。"
   }
 }

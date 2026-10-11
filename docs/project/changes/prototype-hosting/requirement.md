@@ -35,3 +35,17 @@ MODIFIED 移除设置界面的「原型来源」字段及服务端/客户端的�
 - skill 引导完成 OpenFolio 发布和登记；自建适配器与 Git 兜底仍可使用，切换方式不改写历史引用。
 - 删除来源配置后，旧配置仍能启动和保存；不同 HTTP/HTTPS 来源及同源原型不因来源策略被拒绝；本地托管的模块、样式与图片正常加载，原型脚本无法访问工作台 DOM 或管理凭据。
 - 项目现有文档、邀请码及管理权限回归通过，公开静态资源之外的访问权限不变。
+
+## 补充：本项目设计基线与页面外壳
+
+用户于 2026-10-12 明确追加：根据现有产品整理原型包 DESIGN.md，参考主流设计 skill，向 SpecTrail 提供可复用模板和简短指南；移除当前工程的旧测试 demo，只保留一个页面外壳原型。本项目明确采用 Git 直接存储，不调用上传服务。已有归档快照与 Git 历史保持可追溯。
+
+验收：设计规范说明来源、视觉方向、色彩角色、字阶、布局/响应式、组件和交互约定，数值能回溯现有实现；初始化可获得设计模板并保留既有规范；当前清单只含页面外壳，桌面/平板/手机可预览，主要壳层交互可用，资源自包含且无接口请求。该局部追加沿用现有发布契约与 medium 交付安排。
+
+## 协作资源
+
+以下一手资料读取于 2026-10-12，仅参考文档组织和提炼方法，不引入对应平台依赖：
+
+- [Google Stitch extract-design-md](https://github.com/google-labs-code/stitch-skills/blob/main/plugins/stitch-design/skills/extract-design-md/SKILL.md)：从主题、样式和组件抽取设计事实，说明颜色用途与布局规则。
+- [Google Stitch design-md](https://github.com/google-labs-code/stitch-skills/blob/main/plugins/stitch-utilities/skills/design-md/SKILL.md)：把视觉描述、具体数值和功能角色结合，形成后续页面可复用的依据。
+- [Anthropic frontend-design](https://github.com/anthropics/claude-code/blob/main/plugins/frontend-design/skills/frontend-design/SKILL.md)：明确用途与视觉方向，再协调字体、色彩、空间及交互。本项目沿用已有雾蓝工作台风格。
