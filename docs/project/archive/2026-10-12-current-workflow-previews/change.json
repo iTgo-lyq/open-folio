@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "current-workflow-previews",
+  "title": "历史原型统一使用 main 当前配置",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/current-workflow-previews",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一当前配置读取并验证历史原型成功与失败路径",
+      "status": "done",
+      "verification": "23 项相关测试、13 项浏览器测试、类型/格式/生产构建通过；真实旧归档三个入口 HTTP 200 且逐字节匹配，生产浏览器确认成功与失败展示。Agent 自查通过，无剩余问题。",
+      "commitTitle": "current-workflow-previews T1: resolve fixed artifacts with current main configuration"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-11T17:25:57.429Z",
+      "summary": "Agent 自查通过；23 项相关测试、13 项浏览器测试、类型/格式/生产构建及真实归档与当前原型验证通过，无未解决事项。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-11T17:25:57.503Z",
+      "summary": "Agent 自验收通过：当前 main 配置统一生效，固定产物字节不变；旧配置不参与读取；无效配置、路径与引用明确失败。相关测试和真实部署证据满足全部验收项。",
+      "source": "SpecTrail small 默认自验收；用户本轮已明确要求按当前 main 配置读取并直接展示失败。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-11T17:25:57.612Z",
+      "summary": "同步 prototype-preview 能力：配置统一取 main 当前 workflow，历史只取记录和产物；读取失败明确展示，不回退旧配置或新产物。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-11T17:25:57.686Z",
+      "summary": "small 自验收完成，相关测试与真实预览通过，Specs 已同步；归档当前配置读取修正。",
+      "path": "docs/project/archive/2026-10-12-current-workflow-previews"
+    }
+  }
+}
