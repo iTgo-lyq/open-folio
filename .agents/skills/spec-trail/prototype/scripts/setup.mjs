@@ -190,7 +190,7 @@ try {
           "DESIGN.md",
           design
             ? `# Design source\n\nFollow [the project design standard](${relative(pkg, join(root, design)).split("\\").join("/")}). Record only prototype-specific exceptions here; keep the source authoritative.\n`
-            : "# Design source\n\nReuse the project design tokens, typography, component library and accessibility conventions. Record the authoritative source here before adding a new visual direction. If no standard exists, establish one project-wide standard for this package.\n",
+            : await readFile(new URL("../assets/DESIGN.template.md", import.meta.url), "utf8"),
         ],
       ])
         if (!(await exists(join(pkg, file))))

@@ -2,43 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
-      "id": "change-overview",
-      "title": "Change 概览",
+      "id": "workspace-shell",
+      "title": "工作台外壳",
+      "description": "基于当前产品的导航、项目上下文与内容容器。",
+      "sourcePath": "packages/prototype/src/pages/workspace-shell.html",
       "kind": "page",
-      "sourcePath": "packages/prototype/src/pages/change-overview.html",
-      "artifact": {
-        "type": "git",
-        "path": "packages/prototype/preview/change-overview",
-        "sourceCommit": "35a86cbd338ee62ba3e5921efe1b576d10e6c57b"
-      },
-      "devices": ["pc-web", "ipad", "mobile"]
-    },
-    {
-      "id": "empty-state",
-      "title": "空状态",
-      "kind": "page",
-      "sourcePath": "packages/prototype/src/pages/empty-state.html",
-      "artifact": {
-        "type": "git",
-        "path": "packages/prototype/preview/empty-state",
-        "sourceCommit": "35a86cbd338ee62ba3e5921efe1b576d10e6c57b"
-      },
-      "devices": ["pc-web", "mobile"]
-    },
-    {
-      "id": "preview-toolbar",
-      "title": "预览工具栏",
-      "kind": "component",
-      "sourcePath": "packages/prototype/src/pages/preview-toolbar.html",
-      "artifact": {
-        "type": "git",
-        "path": "packages/prototype/preview/preview-toolbar",
-        "sourceCommit": "35a86cbd338ee62ba3e5921efe1b576d10e6c57b"
-      },
-      "viewport": {
-        "width": 720,
-        "height": 120
-      }
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
     }
   ]
 }

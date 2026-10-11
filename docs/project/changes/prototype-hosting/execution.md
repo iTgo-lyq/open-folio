@@ -31,3 +31,11 @@ setup 可用本地管理密码自动获取并保存上传地址，publish upload
 持久预览已切换到本 worktree 的生产构建，沿用现有数据目录、tmux 会话和 Merlin 端口转发。10680 的 IPv4/IPv6 首页均为 200，匿名上传地址发现接口为 401；原 worktree 构建保留供回退。Merlin 现有平台访问控制保持原设置。
 
 单实例文件存储仍需持久卷和备份，不自动回收历史版本。上传限制为每次 2000 文件/100 MiB、同时两次、120 秒；部署代理需允许相应请求体与时间。
+
+## T4
+
+根据当前 UI token、业务样式、壳层组件及桌面/手机截图重写原型包 DESIGN.md，补充依据、色彩角色、字阶、布局/断点、组件交互和实际范围。参考来源登记在 Requirement。skill 提供中立 DESIGN.template.md 与简短指南；setup 默认采用模板，--design 仍链接已有规范，并保留用户已编辑的 DESIGN.md。已选择 Git 时不补问无关服务地址。
+
+当前工程移除三个测试 demo，只保留 workspace-shell，品牌素材改用现有产品图标。workflow 明确 provider:git，外壳构建为自包含 HTML；源码、当前清单和 Git 固定快照构成此次交付，未调用原型上传服务，历史归档未修改。
+
+`npm run build --workspace prototype`、`validate.mjs --browser`、8 项 prototype-tools 测试、格式和 skill 结构检查、diff 检查通过。临时 Playwright 检查 1440×1000、768×1024、390×844、320×740：导航与选中、折叠、搜索过滤、Ctrl+K/Escape、焦点返回、配置入口、减少动态效果和无横向溢出全部通过；无脚本错误及外部网络请求。截图位于忽略目录 artifacts/workspace-shell-*.png，已和现有产品外壳对照。正式应用和 UI 包未改动，沿用 T3 生产构建与整体验证证据。

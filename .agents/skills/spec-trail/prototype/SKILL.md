@@ -21,7 +21,7 @@ node .agents/skills/spec-trail/prototype/scripts/setup.mjs --accept --package pa
 node .agents/skills/spec-trail/prototype/scripts/setup.mjs --decline
 ```
 
-接入决定沿用会话授权，历史由 Git 保存。需要发布时先读 workflow：未记录 openfolioUrl 时，询问是否有自建 OpenFolio，保存服务地址或 null；未记录 prototype.hosting 时，询问选择 OpenFolio、其他自建托管或 Git 兜底。已有选择直接复用，不因一次发布失败换方案。
+接入决定沿用会话授权，历史由 Git 保存。需要发布时先读 workflow；托管方式尚未选择时，先询问是否有自建 OpenFolio（openfolioUrl 保存地址或 null），再询问 OpenFolio、其他自建托管或 Git，保存到 prototype.hosting。会话或配置已有选择时直接复用，只补齐该方式必需的信息，不因一次发布失败换方案。
 
 OpenFolio 选择保存管理员提供的 uploadUrl；持有地址即可上传，可提交到仓库供成员使用。custom 可记录上传地址，使用项目适配器；git 不填上传地址。无自建 OpenFolio 时先选 custom/git，或补齐实例地址。保存选择：
 
@@ -35,6 +35,12 @@ node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --openfol
 管理员可在本地设置 OPENFOLIO_ADMIN_PASSWORD，将 --upload-url 换为 --fetch-upload-url 自动获取并保存地址；不把管理密码写入仓库。OpenFolio 的静态文件公开读取，上传不要求项目登记或邀请码。
 
 setup 不安装框架，不覆盖已有文件；采用现有工程时提供 package.json、AGENTS、DESIGN 和合法 prototype.json，再运行 --enable。保留原包管理器，原型包 private:true。源码可用 HTML、React 及项目 UI 包，宿主保证正常 build 与浏览器交互，局部状态和 mock 不依赖真实业务服务或持久存储。
+
+### DESIGN.md
+
+已有规范用 --design 引用，避免复制出第二份权威；没有时，setup 从 [模板](./assets/DESIGN.template.md) 生成包内 DESIGN.md，绘制前按项目事实补全。先读主题/token、共享组件和代表页面，必要时对照截图；写清视觉方向、色彩用途与数值、字阶、布局/断点、组件状态及无障碍约定。链接依据，区分现状与新决策；未知项标明待定，删除无关章节。后续原型沿用该规范。
+
+模板组织参考 [Google Stitch](https://github.com/google-labs-code/stitch-skills/blob/main/plugins/stitch-design/skills/extract-design-md/SKILL.md) 的源码提炼方法和 [Anthropic frontend-design](https://github.com/anthropics/claude-code/blob/main/plugins/frontend-design/skills/frontend-design/SKILL.md) 的设计方向约定；无需安装这些 skill 或接入其服务。
 
 ## 当前清单
 

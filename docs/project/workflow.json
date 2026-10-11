@@ -5,6 +5,9 @@
   ],
   "prototype": {
     "status": "enabled",
-    "packagePath": "packages/prototype"
+    "packagePath": "packages/prototype",
+    "hosting": {
+      "provider": "git"
+    }
   }
 }

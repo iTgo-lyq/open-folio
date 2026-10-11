@@ -45,11 +45,16 @@ test("setup persists refusal, initializes one package, reuses design and preserv
     join(pkg, "AGENTS.md"),
     "Keep my project-specific instructions\n",
   );
+  await writeFile(join(pkg, "DESIGN.md"), "# My reviewed design rules\n");
   result = run(f.author, "setup.mjs", ["--accept"]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     await readFile(join(pkg, "AGENTS.md"), "utf8"),
     "Keep my project-specific instructions\n",
+  );
+  assert.equal(
+    await readFile(join(pkg, "DESIGN.md"), "utf8"),
+    "# My reviewed design rules\n",
   );
   const root = JSON.parse(
     await readFile(join(f.author, "package.json"), "utf8"),
