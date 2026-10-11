@@ -4,7 +4,7 @@
   "title": "OpenFolio 本地原型托管与发布选择",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/prototype-hosting",
   "confirmations": {
     "requirement": {
@@ -43,9 +43,19 @@
       "commitTitle": "prototype-hosting T3: publish builds through the built-in service"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-11T11:37:52.437Z",
+      "summary": "87 项测试通过，51 项浏览器场景完成覆盖（分享链接等待竞态修正后访问 4 项复验通过）；类型、格式、skill 校验、无警告生产构建和生产冒烟通过；上下文隔离独立评审及追加复核通过，持久预览已更新。详见 execution.md。"
+    }
+  },
   "dependsOn": [
     "visual-configuration",
     "prototype-ui-rules"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现、验证、独立评审及持久预览已完成，等待用户验收后同步 Specs 并归档。"
+  }
 }
