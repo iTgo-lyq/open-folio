@@ -1,6 +1,8 @@
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
+import { createServer } from "node:http";
+import { uploadToOpenFolio } from "../.agents/skills/spec-trail/prototype/scripts/openfolio-client.mjs";
 import assert from "node:assert/strict";
 import { readFile, writeFile, mkdir, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -169,6 +171,104 @@ test("host publication is idempotent and only complete results update current an
       "utf8",
     ),
     "<!doctype html><button>ready</button>",
+  );
+});
+
+test("OpenFolio client preserves references on failure and redirect and saves a result for registration recovery", async (t) => {
+  const { f } = await publication(t);
+  let mode = "failure",
+    followed = false;
+  let request: ReturnType<typeof prepare>;
+  const server = createServer(async (incoming, response) => {
+    for await (const chunk of incoming) {
+      void chunk;
+    }
+    if (incoming.url === "/unexpected") followed = true;
+    if (mode === "failure") {
+      response.writeHead(503).end("private-upload-address");
+      return;
+    }
+    if (mode === "redirect") {
+      response.writeHead(307, { location: "/unexpected" }).end();
+      return;
+    }
+    if (mode === "changed")
+      await f.put(
+        "packages/prototype/dist/index.html",
+        "new local edit during upload",
+      );
+    response.writeHead(200, { "content-type": "application/json" }).end(
+      JSON.stringify({
+        schemaVersion: 1,
+        status: "published",
+        requestId: request.requestId,
+        sourceCommit: request.sourceCommit,
+        digest: request.digest,
+        version: request.requestId,
+        entries: [
+          {
+            id: "screen",
+            path: `prototype-assets/${request.requestId}/index.html`,
+          },
+        ],
+      }),
+    );
+  });
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  t.after(() => {
+    server.closeAllConnections();
+    server.close();
+  });
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const workflow = JSON.parse(
+    await readFile(join(f.author, "docs/project/workflow.json"), "utf8"),
+  );
+  workflow.openfolioUrl = base;
+  workflow.prototype.hosting = {
+    provider: "openfolio",
+    uploadUrl: `${base}/upload-capability`,
+  };
+  await f.put("docs/project/workflow.json", JSON.stringify(workflow));
+  f.commit();
+  request = prepare(
+    f.author,
+    "packages/prototype/dist",
+    [{ id: "screen", entryPath: "index.html" }],
+    "https://example.test/project.git",
+  );
+  const requestPath = join(f.root, "request.json"),
+    resultPath = join(f.root, "result.json");
+  await writeFile(requestPath, JSON.stringify(request));
+  const path = join(f.author, "packages/prototype/prototype.json"),
+    before = await readFile(path, "utf8");
+  const upload = () =>
+    uploadToOpenFolio(f.author, {
+      requestPath,
+      resultPath,
+      change: "publish-demo",
+    });
+  await assert.rejects(upload(), /HTTP 503/);
+  assert.equal(await readFile(path, "utf8"), before);
+  mode = "redirect";
+  await assert.rejects(upload(), /failed or redirected/);
+  assert.equal(followed, false);
+  await assert.rejects(readFile(resultPath), { code: "ENOENT" });
+  mode = "changed";
+  await assert.rejects(upload(), /Build output changed/);
+  assert.equal(await readFile(path, "utf8"), before);
+  const result = JSON.parse(await readFile(resultPath, "utf8"));
+  assert.equal(result.requestId, request.requestId);
+  assert.ok(
+    !JSON.stringify(result).includes(workflow.prototype.hosting.uploadUrl),
+  );
+  await f.put(
+    "packages/prototype/dist/index.html",
+    "<!doctype html><button>ready</button>",
+  );
+  register(f.author, { request, result, change: "publish-demo" });
+  assert.equal(
+    JSON.parse(await readFile(path, "utf8")).entries[0].artifact.url,
+    result.entries[0].url,
   );
 });
 test("Git fallback copies an independent Change snapshot and rejects symlinks and dirty source", async (t) => {

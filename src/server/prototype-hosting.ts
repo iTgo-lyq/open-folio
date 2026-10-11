@@ -270,7 +270,9 @@ async function readPublication(version: string): Promise<StoredPublication> {
   const path = await regularPath(version, "publication.json");
   const stat = await lstat(path);
   if (stat.size > 3 * maxHeaderBytes) throw invalid();
-  const stored = JSON.parse(await readFile(path, "utf8"));
+  const stored = JSON.parse(
+    await readFile(/* turbopackIgnore: true */ path, "utf8"),
+  );
   validateUpload({ request: stored.request, files: stored.files });
   if (
     stored.request.requestId !== version ||
@@ -285,7 +287,10 @@ async function readStoredFile(
   file: Publication["files"][number],
 ) {
   const path = await regularPath(version, `files/${file.path}`);
-  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  const handle = await open(
+    /* turbopackIgnore: true */ path,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  );
   try {
     if ((await handle.stat()).size !== file.size) throw invalid();
     return await handle.readFile();

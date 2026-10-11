@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "贯通 skill 上传和原型引用登记",
-      "status": "todo"
+      "status": "done",
+      "verification": "87 项测试、浏览器全部 51 项覆盖（访问等待修正后 4 项复验）、类型/格式/skill 校验、无警告生产构建与生产冒烟通过；独立评审通过，详见 execution.md。",
+      "commitTitle": "prototype-hosting T3: publish builds through the built-in service"
     }
   },
   "closure": {},

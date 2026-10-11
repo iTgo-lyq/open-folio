@@ -32,6 +32,8 @@ node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --openfol
 
 首次初始化可将这些参数与 --accept 一起使用。新 hosted 包默认输出 dist，Git 输出 preview/id/index.html；已有工程保留原构建命令，发布时显式指定产物目录。
 
+管理员可在本地设置 OPENFOLIO_ADMIN_PASSWORD，将 --upload-url 换为 --fetch-upload-url 自动获取并保存地址；不把管理密码写入仓库。OpenFolio 的静态文件公开读取，上传不要求项目登记或邀请码。
+
 setup 不安装框架，不覆盖已有文件；采用现有工程时提供 package.json、AGENTS、DESIGN 和合法 prototype.json，再运行 --enable。保留原包管理器，原型包 private:true。源码可用 HTML、React 及项目 UI 包，宿主保证正常 build 与浏览器交互，局部状态和 mock 不依赖真实业务服务或持久存储。
 
 ## 当前清单
@@ -56,17 +58,21 @@ id 稳定且项目内唯一；名称可改。component 在 devices 和 1–4096 
 ```bash
 # entries.json 是 [{"id":"orders","entryPath":"index.html","hash":"#/orders"}]
 node .agents/skills/spec-trail/prototype/scripts/publish.mjs prepare --directory packages/prototype/dist --entries /tmp/entries.json --repository https://example.org/team/project.git --out /tmp/request.json
-# 宿主自己的发布程序读取 request.json，上传到自己的静态托管并生成 result.json。
+# OpenFolio：按 workflow 中的地址上传，并登记当前清单及可选 Change。
+node .agents/skills/spec-trail/prototype/scripts/publish.mjs upload --request /tmp/request.json --result /tmp/result.json --change change-id
+# custom：由项目适配器读取 request.json，上传并生成 result.json，再登记。
 node .agents/skills/spec-trail/prototype/scripts/publish.mjs register --request /tmp/request.json --result /tmp/result.json --change change-id
 ```
 
-请求包含 schemaVersion、repository、sourceCommit、artifactDirectory、digest、entries、requestId。requestId 基于内容和入口确定；实现见 [publishing.mjs](./scripts/publishing.mjs)，[文件系统宿主示例](./examples/filesystem-host.mjs) 可用于 CI 挂载的静态存储和测试，不是 OpenFolio 托管服务。
+请求包含 schemaVersion、repository、sourceCommit、artifactDirectory、digest、entries、requestId。requestId 基于内容和入口确定；实现见 [publishing.mjs](./scripts/publishing.mjs)。OpenFolio 按固定版本保存在服务数据目录，无数据库；[文件系统适配器示例](./examples/filesystem-host.mjs) 供 custom 模式参考。
 
 成功结果包含 schemaVersion:1、status:published、原 requestId/sourceCommit/digest、固定 version 及 entries；每项是 id/url，可提供 thumbnails 数组（device/url；固定 PNG/WebP）。失败返回 status:failed、requestId、code、message、retryable。宿主先完整上传再原子发布，重复请求返回同版本，绝不覆盖旧版本字节；失败不替换引用，也不自动提交 dist。
 
 登记命令校验结果后一起更新当前 artifact 与可选 Change previews；无 --change 可只更新当前清单。多文件更新中断后运行 `publish.mjs recover`，遇到新用户编辑停止恢复，不覆盖。若进程异常退出遗留 Git common-dir 下的 `spec-trail-state.lock`，命令不会抢占锁：先读取其中的 owner.json（PID、主机、工作区、开始时间），核实对应主机上的进程已结束、仓库无其他状态操作并检查工作区及事务日志，再清理已确认失效的锁目录，重新运行 recover。没有 owner.json 的共享锁也必须先核实持锁进程；无法确认时保留锁与日志。不要删除事务日志来绕过恢复。随后提交推送；引用进入 main 才更新总览。Change 保留自己的显示信息、视口、固定地址和构建源码 commit，不跟随当前清单变化。预览引用使用无凭据、无 query 的 HTTP/HTTPS，可用 hash 路由；上传地址只保存在 workflow，不放进预览引用或成功日志。
 
 宿主负责保留被历史引用的版本。Git 标签仅保留记录和源码，不能代替外部存储的保留承诺。
+
+OpenFolio 上传失败可原请求重试；上传成功但本地登记失败时，使用保存的 request/result 重试 register。成功后提交引用；临时协议文件放仓库外，普通 dist 不提交。
 
 ## 嵌入与验证
 

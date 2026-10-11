@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { fixture } from "../fixture.ts";
 import {
   digestPrefix,
   encodeUploadHeader,
@@ -137,5 +141,121 @@ test("built-in public assets load modules, styles and images on same and other o
     ).toBe("isolated");
   } finally {
     await publicContext.close();
+  }
+});
+
+test("skill CLI configures hosting, uploads a build and registers immutable current and Change references", async ({
+  browser,
+  baseURL,
+}) => {
+  const f = await fixture();
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  try {
+    const run = (script: string, args: string[]) =>
+      execFileSync(
+        process.execPath,
+        [
+          resolve(`.agents/skills/spec-trail/prototype/scripts/${script}`),
+          ...(script === "publish.mjs"
+            ? [args[0], "--repo", f.author, ...args.slice(1)]
+            : ["--repo", f.author, ...args]),
+        ],
+        {
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            OPENFOLIO_ADMIN_PASSWORD: "fixture-admin-password",
+          },
+        },
+      );
+    run("setup.mjs", [
+      "--accept",
+      "--hosting",
+      "openfolio",
+      "--openfolio-url",
+      baseURL!,
+      "--fetch-upload-url",
+    ]);
+    const workflow = JSON.parse(
+      await readFile(join(f.author, "docs/project/workflow.json"), "utf8"),
+    );
+    expect(workflow.prototype.hosting.uploadUrl).toContain(
+      "/api/prototype-uploads/",
+    );
+    expect(workflow.openfolioUrl).toBe(baseURL);
+    f.git(["checkout", "-b", "change/cli-upload"]);
+    await f.put(
+      "docs/project/changes/cli-upload/change.json",
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "cli-upload",
+        title: "CLI upload",
+        branch: "change/cli-upload",
+        size: "small",
+        status: "active",
+        stage: "execution",
+        confirmations: {},
+        tasks: { T1: { title: "Prototype", status: "doing" } },
+        closure: {},
+      }),
+    );
+    f.commit();
+    const entries = join(f.root, "entries.json"),
+      request = join(f.root, "request.json"),
+      result = join(f.root, "result.json");
+    await writeFile(
+      entries,
+      JSON.stringify([{ id: "welcome", entryPath: "welcome/index.html" }]),
+    );
+    run("publish.mjs", [
+      "prepare",
+      "--directory",
+      "packages/prototype/dist",
+      "--entries",
+      entries,
+      "--repository",
+      "https://example.test/cli.git",
+      "--out",
+      request,
+    ]);
+    const output = run("publish.mjs", [
+      "upload",
+      "--request",
+      request,
+      "--result",
+      result,
+      "--change",
+      "cli-upload",
+    ]);
+    expect(output).not.toContain(workflow.prototype.hosting.uploadUrl);
+    const published = JSON.parse(await readFile(result, "utf8"));
+    const manifest = JSON.parse(
+      await readFile(
+        join(f.author, "packages/prototype/prototype.json"),
+        "utf8",
+      ),
+    );
+    const state = JSON.parse(
+      await readFile(
+        join(f.author, "docs/project/changes/cli-upload/change.json"),
+        "utf8",
+      ),
+    );
+    expect(manifest.entries[0].artifact).toEqual(state.previews[0].artifact);
+    expect(manifest.entries[0].artifact.url).toBe(published.entries[0].url);
+    const page = await context.newPage();
+    await page.goto(published.entries[0].url);
+    await expect(page.locator("h1")).toBeVisible();
+    expect((await context.request.get(published.entries[0].url)).status()).toBe(
+      200,
+    );
+    expect(await readFile(result, "utf8")).not.toContain(
+      workflow.prototype.hosting.uploadUrl,
+    );
+  } finally {
+    await context.close();
+    await f.cleanup();
   }
 });

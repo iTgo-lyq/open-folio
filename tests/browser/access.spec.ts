@@ -157,6 +157,9 @@ test("admin login, copied share link and rotation work across separate browsers"
       visitor.getByRole("button", { name: "刷新中心仓库" }),
     ).toBeEnabled();
     await expect(visitor).not.toHaveURL(/invite=/);
+    await expect(
+      visitor.getByRole("heading", { name: "交付记录", exact: true }),
+    ).toBeVisible();
     expect(
       (await visitor.request.get("/api/projects/fixture/workbench")).status(),
     ).toBe(200);

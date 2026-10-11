@@ -82,7 +82,20 @@ Markdown 不执行 HTML、MDX 或脚本。相对链接只在同一提交的工�
 
 「原型」总览只读取被管理项目 main 的 `<packagePath>/prototype.json`，按名称、说明和设备发现当前页面并直接打开。入口不需要关联 Change；删除 main 清单项后移出总览，开发分支和单独上传不会改变当前展示。无 main、配置未启用、清单缺失或损坏时明确提示，不从 Change 拼接列表。
 
-原型协作通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 可选接入。宿主维护原型源码、mock 和构建，可使用 React 及自己的组件库；宿主实现发布协议并维护版本保留。OpenFolio 只读固定地址、版本、digest 和 sourceCommit，不安装依赖、不运行第三方构建、不接收上传。已登记参考原型不会因源码或样式变化而自动重新发布。
+原型协作通过 [SpecTrail 原型子 skill](.agents/skills/spec-trail/prototype/SKILL.md) 接入。项目维护源码、mock 和构建，可使用 React 及自己的组件库；产物选择 OpenFolio 内置托管、自建静态托管或 Git 单 HTML 兜底，选择保存到 workflow.json。OpenFolio 不安装项目依赖或运行第三方构建，已登记原型不会因源码或样式变化自动重新发布。
+
+内置托管无需数据库，版本文件保存在 `OPENFOLIO_DATA_DIR/prototype-artifacts`，重启后保留。静态 URL 公开访问，不要求项目邀请码。管理员通过 `GET /api/prototype-hosting` 获取专用上传地址；地址本身授权上传，可保存到仓库供成员使用，不能用于修改服务配置。
+
+在项目仓库配置服务（管理密码仅通过本地环境变量注入）：
+
+```bash
+node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting openfolio --openfolio-url https://folio.example.com --fetch-upload-url
+# 或由管理员提供 OPENFOLIO_UPLOAD_URL，将 --fetch-upload-url 换为 --upload-url "$OPENFOLIO_UPLOAD_URL"。
+```
+
+workflow 的 `openfolioUrl` 保存服务地址，null 表示无实例；`prototype.hosting` 保存 provider（openfolio/custom/git）及适用的 uploadUrl。新 hosted 包默认输出 `packages/prototype/dist`，资源用相对路径。构建、入口声明、上传和登记命令见原型 skill。
+
+每次上传最多 2000 个文件、100 MiB，同时最多两次上传；反向代理须允许相应请求体和上传时间。只发布完整且摘要一致的版本，重复请求返回同版本，历史文件不覆盖。备份数据目录时包含 `prototype-artifacts` 和 `prototype-upload-key`；停止服务后移除该密钥文件，再由管理员获取新地址，可撤销旧上传地址，公开历史静态链接不受影响。
 
 宿主使用无凭据、无查询令牌的固定 HTTP/HTTPS URL，无需配置来源白名单，支持同源预览。iframe 仅授予 `allow-scripts`，不开放同源、存储、弹窗或顶层跳转，使用 no-referrer。宿主须允许嵌入，并为 ESM、动态模块和字体提供适配不透明来源的 CORS；演示使用内存状态和 hash/memory 路由。工作台不代理登录或资源请求。可选就绪桥接确认应用可交互；超时仅提示未确认，保留画布及独立打开入口。
 

@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { validateWorkflow } from "../../scripts/state-schema.mjs";
 import { withLock, checkedPath } from "./publishing.mjs";
+import { discoverUpload } from "./openfolio-client.mjs";
 import {
   packagePath,
   validatePrototype,
@@ -37,10 +38,11 @@ for (let i = 0; i < args.length; i++) {
       "--hosting",
       "--openfolio-url",
       "--upload-url",
+      "--fetch-upload-url",
     ].includes(key)
   )
     throw Error(`Unknown option ${key}`);
-  options[key] = ["--accept", "--decline", "--enable", "--configure"].includes(key)
+  options[key] = ["--accept", "--decline", "--enable", "--configure", "--fetch-upload-url"].includes(key)
     ? true
     : args[++i];
 }
@@ -71,6 +73,11 @@ try {
   const config = JSON.parse(original);
   if (options["--openfolio-url"] !== undefined)
     config.openfolioUrl = options["--openfolio-url"] === "none" ? null : options["--openfolio-url"];
+  if (options["--fetch-upload-url"]) {
+    if (options["--hosting"] !== "openfolio" || options["--upload-url"])
+      throw Error("Use --fetch-upload-url with --hosting openfolio instead of --upload-url.");
+    options["--upload-url"] = await discoverUpload(config.openfolioUrl);
+  }
   const hosting = options["--hosting"]
     ? { provider: options["--hosting"], ...(options["--upload-url"] ? { uploadUrl: options["--upload-url"] } : {}) }
     : config.prototype?.hosting;
