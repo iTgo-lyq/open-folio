@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "整理设计基线、模板与 Git 页面外壳原型",
-      "status": "doing"
+      "status": "done",
+      "verification": "设计依据及模板集成核对通过；8 项原型工具测试、构建和沙箱校验、4 视口交互/截图、格式及 skill 校验通过；独立评审通过，Git 当前引用及 Change 固定快照已登记。详见 execution.md。",
+      "commitTitle": "prototype-hosting T4: deliver the Git workspace shell"
     }
   },
   "closure": {},
@@ -56,5 +58,22 @@
     "at": "2026-10-11T16:46:06.861Z",
     "reason": "用户补充原型工程整理任务：形成现有项目 DESIGN.md、提供 skill 模板与简短指南、清理测试 demo，仅保留页面外壳，并明确本项目使用 Git。",
     "approach": "沿用已确认的托管协议与服务实现，追加 T4 完成本项目 Git 原型和设计基线整理；以用户本次明确指令作为新增任务授权。"
-  }
+  },
+  "previews": [
+    {
+      "id": "workspace-shell",
+      "title": "工作台外壳",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "git",
+        "path": "docs/project/changes/prototype-hosting/previews/workspace-shell",
+        "sourceCommit": "95175dfdcae0fab149a3920c49f2261de24a340d"
+      }
+    }
+  ]
 }
