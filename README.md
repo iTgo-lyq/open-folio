@@ -9,18 +9,23 @@
 ```bash
 npm ci
 npx playwright install --with-deps chromium
-cp openfolio.config.example.json openfolio.local.json
-export OPENFOLIO_CONFIG="$PWD/openfolio.local.json"
-export OPENFOLIO_DATA_DIR="$HOME/.local/share/open-folio"
 npm run build
 npm start
 ```
 
-打开 `http://127.0.0.1:10681`。开发时使用 `npm run dev`。没有配置时显示连接引导，构建不连接远端仓库。首次打开已配置项目时自动读取一次，此后通过页面刷新获取最新已推送记录。
+打开 `http://127.0.0.1:10681`。开发时使用 `npm run dev`。空配置显示连接引导，构建不创建配置文件，也不连接远端仓库。首次打开已配置项目时自动读取一次，此后通过页面刷新获取最新已推送记录。
 
-仓库地址必须是没有内嵌凭据的 HTTPS URL。认证使用运行服务的 OS 用户已有的 Git credential helper；不将密码、token 或私有配置提交到仓库。页面不接受任意仓库地址。
+仓库地址必须是没有内嵌凭据的 HTTPS URL。认证使用运行服务的 OS 用户已有的 Git credential helper；不将密码、token 或私有配置提交到仓库。文档与原型请求仅访问已登记项目。
 
 ## 项目配置
+
+不设置环境变量即可启动。`OPENFOLIO_DATA_DIR` 默认为运行服务用户的 `~/.local/share/open-folio`；配置文件默认位于该目录的 `config.json`。`OPENFOLIO_CONFIG` 可指定其他配置文件路径，相对路径以服务工作目录为基准，仍只接受路径。
+
+首次读取配置时自动创建缺失的父目录和空文件 `{"schemaVersion":1,"projects":[]}`，不会覆盖已存在文件。路径错误、权限不足或已有文件损坏时显示错误，修复后重新加载。配置保存需要文件所在目录可写，采用原子替换；部署时可挂载整个数据目录，同时持久化配置和缓存。
+
+例如：`OPENFOLIO_DATA_DIR=/var/lib/openfolio npm start` 使用 `/var/lib/openfolio/config.json`；同时设置 `OPENFOLIO_CONFIG=/etc/openfolio/config.json` 则使用指定文件，缓存仍在数据目录。
+
+左下角齿轮打开配置面板，输入独立管理密码后维护配置；移动端入口位于顶部，空项目页也可直接进入。表单支持新增、修改和移除项目，以及资源限制覆盖；限制留空恢复默认。点击「保存配置」写回实际文件，成功后更新项目列表与当前来源，无需重启。未保存的修改可以继续编辑或放弃；文件已被其他页面或外部编辑器修改时，保存返回冲突，需要重新加载后再编辑。
 
 `openfolio.config.example.json` 展示必要字段。可以登记多个项目，`id` 必须唯一。可选配置示例：
 
@@ -32,6 +37,7 @@ npm start
       "id": "example",
       "name": "Example",
       "repositoryUrl": "https://github.com/owner/example.git",
+      "inviteCode": "replace-with-a-random-invitation",
       "specBranch": "main",
       "prototypeOrigins": ["https://static.example.com"]
     }
@@ -42,15 +48,23 @@ npm start
 
 `specBranch` 必须是远端默认分支的 `docs/project/workflow.json` 所声明的守护分支；未配置时尝试远端 HEAD。不能确定基线时给出提示，仍允许显式选择已推送分支阅读。Changes 跨分支聚合，始终采用其声明主分支的记录。
 
-默认仅监听 loopback。远程访问可通过反向代理提供，需要 IPv6 监听时可运行 `npx next start --hostname :: --port 10681`。此应用没有团队登录，访问控制由部署环境提供。
+默认仅监听 loopback。远程访问可通过反向代理提供，需要 IPv6 监听时可运行 `npx next start --hostname :: --port 10681`。通过反向代理提供 HTTPS，代理应设置正确的 Host 和 X-Forwarded-Proto。
+
+## 访问权限与分享
+
+管理密码优先使用 `OPENFOLIO_ADMIN_PASSWORD`；未设置时，在首次访问服务时自动生成到数据目录的 `admin-password` 文件（仅服务用户可读写）。部署者读取文件后登录，例如默认路径下运行 `cat ~/.local/share/open-folio/admin-password`。密码不会出现在网页响应或服务日志中；请持久保存该文件及同目录自动生成的随机签名密钥 `access-secret`；丢失密钥会要求所有浏览器重新验证。更换环境变量后重启，或修改密码文件，会撤销原管理凭证及项目访问凭证。
+
+每个项目都有独立、长期有效的 `inviteCode`。配置面板自动生成新邀请码，也可自行修改；历史配置缺失邀请码时仅管理员可读，编辑时会补充，保存后访客才能验证。访客首次打开项目需填写邀请码，浏览器以持久 HttpOnly Cookie 记住（最长 400 天；清除浏览器数据后需重填）。管理员可读取全部项目，项目访客无权读取或修改配置。
+
+保存配置后点击「复制分享链接」，接收者打开即可自动验证；链接中的 `#invite=...` 验证前从地址栏移除。链接等同该项目的访问凭据。更换邀请码并保存后，旧链接和旧 Cookie 在后续请求中失效；已经显示或下载的内容无法收回。项目 API、正文、图片、Git 原型和截图均校验权限；外部静态托管原型及其缩略图的直接地址仍由外部宿主管理权限。
 
 ## 数据与运行边界
 
 - 不使用数据库。服务维护独立 bare Git 缓存、按 blob 保存的正文和不可变快照；不会 checkout 或修改来源仓库。
 - 单 Node 进程、单实例部署；数据目录有进程锁，多个服务需使用不同目录。服务重启可继续读取成功快照。
 - 正文与状态绑定快照，保留最近三份。过期版本返回明确提示；刷新失败继续显示旧快照和原成功时间。
-- 默认限制：120 秒刷新、1 MiB Markdown、256 KiB JSON、5 MiB 图片、256 分支、10,000 文档、64 MiB 去重正文。单文件超限仍保留来源说明，整体超限不发布部分结果。可通过 `limits` 调整同名字段。
-- Git 缓存完整获取分支历史，首读成本随仓库大小增长，未启用自动 GC。停服务后可以移走整个数据目录并重新读取；历史缓存会丢失，但中心仓库不受影响。
+- 默认限制：120 秒读取超时、1 MiB Markdown、256 KiB JSON、5 MiB 图片、256 分支、10,000 文档、64 MiB 去重正文。单文件超限仍保留来源说明，整体超限不发布部分结果。可通过 `limits` 调整同名字段。
+- Git 缓存完整获取分支历史，首读成本随仓库大小增长，未启用自动 GC。清理数据目录前先停服务并备份配置与管理密码；恢复配置后可重新读取仓库。历史缓存会丢失，中心仓库不受影响。
 - 仓库地址变化会隔离旧缓存；删除项目配置后 API 不再暴露其缓存。缓存包含私有仓库内容，应保留 OS 权限与磁盘访问控制。
 
 ## 阅读规则

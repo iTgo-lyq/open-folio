@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "id": "visual-configuration",
+  "title": "默认配置与可视化配置管理",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/visual-configuration",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-10T09:07:09.665Z",
+      "summary": "用户追加每项目长期邀请码、浏览器记住及免手填分享链接，并选择独立管理密码和换码后旧链接及凭证失效；原默认路径与配置编辑要求继续有效。",
+      "source": "本次对话追加需求及两项异步回答"
+    },
+    "technical": {
+      "at": "2026-10-10T09:14:16.459Z",
+      "summary": "用户确认扩充权限方案：环境变量覆盖或自动生成管理密码，项目持久凭证，分享及换码撤销。",
+      "source": "本次异步回答：自动生成，可由环境变量覆盖；确认，继续实现"
+    },
+    "plan": {
+      "at": "2026-10-10T09:14:16.522Z",
+      "summary": "用户确认继续按 T1、T2、T3 顺序实现扩充计划。",
+      "source": "本次异步回答：确认，继续实现"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "自动初始化并可靠保存服务配置",
+      "status": "done",
+      "verification": "配置与存储 13 项测试通过；类型、改动文件格式和 diff 检查通过，详见 execution.md。",
+      "commitTitle": "visual-configuration T1: persist runtime configuration"
+    },
+    "T2": {
+      "title": "在工作台可视化维护配置并立即生效",
+      "status": "done",
+      "verification": "单元 73 项、配置与 API 浏览器 8 项、独立评审修正后配置浏览器 6 项通过；类型、格式、UI 预览和生产构建通过，详见 execution/review。",
+      "commitTitle": "visual-configuration T2: resolve configuration review findings"
+    },
+    "T3": {
+      "title": "用管理密码和项目邀请码控制访问与分享",
+      "status": "done",
+      "verification": "80 项单元、49 项浏览器全量回归、类型格式及生产构建通过；真实生产首次启动与权限烟测通过；独立评审问题全部修正。详见 execution.md、review.md。",
+      "commitTitle": "visual-configuration T3: protect projects with invitations and admin access"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-10T09:27:51.508Z",
+      "summary": "配置、访问与分享完整交付。80 项单元、49 项浏览器、类型格式和生产构建/首次启动烟测通过。独立 Agent 评审四项问题已修正复核，详见 execution.md 和 review.md。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-11T11:09:31.281Z",
+      "summary": "用户在确认按托管方案实施并验收归档前项配置权限交付的询问后回复“继续吧”。",
+      "source": "本次对话：继续吧；对应上一轮方案实施与依赖验收询问"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-11T11:09:31.363Z",
+      "summary": "同步默认路径、可视化配置、管理员与项目邀请码访问和分享规格。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-11T11:09:31.441Z",
+      "summary": "用户验收后同步配置与访问能力规格并归档。",
+      "path": "docs/project/archive/2026-10-11-visual-configuration"
+    }
+  },
+  "rework": {
+    "at": "2026-10-10T09:07:09.590Z",
+    "reason": "用户追加独立管理密码、每项目长期邀请码及自动验证分享链接，并明确接受换码撤销。",
+    "approach": "保留 T1 交付和 T2 不受影响的配置表单，补充权限范围与方案，在原计划后追加完整访问与分享场景 T3。"
+  }
+}

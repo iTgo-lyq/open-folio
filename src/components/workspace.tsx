@@ -11,6 +11,7 @@ import {
   PanelsTopLeft,
   RefreshCw,
   Search,
+  Settings2,
   X,
 } from "lucide-react";
 import type { SearchResult } from "@/lib/model";
@@ -20,12 +21,17 @@ import { DocumentModal, Empty, ErrorNotice } from "./document";
 import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
+import { AccessForm } from "./access";
+import { SettingsDialog } from "./settings";
+import { Button } from "@open-folio/ui";
 function Shell() {
   const {
     q,
     nav,
     projects,
     projectId,
+    locked,
+    accessChanged,
     data,
     loading,
     refreshing,
@@ -35,7 +41,13 @@ function Shell() {
     notice,
   } = useWorkspace();
   const [collapsed, setCollapsed] = useState(false),
-    [search, setSearch] = useState(false);
+    [search, setSearch] = useState(false),
+    [settings, setSettings] = useState(false);
+  const settingsTrigger = useRef<HTMLElement | null>(null);
+  const openSettings = (event: React.MouseEvent<HTMLButtonElement>) => {
+    settingsTrigger.current = event.currentTarget;
+    setSettings(true);
+  };
   const module =
     q.m === "prototypes"
       ? "prototypes"
@@ -119,9 +131,15 @@ function Shell() {
             <span className="restore-handle" />
           </button>
           {navigation}
-          <div className="rail-footer" title="只读工作台">
-            <span>OF</span>
-          </div>
+          <button
+            className="rail-footer"
+            title="工作台配置"
+            aria-label="工作台配置"
+            data-config-trigger
+            onClick={openSettings}
+          >
+            <Settings2 size={18} />
+          </button>
         </aside>
       )}
       <main className="workspace">
@@ -198,6 +216,14 @@ function Shell() {
             )}
           </div>
           <div className="header-actions">
+            <button
+              className="icon-button settings-mobile-trigger"
+              aria-label="工作台配置"
+              data-config-trigger
+              onClick={openSettings}
+            >
+              <Settings2 size={18} />
+            </button>
             {focusedPreview ? (
               <select
                 aria-label="跳转工作台模块"
@@ -309,9 +335,22 @@ function Shell() {
             />
           ) : !projects.length ? (
             <Empty title="连接你的中心 Git 仓库">
-              <p>尚未登记项目。请在服务端配置项目后重新打开工作台。</p>
-              <code>OPENFOLIO_CONFIG</code>
+              <p>添加项目仓库，开始浏览 Specs、Changes 和原型。</p>
+              <Button
+                variant="primary"
+                data-config-trigger
+                onClick={openSettings}
+              >
+                配置项目
+              </Button>
             </Empty>
+          ) : locked ? (
+            <AccessForm
+              key={projectId}
+              project={projectId}
+              name={projects.find((p) => p.id === projectId)?.name}
+              onSuccess={accessChanged}
+            />
           ) : !data ? (
             <Empty title="暂时没有可读取的版本">
               <p>检查仓库访问权限后重新读取。</p>
@@ -334,6 +373,11 @@ function Shell() {
       </main>
       {!focusedPreview && <div className="mobile-navigation">{navigation}</div>}
       <SearchDialog open={search} setOpen={setSearch} />
+      <SettingsDialog
+        open={settings}
+        setOpen={setSettings}
+        trigger={settingsTrigger}
+      />
       <DocumentModal />
       {message && (
         <div className="toast" role="status">

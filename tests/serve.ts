@@ -10,7 +10,7 @@ await writeFile(
   config,
   JSON.stringify({
     schemaVersion: 1,
-    projects: [f.project],
+    projects: [{ ...f.project, inviteCode: "fixture-invitation" }],
   }),
 );
 await mkdir("artifacts", { recursive: true });
@@ -33,6 +33,7 @@ const child = spawn(
     stdio: "inherit",
     env: {
       ...process.env,
+      OPENFOLIO_ADMIN_PASSWORD: "fixture-admin-password",
       OPENFOLIO_CONFIG: config,
       OPENFOLIO_DATA_DIR: join(f.root, "cache"),
       OPENFOLIO_BUILD_DIR: ".next-e2e",

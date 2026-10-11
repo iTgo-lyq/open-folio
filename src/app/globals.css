@@ -200,6 +200,189 @@ input {
   color: #456681;
   font-size: 11px;
 }
+.settings-mobile-trigger {
+  display: none;
+}
+.rail-collapsed .settings-mobile-trigger,
+.preview-focused .settings-mobile-trigger {
+  display: inline-flex;
+}
+.settings-dialog {
+  position: fixed;
+  z-index: 70;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(800px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 90px #243f5426;
+}
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 500;
+  margin: 0 0 7px;
+}
+.settings-header p {
+  color: var(--muted);
+  margin: 0;
+  font-size: 12px;
+}
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.settings-body {
+  overflow: auto;
+  padding: 24px 28px;
+}
+.settings-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.settings-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.settings-section-heading h3 {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.settings-section-heading p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+.settings-section-heading button {
+  flex-shrink: 0;
+}
+.settings-project {
+  margin-bottom: 16px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.settings-wide {
+  grid-column: 1 / -1;
+}
+.settings-empty {
+  padding: 30px 16px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+.settings-empty p {
+  margin: 0;
+}
+.settings-limits {
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 20px;
+}
+.settings-limits summary {
+  cursor: pointer;
+  font-weight: 500;
+  padding-bottom: 18px;
+}
+.settings-limits summary span {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 10px;
+}
+.settings-location {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 24px 0 0;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.settings-location code {
+  display: block;
+}
+.settings-footer {
+  padding: 16px 28px;
+  border-top: 1px solid var(--line);
+  background: var(--of-surface);
+}
+.settings-actions,
+.settings-discard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings-actions > span,
+.settings-discard > span {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.settings-error {
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+.settings-error span {
+  flex: 1;
+  min-width: 180px;
+}
+@media (max-width: 760px) {
+  .settings-mobile-trigger {
+    display: inline-flex;
+  }
+  .settings-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 13px;
+  }
+  .settings-header,
+  .settings-body,
+  .settings-footer {
+    padding: 18px;
+  }
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-actions,
+  .settings-discard {
+    flex-wrap: wrap;
+  }
+  .settings-discard > span {
+    flex-basis: 100%;
+  }
+}
 .restore-handle {
   display: none;
 }
@@ -3774,4 +3957,34 @@ input {
     grid-template-columns: 1fr;
     gap: 4px;
   }
+}
+
+.access-form {
+  width: min(100%, 420px);
+  margin: auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+}
+.access-form > svg {
+  color: var(--of-blue);
+}
+.access-form h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.access-form p {
+  margin: 0;
+  line-height: 1.6;
+}
+.settings-invite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings-invite input {
+  flex: 1 1 240px;
+  min-width: 0;
 }

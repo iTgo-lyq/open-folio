@@ -25,6 +25,7 @@ export type ProjectConfig = {
   id: string;
   name: string;
   repositoryUrl: string;
+  inviteCode?: string;
   specBranch?: string;
   prototypeOrigins?: string[];
 };
@@ -56,6 +57,12 @@ export type AppConfig = {
   schemaVersion: 1;
   projects: ProjectConfig[];
   limits?: Partial<Limits>;
+};
+export type ConfigSnapshot = {
+  config: AppConfig;
+  revision: string;
+  path: string;
+  defaults: Limits;
 };
 export type SpecRef = {
   id: string;
@@ -214,6 +221,7 @@ export type Snapshot = {
   diagnostics: Diagnostic[];
 };
 export type ProjectSummary = {
+  locked?: boolean;
   id: string;
   name: string;
   snapshotId?: string;

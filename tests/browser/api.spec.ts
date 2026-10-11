@@ -47,8 +47,10 @@ test("API reads configured data, refreshes repositories and enforces input bound
     const refresh = await request.post("/api/projects/fixture/refresh", {
       headers,
     });
-    expect(refresh.status()).toBe(503);
-    expect((await refresh.json()).error.code).toBe("GIT_READ_FAILED");
+    expect(refresh.status()).toBe(headers.origin ? 403 : 503);
+    expect((await refresh.json()).error.code).toBe(
+      headers.origin ? "ORIGIN_DENIED" : "GIT_READ_FAILED",
+    );
   }
   expect(
     (

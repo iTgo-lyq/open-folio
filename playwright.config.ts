@@ -3,9 +3,11 @@ export default defineConfig({
   testDir: "./tests/browser",
   timeout: 30_000,
   expect: { timeout: 10_000 },
+  globalSetup: "./tests/auth-setup.ts",
   fullyParallel: false,
   workers: 1,
   use: {
+    storageState: "artifacts/e2e-admin.json",
     baseURL: "http://127.0.0.1:10682",
     browserName: "chromium",
     ignoreHTTPSErrors: true,

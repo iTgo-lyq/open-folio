@@ -100,3 +100,10 @@ export {
   type TabbedCardProps,
   type TabbedCardItem,
 } from "./components/tabbed-card";
+export { Input, Textarea } from "./components/input";
+export {
+  FieldGroup,
+  Field,
+  FieldLabel,
+  FieldDescription,
+} from "./components/field";
