@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "按未变化分支复用采集结果并自动更新工作台快照",
-      "status": "doing"
+      "status": "done",
+      "verification": "147 项单元/集成、40 项相关浏览器场景及最终 5 项定向复验、类型/格式/构建通过；本地服务已更新；原工作台 8 项 Specs 与 3 项原型只来自 main，无变化刷新复用快照 4.3–4.8 秒，真实推送约 30.9 秒后正文自动更新。",
+      "commitTitle": "incremental-workspace-refresh T1: reuse branch scans and refresh workspaces automatically"
     }
   },
   "closure": {},
