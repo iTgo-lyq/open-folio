@@ -63,7 +63,7 @@ export async function sessionResponse(
         const service =
           discover ?? (store === personalSessions() ? discovery() : undefined);
         if (service)
-          await service.start(connected.cookie, connected.connection.id);
+          await service.ensure(connected.cookie, connected.connection.id);
       } catch (e) {
         discoveryError = {
           code: e instanceof AppError ? e.code : "DISCOVERY_UNAVAILABLE",

@@ -116,31 +116,51 @@ export class Repositories {
             409,
           );
       }
-      const assertRead = async () => {
-        await verifyIdentity();
+      const assertPermission = async (owner: ConnectionLease) => {
+        const actual = await provider.authenticate(
+          owner.context.secret,
+          owner.context.signal,
+        );
+        if (
+          actual.subjectId !== owner.context.identity.subjectId ||
+          actual.providerId !== owner.context.identity.providerId ||
+          actual.instanceId !== owner.context.identity.instanceId
+        )
+          throw new ProviderError(
+            "IDENTITY_CHANGED",
+            "凭据身份已改变，请重新登录。",
+            401,
+          );
+        await owner.assertCurrent();
         const current = await provider.resolveRepository(
-          lease.context,
+          owner.context,
           repository,
         );
         if (repositoryKey(current) !== key)
           throw new AppError("REPOSITORY_MISMATCH", "仓库身份已变化。", 403);
-        await provider.assertRead(lease.context, current);
-        await this.git(provider, lease.context, current);
-        await lease.assertCurrent();
+        await provider.assertRead(owner.context, current);
+        await this.git(provider, owner.context, current);
+        await owner.assertCurrent();
       };
+      const assertRead = () => assertPermission(lease);
       await assertRead();
-      const transport = await provider.gitTransport(lease.context, repository);
-      const cache = join(
-        this.root,
-        lease.sessionId,
-        connectionId,
-        String(lease.connection.revision),
-      );
-      const store = new SnapshotStore(cache, (dir) => {
-        const reader = this.readerFactory(dir, transport);
-        reader.signal = lease.context.signal;
-        return reader;
-      });
+      const cache = join(this.root, lease.workspaceId);
+      const makeStore = async (owner: ConnectionLease) => {
+        const transport = await provider.gitTransport(
+          owner.context,
+          repository,
+        );
+        return new SnapshotStore(
+          cache,
+          (dir) => {
+            const reader = this.readerFactory(dir, transport);
+            reader.signal = owner.context.signal;
+            return reader;
+          },
+          key,
+        );
+      };
+      const store = await makeStore(lease);
       const project: ProjectConfig = {
         id: key,
         name: repository.fullName,
@@ -155,23 +175,36 @@ export class Repositories {
         refresh: async (limits) => {
           const locks = (state.folioRefreshes ??= new Map());
           const path = store.directory(project);
-          const previous = locks.get(path) ?? Promise.resolve();
-          // Serialize Git writes, but never borrow another request's authorization.
-          const next = previous
-            .catch(() => {})
-            .then(async () => {
-              await assertRead();
-              return store.refresh(project, limits, {
-                signal: lease.context.signal,
-                beforePublish: assertRead,
-              });
-            });
-          locks.set(path, next);
-          try {
-            return await next;
-          } finally {
-            if (locks.get(path) === next) locks.delete(path);
+          // A credential-owned job survives an individual device logout. Each
+          // waiting device still authorizes its own response before delivery.
+          let next = locks.get(path);
+          if (!next) {
+            next = (async () => {
+              const owner = await this.sessions.workspaceLease(
+                cookie,
+                connectionId,
+              );
+              try {
+                await assertPermission(owner);
+                const shared = await makeStore(owner);
+                return await shared.refresh(project, limits, {
+                  signal: owner.context.signal,
+                  beforePublish: () => assertPermission(owner),
+                });
+              } finally {
+                owner.release();
+              }
+            })();
+            locks.set(path, next);
+            void next
+              .finally(() => {
+                if (locks.get(path) === next) locks.delete(path);
+              })
+              .catch(() => {});
           }
+          const result = await next;
+          await assertRead();
+          return result as Awaited<ReturnType<SnapshotStore["refresh"]>>;
         },
       };
       const result = await operation(context);
@@ -184,7 +217,7 @@ export class Repositories {
 }
 export function repositories() {
   return new Repositories(
-    join(dataDirectory(), "repositories-v1"),
+    join(dataDirectory(), "repositories-v2"),
     personalSessions(),
     discovery(),
   );

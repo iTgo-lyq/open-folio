@@ -14,6 +14,7 @@ import {
   requirePersonalOrigin,
   readPersonalBody,
   sessionCookie,
+  renewPersonalResponse,
 } from "./personal-http.ts";
 import { readConfig, limitsFor } from "./config.ts";
 import type { Limits } from "../lib/model.ts";
@@ -59,10 +60,14 @@ export async function preparePreviewResponse(
         : undefined,
       request.signal,
     );
-    return personalJson({
-      publication: result,
-      url: publicPreviewUrl(result.id),
-    });
+    return await renewPersonalResponse(
+      request,
+      personalJson({
+        publication: result,
+        url: publicPreviewUrl(result.id),
+      }),
+      repos.sessions,
+    );
   } catch (e) {
     return personalError(e);
   }

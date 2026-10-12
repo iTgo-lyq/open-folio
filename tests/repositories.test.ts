@@ -120,6 +120,17 @@ test("read delivery rechecks remote permissions; failed refresh retains prior po
     lease.release();
     assert.equal(
       (await t.request("workbench", "GET", replacement.cookie)).status,
+      401,
+    );
+    assert.equal(
+      (
+        await t.request(
+          "workbench",
+          "GET",
+          replacement.cookie,
+          replacement.connection.id,
+        )
+      ).status,
       404,
     );
   } finally {
@@ -148,6 +159,144 @@ test("the complete personal HTTP read path uses the supplied HTTPS Git token and
   } finally {
     if (saved === undefined) delete process.env.GIT_SSL_CAINFO;
     else process.env.GIT_SSL_CAINFO = saved;
+    await t.cleanup();
+  }
+});
+
+test("same-token devices reuse snapshots and directories while another token cannot reuse them", async () => {
+  const t = await setup();
+  try {
+    await t.request("refresh", "POST");
+    const first = await (await t.request("workbench")).json(),
+      second = await t.f.connect();
+    assert.equal(second.connection.id, t.c.connection.id);
+    assert.equal(
+      (
+        await (
+          await t.request(
+            `workbench?snapshot=${first.id}`,
+            "GET",
+            second.cookie,
+            second.connection.id,
+          )
+        ).json()
+      ).id,
+      first.id,
+    );
+    const ownPath = await t.read(async (ctx) =>
+      ctx.store.directory(ctx.project),
+    );
+    const secondPath = await t.service.read(
+      second.cookie,
+      second.connection.id,
+      t.key,
+      async (ctx) => ctx.store.directory(ctx.project),
+    );
+    assert.equal(ownPath, secondPath);
+    const different = await t.f.connect("", "third");
+    await t.service.discoveries.check(
+      different.cookie,
+      different.connection.id,
+      t.repo.webUrl,
+    );
+    assert.equal(
+      (
+        await t.request(
+          `workbench?snapshot=${first.id}`,
+          "GET",
+          different.cookie,
+          different.connection.id,
+        )
+      ).status,
+      410,
+    );
+    await t.request(
+      "refresh",
+      "POST",
+      different.cookie,
+      different.connection.id,
+    );
+    const differentPath = await t.service.read(
+      different.cookie,
+      different.connection.id,
+      t.key,
+      async (ctx) => ctx.store.directory(ctx.project),
+    );
+    assert.notEqual(differentPath, ownPath);
+    assert.ok(String(ownPath).includes(t.c.connection.id));
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("concurrent refresh has one credential-owned Git job and never delivers to a revoked device", async () => {
+  const t = await setup();
+  let release!: () => void, entered!: () => void, secondEntered!: () => void;
+  const gate = new Promise<void>((r) => {
+      release = r;
+    }),
+    started = new Promise<void>((r) => {
+      entered = r;
+    }),
+    secondStarted = new Promise<void>((r) => {
+      secondEntered = r;
+    });
+  let collects = 0;
+  const { Repositories } = await import("../src/server/repositories.ts"),
+    { GitReader } = await import("../src/server/git.ts");
+  const service = new Repositories(
+    t.service.root,
+    t.f.sessions,
+    t.service.discoveries,
+    t.f.git,
+    (directory) => {
+      const reader = new GitReader(directory, t.g.remote, "file"),
+        collect = reader.collect.bind(reader);
+      reader.collect = async (limits, signal) => {
+        collects++;
+        entered();
+        await gate;
+        signal.throwIfAborted();
+        return collect(limits, signal);
+      };
+      return reader;
+    },
+  );
+  try {
+    const other = await t.f.connect();
+    const one = service.read(
+      t.c.cookie,
+      t.c.connection.id,
+      t.key,
+      async (ctx) => ctx.refresh(DEFAULT_LIMITS),
+    );
+    const rejected = assert.rejects(() => one);
+    await started;
+    const two = service.read(
+      other.cookie,
+      other.connection.id,
+      t.key,
+      async (ctx) => {
+        secondEntered();
+        return ctx.refresh(DEFAULT_LIMITS);
+      },
+    );
+    await secondStarted;
+    await t.f.sessions.remove(t.c.cookie);
+    release();
+    await rejected;
+    const result = await two;
+    assert.equal(collects, 1);
+    assert.equal(
+      (
+        await (
+          await t.request("workbench", "GET", other.cookie, other.connection.id)
+        ).json()
+      ).id,
+      result.id,
+    );
+  } finally {
+    release();
     await t.cleanup();
   }
 });

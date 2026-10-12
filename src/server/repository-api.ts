@@ -9,6 +9,7 @@ import {
   personalJson,
   personalError,
   privateHeaders,
+  renewPersonalResponse,
 } from "./personal-http.ts";
 import type { Limits } from "../lib/model.ts";
 export async function repositoryResponse(
@@ -162,6 +163,7 @@ export async function repositoryResponse(
       selector,
       request.signal,
     );
+    await renewPersonalResponse(request, response, service.sessions);
     return request.method === "HEAD"
       ? new Response(null, {
           status: response.status,

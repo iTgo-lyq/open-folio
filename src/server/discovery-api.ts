@@ -8,6 +8,7 @@ import {
   personalJson,
   personalError,
   readPersonalBody,
+  renewPersonalResponse,
 } from "./personal-http.ts";
 export async function discoveryResponse(
   request: Request,
@@ -20,7 +21,11 @@ export async function discoveryResponse(
       throw new AppError("CONNECTION_NOT_FOUND", "连接不存在。", 404);
     const cookie = sessionCookie(request);
     if (kind === "discovery" && request.method === "GET")
-      return personalJson({ discovery: await service.status(cookie, id) });
+      return await renewPersonalResponse(
+        request,
+        personalJson({ discovery: await service.status(cookie, id) }),
+        service.sessions,
+      );
     requirePersonalOrigin(request);
     const body = await readPersonalBody(request);
     if (kind === "check") {
@@ -30,7 +35,11 @@ export async function discoveryResponse(
         .safeParse(body);
       if (!input.success)
         throw new AppError("INVALID_PARAMETER", "请填写仓库 HTTPS 地址。", 400);
-      return personalJson(await service.check(cookie, id, input.data.url));
+      return await renewPersonalResponse(
+        request,
+        personalJson(await service.check(cookie, id, input.data.url)),
+        service.sessions,
+      );
     }
     const input = z
       .object({ retry: z.boolean().optional() })
@@ -38,9 +47,13 @@ export async function discoveryResponse(
       .safeParse(body);
     if (!input.success)
       throw new AppError("INVALID_PARAMETER", "发现参数不合法。", 400);
-    return personalJson(
-      { discovery: await service.start(cookie, id, input.data.retry) },
-      202,
+    return await renewPersonalResponse(
+      request,
+      personalJson(
+        { discovery: await service.start(cookie, id, input.data.retry) },
+        202,
+      ),
+      service.sessions,
     );
   } catch (e) {
     return personalError(e);
@@ -58,8 +71,12 @@ export async function repositoryListResponse(
     const cursor = params.get("cursor") ?? "0";
     if (!/^\d{1,6}$/.test(cursor))
       throw new AppError("INVALID_PARAMETER", "目录页码不合法。", 400);
-    return personalJson(
-      await service.list(sessionCookie(request), id, Number(cursor)),
+    return await renewPersonalResponse(
+      request,
+      personalJson(
+        await service.list(sessionCookie(request), id, Number(cursor)),
+      ),
+      service.sessions,
     );
   } catch (e) {
     return personalError(e);

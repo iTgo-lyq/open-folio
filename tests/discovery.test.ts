@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { personalFixture } from "./personal-fixture.ts";
 import { Discovery } from "../src/server/discovery.ts";
 import { repositoryKey } from "../src/server/providers/types.ts";
-import { connectionResponse } from "../src/server/connection-api.ts";
+import { sessionResponse } from "../src/server/connection-api.ts";
 import {
   discoveryResponse,
   repositoryListResponse,
@@ -134,13 +134,7 @@ test("restart records interruption and duplicate start requests share one job", 
     await f.discovery.wait(c.cookie, c.connection.id);
     assert.deepEqual(f.controls.pages, [null, "page-2"]);
     const lease = await f.sessions.lease(c.cookie, c.connection.id),
-      path = join(
-        f.root,
-        "discovery",
-        lease.sessionId,
-        c.connection.id,
-        "1.json",
-      );
+      path = join(f.root, "discovery", lease.workspaceId, "state.json");
     lease.release();
     const job = JSON.parse(await readFile(path, "utf8"));
     job.state = "running";
@@ -161,9 +155,12 @@ test("restart records interruption and duplicate start requests share one job", 
 test("HTTP connection success starts discovery and manual checks stay owned by the connection", async () => {
   const f = await personalFixture();
   try {
-    const response = await connectionResponse(
-      req("POST", "", { providerId: "sample", token: "first" }),
-      undefined,
+    const response = await sessionResponse(
+      req("POST", "", {
+        providerId: "sample",
+        username: "reader",
+        token: "first",
+      }),
       f.sessions,
       f.discovery,
     );
@@ -196,7 +193,7 @@ test("HTTP connection success starts discovery and manual checks stay owned by t
   }
 });
 
-test("discovery bounds concurrent probes and removing a connection cancels its job", async () => {
+test("discovery bounds concurrent probes and logged-out devices cannot read its job", async () => {
   const f = await personalFixture();
   try {
     f.controls.delay = 25;
@@ -252,6 +249,50 @@ test("directory delivery rechecks an early repository revoked while later entrie
       !listing.items.some((item) => item.repository.repositoryId === "1"),
     );
     assert.equal(listing.unavailable, 1);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test("same-token discovery is shared across devices and survives one logout; logout-all cancels it", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await f.connect(),
+      b = await f.connect();
+    f.controls.delay = 30;
+    await Promise.all([
+      f.discovery.start(a.cookie, a.connection.id),
+      f.discovery.start(b.cookie, b.connection.id),
+    ]);
+    await f.sessions.remove(a.cookie);
+    await f.discovery.wait(b.cookie, b.connection.id);
+    assert.deepEqual(f.controls.pages, [null, "page-2"]);
+    assert.equal(
+      (await f.discovery.status(b.cookie, b.connection.id))?.checked,
+      6,
+    );
+    const before = [...f.controls.pages];
+    await f.discovery.ensure(b.cookie, b.connection.id);
+    assert.deepEqual(f.controls.pages, before);
+    const c = await f.connect();
+    assert.equal(c.connection.id, b.connection.id);
+    await f.discovery.start(b.cookie, b.connection.id);
+    const wait = f.discovery.wait(c.cookie, c.connection.id);
+    await f.sessions.remove(b.cookie, undefined, true);
+    await wait;
+    const restored = await f.connect();
+    assert.equal(
+      (await f.discovery.status(restored.cookie, restored.connection.id))
+        ?.state,
+      "interrupted",
+    );
+    await f.discovery.start(restored.cookie, restored.connection.id, true);
+    await f.discovery.wait(restored.cookie, restored.connection.id);
+    assert.equal(
+      (await f.discovery.status(restored.cookie, restored.connection.id))
+        ?.checked,
+      6,
+    );
   } finally {
     await f.cleanup();
   }

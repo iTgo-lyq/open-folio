@@ -55,18 +55,24 @@ export class SnapshotStore {
     directory: string,
     project: ProjectConfig,
   ) => GitReader;
+  private cacheIdentity?: string;
   constructor(
     root: string,
     readerFactory = (directory: string, p: ProjectConfig) =>
       new GitReader(directory, p.repositoryUrl),
+    cacheIdentity?: string,
   ) {
     this.root = root;
     this.readerFactory = readerFactory;
+    this.cacheIdentity = cacheIdentity;
   }
   fingerprint(p: ProjectConfig) {
+    if (this.cacheIdentity)
+      return hash(JSON.stringify([2, this.cacheIdentity]));
     return hash(JSON.stringify([1, p.repositoryUrl, p.specBranch ?? null]));
   }
   directory(p: ProjectConfig) {
+    if (this.cacheIdentity) return join(this.root, this.cacheIdentity);
     return join(this.root, `${p.id}-${this.fingerprint(p).slice(0, 16)}`);
   }
   private async acquire() {

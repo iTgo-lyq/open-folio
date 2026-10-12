@@ -14,6 +14,7 @@ import {
   readPersonalBody,
   requirePersonalOrigin,
   sessionCookie,
+  renewPersonalResponse,
 } from "./personal-http.ts";
 const bindingPath = (root: string, id: string) =>
   join(
@@ -99,7 +100,11 @@ export async function legacyResolveResponse(
       );
       await lease.assertCurrent();
       await bind(root, id, key);
-      return personalJson(result);
+      return await renewPersonalResponse(
+        request,
+        personalJson(result),
+        repos.sessions,
+      );
     } finally {
       lease.release();
     }

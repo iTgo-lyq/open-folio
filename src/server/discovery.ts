@@ -173,12 +173,7 @@ export class Discovery {
     this.git = git;
   }
   private path(lease: ConnectionLease) {
-    return join(
-      this.root,
-      lease.sessionId,
-      lease.connection.id,
-      `${lease.connection.revision}.json`,
-    );
+    return join(this.root, lease.workspaceId, "state.json");
   }
   private async read(lease: ConnectionLease): Promise<Job | null> {
     try {
@@ -229,7 +224,11 @@ export class Discovery {
       lease.context.secret,
       lease.context.signal,
     );
-    if (actual.subjectId !== lease.context.identity.subjectId)
+    if (
+      actual.subjectId !== lease.context.identity.subjectId ||
+      actual.providerId !== lease.context.identity.providerId ||
+      actual.instanceId !== lease.context.identity.instanceId
+    )
       throw new ProviderError(
         "IDENTITY_CHANGED",
         "连接身份已改变，请重新连接。",
@@ -310,20 +309,40 @@ export class Discovery {
   }
   async start(cookie: string, id: string, retry = false) {
     const lease = await this.sessions.lease(cookie, id);
-    const path = this.path(lease);
-    lease.release();
-    const existing = this.starts.get(path);
-    if (existing) return existing;
-    const pending = this.begin(cookie, id, retry);
-    this.starts.set(path, pending);
     try {
-      return await pending;
+      const path = this.path(lease);
+      let pending = this.starts.get(path);
+      if (!pending) {
+        pending = this.begin(cookie, id, retry);
+        this.starts.set(path, pending);
+        void pending
+          .finally(() => {
+            if (this.starts.get(path) === pending) this.starts.delete(path);
+          })
+          .catch(() => {});
+      }
+      const result = await pending;
+      await lease.assertCurrent();
+      return result;
     } finally {
-      if (this.starts.get(path) === pending) this.starts.delete(path);
+      lease.release();
     }
   }
-  private async begin(cookie: string, id: string, retry = false) {
+  async ensure(cookie: string, id: string) {
     const lease = await this.sessions.lease(cookie, id);
+    try {
+      const previous = await this.read(lease);
+      if (previous) {
+        await this.identity(lease);
+        return summary(previous);
+      }
+    } finally {
+      lease.release();
+    }
+    return this.start(cookie, id);
+  }
+  private async begin(cookie: string, id: string, retry = false) {
+    const lease = await this.sessions.workspaceLease(cookie, id);
     let retained = false;
     try {
       const path = this.path(lease);
@@ -653,7 +672,7 @@ export class Discovery {
 }
 export function discovery() {
   const sessions = personalSessions(),
-    root = join(dataDirectory(), "discovery-v1");
+    root = join(dataDirectory(), "discovery-v2");
   const stores = (processState.folioDiscovery ??= new Map());
   let service = stores.get(root);
   if (!service) {

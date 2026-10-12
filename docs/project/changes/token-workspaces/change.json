@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "按 token 共享发现与仓库缓存，保持逐设备授权",
-      "status": "todo"
+      "status": "done",
+      "verification": "36 项发现、仓库、公开原型、快照、会话定向测试及类型检查通过；同 token 共享、跨 token 隔离、单次刷新、撤销设备交付和真实 HTTPS Git 授权均覆盖。",
+      "commitTitle": "token-workspaces T2: share credential caches with per-device authorization"
     },
     "T3": {
       "title": "升级旧连接并恢复可证明归属的缓存",

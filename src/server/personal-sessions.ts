@@ -608,6 +608,7 @@ export class PersonalSessions {
     cookie: string,
     id: string,
     signal?: AbortSignal,
+    workspaceOwned = false,
   ): Promise<ConnectionLease> {
     return this.lock(async () => {
       const state = await this.load();
@@ -618,10 +619,11 @@ export class PersonalSessions {
         throw denied();
       const secret = decryptWorkspace(w, (await this.keys(false)).credential),
         controller = new AbortController(),
-        key = `${this.root}/${s.id}`;
-      const set = operations().get(key) ?? new Set<AbortController>();
+        key = `${this.root}/${workspaceOwned ? w.id : s.id}`,
+        registry = workspaceOwned ? workspaceOperations() : operations();
+      const set = registry.get(key) ?? new Set<AbortController>();
       set.add(controller);
-      operations().set(key, set);
+      registry.set(key, set);
       return {
         sessionId: s.id,
         deviceSessionId: s.id,
@@ -646,7 +648,7 @@ export class PersonalSessions {
                 x.absoluteExpiresAt > this.now(),
             );
           if (
-            !current ||
+            (!workspaceOwned && !current) ||
             !latest.workspaces.some(
               (x) =>
                 x.id === w.id &&
@@ -659,11 +661,13 @@ export class PersonalSessions {
         },
         release: () => {
           set.delete(controller);
-          if (!set.size && operations().get(key) === set)
-            operations().delete(key);
+          if (!set.size && registry.get(key) === set) registry.delete(key);
         },
       };
     });
+  }
+  workspaceLease(cookie: string, id: string) {
+    return this.lease(cookie, id, undefined, true);
   }
 }
 export function personalSessions() {

@@ -1,6 +1,10 @@
 import "server-only";
 import { AppError, publicError } from "./errors.ts";
 import { ProviderError } from "./providers/types.ts";
+import {
+  personalSessions,
+  type PersonalSessions,
+} from "./personal-sessions.ts";
 export const sessionCookieName = "openfolio-session";
 export const privateHeaders = {
   "Cache-Control": "private, no-store",
@@ -71,6 +75,24 @@ export function personalError(error: unknown) {
     },
     e.status,
   );
+}
+export async function renewPersonalResponse(
+  request: Request,
+  response: Response,
+  store: PersonalSessions = personalSessions(),
+) {
+  const cookie = sessionCookie(request);
+  const current = await store.get(cookie);
+  if (response.ok && !current.connected)
+    throw new AppError("SESSION_REQUIRED", "设备会话已失效，请重新登录。", 401);
+  if (current.renewed)
+    response.headers.set(
+      "Set-Cookie",
+      cookieHeader(request, cookie, current.expiresAt),
+    );
+  else if (cookie && !current.connected)
+    response.headers.set("Set-Cookie", cookieHeader(request, ""));
+  return response;
 }
 export async function readPersonalBody(request: Request) {
   if (
