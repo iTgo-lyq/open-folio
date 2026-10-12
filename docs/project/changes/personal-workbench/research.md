@@ -58,3 +58,5 @@
 Playwright 使用 1440×900、834×1194、390×844、320×760 四种视口，拦截非本地网络请求，验证侧栏收起／恢复、连接入口可达、当前导航标记、仓库切换保留模块并重置文档、目录弹窗、搜索与无结果、Specs／Changes／原型切换、分享、连接表单、发现完成、接入检查、连接移除及退出。弹窗 Escape 后焦点回到触发控件；失去连接后阅读按钮禁用。空结果、部分失败、连接失效、无权限和公开预览均无页面、头部或正文横向溢出。四视口交互检查通过，无 JavaScript 异常或外部网络请求。
 
 桌面计算样式核实侧轨为 84px、玻璃模糊为 blur(20px) saturate(135%)。对桌面和手机的仓库首页、阅读、首次连接截图做视觉复核；PC Web、iPad、Mobile 首页截图随新版本发布。原型只证明布局与交互路径，不能替代真实 token 鉴权、Git fetch、存储和跨用户隔离的实现验收。
+
+R2 新固定版本已完成字节与公开读取校验，源码提交为 `d528edf8eb635a30c7191a55faa62250583998c2`，已登记到本 Change。[玻璃导航原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/index.html) 匿名 HTTP 请求返回 200；公开地址复验仓库选择、侧栏收起／恢复、连接与发现、公开预览通过。`node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser` 对两个当前入口的 Chromium sandbox 验证通过。既有 workspace-shell 固定引用与历史发布保持原值。

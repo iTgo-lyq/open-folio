@@ -32,25 +32,29 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/index.html",
-        "sourceCommit": "33e7633e7958451ab886038651db11b3c6f1aa46",
-        "digest": "sha256:37579e612aeb825867d664d33ca2879bc6c2bc4300ed604220106d44bbf87edd",
+        "version": "e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/index.html",
+        "sourceCommit": "d528edf8eb635a30c7191a55faa62250583998c2",
+        "digest": "sha256:f300ca5a3a4563ee5277b3285a56d2b37cf7a36b8cd2f60d469a8b54ef2e0cc4",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/mobile.png"
           }
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "按用户反馈恢复侧边玻璃按钮框架的原型已验证并发布；技术方案和 UI 可审阅，技术确认后进入 Plan。"
+  }
 }

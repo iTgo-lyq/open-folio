@@ -2,7 +2,7 @@
 
 依据：[Requirement](./requirement.md)、[Research](./research.md)。公开版本仅交付 GitHub.com，保留平台适配边界；应用继续是单 Node 进程、单实例和持久磁盘上的只读工作台。正式实现仍需本方案确认后再编写 Plan。
 
-[打开个人工作台交互原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/index.html)。顶部可切换首次连接、发现中、空结果、部分失败、连接过期、分享无权限和公开预览；表单输入 `demo` 体验流程，使用示例数据。
+[打开个人工作台交互原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/index.html)。顶部可切换首次连接、发现中、空结果、部分失败、连接过期、分享无权限和公开预览；表单输入 `demo` 体验流程，使用示例数据。
 
 ## 方案总览
 
