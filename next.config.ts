@@ -14,7 +14,7 @@ const config: NextConfig = {
         ],
       },
       {
-        source: "/((?!prototype-assets(?:/|$)).*)",
+        source: "/((?!(?:prototype-assets|api/public-previews)(?:/|$)).*)",
         headers: [{ key: "X-Frame-Options", value: "DENY" }],
       },
       {
