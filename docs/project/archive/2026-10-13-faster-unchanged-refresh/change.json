@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "faster-unchanged-refresh",
+  "title": "缩短无变化刷新等待",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/faster-unchanged-refresh",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实测并减少无变化刷新的远端往返，部署复验",
+      "status": "done",
+      "verification": "150 项单元/集成、15 项浏览器、类型/格式/构建通过；3c4b90e 已部署，同工作台无变化逐段均值 4.123→2.019 秒，生产 HTTP 中位 2.073 秒；无 fetch/重复远端鉴权，8 Specs/3 原型及后台检查正常。",
+      "commitTitle": "faster-unchanged-refresh T1: verify deployed latency reduction"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T17:35:03.621Z",
+      "summary": "Agent 自查整个差异与验收对应；150 项单元/集成、15 项浏览器、类型/格式/构建及同工作台真实冒烟通过；分段均值下降 51%，失败与撤销、引用变更路径均覆盖，无未解决阻塞。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T17:35:03.690Z",
+      "summary": "Agent 自验收通过：无变化实时查询 refs 后跳过 fetch 与末尾重复平台请求，快照不变；有变化仍采集复验；原工作台与主分支 Specs/原型、后台刷新复测通过。",
+      "source": "用户本轮要求确认 4 秒刷新耗时并继续优化；按 SpecTrail small 自验收归档规则。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T17:35:26.958Z",
+      "summary": "同步项目知识工作台及 access 两份 Specs、README：新快照发布前远端复验，无变化刷新沿用本次入口授权与 Git 检查并复核本地凭据和设备；纯性能细节保留在执行证据。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T17:35:27.023Z",
+      "summary": "完成计时定位、减少无变化远端往返、回归与部署；同工作台分段均值下降 51%，生产 HTTP 中位 2.073 秒，small 自验收通过，授权时点文档已同步。",
+      "path": "docs/project/archive/2026-10-13-faster-unchanged-refresh"
+    }
+  },
+  "dependsOn": [
+    "incremental-workspace-refresh"
+  ]
+}
