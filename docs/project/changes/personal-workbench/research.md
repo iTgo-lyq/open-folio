@@ -20,45 +20,24 @@
 
 本轮用户已明确选择“原型全部可以公开访问，不需要做另外权限校验”。需求据此将 Git 来源原型和截图也纳入公开交付，工程文档仍受个人仓库权限保护。技术设计需区分“用用户 token 读取仓库取得产物”和“匿名读取已准备好的公开产物”，不能给匿名请求借用他人凭据。
 
-## 既有 token 实验：已验证的有限结论
+## GitHub 凭据与发现实验
 
-此前会话中的实验使用用户临时提供的凭据，排除本地凭据 helper、配置、登录态和默认凭据文件的影响；令牌不写入仓库、输出、命令参数或持久化文件。
+此前会话使用用户临时提供的 fine-grained PAT，在排除本地凭据的条件下读取当前账号与指定私有仓库元数据；匿名 `ls-remote` 失败，指定账号与 PAT 后成功。令牌不写入仓库、输出、命令参数或持久化文件。
 
-- Codebase：使用个人 PAT 与用户提供的 Git 用户名，针对指定仓库执行 `git ls-remote --symref … HEAD` 成功，取得默认分支与 HEAD。更早的另一类 token 未成功，不能把所有 token 类型视为可互换。
-- GitHub：使用 fine-grained PAT 读取当前账号与目标仓库元数据成功；目标为私有仓库。匿名 `ls-remote` 失败，指定账号与 PAT 后成功。
-- GitLab：尚未提供真实测试仓库与 token；未执行集成实验。
-
-上述结果证明两个指定仓库的引用读取可用。未执行完整 `fetch`／采集，没有验证当前用户的仓库枚举、Codebase 个人身份 API、撤权与恢复行为，也没有修改正式产品代码。
+本轮以相同 PAT 直接调用 GitHub 仓库列表和指定仓库工作流文件接口，仅注入该 token，不读取本地 CLI 登录态。结果将在技术方案中列明；引用读取不等同于正式产品的完整采集与权限回归。
 
 ## 官方平台契约
 
-### GitHub
+[List repositories for the authenticated user](https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user) 提供 `GET /user/repos`，覆盖本人拥有、协作以及组织成员关系带来的仓库；支持分页与 affiliation 条件。fine-grained PAT 使用 Metadata 读取权限，内容读取另需相应仓库 Contents 权限。
 
-[List repositories for the authenticated user](https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user) 提供 `GET /user/repos`，覆盖本人拥有、协作以及组织成员关系带来的仓库；支持分页与 affiliation 条件。该列表接口的 fine-grained PAT 权限为 Metadata 读取，完整内容读取另需相应仓库 Contents 权限。
+[Get the authenticated user](https://docs.github.com/en/rest/users/users#get-the-authenticated-user) 提供 `GET /user`，返回稳定账号 id 和登录名，可验证 token 身份。不能通过公开仓库的匿名可读性推断 token 有效。
 
-[个人访问令牌说明](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)说明 token 可受仓库选择、资源所有者、有效期与组织策略限制。因此发现结果只能代表当前 token 的授权范围，不能声称列出了用户在平台上的所有仓库。
+[个人访问令牌说明](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)说明 token 受仓库选择、资源所有者、有效期与组织策略限制。发现结果只代表当前 token 的授权范围。
 
-### GitLab
+[Repository contents](https://docs.github.com/en/rest/repos/contents#get-repository-content) 可读取默认分支的工作流文件，避免发现阶段逐仓库全量拉取。缺失文件与仓库权限不足都可能涉及 404，需结合身份和仓库权限证据分类。
 
-[Projects API](https://docs.gitlab.com/api/projects/#list-projects) 提供项目列表与 `membership` 条件，可据此限定当前用户参与的项目；需要处理分页和实例地址。
+## 平台扩展边界
 
-[Access token scopes](https://docs.gitlab.com/security/tokens/access_token_scopes/) 区分 `read_api` 与 `read_repository`：前者用于 API 只读权限，后者支持 Git-over-HTTP 和仓库文件 API。连接设计需要分别验证个人身份／仓库发现与 Git 内容读取，不能仅根据 Git 拉取成功断言 API scope 已满足。
+公开仓库只交付 GitHub.com。其他平台的具体接口、scope、主机及数据结构不进入此仓库；只定义平台无关的身份、仓库发现、权限、文件探测和 Git 鉴权适配接口。使用虚构平台的测试适配器证明核心读取与会话不依赖 GitHub 数据形状。
 
-### Codebase
-
-本地一手工具说明 `/home/tiger/.agents/skills/bytedcli/references/subskills/bytedance-codebase/GUIDE.md` 及 `references/codebase.md` 提供 `codebase repo list`、文件读取和成员能力，生产网数据 API 指向 `https://code.byted.org/api/v2/`。这支持“需要独立平台适配”的判断，不能据此认定 GitLab v4 接口兼容。
-
-工具默认认证链可能使用 JWT、应用凭据、PAT、SSO／ZTI 换票，并在某些失败后回退。验证用户 token 时不能直接运行默认认证命令，以免把宿主已有身份的结果误当成所给 token 的能力。
-
-需在技术阶段核实：个人 PAT 的身份识别与列表请求格式；枚举是否限定本人参与、能否包含继承权限；分页与限流；列举及文件读取所需 scope。现有 `ls-remote` 实验不覆盖这些问题。
-
-## 技术阶段需要解决的内容
-
-- 明确各平台连接、实例、个人身份、仓库稳定标识和深链接的契约，以及一个用户多个连接时的选择规则。
-- 证明 Git 与 API 都只使用指定 token；保留必要代理和 CA 信任，同时隔离宿主凭据，限定凭据可发送的目标并处理自建实例。
-- 明确服务器保管 token、浏览器会话、连接恢复、退出、轮换、失效和跨用户隔离；不把本地凭据当作运行依赖。
-- 明确仓库发现与识别的分页、增量展示、限流、重试和诊断；给出每个平台的真实集成验证路径，不能只依赖模拟数据。
-- 明确每次新内容请求的权限确认、在途请求撤销、共享采集和缓存边界，避免权限校验成功与数据交付之间串用连接。
-- 落实全部原型公开读取，尤其是 Git 来源产物与截图的公开交付和深链接；保持工程文档、上传入口及密钥隔离，外部宿主需提供公开资源。
-- 说明旧项目 id／分享链接、配置、管理接口与缓存的迁移及回退；保留运维设置的受控入口。
-- 基于现有组件库与原型包交付完整个人工作台流程预览，再形成正式实现方案与计划。
+技术方案需要覆盖：token 服务端加密保管和会话撤销；身份、仓库权限与缓存隔离；分页、增量发现和失败恢复；安全的 Git 进程环境；公开原型的受控准备和匿名交付；旧配置、深链接和管理入口迁移；现有原型包的完整交互验证。
