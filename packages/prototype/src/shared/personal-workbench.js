@@ -18,6 +18,8 @@ const state = {
   accounts: 2,
   accountNames: ["demo-user", "another-user"],
   pendingRemove: null,
+  railCollapsed: false,
+  lastRepo: "open-folio",
 };
 const repos = [
   {
@@ -108,21 +110,40 @@ function availableRepos() {
       (state.scenario !== "scanning" || i < 2),
   );
 }
+const modules = [
+  ["specs", "Specs"],
+  ["changes", "Changes"],
+  ["prototypes", "原型"],
+];
+const homeIcon = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`;
 function shell(content, title = "我的仓库") {
-  const route = current(),
-    settings = route.page === "connections",
-    repo = route.page === "repo";
-  return `<div class="shell"><aside class="sidebar"><a class="brand" href="#home"><img src="${mark}" alt="">OpenFolio</a><a class="nav-link ${!settings ? "active" : ""}" href="#home" ${!settings ? 'aria-current="page"' : ""}>${icon("prototypes")}<span>我的仓库</span><span class="count">${availableRepos().length}</span></a><div class="nav-section">仓库</div>${availableRepos()
-    .map(
-      (r) =>
-        `<a class="repo-nav" href="#repo/${r.id}/specs"><span>${r.symbol}</span>${r.name}</a>`,
-    )
-    .join(
-      "",
-    )}<div class="side-footer"><div class="connection-mini">${state.scenario === "expired" ? '<strong style="color:var(--red)">一个连接需要更新</strong>' : `<strong>● ${state.accounts} 个 GitHub 连接</strong>`}<br>仓库权限跟随你的账号</div><a class="nav-link ${settings ? "active" : ""}" href="#connections" ${settings ? 'aria-current="page"' : ""}>${icon("settings")}我的连接</a></div></aside><main class="work-area"><header class="topbar"><div class="breadcrumb"><img class="mobile-brand" src="${mark}" alt="OpenFolio"><span class="desktop-label">个人工作台</span>${icon("chevron")}<b>${esc(title)}</b></div><div class="row"><span class="small muted desktop-label">${repo ? "已推送的工程记录" : "你的仓库，你的工作台"}</span><a class="avatar" href="#connections" aria-label="管理个人连接">DE</a></div></header><div class="body">${content}</div></main></div><nav class="mobile-nav" aria-label="个人导航"><a href="#home" class="${!settings ? "active" : ""}">${icon("prototypes")}我的仓库</a><a href="#connections" class="${settings ? "active" : ""}">${icon("settings")}我的连接</a></nav>`;
+  const route = current();
+  const choices = state.connected ? availableRepos() : [];
+  const activeRepo =
+    route.page === "repo" ? choices.find((r) => r.id === route.repo) : null;
+  if (activeRepo) state.lastRepo = activeRepo.id;
+  const target = choices.find((r) => r.id === state.lastRepo) || choices[0];
+  const label = activeRepo
+    ? modules.find(([id]) => id === route.tab)?.[1] || "Specs"
+    : title;
+  const navigation = `<a href="#home" aria-label="我的仓库" ${["home", "welcome"].includes(route.page) ? 'aria-current="page"' : ""}>${homeIcon}<span>我的仓库</span></a><i class="nav-divider" aria-hidden="true"></i>${modules.map(([id, name]) => (target ? `<a href="#repo/${target.id}/${id}" aria-label="${name}" ${activeRepo && route.tab === id ? 'aria-current="page"' : ""}>${icon(id)}<span>${name}</span></a>` : `<button disabled aria-label="${name}（连接并发现仓库后可用）">${icon(id)}<span>${name}</span></button>`)).join("")}`;
+  const context = choices.length
+    ? `<label class="project-select"><span class="project-monogram">${activeRepo?.symbol || "O"}</span><select aria-label="当前仓库"><option value="home" ${!activeRepo ? "selected" : ""}>我的仓库</option>${choices.map((r) => `<option value="${r.id}" ${r === activeRepo ? "selected" : ""}>${r.name}</option>`).join("")}</select></label>${activeRepo || route.page !== "home" ? `${icon("chevron")}<span class="header-module">${esc(label)}</span>` : ""}`
+    : `<img class="mobile-brand" src="${mark}" alt=""><span class="header-module">${esc(title)}</span>`;
+  const connectionLabel =
+    state.scenario === "expired"
+      ? "一个连接需要更新"
+      : `${state.accounts} 个 GitHub 连接`;
+  const source = activeRepo
+    ? `<span class="row">${icon("branch")}<span>${route.tab === "changes" ? "全部已推送分支" : "main · 守护分支"}</span><span class="source-path mono">${activeRepo.path}</span></span><span class="source-actions">${route.tab === "specs" ? '<button class="mobile-docs" data-action="docs">目录</button>' : ""}<button data-action="share">分享${route.tab === "prototypes" ? "入口" : "记录"} ↗</button></span>`
+    : `<span class="row"><span class="status-dot ${state.scenario === "expired" ? "warning" : ""}"></span>${state.connected ? connectionLabel : "连接 GitHub 后自动发现 SpecTrail 仓库"}</span><span class="source-caption">${state.connected ? "仓库权限跟随你的账号" : "个人工作台"}</span>`;
+  return `<div class="shell ${state.railCollapsed ? "rail-collapsed" : ""}"><aside class="module-rail"><button class="shell-brand" data-action="toggle-rail" aria-label="${state.railCollapsed ? "展开侧栏" : "收起侧栏"}" aria-expanded="${!state.railCollapsed}"><img src="${mark}" alt="OpenFolio"><span class="restore-handle"></span></button><nav class="module-nav" aria-label="模块导航">${navigation}</nav><a class="rail-footer" href="#connections" aria-label="我的连接" ${route.page === "connections" ? 'aria-current="page"' : ""}>${icon("settings")}<span class="rail-tooltip">我的连接</span>${state.scenario === "expired" ? '<i class="connection-alert"></i>' : ""}</a></aside><main class="work-area"><header class="topbar"><div class="header-context">${context}${activeRepo ? '<span class="read-only">只读</span>' : ""}</div><div class="header-actions"><a class="icon-btn settings-mobile-trigger" href="#connections" aria-label="我的连接">${icon("settings")}</a><button class="search-launch" data-action="search" aria-label="搜索仓库">${icon("search")}<span>搜索仓库…</span><kbd>⌘ K</kbd></button><button class="icon-btn" data-action="${activeRepo ? "refresh-repo" : state.connected ? "rescan" : "connect"}" aria-label="${activeRepo ? "刷新当前仓库" : state.connected ? "重新发现仓库" : "连接 GitHub"}">${icon("refresh")}</button></div></header><div class="source">${source}</div><div class="body">${content}</div></main></div><nav class="module-nav mobile-navigation" aria-label="移动模块导航">${navigation}</nav>`;
 }
 function welcome() {
-  return `<main class="welcome" style="min-height:calc(100dvh - 36px)"><div class="welcome-inner"><div class="welcome-mark"><img src="${mark}" alt="">OpenFolio</div><div class="eyebrow">从你参与的仓库开始</div><h1>项目的来龙去脉，<br>回到你的工作台。</h1><p>连接 GitHub，自动找到已接入 SpecTrail 的仓库。<br>需求、方案和原型，在同一个地方继续。</p>${button("连接 GitHub", "connect", true, "branch")}<div class="welcome-route"><span>连接自己的账号</span>${icon("chevron")}<span>发现仓库</span>${icon("chevron")}<span>开始阅读</span></div><p class="welcome-bottom">使用个人访问令牌连接，只需仓库读取权限。<br>协作者用自己的账号查看同一仓库，无需邀请码。</p><a class="text-link small" style="display:inline-block;margin-top:23px" href="#public">查看公开原型示例 ↗</a></div></main>`;
+  return shell(
+    `<section class="welcome"><div class="welcome-inner"><div class="welcome-mark"><img src="${mark}" alt="">OpenFolio</div><h1>连接 GitHub，找到你的项目</h1><p>自动发现已接入 SpecTrail 的仓库，<br>在这里阅读 Specs、跟进 Changes、查看原型。</p>${button("连接 GitHub", "connect", true, "branch")}<div class="welcome-route"><span>连接自己的账号</span>${icon("chevron")}<span>发现仓库</span>${icon("chevron")}<span>开始阅读</span></div><p class="welcome-bottom">使用个人访问令牌连接，只需仓库读取权限。<br>协作者用自己的账号查看同一仓库，无需邀请码。</p><a class="text-link small" style="display:inline-block;margin-top:23px" href="#public">查看公开原型示例 ↗</a></div></section>`,
+    "个人工作台",
+  );
 }
 function notice() {
   if (state.scenario === "expired")
@@ -152,7 +173,7 @@ function home() {
         ? `<div class="empty">${icon("search")}<h2>没有匹配的仓库</h2><p>试试仓库名称或所属账号。</p>${button("清除搜索", "clear-search")}</div>`
         : "";
   return shell(
-    `<section class="home"><div class="intro"><div><div class="eyebrow">MY REPOSITORIES</div><h1>我的仓库</h1><p>你参与的项目，和每一次有迹可循的推进。</p></div>${button("重新发现", "rescan", false, "refresh")}</div>${notice()}<div class="toolbar"><div class="filter-tabs" aria-label="仓库筛选"><button data-filter="all" class="${state.filter === "all" ? "active" : ""}" aria-pressed="${state.filter === "all"}">全部仓库</button><button data-filter="mine" class="${state.filter === "mine" ? "active" : ""}" aria-pressed="${state.filter === "mine"}">我的仓库</button></div><label class="search">${icon("search")}<input id="repo-search" type="search" aria-label="查找仓库" placeholder="查找仓库…" value="${esc(state.query)}"></label></div><div class="list-head"><span>仓库</span><span class="repo-content">工程记录</span><span>SpecTrail</span><span></span></div><div id="repo-results">${selected.map(repoRow).join("")}${empty}</div><div class="section-note"><span>${state.scenario === "scanning" ? "发现仍在进行中" : state.scenario === "partial" ? "上次发现部分完成" : state.scenario === "empty" ? "已检查 12 个仓库，暂无接入" : "发现完成 · 3 个已接入仓库"}<br>只显示当前连接有权读取的仓库</span><button data-action="check">找不到仓库？</button></div><div class="reading-corner"><div class="note-panel"><h3>协作，已经在仓库里</h3><p>分享一份 Spec 或 Change，对方用自己的 GitHub 账号继续阅读。无需再维护一份成员名单。</p><a href="#repo/open-folio/specs" class="text-link">打开项目知识 ${icon("chevron")}</a></div><div class="note-panel"><h3>让原型更容易被看见</h3><p>原型链接可以公开打开。让没有仓库账号的伙伴，也能直接体验这次改动。</p><a href="#public" class="text-link">查看公开预览 ${icon("chevron")}</a></div></div></section>`,
+    `<section class="home"><div class="intro"><div><div class="eyebrow">MY REPOSITORIES</div><h1>我的仓库</h1><p>你参与的项目，和每一次有迹可循的推进。</p></div>${button("重新发现", "rescan", false, "refresh")}</div>${notice()}<div class="toolbar"><div class="filter-tabs" aria-label="仓库筛选"><button data-filter="all" class="${state.filter === "all" ? "active" : ""}" aria-pressed="${state.filter === "all"}">全部仓库</button><button data-filter="mine" class="${state.filter === "mine" ? "active" : ""}" aria-pressed="${state.filter === "mine"}">我的仓库</button></div><label class="search">${icon("search")}<input id="repo-search" type="search" aria-label="查找仓库" placeholder="查找仓库…" value="${esc(state.query)}"></label></div><div class="list-head"><span>仓库</span><span class="repo-content">工程记录</span><span>SpecTrail</span><span></span></div><div id="repo-results">${selected.map(repoRow).join("")}${empty}</div><div class="section-note"><span>${state.scenario === "scanning" ? "发现仍在进行中" : state.scenario === "partial" ? "上次发现部分完成" : state.scenario === "empty" ? "已检查 12 个仓库，暂无接入" : `发现完成 · ${availableRepos().length} 个已接入仓库`}<br>只显示当前连接有权读取的仓库</span><button data-action="check">找不到仓库？</button></div><div class="reading-corner"><div class="note-panel"><h3>协作，已经在仓库里</h3><p>分享一份 Spec 或 Change，对方用自己的 GitHub 账号继续阅读。无需再维护一份成员名单。</p><a href="#repo/open-folio/specs" class="text-link">打开项目知识 ${icon("chevron")}</a></div><div class="note-panel"><h3>让原型更容易被看见</h3><p>原型链接可以公开打开。让没有仓库账号的伙伴，也能直接体验这次改动。</p><a href="#public" class="text-link">查看公开预览 ${icon("chevron")}</a></div></div></section>`,
   );
 }
 function connections() {
@@ -180,16 +201,6 @@ function repository() {
   if (!availableRepos().some((r) => r.id === c.repo)) return denied();
   const r = repos.find((r) => r.id === c.repo) || repos[0],
     d = docs[c.doc] || docs.overview;
-  const tabs = `<nav class="tabs" aria-label="仓库内容">${[
-    ["specs", "Specs"],
-    ["changes", "Changes"],
-    ["prototypes", "原型"],
-  ]
-    .map(
-      ([id, label]) =>
-        `<a href="#repo/${r.id}/${id}" class="${c.tab === id ? "active" : ""}" ${c.tab === id ? 'aria-current="page"' : ""}>${icon(id)}${label}</a>`,
-    )
-    .join("")}</nav>`;
   let content;
   if (c.tab === "changes")
     content = `<section class="change-list"><article class="change-item"><div><h3>个人工作台与仓库自动发现</h3><p class="mono">personal-workbench</p><p>从个人连接开始，重建仓库发现、阅读与分享路径。</p><div class="row" style="margin-top:18px">${button("查看方案", "change-detail")}${button("分享 Change", "share")}</div></div>${badge("技术方案", "warning")}</article><article class="change-item"><div><h3>原型发布与固定版本</h3><p>交付已归档，记录保留在仓库中。</p></div>${badge("已完成")}</article></section>`;
@@ -206,10 +217,7 @@ function repository() {
       .join(
         "",
       )}</nav><article class="document"><div class="doc-byline"><span>SPEC</span><span>项目知识 / ${c.doc}</span></div><h1>${d[0]}</h1><p>${d[1]}</p><h2>围绕仓库继续协作</h2><p>选择你参与的项目，查看已经合入的能力和仍在推进的 Change。阅读时始终保留来源分支、文件路径和快照信息。</p><blockquote>Specs 描述当前有效的能力；Changes 记录一次变化如何发生。两者共同保留项目的上下文。</blockquote><h2>从同一份事实出发</h2><ul><li>工程记录来自已经推送的提交。</li><li>分享文档后，对方使用自己的账号验证读取权限。</li><li>原型有独立的公开预览入口，无需仓库账号。</li></ul><h2>来源</h2><p class="mono">docs/project/specs/project-knowledge/spec.md</p><p>main · 8bd2a6c · 示例快照</p></article></div>`;
-  return shell(
-    `<div class="repo-header"><div class="repo-heading"><div><h1>${r.name}</h1><p class="mono">${r.path} · GitHub</p></div>${button("分享", "share", false, "branch")}</div>${tabs}</div><div class="source"><span class="row">${icon("branch")}<span>${c.tab === "changes" ? "全部已推送分支" : "main · 守护分支"}</span></span><span class="desktop-label">${c.tab === "prototypes" ? "原型全部公开访问" : "最近同步 · 刚刚"}</span><button class="mobile-docs" data-action="docs">目录</button></div>${content}`,
-    r.name,
-  );
+  return shell(content, r.name);
 }
 function denied() {
   return shell(
@@ -279,6 +287,14 @@ function bind(root = $("#app")) {
         render();
       }),
   );
+  const picker = $('[aria-label="当前仓库"]', root);
+  if (picker)
+    picker.onchange = () =>
+      go(
+        picker.value === "home"
+          ? "home"
+          : `repo/${picker.value}/${current().page === "repo" ? current().tab : "specs"}`,
+      );
   const search = $("#repo-search", root);
   if (search)
     search.oninput = () => {
@@ -294,6 +310,22 @@ function bind(root = $("#app")) {
 }
 function action(name, el) {
   const close = () => $("#dialog").close();
+  if (name === "toggle-rail") {
+    state.railCollapsed = !state.railCollapsed;
+    $(".shell").classList.toggle("rail-collapsed", state.railCollapsed);
+    el.setAttribute(
+      "aria-label",
+      state.railCollapsed ? "展开侧栏" : "收起侧栏",
+    );
+    el.setAttribute("aria-expanded", String(!state.railCollapsed));
+    return;
+  }
+  if (name === "search") {
+    go("home");
+    setTimeout(() => $("#repo-search")?.focus(), 0);
+    return;
+  }
+  if (name === "refresh-repo") return toast("示例仓库已刷新，当前为最新快照");
   if (name === "cancel") return close();
   if (name === "connect") return connect();
   if (name === "replace") return connect(true);

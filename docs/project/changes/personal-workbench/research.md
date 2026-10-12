@@ -51,10 +51,10 @@
 
 ## 方案原型验证
 
-`npm run build --workspace prototype` 导出自包含 HTML；原型使用内存示例数据和 demo 输入，不发送 GitHub 请求、不保存 token。静态校验和 JavaScript 语法检查通过。
+用户要求保留既有侧边玻璃按钮框架。以 `workspace-shell` 截图和源码为基线，个人工作台恢复 84px 侧轨、60px 玻璃胶囊、圆形模块按钮及白色工作面；仓库选择回到顶栏，首次连接和连接管理使用相同外壳，手机保留悬浮玻璃胶囊。
 
-Playwright 使用 1440×900、834×1194、390×844、320×760 四种视口，拦截非本地网络请求，覆盖仓库搜索／无结果、Specs 与 Changes 阅读、弹窗 Escape、公开原型、连接表单、发现完成、连接移除及退出。检查空结果、部分失败、连接失效、无权限和公开预览的页面横向溢出；修复 320px 公开页头后四视口复验通过。浏览器未记录 JavaScript 异常。
+`npm run build --workspace prototype` 导出自包含 HTML；原型使用内存示例数据和 demo 输入，不发送 GitHub 请求、不保存 token。JavaScript 语法检查和 `git diff --check` 通过。
 
-PC Web、iPad、Mobile 截图随原型发布。原型只证明布局与交互路径，不能替代真实 token 鉴权、Git fetch、存储和跨用户隔离的实现验收。
+Playwright 使用 1440×900、834×1194、390×844、320×760 四种视口，拦截非本地网络请求，验证侧栏收起／恢复、连接入口可达、当前导航标记、仓库切换保留模块并重置文档、目录弹窗、搜索与无结果、Specs／Changes／原型切换、分享、连接表单、发现完成、接入检查、连接移除及退出。弹窗 Escape 后焦点回到触发控件；失去连接后阅读按钮禁用。空结果、部分失败、连接失效、无权限和公开预览均无页面、头部或正文横向溢出。四视口交互检查通过，无 JavaScript 异常或外部网络请求。
 
-R2 固定发布已校验字节与公开读取，源码提交为 `33e7633e7958451ab886038651db11b3c6f1aa46`，预览已登记到本 Change。[交互原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/index.html) 的匿名 HTTP 请求返回 200；在公开地址复验连接、发现和公开预览成功。`node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser` 对当前两个入口的 Chromium sandbox 验证通过。
+桌面计算样式核实侧轨为 84px、玻璃模糊为 blur(20px) saturate(135%)。对桌面和手机的仓库首页、阅读、首次连接截图做视觉复核；PC Web、iPad、Mobile 首页截图随新版本发布。原型只证明布局与交互路径，不能替代真实 token 鉴权、Git fetch、存储和跨用户隔离的实现验收。
