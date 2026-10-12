@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "共享短期权限检查、按错误复验并部署同工作台验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "154 项单元/集成（旧撤权断言调整后复验通过）、24 项相关浏览器用例、类型/格式/构建通过；45cb59c 已部署，原工作台 15 次连续读取零重复平台鉴权，HTTP 正文 27–30ms、目录 63–76ms、无变化刷新 1.01–1.15s。",
+      "commitTitle": "periodic-repository-permissions T1: verify deployed reuse and latency"
     }
   },
   "closure": {},
