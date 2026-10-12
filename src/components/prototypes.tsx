@@ -335,8 +335,19 @@ function PrototypeThumbnail({
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(large),
-    [status, setStatus] = useState<"loading" | "ready" | "error">("loading"),
+    [state, setState] = useState<{
+      key: string;
+      status: "loading" | "ready" | "error";
+    }>({ key: "", status: "loading" }),
     [attempt, setAttempt] = useState(0);
+  const imageKey = `${url}:${attempt}`;
+  const status = prepareError
+    ? "error"
+    : state.key === imageKey
+      ? state.status
+      : "loading";
+  const setStatus = (status: "loading" | "ready" | "error") =>
+    setState({ key: imageKey, status });
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -354,14 +365,10 @@ function PrototypeThumbnail({
     if (!enabled || !visible || status !== "loading") return;
     const timer = setTimeout(() => setStatus("error"), 12000);
     return () => clearTimeout(timer);
-  }, [enabled, visible, status, attempt]);
-  useEffect(() => {
-    if (prepareError) setStatus("error");
-    else if (url) setStatus("loading");
-  }, [prepareError, url]);
+  }, [enabled, visible, status, imageKey]);
   const screenshot = enabled && visible && url && status !== "error" && (
     <img
-      key={attempt}
+      key={imageKey}
       src={`${url}${url.includes("?") ? "&" : "?"}attempt=${attempt}`}
       alt={`${title}的${large ? "大图" : "首屏截图"}`}
       referrerPolicy="no-referrer"

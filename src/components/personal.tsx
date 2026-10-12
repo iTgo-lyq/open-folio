@@ -653,9 +653,8 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
             <p>{result.message ?? result.repository.fullName}</p>
             {["ready", "attention"].includes(result.state) && (
               <Button
-                disabled={!p.items.some((i) => i.key === result.key)}
                 onClick={() => {
-                  selectRepository(result.key);
+                  selectRepository(result.key, result.repository);
                   onClose();
                 }}
               >

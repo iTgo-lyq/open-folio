@@ -16,8 +16,20 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
       chosen = q.get("device");
     if (meta.devices?.some((d) => d === chosen))
       setDevice(chosen as typeof device);
-    setRotated(q.get("orientation") === "landscape");
-  }, [meta.devices]);
+    const base =
+      meta.viewport ??
+      DEVICE_VIEWPORTS[
+        (meta.devices?.some((d) => d === chosen)
+          ? chosen
+          : (meta.devices?.[0] ?? "pc-web")) as keyof typeof DEVICE_VIEWPORTS
+      ];
+    const orientation = q.get("orientation");
+    setRotated(
+      !meta.viewport &&
+        (orientation === "portrait" || orientation === "landscape") &&
+        orientation !== (base.width >= base.height ? "landscape" : "portrait"),
+    );
+  }, [meta.devices, meta.viewport]);
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
@@ -65,19 +77,21 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
               ))}
             </select>
           )}
-          <IconButton
-            aria-label="旋转视口"
-            onClick={() => setRotated((v) => !v)}
-          >
-            <RotateCw />
-          </IconButton>
+          {!meta.viewport && (
+            <IconButton
+              aria-label="旋转视口"
+              onClick={() => setRotated((v) => !v)}
+            >
+              <RotateCw />
+            </IconButton>
+          )}
           <Button
             onClick={async () => {
               const link = new URL(window.location.href);
               if (device) link.searchParams.set("device", device);
               link.searchParams.set(
                 "orientation",
-                rotated ? "landscape" : "portrait",
+                size.width >= size.height ? "landscape" : "portrait",
               );
               try {
                 await navigator.clipboard.writeText(link.href);

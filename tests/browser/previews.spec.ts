@@ -166,3 +166,28 @@ test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted 
     /#no-bridge$/,
   );
 });
+
+test("published Git prototypes still report script and CSP errors to the owning canvas", async ({
+  page,
+}) => {
+  for (const code of ["runtime", "network"]) {
+    await page.goto(path + "&preview=orders");
+    const frame = page.frameLocator('iframe[title="原型：订单列表"]');
+    await expect(frame.getByRole("heading")).toBeVisible();
+    await frame.locator("body").evaluate((_body, code) => {
+      if (code === "runtime")
+        setTimeout(() => {
+          throw Error("fixture runtime fault");
+        }, 0);
+      else void fetch("https://example.invalid/blocked").catch(() => {});
+    }, code);
+    await expect(
+      page.getByText(
+        code === "runtime"
+          ? "原型脚本发生错误，请在原型包中检查并重新导出。"
+          : "原型仍依赖外部资源或不支持的能力，请重新导出自包含 HTML。",
+        { exact: true },
+      ),
+    ).toBeVisible();
+  }
+});

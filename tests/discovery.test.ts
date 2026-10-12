@@ -80,6 +80,13 @@ test("rate limiting retains continuation and completed results for retry", async
     assert.equal(status?.hasMore, true);
     assert.equal(status?.retryAfter, "1");
     f.controls.rateLimit = false;
+    const before = [...f.controls.pages];
+    await assert.rejects(
+      () => f.discovery.start(c.cookie, c.connection.id, true),
+      { code: "RATE_LIMITED", status: 429 },
+    );
+    assert.deepEqual(f.controls.pages, before);
+    await new Promise((resolve) => setTimeout(resolve, 1100));
     await f.discovery.start(c.cookie, c.connection.id, true);
     await f.discovery.wait(c.cookie, c.connection.id);
     status = await f.discovery.status(c.cookie, c.connection.id);
@@ -224,6 +231,27 @@ test("discovery bounds concurrent probes and removing a connection cancels its j
     await assert.rejects(() => f.discovery.status(c.cookie, c.connection.id), {
       code: "SESSION_REQUIRED",
     });
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test("directory delivery rechecks an early repository revoked while later entries were checked", async () => {
+  const f = await personalFixture();
+  try {
+    const c = await f.connect();
+    await f.discovery.start(c.cookie, c.connection.id);
+    await f.discovery.wait(c.cookie, c.connection.id);
+    const original = f.provider.assertRead;
+    f.provider.assertRead = async (ctx, repo) => {
+      if (repo.repositoryId === "2") f.controls.deny.add("1");
+      return original(ctx, repo);
+    };
+    const listing = await f.discovery.list(c.cookie, c.connection.id);
+    assert.ok(
+      !listing.items.some((item) => item.repository.repositoryId === "1"),
+    );
+    assert.equal(listing.unavailable, 1);
   } finally {
     await f.cleanup();
   }

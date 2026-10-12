@@ -30,7 +30,7 @@ type Value = {
   notice: (message: string) => void;
   message: string;
   readUrl: (path: string) => string;
-  selectRepository: (key: string) => void;
+  selectRepository: (key: string, repository?: RepositoryIdentity) => void;
 };
 const Context = createContext<Value | null>(null);
 export const useWorkspace = () => useContext(Context)!;
@@ -148,8 +148,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [connection?.id, projectId, q.repositoryId, q.fullName],
   );
   const selectRepository = useCallback(
-    (key: string) => {
-      const item = personal.items.find((r) => r.key === key);
+    (key: string, checkedRepository?: RepositoryIdentity) => {
+      const item = checkedRepository
+        ? { repository: checkedRepository }
+        : personal.items.find((r) => r.key === key);
       if (!item) return;
       const params: Record<string, string | null> = Object.fromEntries(
         Object.keys(q).map((k) => [k, null]),

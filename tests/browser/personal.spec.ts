@@ -134,3 +134,24 @@ test("multiple connections require an explicit choice on return and failed autho
   await expect(page.getByText("token 已失效，请替换连接。")).toBeVisible();
   await expect(page.locator(".personal-repo-row")).toHaveCount(0);
 });
+
+test("a checked repository opens even when it is not on the current directory page", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await connect(page);
+  await page.route("**/api/repositories?*", (route) =>
+    route.fulfill({ json: { items: [], unavailable: 0, nextOffset: 20 } }),
+  );
+  await page.getByRole("button", { name: "用仓库地址检查" }).click();
+  await page
+    .getByLabel("GitHub HTTPS 仓库地址")
+    .fill("https://github.com/acme/fixture");
+  await page.getByRole("button", { name: "检查仓库", exact: true }).click();
+  await expect(page.getByText("已接入，可以阅读")).toBeVisible();
+  await page.getByRole("button", { name: "打开仓库", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "交付记录", exact: true }),
+  ).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("repositoryId")).toBe("1");
+});

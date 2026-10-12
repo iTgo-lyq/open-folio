@@ -61,6 +61,16 @@ export type PrepareInput = {
 };
 const digest = (data: string | Buffer) =>
   createHash("sha256").update(data).digest("hex");
+function diagnosticHtml(html: string) {
+  // Published bytes contain the bridge too, so hashing and anonymous delivery stay immutable.
+  const reporter = `<script>(()=>{const load=new URL(location.href).searchParams.get('load')||'';if(!/^[a-zA-Z0-9-]{1,64}$/.test(load))return;const report=code=>parent.postMessage({type:'openfolio-preview-error',load,code},'*');addEventListener('securitypolicyviolation',()=>report('network-blocked'));addEventListener('error',()=>report('runtime-error'));})();</script>`;
+  const insertion = /<head(?:\s[^>]*)?>/i.test(html)
+    ? /<head(?:\s[^>]*)?>/i
+    : /<!doctype[^>]*>|<html(?:\s[^>]*)?>/i;
+  return insertion.test(html)
+    ? html.replace(insertion, (match) => match + reporter)
+    : reporter + html;
+}
 export class PublicPreviews {
   root: string;
   screenshots: ThumbnailCache;
@@ -145,8 +155,27 @@ export class PublicPreviews {
     const path = this.aliasPath(key, { ...input, revision: meta.revision });
     await writeFile(path, meta.id, { flag: "wx", mode: 0o600 }).catch(
       async (e: NodeJS.ErrnoException) => {
-        if (e.code !== "EEXIST" || (await readFile(path, "utf8")) !== meta.id)
-          throw e;
+        if (e.code !== "EEXIST") throw e;
+        const existing = await readFile(path, "utf8");
+        if (!hex.safeParse(existing).success)
+          throw new AppError(
+            "PUBLICATION_CONFLICT",
+            "旧公开原型映射不完整，请联系部署者。",
+            503,
+          );
+        if (existing !== meta.id) {
+          // Renderer upgrades can create new immutable bytes for the same source.
+          // Keep the original legacy URL bound to its original public version.
+          try {
+            await this.get(existing);
+          } catch (error) {
+            if (
+              !(error instanceof AppError) ||
+              error.code !== "PREVIEW_WITHDRAWN"
+            )
+              throw error;
+          }
+        }
       },
     );
   }
@@ -186,10 +215,10 @@ export class PublicPreviews {
     const artifact = entry.artifact;
     if (artifact.type === "git" && result.html === undefined)
       throw new AppError("PREVIEW_UNAVAILABLE", "Git 原型正文不可读。", 409);
+    const html =
+      artifact.type === "git" ? diagnosticHtml(result.html!) : undefined;
     const contentDigest =
-      artifact.type === "git"
-        ? `sha256:${digest(result.html!)}`
-        : artifact.digest;
+      artifact.type === "git" ? `sha256:${digest(html!)}` : artifact.digest;
     const id = digest(
       JSON.stringify([
         1,
@@ -222,11 +251,11 @@ export class PublicPreviews {
         });
       };
       if (artifact.type === "git") {
-        await put("index.html", Buffer.from(result.html!));
+        await put("index.html", Buffer.from(html!));
         for (const device of entry.devices ?? [undefined]) {
           context.lease.context.signal.throwIfAborted();
           const { viewport } = previewViewport(entry, device);
-          const image = await this.screenshots.get(id, result.html!, viewport);
+          const image = await this.screenshots.get(id, html!, viewport);
           await put(`${device ?? "component"}.jpg`, image.body);
         }
       }

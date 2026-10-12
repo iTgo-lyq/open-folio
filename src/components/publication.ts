@@ -51,7 +51,10 @@ export function usePublication(
   }, [key, readUrl, enabled, retry]);
   return {
     ...(result.key === key ? result : {}),
-    retry: () => setRetry((v) => v + 1),
+    retry: () => {
+      setResult({ key: "" });
+      setRetry((v) => v + 1);
+    },
   };
 }
 export function publicationThumbnail(

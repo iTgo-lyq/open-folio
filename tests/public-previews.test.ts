@@ -1,7 +1,8 @@
+import { createHash } from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { readdir, writeFile } from "node:fs/promises";
+import { cp, readFile, rm, readdir, writeFile } from "node:fs/promises";
 import { repositoryFixture } from "./repositories-fixture.ts";
 import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
@@ -425,6 +426,77 @@ test("legacy links expose no mapping before authorization and redirect only prep
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+    await t.cleanup();
+  }
+});
+
+test("renderer upgrades preserve old public bytes and aliases while allowing a new publication", async () => {
+  const t = await setup();
+  try {
+    const current = await t.prepare();
+    const original = t.g.git([
+      "show",
+      `${current.revision}:packages/prototype/preview/screen/index.html`,
+    ]);
+    const hash = (value: string) =>
+      createHash("sha256").update(value).digest("hex");
+    const oldId = hash(
+      JSON.stringify([
+        1,
+        t.key,
+        current.revision,
+        "",
+        t.entry.id,
+        t.entry.artifact,
+        `sha256:${hash(original)}`,
+      ]),
+    );
+    const oldDir = join(t.root, "versions", oldId),
+      newDir = join(t.root, "versions", current.id);
+    await cp(newDir, oldDir, { recursive: true });
+    const old = {
+      ...current,
+      id: oldId,
+      digest: `sha256:${hash(original)}`,
+      files: {
+        ...current.files,
+        "index.html": {
+          hash: hash(original),
+          bytes: Buffer.byteLength(original),
+        },
+      },
+    };
+    await writeFile(join(oldDir, "manifest.json"), JSON.stringify(old));
+    await writeFile(join(oldDir, "index.html"), original);
+    const alias = join(
+      t.root,
+      "aliases",
+      hash(JSON.stringify([t.key, current.revision, "", t.entry.id])),
+    );
+    await writeFile(alias, oldId);
+    await rm(newDir, { recursive: true });
+    const updated = await t.prepare();
+    assert.equal(updated.id, current.id);
+    assert.notEqual(updated.id, oldId);
+    assert.match(
+      (await t.store.asset(updated.id, "index.html")).body!.toString(),
+      /openfolio-preview-error/,
+    );
+    assert.equal(
+      (await t.store.asset(oldId, "index.html")).body!.toString(),
+      original,
+    );
+    assert.equal(await readFile(alias, "utf8"), oldId);
+    await t.store.withdraw(oldId);
+    assert.equal((await t.prepare()).id, current.id);
+    await assert.rejects(
+      t.store.resolveAlias(t.key, {
+        revision: current.revision,
+        entry: t.entry.id,
+      }),
+      { code: "PREVIEW_WITHDRAWN" },
+    );
+  } finally {
     await t.cleanup();
   }
 });

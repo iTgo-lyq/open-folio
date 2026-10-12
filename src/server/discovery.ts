@@ -326,9 +326,24 @@ export class Discovery {
     const lease = await this.sessions.lease(cookie, id);
     let retained = false;
     try {
-      const provider = await this.identity(lease),
-        path = this.path(lease);
+      const path = this.path(lease);
       const previous = await this.read(lease);
+      if (previous?.retryAfter) {
+        const remaining = Math.ceil(
+          (Date.parse(previous.updatedAt) +
+            Number(previous.retryAfter) * 1000 -
+            Date.now()) /
+            1000,
+        );
+        if (remaining > 0)
+          throw new ProviderError(
+            "RATE_LIMITED",
+            "平台限流尚未解除，请稍后重试。",
+            429,
+            String(remaining),
+          );
+      }
+      const provider = await this.identity(lease);
       if (this.active.has(path) && previous) return summary(previous);
       const job: Job =
         retry && previous && previous.state !== "complete"
@@ -483,13 +498,20 @@ export class Discovery {
       let unavailable = 0;
       for (const item of all.slice(offset, offset + 20)) {
         await slots().use(lease.context.signal, async () => {
+          const context = {
+            ...lease.context,
+            signal: AbortSignal.any([
+              lease.context.signal,
+              AbortSignal.timeout(20_000),
+            ]),
+          };
           try {
             const repository = await provider.resolveRepository(
-              lease.context,
+              context,
               item.repository,
             );
-            await provider.assertRead(lease.context, repository);
-            await this.git(provider, lease.context, repository);
+            await provider.assertRead(context, repository);
+            await this.git(provider, context, repository);
             items.push({ ...item, repository });
           } catch (e) {
             if (
@@ -506,9 +528,57 @@ export class Discovery {
           }
         });
       }
+      // A page can take multiple remote calls. Recheck every retained repository
+      // before delivery, including entries checked early in the initial pass.
+      await this.identity(lease);
+      const verification = await Promise.allSettled(
+        items.map((item) =>
+          slots().use(lease.context.signal, async () => {
+            const context = {
+              ...lease.context,
+              signal: AbortSignal.any([
+                lease.context.signal,
+                AbortSignal.timeout(20_000),
+              ]),
+            };
+            try {
+              const repository = await provider.resolveRepository(
+                context,
+                item.repository,
+              );
+              await provider.assertRead(context, repository);
+              await this.git(provider, context, repository);
+              return { ...item, repository };
+            } catch (e) {
+              if (
+                e instanceof ProviderError &&
+                [
+                  "TOKEN_INVALID",
+                  "RATE_LIMITED",
+                  "PROVIDER_UNAVAILABLE",
+                  "IDENTITY_CHANGED",
+                ].includes(e.code)
+              )
+                throw e;
+              unavailable++;
+              return null;
+            }
+          }),
+        ),
+      );
+      const failed = verification.find(
+        (result) => result.status === "rejected",
+      );
+      if (failed?.status === "rejected") throw failed.reason;
+      const verified = verification.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : [],
+      );
+      await this.identity(lease);
       await lease.assertCurrent();
       return {
-        items,
+        items: verified.filter(
+          (item): item is DiscoveredRepository => item !== null,
+        ),
         unavailable,
         nextOffset: offset + 20 < all.length ? offset + 20 : null,
       };
@@ -556,7 +626,12 @@ export class Discovery {
         .filter((r) => r.key !== result.key)
         .concat(result);
       await this.write(lease, job);
-      return result;
+      await this.identity(lease);
+      const current = await provider.resolveRepository(lease.context, repo);
+      await provider.assertRead(lease.context, current);
+      await this.git(provider, lease.context, current);
+      await lease.assertCurrent();
+      return { ...result, repository: current };
     } finally {
       lease.release();
     }
