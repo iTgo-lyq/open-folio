@@ -36,7 +36,8 @@
     },
     "T3": {
       "title": "提供个人会话与连接生命周期",
-      "status": "todo"
+      "status": "done",
+      "verification": "7 项个人会话/连接 HTTP 与密文生命周期测试及类型检查通过。"
     },
     "T4": {
       "title": "自动发现并诊断 SpecTrail 仓库",

@@ -15,3 +15,11 @@ GitReader 接收显式 GitTransport。HTTPS 没有凭据时在启动 Git 前拒�
 新增真实 HTTPS Git fixture，通过 git-http-backend 验证 refs 和 fetch；故意提供有效宿主 helper、netrc、继承鉴权头，错误 token 仍失败，helper 与 trace 均未执行。并发两连接分别发送各自凭据；远端撤权、取消和被污染的本地 config 均拒绝。
 
 验证：`npm run typecheck` 通过；`node --conditions=react-server --test tests/git-credentials.test.ts tests/store.test.ts tests/changes.test.ts tests/previews.test.ts`，27 项通过。真实 GitHub 联调通过关闭回显的 stdin 临时注入用户此前提供的 token，未使用本机 Git 登录态；指定 runweft 仓库身份、发现、refs 与 fetch 均成功，读取 2 个分支和 507 个受限文档。工作流探测由目录树确认 missing，不能作为已接入正向样本；后续发现／工作台仍需正向联调。临时 Git 目录已删除，秘密未落盘。
+
+## T3 提供个人会话与连接生命周期
+
+新增个人会话、连接创建／替换／移除与退出接口。Cookie 为随机 256-bit 值，服务端只保存摘要，默认 30 天；创建／替换成功轮换 Cookie。token 使用 AES-256-GCM、独立 nonce 与绑定会话／连接／revision 的 AAD 加密；密钥和状态文件为 0600，目录为 0700。缺失密钥或密文验证失败时保留现场并拒绝恢复。相同账号允许多个连接，替换为其他账号被拒绝。
+
+跨请求操作通过 connection lease 校验所属会话和 revision，移除、替换、退出及过期取消在途操作。写接口要求同源、远程 HTTPS、有限 JSON 输入，公共 DTO 不含密文或原 token。连接成功后的自动发现由 T4 接入；正式页面在 T7 交付。
+
+验证：`node --conditions=react-server --test tests/personal-sessions.test.ts`，7 项通过；`npm run typecheck` 通过。覆盖重启恢复、独立 nonce、Cookie 轮换、同账号多连接、失败替换回滚、跨用户拒绝、取消与到期、密文调换、密钥丢失、同源／输入边界、秘密不回显及同进程多存储实例并发写入。
