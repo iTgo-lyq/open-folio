@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "faster-workspace-reads",
+  "title": "缩短工作台缓存读取等待",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/faster-workspace-reads",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "精简远端授权、并发目录检查并部署复测",
+      "status": "done",
+      "verification": "144 项单测、29 项浏览器测试、类型与格式检查通过；生产服务已更新至 37f8c77，同工作台同仓库复测，目录/正文中位耗时下降 90%/88%，端到端 18.159→3.462 秒；详见 execution.md。",
+      "commitTitle": "faster-workspace-reads T1: verify deployed performance improvement"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T16:47:25.123Z",
+      "summary": "Agent 自查完整差异与需求对应；144 项单测、29 项浏览器测试、类型/格式及生产构建通过，真实工作台复测确认端到端等待下降约 81%，运行数据与会话隔离验证通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T16:47:25.190Z",
+      "summary": "Agent 自验收通过：普通缓存读取精简为两次平台请求、目录检查受限并发；关键拒绝路径及设备撤销测试通过；本地服务更新、相同工作台同仓库复测及测试设备清理均已完成。",
+      "source": "SpecTrail small 直接自验收归档规则；用户明确授权优化、删除重复鉴权、更新本地服务并用同一工作台复测。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T16:47:25.310Z",
+      "summary": "同步 project-knowledge 与 access 能力中的授权检查时点、缓存读取与 Git 检查边界，以及目录并发检查和发现状态读取约定。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T16:47:25.389Z",
+      "summary": "完成性能优化、自验收、Specs 同步与本地部署；真实工作台端到端等待从 18.159 秒降至 3.462 秒，完整证据保存在 execution.md。",
+      "path": "docs/project/archive/2026-10-13-faster-workspace-reads"
+    }
+  }
+}
