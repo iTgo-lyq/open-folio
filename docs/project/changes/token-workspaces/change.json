@@ -4,7 +4,7 @@
   "title": "Token 工作台与多设备登录",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
@@ -61,7 +61,13 @@
       "commitTitle": "token-workspaces T6: make display usernames optional with Git defaults"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T12:26:29.859Z",
+      "summary": "T1–T5 原67个浏览器场景与独立全量评审证据保留；T6 141项单元／集成、23个相关浏览器场景、类型／格式和默认生产构建通过，独立增量评审22项复验通过；R1–R4均已关闭，原10680预览更新并核对可选用户名。"
+    }
+  },
   "dependsOn": [
     "personal-workbench"
   ],
@@ -102,5 +108,9 @@
     "at": "2026-10-12T12:19:12.054Z",
     "reason": "用户要求用户名可选、改为普通用户名，默认使用 Git 账号名，不再校验与 token 账号一致。",
     "approach": "保留 token 身份与缓存契约，追加 T6：可选用户名作为显示名称，空值使用平台账号名，Git 传输继续使用适配器返回值。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "T1–T6 已实现、验证、提交推送，用户名按最新要求可选并自动填充，生产预览已更新；large Change 仍待用户整体验收，随后同步 Specs 与归档。"
   }
 }
