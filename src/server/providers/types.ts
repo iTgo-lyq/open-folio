@@ -40,6 +40,7 @@ export interface RepositoryIdentity {
 }
 export interface ProviderContext {
   identity: ProviderIdentity;
+  gitUsername?: string;
   secret: SecretHandle;
   signal: AbortSignal;
 }
@@ -72,7 +73,8 @@ export interface RepositoryProvider {
   authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
-  ): Promise<ProviderIdentity>;
+    username?: string,
+  ): Promise<ProviderIdentity & { gitUsername?: string }>;
   listRepositories(
     context: ProviderContext,
     cursor: string | null,

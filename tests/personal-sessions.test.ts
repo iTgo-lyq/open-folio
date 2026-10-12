@@ -1,229 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  mkdtemp,
-  rm,
-  readFile,
-  writeFile,
-  stat,
-  unlink,
-} from "node:fs/promises";
+import { readFile, writeFile, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { PersonalSessions } from "../src/server/personal-sessions.ts";
-import { ProviderRegistry } from "../src/server/providers/registry.ts";
 import {
-  ProviderError,
-  type RepositoryProvider,
-} from "../src/server/providers/types.ts";
+  PersonalSessions,
+  sessionIdleTtl,
+  sessionAbsoluteTtl,
+} from "../src/server/personal-sessions.ts";
+import { personalFixture } from "./personal-fixture.ts";
 import {
   connectionResponse,
   sessionResponse,
+  logoutAllResponse,
 } from "../src/server/connection-api.ts";
+import { ProviderError } from "../src/server/providers/types.ts";
 const signal = () => new AbortController().signal;
-async function setup() {
-  const root = await mkdtemp(join(tmpdir(), "folio-session-test-"));
-  const provider: RepositoryProvider = {
-    id: "sample",
-    parseRepositoryUrl: () => ({ fullName: "group/project" }),
-    describeConnection: () => ({
-      id: "sample",
-      name: "Sample",
-      instance: "sample.test",
-      tokenUrl: "https://sample.test/tokens",
-      permissions: ["read"],
-    }),
-    authenticate: async (secret) =>
-      secret.use((value) => {
-        if (value === "invalid")
-          throw new ProviderError(
-            "TOKEN_INVALID",
-            "Invalid fixture token",
-            401,
-          );
-        return {
-          providerId: "sample",
-          instanceId: "sample.test",
-          subjectId: value.startsWith("other") ? "2" : "1",
-          login: value.startsWith("other") ? "other" : "reader",
-          displayName: "Fixture",
-        };
-      }),
-    listRepositories: async () => ({ items: [], nextCursor: null }),
-    resolveRepository: async () => {
-      throw new Error();
-    },
-    assertRead: async () => {},
-    probeWorkflow: async () => ({ kind: "empty-repository" }),
-    gitTransport: async () => {
-      throw new Error();
-    },
-  };
-  const registry = new ProviderRegistry([provider]),
-    store = new PersonalSessions(root, registry, join(root, "credential-key"));
-  return {
-    root,
-    store,
-    registry,
-    connect: (cookie = "", token = "sample-secret", replace?: string) =>
-      store.connect(cookie, "sample", token, undefined, signal(), replace),
-    cleanup: () => rm(root, { recursive: true, force: true }),
-  };
-}
-test("sessions persist encrypted secrets, hash cookies and keep independent same-account connections", async () => {
-  const f = await setup();
-  try {
-    const first = await f.connect(),
-      id = first.connection.id;
-    const second = await f.connect(first.cookie);
-    assert.notEqual(first.cookie, second.cookie);
-    assert.equal((await f.store.get(first.cookie)).connected, false);
-    assert.equal(second.session.connections.length, 2);
-    const body = await readFile(join(f.root, "sessions.json"), "utf8");
-    assert.ok(!body.includes("sample-secret"));
-    assert.ok(!body.includes(second.cookie));
-    assert.ok(!JSON.stringify(second.session).includes("ciphertext"));
-    const parsed = JSON.parse(body);
-    assert.notEqual(
-      parsed.sessions[0].connections[0].nonce,
-      parsed.sessions[0].connections[1].nonce,
-    );
-    assert.equal(
-      (await stat(join(f.root, "sessions.json"))).mode & 0o777,
-      0o600,
-    );
-    assert.equal(
-      (await stat(join(f.root, "credential-key"))).mode & 0o777,
-      0o600,
-    );
-    const restarted = new PersonalSessions(
-      f.root,
-      f.registry,
-      join(f.root, "credential-key"),
-    );
-    assert.equal((await restarted.get(second.cookie)).connections.length, 2);
-    const lease = await restarted.lease(second.cookie, id);
-    assert.equal(
-      lease.context.secret.use((v) => v),
-      "sample-secret",
-    );
-    await lease.assertCurrent();
-    lease.release();
-  } finally {
-    await f.cleanup();
-  }
-});
-test("failed replacement preserves credentials; successful rotation cancels previous operations", async () => {
-  const f = await setup();
-  try {
-    const first = await f.connect();
-    const lease = await f.store.lease(first.cookie, first.connection.id);
-    await assert.rejects(
-      () => f.connect(first.cookie, "invalid", first.connection.id),
-      { code: "TOKEN_INVALID" },
-    );
-    await assert.rejects(
-      () => f.connect(first.cookie, "other-secret", first.connection.id),
-      { code: "IDENTITY_CHANGED" },
-    );
-    await lease.assertCurrent();
-    assert.equal((await f.store.get(first.cookie)).connected, true);
-    const replacement = await f.connect(
-      first.cookie,
-      "replacement-secret",
-      first.connection.id,
-    );
-    assert.equal(replacement.connection.revision, 2);
-    assert.equal(replacement.connection.id, first.connection.id);
-    assert.equal(lease.context.signal.aborted, true);
-    await assert.rejects(() => lease.assertCurrent());
-    lease.release();
-    const fresh = await f.store.lease(
-      replacement.cookie,
-      replacement.connection.id,
-    );
-    assert.equal(
-      fresh.context.secret.use((v) => v),
-      "replacement-secret",
-    );
-    fresh.release();
-  } finally {
-    await f.cleanup();
-  }
-});
-test("ownership, removal, logout and expiry invalidate access, including in-flight operations", async () => {
-  const f = await setup();
-  try {
-    const one = await f.connect(),
-      two = await f.connect("", "other-secret");
-    await assert.rejects(() => f.store.lease(two.cookie, one.connection.id), {
-      code: "SESSION_REQUIRED",
-    });
-    await assert.rejects(() => f.store.remove(two.cookie, one.connection.id), {
-      code: "SESSION_REQUIRED",
-    });
-    const lease = await f.store.lease(one.cookie, one.connection.id);
-    const removed = await f.store.remove(one.cookie, one.connection.id);
-    assert.equal(removed.connected, false);
-    assert.equal(lease.context.signal.aborted, true);
-    assert.equal((await f.store.get(two.cookie)).connected, true);
-    lease.release();
-    const active = await f.store.lease(two.cookie, two.connection.id);
-    const data = JSON.parse(
-      await readFile(join(f.root, "sessions.json"), "utf8"),
-    );
-    data.sessions[0].expiresAt = Date.now() - 1;
-    await writeFile(join(f.root, "sessions.json"), JSON.stringify(data));
-    await assert.rejects(() => active.assertCurrent());
-    assert.equal((await f.store.get(two.cookie)).connected, false);
-    assert.deepEqual(
-      JSON.parse(await readFile(join(f.root, "sessions.json"), "utf8"))
-        .sessions,
-      [],
-    );
-    active.release();
-    const three = await f.connect();
-    await f.store.remove(three.cookie);
-    assert.equal((await f.store.get(three.cookie)).connected, false);
-  } finally {
-    await f.cleanup();
-  }
-});
-test("lost key and swapped ciphertext are rejected without destroying stored connections", async () => {
-  const f = await setup();
-  try {
-    const first = await f.connect(),
-      second = await f.connect(first.cookie);
-    const path = join(f.root, "sessions.json"),
-      original = await readFile(path, "utf8"),
-      data = JSON.parse(original),
-      [a, b] = data.sessions[0].connections;
-    [a.ciphertext, b.ciphertext] = [b.ciphertext, a.ciphertext];
-    await writeFile(path, JSON.stringify(data));
-    await assert.rejects(() => f.store.get(second.cookie), {
-      code: "CREDENTIAL_UNREADABLE",
-    });
-    await writeFile(path, original);
-    const key = await readFile(join(f.root, "credential-key"));
-    await unlink(join(f.root, "credential-key"));
-    await assert.rejects(() => f.store.get(second.cookie), {
-      code: "CREDENTIAL_KEY_UNAVAILABLE",
-    });
-    assert.equal(await readFile(path, "utf8"), original);
-    await assert.rejects(() => stat(join(f.root, "credential-key")));
-    await writeFile(join(f.root, "credential-key"), key, { mode: 0o600 });
-    assert.equal((await f.store.get(second.cookie)).connected, true);
-  } finally {
-    await f.cleanup();
-  }
-});
-const request = (
+const req = (
   method: string,
   cookie = "",
   body?: unknown,
   headers: Record<string, string> = {},
 ) =>
-  new Request("https://folio.test/api/connections", {
+  new Request("https://folio.test/api/session", {
     method,
     headers: {
       origin: "https://folio.test",
@@ -231,149 +29,332 @@ const request = (
       ...(cookie ? { cookie: `openfolio-session=${cookie}` } : {}),
       ...headers,
     },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-test("HTTP connection lifecycle rotates secure cookies without returning credentials", async () => {
-  const f = await setup();
+const input = (token = "first") => ({
+  providerId: "sample",
+  username: "reader",
+  token,
+});
+const cookieOf = (r: Response) =>
+  r.headers.get("set-cookie")!.split(";")[0].split("=")[1];
+
+test("same token converges across concurrent devices and survives restart without revealing its index", async () => {
+  const f = await personalFixture();
   try {
-    const response = await connectionResponse(
-      request("POST", "", { providerId: "sample", token: "sample-secret" }),
-      undefined,
-      f.store,
+    const secondStore = new PersonalSessions(
+      f.sessions.root,
+      f.registry,
+      f.sessions.keyPath,
     );
-    assert.equal(response.status, 201);
-    const cookie = response.headers.get("set-cookie")!;
-    assert.match(cookie, /HttpOnly/);
-    assert.match(cookie, /SameSite=Lax/);
-    assert.match(cookie, /Secure/);
-    assert.equal(response.headers.get("cache-control"), "private, no-store");
-    const body = await response.json();
-    assert.ok(!JSON.stringify(body).includes("sample-secret"));
-    const token = cookie.split(";")[0].split("=")[1];
-    const current = await sessionResponse(request("GET", token), f.store);
-    assert.equal((await current.json()).connections.length, 1);
-    const replaced = await connectionResponse(
-      request("PATCH", token, {
-        providerId: "sample",
-        token: "replacement-secret",
-      }),
-      body.connection.id,
-      f.store,
+    const [a, b] = await Promise.all([
+      f.connect(),
+      secondStore.login("", "sample", "first", "reader", undefined, signal()),
+    ]);
+    assert.equal(a.connection.id, b.connection.id);
+    assert.notEqual(a.cookie, b.cookie);
+    assert.equal((await f.sessions.get(a.cookie)).connected, true);
+    const path = join(f.sessions.root, "state.json"),
+      raw = await readFile(path, "utf8"),
+      state = JSON.parse(raw);
+    assert.equal(state.workspaces.length, 1);
+    assert.equal(state.sessions.length, 2);
+    assert.ok(!raw.includes(a.cookie));
+    assert.ok(!raw.includes('"first"'));
+    assert.ok(!JSON.stringify(a.session).includes("credentialFingerprint"));
+    for (const file of [path, f.sessions.keyPath, f.sessions.identityKeyPath])
+      assert.equal((await stat(file)).mode & 0o777, 0o600);
+    const restarted = new PersonalSessions(
+      f.sessions.root,
+      f.registry,
+      f.sessions.keyPath,
     );
-    assert.equal(replaced.status, 200);
-    assert.notEqual(replaced.headers.get("set-cookie"), cookie);
-    const updated = replaced.headers
-      .get("set-cookie")!
-      .split(";")[0]
-      .split("=")[1];
-    const logout = await sessionResponse(request("DELETE", updated), f.store);
-    assert.equal((await logout.json()).connected, false);
-    assert.match(logout.headers.get("set-cookie")!, /Max-Age=0/);
+    const lease = await restarted.lease(b.cookie, a.connection.id);
+    assert.equal(
+      lease.context.secret.use((v) => v),
+      "first",
+    );
+    await lease.assertCurrent();
+    lease.release();
   } finally {
     await f.cleanup();
   }
 });
-test("HTTP writes reject cross-origin, missing origin, malformed input and oversized bodies", async () => {
-  const f = await setup();
+test("different tokens for the same identity stay separate; rename and adapter Git username preserve token identity", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await f.connect(),
+      b = await f.connect("", "third");
+    assert.equal(
+      a.connection.identity.subjectId,
+      b.connection.identity.subjectId,
+    );
+    assert.notEqual(a.connection.id, b.connection.id);
+    await assert.rejects(() => f.sessions.lease(b.cookie, a.connection.id), {
+      code: "SESSION_REQUIRED",
+    });
+    const authenticate = f.provider.authenticate;
+    f.provider.authenticate = async (secret, sig, username) => ({
+      ...(await authenticate(secret, sig)),
+      login: "renamed",
+      gitUsername: username ?? "transport-user",
+    });
+    const c = await f.sessions.login(
+      "",
+      "sample",
+      "first",
+      "transport-user",
+      undefined,
+      signal(),
+    );
+    assert.equal(c.connection.id, a.connection.id);
+    const lease = await f.sessions.lease(c.cookie, c.connection.id);
+    assert.equal(lease.context.gitUsername, "transport-user");
+    assert.equal(lease.context.identity.login, "renamed");
+    lease.release();
+  } finally {
+    await f.cleanup();
+  }
+});
+test("failed switch retains old session; successful switch revokes only the switching device", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await f.connect(),
+      other = await f.connect();
+    const lease = await f.sessions.lease(a.cookie, a.connection.id);
+    f.controls.identityInvalid = true;
+    await assert.rejects(() => f.connect(a.cookie, "new-token"), {
+      code: "TOKEN_INVALID",
+    });
+    f.controls.identityInvalid = false;
+    await lease.assertCurrent();
+    const switched = await f.connect(a.cookie, "new-token");
+    assert.notEqual(switched.connection.id, a.connection.id);
+    assert.equal((await f.sessions.get(a.cookie)).connected, false);
+    assert.equal((await f.sessions.get(other.cookie)).connected, true);
+    assert.equal(lease.context.signal.aborted, true);
+    await assert.rejects(() => lease.assertCurrent());
+    lease.release();
+  } finally {
+    await f.cleanup();
+  }
+});
+test("logout and expiry revoke devices while credentials remain recoverable; logout-all spares other tokens", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await f.connect(),
+      b = await f.connect(),
+      other = await f.connect("", "third");
+    const lease = await f.sessions.lease(a.cookie, a.connection.id);
+    await f.sessions.remove(a.cookie);
+    assert.equal(lease.context.signal.aborted, true);
+    assert.equal((await f.sessions.get(b.cookie)).connected, true);
+    lease.release();
+    const restored = await f.connect();
+    assert.equal(restored.connection.id, a.connection.id);
+    const all = await f.sessions.lease(b.cookie, b.connection.id);
+    await f.sessions.remove(restored.cookie, undefined, true);
+    await assert.rejects(() => all.assertCurrent());
+    all.release();
+    assert.equal((await f.sessions.get(b.cookie)).connected, false);
+    assert.equal((await f.sessions.get(other.cookie)).connected, true);
+    assert.equal((await f.connect()).connection.id, a.connection.id);
+  } finally {
+    await f.cleanup();
+  }
+});
+test("daily idle renewal is bounded by absolute lifetime and inactivity retains workspace", async () => {
+  const f = await personalFixture();
+  let now = Date.now();
+  const store = new PersonalSessions(
+    f.sessions.root,
+    f.registry,
+    f.sessions.keyPath,
+    () => now,
+  );
+  try {
+    const a = await store.login(
+      "",
+      "sample",
+      "first",
+      "reader",
+      undefined,
+      signal(),
+    );
+    const start = now;
+    now += 25 * 60 * 60 * 1000;
+    const renewed = await store.get(a.cookie);
+    assert.equal(renewed.renewed, true);
+    assert.equal(renewed.expiresAt, now + sessionIdleTtl);
+    assert.equal((await store.get(a.cookie)).renewed, undefined);
+    for (let day = 2; day <= 89; day++) {
+      now = start + day * 24 * 60 * 60 * 1000;
+      await store.get(a.cookie);
+    }
+    assert.equal(
+      (await store.get(a.cookie)).expiresAt,
+      start + sessionAbsoluteTtl,
+    );
+    now = start + sessionAbsoluteTtl;
+    assert.equal((await store.get(a.cookie)).connected, false);
+    const again = await store.login(
+      "",
+      "sample",
+      "first",
+      "reader",
+      undefined,
+      signal(),
+    );
+    assert.equal(again.connection.id, a.connection.id);
+    now += sessionIdleTtl + 1;
+    assert.equal((await store.get(again.cookie)).connected, false);
+    assert.equal(
+      JSON.parse(await readFile(join(store.root, "state.json"), "utf8"))
+        .workspaces.length,
+      1,
+    );
+  } finally {
+    await f.cleanup();
+  }
+});
+test("missing keys and swapped ciphertext fail closed and preserve stored data", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await f.connect(),
+      b = await f.connect("", "third"),
+      path = join(f.sessions.root, "state.json"),
+      original = await readFile(path, "utf8"),
+      state = JSON.parse(original);
+    const [w1, w2] = state.workspaces;
+    [w1.ciphertext, w2.ciphertext] = [w2.ciphertext, w1.ciphertext];
+    await writeFile(path, JSON.stringify(state));
+    await assert.rejects(() => f.sessions.get(a.cookie), {
+      code: "CREDENTIAL_UNREADABLE",
+    });
+    await writeFile(path, original);
+    for (const keyPath of [f.sessions.keyPath, f.sessions.identityKeyPath]) {
+      const bytes = await readFile(keyPath);
+      await unlink(keyPath);
+      await assert.rejects(() => f.sessions.get(b.cookie), {
+        code: "CREDENTIAL_KEY_UNAVAILABLE",
+      });
+      assert.equal(await readFile(path, "utf8"), original);
+      await assert.rejects(() => stat(keyPath));
+      await writeFile(keyPath, bytes, { mode: 0o600 });
+    }
+    assert.equal((await f.sessions.get(a.cookie)).connected, true);
+  } finally {
+    await f.cleanup();
+  }
+});
+test("device limit preserves existing sessions and admits a replacement current device", async () => {
+  const f = await personalFixture();
+  try {
+    const devices = [];
+    for (let n = 0; n < 32; n++) devices.push(await f.connect());
+    await assert.rejects(() => f.connect(), { code: "SESSION_LIMIT" });
+    const switched = await f.connect(devices[0].cookie);
+    assert.equal((await f.sessions.get(switched.cookie)).connected, true);
+    assert.equal((await f.sessions.get(devices[1].cookie)).connected, true);
+  } finally {
+    await f.cleanup();
+  }
+});
+test("new session HTTP issues independent secure cookies, retires old connection writes and clears logout cookies", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await sessionResponse(req("POST", "", input()), f.sessions);
+    assert.equal(a.status, 201);
+    const cookie = cookieOf(a);
+    assert.match(a.headers.get("set-cookie")!, /HttpOnly; SameSite=Lax/);
+    assert.match(a.headers.get("set-cookie")!, /Secure$/);
+    assert.equal(a.headers.get("cache-control"), "private, no-store");
+    const body = await a.json();
+    assert.ok(!JSON.stringify(body).includes('"first"'));
+    const b = await sessionResponse(req("POST", "", input()), f.sessions);
+    assert.equal(
+      (await b.json()).session.workspace.id,
+      body.session.workspace.id,
+    );
+    assert.notEqual(cookieOf(b), cookie);
+    const current = await sessionResponse(req("GET", cookie), f.sessions);
+    assert.equal(
+      (await current.json()).workspace.id,
+      body.session.workspace.id,
+    );
+    assert.equal(
+      (
+        await connectionResponse(
+          req("POST", "", input()),
+          undefined,
+          f.sessions,
+        )
+      ).status,
+      410,
+    );
+    const logout = await sessionResponse(req("DELETE", cookie), f.sessions);
+    assert.match(logout.headers.get("set-cookie")!, /Max-Age=0/);
+    assert.equal((await f.sessions.get(cookieOf(b))).connected, true);
+    assert.equal(
+      (await logoutAllResponse(req("POST", cookieOf(b)), f.sessions)).status,
+      200,
+    );
+    assert.equal((await f.sessions.get(cookieOf(b))).connected, false);
+  } finally {
+    await f.cleanup();
+  }
+});
+test("HTTP login rejects cross-site, malformed username and token, oversized requests and untrusted providers", async () => {
+  const f = await personalFixture();
   try {
     for (const headers of [
       { origin: "https://else.test" },
       { origin: "null" },
-      { origin: "http://folio.test" },
       { "sec-fetch-site": "cross-site" },
     ] as Record<string, string>[])
       assert.equal(
-        (
-          await connectionResponse(
-            request(
-              "POST",
-              "",
-              { providerId: "sample", token: "sample-secret" },
-              headers,
-            ),
-            undefined,
-            f.store,
-          )
-        ).status,
+        (await sessionResponse(req("POST", "", input(), headers), f.sessions))
+          .status,
         403,
       );
-    const absent = new Request("https://folio.test/api/connections", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: "{}",
-    });
-    assert.equal(
-      (await connectionResponse(absent, undefined, f.store)).status,
-      403,
-    );
-    for (const token of ["a\nb", "", "a".repeat(4097)])
+    const absent = req("POST", "", input());
+    absent.headers.delete("origin");
+    assert.equal((await sessionResponse(absent, f.sessions)).status, 403);
+    for (const body of [
+      { ...input(), username: "" },
+      { ...input(), username: "bad:name" },
+      { ...input(), token: "a\nb" },
+      { ...input(), token: "" },
+      { ...input(), workspaceId: "forged" },
+      { ...input(), providerId: "unknown" },
+    ])
       assert.equal(
-        (
-          await connectionResponse(
-            request("POST", "", { providerId: "sample", token }),
-            undefined,
-            f.store,
-          )
-        ).status,
+        (await sessionResponse(req("POST", "", body), f.sessions)).status,
         400,
       );
     assert.equal(
       (
-        await connectionResponse(
-          request("POST", "", {
-            providerId: "sample",
-            token: "a".repeat(17000),
-          }),
-          undefined,
-          f.store,
+        await sessionResponse(
+          req("POST", "", input("a".repeat(17000))),
+          f.sessions,
         )
       ).status,
       413,
     );
+    f.provider.authenticate = async () => {
+      throw new ProviderError("USERNAME_MISMATCH", "Mismatch", 400);
+    };
     assert.equal(
-      (
-        await connectionResponse(
-          request("POST", "", {
-            providerId: "unregistered",
-            token: "sample-secret",
-          }),
-          undefined,
-          f.store,
-        )
-      ).status,
+      (await sessionResponse(req("POST", "", input()), f.sessions)).status,
       400,
     );
   } finally {
     await f.cleanup();
   }
 });
-test("same-process stores serialize new sessions without losing concurrent writes", async () => {
-  const f = await setup();
-  try {
-    const another = new PersonalSessions(
-      f.root,
-      f.registry,
-      join(f.root, "credential-key"),
-    );
-    const [a, b] = await Promise.all([
-      f.connect(),
-      another.connect("", "sample", "other-secret", undefined, signal()),
-    ]);
-    assert.equal((await f.store.get(a.cookie)).connected, true);
-    assert.equal((await another.get(b.cookie)).connected, true);
-    assert.equal(
-      JSON.parse(await readFile(join(f.root, "sessions.json"), "utf8")).sessions
-        .length,
-      2,
-    );
-  } finally {
-    await f.cleanup();
-  }
-});
-
-test("reverse proxy writes use the external Host while retaining origin and HTTPS checks", async () => {
-  const f = await setup();
-  const proxyRequest = (
+test("reverse proxy uses actual external Host and rejects forwarded-host, missing origin and plaintext", async () => {
+  const f = await personalFixture();
+  const proxy = (
     overrides: Record<string, string> = {},
     omit: string[] = [],
   ) => {
@@ -384,42 +365,58 @@ test("reverse proxy writes use the external Host while retaining origin and HTTP
       "content-type": "application/json",
       ...overrides,
     });
-    omit.forEach((key) => headers.delete(key));
-    return new Request("http://localhost:10680/api/connections", {
+    omit.forEach((k) => headers.delete(k));
+    return new Request("http://localhost:10680/api/session", {
       method: "POST",
       headers,
-      body: JSON.stringify({ providerId: "sample", token: "sample-secret" }),
+      body: JSON.stringify(input()),
     });
   };
   try {
-    const response = await connectionResponse(
-      proxyRequest(),
-      undefined,
-      f.store,
-    );
+    const response = await sessionResponse(proxy(), f.sessions);
     assert.equal(response.status, 201);
     assert.match(response.headers.get("set-cookie")!, /; Secure$/);
-    for (const request of [
-      proxyRequest({ origin: "https://other.test" }),
-      proxyRequest({
-        origin: "https://other.test",
-        "x-forwarded-host": "other.test",
-      }),
-      proxyRequest({ "sec-fetch-site": "cross-site" }),
-      proxyRequest({}, ["origin"]),
-      proxyRequest({ host: "folio.test/ignored" }),
+    for (const r of [
+      proxy({ origin: "https://other.test" }),
+      proxy({ origin: "https://other.test", "x-forwarded-host": "other.test" }),
+      proxy({}, ["origin"]),
+      proxy({ host: "folio.test/ignored" }),
     ])
-      assert.equal(
-        (await connectionResponse(request, undefined, f.store)).status,
-        403,
-      );
-    const plaintext = await connectionResponse(
-      proxyRequest({ origin: "http://folio.test" }, ["x-forwarded-proto"]),
-      undefined,
-      f.store,
+      assert.equal((await sessionResponse(r, f.sessions)).status, 403);
+    assert.equal(
+      (
+        await sessionResponse(
+          proxy({ origin: "http://folio.test" }, ["x-forwarded-proto"]),
+          f.sessions,
+        )
+      ).status,
+      400,
     );
-    assert.equal(plaintext.status, 400);
-    assert.equal((await plaintext.json()).error.code, "HTTPS_REQUIRED");
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test("trusted provider instances isolate identical tokens", async () => {
+  const f = await personalFixture();
+  try {
+    const a = await f.connect();
+    const originalDescription = f.provider.describeConnection;
+    const originalAuthenticate = f.provider.authenticate;
+    f.provider.describeConnection = () => ({
+      ...originalDescription(),
+      instance: "another.test",
+    });
+    f.provider.authenticate = async (secret, sig) => ({
+      ...(await originalAuthenticate(secret, sig)),
+      instanceId: "another.test",
+    });
+    const b = await f.connect();
+    assert.notEqual(a.connection.id, b.connection.id);
+    assert.equal(
+      (await f.sessions.get(a.cookie)).workspace?.identity.instanceId,
+      "sample.test",
+    );
   } finally {
     await f.cleanup();
   }

@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "让同一 token 在多设备恢复同一工作台",
-      "status": "doing"
+      "status": "done",
+      "verification": "20 项会话与 Provider 测试及类型检查通过；覆盖并发同 token、多设备、实例隔离、续期、退出、失败切换、密钥丢失、同源与代理。",
+      "commitTitle": "token-workspaces T1: persist credential workspaces and device sessions"
     },
     "T2": {
       "title": "按 token 共享发现与仓库缓存，保持逐设备授权",

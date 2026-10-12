@@ -14,9 +14,10 @@ import {
   personalError,
   readPersonalBody,
 } from "./personal-http.ts";
-const connectionInput = z
+const loginInput = z
   .object({
     providerId: z.string().min(1).max(80).default("github"),
+    username: z.string().trim().min(1).max(255),
     token: z.string().max(4096),
     label: z.string().max(100).optional(),
   })
@@ -24,9 +25,61 @@ const connectionInput = z
 export async function sessionResponse(
   request: Request,
   store: PersonalSessions = personalSessions(),
+  discover?: Discovery,
 ) {
   try {
     const cookie = sessionCookie(request);
+    if (request.method === "POST") {
+      requirePersonalOrigin(request);
+      const result = loginInput.safeParse(await readPersonalBody(request));
+      if (!result.success)
+        throw new AppError(
+          "INVALID_PARAMETER",
+          "请填写 Git 用户名与 token。",
+          400,
+        );
+      const { providerId, username, token, label } = result.data;
+      const userAgent = request.headers.get("user-agent") ?? "";
+      const deviceLabel = /Android/i.test(userAgent)
+        ? "Android 浏览器"
+        : /iPhone|iPad/i.test(userAgent)
+          ? "iOS 浏览器"
+          : /Windows/i.test(userAgent)
+            ? "Windows 浏览器"
+            : /Macintosh/i.test(userAgent)
+              ? "Mac 浏览器"
+              : "浏览器";
+      const connected = await store.login(
+        cookie,
+        providerId,
+        token,
+        username,
+        label,
+        request.signal,
+        deviceLabel,
+      );
+      let discoveryError: { code: string; message: string } | undefined;
+      try {
+        const service =
+          discover ?? (store === personalSessions() ? discovery() : undefined);
+        if (service)
+          await service.start(connected.cookie, connected.connection.id);
+      } catch (e) {
+        discoveryError = {
+          code: e instanceof AppError ? e.code : "DISCOVERY_UNAVAILABLE",
+          message: "登录已完成，但发现未启动，请重新发现仓库。",
+        };
+      }
+      return personalJson(
+        {
+          session: connected.session,
+          connection: connected.connection,
+          ...(discoveryError ? { discoveryError } : {}),
+        },
+        201,
+        cookieHeader(request, connected.cookie, connected.session.expiresAt),
+      );
+    }
     if (request.method === "DELETE") {
       requirePersonalOrigin(request);
       if (cookie && (await store.get(cookie)).connected)
@@ -37,11 +90,33 @@ export async function sessionResponse(
         cookieHeader(request, ""),
       );
     }
-    const session = await store.get(cookie);
+    if (request.method !== "GET")
+      throw new AppError("METHOD_NOT_ALLOWED", "不支持此操作。", 405);
+    const { renewed, ...session } = await store.get(cookie);
     return personalJson(
       { ...session, providers: store.registry.describe() },
       200,
-      cookie && !session.connected ? cookieHeader(request, "") : undefined,
+      cookie && !session.connected
+        ? cookieHeader(request, "")
+        : renewed
+          ? cookieHeader(request, cookie, session.expiresAt)
+          : undefined,
+    );
+  } catch (e) {
+    return personalError(e);
+  }
+}
+export async function logoutAllResponse(
+  request: Request,
+  store: PersonalSessions = personalSessions(),
+) {
+  try {
+    requirePersonalOrigin(request);
+    await store.remove(sessionCookie(request), undefined, true);
+    return personalJson(
+      { connected: false, connections: [] },
+      200,
+      cookieHeader(request, ""),
     );
   } catch (e) {
     return personalError(e);
@@ -49,59 +124,16 @@ export async function sessionResponse(
 }
 export async function connectionResponse(
   request: Request,
-  id?: string,
-  store: PersonalSessions = personalSessions(),
-  discover?: Discovery,
+  _id?: string,
+  _store?: PersonalSessions,
+  _discover?: Discovery,
 ) {
   try {
     requirePersonalOrigin(request);
-    const cookie = sessionCookie(request);
-    if (id && !z.string().uuid().safeParse(id).success)
-      throw new AppError("CONNECTION_NOT_FOUND", "连接不存在。", 404);
-    if (request.method === "DELETE" && id) {
-      const session = await store.remove(cookie, id);
-      return personalJson(
-        session,
-        200,
-        session.connected ? undefined : cookieHeader(request, ""),
-      );
-    }
-    const result = connectionInput.safeParse(await readPersonalBody(request));
-    if (!result.success)
-      throw new AppError(
-        "INVALID_PARAMETER",
-        "请填写有效的 token 和连接名称。",
-        400,
-      );
-    const { providerId, token, label } = result.data;
-    const connected = await store.connect(
-      cookie,
-      providerId,
-      token,
-      label,
-      request.signal,
-      id,
-    );
-    let discoveryError: { code: string; message: string } | undefined;
-    try {
-      const service =
-        discover ?? (store === personalSessions() ? discovery() : undefined);
-      if (service)
-        await service.start(connected.cookie, connected.connection.id);
-    } catch (e) {
-      discoveryError = {
-        code: e instanceof AppError ? e.code : "DISCOVERY_UNAVAILABLE",
-        message: "连接已保存，但发现未启动，请重新发现仓库。",
-      };
-    }
-    return personalJson(
-      {
-        session: connected.session,
-        connection: connected.connection,
-        ...(discoveryError ? { discoveryError } : {}),
-      },
-      id ? 200 : 201,
-      cookieHeader(request, connected.cookie, connected.session.expiresAt),
+    throw new AppError(
+      "CONNECTIONS_RETIRED",
+      "连接新增与替换已停用，请使用 Git 用户名与 token 登录或切换凭据。",
+      410,
     );
   } catch (e) {
     return personalError(e);

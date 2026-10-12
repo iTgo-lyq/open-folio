@@ -352,3 +352,27 @@ test("a second provider supplies the same contract without GitHub data", async (
   assert.equal((await p.probeWorkflow(ctx, listed.items[0])).kind, "missing");
   assert.equal((await p.gitTransport(ctx, item)).url, item.cloneUrl);
 });
+
+test("GitHub login validates the entered username and keeps the verified Git transport name", async () => {
+  const { provider } = mock({
+    "/user": { id: 7, login: "demo" },
+    "/repos/demo/work": source,
+  });
+  assert.equal(
+    (await provider.authenticate(context.secret, context.signal, "DEMO")).login,
+    "demo",
+  );
+  await assert.rejects(
+    () => provider.authenticate(context.secret, context.signal, "someone-else"),
+    { code: "USERNAME_MISMATCH" },
+  );
+  assert.equal(
+    (
+      await provider.gitTransport(
+        { ...context, gitUsername: "demo" },
+        await repo(provider),
+      )
+    ).username,
+    "demo",
+  );
+});

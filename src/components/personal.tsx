@@ -387,9 +387,7 @@ export function Connections() {
             <Button
               disabled={!!busy}
               onClick={() =>
-                void run(c.id, () =>
-                  api(`/api/connections/${c.id}`, { method: "DELETE" }),
-                )
+                void run(c.id, () => api("/api/session", { method: "DELETE" }))
               }
             >
               移除连接
@@ -476,6 +474,7 @@ export function ConnectDialog({
 }) {
   const p = usePersonal();
   const [token, setToken] = useState(""),
+    [username, setUsername] = useState(connection?.identity.login ?? ""),
     [label, setLabel] = useState(connection?.label ?? ""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -487,12 +486,13 @@ export function ConnectDialog({
     setToken("");
     try {
       const result = await api<{ connection: ConnectionSummary }>(
-        `/api/connections${connection ? `/${connection.id}` : ""}`,
+        "/api/session",
         {
-          method: connection ? "PATCH" : "POST",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             providerId: "github",
+            username,
             token: value,
             ...(label.trim() ? { label: label.trim() } : {}),
           }),
@@ -509,16 +509,28 @@ export function ConnectDialog({
   const provider = p.session?.providers.find((v) => v.id === "github");
   return (
     <PersonalDialog
-      title={connection ? "替换 GitHub token" : "连接 GitHub"}
+      title={connection ? "切换凭据" : "登录工作台"}
       onClose={onClose}
     >
       <p className="muted">
         {connection
-          ? `为 @${connection.identity.login} 更新读取凭据。失败时保留原连接。`
-          : "使用个人访问令牌，发现你参与的 SpecTrail 仓库。"}
+          ? "相同 token 恢复原工作台，不同 token 使用独立工作台。失败时保留当前登录。"
+          : "使用 Git 用户名与 token，恢复自己的工作台并发现 SpecTrail 仓库。"}
       </p>
       <form onSubmit={submit}>
         <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="git-username">Git 用户名</FieldLabel>
+            <Input
+              id="git-username"
+              autoFocus
+              autoComplete="username"
+              value={username}
+              maxLength={255}
+              required
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </Field>
           <Field>
             <FieldLabel htmlFor="connection-label">连接名称（可选）</FieldLabel>
             <Input
@@ -532,7 +544,6 @@ export function ConnectDialog({
           <Field data-invalid={!!error}>
             <FieldLabel htmlFor="github-token">GitHub token</FieldLabel>
             <Input
-              autoFocus
               id="github-token"
               type="password"
               autoComplete="off"
