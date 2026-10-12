@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "periodic-repository-permissions",
+  "title": "按周期复用仓库权限检查",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/periodic-repository-permissions",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "共享短期权限检查、按错误复验并部署同工作台验证",
+      "status": "done",
+      "verification": "154 项单元/集成（旧撤权断言调整后复验通过）、24 项相关浏览器用例、类型/格式/构建通过；45cb59c 已部署，原工作台 15 次连续读取零重复平台鉴权，HTTP 正文 27–30ms、目录 63–76ms、无变化刷新 1.01–1.15s。",
+      "commitTitle": "periodic-repository-permissions T1: verify deployed reuse and latency"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T17:52:29.600Z",
+      "summary": "Agent 自查整个差异；周期失效、并发、凭据隔离、Git 错误诊断、已确认拒绝与迟到响应、发布原型即时复验均有测试；154 项单元/集成与 24 项相关浏览器用例通过，类型/格式/构建及原工作台冒烟通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T17:52:29.667Z",
+      "summary": "Agent 自验收通过：普通动作按同工作台同仓库固定 5 分钟复用权限，实际错误及时复验，明确失权使缓存及在途交付失效；保留本地设备检查，真实服务缓存正文降到 27–30ms，后台和原型正常。",
+      "source": "用户明确要求不再每个动作鉴权，可定时检查并在接口出错时确认无权限；SpecTrail small 自验收规则。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T17:53:29.077Z",
+      "summary": "同步项目知识工作台、个人访问与分享、原型浏览三份 Specs 及 README：固定 5 分钟权限周期、列表/正文共享、错误复验、明确失权及本地撤销、新增公开版本即时复验。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T17:53:29.140Z",
+      "summary": "周期权限缓存与错误复验、自验收、Specs 同步和真实工作台部署验证已完成；HTTP 正文 27–30ms、无变化刷新 1.01–1.15s，所有验证材料归档。",
+      "path": "docs/project/archive/2026-10-13-periodic-repository-permissions"
+    }
+  },
+  "dependsOn": [
+    "faster-unchanged-refresh"
+  ]
+}
