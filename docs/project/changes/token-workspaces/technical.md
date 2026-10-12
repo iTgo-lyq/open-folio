@@ -24,11 +24,11 @@ token 用 AES-256-GCM 加密，随机 nonce，AAD 绑定新 schema、workspaceId
 
 ### 登录、恢复与切换
 
-登录输入 `{ providerId, username, token, label? }`，实例由适配器配置决定。先验证输入和限额，再调用适配器验证 token；取得平台身份后核对适配器与实例边界，在存储锁下匹配或建立工作台，并创建独立设备会话。并发首次登录相同 token 必须收敛到同一个 workspaceId。
+登录输入 `{ providerId, username?, token, label? }`，实例由适配器配置决定。username 是最长 100 字符的可选显示名称，允许内部空格及冒号，拒绝控制字符；省略、空字符串和纯空白都视为未指定。先验证输入和限额，再调用适配器验证 token；取得平台身份后核对适配器与实例边界，在存储锁下匹配或建立工作台，并创建独立设备会话。并发首次登录相同 token 必须收敛到同一个 workspaceId。
 
 POST /api/session 承载登录与切换；GET /api/session 返回 `{ connected, workspace?, expiresAt?, providers, legacyChoices? }`，工作台摘要不包含指纹或密文。旧 POST／PUT /api/connections 的新增与替换入口退出使用，返回明确的重新登录提示，不保留按 subjectId 替换旧工作台的旁路。
 
-用户名由适配器处理：增加可选登录输入字段及返回的有效 Git 用户名，ProviderContext 的 gitUsername 来自服务端验证结果，不信任浏览器直接提供的 GitTransport。GitHub 适配器使用平台返回的 login；表单填写其他用户名时给出明确不匹配错误，不因此创建另一个工作台。其他适配器可规范化传输用户名，通用存储不包含 GitHub 特有分支。用户名改名不改变凭据匹配索引。
+username 仅作为已有工作台 label 的显示名称，不传入平台鉴权。兼容既有 label 输入时，显式 label 优先；首次未指定名称时使用平台返回的 login，恢复未指定名称时保留已有 label。ProviderContext 的 gitUsername 来自服务端验证结果，不信任浏览器直接提供的 GitTransport。GitHub 适配器只验证 token 并使用平台返回的 login；其他适配器可返回专用传输用户名。通用存储不包含 GitHub 特有分支，用户名改名不改变凭据匹配索引。
 
 恢复已有工作台仍要向平台验证当前 token，不接受仅凭本地摘要命中登录。普通 Cookie 恢复只返回安全摘要，真正读取继续走完整授权链；平台短暂失败不删除工作台或当前会话。
 
@@ -78,7 +78,7 @@ POST /api/session/restore 只接受 legacyChoices 中的旧 connectionId，复�
 
 ### 产品流程与原型
 
-沿用现有玻璃导航和阅读工作面。登录页展示受信平台实例、Git 用户名、token 和登录动作；没有尚未支持的平台菜单。当前凭据页展示账号摘要、复制 token、切换凭据、设备会话、退出当前设备与退出全部设备。
+沿用现有玻璃导航和阅读工作面。登录页展示受信平台实例、可选用户名、token 和登录动作；用户名提示留空自动使用 Git 账号名，不重复提供工作台名称输入，没有尚未支持的平台菜单。当前凭据页展示用户名及平台账号摘要、复制 token、切换凭据、设备会话、退出当前设备与退出全部设备。
 
 同 token 新设备登录直接恢复工作台；不同 token 初次进入发现流程。切换时清空前一工作台客户端正文、列表与错误，防止旧响应覆盖新工作台。分享链接仍只包含仓库身份与阅读位置，原型保持公开。
 
