@@ -4,9 +4,15 @@
   "title": "个人工作台与 SpecTrail 仓库自动发现",
   "size": "large",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "codex/personal-workbench",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-12T05:48:23.818Z",
+      "summary": "用户确认个人工作台需求并要求继续：个人 token 连接、三平台自动发现、工程记录按仓库授权、全部原型公开、完整 UI 改造与旧配置迁移。",
+      "source": "用户在需求文档 3d4df0e 提交推送后回复：继续吧。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "waitingFor": {
