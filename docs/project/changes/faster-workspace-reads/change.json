@@ -4,13 +4,13 @@
   "title": "缩短工作台缓存读取等待",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/faster-workspace-reads",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "精简远端授权、并发目录检查并部署复测",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {}

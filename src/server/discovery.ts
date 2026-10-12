@@ -333,7 +333,7 @@ export class Discovery {
     try {
       const previous = await this.read(lease);
       if (previous) {
-        await this.identity(lease);
+        await lease.assertCurrent();
         return summary(previous);
       }
     } finally {
@@ -491,7 +491,6 @@ export class Discovery {
   async status(cookie: string, id: string) {
     const lease = await this.sessions.lease(cookie, id);
     try {
-      await this.identity(lease);
       const job = await this.read(lease);
       if (!job) return null;
       if (job.state === "running" && !this.active.has(this.path(lease))) {
@@ -510,48 +509,14 @@ export class Discovery {
       throw new AppError("INVALID_PARAMETER", "目录页码不合法。", 400);
     const lease = await this.sessions.lease(cookie, id);
     try {
-      const provider = await this.identity(lease),
+      const provider = this.sessions.registry.get(
+          lease.context.identity.providerId,
+        ),
         job = await this.read(lease),
         all = job ? found(job) : [];
-      const items: DiscoveredRepository[] = [];
       let unavailable = 0;
-      for (const item of all.slice(offset, offset + 20)) {
-        await slots().use(lease.context.signal, async () => {
-          const context = {
-            ...lease.context,
-            signal: AbortSignal.any([
-              lease.context.signal,
-              AbortSignal.timeout(20_000),
-            ]),
-          };
-          try {
-            const repository = await provider.resolveRepository(
-              context,
-              item.repository,
-            );
-            await provider.assertRead(context, repository);
-            await this.git(provider, context, repository);
-            items.push({ ...item, repository });
-          } catch (e) {
-            if (
-              e instanceof ProviderError &&
-              [
-                "TOKEN_INVALID",
-                "RATE_LIMITED",
-                "PROVIDER_UNAVAILABLE",
-                "IDENTITY_CHANGED",
-              ].includes(e.code)
-            )
-              throw e;
-            unavailable++;
-          }
-        });
-      }
-      // A page can take multiple remote calls. Recheck every retained repository
-      // before delivery, including entries checked early in the initial pass.
-      await this.identity(lease);
       const verification = await Promise.allSettled(
-        items.map((item) =>
+        all.slice(offset, offset + 20).map((item) =>
           slots().use(lease.context.signal, async () => {
             const context = {
               ...lease.context,
@@ -566,7 +531,6 @@ export class Discovery {
                 item.repository,
               );
               await provider.assertRead(context, repository);
-              await this.git(provider, context, repository);
               return { ...item, repository };
             } catch (e) {
               if (
@@ -592,7 +556,6 @@ export class Discovery {
       const verified = verification.flatMap((result) =>
         result.status === "fulfilled" ? [result.value] : [],
       );
-      await this.identity(lease);
       await lease.assertCurrent();
       return {
         items: verified.filter(
@@ -645,12 +608,8 @@ export class Discovery {
         .filter((r) => r.key !== result.key)
         .concat(result);
       await this.write(lease, job);
-      await this.identity(lease);
-      const current = await provider.resolveRepository(lease.context, repo);
-      await provider.assertRead(lease.context, current);
-      await this.git(provider, lease.context, current);
       await lease.assertCurrent();
-      return { ...result, repository: current };
+      return result;
     } finally {
       lease.release();
     }

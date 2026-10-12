@@ -3,7 +3,7 @@ import { personalFixture } from "./personal-fixture.ts";
 import { fixture } from "./fixture.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { Repositories } from "../src/server/repositories.ts";
-import { Discovery, probeGit } from "../src/server/discovery.ts";
+import { Discovery } from "../src/server/discovery.ts";
 import { GitReader } from "../src/server/git.ts";
 import { repositoryKey } from "../src/server/providers/types.ts";
 import { repositoryResponse } from "../src/server/repository-api.ts";
@@ -44,7 +44,6 @@ export async function repositoryFixture(https = false) {
     join(f.root, "repos"),
     f.sessions,
     discovery,
-    https ? probeGit : f.git,
     https ? undefined : (dir) => new GitReader(dir, g.remote, "file"),
   );
   const key = repositoryKey(repo);

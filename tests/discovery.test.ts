@@ -233,22 +233,47 @@ test("discovery bounds concurrent probes and logged-out devices cannot read its 
   }
 });
 
-test("directory delivery rechecks an early repository revoked while later entries were checked", async () => {
+test("directory checks run once per entry with bounded concurrency and retain the original order", async () => {
   const f = await personalFixture();
   try {
     const c = await f.connect();
+    for (let i = 7; i <= 16; i++)
+      f.repositories.push({
+        ...f.repositories[0],
+        repositoryId: String(i),
+        fullName: `team/content-${i}`,
+      });
     await f.discovery.start(c.cookie, c.connection.id);
     await f.discovery.wait(c.cookie, c.connection.id);
+    const before = await f.discovery.list(c.cookie, c.connection.id);
     const original = f.provider.assertRead;
+    const checked: string[] = [];
+    let active = 0,
+      peak = 0;
     f.provider.assertRead = async (ctx, repo) => {
-      if (repo.repositoryId === "2") f.controls.deny.add("1");
-      return original(ctx, repo);
+      checked.push(repo.repositoryId);
+      active++;
+      peak = Math.max(peak, active);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return await original(ctx, repo);
+      } finally {
+        active--;
+      }
     };
+    const gitCalls = f.controls.gitCalls;
     const listing = await f.discovery.list(c.cookie, c.connection.id);
+    assert.deepEqual(listing.items, before.items);
+    assert.equal(new Set(checked).size, listing.items.length);
+    assert.equal(checked.length, listing.items.length);
+    assert.ok(peak > 1 && peak <= 8, `peak concurrency: ${peak}`);
+    assert.equal(f.controls.gitCalls, gitCalls);
+    f.controls.deny.add("1");
+    const revoked = await f.discovery.list(c.cookie, c.connection.id);
     assert.ok(
-      !listing.items.some((item) => item.repository.repositoryId === "1"),
+      !revoked.items.some((item) => item.repository.repositoryId === "1"),
     );
-    assert.equal(listing.unavailable, 1);
+    assert.equal(revoked.unavailable, 1);
   } finally {
     await f.cleanup();
   }

@@ -83,6 +83,12 @@ export async function personalFixture() {
       };
     },
     resolveRepository: async (_ctx, selector) => {
+      if (controls.identityInvalid)
+        throw new ProviderError(
+          "TOKEN_INVALID",
+          "Expired fixture connection",
+          401,
+        );
       const r = repositories.find((r) =>
         selector.repositoryId
           ? r.repositoryId === selector.repositoryId
@@ -93,6 +99,12 @@ export async function personalFixture() {
       return r;
     },
     assertRead: async (_ctx, r) => {
+      if (controls.identityInvalid)
+        throw new ProviderError(
+          "TOKEN_INVALID",
+          "Expired fixture connection",
+          401,
+        );
       if (controls.deny.has(r.repositoryId))
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
     },

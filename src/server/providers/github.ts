@@ -358,15 +358,7 @@ export class GitHubProvider implements RepositoryProvider {
   }
   async assertRead(ctx: ProviderContext, repo: RepositoryIdentity) {
     this.#context(ctx, repo);
-    const identity = await this.authenticate(ctx.secret, ctx.signal);
-    if (identity.subjectId !== ctx.identity.subjectId)
-      throw new ProviderError(
-        "IDENTITY_CHANGED",
-        "连接身份已改变，请重新连接。",
-        401,
-      );
-    const current = await this.resolveRepository(ctx, repo);
-    await this.#root(ctx, current);
+    await this.#root(ctx, repo);
   }
   async probeWorkflow(
     ctx: ProviderContext,

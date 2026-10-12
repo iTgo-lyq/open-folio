@@ -267,7 +267,7 @@ test("expired identities cannot be hidden by a public repository; limits are rec
     await assert.rejects(() => p.listRepositories(context, null), { code });
   }
   const f = fixture();
-  f["/user"] = new Response(null, { status: 401 });
+  f["/repos/demo/work/commits/trunk"] = new Response(null, { status: 401 });
   const p = mock(f).provider;
   await assert.rejects(
     () =>
@@ -283,6 +283,22 @@ test("expired identities cannot be hidden by a public repository; limits are rec
       }),
     { code: "TOKEN_INVALID" },
   );
+});
+test("content permission checks use one authenticated contents request without identity or metadata round trips", async () => {
+  const { provider, requests } = mock(fixture());
+  const repository = await repo(provider);
+  requests.length = 0;
+  await provider.assertRead(context, repository);
+  assert.deepEqual(
+    requests.map((u) => u.pathname),
+    ["/repos/demo/work/commits/trunk"],
+  );
+  for (const status of [401, 403, 404, 503]) {
+    const denied = mock({
+      "/repos/demo/work/commits/trunk": new Response(null, { status }),
+    }).provider;
+    await assert.rejects(() => denied.assertRead(context, repository));
+  }
 });
 test("stable identity survives rename, without following redirects", async () => {
   const p = mock({

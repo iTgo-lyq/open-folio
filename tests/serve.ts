@@ -121,7 +121,8 @@ const provider: RepositoryProvider = {
     };
   },
   listRepositories: async () => ({ items: [repository], nextCursor: null }),
-  resolveRepository: async (_ctx, selector) => {
+  resolveRepository: async (ctx, selector) => {
+    await provider.authenticate(ctx.secret, ctx.signal);
     if (
       (selector.repositoryId && selector.repositoryId !== "1") ||
       (!selector.repositoryId && selector.fullName !== repository.fullName)
@@ -129,9 +130,8 @@ const provider: RepositoryProvider = {
       throw new ProviderError("READ_DENIED", "当前连接无法读取这个仓库。", 403);
     return repository;
   },
-  assertRead: async () => {
-    if (unavailable)
-      throw new ProviderError("PROVIDER_UNAVAILABLE", "平台暂时不可达。", 503);
+  assertRead: async (ctx) => {
+    await provider.authenticate(ctx.secret, ctx.signal);
   },
   probeWorkflow: async () => ({
     kind: "file",

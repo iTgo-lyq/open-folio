@@ -1,12 +1,7 @@
 import "server-only";
 import { join } from "node:path";
 import { dataDirectory } from "./config.ts";
-import {
-  discovery,
-  type Discovery,
-  probeGit,
-  type GitProbe,
-} from "./discovery.ts";
+import { discovery, type Discovery } from "./discovery.ts";
 import {
   personalSessions,
   type PersonalSessions,
@@ -17,7 +12,6 @@ import { SnapshotStore } from "./store.ts";
 import { AppError } from "./errors.ts";
 import {
   repositoryKey,
-  ProviderError,
   type RepositoryIdentity,
   type RepositorySelector,
   type GitTransport,
@@ -39,21 +33,17 @@ export class Repositories {
   readonly root: string;
   readonly sessions: PersonalSessions;
   readonly discoveries: Discovery;
-  readonly git: GitProbe;
   readonly readerFactory: ReaderFactory;
   constructor(
     root: string,
     sessions: PersonalSessions,
     discoveries: Discovery,
-    git: GitProbe = probeGit,
     readerFactory: ReaderFactory = (dir, transport) =>
       new GitReader(dir, transport),
   ) {
-    Object.assign(this, { root, sessions, discoveries, git, readerFactory });
     this.root = root;
     this.sessions = sessions;
     this.discoveries = discoveries;
-    this.git = git;
     this.readerFactory = readerFactory;
   }
   async read<T>(
@@ -71,20 +61,6 @@ export class Repositories {
       const provider = this.sessions.registry.get(
         lease.context.identity.providerId,
       );
-      const verifyIdentity = async () => {
-        const actual = await provider.authenticate(
-          lease.context.secret,
-          lease.context.signal,
-        );
-        if (actual.subjectId !== lease.context.identity.subjectId)
-          throw new ProviderError(
-            "IDENTITY_CHANGED",
-            "连接身份已改变，请重新连接。",
-            401,
-          );
-        await lease.assertCurrent();
-      };
-      await verifyIdentity();
       const found = await this.discoveries.lookup(lease, key);
       const target = found?.repository ?? selector;
       if (!target)
@@ -103,6 +79,7 @@ export class Repositories {
           "链接的仓库身份不匹配。",
           404,
         );
+      await provider.assertRead(lease.context, repository);
       if (!found) {
         const diagnosed = await this.discoveries.diagnose(
           provider,
@@ -117,20 +94,6 @@ export class Repositories {
           );
       }
       const assertPermission = async (owner: ConnectionLease) => {
-        const actual = await provider.authenticate(
-          owner.context.secret,
-          owner.context.signal,
-        );
-        if (
-          actual.subjectId !== owner.context.identity.subjectId ||
-          actual.providerId !== owner.context.identity.providerId ||
-          actual.instanceId !== owner.context.identity.instanceId
-        )
-          throw new ProviderError(
-            "IDENTITY_CHANGED",
-            "凭据身份已改变，请重新登录。",
-            401,
-          );
         await owner.assertCurrent();
         const current = await provider.resolveRepository(
           owner.context,
@@ -139,11 +102,10 @@ export class Repositories {
         if (repositoryKey(current) !== key)
           throw new AppError("REPOSITORY_MISMATCH", "仓库身份已变化。", 403);
         await provider.assertRead(owner.context, current);
-        await this.git(provider, owner.context, current);
         await owner.assertCurrent();
       };
       const assertRead = () => assertPermission(lease);
-      await assertRead();
+      await lease.assertCurrent();
       const cache = join(this.root, lease.workspaceId);
       const makeStore = async (owner: ConnectionLease) => {
         const transport = await provider.gitTransport(
@@ -176,7 +138,7 @@ export class Repositories {
           const locks = (state.folioRefreshes ??= new Map());
           const path = store.directory(project);
           // A credential-owned job survives an individual device logout. Each
-          // waiting device still authorizes its own response before delivery.
+          // waiting device must still have a valid session before delivery.
           let next = locks.get(path);
           if (!next) {
             next = (async () => {
@@ -185,7 +147,7 @@ export class Repositories {
                 connectionId,
               );
               try {
-                await assertPermission(owner);
+                await owner.assertCurrent();
                 const shared = await makeStore(owner);
                 return await shared.refresh(project, limits, {
                   signal: owner.context.signal,
@@ -203,12 +165,11 @@ export class Repositories {
               .catch(() => {});
           }
           const result = await next;
-          await assertRead();
           return result as Awaited<ReturnType<SnapshotStore["refresh"]>>;
         },
       };
       const result = await operation(context);
-      await assertRead();
+      await lease.assertCurrent();
       return result;
     } finally {
       lease.release();

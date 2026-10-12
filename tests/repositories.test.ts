@@ -76,21 +76,19 @@ test("personal repository reads isolate snapshots and authorize every cached doc
     await t.cleanup();
   }
 });
-test("read delivery rechecks remote permissions; failed refresh retains prior pointer and replacement invalidates cache", async () => {
+test("short reads use entry authorization; subsequent reads detect revocation and failed refresh retains the prior pointer", async () => {
   const t = await setup();
   try {
     const first = (await t.read((ctx) => ctx.refresh(DEFAULT_LIMITS))) as {
       id: string;
     };
-    await assert.rejects(
-      () =>
-        t.read(async (ctx) => {
-          const body = await ctx.store.workbench(ctx.project);
-          t.f.controls.deny.add("1");
-          return body;
-        }),
-      { code: "READ_DENIED" },
-    );
+    const permitted = (await t.read(async (ctx) => {
+      const body = await ctx.store.workbench(ctx.project);
+      t.f.controls.deny.add("1");
+      return body;
+    })) as { id: string };
+    assert.equal(permitted.id, first.id);
+    assert.equal((await t.request("workbench")).status, 403);
     t.f.controls.deny.clear();
     await assert.rejects(
       () =>
@@ -137,7 +135,7 @@ test("read delivery rechecks remote permissions; failed refresh retains prior po
     await t.cleanup();
   }
 });
-test("the complete personal HTTP read path uses the supplied HTTPS Git token and rejects revoked Git access even with cache", async () => {
+test("Git refresh uses the supplied HTTPS token; cached API-authorized reads do not probe Git", async () => {
   const t = await setup(true),
     g = t.g as Awaited<ReturnType<typeof gitHttpsFixture>>,
     saved = process.env.GIT_SSL_CAINFO;
@@ -146,10 +144,14 @@ test("the complete personal HTTP read path uses the supplied HTTPS Git token and
     assert.equal((await t.request("refresh", "POST")).status, 200);
     const w = await (await t.request("workbench")).json();
     assert.ok(w.specs.length);
-    assert.ok(g.attempts.length > 3);
+    assert.ok(g.attempts.length > 0);
     assert.ok(g.attempts.every((v) => v === "reader:token-a"));
+    const attempts = g.attempts.length;
     g.allowed.delete("reader:token-a");
-    assert.equal((await t.request(`workbench?snapshot=${w.id}`)).status, 503);
+    assert.equal((await t.request(`workbench?snapshot=${w.id}`)).status, 200);
+    assert.equal(g.attempts.length, attempts);
+    assert.equal((await t.request("refresh", "POST")).status, 503);
+    assert.equal((await (await t.request("workbench")).json()).id, w.id);
     const dump = await t
       .read(async (ctx) =>
         readFile(join(ctx.store.directory(ctx.project), "git/config"), "utf8"),
@@ -159,6 +161,40 @@ test("the complete personal HTTP read path uses the supplied HTTPS Git token and
   } finally {
     if (saved === undefined) delete process.env.GIT_SSL_CAINFO;
     else process.env.GIT_SSL_CAINFO = saved;
+    await t.cleanup();
+  }
+});
+
+test("cached reads authorize once and still reject a device revoked while materializing the response", async () => {
+  const t = await setup();
+  try {
+    await t.request("refresh", "POST");
+    const calls = { identity: 0, resolve: 0, contents: 0 };
+    const provider = t.f.provider;
+    for (const [method, field] of [
+      ["authenticate", "identity"],
+      ["resolveRepository", "resolve"],
+      ["assertRead", "contents"],
+    ] as const) {
+      const original = provider[method].bind(provider);
+      // Each provider method has a different signature; only count and forward.
+      (provider as any)[method] = (...args: any[]) => {
+        calls[field]++;
+        return (original as any)(...args);
+      };
+    }
+    const gitCalls = t.f.controls.gitCalls;
+    assert.equal((await t.request("workbench")).status, 200);
+    assert.deepEqual(calls, { identity: 0, resolve: 1, contents: 1 });
+    assert.equal(t.f.controls.gitCalls, gitCalls);
+    await assert.rejects(() =>
+      t.read(async (ctx) => {
+        const value = await ctx.store.workbench(ctx.project);
+        await t.f.sessions.remove(t.c.cookie);
+        return value;
+      }),
+    );
+  } finally {
     await t.cleanup();
   }
 });
@@ -248,7 +284,6 @@ test("concurrent refresh has one credential-owned Git job and never delivers to 
     t.service.root,
     t.f.sessions,
     t.service.discoveries,
-    t.f.git,
     (directory) => {
       const reader = new GitReader(directory, t.g.remote, "file"),
         collect = reader.collect.bind(reader);

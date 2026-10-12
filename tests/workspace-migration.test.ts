@@ -189,7 +189,6 @@ test("migration groups exact tokens, chooses latest complete cache and preserves
         join(t.root, "repositories-v2"),
         t.store,
         discovery,
-        t.f.git,
         (dir) => new GitReader(dir, t.g.remote, "file"),
       );
     const snapshot = async (cookie: string, id: string) =>
