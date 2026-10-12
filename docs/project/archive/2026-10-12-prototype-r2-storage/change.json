@@ -3,8 +3,8 @@
   "id": "prototype-r2-storage",
   "title": "当前页面外壳原型迁移至 R2",
   "size": "small",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/prototype-r2-storage",
   "confirmations": {},
   "tasks": {
@@ -15,7 +15,30 @@
       "commitTitle": "prototype-r2-storage T1: verify R2 delivery and historical compatibility"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T03:31:28.331Z",
+      "summary": "Agent 自查通过：固定 R2 发布、三设备截图与四视口交互、失败及重试、实际工作台读取、当前 custom 配置解析旧 Git 交付均有证据；历史归档及标签保持原样。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T03:31:28.404Z",
+      "summary": "Agent 自验收通过：唯一外壳及截图已公开发布，当前与新 Change 引用一致，旧交付可读，密钥与 dist 未提交。",
+      "source": "SpecTrail small 自验收规则；用户明确选择新 Change 迁移当前唯一原型到 R2，历史 Change 不改。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T03:31:28.514Z",
+      "summary": "同步 prototype-preview Spec 的项目级 R2 发布、固定引用、凭据与历史保留约定；更新发布文档。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T03:31:28.585Z",
+      "summary": "R2 发布、工作台预览和历史 Git 兼容已验证，small 自验收后归档。",
+      "path": "docs/project/archive/2026-10-12-prototype-r2-storage"
+    }
+  },
   "previews": [
     {
       "id": "workspace-shell",

@@ -12,7 +12,7 @@
 
 ## 发布
 
-在仓库根目录运行。先提交源码和构建脚本，保持工作区干净；协议文件放仓库外。以下 `prototype-r2-storage` 是本次迁移的 Change，后续替换为实际活动 Change。
+在仓库根目录运行。先提交源码和构建脚本，保持工作区干净；协议文件放仓库外。以下 `your-change-id` 替换为本次发布所属的活动 Change。
 
 ```bash
 npm ci
@@ -34,7 +34,7 @@ node --env-file="$HOME/.config/open-folio/r2.env" packages/prototype/publish-r2.
 node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting custom
 node .agents/skills/spec-trail/prototype/scripts/publish.mjs register \
   --request /tmp/open-folio-r2-request.json --result /tmp/open-folio-r2-result.json \
-  --change prototype-r2-storage
+  --change your-change-id
 node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 ```
 
