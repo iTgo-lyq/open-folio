@@ -138,6 +138,9 @@ export class GitHubProvider implements RepositoryProvider {
   constructor(fetcher: typeof fetch = fetch) {
     this.#fetch = fetcher;
   }
+  parseRepositoryUrl(input: string) {
+    return { fullName: githubRepositoryName(input) };
+  }
   describeConnection() {
     return {
       id: this.id,

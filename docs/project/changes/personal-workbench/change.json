@@ -41,7 +41,8 @@
     },
     "T4": {
       "title": "自动发现并诊断 SpecTrail 仓库",
-      "status": "todo"
+      "status": "done",
+      "verification": "发现服务 6 项测试、Provider/会话回归及类型检查通过；真实正向识别与正文读取在 T5 联调。"
     },
     "T5": {
       "title": "按个人仓库权限读取工程记录",

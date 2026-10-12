@@ -25,6 +25,7 @@ async function setup() {
   const root = await mkdtemp(join(tmpdir(), "folio-session-test-"));
   const provider: RepositoryProvider = {
     id: "sample",
+    parseRepositoryUrl: () => ({ fullName: "group/project" }),
     describeConnection: () => ({
       id: "sample",
       name: "Sample",

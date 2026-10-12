@@ -322,6 +322,7 @@ test("a second provider supplies the same contract without GitHub data", async (
   };
   const fake: RepositoryProvider = {
     id: "sample",
+    parseRepositoryUrl: () => ({ fullName: "group/project" }),
     describeConnection: () => ({
       id: "sample",
       name: "Sample",

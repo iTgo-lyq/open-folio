@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { discovery, type Discovery } from "./discovery.ts";
 import { AppError } from "./errors.ts";
 import {
   personalSessions,
@@ -50,6 +51,7 @@ export async function connectionResponse(
   request: Request,
   id?: string,
   store: PersonalSessions = personalSessions(),
+  discover?: Discovery,
 ) {
   try {
     requirePersonalOrigin(request);
@@ -80,8 +82,24 @@ export async function connectionResponse(
       request.signal,
       id,
     );
+    let discoveryError: { code: string; message: string } | undefined;
+    try {
+      const service =
+        discover ?? (store === personalSessions() ? discovery() : undefined);
+      if (service)
+        await service.start(connected.cookie, connected.connection.id);
+    } catch (e) {
+      discoveryError = {
+        code: e instanceof AppError ? e.code : "DISCOVERY_UNAVAILABLE",
+        message: "连接已保存，但发现未启动，请重新发现仓库。",
+      };
+    }
     return personalJson(
-      { session: connected.session, connection: connected.connection },
+      {
+        session: connected.session,
+        connection: connected.connection,
+        ...(discoveryError ? { discoveryError } : {}),
+      },
       id ? 200 : 201,
       cookieHeader(request, connected.cookie, connected.session.expiresAt),
     );

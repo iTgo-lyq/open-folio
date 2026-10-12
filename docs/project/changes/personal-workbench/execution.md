@@ -23,3 +23,9 @@ GitReader 接收显式 GitTransport。HTTPS 没有凭据时在启动 Git 前拒�
 跨请求操作通过 connection lease 校验所属会话和 revision，移除、替换、退出及过期取消在途操作。写接口要求同源、远程 HTTPS、有限 JSON 输入，公共 DTO 不含密文或原 token。连接成功后的自动发现由 T4 接入；正式页面在 T7 交付。
 
 验证：`node --conditions=react-server --test tests/personal-sessions.test.ts`，7 项通过；`npm run typecheck` 通过。覆盖重启恢复、独立 nonce、Cookie 轮换、同账号多连接、失败替换回滚、跨用户拒绝、取消与到期、密文调换、密钥丢失、同源／输入边界、秘密不回显及同进程多存储实例并发写入。
+
+## T4 自动发现并诊断 SpecTrail 仓库
+
+连接验证成功后启动后台发现；分页和未完成队列按连接 revision 持久化，单批最多 4 个检查、进程总计最多 8 个，单仓库设超时。完整工作流 schema、普通文件类型、默认分支提交与守护分支共同决定 ready／attention；缺失、损坏、来源异常和暂时失败分别呈现，未完成扫描不会成为完整空结果。目录分页返回前重新验证身份、仓库 Contents 权限和指定 token 的 Git refs。补充地址检查通过 Provider 解析，发现进行时提示稍后重试，避免与后台目录写入竞争。
+
+验证：发现服务 6 项测试通过，覆盖六类样本、多页、限流续传、重启中断、并发合并与上限、撤权目录过滤、连接移除取消、跨会话拒绝和 HTTP 自动发现。连同 Provider／会话 20 项先前测试及 `npm run typecheck` 通过；新加并发用例单独复验通过。发现仅执行元数据、workflow blob 与 refs 检查，不 fetch 候选仓库。真实 GitHub 已有 T2 的发现及未接入负向证据，正向 SpecTrail 识别和正文读取留待 T5 联调，不以受控样本宣称真实正向通过。

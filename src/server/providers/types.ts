@@ -68,6 +68,7 @@ export type ProbeResult =
 export interface RepositoryProvider {
   id: string;
   describeConnection(): ConnectionDescriptor;
+  parseRepositoryUrl(input: string): RepositorySelector;
   authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
