@@ -3,7 +3,7 @@
   "id": "personal-workbench",
   "title": "个人工作台与 SpecTrail 仓库自动发现",
   "size": "large",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/personal-workbench",
   "confirmations": {
@@ -85,6 +85,23 @@
       "result": "passed",
       "at": "2026-10-12T09:25:32.693Z",
       "summary": "T1–T11 已提交推送。完整差异和 T11 反向代理修复均由隔离上下文独立评审，无剩余阻塞项；最终 120 项单元/集成、类型、格式和生产构建通过，既有 54 项完整浏览器及最终公开分享回归通过，新增实际生产页面/连接表单和五组代理 HTTP 验证通过。原 Merlin 预览服务已更新，未合入 main。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T11:03:04.111Z",
+      "summary": "用户明确要求归档个人工作台，沿用已完成的 T1–T11 验证与独立评审，接受当前交付并继续关闭。",
+      "source": "用户在交付、验证证据和后续 Token 工作台方案说明后明确回复：“继续吧，归档前一个change。”"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T11:08:02.027Z",
+      "summary": "同步项目知识工作台及个人访问、运维配置、Spec 阅读、Change 原型关联、公开原型能力六份 Specs；移除全局项目、邀请码和宿主凭据授权描述，保留既有阅读与流程规则，仅记录已实现并验证的 personal-v1 交付。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T11:08:02.155Z",
+      "summary": "用户明确归档授权，整体验证、人工接受与 Specs 同步均已记录；完整材料移入只读归档，随归档提交推送原型保留标签。",
+      "path": "docs/project/archive/2026-10-12-personal-workbench"
     }
   },
   "rework": {
@@ -124,9 +141,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "整体验证和既有预览服务更新已完成，等待用户在新版工作台人工验收；验收后同步 Specs 并归档。"
-  }
+  ]
 }
