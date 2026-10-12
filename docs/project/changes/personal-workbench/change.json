@@ -31,7 +31,8 @@
     },
     "T2": {
       "title": "让 Git 读取只使用指定连接的 token",
-      "status": "todo"
+      "status": "done",
+      "verification": "27 项 Git/缓存/Change/原型回归与类型检查通过；真实 GitHub refs 和 fetch 成功，指定仓库工作流缺失为负向样本。"
     },
     "T3": {
       "title": "提供个人会话与连接生命周期",

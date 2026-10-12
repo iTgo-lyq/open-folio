@@ -7,3 +7,11 @@
 工作流探测逐级检查普通目录／文件，树证实缺失才返回 missing；符号链接、子模块与非法位置返回 WORKFLOW_INVALID，留给发现层归类。API 版本采用本轮核对的官方 REST 示例版本 `2026-03-10`；[仓库接口](https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user)与[Git Trees](https://docs.github.com/en/rest/git/trees#get-a-tree)作为映射依据。
 
 验证：`node --conditions=react-server --test tests/providers.test.ts`，8 项通过；`npm run typecheck` 通过。测试覆盖前向分页与恶意 continuation、稳定身份改名、缺失与权限失败区分、普通文件／符号链接／子模块、树截断、空仓库、身份过期、限流、秘密不可序列化及虚构第二适配器。真实 GitHub fetch 和发现服务集成随 T2／T4／T5 验证，此处不报告完整联调。
+
+## T2 让 Git 读取只使用指定连接的 token
+
+GitReader 接收显式 GitTransport。HTTPS 没有凭据时在启动 Git 前拒绝；子进程使用环境白名单、临时空 HOME／XDG／CURL 目录，关闭系统／全局配置、helper、交互、trace、重定向和非指定协议。Authorization 只经子进程环境注入精确 URL 作用域，不进入参数或磁盘。缓存仅接受服务生成的无凭据 Git config，未知旧配置拒绝复用；可信代理和 CA 保留，TLS 校验始终启用。
+
+新增真实 HTTPS Git fixture，通过 git-http-backend 验证 refs 和 fetch；故意提供有效宿主 helper、netrc、继承鉴权头，错误 token 仍失败，helper 与 trace 均未执行。并发两连接分别发送各自凭据；远端撤权、取消和被污染的本地 config 均拒绝。
+
+验证：`npm run typecheck` 通过；`node --conditions=react-server --test tests/git-credentials.test.ts tests/store.test.ts tests/changes.test.ts tests/previews.test.ts`，27 项通过。真实 GitHub 联调通过关闭回显的 stdin 临时注入用户此前提供的 token，未使用本机 Git 登录态；指定 runweft 仓库身份、发现、refs 与 fetch 均成功，读取 2 个分支和 507 个受限文档。工作流探测由目录树确认 missing，不能作为已接入正向样本；后续发现／工作台仍需正向联调。临时 Git 目录已删除，秘密未落盘。

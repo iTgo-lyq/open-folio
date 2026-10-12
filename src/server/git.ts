@@ -1,6 +1,16 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir, access } from "node:fs/promises";
+import {
+  mkdir,
+  chmod,
+  access,
+  readFile,
+  writeFile,
+  mkdtemp,
+  rm,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import type { GitTransport } from "./providers/types.ts";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import type { Branch, DocumentRef, Limits } from "../lib/model.ts";
@@ -35,32 +45,113 @@ export class GitReader {
   directory: string;
   url: string;
   protocol: "https" | "file";
+  private transport?: GitTransport;
   constructor(
     directory: string,
-    url: string,
+    source: string | GitTransport,
     protocol: "https" | "file" = "https",
   ) {
     this.directory = directory;
-    this.url = url;
+    this.url = typeof source === "string" ? source : source.url;
     this.protocol = protocol;
+    if (typeof source !== "string") this.transport = source;
+    if (/[\x00-\x1f\x7f]/.test(this.url))
+      throw new AppError("INVALID_TRANSPORT", "仓库地址不合法。", 400);
+    if (protocol === "https" && this.transport) {
+      const u = new URL(this.url);
+      if (
+        u.protocol !== "https:" ||
+        u.username ||
+        u.password ||
+        u.search ||
+        u.hash ||
+        !this.transport.username ||
+        /[\x00-\x20\x7f:]/.test(this.transport.username)
+      )
+        throw new AppError("INVALID_TRANSPORT", "仓库传输配置不合法。", 400);
+    }
+  }
+  private config() {
+    const url = this.url.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    return `[core]\nrepositoryformatversion = 0\nfilemode = true\nbare = true\n[remote "origin"]\nurl = "${url}"\nfetch = +refs/heads/*:refs/remotes/origin/*\n`;
   }
   async run(
     args: string[],
     signal?: AbortSignal,
     inputLimit = 16 * 1024 * 1024,
   ): Promise<Buffer> {
-    const env = {
-      ...process.env,
+    if (this.protocol === "https" && !this.transport)
+      throw new AppError(
+        "TOKEN_REQUIRED",
+        "请连接自己的 GitHub 账号后读取仓库。",
+        401,
+      );
+    const config = await readFile(join(this.directory, "config"), "utf8").catch(
+      (e: NodeJS.ErrnoException) => {
+        if (e.code === "ENOENT") return null;
+        throw e;
+      },
+    );
+    if (config !== null && config !== this.config())
+      throw new AppError(
+        "GIT_CONFIG_UNTRUSTED",
+        "仓库缓存配置不兼容，请重新建立个人缓存。",
+      );
+    const isolated = await mkdtemp(join(tmpdir(), "openfolio-git-env-"));
+    const env: NodeJS.ProcessEnv = { NODE_ENV: "production" };
+    for (const key of [
+      "PATH",
+      "SystemRoot",
+      "LANG",
+      "LC_ALL",
+      "HTTP_PROXY",
+      "HTTPS_PROXY",
+      "ALL_PROXY",
+      "NO_PROXY",
+      "http_proxy",
+      "https_proxy",
+      "all_proxy",
+      "no_proxy",
+      "GIT_SSL_CAINFO",
+      "GIT_SSL_CAPATH",
+      "SSL_CERT_FILE",
+      "SSL_CERT_DIR",
+    ])
+      if (process.env[key] !== undefined) env[key] = process.env[key];
+    Object.assign(env, {
+      HOME: isolated,
+      XDG_CONFIG_HOME: isolated,
+      CURL_HOME: isolated,
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_SYSTEM: "/dev/null",
+      GIT_CONFIG_GLOBAL: "/dev/null",
       GIT_TERMINAL_PROMPT: "0",
+      GIT_ASKPASS: "/bin/false",
+      SSH_ASKPASS: "/bin/false",
       GIT_NO_REPLACE_OBJECTS: "1",
-    };
-    for (const k of Object.keys(env))
-      if (
-        /^GIT_(DIR|COMMON_DIR|WORK_TREE|INDEX_FILE|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES|CONFIG|CEILING_DIRECTORIES|DISCOVERY)/.test(
-          k,
-        )
-      )
-        delete (env as Record<string, string | undefined>)[k];
+      GIT_ATTR_NOSYSTEM: "1",
+      GIT_TEMPLATE_DIR: isolated,
+      GIT_LFS_SKIP_SMUDGE: "1",
+    });
+    const settings: [string, string][] = [
+      ["credential.helper", ""],
+      ["core.askPass", "/bin/false"],
+      ["http.extraHeader", ""],
+      ["http.sslVerify", "true"],
+    ];
+    if (this.transport)
+      settings.push([
+        `http.${this.url}.extraHeader`,
+        this.transport.secret.use(
+          (token) =>
+            `Authorization: Basic ${Buffer.from(`${this.transport!.username}:${token}`).toString("base64")}`,
+        ),
+      ]);
+    env.GIT_CONFIG_COUNT = String(settings.length);
+    settings.forEach(([key, value], i) => {
+      env[`GIT_CONFIG_KEY_${i}`] = key;
+      env[`GIT_CONFIG_VALUE_${i}`] = value;
+    });
     try {
       const r = await exec(
         "git",
@@ -99,10 +190,18 @@ export class GitReader {
       throw new AppError(
         "GIT_READ_FAILED",
         signal?.aborted
-          ? "读取超时，已保留上次快照。"
-          : "仓库读取失败，请检查运行环境的仓库访问权限、网络或存储空间。",
+          ? "读取已取消或超时，请重试。"
+          : "仓库读取失败，请检查当前连接的权限、网络或存储空间。",
       );
+    } finally {
+      await rm(isolated, { recursive: true, force: true });
     }
+  }
+  async remoteRefs(signal: AbortSignal) {
+    await mkdir(this.directory, { recursive: true, mode: 0o700 });
+    return (
+      await this.run(["ls-remote", "--symref", this.url, "HEAD"], signal)
+    ).toString();
   }
   async collect(limits: Limits, signal: AbortSignal) {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
@@ -110,7 +209,10 @@ export class GitReader {
       await access(join(this.directory, "HEAD"));
     } catch {
       await this.run(["init", "--bare", "."], signal);
-      await this.run(["remote", "add", "origin", this.url], signal);
+      await writeFile(join(this.directory, "config"), this.config(), {
+        mode: 0o600,
+      });
+      await chmod(join(this.directory, "config"), 0o600);
     }
     const head = (
       await this.run(["ls-remote", "--symref", "origin", "HEAD"], signal)
