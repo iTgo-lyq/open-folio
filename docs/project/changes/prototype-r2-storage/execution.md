@@ -12,6 +12,10 @@
 - 静态原型校验、`git diff --check` 通过；dist 已被 Git 忽略。
 - 对比 origin/main：workflow、当前 manifest、旧 preview 及全部 archive 无差异。未操作历史标签。
 
-用户将通过本地 Agent 操作已登录的 Cloudflare 浏览器。凭据只保存在本地发布机器；仓库 README 与环境变量模板供交接。尚缺真实桶、公开地址和本地上传验证结果，当前入口继续使用既有 Git 产物。
+2026-10-12 用户回报本地 Agent 已完成配置（账号权限以用户回报为依据，远端未登录控制台）：
 
-继续时先取得非敏感配置结果，由本地 Agent checkout 本 Change 分支，读取 README 完成上传；收取 request/result 与必要的产物文件，或由本地 Agent 登记后推送同一分支。随后核对公开预览、各视口交互、历史预览，才切换引用、删除当前旧产物并完成验收归档。
+- bucket：open-folio-prototypes；Account ID：af076b9d914da91e433420ebf090d43e。
+- 公开基址：https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev。
+- 凭据只保存在用户 Mac 的 /Users/bytedance/.config/open-folio/r2.env；仅该桶 Object Read & Write，目录 700、文件 600。远端无法读取此本地文件。
+
+已交接本地上传步骤：独立检出本 Change 分支，构建并生成三个声明设备的截图，prepare 后使用本机配置上传，只回传无密钥的 request/result JSON。远端收取记录及已发布产物后核对摘要、公开预览、各视口交互和历史预览，才登记引用、删除当前旧产物并完成验收归档。尚未收到真实上传结果，当前入口继续使用既有 Git 产物。

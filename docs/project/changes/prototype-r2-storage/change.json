@@ -11,7 +11,7 @@
     "T1": {
       "title": "发布 workspace-shell 到 R2 并切换当前及本 Change 的固定引用",
       "status": "blocked",
-      "reason": "发布脚本与本地验证已就绪；等待用户本地 Agent 开通 R2、创建公开桶并提供非敏感配置和真实上传结果。当前 Git 引用尚未切换。"
+      "reason": "用户已完成公开桶及本地 Mac 凭据配置；等待本地 Agent 上传并回传无密钥的 request/result。远端收到后校验产物、登记引用并验收，当前 Git 引用未切换。"
     }
   },
   "closure": {}
