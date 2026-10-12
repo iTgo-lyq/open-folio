@@ -370,3 +370,57 @@ test("same-process stores serialize new sessions without losing concurrent write
     await f.cleanup();
   }
 });
+
+test("reverse proxy writes use the external Host while retaining origin and HTTPS checks", async () => {
+  const f = await setup();
+  const proxyRequest = (
+    overrides: Record<string, string> = {},
+    omit: string[] = [],
+  ) => {
+    const headers = new Headers({
+      host: "folio.test",
+      origin: "https://folio.test",
+      "x-forwarded-proto": "https",
+      "content-type": "application/json",
+      ...overrides,
+    });
+    omit.forEach((key) => headers.delete(key));
+    return new Request("http://localhost:10680/api/connections", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ providerId: "sample", token: "sample-secret" }),
+    });
+  };
+  try {
+    const response = await connectionResponse(
+      proxyRequest(),
+      undefined,
+      f.store,
+    );
+    assert.equal(response.status, 201);
+    assert.match(response.headers.get("set-cookie")!, /; Secure$/);
+    for (const request of [
+      proxyRequest({ origin: "https://other.test" }),
+      proxyRequest({
+        origin: "https://other.test",
+        "x-forwarded-host": "other.test",
+      }),
+      proxyRequest({ "sec-fetch-site": "cross-site" }),
+      proxyRequest({}, ["origin"]),
+      proxyRequest({ host: "folio.test/ignored" }),
+    ])
+      assert.equal(
+        (await connectionResponse(request, undefined, f.store)).status,
+        403,
+      );
+    const plaintext = await connectionResponse(
+      proxyRequest({ origin: "http://folio.test" }, ["x-forwarded-proto"]),
+      undefined,
+      f.store,
+    );
+    assert.equal(plaintext.status, 400);
+    assert.equal((await plaintext.json()).error.code, "HTTPS_REQUIRED");
+  } finally {
+    await f.cleanup();
+  }
+});

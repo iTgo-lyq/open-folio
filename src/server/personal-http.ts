@@ -18,11 +18,24 @@ export function requirePersonalOrigin(request: Request) {
   const secure =
     url.protocol === "https:" ||
     request.headers.get("x-forwarded-proto") === "https";
-  if (!secure && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
+  // Next.js can construct request.url from its internal listener behind a proxy.
+  // Host is the browser-facing authority; never trust an arbitrary forwarded-host.
+  const authority = request.headers.get("host") ?? url.host;
+  let external: URL;
+  try {
+    if (/[\s/@?#\\]/.test(authority)) throw Error();
+    external = new URL(`${secure ? "https:" : url.protocol}//${authority}`);
+  } catch {
+    throw new AppError("ORIGIN_DENIED", "请从本站页面提交请求。", 403);
+  }
+  if (
+    !secure &&
+    !["localhost", "127.0.0.1", "[::1]"].includes(external.hostname)
+  )
     throw new AppError("HTTPS_REQUIRED", "远程连接需要 HTTPS。", 400);
   const origin = request.headers.get("origin"),
     site = request.headers.get("sec-fetch-site");
-  const expected = `${secure ? "https:" : url.protocol}//${url.host}`;
+  const expected = external.origin;
   if (
     site === "cross-site" ||
     (origin ? origin !== expected : site !== "same-origin")

@@ -4,7 +4,7 @@
   "title": "个人工作台与 SpecTrail 仓库自动发现",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
@@ -73,19 +73,17 @@
       "title": "修复整体验证与独立评审问题",
       "status": "done",
       "verification": "独立评审 R1–R6 修复及复验通过，无剩余阻塞项；119 项单元/集成、54 项浏览器及最后 5 项公开分享复验通过，类型/格式/生产构建通过。"
+    },
+    "T11": {
+      "title": "修复运行实例的反向代理同源校验",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-12T08:57:05.894Z",
-      "summary": "T1–T10 已提交推送；119 项单元/集成、54 项完整浏览器、最后 5 项公开分享复验、类型/格式/生产构建通过。上下文隔离 subagent 独立评审完整差异，R1–R6 均修复并复验，无剩余阻塞项；真实 GitHub 联调与多设备截图见 Execution。"
-    }
-  },
+  "closure": {},
   "rework": {
-    "at": "2026-10-12T06:39:46.264Z",
-    "reason": "用户要求重设计原型，保留既有侧边玻璃质感按钮和白色工作面框架。",
-    "approach": "复用 84px 侧轨、悬浮玻璃胶囊和顶部仓库上下文；将个人连接、自动发现与阅读融入既有外壳，重新验证并发布固定版本。"
+    "at": "2026-10-12T09:05:24.924Z",
+    "reason": "运行实例上线检查发现 Next.js 反向代理请求 URL 使用内部主机，导致合法连接写请求被同源校验拒绝。",
+    "approach": "保持既有权限边界，依据实际 Host 与可信代理协议验证公开来源，补代理请求回归并更新既有预览服务。"
   },
   "previews": [
     {
@@ -119,9 +117,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与整体验证已完成，等待用户人工验收个人工作台；验收后同步 Specs 并归档。"
-  }
+  ]
 }
