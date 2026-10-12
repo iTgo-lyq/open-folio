@@ -4,7 +4,7 @@
   "title": "Token 工作台与多设备登录",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
@@ -55,7 +55,13 @@
       "commitTitle": "token-workspaces T5: restore workspace reading and isolate stale responses"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T12:08:16.596Z",
+      "summary": "140 项单元／集成、67 个浏览器场景、类型、格式和两次生产构建通过；隔离独立评审与24项复验通过，两项P2及焦点问题已关闭；原10680预览更新、真实迁移及代理HTTP与生产Chromium核对通过。"
+    }
+  },
   "dependsOn": [
     "personal-workbench"
   ],
@@ -91,5 +97,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "T1–T5 已实现、验证、逐项提交推送，生产预览更新且备份完整；large Change 等待用户人工验收，随后同步 Specs 与归档。"
+  }
 }
