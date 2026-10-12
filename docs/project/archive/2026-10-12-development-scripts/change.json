@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "development-scripts",
+  "title": "沉淀开发服务管理与原型截图脚本并清理临时产物",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/development-scripts",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "沉淀开发工具并完成服务更新与临时产物清理",
+      "status": "done",
+      "verification": "服务生命周期集成测试、原型包11项测试、实际四种视口截图、类型及格式检查通过；长期服务已更新，数据聚合校验一致，清理650.5MiB临时产物",
+      "commitTitle": "development-scripts T1: add service management and prototype screenshots"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T14:00:47.511Z",
+      "summary": "Agent自查通过：生命周期与失败保护集成测试、原型包11项测试及实际截图、类型和格式检查、长期服务更新与手机登录表单验证通过；运行数据校验一致，临时产物已清理；保留既有迁移追踪警告"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T14:00:47.579Z",
+      "summary": "Agent 自验收通过：需求各项均有验证证据，服务已切换到项目脚本，截图与模板交付完成，运行数据保持不变，临时产物清理完成",
+      "source": "SpecTrail small 默认自验收归档；用户明确要求继续沉淀服务管理、原型截图、环境模板及清理"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-12T14:00:47.646Z",
+      "summary": "仅沉淀本地开发工具与环境约定，不改变产品行为或共享契约；使用约定已写入 AGENTS.md 与 README，无需修改产品 Specs"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T14:00:47.720Z",
+      "summary": "开发工具验证、Agent 自验收及指南同步完成，临时产物清理完毕，长期服务已更新且数据保留",
+      "path": "docs/project/archive/2026-10-12-development-scripts"
+    }
+  }
+}
