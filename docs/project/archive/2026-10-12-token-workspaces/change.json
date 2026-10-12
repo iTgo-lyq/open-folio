@@ -3,7 +3,7 @@
   "id": "token-workspaces",
   "title": "Token 工作台与多设备登录",
   "size": "large",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/personal-workbench",
   "confirmations": {
@@ -66,6 +66,23 @@
       "result": "passed",
       "at": "2026-10-12T12:26:29.859Z",
       "summary": "T1–T5 原67个浏览器场景与独立全量评审证据保留；T6 141项单元／集成、23个相关浏览器场景、类型／格式和默认生产构建通过，独立增量评审22项复验通过；R1–R4均已关闭，原10680预览更新并核对可选用户名。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T12:37:49.396Z",
+      "summary": "用户在可选用户名及完整 Token 工作台交付与验证结果后明确要求归档并合入 main，按实际合入授权记录人工验收通过。",
+      "source": "用户：“归档推送main吧”。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T12:39:28.766Z",
+      "summary": "已按最终验收实现同步 project-knowledge、access、spec-reading 与 configuration 四项 Specs，覆盖 token 工作台、可选用户名、设备会话、复制、共享缓存、偏好、迁移及密钥轮换；无关能力保留。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T12:39:28.892Z",
+      "summary": "按用户“归档推送main吧”完成验收及四项 Specs 同步，保留 T1–T6 验证、独立评审与固定原型引用，归档 Token 工作台交付。",
+      "path": "docs/project/archive/2026-10-12-token-workspaces"
     }
   },
   "dependsOn": [
@@ -108,9 +125,5 @@
     "at": "2026-10-12T12:19:12.054Z",
     "reason": "用户要求用户名可选、改为普通用户名，默认使用 Git 账号名，不再校验与 token 账号一致。",
     "approach": "保留 token 身份与缓存契约，追加 T6：可选用户名作为显示名称，空值使用平台账号名，Git 传输继续使用适配器返回值。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "T1–T6 已实现、验证、提交推送，用户名按最新要求可选并自动填充，生产预览已更新；large Change 仍待用户整体验收，随后同步 Specs 与归档。"
   }
 }
