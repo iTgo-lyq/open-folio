@@ -247,7 +247,8 @@ export class SnapshotStore {
           JSON.stringify({ snapshotId: id, at: Date.now() }),
         );
       if (data.unchanged && previous) {
-        await context?.beforePublish();
+        // The live Git check reused an already authorized snapshot. Only a new
+        // snapshot needs the extra remote permission check before publication.
         signal.throwIfAborted();
         await markChecked(previous.id);
         await unlink(join(dir, "last-error.json")).catch(() => {});

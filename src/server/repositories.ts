@@ -152,11 +152,13 @@ export class Repositories {
               try {
                 await owner.assertCurrent();
                 const shared = await makeStore(owner);
-                return await shared.refresh(project, limits, {
+                const snapshot = await shared.refresh(project, limits, {
                   automatic,
                   signal: owner.context.signal,
                   beforePublish: () => assertPermission(owner),
                 });
+                await owner.assertCurrent();
+                return snapshot;
               } finally {
                 owner.release();
               }

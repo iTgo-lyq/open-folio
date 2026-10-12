@@ -231,23 +231,65 @@ export class GitReader {
       await chmod(join(this.directory, "config"), 0o600);
     }
     const head = (
-      await this.run(["ls-remote", "--symref", "origin", "HEAD"], signal)
+      await this.run(
+        [
+          "ls-remote",
+          "--symref",
+          "origin",
+          "HEAD",
+          "refs/heads/*",
+          "refs/tags/spec-trail/archive-v2/*",
+        ],
+        signal,
+      )
     ).toString();
     const defaultBranch =
       /^ref: refs\/heads\/(.+)\tHEAD$/m.exec(head)?.[1] ?? null;
-    await this.run(
-      [
-        "fetch",
-        "--atomic",
-        "--prune",
-        "--no-tags",
-        "--no-recurse-submodules",
-        "origin",
-        "+refs/heads/*:refs/remotes/origin/*",
-        "+refs/tags/spec-trail/archive-v2/*:refs/openfolio/archive-v2/*",
-      ],
-      signal,
-    );
+    // Compare raw tag objects too: an annotated tag may change without changing
+    // its peeled commit. The live advertisement also catches deletes and force pushes.
+    const remoteRefs = head
+      .trim()
+      .split("\n")
+      .filter(
+        (row) =>
+          /^[a-f0-9]{40,64}\trefs\/(heads\/|tags\/spec-trail\/archive-v2\/)/.test(
+            row,
+          ) && !row.endsWith("^{}"),
+      )
+      .map((row) =>
+        row
+          .replace("\trefs/heads/", "\trefs/remotes/origin/")
+          .replace("\trefs/tags/spec-trail/", "\trefs/openfolio/"),
+      );
+    const localRefs = (
+      await this.run(
+        [
+          "for-each-ref",
+          "--format=%(objectname)%09%(refname)",
+          "refs/remotes/origin/",
+          "refs/openfolio/archive-v2/",
+        ],
+        signal,
+      )
+    )
+      .toString()
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+    if (JSON.stringify(remoteRefs.sort()) !== JSON.stringify(localRefs.sort()))
+      await this.run(
+        [
+          "fetch",
+          "--atomic",
+          "--prune",
+          "--no-tags",
+          "--no-recurse-submodules",
+          "origin",
+          "+refs/heads/*:refs/remotes/origin/*",
+          "+refs/tags/spec-trail/archive-v2/*:refs/openfolio/archive-v2/*",
+        ],
+        signal,
+      );
     const refs = (
       await this.run(
         [

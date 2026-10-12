@@ -96,6 +96,8 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.equal(same.id, first.id);
   assert.equal(same.capturedAt, first.capturedAt);
   assert(!f.calls.some((a) => ["ls-tree", "cat-file"].includes(a[0])));
+  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 1);
+  assert(!f.calls.some((a) => a[0] === "fetch"));
 
   await f.put(
     "docs/project/changes/demo/requirement.md",
@@ -105,6 +107,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   f.calls.length = 0;
   const next = await restart.refresh(f.project, DEFAULT_LIMITS);
   assert.notEqual(next.id, first.id);
+  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 1);
   assert.deepEqual(
     f.scans().map((a) => a[3]),
     [changed],
@@ -154,6 +157,7 @@ test("default branch changes invalidate source scope even at identical commits, 
   f.calls.length = 0;
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.equal(f.scans().length, 2);
+  assert(!f.calls.some((a) => a[0] === "fetch"));
   assert.deepEqual(
     next.specs.map((s) => s.branch),
     ["release"],
@@ -180,6 +184,47 @@ test("default branch changes invalidate source scope even at identical commits, 
   );
   assert.equal((await f.store.snapshot(f.project)).id, upgraded.id);
   assert.notEqual(first.id, upgraded.id);
+});
+
+test("live refs detect lightweight and annotated archive tag changes, including rewritten tags at the same commit", async (t) => {
+  const f = await traced();
+  t.after(f.cleanup);
+  const commit = f.git(["rev-parse", "HEAD"]);
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const light = "refs/tags/spec-trail/archive-v2/light";
+  const annotated = "refs/tags/spec-trail/archive-v2/annotated";
+  f.git(["tag", "spec-trail/archive-v2/light"]);
+  f.git(["tag", "-a", "spec-trail/archive-v2/annotated", "-m", "first"]);
+  f.git(["push", "origin", light, annotated]);
+  f.calls.length = 0;
+  const tagged = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.deepEqual(tagged.archiveRefs, [
+    { id: "annotated", commit },
+    { id: "light", commit },
+  ]);
+  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 1);
+  f.calls.length = 0;
+  assert.equal(
+    (await f.store.refresh(f.project, DEFAULT_LIMITS)).id,
+    tagged.id,
+  );
+  assert(!f.calls.some((a) => a[0] === "fetch"));
+  f.git(["tag", "-fa", "spec-trail/archive-v2/annotated", "-m", "rewritten"]);
+  f.git(["push", "--force", "origin", annotated]);
+  f.calls.length = 0;
+  assert.equal(
+    (await f.store.refresh(f.project, DEFAULT_LIMITS)).id,
+    tagged.id,
+  );
+  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 1);
+  f.calls.length = 0;
+  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert(!f.calls.some((a) => a[0] === "fetch"));
+  f.git(["push", "origin", `:${light}`, `:${annotated}`]);
+  assert.deepEqual(
+    (await f.store.refresh(f.project, DEFAULT_LIMITS)).archiveRefs,
+    [],
+  );
 });
 
 test("automatic refresh shares persisted freshness, manual refresh bypasses it, and failed checks stay retryable", async (t) => {

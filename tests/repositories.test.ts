@@ -90,6 +90,8 @@ test("short reads use entry authorization; subsequent reads detect revocation an
     assert.equal(permitted.id, first.id);
     assert.equal((await t.request("workbench")).status, 403);
     t.f.controls.deny.clear();
+    await t.g.put("docs/project/specs/platform/spec.md", "# 待发布的新内容");
+    t.g.commit();
     await assert.rejects(
       () =>
         t.read(async (ctx) => {
@@ -131,6 +133,31 @@ test("short reads use entry authorization; subsequent reads detect revocation an
       ).status,
       404,
     );
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("unchanged refresh authorizes once; changed snapshots recheck before publishing", async () => {
+  const t = await setup();
+  try {
+    const first = await (await t.request("refresh", "POST")).json();
+    let reads = 0;
+    const original = t.f.provider.assertRead.bind(t.f.provider);
+    t.f.provider.assertRead = async (...args) => {
+      reads++;
+      return original(...args);
+    };
+    assert.deepEqual(await (await t.request("refresh", "POST")).json(), first);
+    assert.equal(reads, 1);
+    reads = 0;
+    await t.g.put("docs/project/specs/platform/spec.md", "# 新内容");
+    t.g.commit();
+    const changed = await (await t.request("refresh", "POST")).json();
+    assert.notEqual(changed.snapshotId, first.snapshotId);
+    assert.equal(reads, 2);
+    t.f.controls.deny.add("1");
+    assert.equal((await t.request("refresh", "POST")).status, 403);
   } finally {
     await t.cleanup();
   }
@@ -265,73 +292,83 @@ test("same-token devices reuse snapshots and directories while another token can
   }
 });
 
-test("concurrent refresh has one credential-owned Git job and never delivers to a revoked device", async () => {
-  const t = await setup();
-  let release!: () => void, entered!: () => void, secondEntered!: () => void;
-  const gate = new Promise<void>((r) => {
-      release = r;
-    }),
-    started = new Promise<void>((r) => {
-      entered = r;
-    }),
-    secondStarted = new Promise<void>((r) => {
-      secondEntered = r;
-    });
-  let collects = 0;
-  const { Repositories } = await import("../src/server/repositories.ts"),
-    { GitReader } = await import("../src/server/git.ts");
-  const service = new Repositories(
-    t.service.root,
-    t.f.sessions,
-    t.service.discoveries,
-    (directory) => {
-      const reader = new GitReader(directory, t.g.remote, "file"),
-        collect = reader.collect.bind(reader);
-      reader.collect = async (limits, signal) => {
-        collects++;
-        entered();
-        await gate;
-        signal.throwIfAborted();
-        return collect(limits, signal);
-      };
-      return reader;
-    },
-  );
-  try {
-    const other = await t.f.connect();
-    const one = service.read(
-      t.c.cookie,
-      t.c.connection.id,
-      t.key,
-      async (ctx) => ctx.refresh(DEFAULT_LIMITS),
-    );
-    const rejected = assert.rejects(() => one);
-    await started;
-    const two = service.read(
-      other.cookie,
-      other.connection.id,
-      t.key,
-      async (ctx) => {
-        secondEntered();
-        return ctx.refresh(DEFAULT_LIMITS);
+for (const cached of [false, true])
+  test(`concurrent refresh (cached=${cached}) has one credential-owned Git job and never delivers to a revoked device`, async () => {
+    const t = await setup();
+    let release!: () => void, entered!: () => void, secondEntered!: () => void;
+    const gate = new Promise<void>((r) => {
+        release = r;
+      }),
+      started = new Promise<void>((r) => {
+        entered = r;
+      }),
+      secondStarted = new Promise<void>((r) => {
+        secondEntered = r;
+      });
+    let collects = 0;
+    const { Repositories } = await import("../src/server/repositories.ts"),
+      { GitReader } = await import("../src/server/git.ts");
+    const service = new Repositories(
+      t.service.root,
+      t.f.sessions,
+      t.service.discoveries,
+      (directory) => {
+        const reader = new GitReader(directory, t.g.remote, "file"),
+          collect = reader.collect.bind(reader);
+        reader.collect = async (limits, signal, cache) => {
+          collects++;
+          entered();
+          await gate;
+          signal.throwIfAborted();
+          return collect(limits, signal, cache);
+        };
+        return reader;
       },
     );
-    await secondStarted;
-    await t.f.sessions.remove(t.c.cookie);
-    release();
-    await rejected;
-    const result = await two;
-    assert.equal(collects, 1);
-    assert.equal(
-      (
-        await (
-          await t.request("workbench", "GET", other.cookie, other.connection.id)
-        ).json()
-      ).id,
-      result.id,
-    );
-  } finally {
-    release();
-    await t.cleanup();
-  }
-});
+    try {
+      const previous = cached
+        ? await (await t.request("refresh", "POST")).json()
+        : undefined;
+      const other = await t.f.connect();
+      const one = service.read(
+        t.c.cookie,
+        t.c.connection.id,
+        t.key,
+        async (ctx) => ctx.refresh(DEFAULT_LIMITS),
+      );
+      const rejected = assert.rejects(() => one);
+      await started;
+      const two = service.read(
+        other.cookie,
+        other.connection.id,
+        t.key,
+        async (ctx) => {
+          secondEntered();
+          return ctx.refresh(DEFAULT_LIMITS);
+        },
+      );
+      await secondStarted;
+      await t.f.sessions.remove(t.c.cookie);
+      release();
+      await rejected;
+      const result = await two;
+      if (previous) assert.equal(result.id, previous.snapshotId);
+      assert.equal(collects, 1);
+      assert.equal(
+        (
+          await (
+            await t.request(
+              "workbench",
+              "GET",
+              other.cookie,
+              other.connection.id,
+            )
+          ).json()
+        ).id,
+        result.id,
+      );
+    } finally {
+      release();
+      await t.cleanup();
+    }
+  });
