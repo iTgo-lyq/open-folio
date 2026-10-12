@@ -4,7 +4,7 @@
   "title": "个人工作台与 SpecTrail 仓库自动发现",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
@@ -80,7 +80,13 @@
       "verification": "反向代理受控连接与生产五组 HTTP 请求验证通过；完整单元/集成 120 项、类型、格式及生产构建通过；实际 Chromium 新首页和连接表单正常，独立复核无可操作问题。"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T09:25:32.693Z",
+      "summary": "T1–T11 已提交推送。完整差异和 T11 反向代理修复均由隔离上下文独立评审，无剩余阻塞项；最终 120 项单元/集成、类型、格式和生产构建通过，既有 54 项完整浏览器及最终公开分享回归通过，新增实际生产页面/连接表单和五组代理 HTTP 验证通过。原 Merlin 预览服务已更新，未合入 main。"
+    }
+  },
   "rework": {
     "at": "2026-10-12T09:05:24.924Z",
     "reason": "运行实例上线检查发现 Next.js 反向代理请求 URL 使用内部主机，导致合法连接写请求被同源校验拒绝。",
@@ -118,5 +124,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "整体验证和既有预览服务更新已完成，等待用户在新版工作台人工验收；验收后同步 Specs 并归档。"
+  }
 }
