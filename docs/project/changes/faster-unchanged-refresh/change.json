@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "实测并减少无变化刷新的远端往返，部署复验",
-      "status": "doing"
+      "status": "done",
+      "verification": "150 项单元/集成、15 项浏览器、类型/格式/构建通过；3c4b90e 已部署，同工作台无变化逐段均值 4.123→2.019 秒，生产 HTTP 中位 2.073 秒；无 fetch/重复远端鉴权，8 Specs/3 原型及后台检查正常。",
+      "commitTitle": "faster-unchanged-refresh T1: verify deployed latency reduction"
     }
   },
   "closure": {},
