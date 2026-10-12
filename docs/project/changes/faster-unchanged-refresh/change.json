@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "faster-unchanged-refresh",
+  "title": "缩短无变化刷新等待",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/faster-unchanged-refresh",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实测并减少无变化刷新的远端往返，部署复验",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "dependsOn": [
+    "incremental-workspace-refresh"
+  ]
+}
