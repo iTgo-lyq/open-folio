@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "development-scripts",
+  "title": "沉淀开发服务管理与原型截图脚本并清理临时产物",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/development-scripts",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "沉淀开发工具并完成服务更新与临时产物清理",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
