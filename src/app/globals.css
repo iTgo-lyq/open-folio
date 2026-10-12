@@ -4515,3 +4515,20 @@ input {
     font-size: 15px;
   }
 }
+
+.personal-device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.personal-device-row:last-child {
+  border-bottom: 0;
+}
+.personal-device-row p {
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+}

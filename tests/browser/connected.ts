@@ -8,9 +8,9 @@ export async function connectRequest(
   request: APIRequestContext,
   token = "token-a",
 ) {
-  const response = await request.post("/api/connections", {
+  const response = await request.post("/api/session", {
     headers: { origin: "http://127.0.0.1:10682" },
-    data: { providerId: "github", token },
+    data: { providerId: "github", username: "reader", token },
   });
   expect(response.ok()).toBe(true);
   const result = await response.json();

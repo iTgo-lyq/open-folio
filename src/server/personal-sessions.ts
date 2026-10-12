@@ -747,7 +747,7 @@ export class PersonalSessions {
   }
   async lease(
     cookie: string,
-    id: string,
+    id: string | undefined,
     signal?: AbortSignal,
     workspaceOwned = false,
   ): Promise<ConnectionLease> {
@@ -756,7 +756,11 @@ export class PersonalSessions {
       await this.prune(state);
       const s = this.find(state, cookie),
         w = state.workspaces.find((w) => w.id === s?.workspaceId);
-      if (!s || !w || (id !== w.id && !w.legacyConnectionIds?.includes(id)))
+      if (
+        !s ||
+        !w ||
+        (id && id !== w.id && !w.legacyConnectionIds?.includes(id))
+      )
         throw denied();
       const secret = decryptWorkspace(w, (await this.keys(false)).credential),
         controller = new AbortController(),
@@ -810,7 +814,45 @@ export class PersonalSessions {
   workspaceLease(cookie: string, id: string) {
     return this.lease(cookie, id, undefined, true);
   }
+  async devices(cookie: string) {
+    return this.lock(async () => {
+      const state = await this.load();
+      await this.prune(state);
+      const current = this.find(state, cookie);
+      if (!current) throw denied();
+      return state.sessions
+        .filter((s) => s.workspaceId === current.workspaceId)
+        .map((s) => ({
+          id: s.id,
+          label: s.displayLabel,
+          current: s.id === current.id,
+          createdAt: s.createdAt,
+          lastSeenAt: s.lastSeenAt,
+          expiresAt: s.expiresAt,
+        }));
+    });
+  }
+  async revokeDevice(cookie: string, id: string) {
+    return this.lock(async () => {
+      const state = await this.load();
+      await this.prune(state);
+      const current = this.find(state, cookie);
+      if (!current) throw denied();
+      const device = state.sessions.find(
+        (s) => s.id === id && s.workspaceId === current.workspaceId,
+      );
+      if (!device)
+        throw new AppError("DEVICE_NOT_FOUND", "设备会话不存在。", 404);
+      state.sessions = state.sessions.filter((s) => s !== device);
+      await this.save(state);
+      this.stopDevice(device);
+      return { revoked: true, current: device.id === current.id };
+    });
+  }
 }
+export type DeviceSummary = Awaited<
+  ReturnType<PersonalSessions["devices"]>
+>[number];
 export function personalSessions() {
   const root = join(dataDirectory(), "personal-v2"),
     stores = (globals.folioWorkspaceStores ??= new Map());

@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "提供当前凭据复制与设备会话管理",
-      "status": "todo"
+      "status": "done",
+      "verification": "15 项凭据 HTTP／会话测试、类型检查及两个浏览器场景通过；覆盖同源、当前凭据专用复制、撤销竞争、手动复制清理和跨设备撤销。",
+      "commitTitle": "token-workspaces T4: add explicit credential copy and device management"
     },
     "T5": {
       "title": "贯通登录、切换与跨设备阅读恢复",

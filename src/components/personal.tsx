@@ -1,8 +1,9 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import {
   ArrowRight,
+  Copy,
   ChevronRight,
   GitBranch,
   Github,
@@ -34,7 +35,10 @@ import {
 import { usePersonal } from "./personal-context";
 import { useWorkspace } from "./context";
 import { api } from "./api";
-import type { ConnectionSummary } from "@/server/personal-sessions";
+import type {
+  ConnectionSummary,
+  DeviceSummary,
+} from "@/server/personal-sessions";
 import type { DiscoveredRepository } from "@/server/discovery";
 import { ErrorNotice } from "./document";
 export function ConnectionPicker() {
@@ -326,96 +330,200 @@ export function PersonalHome() {
   );
 }
 export function Connections() {
+  const p = usePersonal();
+  const [login, setLogin] = useState(false);
+  if (p.connection)
+    return (
+      <CredentialDetails key={p.connection.id} connection={p.connection} />
+    );
+  return (
+    <section className="personal-connections">
+      <EmptyState title="登录自己的工作台">
+        <p>使用 Git 用户名与 token，在多台设备恢复同一工作台。</p>
+        <Button onClick={() => setLogin(true)}>登录工作台</Button>
+      </EmptyState>
+      {login && <ConnectDialog onClose={() => setLogin(false)} />}
+    </section>
+  );
+}
+function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
   const p = usePersonal(),
     { nav } = useWorkspace();
-  const [editing, setEditing] = useState<ConnectionSummary | null | undefined>(
-      undefined,
-    ),
+  const [editing, setEditing] = useState(false),
+    [devices, setDevices] = useState<DeviceSummary[]>([]),
+    [manual, setManual] = useState(""),
+    [status, setStatus] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
-  const run = async (id: string, operation: () => Promise<unknown>) => {
-    setBusy(id);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const c = new AbortController();
+    controller.current = c;
+    void api<{ devices: DeviceSummary[] }>("/api/session/devices", {
+      signal: c.signal,
+    })
+      .then((r) => {
+        if (!c.signal.aborted) setDevices(r.devices);
+      })
+      .catch((e) => {
+        if (!c.signal.aborted) setError(e.message);
+      });
+    return () => {
+      c.abort();
+      controller.current = null;
+    };
+  }, []);
+  const run = async (
+    name: string,
+    operation: (signal: AbortSignal) => Promise<void>,
+  ) => {
+    const signal = controller.current?.signal;
+    if (!signal || signal.aborted) return;
+    setBusy(name);
     setError("");
+    setStatus("");
+    setManual("");
     try {
-      await operation();
-      await p.reloadSession();
+      await operation(signal);
     } catch (e) {
-      setError((e as Error).message);
+      if (!signal.aborted) setError((e as Error).message);
     } finally {
-      setBusy("");
+      if (!signal.aborted) setBusy("");
     }
   };
+  const copy = () =>
+    run("copy", async (signal) => {
+      const result = await api<{ token: string }>("/api/session/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+        signal,
+      });
+      if (signal.aborted) return;
+      try {
+        await navigator.clipboard.writeText(result.token);
+        if (!signal.aborted) setStatus("token 已复制");
+      } catch {
+        if (!signal.aborted) setManual(result.token);
+      }
+    });
+  const logout = (all = false) =>
+    run("logout", async (signal) => {
+      await api(all ? "/api/session/logout-all" : "/api/session", {
+        method: all ? "POST" : "DELETE",
+        signal,
+      });
+      await p.reloadSession();
+    });
+  const revoke = (id: string) =>
+    run(id, async (signal) => {
+      await api(`/api/session/devices/${id}`, { method: "DELETE", signal });
+      const r = await api<{ devices: DeviceSummary[] }>(
+        "/api/session/devices",
+        { signal },
+      );
+      if (!signal.aborted) setDevices(r.devices);
+    });
   return (
     <section className="personal-connections">
       <div className="personal-intro">
         <div>
-          <div className="eyebrow">YOUR CONNECTIONS</div>
-          <h1>我的连接</h1>
-          <p>管理自己的读取凭据。每个连接都有独立的访问范围。</p>
+          <div className="eyebrow">YOUR CREDENTIALS</div>
+          <h1>当前凭据</h1>
+          <p>同一 token 的设备共享工作台；每台设备独立登录。</p>
         </div>
-        <Button variant="primary" onClick={() => setEditing(null)}>
-          <Plus data-icon="inline-start" />
-          添加连接
+        <Button disabled={!!busy} onClick={() => setEditing(true)}>
+          切换凭据
         </Button>
       </div>
       {error && <ErrorNotice>{error}</ErrorNotice>}
-      {p.session?.connections.map((c) => (
-        <Card className="personal-connection-card" key={c.id}>
-          <CardHeader>
-            <CardTitle>
-              <Github size={18} /> {c.label}
-            </CardTitle>
-            <CardDescription>
-              @{c.identity.login} · GitHub · {c.id.slice(0, 8)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>
-              所有仓库操作使用此连接的 token；替换时仍需属于同一个 GitHub 账号。
-            </p>
-          </CardContent>
-          <CardFooter className="personal-connection-actions">
-            <Button
-              onClick={() => {
-                p.selectConnection(c.id);
-                nav({ m: "home" });
-              }}
-            >
-              查看仓库
-            </Button>
-            <Button onClick={() => setEditing(c)}>替换 token</Button>
-            <Button
-              disabled={!!busy}
-              onClick={() =>
-                void run(c.id, () => api("/api/session", { method: "DELETE" }))
-              }
-            >
-              移除连接
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
-      {!p.session?.connections.length && (
-        <EmptyState title="还没有个人连接">
-          <p>添加 GitHub token 后自动发现仓库。</p>
-        </EmptyState>
-      )}
-      <div className="personal-section-note">
-        <p>移除连接会清除当前会话的读取权限，已经发布的原型继续公开。</p>
-        <Button
-          disabled={!!busy || !p.session?.connected}
-          onClick={() =>
-            void run("logout", () => api("/api/session", { method: "DELETE" }))
-          }
-        >
-          退出工作台
-        </Button>
-      </div>
-      {editing !== undefined && (
+      {status && <p role="status">{status}</p>}
+      <Card className="personal-connection-card">
+        <CardHeader>
+          <CardTitle>
+            <KeyRound size={18} /> {connection.label}
+          </CardTitle>
+          <CardDescription>
+            @{connection.identity.login} ·{" "}
+            {p.session?.providers.find(
+              (v) => v.id === connection.identity.providerId,
+            )?.name ?? connection.identity.providerId}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>相同 token 可以在另一台设备登录。更换 token 会进入独立工作台。</p>
+        </CardContent>
+        <CardFooter className="personal-connection-actions">
+          <Button onClick={() => nav({ m: "home" })}>查看仓库</Button>
+          <Button disabled={!!busy} onClick={() => void copy()}>
+            <Copy data-icon="inline-start" />
+            {busy === "copy" ? "正在复制…" : "复制 token"}
+          </Button>
+        </CardFooter>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>已登录设备</CardTitle>
+          <CardDescription>
+            退出设备会立即停止它的私有读取权限。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {devices.map((device) => (
+            <div className="personal-device-row" key={device.id}>
+              <div>
+                <strong>
+                  {device.label} · {device.id.slice(0, 8)}
+                </strong>{" "}
+                {device.current && <Badge>当前设备</Badge>}
+                <p className="muted">
+                  最近使用：{new Date(device.lastSeenAt).toLocaleString()}
+                </p>
+              </div>
+              {!device.current && (
+                <Button
+                  disabled={!!busy}
+                  aria-label={`退出设备 ${device.id.slice(0, 8)}`}
+                  onClick={() => void revoke(device.id)}
+                >
+                  退出设备
+                </Button>
+              )}
+            </div>
+          ))}
+        </CardContent>
+        <CardFooter className="personal-connection-actions">
+          <Button disabled={!!busy} onClick={() => void logout()}>
+            退出当前设备
+          </Button>
+          <Button disabled={!!busy} onClick={() => void logout(true)}>
+            退出全部设备
+          </Button>
+        </CardFooter>
+      </Card>
+      {editing && (
         <ConnectDialog
-          connection={editing ?? undefined}
-          onClose={() => setEditing(undefined)}
+          connection={connection}
+          onClose={() => setEditing(false)}
         />
+      )}
+      {manual && (
+        <PersonalDialog title="手动复制 token" onClose={() => setManual("")}>
+          <p className="muted">剪贴板不可用，请选中并复制。关闭后清除显示。</p>
+          <Field>
+            <FieldLabel htmlFor="manual-token">当前 token</FieldLabel>
+            <Input
+              id="manual-token"
+              value={manual}
+              readOnly
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              onFocus={(e) => e.target.select()}
+            />
+          </Field>
+          <Button onClick={() => setManual("")}>完成</Button>
+        </PersonalDialog>
       )}
     </section>
   );

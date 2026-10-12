@@ -19,6 +19,8 @@ import { Repositories } from "../src/server/repositories.ts";
 import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
   sessionResponse,
+  logoutAllResponse,
+  restoreSessionResponse,
   connectionResponse,
 } from "../src/server/connection-api.ts";
 import {
@@ -32,6 +34,10 @@ import {
   publicPreviewResponse,
   withdrawPreviewResponse,
 } from "../src/server/public-preview-api.ts";
+import {
+  tokenResponse,
+  devicesResponse,
+} from "../src/server/credential-api.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 const f = await seed(),
   git = await gitHttpsFixture(f),
@@ -195,7 +201,16 @@ const server = createServer(async (req, res) => {
         ...(body.length ? { body } : {}),
       });
       if (s[1] === "session")
-        response = await sessionResponse(request, sessions);
+        response =
+          s[2] === "token"
+            ? await tokenResponse(request, sessions)
+            : s[2] === "devices"
+              ? await devicesResponse(request, s[3], sessions)
+              : s[2] === "logout-all"
+                ? await logoutAllResponse(request, sessions)
+                : s[2] === "restore"
+                  ? await restoreSessionResponse(request, sessions, discoveries)
+                  : await sessionResponse(request, sessions, discoveries);
       else if (s[1] === "connections")
         response =
           s.length === 2
