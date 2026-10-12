@@ -2,16 +2,20 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "personal-workbench",
+      "title": "个人工作台",
+      "description": "连接 GitHub、发现 SpecTrail 仓库、阅读工程记录和公开分享原型的完整方案。",
+      "sourcePath": "packages/prototype/src/pages/personal-workbench.html",
+      "kind": "page",
+      "devices": ["pc-web", "ipad", "mobile"]
+    },
+    {
       "id": "workspace-shell",
       "title": "工作台外壳",
       "description": "基于当前产品的导航、项目上下文与内容容器。",
       "sourcePath": "packages/prototype/src/pages/workspace-shell.html",
       "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
+      "devices": ["pc-web", "ipad", "mobile"],
       "artifact": {
         "type": "hosted",
         "version": "190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a",

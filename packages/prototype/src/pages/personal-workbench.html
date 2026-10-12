@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenFolio · 个人工作台</title>
+    <style>
+      {{include:../shared/personal-workbench.css}}
+    </style>
+  </head>
+  <body>
+    {{include:../shared/icons.html}}
+    <div class="review-bar">
+      <span
+        ><i></i> 交互原型
+        <span class="review-note">· 示例数据，不连接真实账号</span></span
+      ><label
+        >场景
+        <select id="scenario" aria-label="切换原型场景">
+          <option value="home">个人工作台</option>
+          <option value="welcome">首次连接</option>
+          <option value="scanning">发现中</option>
+          <option value="empty">没有接入仓库</option>
+          <option value="partial">部分发现失败</option>
+          <option value="expired">连接已过期</option>
+          <option value="denied">分享链接无权限</option>
+          <option value="public">公开原型</option>
+        </select></label
+      >
+    </div>
+    <div id="app"></div>
+    <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script>
+      {{include:../shared/personal-workbench.js}}
+    </script>
+  </body>
+</html>
