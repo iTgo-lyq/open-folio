@@ -18,4 +18,4 @@
 - 公开基址：https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev。
 - 凭据只保存在用户 Mac 的 /Users/bytedance/.config/open-folio/r2.env；仅该桶 Object Read & Write，目录 700、文件 600。远端无法读取此本地文件。
 
-已交接本地上传步骤：独立检出本 Change 分支，构建并生成三个声明设备的截图，prepare 后使用本机配置上传，只回传无密钥的 request/result JSON。远端收取记录及已发布产物后核对摘要、公开预览、各视口交互和历史预览，才登记引用、删除当前旧产物并完成验收归档。尚未收到真实上传结果，当前入口继续使用既有 Git 产物。
+用户随后将配置同步至当前机器的 /home/tiger/.config/open-folio/r2.env，权限 600。已核对公开目标一致、两项凭据存在，未输出凭据值。直接在当前机器继续构建、截图、上传及验收；当前 Git 引用待真实上传校验通过后切换。
