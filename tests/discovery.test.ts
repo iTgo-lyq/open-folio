@@ -4,6 +4,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { personalFixture } from "./personal-fixture.ts";
 import { Discovery } from "../src/server/discovery.ts";
+import {
+  repositoryPermissions,
+  PERMISSION_CHECK_MS,
+} from "../src/server/repository-permissions.ts";
 import { repositoryKey } from "../src/server/providers/types.ts";
 import { sessionResponse } from "../src/server/connection-api.ts";
 import {
@@ -262,6 +266,11 @@ test("directory checks run once per entry with bounded concurrency and retain th
       }
     };
     const gitCalls = f.controls.gitCalls;
+    let permissionTime = Date.now();
+    repositoryPermissions(f.sessions).now = () => permissionTime;
+    await f.discovery.list(c.cookie, c.connection.id);
+    assert.equal(checked.length, 0);
+    permissionTime += PERMISSION_CHECK_MS;
     const listing = await f.discovery.list(c.cookie, c.connection.id);
     assert.deepEqual(listing.items, before.items);
     assert.equal(new Set(checked).size, listing.items.length);
@@ -269,6 +278,7 @@ test("directory checks run once per entry with bounded concurrency and retain th
     assert.ok(peak > 1 && peak <= 8, `peak concurrency: ${peak}`);
     assert.equal(f.controls.gitCalls, gitCalls);
     f.controls.deny.add("1");
+    permissionTime += PERMISSION_CHECK_MS;
     const revoked = await f.discovery.list(c.cookie, c.connection.id);
     assert.ok(
       !revoked.items.some((item) => item.repository.repositoryId === "1"),

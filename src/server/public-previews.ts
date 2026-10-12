@@ -278,7 +278,7 @@ export class PublicPreviews {
         mode: 0o600,
         flag: "wx",
       });
-      await context.assertRead();
+      await context.assertRead(true);
       try {
         await rename(temporary, directory);
       } catch (e) {

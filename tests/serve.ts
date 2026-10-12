@@ -22,6 +22,7 @@ import {
 } from "../src/server/providers/types.ts";
 import { Discovery } from "../src/server/discovery.ts";
 import { Repositories } from "../src/server/repositories.ts";
+import { repositoryPermissions } from "../src/server/repository-permissions.ts";
 import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
   sessionResponse,
@@ -80,6 +81,8 @@ const repository: RepositoryIdentity = {
 };
 const valid = new Set(["token-a", "token-b"]);
 let unavailable = false;
+let permissionOffset = 0,
+  permissionChecks = 0;
 const provider: RepositoryProvider = {
   id: "github",
   describeConnection: () => ({
@@ -131,6 +134,7 @@ const provider: RepositoryProvider = {
     return repository;
   },
   assertRead: async (ctx) => {
+    permissionChecks++;
     await provider.authenticate(ctx.secret, ctx.signal);
   },
   probeWorkflow: async () => ({
@@ -154,6 +158,7 @@ const sessions = new PersonalSessions(
 const discoveries = new Discovery(join(root, "discoveries"), sessions),
   repos = new Repositories(join(root, "repos"), sessions, discoveries),
   publications = new PublicPreviews(join(root, "public-previews"));
+repositoryPermissions(sessions).now = () => Date.now() + permissionOffset;
 const key = repositoryKey(repository);
 const originalMain = f.git(["rev-parse", "main"]);
 await mkdir("artifacts", { recursive: true });
@@ -204,6 +209,8 @@ const server = createServer(async (req, res) => {
         }
         if (input.gitRevoke) git.allowed.delete(`reader:${input.gitRevoke}`);
         if (input.unavailable !== undefined) unavailable = input.unavailable;
+        if (input.advancePermissions)
+          permissionOffset += input.advancePermissions;
         if (input.advanceMain) {
           f.git(["checkout", "main"]);
           await f.put(
@@ -231,6 +238,7 @@ const server = createServer(async (req, res) => {
         key,
         repository,
         attempts: git.attempts.length,
+        permissionChecks,
       });
     } else if (
       s[0] === "api" &&

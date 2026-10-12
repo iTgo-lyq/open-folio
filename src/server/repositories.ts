@@ -10,8 +10,8 @@ import {
 import { GitReader } from "./git.ts";
 import { SnapshotStore } from "./store.ts";
 import { AppError } from "./errors.ts";
+import { repositoryPermissions } from "./repository-permissions.ts";
 import {
-  repositoryKey,
   type RepositoryIdentity,
   type RepositorySelector,
   type GitTransport,
@@ -22,7 +22,7 @@ export interface ReadContext {
   repository: RepositoryIdentity;
   project: ProjectConfig;
   store: SnapshotStore;
-  assertRead(): Promise<void>;
+  assertRead(force?: boolean): Promise<void>;
   refresh(
     limits: Limits,
     automatic?: boolean,
@@ -60,29 +60,21 @@ export class Repositories {
     if (!/^[a-f0-9]{64}$/.test(key))
       throw new AppError("REPOSITORY_NOT_FOUND", "仓库不存在。", 404);
     const lease = await this.sessions.lease(cookie, connectionId, signal);
+    const permissions = repositoryPermissions(this.sessions);
+    let target: RepositorySelector | undefined;
     try {
       const provider = this.sessions.registry.get(
         lease.context.identity.providerId,
       );
       const found = await this.discoveries.lookup(lease, key);
-      const target = found?.repository ?? selector;
+      target = found?.repository ?? selector;
       if (!target)
         throw new AppError(
           "REPOSITORY_NOT_FOUND",
           "请先发现或检查这个仓库。",
           404,
         );
-      const repository = await provider.resolveRepository(
-        lease.context,
-        target,
-      );
-      if (repositoryKey(repository) !== key)
-        throw new AppError(
-          "REPOSITORY_MISMATCH",
-          "链接的仓库身份不匹配。",
-          404,
-        );
-      await provider.assertRead(lease.context, repository);
+      const repository = await permissions.check(cookie, lease, key, target);
       if (!found) {
         const diagnosed = await this.discoveries.diagnose(
           provider,
@@ -96,18 +88,17 @@ export class Repositories {
             409,
           );
       }
-      const assertPermission = async (owner: ConnectionLease) => {
-        await owner.assertCurrent();
-        const current = await provider.resolveRepository(
-          owner.context,
-          repository,
-        );
-        if (repositoryKey(current) !== key)
-          throw new AppError("REPOSITORY_MISMATCH", "仓库身份已变化。", 403);
-        await provider.assertRead(owner.context, current);
+      const assertPermission = async (
+        owner: ConnectionLease,
+        force = false,
+      ) => {
+        await permissions.check(cookie, owner, key, repository, {
+          force,
+          workspaceOwned: owner !== lease,
+        });
         await owner.assertCurrent();
       };
-      const assertRead = () => assertPermission(lease);
+      const assertRead = (force = false) => assertPermission(lease, force);
       await lease.assertCurrent();
       const cache = join(this.root, lease.workspaceId);
       const makeStore = async (owner: ConnectionLease) => {
@@ -158,6 +149,7 @@ export class Repositories {
                   beforePublish: () => assertPermission(owner),
                 });
                 await owner.assertCurrent();
+                permissions.assertAllowed(owner, key);
                 return snapshot;
               } finally {
                 owner.release();
@@ -176,7 +168,18 @@ export class Repositories {
       };
       const result = await operation(context);
       await lease.assertCurrent();
+      permissions.assertAllowed(lease, key);
       return result;
+    } catch (error) {
+      permissions.reject(lease, key, error);
+      if (
+        error instanceof AppError &&
+        error.code === "GIT_READ_FAILED" &&
+        target &&
+        !lease.context.signal.aborted
+      )
+        await permissions.check(cookie, lease, key, target, { force: true });
+      throw error;
     } finally {
       lease.release();
     }

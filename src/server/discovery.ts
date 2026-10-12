@@ -14,6 +14,7 @@ import { z } from "zod";
 import { workflowSchema } from "./schema.ts";
 import { GitReader } from "./git.ts";
 import { AppError } from "./errors.ts";
+import { repositoryPermissions } from "./repository-permissions.ts";
 import { dataDirectory } from "./config.ts";
 import {
   personalSessions,
@@ -220,20 +221,25 @@ export class Discovery {
     const provider = this.sessions.registry.get(
       lease.context.identity.providerId,
     );
-    const actual = await provider.authenticate(
-      lease.context.secret,
-      lease.context.signal,
-    );
+    const actual = await provider
+      .authenticate(lease.context.secret, lease.context.signal)
+      .catch((error) => {
+        repositoryPermissions(this.sessions).reject(lease, undefined, error);
+        throw error;
+      });
     if (
       actual.subjectId !== lease.context.identity.subjectId ||
       actual.providerId !== lease.context.identity.providerId ||
       actual.instanceId !== lease.context.identity.instanceId
-    )
-      throw new ProviderError(
+    ) {
+      const error = new ProviderError(
         "IDENTITY_CHANGED",
         "连接身份已改变，请重新连接。",
         401,
       );
+      repositoryPermissions(this.sessions).reject(lease, undefined, error);
+      throw error;
+    }
     await lease.assertCurrent();
     return provider;
   }
@@ -449,6 +455,11 @@ export class Discovery {
                   (r) => repositoryKey(r) !== result.key,
                 );
               } catch (e) {
+                repositoryPermissions(this.sessions).reject(
+                  lease,
+                  repositoryKey(repository),
+                  e,
+                );
                 if (
                   e instanceof ProviderError &&
                   [
@@ -482,6 +493,7 @@ export class Discovery {
         : "complete";
       await this.write(lease, job);
     } catch (e) {
+      repositoryPermissions(this.sessions).reject(lease, undefined, e);
       job.state = "partial";
       job.message = e instanceof AppError ? e.message : "发现已中断，请重试。";
       job.retryAfter = e instanceof ProviderError ? e.retryAfter : undefined;
@@ -509,28 +521,20 @@ export class Discovery {
       throw new AppError("INVALID_PARAMETER", "目录页码不合法。", 400);
     const lease = await this.sessions.lease(cookie, id);
     try {
-      const provider = this.sessions.registry.get(
-          lease.context.identity.providerId,
-        ),
+      const permissions = repositoryPermissions(this.sessions),
         job = await this.read(lease),
         all = job ? found(job) : [];
       let unavailable = 0;
       const verification = await Promise.allSettled(
         all.slice(offset, offset + 20).map((item) =>
           slots().use(lease.context.signal, async () => {
-            const context = {
-              ...lease.context,
-              signal: AbortSignal.any([
-                lease.context.signal,
-                AbortSignal.timeout(20_000),
-              ]),
-            };
             try {
-              const repository = await provider.resolveRepository(
-                context,
+              const repository = await permissions.check(
+                cookie,
+                lease,
+                item.key,
                 item.repository,
               );
-              await provider.assertRead(context, repository);
               return { ...item, repository };
             } catch (e) {
               if (
@@ -557,6 +561,8 @@ export class Discovery {
         result.status === "fulfilled" ? [result.value] : [],
       );
       await lease.assertCurrent();
+      for (const item of verified)
+        if (item) permissions.assertAllowed(lease, item.key);
       return {
         items: verified.filter(
           (item): item is DiscoveredRepository => item !== null,
@@ -574,14 +580,20 @@ export class Discovery {
     selector: string | { fullName: string; repositoryId?: string },
   ) {
     const lease = await this.sessions.lease(cookie, id);
+    let key: string | undefined;
     try {
       const provider = await this.identity(lease),
-        repo = await provider.resolveRepository(
-          lease.context,
+        target =
           typeof selector === "string"
             ? provider.parseRepositoryUrl(selector)
-            : selector,
-        );
+            : selector;
+      key = (await this.read(lease))?.results.find((item) =>
+        target.repositoryId
+          ? item.repository.repositoryId === target.repositoryId
+          : item.repository.fullName === target.fullName,
+      )?.key;
+      const repo = await provider.resolveRepository(lease.context, target);
+      key = repositoryKey(repo);
       const result = await slots().use(lease.context.signal, () =>
         this.diagnose(provider, lease.context, repo),
       );
@@ -610,6 +622,9 @@ export class Discovery {
       await this.write(lease, job);
       await lease.assertCurrent();
       return result;
+    } catch (error) {
+      repositoryPermissions(this.sessions).reject(lease, key, error);
+      throw error;
     } finally {
       lease.release();
     }

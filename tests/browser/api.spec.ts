@@ -30,7 +30,7 @@ test("personal API reads cached records and enforces input boundaries", async ({
     ).status(),
   ).toBe(403);
 });
-test("revoked credentials cannot read cached documents, search, images or HEAD", async ({
+test("periodic revalidation detects revoked credentials and then rejects cached reads", async ({
   request,
   personal,
 }) => {
@@ -42,6 +42,10 @@ test("revoked credentials cannot read cached documents, search, images or HEAD",
     (d: { kind: string }) => d.kind === "image",
   );
   await request.post("/_fixture/control", { data: { revoke: "token-a" } });
+  expect((await request.get(personal.url("workbench"))).status()).toBe(200);
+  await request.post("/_fixture/control", {
+    data: { advancePermissions: 300_000 },
+  });
   for (const path of [
     "workbench",
     `documents/${doc.id}?snapshot=${work.id}`,
@@ -58,6 +62,10 @@ test("platform failure does not return stale snapshots and retired endpoints exp
   personal,
 }) => {
   await request.post("/_fixture/control", { data: { unavailable: true } });
+  expect((await request.get(personal.url("workbench"))).status()).toBe(200);
+  await request.post("/_fixture/control", {
+    data: { advancePermissions: 300_000 },
+  });
   const denied = await request.get(personal.url("workbench"));
   expect(denied.status()).toBe(503);
   expect(await denied.text()).not.toContain("工程协作");

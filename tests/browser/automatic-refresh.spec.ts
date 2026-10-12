@@ -1,5 +1,39 @@
 import { test, expect, repositoryQuery } from "./connected";
 
+test("cached interactions reuse permissions, periodic checks renew once, and transient manual failure keeps the page", async ({
+  page,
+  request,
+}) => {
+  const stats = async () =>
+    (await (await request.post("/_fixture/control", { data: {} })).json())
+      .permissionChecks as number;
+  const before = await stats();
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+  const heading = page.getByRole("heading", { name: "工程协作", exact: true });
+  await expect(heading).toBeVisible();
+  await page.reload();
+  await expect(heading).toBeVisible();
+  expect(await stats()).toBe(before);
+  await request.post("/_fixture/control", {
+    data: { advancePermissions: 300_000 },
+  });
+  const rechecked = page.waitForResponse(
+    (r) => r.url().includes("/refresh?automatic=1") && r.status() === 200,
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await rechecked;
+  expect(await stats()).toBe(before + 1);
+  await page.route("**/refresh?*", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: { code: "GIT_READ_FAILED", message: "临时网络故障" } },
+    }),
+  );
+  await page.getByRole("button", { name: "刷新中心仓库", exact: true }).click();
+  await expect(page.locator(".error-notice")).toContainText("临时网络故障");
+  await expect(heading).toBeVisible();
+});
+
 test("visible workbench automatically updates main Specs and prototypes without clearing the current content", async ({
   page,
   request,
@@ -74,7 +108,9 @@ test("hidden pages pause checks, foreground retries transient failures, and revo
   });
   await page.clock.fastForward(120_000);
   expect(checks).toBe(1);
-  await request.post("/_fixture/control", { data: { unavailable: true } });
+  await request.post("/_fixture/control", {
+    data: { unavailable: true, advancePermissions: 300_000 },
+  });
   await page.evaluate(() => {
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
@@ -89,7 +125,9 @@ test("hidden pages pause checks, foreground retries transient failures, and revo
   await request.post("/_fixture/control", { data: { unavailable: false } });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(page.locator(".error-notice")).toHaveCount(0);
-  await request.post("/_fixture/control", { data: { revoke: "token-a" } });
+  await request.post("/_fixture/control", {
+    data: { revoke: "token-a", advancePermissions: 300_000 },
+  });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),

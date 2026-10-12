@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { repositoryFixture as setup } from "./repositories-fixture.ts";
-test("personal repository reads isolate snapshots and authorize every cached document, search, image and HEAD", async () => {
+import {
+  repositoryPermissions,
+  PERMISSION_CHECK_MS,
+} from "../src/server/repository-permissions.ts";
+test("personal repository reads isolate snapshots and expire cached permissions for documents, search, images and HEAD", async () => {
   const t = await setup();
   try {
     assert.equal((await t.request("refresh", "POST")).status, 200);
@@ -63,6 +67,8 @@ test("personal repository reads isolate snapshots and authorize every cached doc
       doc.commit,
     );
     t.f.controls.deny.add("1");
+    repositoryPermissions(t.f.sessions).now = () =>
+      Date.now() + PERMISSION_CHECK_MS;
     for (const path of paths)
       for (const method of ["GET", "HEAD"]) {
         const denied = await t.request(path, method);
@@ -88,6 +94,9 @@ test("short reads use entry authorization; subsequent reads detect revocation an
       return body;
     })) as { id: string };
     assert.equal(permitted.id, first.id);
+    assert.equal((await t.request("workbench")).status, 200);
+    repositoryPermissions(t.f.sessions).now = () =>
+      Date.now() + PERMISSION_CHECK_MS;
     assert.equal((await t.request("workbench")).status, 403);
     t.f.controls.deny.clear();
     await t.g.put("docs/project/specs/platform/spec.md", "# 待发布的新内容");
@@ -99,7 +108,7 @@ test("short reads use entry authorization; subsequent reads detect revocation an
             signal: ctx.lease.context.signal,
             beforePublish: async () => {
               t.f.controls.deny.add("1");
-              await ctx.assertRead();
+              await ctx.assertRead(true);
             },
           });
         }),
@@ -138,7 +147,7 @@ test("short reads use entry authorization; subsequent reads detect revocation an
   }
 });
 
-test("unchanged refresh authorizes once; changed snapshots recheck before publishing", async () => {
+test("unchanged and changed refreshes reuse permissions until the next periodic check", async () => {
   const t = await setup();
   try {
     const first = await (await t.request("refresh", "POST")).json();
@@ -149,14 +158,16 @@ test("unchanged refresh authorizes once; changed snapshots recheck before publis
       return original(...args);
     };
     assert.deepEqual(await (await t.request("refresh", "POST")).json(), first);
-    assert.equal(reads, 1);
+    assert.equal(reads, 0);
     reads = 0;
     await t.g.put("docs/project/specs/platform/spec.md", "# 新内容");
     t.g.commit();
     const changed = await (await t.request("refresh", "POST")).json();
     assert.notEqual(changed.snapshotId, first.snapshotId);
-    assert.equal(reads, 2);
+    assert.equal(reads, 0);
     t.f.controls.deny.add("1");
+    repositoryPermissions(t.f.sessions).now = () =>
+      Date.now() + PERMISSION_CHECK_MS;
     assert.equal((await t.request("refresh", "POST")).status, 403);
   } finally {
     await t.cleanup();
@@ -185,6 +196,9 @@ test("Git refresh uses the supplied HTTPS token; cached API-authorized reads do 
       )
       .catch(() => "");
     assert.ok(!String(dump).includes("token-a"));
+    t.f.controls.deny.add("1");
+    assert.equal((await t.request("refresh", "POST")).status, 403);
+    assert.equal((await t.request("workbench")).status, 403);
   } finally {
     if (saved === undefined) delete process.env.GIT_SSL_CAINFO;
     else process.env.GIT_SSL_CAINFO = saved;
@@ -192,7 +206,37 @@ test("Git refresh uses the supplied HTTPS token; cached API-authorized reads do 
   }
 });
 
-test("cached reads authorize once and still reject a device revoked while materializing the response", async () => {
+test("list permissions are reused by repository reads and a confirmed denial prevents an in-flight response", async () => {
+  const t = await setup();
+  try {
+    await t.service.discoveries.list(t.c.cookie, t.c.connection.id);
+    let calls = 0;
+    const original = t.f.provider.assertRead;
+    t.f.provider.assertRead = async (...args) => {
+      calls++;
+      return original(...args);
+    };
+    await t.request("refresh", "POST");
+    assert.equal((await t.request("workbench")).status, 200);
+    assert.equal(calls, 0);
+    await assert.rejects(
+      t.read(async (ctx) => {
+        const work = await ctx.store.workbench(ctx.project);
+        t.f.controls.deny.add("1");
+        await assert.rejects(
+          t.read((inner) => inner.assertRead(true)),
+          { code: "READ_DENIED" },
+        );
+        return work;
+      }),
+      { code: "READ_DENIED" },
+    );
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("cached reads skip remote checks and still reject a device revoked while materializing the response", async () => {
   const t = await setup();
   try {
     await t.request("refresh", "POST");
@@ -212,7 +256,7 @@ test("cached reads authorize once and still reject a device revoked while materi
     }
     const gitCalls = t.f.controls.gitCalls;
     assert.equal((await t.request("workbench")).status, 200);
-    assert.deepEqual(calls, { identity: 0, resolve: 1, contents: 1 });
+    assert.deepEqual(calls, { identity: 0, resolve: 0, contents: 0 });
     assert.equal(t.f.controls.gitCalls, gitCalls);
     await assert.rejects(() =>
       t.read(async (ctx) => {

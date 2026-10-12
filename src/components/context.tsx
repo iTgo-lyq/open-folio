@@ -320,13 +320,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           {
             method: "POST",
             signal: c.signal,
-            background: true,
           },
         );
         if (result.snapshotId !== snapshotId) {
           const next = await api<Workbench>(readUrl("workbench"), {
             signal: c.signal,
-            background: true,
           });
           if (!c.signal.aborted && version === generation.current) {
             snapshotId = next.id;

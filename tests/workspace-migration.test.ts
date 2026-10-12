@@ -19,6 +19,10 @@ import {
 } from "../src/server/connection-api.ts";
 import { Discovery } from "../src/server/discovery.ts";
 import { Repositories } from "../src/server/repositories.ts";
+import {
+  repositoryPermissions,
+  PERMISSION_CHECK_MS,
+} from "../src/server/repository-permissions.ts";
 import { SnapshotStore } from "../src/server/store.ts";
 import { GitReader } from "../src/server/git.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
@@ -218,6 +222,9 @@ test("migration groups exact tokens, chooses latest complete cache and preserves
       a.connection.id,
     );
     t.f.controls.deny.add("1");
+    assert.equal((await snapshot(a.cookie, a.connection.id)).id, latest.id);
+    repositoryPermissions(repos.sessions).now = () =>
+      Date.now() + PERMISSION_CHECK_MS;
     await assert.rejects(() => snapshot(a.cookie, a.connection.id), {
       code: "READ_DENIED",
     });
