@@ -251,7 +251,6 @@ export class GitHubProvider implements RepositoryProvider {
   async authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
-    username?: string,
   ): Promise<ProviderIdentity> {
     const { value } = await this.#request("/user", secret, signal);
     const u = parsed(
@@ -262,12 +261,6 @@ export class GitHubProvider implements RepositoryProvider {
       }),
       value,
     );
-    if (username && username.toLowerCase() !== u.login.toLowerCase())
-      throw new ProviderError(
-        "USERNAME_MISMATCH",
-        "Git 用户名与 token 所属账号不匹配。",
-        400,
-      );
     return {
       providerId: this.id,
       instanceId: "github.com",

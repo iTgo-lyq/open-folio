@@ -144,7 +144,7 @@ const touchInterval = 24 * 60 * 60 * 1000;
 export const cookieHash = (s: string) =>
   createHash("sha256").update(s).digest("hex");
 const denied = () =>
-  new AppError("SESSION_REQUIRED", "请使用 Git 用户名与 token 登录。", 401);
+  new AppError("SESSION_REQUIRED", "请使用 token 登录。", 401);
 const workspaceSummary = (w: Workspace): WorkspaceSummary => ({
   id: w.id,
   identity: w.identity,
@@ -489,15 +489,18 @@ export class PersonalSessions {
     displayLabel = "浏览器",
   ) {
     const secret = new SecretHandle(input),
-      cleanName = username?.trim(),
-      cleanLabel = label?.trim();
+      cleanName = username?.trim() || undefined,
+      cleanLabel = label?.trim(),
+      displayName = cleanLabel ?? cleanName;
     if (
       cleanName !== undefined &&
-      (!cleanName ||
-        cleanName.length > 255 ||
-        /[\x00-\x20\x7f:]/.test(cleanName))
+      (cleanName.length > 100 || /[\x00-\x1f\x7f]/.test(cleanName))
     )
-      throw new AppError("INVALID_USERNAME", "请输入有效的 Git 用户名。", 400);
+      throw new AppError(
+        "INVALID_USERNAME",
+        "用户名最多 100 个字符，不能包含控制字符。",
+        400,
+      );
     if (
       cleanLabel !== undefined &&
       (!cleanLabel ||
@@ -506,7 +509,7 @@ export class PersonalSessions {
     )
       throw new AppError("INVALID_LABEL", "名称需为 1–100 个字符。", 400);
     const provider = this.registry.get(providerId),
-      authenticated = await provider.authenticate(secret, signal, cleanName);
+      authenticated = await provider.authenticate(secret, signal);
     const identity = identitySchema.parse({
       providerId: authenticated.providerId,
       instanceId: authenticated.instanceId,
@@ -525,11 +528,7 @@ export class PersonalSessions {
       );
     const gitUsername = authenticated.gitUsername ?? identity.login;
     if (!workspaceSchema.shape.gitUsername.safeParse(gitUsername).success)
-      throw new AppError(
-        "INVALID_USERNAME",
-        "平台未返回有效的 Git 用户名。",
-        502,
-      );
+      throw new AppError("INVALID_USERNAME", "平台未返回有效的用户名。", 502);
     return this.lock(async () => {
       signal.throwIfAborted();
       const state = await this.load();
@@ -562,7 +561,7 @@ export class PersonalSessions {
           credentialFingerprint: fingerprint,
           identity,
           gitUsername,
-          label: cleanLabel ?? identity.login,
+          label: displayName ?? identity.login,
           preferences: {},
           createdAt: this.now(),
           ...encryptWorkspace(base, secret, keys.credential),
@@ -572,7 +571,7 @@ export class PersonalSessions {
         decryptWorkspace(w, keys.credential);
         w.identity = identity;
         w.gitUsername = gitUsername;
-        if (cleanLabel) w.label = cleanLabel;
+        if (displayName) w.label = displayName;
       }
       if (
         state.sessions.filter((s) => s.workspaceId === w.id && s.id !== old?.id)

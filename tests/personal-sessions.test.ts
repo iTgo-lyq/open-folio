@@ -94,24 +94,90 @@ test("different tokens for the same identity stay separate; rename and adapter G
       code: "SESSION_REQUIRED",
     });
     const authenticate = f.provider.authenticate;
-    f.provider.authenticate = async (secret, sig, username) => ({
+    f.provider.authenticate = async (secret, sig) => ({
       ...(await authenticate(secret, sig)),
       login: "renamed",
-      gitUsername: username ?? "transport-user",
+      gitUsername: "transport-user",
     });
     const c = await f.sessions.login(
       "",
       "sample",
       "first",
-      "transport-user",
+      "自定义用户名",
       undefined,
       signal(),
     );
     assert.equal(c.connection.id, a.connection.id);
+    assert.equal(c.connection.label, "自定义用户名");
     const lease = await f.sessions.lease(c.cookie, c.connection.id);
     assert.equal(lease.context.gitUsername, "transport-user");
     assert.equal(lease.context.identity.login, "renamed");
     lease.release();
+  } finally {
+    await f.cleanup();
+  }
+});
+test("optional display usernames default to the Git account and never become authentication input", async () => {
+  const f = await personalFixture();
+  try {
+    const authenticate = f.provider.authenticate;
+    f.provider.authenticate = async (...args) => {
+      assert.equal(args.length, 2);
+      return authenticate(...args);
+    };
+    let workspaceId: string | undefined;
+    for (const username of [undefined, "", "   "]) {
+      const response = await sessionResponse(
+        req("POST", "", { providerId: "sample", token: "first", username }),
+        f.sessions,
+      );
+      assert.equal(response.status, 201);
+      const { connection } = await response.json();
+      assert.equal(connection.label, "reader");
+      assert.equal(connection.identity.login, "reader");
+      workspaceId ??= connection.id;
+      assert.equal(connection.id, workspaceId);
+    }
+    const response = await sessionResponse(
+      req("POST", "", { ...input(), username: "  用户名: 自己填写  " }),
+      f.sessions,
+    );
+    assert.equal(response.status, 201);
+    const { connection } = await response.json();
+    assert.equal(connection.id, workspaceId);
+    assert.equal(connection.label, "用户名: 自己填写");
+    const lease = await f.sessions.lease(cookieOf(response), workspaceId);
+    assert.equal(lease.context.gitUsername, "reader");
+    assert.equal(lease.context.identity.login, "reader");
+    lease.release();
+    const restored = await f.sessions.login(
+      "",
+      "sample",
+      "first",
+      "",
+      undefined,
+      signal(),
+    );
+    assert.equal(restored.connection.label, connection.label);
+    assert.equal(restored.connection.id, workspaceId);
+    const renamed = await f.sessions.login(
+      "",
+      "sample",
+      "first",
+      "另一个名称",
+      undefined,
+      signal(),
+    );
+    assert.equal(renamed.connection.id, workspaceId);
+    const other = await f.sessions.login(
+      "",
+      "sample",
+      "third",
+      "另一个名称",
+      undefined,
+      signal(),
+    );
+    assert.notEqual(other.connection.id, workspaceId);
   } finally {
     await f.cleanup();
   }
@@ -321,8 +387,9 @@ test("HTTP login rejects cross-site, malformed username and token, oversized req
     absent.headers.delete("origin");
     assert.equal((await sessionResponse(absent, f.sessions)).status, 403);
     for (const body of [
-      { ...input(), username: "" },
-      { ...input(), username: "bad:name" },
+      { ...input(), username: "bad\nname" },
+      { ...input(), username: "a".repeat(101) },
+      { ...input(), username: null },
       { ...input(), token: "a\nb" },
       { ...input(), token: "" },
       { ...input(), workspaceId: "forged" },
@@ -342,7 +409,7 @@ test("HTTP login rejects cross-site, malformed username and token, oversized req
       413,
     );
     f.provider.authenticate = async () => {
-      throw new ProviderError("USERNAME_MISMATCH", "Mismatch", 400);
+      throw new ProviderError("TOKEN_INVALID", "Invalid token", 400);
     };
     assert.equal(
       (await sessionResponse(req("POST", "", input()), f.sessions)).status,

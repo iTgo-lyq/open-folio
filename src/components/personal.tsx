@@ -381,7 +381,7 @@ export function Connections() {
         </ErrorNotice>
       )}
       <EmptyState title="登录自己的工作台">
-        <p>使用 Git 用户名与 token，在多台设备恢复同一工作台。</p>
+        <p>使用 token，在多台设备恢复同一工作台。</p>
         <Button onClick={() => setLogin(true)}>登录工作台</Button>
       </EmptyState>
       {login && <ConnectDialog onClose={() => setLogin(false)} />}
@@ -638,8 +638,7 @@ export function ConnectDialog({
 }) {
   const p = usePersonal();
   const [token, setToken] = useState(""),
-    [username, setUsername] = useState(connection?.identity.login ?? ""),
-    [label, setLabel] = useState(connection?.label ?? ""),
+    [username, setUsername] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const submit = async (e: React.FormEvent) => {
@@ -656,9 +655,8 @@ export function ConnectDialog({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             providerId: "github",
-            username,
+            ...(username.trim() ? { username: username.trim() } : {}),
             token: value,
-            ...(label.trim() ? { label: label.trim() } : {}),
           }),
         },
       );
@@ -679,33 +677,25 @@ export function ConnectDialog({
       <p className="muted">
         {connection
           ? "相同 token 恢复原工作台，不同 token 使用独立工作台。失败时保留当前登录。"
-          : "使用 Git 用户名与 token，恢复自己的工作台并发现 SpecTrail 仓库。"}
+          : "使用 token，恢复自己的工作台并发现 SpecTrail 仓库。"}
       </p>
       <form onSubmit={submit}>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="git-username">Git 用户名</FieldLabel>
+            <FieldLabel htmlFor="username">用户名（可选）</FieldLabel>
             <Input
-              id="git-username"
+              id="username"
               autoFocus
               autoComplete="username"
               value={username}
-              maxLength={255}
-              required
+              maxLength={100}
+              placeholder="留空自动使用 Git 账号名"
+              aria-describedby="username-help"
               onChange={(e) => setUsername(e.target.value)}
             />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="connection-label">
-              工作台名称（可选）
-            </FieldLabel>
-            <Input
-              id="connection-label"
-              value={label}
-              maxLength={100}
-              placeholder="例如：工作仓库"
-              onChange={(e) => setLabel(e.target.value)}
-            />
+            <FieldDescription id="username-help">
+              留空时自动使用 Git 账号名；已有工作台保留当前用户名。
+            </FieldDescription>
           </Field>
           <Field data-invalid={!!error}>
             <FieldLabel htmlFor="github-token">GitHub token</FieldLabel>

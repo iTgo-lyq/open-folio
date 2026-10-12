@@ -9,9 +9,6 @@ async function connect(
   token = "token-a",
 ) {
   await page.getByRole("button", { name: "登录工作台", exact: true }).click();
-  await page
-    .getByLabel("Git 用户名", { exact: true })
-    .fill(token === "token-b" ? "collaborator" : "reader");
   await page.getByLabel("GitHub token", { exact: true }).fill(token);
   await page.getByRole("button", { name: "登录并发现仓库" }).click();
   await expect(
@@ -58,12 +55,60 @@ test("anonymous onboarding discovers personal repositories and restores the encr
     page.getByRole("button", { name: "用仓库地址检查" }),
   ).toBeFocused();
 });
+test("optional username defaults to the Git account and accepts a custom name across devices", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "登录工作台", exact: true }).click();
+  const username = page.getByLabel("用户名（可选）", { exact: true });
+  await expect(username).not.toHaveAttribute("required", "");
+  await expect(username).toHaveValue("");
+  await expect(
+    page.getByLabel("工作台名称（可选）", { exact: true }),
+  ).toHaveCount(0);
+  await page.getByLabel("GitHub token", { exact: true }).fill("token-a");
+  await page.getByRole("button", { name: "登录并发现仓库" }).click();
+  await expect(page.locator(".personal-current-account")).toContainText(
+    "reader",
+  );
+  const original = await (await page.request.get("/api/session")).json();
+  await page.locator('.module-rail [aria-label="当前凭据"]').click();
+  await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+  await username.fill("我的 用户名: 自定义");
+  await page.getByLabel("GitHub token", { exact: true }).fill("token-a");
+  await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
+  await expect(page.locator(".personal-connection-card")).toContainText(
+    "我的 用户名: 自定义",
+  );
+  const current = await (await page.request.get("/api/session")).json();
+  expect(current.workspace.id).toBe(original.workspace.id);
+  expect(current.workspace.identity.login).toBe("reader");
+  const second = await browser.newContext();
+  try {
+    const response = await second.request.post("/api/session", {
+      headers: { origin: "http://127.0.0.1:10682" },
+      data: { token: "token-a" },
+    });
+    expect(response.status()).toBe(201);
+    const restored = await response.json();
+    expect(restored.connection.id).toBe(original.workspace.id);
+    expect(restored.connection.label).toBe("我的 用户名: 自定义");
+    const other = await second.newPage();
+    await other.goto("/?m=connections");
+    await expect(other.locator(".personal-connection-card")).toContainText(
+      "我的 用户名: 自定义",
+    );
+  } finally {
+    await second.close();
+  }
+});
 test("invalid credentials, replacement rollback, removal and logout remain explicit", async ({
   page,
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "登录工作台", exact: true }).click();
-  await page.getByLabel("Git 用户名", { exact: true }).fill("reader");
+  await page.getByLabel("用户名（可选）", { exact: true }).fill("reader");
   await page.getByLabel("GitHub token", { exact: true }).fill("wrong");
   await page.getByRole("button", { name: "登录并发现仓库" }).click();
   await expect(page.getByRole("alert")).toContainText("失效");
@@ -86,7 +131,7 @@ test("invalid credentials, replacement rollback, removal and logout remain expli
     page.getByRole("heading", { name: "登录自己的工作台" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "登录工作台", exact: true }).click();
-  await page.getByLabel("Git 用户名", { exact: true }).fill("reader");
+  await page.getByLabel("用户名（可选）", { exact: true }).fill("reader");
   await page.getByLabel("GitHub token", { exact: true }).fill("token-a");
   await page
     .getByRole("button", { name: "登录并发现仓库", exact: true })
@@ -120,8 +165,7 @@ test("switching credentials restores only the current token and revoked permissi
   await connect(page);
   await page.locator('.module-rail [aria-label="当前凭据"]').click();
   await page.getByRole("button", { name: "切换凭据", exact: true }).click();
-  await page.getByLabel("Git 用户名", { exact: true }).fill("collaborator");
-  await page.getByLabel("工作台名称（可选）").fill("范围 B");
+  await page.getByLabel("用户名（可选）", { exact: true }).fill("范围 B");
   await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
   await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
   await expect(page.locator(".personal-connection-card")).toHaveCount(1);

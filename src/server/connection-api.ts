@@ -17,7 +17,7 @@ import {
 const loginInput = z
   .object({
     providerId: z.string().min(1).max(80).default("github"),
-    username: z.string().trim().min(1).max(255),
+    username: z.string().trim().max(100).optional(),
     token: z.string().max(4096),
     label: z.string().max(100).optional(),
   })
@@ -35,7 +35,7 @@ export async function sessionResponse(
       if (!result.success)
         throw new AppError(
           "INVALID_PARAMETER",
-          "请填写 Git 用户名与 token。",
+          "请填写有效的 token，用户名可选且最多 100 个字符。",
           400,
         );
       const { providerId, username, token, label } = result.data;
@@ -171,7 +171,7 @@ export async function connectionResponse(
     requirePersonalOrigin(request);
     throw new AppError(
       "CONNECTIONS_RETIRED",
-      "连接新增与替换已停用，请使用 Git 用户名与 token 登录或切换凭据。",
+      "连接新增与替换已停用，请使用 token 登录或切换凭据。",
       410,
     );
   } catch (e) {

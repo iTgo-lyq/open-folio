@@ -36,6 +36,16 @@
 
 独立评审及复验见 Review：隔离上下文评审发现的两项 P2（晚到 GET 覆盖新 Cookie、晚到偏好复活旧账号）已修复，评审者独立运行 24 项定向测试，并在隔离 Chromium 重现切换／退出的延迟时序和两个旧 Cookie 入口，均通过。浏览器检查发现的复制弹层焦点问题也在四种宽度复验通过。Technical 与 README 补记 Cookie 固定绝对期限和服务端闲置续期；需求目标、设备权限与缓存隔离不变。未使用真实 token 验证。
 
+## T6：可选用户名与自动填充
+
+按用户明确指令，将登录字段改为“用户名（可选）”，省略、空字符串与纯空白都可仅凭 token 登录。可自定义包含中文、内部空格或冒号的显示名称，保存在已有 label；首次未指定名称使用平台账号 login，恢复时保留已保存名称。表单合并重复的工作台名称输入，既有 label API 保持兼容并优先。显示名称不传入 Provider.authenticate，不再校验 GitHub 用户名匹配；Git 传输仍使用适配器返回的有效用户名，不改变平台身份、凭据指纹、工作台 UUID 或缓存归属。
+
+验证：`npm test` 141 项通过，类型及格式检查通过。`npx playwright test tests/browser/personal.spec.ts tests/browser/token-workspaces.spec.ts tests/browser/sharing.spec.ts tests/browser/credentials.spec.ts` 23 个场景中 22 个首次通过；旧切换测试仍定位删除的“工作台名称（可选）”，修正后单独复跑通过，最终全部 23 个场景通过。新增真实浏览器场景覆盖仅 token 登录、默认 Git 账号名、自定义显示名称、同 token 原工作台及第二设备省略用户名恢复。四尺寸切换／复制／退出、分享、撤权、旧 Cookie 和延迟响应回归通过。
+
+不继承本轮实现上下文的独立评审未发现新增生产问题，独立会话／Provider 22 项测试通过；发现的旧测试定位问题见 Review R4，已修并复验。原 T1–T5 的验证和评审证据保留；不使用真实用户 token。
+
+默认 `.next` 生产构建通过。更新前停止原 10680 预览，将当时完整构建和运行数据备份到私有忽略目录 `.openfolio/rollback-username-8dcc757`，构建后沿用原脚本重启；未新增端口或更改数据结构。生产 Chromium 在 390px 打开登录弹层，确认用户名可选、初始为空、无重复名称字段、无脚本错误或横向溢出，已实际查看 `artifacts/optional-username-live.png`。最终格式检查通过，Next 生成的类型引用没有新增差异，未使用临时构建目录。
+
 ## 运行预览更新与最终核对
 
 T5 实现提交 `5c28078` 已推送后，停止原 10680 预览，在私有忽略目录 `.openfolio/rollback-token-5c28078` 备份完整 `.next` 和运行数据，再串行执行默认 `npm run build`，生产构建通过，沿用原 tmux 启动脚本和访问范围重启。未新增外部端口或代理。

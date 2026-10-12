@@ -73,7 +73,6 @@ export interface RepositoryProvider {
   authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
-    username?: string,
   ): Promise<ProviderIdentity & { gitUsername?: string }>;
   listRepositories(
     context: ProviderContext,

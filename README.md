@@ -15,11 +15,11 @@ npm start
 
 打开 `http://127.0.0.1:10681`，开发使用 `npm run dev`。远程服务通过 HTTPS 反向代理提供，代理设置可信的 Host、X-Forwarded-Proto，防止客户端伪造；默认仅监听 loopback。单 Node 进程、单实例，不能让多个服务共享同一数据目录。
 
-在登录页填写 Git 用户名与 token；用户名由平台适配器校验，GitHub 使用 token 所属账号的 login。token 生成入口可选择需要读取的仓库并授予 **Contents: Read-only**（Metadata 为隐含权限）。组织可能要求管理员批准或 SSO 授权；token 必须可枚举目标仓库。公开版本只接入 GitHub.com；Provider 接口集中在 `src/server/providers`，其他实例或平台可通过独立适配器扩展，不接受用户输入任意 API 主机。
+在登录页填写 token，用户名可选，仅作为工作台显示名称。留空时首次登录使用 Git 账号名，恢复已有工作台时保留原用户名；自行填写无需与 Git 账号一致。token 生成入口可选择需要读取的仓库并授予 **Contents: Read-only**（Metadata 为隐含权限）。组织可能要求管理员批准或 SSO 授权；token 必须可枚举目标仓库。公开版本只接入 GitHub.com；Provider 接口集中在 `src/server/providers`，其他实例或平台可通过独立适配器扩展，不接受用户输入任意 API 主机。
 
 连接验证成功后自动分页发现仓库，检查默认分支的普通文件 `docs/project/workflow.json`、完整配置和守护分支。有效、有待处理、未接入和检查失败分别展示；限流或中断保留进度，重新发现可继续。也可输入 GitHub HTTPS 仓库地址检查。发现只采集必要元数据和 refs，选择仓库后才 fetch 工程记录；刷新获取最新已推送内容。
 
-同一平台实例与完全一致的 token 恢复同一工作台；不同 token 即使属于同一账号也分别保存。Git 用户名用于适配器校验和传输，不用于合并工作台。所有远程 API、`ls-remote` 和 `fetch` 只使用当前工作台的 token，不读取宿主 helper、netrc、SSH agent 或继承鉴权头，也不会失败后切换其他 token。仓库公开可见也要先验证 token 身份。token 在服务端加密保存，普通摘要不读回秘密；不要把真实 token 放进仓库。
+同一平台实例与完全一致的 token 恢复同一工作台；不同 token 即使属于同一账号也分别保存。用户名不参与鉴权或工作台匹配，Git 传输使用平台适配器返回的用户名。所有远程 API、`ls-remote` 和 `fetch` 只使用当前工作台的 token，不读取宿主 helper、netrc、SSH agent 或继承鉴权头，也不会失败后切换其他 token。仓库公开可见也要先验证 token 身份。token 在服务端加密保存，普通摘要不读回秘密；不要把真实 token 放进仓库。
 
 ## 会话、权限与分享
 

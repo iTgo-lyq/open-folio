@@ -123,7 +123,9 @@ for (const width of [1440, 834, 390, 320])
       page.getByRole("button", { name: "复制 token", exact: true }),
     ).toBeFocused();
     await page.getByRole("button", { name: "切换凭据", exact: true }).click();
-    await page.getByLabel("Git 用户名", { exact: true }).fill("collaborator");
+    await page
+      .getByLabel("用户名（可选）", { exact: true })
+      .fill("collaborator");
     await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
     await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
     await expect(page.locator(".personal-connection-card")).toContainText(
@@ -224,7 +226,9 @@ for (const action of ["switch", "logout"])
     });
     if (action === "switch") {
       await page.getByRole("button", { name: "切换凭据", exact: true }).click();
-      await page.getByLabel("Git 用户名", { exact: true }).fill("collaborator");
+      await page
+        .getByLabel("用户名（可选）", { exact: true })
+        .fill("collaborator");
       await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
       await page
         .getByRole("button", { name: "切换并恢复", exact: true })

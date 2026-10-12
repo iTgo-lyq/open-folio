@@ -30,7 +30,9 @@ test("engineering share links use each collaborator's connection and restore the
     await other
       .getByRole("button", { name: "登录工作台", exact: true })
       .click();
-    await other.getByLabel("Git 用户名", { exact: true }).fill("collaborator");
+    await other
+      .getByLabel("用户名（可选）", { exact: true })
+      .fill("collaborator");
     await other.getByLabel("GitHub token", { exact: true }).fill("token-b");
     await other.getByRole("button", { name: "登录并发现仓库" }).click();
     await expect(
