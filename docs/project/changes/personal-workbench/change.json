@@ -4,7 +4,7 @@
   "title": "个人工作台与 SpecTrail 仓库自动发现",
   "size": "large",
   "status": "active",
-  "stage": "plan",
+  "stage": "execution",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
@@ -16,12 +16,17 @@
       "at": "2026-10-12T06:56:16.754Z",
       "summary": "用户确认个人工作台技术方案与修订后的玻璃导航原型；沿用 GitHub 首版、用户 token 鉴权、适配器扩展、逐请求授权、隔离缓存及公开原型边界，进入实施计划。",
       "source": "用户在新版原型与 Change 同步后回复：“可以，继续吧”。"
+    },
+    "plan": {
+      "at": "2026-10-12T07:22:05.453Z",
+      "summary": "用户确认九项实施任务与完整验收路径，按 T1–T9 串行执行。",
+      "source": "用户在实施计划与确认说明后回复：“继续吧”。"
     }
   },
   "tasks": {
     "T1": {
       "title": "建立可扩展的 GitHub 仓库适配契约",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "让 Git 读取只使用指定连接的 token",
@@ -94,9 +99,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "技术方案及玻璃导航原型已确认；实施计划 T1–T9 与 11 项需求验收映射已准备，待整体计划确认后按编号串行执行。"
-  }
+  ]
 }
