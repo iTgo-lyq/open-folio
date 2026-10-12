@@ -4,7 +4,7 @@
   "title": "Token 工作台与多设备登录",
   "size": "large",
   "status": "active",
-  "stage": "plan",
+  "stage": "execution",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
@@ -16,12 +16,17 @@
       "at": "2026-10-12T11:09:42.319Z",
       "summary": "用户确认完整 Token 工作台技术方案与已验证原型：平台实例与 token 身份、独立设备会话、缓存隔离、主动复制和可恢复迁移；进入实施计划。",
       "source": "用户在技术方案、交互原型及请求进入实施计划的说明后回复：“继续吧，归档前一个change。”"
+    },
+    "plan": {
+      "at": "2026-10-12T11:18:28.231Z",
+      "summary": "用户确认完整五项串行实施计划，按 T1–T5 连续交付多设备身份、缓存隔离、迁移、凭据管理和前端恢复，并执行完整验证与独立评审。",
+      "source": "用户在已推送五项计划及请求开始实施后回复：“继续吧”。"
     }
   },
   "tasks": {
     "T1": {
       "title": "让同一 token 在多设备恢复同一工作台",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "按 token 共享发现与仓库缓存，保持逐设备授权",
@@ -76,9 +81,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "完整五项串行实施计划已形成；前置 personal-workbench 已归档推送，技术方案已确认。等待用户确认整体计划后进入 execution，确认后按 T1–T5 连续推进。"
-  }
+  ]
 }
