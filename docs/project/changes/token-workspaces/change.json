@@ -4,24 +4,46 @@
   "title": "Token 工作台与多设备登录",
   "size": "large",
   "status": "active",
-  "stage": "technical",
+  "stage": "plan",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
       "at": "2026-10-12T10:24:43.458Z",
       "summary": "用户认可完整的 token 工作台方向：同平台实例及同 token 多设备恢复，设备会话独立，跨 token 缓存隔离，切换凭据与主动复制原始 token；保持适配器扩展，不引入 GitHub OAuth。",
       "source": "用户提出“实际上就是拿 token 做账号，一旦 token 不一致，仓库缓存也不能复用”，在包含多设备、退出、切换、复制与权限校验的完整行为说明后回复“没什么问题”。"
+    },
+    "technical": {
+      "at": "2026-10-12T11:09:42.319Z",
+      "summary": "用户确认完整 Token 工作台技术方案与已验证原型：平台实例与 token 身份、独立设备会话、缓存隔离、主动复制和可恢复迁移；进入实施计划。",
+      "source": "用户在技术方案、交互原型及请求进入实施计划的说明后回复：“继续吧，归档前一个change。”"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "让同一 token 在多设备恢复同一工作台",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "按 token 共享发现与仓库缓存，保持逐设备授权",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "升级旧连接并恢复可证明归属的缓存",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "提供当前凭据复制与设备会话管理",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "贯通登录、切换与跨设备阅读恢复",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "dependsOn": [
     "personal-workbench"
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "需求方向已获用户认可。等待用户审阅并确认完整技术方案与已验证交互原型，确认后进入实施计划；正式实施还需 personal-workbench 完成验收与归档。"
-  },
   "previews": [
     {
       "id": "token-workspaces",
@@ -54,5 +76,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "完整五项串行实施计划已形成；前置 personal-workbench 已归档推送，技术方案已确认。等待用户确认整体计划后进入 execution，确认后按 T1–T5 连续推进。"
+  }
 }

@@ -88,7 +88,7 @@ POST /api/session/restore 只接受 legacyChoices 中的旧 connectionId，复�
 
 - 改变个人存储 schema、设备退出语义、连接替换语义及主动读回秘密的边界；这些改动必须同步 README 和最终 Specs，不能以局部表单改动交付。
 - 使用既有 Node.js 24、Next.js 16.3.7、Playwright、Git 与持久磁盘；框架认证指引已从安装包读取。原型沿用已配置的 custom R2 托管，不创建新存储服务。
-- personal-workbench 交付提供所需实现，当前尚待人工验收。允许同分支规划，实施前必须完成其关闭与归档；不把本次需求认可记作前一交付的人工验收。
+- [personal-workbench 交付](../../archive/2026-10-12-personal-workbench/requirement.md)提供所需实现，已按用户明确指令完成验收、Specs 同步、归档与推送，原型保留标签已核实。其归档提交在当前分支历史中，所需交付可用；本次工作继续在同一分支推进。
 - 完全相同 token 由服务端指纹匹配的可行性来自现有 SecretHandle 和加密密钥设施；尚未实现新 schema、设备并发与迁移，验收前不描述为已接通。
 
 ## 验证
