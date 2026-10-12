@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-r2-storage",
+  "title": "当前页面外壳原型迁移至 R2",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/prototype-r2-storage",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "发布 workspace-shell 到 R2 并切换当前及本 Change 的固定引用",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
