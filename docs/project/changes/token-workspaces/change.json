@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "升级旧连接并恢复可证明归属的缓存",
-      "status": "todo"
+      "status": "done",
+      "verification": "30 项迁移、会话、发现、仓库定向测试及类型检查通过；六项迁移夹具覆盖归属、恢复、中断幂等、密钥丢失、旧 Cookie 一次性选择、原备份不变与恢复后撤权。",
+      "commitTitle": "token-workspaces T3: migrate legacy sessions and verified credential caches"
     },
     "T4": {
       "title": "提供当前凭据复制与设备会话管理",

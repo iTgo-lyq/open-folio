@@ -82,8 +82,14 @@ export async function sessionResponse(
     }
     if (request.method === "DELETE") {
       requirePersonalOrigin(request);
-      if (cookie && (await store.get(cookie)).connected)
-        await store.remove(cookie);
+      if (cookie) {
+        try {
+          await store.remove(cookie);
+        } catch (e) {
+          if (!(e instanceof AppError) || e.code !== "SESSION_REQUIRED")
+            throw e;
+        }
+      }
       return personalJson(
         { connected: false, connections: [] },
         200,
@@ -92,15 +98,50 @@ export async function sessionResponse(
     }
     if (request.method !== "GET")
       throw new AppError("METHOD_NOT_ALLOWED", "不支持此操作。", 405);
-    const { renewed, ...session } = await store.get(cookie);
+    const { renewed, replacementCookie, ...session } = await store.get(cookie);
     return personalJson(
       { ...session, providers: store.registry.describe() },
       200,
-      cookie && !session.connected
-        ? cookieHeader(request, "")
-        : renewed
-          ? cookieHeader(request, cookie, session.expiresAt)
-          : undefined,
+      replacementCookie
+        ? cookieHeader(request, replacementCookie, session.expiresAt)
+        : cookie && !session.connected && !session.legacyChoices?.length
+          ? cookieHeader(request, "")
+          : renewed
+            ? cookieHeader(request, cookie, session.expiresAt)
+            : undefined,
+    );
+  } catch (e) {
+    return personalError(e);
+  }
+}
+export async function restoreSessionResponse(
+  request: Request,
+  store: PersonalSessions = personalSessions(),
+  discover?: Discovery,
+) {
+  try {
+    requirePersonalOrigin(request);
+    const input = z
+      .object({ connectionId: z.string().uuid() })
+      .strict()
+      .safeParse(await readPersonalBody(request));
+    if (!input.success)
+      throw new AppError("INVALID_PARAMETER", "请选择旧会话中的凭据。", 400);
+    const restored = await store.restore(
+      sessionCookie(request),
+      input.data.connectionId,
+      request.signal,
+    );
+    const service =
+      discover ?? (store === personalSessions() ? discovery() : undefined);
+    if (service)
+      await service
+        .ensure(restored.cookie, restored.connection.id)
+        .catch(() => {});
+    return personalJson(
+      { session: restored.session, connection: restored.connection },
+      200,
+      cookieHeader(request, restored.cookie, restored.session.expiresAt),
     );
   } catch (e) {
     return personalError(e);

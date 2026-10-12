@@ -60,7 +60,7 @@ const repoSchema = z.object({
   cloneUrl: z.string(),
   defaultBranch: z.string().nullable(),
 });
-const jobSchema = z.object({
+export const discoveryJobSchema = z.object({
   revision: z.number().int().positive(),
   state: z.enum(["running", "complete", "partial", "interrupted"]),
   cursor: z.string().nullable(),
@@ -177,7 +177,7 @@ export class Discovery {
   }
   private async read(lease: ConnectionLease): Promise<Job | null> {
     try {
-      return jobSchema.parse(
+      return discoveryJobSchema.parse(
         JSON.parse(await readFile(this.path(lease), "utf8")),
       );
     } catch (e) {
