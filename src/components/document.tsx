@@ -63,7 +63,8 @@ export function Markdown({
   body: string;
   document: DocumentRef;
 }) {
-  const { data, projectId, openDocument, notice, nav, q } = useWorkspace();
+  const { data, projectId, openDocument, notice, nav, q, readUrl } =
+    useWorkspace();
   const prose = useRef<HTMLDivElement>(null);
   const follow = (href: string) => {
     const link = resolveDocumentLink(document.path, href);
@@ -137,7 +138,7 @@ export function Markdown({
               <img
                 alt={alt ?? ""}
                 loading="lazy"
-                src={`/api/projects/${encodeURIComponent(projectId)}/assets/${ref.id}?snapshot=${data!.id}`}
+                src={readUrl(`assets/${ref.id}?snapshot=${data!.id}`)}
               />
             ) : (
               <span className="image-unavailable">
@@ -154,14 +155,43 @@ export function Markdown({
   );
 }
 export function CopyPageLink({ document: doc }: { document?: DocumentRef }) {
-  const { projectId, data, notice, q } = useWorkspace();
+  const { projectId, data, notice, q, repository } = useWorkspace();
   return (
     <button
       className="text-button"
       aria-label="复制页面链接"
       onClick={async () => {
         const url = new URL(window.location.href);
-        url.searchParams.set("project", projectId);
+        url.hash = "";
+        const allowed = new Set([
+          "m",
+          "s",
+          "c",
+          "ct",
+          "branch",
+          "doc",
+          "da",
+          "anchor",
+          "raw",
+          "filter",
+          "spec",
+          "stage",
+          "size",
+          "wait",
+          "taskStatus",
+          "scope",
+        ]);
+        for (const key of [...url.searchParams.keys()])
+          if (!allowed.has(key)) url.searchParams.delete(key);
+        url.searchParams.set("repo", projectId);
+        if (repository)
+          for (const [key, value] of Object.entries({
+            provider: repository.providerId,
+            instance: repository.instanceId,
+            repositoryId: repository.repositoryId,
+            fullName: repository.fullName,
+          }))
+            url.searchParams.set(key, value);
         if (doc && !q.doc) {
           const spec = data?.specs.find((s) => s.documentId === doc.id);
           if (spec) {
@@ -389,12 +419,12 @@ export function DocumentModal() {
   );
 }
 function ImageDocument({ doc }: { doc: DocumentRef }) {
-  const { projectId, data } = useWorkspace();
+  const { projectId, data, readUrl } = useWorkspace();
   return (
     <div className="image-document">
       <img
         alt={doc.title}
-        src={`/api/projects/${encodeURIComponent(projectId)}/assets/${doc.id}?snapshot=${data?.id}`}
+        src={readUrl(`assets/${doc.id}?snapshot=${data?.id}`)}
       />
       <Source document={doc} />
     </div>

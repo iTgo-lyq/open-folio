@@ -82,6 +82,29 @@ export async function repositoryResponse(
           });
         if (segments.length === 1 && segments[0] === "prototypes")
           return personalJson(await store.prototypes(p, snapshot));
+        if (segments.length === 1 && segments[0] === "current-preview")
+          return personalJson(
+            (
+              await store.currentPreview(
+                p,
+                q.get("revision") ?? undefined,
+                limits ?? limitsFor(await readConfig()),
+                snapshot,
+              )
+            ).descriptor,
+          );
+        if (segments.length === 2 && segments[0] === "previews")
+          return personalJson(
+            (
+              await store.preview(
+                p,
+                segments[1],
+                q.get("revision") ?? undefined,
+                limits ?? limitsFor(await readConfig()),
+                snapshot,
+              )
+            ).descriptor,
+          );
         if (!snapshot)
           throw new AppError(
             "INVALID_PARAMETER",

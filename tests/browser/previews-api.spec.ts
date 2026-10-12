@@ -1,73 +1,68 @@
-import { test, expect } from "@playwright/test";
-import { readFile, writeFile } from "node:fs/promises";
-async function description(
+import { test, expect, repositoryQuery } from "./connected";
+async function prepare(
   request: import("@playwright/test").APIRequestContext,
+  personal: { id: string; url: (path: string) => string },
 ) {
-  const response = await request.get(
-    "/api/projects/fixture/previews/document-reader",
-  );
+  const response = await request.post(personal.url("previews/prepare"), {
+    headers: { origin: "http://127.0.0.1:10682" },
+    data: {
+      connectionId: personal.id,
+      change: "document-reader",
+      entry: "orders",
+    },
+  });
   expect(response.ok()).toBe(true);
-  return response.json();
+  return (await response.json()).publication;
 }
-test("same-origin preview serves only associated HTML with sandbox headers and no CORS", async ({
+test("anonymous preview serves only listed immutable assets with sandbox headers and no CORS", async ({
   request,
+  personal,
+  browser,
 }) => {
-  const data = await description(request);
-  expect(data.entries).toHaveLength(6);
-  expect(data.entries[3].available).toBe(false);
-  const url = data.entries[0].url;
-  const page = await request.get(url);
-  expect(page.ok()).toBe(true);
-  expect(page.headers()["content-security-policy"]).toContain(
-    "sandbox allow-scripts;",
-  );
-  expect(page.headers()["content-security-policy"]).not.toContain(
-    "allow-same-origin",
-  );
-  expect(page.headers()["content-security-policy"]).toContain(
-    "connect-src 'none'",
-  );
-  expect(page.headers()["x-frame-options"]).toBe("SAMEORIGIN");
-  expect(page.headers()["cache-control"]).toContain("private, no-store");
-  expect(page.headers()["access-control-allow-origin"]).toBeUndefined();
-  expect((await request.head(url)).status()).toBe(200);
-  expect(
-    (await request.get(url.replace("/orders/", "/missing/"))).status(),
-  ).toBe(404);
-  expect(
-    (await request.get(url.replace("/index.html", "/source.ts"))).status(),
-  ).toBe(404);
-  expect(
-    (await request.get(url, { headers: { origin: "null" } })).status(),
-  ).toBe(200);
-  expect(
-    (
-      await request.get("/api/projects", { headers: { origin: "null" } })
-    ).status(),
-  ).toBe(200);
-  expect(
-    (
-      await request.get(
-        "/api/projects/fixture/previews/document-reader?revision=abc",
-      )
-    ).status(),
-  ).toBe(400);
+  const meta = await prepare(request, personal);
+  const anonymous = await browser.newContext({
+    baseURL: "http://127.0.0.1:10682",
+  });
+  try {
+    const url = `/api/public-previews/${meta.id}/index.html`;
+    const res = await anonymous.request.get(url);
+    expect(res.ok()).toBe(true);
+    expect(res.headers()["content-security-policy"]).toContain(
+      "sandbox allow-scripts;",
+    );
+    expect(res.headers()["content-security-policy"]).not.toContain(
+      "allow-same-origin",
+    );
+    expect(res.headers()["content-security-policy"]).toContain(
+      "connect-src 'none'",
+    );
+    expect(res.headers()["access-control-allow-origin"]).toBeUndefined();
+    expect(res.headers()["cache-control"]).toContain("public");
+    expect((await anonymous.request.head(url)).status()).toBe(200);
+    expect(
+      (
+        await anonymous.request.get(url.replace("index.html", "source.ts"))
+      ).status(),
+    ).toBe(404);
+    expect(
+      (
+        await anonymous.request.get(
+          `/api/public-previews/${"f".repeat(64)}/index.html`,
+        )
+      ).status(),
+    ).toBe(404);
+  } finally {
+    await anonymous.close();
+  }
 });
-test("same-origin iframe runs local interaction and cannot reach parent storage, DOM or API", async ({
+test("opaque iframe interaction cannot reach host storage, DOM or engineering API", async ({
   page,
   request,
+  personal,
 }) => {
-  const data = await description(request);
-  await page.goto("/");
-  await page.evaluate((url) => {
-    localStorage.setItem("private-marker", "private");
-    const frame = document.createElement("iframe");
-    frame.id = "preview-probe";
-    frame.sandbox.add("allow-scripts");
-    frame.src = url;
-    document.body.append(frame);
-  }, data.entries[0].url);
-  const frame = page.frameLocator("#preview-probe");
+  const meta = await prepare(request, personal);
+  await page.goto(`/preview/${meta.id}`);
+  const frame = page.frameLocator("iframe");
   await expect(
     frame.getByRole("heading", { name: "订单列表原型" }),
   ).toBeVisible();
@@ -75,63 +70,45 @@ test("same-origin iframe runs local interaction and cannot reach parent storage,
   await expect(
     frame.getByRole("button", { name: "1", exact: true }),
   ).toBeVisible();
-  const child = page.frames().find((f) => f.url().includes("/preview/"))!;
-  const result = await child.evaluate(async () => {
-    const blocked = (fn: () => unknown) => {
-      try {
-        fn();
-        return false;
-      } catch {
-        return true;
-      }
-    };
-    return {
-      parent: blocked(() => parent.document.body),
-      storage: blocked(() => localStorage.getItem("private-marker")),
-      cookie: blocked(() => document.cookie),
-      frameElement: window.frameElement === null,
-      api: await fetch("/api/projects").then(
-        () => false,
-        () => true,
-      ),
-    };
+  const content = page
+    .frames()
+    .find((f) => f.url().includes("/api/public-previews/"))!;
+  const result = await content.evaluate(async () => {
+    const out = { storage: false, dom: false, api: false };
+    try {
+      localStorage.getItem("x");
+      out.storage = true;
+    } catch {}
+    try {
+      parent.document.body;
+      out.dom = true;
+    } catch {}
+    try {
+      await fetch("/api/session");
+      out.api = true;
+    } catch {}
+    return out;
   });
-  expect(Object.values(result).every(Boolean)).toBe(true);
-  await page.goto(data.entries[0].url);
-  expect(
-    await page.evaluate(() => {
-      try {
-        localStorage.getItem("private-marker");
-        return false;
-      } catch {
-        return true;
-      }
-    }),
-  ).toBe(true);
+  expect(result).toEqual({ storage: false, dom: false, api: false });
 });
-test("project removal and configured size limits revoke even an already obtained preview URL", async ({
+test("public assets survive removing the publisher connection and never prepare an unknown version", async ({
   request,
+  personal,
 }) => {
-  const data = await description(request),
-    url = data.entries[0].url;
-  const runtime = JSON.parse(
-      await readFile("artifacts/e2e-runtime.json", "utf8"),
-    ),
-    original = await readFile(runtime.config, "utf8"),
-    config = JSON.parse(original);
-  try {
-    await writeFile(
-      runtime.config,
-      JSON.stringify({ ...config, limits: { previewBytes: 2 } }),
-    );
-    expect((await request.get(url)).status()).toBe(404);
-    await writeFile(
-      runtime.config,
-      JSON.stringify({ ...config, projects: [] }),
-    );
-    expect((await request.get(url)).status()).toBe(404);
-  } finally {
-    await writeFile(runtime.config, original);
-  }
-  expect((await request.get(url)).ok()).toBe(true);
+  const meta = await prepare(request, personal);
+  await request.delete(`/api/connections/${personal.id}`, {
+    headers: { origin: "http://127.0.0.1:10682" },
+  });
+  const before = await (await request.get("/_fixture/info")).json();
+  for (const suffix of ["index.html", "mobile.jpg", "metadata"])
+    expect(
+      (await request.get(`/api/public-previews/${meta.id}/${suffix}`)).status(),
+    ).toBe(200);
+  expect(
+    (
+      await request.get(`/api/public-previews/${"0".repeat(64)}/index.html`)
+    ).status(),
+  ).toBe(404);
+  const after = await (await request.get("/_fixture/info")).json();
+  expect(after.attempts).toBe(before.attempts);
 });

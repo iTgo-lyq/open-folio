@@ -70,6 +70,7 @@ export async function gitHttpsFixture(
       const output: Buffer[] = [];
       child.stdout.on("data", (b) => output.push(b));
       child.stderr.resume();
+      child.stdin.on("error", () => {});
       child.stdin.end(body);
       child.on("close", () => {
         const result = Buffer.concat(output);

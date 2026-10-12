@@ -158,6 +158,7 @@ const server = createServer(async (req, res) => {
           valid.delete(input.revoke);
           git.allowed.delete(`reader:${input.revoke}`);
         }
+        if (input.gitRevoke) git.allowed.delete(`reader:${input.gitRevoke}`);
         if (input.unavailable !== undefined) unavailable = input.unavailable;
       }
       response = Response.json({

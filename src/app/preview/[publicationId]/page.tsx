@@ -1,3 +1,4 @@
+import { PublicPreviewView } from "@/components/public-preview";
 import { publicPreviews } from "@/server/public-previews";
 import { publicError } from "@/server/errors";
 export const runtime = "nodejs";
@@ -22,26 +23,5 @@ export default async function PublicPreviewPage({
         <a href="/">返回 OpenFolio</a>
       </main>
     );
-  const meta = result.value;
-  return (
-    <main className="public-preview-page">
-      <header>
-        <a href="/">OpenFolio</a>
-        <h1>{meta.title}</h1>
-        <span>公开原型 · 固定版本 {meta.revision.slice(0, 7)}</span>
-      </header>
-      <iframe
-        title={meta.title}
-        src={`/api/public-previews/${meta.id}/index.html`}
-        sandbox="allow-scripts allow-forms"
-        referrerPolicy="no-referrer"
-        style={{
-          width: "100%",
-          height: "calc(100dvh - 90px)",
-          border: 0,
-          background: "white",
-        }}
-      />
-    </main>
-  );
+  return <PublicPreviewView meta={result.value} />;
 }

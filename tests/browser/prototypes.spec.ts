@@ -1,14 +1,13 @@
-import { test, expect } from "@playwright/test";
-const path = "/?project=fixture&m=prototypes";
+import { test, expect, repositoryQuery, repoKey } from "./connected";
+const path = `/?${repositoryQuery}&m=prototypes`;
 test("main gallery opens current pages directly without Change/version selectors", async ({
   page,
   context,
   request,
+  personal,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  const catalog = await (
-    await request.get("/api/projects/fixture/prototypes")
-  ).json();
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
   expect(catalog.items).toHaveLength(5);
   expect(catalog.items[0].references).toBeUndefined();
   await page.goto(path);
@@ -42,9 +41,10 @@ test("main gallery opens current pages directly without Change/version selectors
   await page.getByRole("button", { name: "复制预览链接" }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(link).searchParams.has("c")).toBe(false);
-  expect(new URL(link).searchParams.get("prototype")).toBe("orders");
+  expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
   await page.goto(link);
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
+  await page.goBack();
   await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(region.getByRole("textbox", { name: "筛选原型" })).toHaveValue(
     "批量操作",
@@ -98,11 +98,10 @@ test("current gallery has responsive cards, missing artifact placeholders and ho
 test("missing manifest and invalid entries remain explicit, separate from filtering", async ({
   page,
   request,
+  personal,
 }) => {
-  const catalog = await (
-    await request.get("/api/projects/fixture/prototypes")
-  ).json();
-  await page.route("**/api/projects/fixture/prototypes?*", (route) =>
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
+  await page.route("**/api/repositories/*/prototypes?*", (route) =>
     route.fulfill({
       json: {
         ...catalog,
@@ -126,27 +125,30 @@ test("missing manifest and invalid entries remain explicit, separate from filter
 });
 test("catalog API reads configured projects and enforces snapshot boundaries", async ({
   request,
+  personal,
 }) => {
-  expect((await request.get("/api/projects/missing/prototypes")).status()).toBe(
-    404,
-  );
   expect(
     (
-      await request.get(
-        "/api/projects/fixture/prototypes?snapshot=../../private",
-      )
+      await request.get(personal.url("prototypes").replace(repoKey, "missing"))
+    ).status(),
+  ).toBe(404);
+  expect(
+    (
+      await request.get(personal.url("prototypes?snapshot=../../private"))
     ).status(),
   ).toBe(400);
   expect(
     (
       await request.get(
-        "/api/projects/fixture/prototypes?snapshot=00000000-0000-4000-8000-000000000000",
+        personal.url(
+          "prototypes?snapshot=00000000-0000-4000-8000-000000000000",
+        ),
       )
     ).status(),
   ).toBe(410);
   expect(
     (
-      await request.get("/api/projects/fixture/prototypes", {
+      await request.get(personal.url("prototypes"), {
         headers: { origin: "null" },
       })
     ).status(),
@@ -222,15 +224,15 @@ test("focused viewer keeps directory, viewport controls and history in the workb
 test("card captions open details and full-size images while covers enter the canvas", async ({
   page,
   request,
+  personal,
 }) => {
-  const catalog = await (
-    await request.get("/api/projects/fixture/prototypes")
-  ).json();
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
   const entry = catalog.items.find(
     (item: { id: string }) => item.id === "orders",
   );
   await page.goto(path);
   const tile = page.locator('[data-prototype-id="orders"]');
+  await expect(tile).toBeVisible();
   const coverWidth = (await tile.locator(".prototype-thumbnail").boundingBox())!
     .width;
   const description = (await tile
@@ -300,12 +302,10 @@ test("detail links handle reload, missing entries, image errors and narrow layou
   page,
 }) => {
   let fail = true;
-  await page.route(
-    "**/api/projects/fixture/current-thumbnails/card?*",
-    (route) =>
-      fail
-        ? route.fulfill({ status: 503, body: "unavailable" })
-        : route.continue(),
+  await page.route("**/api/public-previews/*/component.jpg?*", (route) =>
+    fail
+      ? route.fulfill({ status: 503, body: "unavailable" })
+      : route.continue(),
   );
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto(path + "&pdetail=card");
@@ -349,14 +349,13 @@ test("detail links handle reload, missing entries, image errors and narrow layou
 test("returning from the viewer preserves expanded cards, scroll and focus", async ({
   page,
   request,
+  personal,
 }) => {
-  const catalog = await (
-    await request.get("/api/projects/fixture/prototypes")
-  ).json();
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
   const orders = catalog.items.find(
     (item: { id: string }) => item.id === "orders",
   );
-  await page.route("**/api/projects/fixture/prototypes?*", (route) =>
+  await page.route("**/api/repositories/*/prototypes?*", (route) =>
     route.fulfill({
       json: {
         ...catalog,

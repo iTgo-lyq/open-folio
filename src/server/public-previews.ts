@@ -247,8 +247,18 @@ export class PublicPreviews {
     }
   }
 }
-export function publicPreviews() {
-  return new PublicPreviews(join(dataDirectory(), "public-previews"));
+const publicState = globalThis as typeof globalThis & {
+  folioPublicPreviews?: Map<string, PublicPreviews>;
+};
+export function publicPreviews(): PublicPreviews {
+  const root = join(dataDirectory(), "public-previews");
+  const stores = (publicState.folioPublicPreviews ??= new Map());
+  let service = stores.get(root);
+  if (!service) {
+    service = new PublicPreviews(root);
+    stores.set(root, service);
+  }
+  return service;
 }
 export const publicPreviewUrl = (id: string) => `/preview/${id}`;
 export function publicEntry(

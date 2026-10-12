@@ -1,118 +1,76 @@
-import { test, expect } from "@playwright/test";
-import { readFile, writeFile } from "node:fs/promises";
-test("API reads configured data, refreshes repositories and enforces input boundaries", async ({
+import { test, expect, repoKey } from "./connected";
+test("personal API reads cached records and enforces input boundaries", async ({
   request,
+  personal,
 }) => {
-  const projects = await request.get("/api/projects");
-  expect(projects.ok()).toBe(true);
-  expect(projects.headers()["cache-control"]).toContain("no-store");
-  const snapshot = (await projects.json()).projects[0].snapshotId;
-  const workbench = await request.get(
-    `/api/projects/fixture/workbench?snapshot=${snapshot}`,
+  const work = await (await request.get(personal.url("workbench"))).json();
+  expect(work.specs.length).toBeGreaterThan(0);
+  const doc = work.documents.find(
+    (d: { kind: string; readable: boolean }) =>
+      d.kind === "markdown" && d.readable,
   );
-  const data = await workbench.json();
-  expect(data.specs).toHaveLength(3);
-  const doc = data.documents.find(
-    (d: { path: string; branch: string }) =>
-      d.branch === "main" && d.path === "docs/project/specs/platform/spec.md",
+  const response = await request.get(
+    personal.url(`documents/${doc.id}?snapshot=${work.id}`),
   );
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(
+    (await request.get(personal.url("workbench?snapshot=../../etc"))).status(),
+  ).toBe(400);
   expect(
     (
-      await request.get(
-        `/api/projects/fixture/documents/${doc.id}?snapshot=${snapshot}`,
-      )
-    ).ok(),
-  ).toBe(true);
-  for (const [path, status] of [
-    ["/api/projects/missing/workbench", 404],
-    ["/api/projects/fixture/workbench?branch=missing", 404],
-    ["/api/projects/fixture/workbench?snapshot=..%2Fconfig", 400],
-    [
-      "/api/projects/fixture/workbench?snapshot=00000000-0000-4000-8000-000000000000",
-      410,
-    ],
-    [`/api/projects/fixture/documents/not-in-list?snapshot=${snapshot}`, 404],
-    [`/api/projects/fixture/documents/${doc.id}`, 400],
-    [`/api/projects/fixture/assets/${doc.id}?snapshot=${snapshot}`, 404],
-  ] as const)
-    expect((await request.get(path)).status(), path).toBe(status);
-  for (const headers of [
-    {},
-    { host: "proxy.internal:9000", origin: "https://folio.example.test" },
-    { origin: "null", "sec-fetch-site": "cross-site" },
-  ] as Record<string, string>[]) {
-    expect((await request.get("/api/projects", { headers })).status()).toBe(
-      200,
-    );
-    const refresh = await request.post("/api/projects/fixture/refresh", {
-      headers,
-    });
-    expect(refresh.status()).toBe(headers.origin ? 403 : 503);
-    expect((await refresh.json()).error.code).toBe(
-      headers.origin ? "ORIGIN_DENIED" : "GIT_READ_FAILED",
-    );
-  }
-  expect(
-    (
-      await request.post("/api/projects/fixture/refresh", {
-        data: "unexpected",
-      })
+      await request.get(personal.url(`search?snapshot=${work.id}&kind=bad`))
     ).status(),
   ).toBe(400);
-  const asset = data.documents.find(
-    (d: { path: string; branch: string }) =>
-      d.path.endsWith("/pixel.png") && d.branch === "main",
-  );
-  const image = await request.get(
-    `/api/projects/fixture/assets/${asset.id}?snapshot=${snapshot}`,
-  );
-  expect(image.headers()["content-type"]).toBe("image/png");
-  expect(image.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(
+    (
+      await request.post(personal.url("refresh"), {
+        headers: { origin: "https://else.test" },
+      })
+    ).status(),
+  ).toBe(403);
 });
-test("removing a configured project hides all cached content immediately", async ({
+test("revoked credentials cannot read cached documents, search, images or HEAD", async ({
   request,
+  personal,
 }) => {
-  const runtime = JSON.parse(
-      await readFile("artifacts/e2e-runtime.json", "utf8"),
-    ),
-    original = await readFile(runtime.config, "utf8"),
-    config = JSON.parse(original);
-  try {
-    await writeFile(
-      runtime.config,
-      JSON.stringify({ ...config, projects: [] }),
-    );
-    expect(
-      (await (await request.get("/api/projects")).json()).projects,
-    ).toHaveLength(0);
-    expect(
-      (await request.get("/api/projects/fixture/workbench")).status(),
-    ).toBe(404);
-  } finally {
-    await writeFile(runtime.config, original);
+  const work = await (await request.get(personal.url("workbench"))).json();
+  const doc = work.documents.find(
+    (d: { kind: string }) => d.kind === "markdown",
+  );
+  const image = work.documents.find(
+    (d: { kind: string }) => d.kind === "image",
+  );
+  await request.post("/_fixture/control", { data: { revoke: "token-a" } });
+  for (const path of [
+    "workbench",
+    `documents/${doc.id}?snapshot=${work.id}`,
+    `assets/${image.id}?snapshot=${work.id}`,
+    `search?snapshot=${work.id}&q=工程`,
+    "prototypes",
+  ]) {
+    expect((await request.get(personal.url(path))).status()).toBe(401);
+    expect((await request.head(personal.url(path))).status()).toBe(401);
   }
 });
-test("failed refresh retains the readable snapshot and deleted branch links recover", async ({
-  page,
+test("platform failure does not return stale snapshots and retired endpoints expose no old project names", async ({
+  request,
+  personal,
 }) => {
-  await page.goto("/?project=fixture&m=specs&s=platform");
-  await expect(
-    page.getByRole("heading", { name: "工程协作", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "刷新中心仓库" }).click();
-  await expect(page.locator(".error-notice[role=alert]")).toContainText(
-    "当前继续显示上次成功版本",
-  );
-  await expect(
-    page.getByRole("heading", { name: "工程协作", exact: true }),
-  ).toBeVisible();
-  await page.reload();
-  await expect(page.locator(".error-notice[role=alert]")).toContainText(
-    "当前继续显示上次成功版本",
-  );
-  await page.goto("/?project=fixture&m=specs&branch=deleted-branch&s=platform");
-  await expect(
-    page.getByRole("heading", { name: "工程协作", exact: true }),
-  ).toBeVisible();
-  await expect(page).not.toHaveURL(/branch=/);
+  await request.post("/_fixture/control", { data: { unavailable: true } });
+  const denied = await request.get(personal.url("workbench"));
+  expect(denied.status()).toBe(503);
+  expect(await denied.text()).not.toContain("工程协作");
+  for (const path of [
+    "/api/projects",
+    "/api/projects/fixture/workbench",
+    "/api/projects/fixture/search",
+    "/api/projects/fixture/documents/old",
+  ]) {
+    const res = await request.get(path);
+    expect(res.status()).toBe(410);
+    expect(await res.text()).not.toContain("测试项目");
+  }
+  await request.post("/_fixture/control", { data: { reset: true } });
+  expect((await request.get(personal.url("workbench"))).status()).toBe(200);
 });

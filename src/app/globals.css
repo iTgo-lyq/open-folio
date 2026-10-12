@@ -4455,3 +4455,63 @@ input {
 .personal-repo-row > .of-ui-badge {
   justify-self: start;
 }
+.public-preview-page {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.public-preview-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.public-preview-brand img {
+  width: 32px;
+  height: 32px;
+}
+.public-preview-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: auto;
+}
+.public-preview-controls select {
+  padding: 8px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.public-preview-caption {
+  padding: 18px 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.public-preview-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 16px;
+}
+.public-preview-canvas > div {
+  overflow: hidden;
+  border-radius: 9px;
+  box-shadow: 0 4px 24px #34567612;
+}
+@media (max-width: 760px) {
+  .public-preview-page > header {
+    padding: 14px;
+    gap: 10px;
+  }
+  .public-preview-controls {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .public-preview-page h1 {
+    font-size: 15px;
+  }
+}

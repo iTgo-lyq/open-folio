@@ -1,4 +1,5 @@
 "use client";
+import { usePublication, publicationThumbnail } from "./publication";
 import { Badge, Button, IconButton } from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
 import { ImageOff, LoaderCircle, PanelsTopLeft, Search, X } from "lucide-react";
@@ -16,7 +17,7 @@ import { Empty, ErrorNotice } from "./document";
 import { ChangePreviews } from "./previews";
 const clearPreview = CLEAR_PROTOTYPE_VIEW;
 export default function Prototypes() {
-  const { data, projectId, q } = useWorkspace();
+  const { data, projectId, q, readUrl } = useWorkspace();
   const previous = useRef("");
   useEffect(() => {
     if (q.prototype) previous.current = q.prototype;
@@ -30,10 +31,9 @@ export default function Prototypes() {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    api<PrototypeCatalog>(
-      `/api/projects/${encodeURIComponent(projectId)}/prototypes?snapshot=${data!.id}`,
-      { signal: controller.signal },
-    )
+    api<PrototypeCatalog>(readUrl(`prototypes?snapshot=${data!.id}`), {
+      signal: controller.signal,
+    })
       .then((value) => {
         if (!controller.signal.aborted) setResponse({ key, value });
       })
@@ -42,7 +42,7 @@ export default function Prototypes() {
           setResponse({ key, error: error.message });
       });
     return () => controller.abort();
-  }, [key, projectId, data, retry]);
+  }, [key, projectId, data, retry, readUrl]);
   const catalog = response.key === key ? response.value : undefined;
   const error = response.key === key ? response.error : undefined;
   if (q.prototype) return <ChangePreviews current />;
@@ -126,7 +126,9 @@ function PrototypeGallery({
           </h1>
           <p>从一个入口，发现项目的页面、细节与各种状态。</p>
         </div>
-        <Badge tone="info">main · 当前状态</Badge>
+        <Badge tone="info">
+          {catalog.policy.branch ?? "默认分支"} · 当前状态
+        </Badge>
       </div>
       <div className="prototype-catalog-controls">
         <div className="scope-tabs" role="group" aria-label="原型类型">
@@ -204,7 +206,7 @@ function PrototypeGallery({
           )}
           {!items.length ? (
             <Empty title="暂无当前页面" icon={<PanelsTopLeft size={28} />}>
-              <p>项目在 main 登记页面预览后，就会展示在这里。</p>
+              <p>项目在默认分支登记页面预览后，就会展示在这里。</p>
             </Empty>
           ) : (
             <>
@@ -258,7 +260,13 @@ function PrototypeCard({
   const { device, viewport } = previewViewport(item, q.pdevice);
   const params = new URLSearchParams({ revision });
   if (device) params.set("device", device);
-  const imageUrl = `/api/projects/${encodeURIComponent(projectId)}/current-thumbnails/${encodeURIComponent(item.id)}?${params}`;
+  const publication = usePublication(
+    item.id,
+    revision,
+    undefined,
+    !!item.artifact,
+  );
+  const imageUrl = publicationThumbnail(publication.publication, device);
   const open = () =>
     nav({
       ...clearPreview,
@@ -274,11 +282,13 @@ function PrototypeCard({
   return (
     <li className="prototype-tile" data-prototype-id={item.id}>
       <PrototypeThumbnail
-        key={imageUrl}
+        key={`${item.id}:${device ?? "component"}`}
         url={imageUrl}
         title={item.title}
         viewport={viewport}
         enabled={!!hasThumbnail}
+        prepareError={publication.error}
+        retryPrepare={publication.retry}
         open={open}
       />
       <div className="prototype-tile-body">
@@ -311,6 +321,8 @@ function PrototypeThumbnail({
   enabled,
   open,
   large = false,
+  prepareError,
+  retryPrepare,
 }: {
   url: string;
   title: string;
@@ -318,6 +330,8 @@ function PrototypeThumbnail({
   enabled: boolean;
   open?: () => void;
   large?: boolean;
+  prepareError?: string;
+  retryPrepare?: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(large),
@@ -341,10 +355,14 @@ function PrototypeThumbnail({
     const timer = setTimeout(() => setStatus("error"), 12000);
     return () => clearTimeout(timer);
   }, [enabled, visible, status, attempt]);
-  const screenshot = enabled && visible && status !== "error" && (
+  useEffect(() => {
+    if (prepareError) setStatus("error");
+    else if (url) setStatus("loading");
+  }, [prepareError, url]);
+  const screenshot = enabled && visible && url && status !== "error" && (
     <img
       key={attempt}
-      src={`${url}&attempt=${attempt}`}
+      src={`${url}${url.includes("?") ? "&" : "?"}attempt=${attempt}`}
       alt={`${title}的${large ? "大图" : "首屏截图"}`}
       referrerPolicy="no-referrer"
       width={viewport.width}
@@ -394,6 +412,7 @@ function PrototypeThumbnail({
               onClick={() => {
                 setStatus("loading");
                 setAttempt((v) => v + 1);
+                retryPrepare?.();
               }}
             >
               重试截图
@@ -478,7 +497,7 @@ function PrototypeDetails({
                 <p>
                   {error ??
                     (catalog
-                      ? "这个入口已不在 main 的当前清单中。关闭详情后可查看其他原型。"
+                      ? "这个入口已不在默认分支的当前清单中。关闭详情后可查看其他原型。"
                       : "请稍候")}
                 </p>
               </div>
@@ -501,7 +520,13 @@ function PrototypeDetailBody({
   const { device, viewport } = previewViewport(item, selectedDevice);
   const params = new URLSearchParams({ revision });
   if (device) params.set("device", device);
-  const imageUrl = `/api/projects/${encodeURIComponent(projectId)}/current-thumbnails/${encodeURIComponent(item.id)}?${params}`;
+  const publication = usePublication(
+    item.id,
+    revision,
+    undefined,
+    !!item.artifact,
+  );
+  const imageUrl = publicationThumbnail(publication.publication, device);
   const hasThumbnail =
     item.artifact?.type === "git" ||
     (item.artifact?.type === "hosted" &&
@@ -549,11 +574,13 @@ function PrototypeDetailBody({
         </Button>
       </div>
       <PrototypeThumbnail
-        key={imageUrl}
+        key={`${item.id}:${device ?? "component"}`}
         url={imageUrl}
         title={item.title}
         viewport={viewport}
         enabled={!!hasThumbnail}
+        prepareError={publication.error}
+        retryPrepare={publication.retry}
         large
       />
       <dl className="prototype-detail-source">
@@ -570,7 +597,7 @@ function PrototypeDetailBody({
           </dd>
         </div>
         <div>
-          <dt>main 清单提交</dt>
+          <dt>默认分支清单提交</dt>
           <dd>
             <code>{revision}</code>
           </dd>

@@ -1,4 +1,5 @@
 "use client";
+import { usePublication } from "./publication";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Monitor,
@@ -31,7 +32,7 @@ export function ChangePreviews({
   change?: ChangeCandidate;
   current?: boolean;
 }) {
-  const { projectId, data, q, nav, notice } = useWorkspace();
+  const { projectId, data, q, nav, notice, readUrl } = useWorkspace();
   const requestKey = `${projectId}:${change?.id ?? ""}:${data?.id}:${q.revision ?? ""}`;
   const [response, setResponse] = useState<{
     key: string;
@@ -53,16 +54,20 @@ export function ChangePreviews({
     const params = new URLSearchParams({ snapshot: data!.id });
     if (q.revision) params.set("revision", q.revision);
     api<PreviewDescriptor>(
-      `/api/projects/${encodeURIComponent(projectId)}/${current ? "current-preview" : `previews/${encodeURIComponent(change?.id ?? "")}`}?${params}`,
+      readUrl(
+        `${current ? "current-preview" : `previews/${encodeURIComponent(change?.id ?? "")}`}?${params}`,
+      ),
       { signal: controller.signal },
     )
-      .then((value) => setResponse({ key: requestKey, value }))
+      .then((value) => {
+        if (!controller.signal.aborted) setResponse({ key: requestKey, value });
+      })
       .catch((e) => {
         if (!controller.signal.aborted)
           setResponse({ key: requestKey, error: e.message });
       });
     return () => controller.abort();
-  }, [requestKey, projectId, change?.id, current, data, q.revision]);
+  }, [requestKey, projectId, change?.id, current, data, q.revision, readUrl]);
   const result = response.key === requestKey ? response.value : undefined;
   useEffect(() => {
     if (current && result?.revision) heading.current?.focus();
@@ -73,6 +78,12 @@ export function ChangePreviews({
     ) ??
     result?.entries.find((e) => e.available) ??
     result?.entries[0];
+  const publication = usePublication(
+    entry?.id,
+    result?.revision ?? undefined,
+    current ? undefined : change?.id,
+    !!entry?.available,
+  );
   const chosenDevice = (
     entry?.devices?.includes(q.device as Device)
       ? q.device
@@ -105,10 +116,10 @@ export function ChangePreviews({
     entry?.artifact?.type === "hosted" ? entry.artifact : undefined;
   const [hostStatus, setHostStatus] = useState("pending");
   const url =
-    entry?.url && load
+    publication.publication && load
       ? hosted
-        ? entry.url
-        : `${entry.url}?load=${load}`
+        ? publication.publication.url
+        : `/api/public-previews/${publication.publication.id}/index.html?load=${load}`
       : undefined;
   useEffect(() => {
     setReady("");
@@ -207,23 +218,13 @@ export function ChangePreviews({
         );
   async function copy() {
     if (!result?.revision || !entry) return;
-    const link = new URL(window.location.href);
-    for (const [key, value] of Object.entries({
-      project: projectId,
-      m: q.m === "prototypes" ? "prototypes" : "changes",
-      c: change?.id ?? "",
-      ct: current ? "" : "previews",
-      prototype: current ? entry.id : "",
-      preview: entry.id,
-      revision: result.revision,
-      orientation,
-    }))
-      if (value) link.searchParams.set(key, value);
-      else link.searchParams.delete(key);
-    link.searchParams.delete("branch");
-    link.searchParams.delete("pdetail");
+    if (!publication.url) {
+      notice(publication.error ?? "公开版本正在准备，请稍后重试。");
+      return;
+    }
+    const link = new URL(publication.url, window.location.origin);
     if (chosenDevice) link.searchParams.set("device", chosenDevice);
-    else link.searchParams.delete("device");
+    link.searchParams.set("orientation", orientation);
     try {
       await navigator.clipboard.writeText(link.href);
       notice("已复制固定版本原型链接");
@@ -231,6 +232,15 @@ export function ChangePreviews({
       notice("未能复制链接，请检查浏览器剪贴板权限。");
     }
   }
+  if (publication.error)
+    return (
+      <Empty title="公开原型准备失败">
+        <p>{publication.error}</p>
+        <button className="button" onClick={publication.retry}>
+          重新准备
+        </button>
+      </Empty>
+    );
   if (response.key === requestKey && response.error)
     return (
       <Empty title="原型读取失败">

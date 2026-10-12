@@ -220,7 +220,7 @@ export function PersonalHome() {
                 </div>
                 {items.map((item) => (
                   <a
-                    href={`?repo=${item.key}&m=specs`}
+                    href={`?${new URLSearchParams({ repo: item.key, m: "specs", provider: item.repository.providerId, instance: item.repository.instanceId, repositoryId: item.repository.repositoryId, fullName: item.repository.fullName })}`}
                     className="personal-repo-row"
                     key={item.key}
                     onClick={(e) => {

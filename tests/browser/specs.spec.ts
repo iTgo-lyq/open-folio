@@ -1,10 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, repositoryQuery } from "./connected";
 test("Specs tree, body search, anchors, raw view and safe links", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/?project=fixture&m=specs&s=platform");
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toBeVisible();
@@ -64,7 +64,7 @@ test("deep namespace, invalid selection and mobile navigation remain usable", as
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/?project=fixture&m=specs&s=platform");
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toBeVisible();
@@ -83,7 +83,7 @@ test("deep namespace, invalid selection and mobile navigation remain usable", as
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.goto("/?project=fixture&m=specs&s=missing");
+  await page.goto(`/?${repositoryQuery}&m=specs&s=missing`);
   await expect(page.getByText("此来源中没有这项能力")).toBeVisible();
   await page.getByRole("button", { name: "返回能力目录" }).click();
   await expect(
@@ -94,7 +94,7 @@ test("deep namespace, invalid selection and mobile navigation remain usable", as
 test("search and deep links reveal selected capability ancestors", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=specs&s=platform");
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
   await page
     .getByRole("button", { name: "收起 platform", exact: true })
     .click();
@@ -122,7 +122,7 @@ test("search and deep links reveal selected capability ancestors", async ({
 test("selecting the same search result explicitly reveals it again", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=specs&s=platform%2Faccess");
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
   await page
     .getByRole("button", { name: "收起 platform", exact: true })
     .click();
@@ -143,7 +143,7 @@ test("copying a document link includes its actual capability and branch", async 
   context,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.goto("/?project=fixture&m=specs&s=platform%2Faccess");
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
   await page.getByRole("button", { name: "复制页面链接" }).click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(copied).searchParams.get("s")).toBe("platform/access");

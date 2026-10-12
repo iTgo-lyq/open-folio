@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-const path = "/?project=fixture&m=changes&c=document-reader&ct=previews";
+import { test, expect, repositoryQuery, repoKey } from "./connected";
+const path = `/?${repositoryQuery}&m=changes&c=document-reader&ct=previews`;
 test("unreadable fixed versions show a failure instead of an empty inventory or a replacement preview", async ({
   page,
 }) => {
@@ -30,7 +30,8 @@ test("Change previews switch declared devices without changing layout dimensions
       .frameLocator('iframe[title="原型：订单列表"]')
       .getByRole("heading", { name: "订单列表原型" }),
   ).toBeVisible();
-  const frame = () => page.frames().find((f) => f.url().includes("/preview/"))!;
+  const frame = () =>
+    page.frames().find((f) => f.url().includes("/api/public-previews/"))!;
   expect(await frame().evaluate(() => innerWidth)).toBe(1440);
   await panel.getByRole("button", { name: "移动设备", exact: true }).click();
   await expect(iframe).toHaveAttribute("width", "390");
@@ -71,15 +72,10 @@ test("fixed revision links restore the entry and invalid exports remain readable
   await expect(page.locator('iframe[title="原型：价格卡片"]')).toBeVisible();
   await page.getByRole("button", { name: "复制固定版本链接" }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
-  expect(new URL(link).searchParams.get("revision")).toMatch(/^[a-f0-9]{40}$/);
+  expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
   await page.goto(link);
-  await expect(page.locator('iframe[title="原型：价格卡片"]')).toHaveAttribute(
-    "width",
-    "640",
-  );
-  await expect(
-    page.getByRole("button", { name: "返回当前 Change 版本" }),
-  ).toBeVisible();
+  await expect(page.locator("iframe")).toHaveAttribute("width", "640");
+  await page.goBack();
   await page
     .getByRole("button", { name: "待导出页面 页面 · 暂不可用", exact: true })
     .click();
@@ -102,7 +98,7 @@ test("narrow screens keep component dimensions and unsupported links recover to 
   expect(
     await page
       .frames()
-      .find((f) => f.url().includes("/preview/"))!
+      .find((f) => f.url().includes("/api/public-previews/"))!
       .evaluate(() => innerWidth),
   ).toBe(640);
   expect(
@@ -132,7 +128,7 @@ test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted 
 }) => {
   const requests: { method: string; url: string }[] = [];
   page.on("request", (r) => {
-    if (r.url().startsWith("https://127.0.0.1:10685"))
+    if (r.url().startsWith("https://127.0.0.1:10686"))
       requests.push({ method: r.method(), url: r.url() });
   });
   await page.goto(path + "&preview=hosted");

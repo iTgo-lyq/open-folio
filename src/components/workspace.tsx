@@ -20,7 +20,7 @@ import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
 import { api, useWorkspace, WorkspaceProvider } from "./context";
 import { PersonalProvider, usePersonal } from "./personal-context";
 import { Connections, PersonalHome, ConnectionPicker } from "./personal";
-import { DocumentModal, Empty, ErrorNotice } from "./document";
+import { DocumentModal, Empty, ErrorNotice, CopyPageLink } from "./document";
 import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
@@ -92,7 +92,7 @@ function Shell() {
         <span className="personal-nav-item" key={item.id}>
           {index === 1 && <span className="personal-nav-divider" />}
           <a
-            href={`?repo=${encodeURIComponent(projectId)}&m=${item.id}`}
+            href={`?${new URLSearchParams({ ...q, m: item.id })}`}
             aria-label={item.title}
             aria-current={module === item.id ? "page" : undefined}
             aria-disabled={
@@ -191,6 +191,19 @@ function Shell() {
             >
               <KeyRound size={18} />
             </button>
+            {focusedPreview && (
+              <select
+                aria-label="跳转工作台模块"
+                className="preview-module-select"
+                value={module}
+                onChange={(e) => go(e.target.value)}
+              >
+                <option value="prototypes">原型</option>
+                <option value="specs">Specs</option>
+                <option value="changes">Changes</option>
+                <option value="home">我的仓库</option>
+              </select>
+            )}
             {reading && !focusedPreview && (
               <>
                 <button
@@ -250,6 +263,7 @@ function Shell() {
                 </span>
               )}
             </div>
+            {data && module !== "specs" && <CopyPageLink />}
             <span className="snapshot-time">
               {personal.connection?.label} ·{" "}
               {refreshing

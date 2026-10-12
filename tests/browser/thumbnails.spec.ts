@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-const path = "/?project=fixture&m=prototypes";
+import { test, expect, repositoryQuery } from "./connected";
+const path = `/?${repositoryQuery}&m=prototypes`;
 
 test("current cards show actual viewport screenshots and switch device consistently", async ({
   page,
@@ -56,7 +56,7 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
 }) => {
   let failed = true;
   await page.route(
-    "**/api/projects/fixture/current-thumbnails/card?*",
+    "**/api/public-previews/*/component.jpg?*",
     async (route) => {
       if (failed)
         await route.fulfill({ status: 503, body: "temporarily unavailable" });
@@ -78,57 +78,30 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
 });
 
-test("thumbnail endpoint returns private validators and rejects unsupported inputs", async ({
+test("public thumbnail endpoints preserve bytes and reject unknown resources", async ({
   request,
+  personal,
 }) => {
-  const url =
-    "/api/projects/fixture/thumbnails/document-reader/orders?device=mobile";
-  const first = await request.get(url);
-  expect(first.ok()).toBe(true);
+  const prepared = await request.post(personal.url("previews/prepare"), {
+    headers: { origin: "http://127.0.0.1:10682" },
+    data: {
+      connectionId: personal.id,
+      change: "document-reader",
+      entry: "orders",
+    },
+  });
+  expect(prepared.ok()).toBe(true);
+  const { publication } = await prepared.json();
+  const url = `/api/public-previews/${publication.id}/mobile.jpg`;
+  const first = await request.get(url),
+    second = await request.get(url);
+  expect(first.headers()["cache-control"]).toContain("public");
   expect(first.headers()["content-type"]).toBe("image/jpeg");
-  expect(first.headers()["cache-control"]).toContain("private, no-cache");
-  expect((await first.body()).subarray(0, 2)).toEqual(
-    Buffer.from([0xff, 0xd8]),
+  expect(await first.body()).toEqual(await second.body());
+  expect((await request.head(url)).status()).toBe(200);
+  const bad = await request.get(
+    `/api/public-previews/${publication.id}/unlisted.jpg`,
   );
-  const etag = first.headers().etag;
-  const repeated = await request.get(url);
-  expect(repeated.headers()["x-openfolio-thumbnail-cache"]).toBe("hit");
-  expect(
-    (await request.get(url, { headers: { "if-none-match": etag } })).status(),
-  ).toBe(304);
-  expect(
-    (await request.get(url, { headers: { origin: "null" } })).status(),
-  ).toBe(200);
-  expect(
-    (
-      await request.get(
-        "/api/projects/missing/thumbnails/document-reader/orders",
-      )
-    ).status(),
-  ).toBe(404);
-  expect((await request.get(url.replace("mobile", "desktop"))).status()).toBe(
-    400,
-  );
-  expect((await request.get(url + "&snapshot=../outside")).status()).toBe(400);
-  expect(
-    (await request.get(url.replace("/orders?", "/missing?"))).status(),
-  ).toBe(404);
-});
-
-test("current thumbnail failures use the public JSON error contract", async ({
-  request,
-}) => {
-  for (const [path, status, code] of [
-    ["orders?device=desktop", 400, "INVALID_PARAMETER"],
-    ["orders?revision=not-a-commit", 400, "INVALID_PARAMETER"],
-    ["absent", 404, "THUMBNAIL_UNAVAILABLE"],
-  ] as const) {
-    const response = await request.get(
-      `/api/projects/fixture/current-thumbnails/${path}`,
-    );
-    expect(response.status()).toBe(status);
-    expect(response.headers()["content-type"]).toContain("application/json");
-    expect(response.headers()["cache-control"]).toBe("private, no-store");
-    expect((await response.json()).error.code).toBe(code);
-  }
+  expect(bad.status()).toBe(404);
+  expect((await bad.json()).error.code).toBe("ASSET_NOT_FOUND");
 });

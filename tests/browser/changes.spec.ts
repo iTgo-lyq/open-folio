@@ -1,8 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, repositoryQuery } from "./connected";
 test("a narrative Plan uses default serial order without a source warning", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=changes&c=default-serial&ct=overview");
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=default-serial&ct=overview`,
+  );
   const drawer = page.getByRole("dialog");
   await expect(
     drawer.getByRole("heading", { name: "默认串行的任务安排", exact: true }),
@@ -20,7 +22,7 @@ test("a narrative Plan uses default serial order without a source warning", asyn
     fullPage: true,
   });
   await drawer.getByRole("button", { name: "关闭变更详情" }).click();
-  await page.goto("/?project=fixture&m=changes&c=document-reader&ct=tasks");
+  await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader&ct=tasks`);
   await expect(
     page
       .getByRole("dialog")
@@ -31,7 +33,7 @@ test("a narrative Plan uses default serial order without a source warning", asyn
 test("list filters, drawer, tasks and stacked document focus preserve context", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=changes");
+  await page.goto(`/?${repositoryQuery}&m=changes`);
   const row = page.getByRole("button", {
     name: "打开 让工程文档成为清晰的阅读体验",
     exact: true,
@@ -82,7 +84,7 @@ test("list filters, drawer, tasks and stacked document focus preserve context", 
 test("dependencies, parent children, cancellation, archived evidence and invalid source", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=changes&view=dependencies");
+  await page.goto(`/?${repositoryQuery}&m=changes&view=dependencies`);
   await expect(page.getByText("流程已满足")).toBeVisible();
   await expect(page.getByText("可用性待核实").first()).toBeVisible();
   await page
@@ -123,7 +125,9 @@ test("dependencies, parent children, cancellation, archived evidence and invalid
 });
 test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/?project=fixture&m=changes&c=document-reader&ct=overview");
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=document-reader&ct=overview`,
+  );
   await expect(
     page.getByRole("heading", {
       name: "让工程文档成为清晰的阅读体验",
@@ -156,7 +160,7 @@ test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
 });
 
 test("task numbers remain searchable at task granularity", async ({ page }) => {
-  await page.goto("/?project=fixture&m=changes&level=tasks");
+  await page.goto(`/?${repositoryQuery}&m=changes&level=tasks`);
   await page.getByRole("textbox", { name: "筛选变更或任务" }).fill("T2");
   await expect(
     page.getByRole("button", {
@@ -172,7 +176,7 @@ test("task numbers remain searchable at task granularity", async ({ page }) => {
 test("Change body search opens the exact document and keeps its Change context", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=changes");
+  await page.goto(`/?${repositoryQuery}&m=changes`);
   await page.getByRole("button", { name: "搜索工作台" }).click();
   await page.getByRole("textbox", { name: "全文搜索" }).fill("一致的文档快照");
   await page
@@ -194,10 +198,9 @@ test("Change body search opens the exact document and keeps its Change context",
 test("changing projects clears filters that belong to the previous project", async ({
   page,
   request,
+  personal,
 }) => {
-  const original = await (
-    await request.get("/api/projects/fixture/workbench")
-  ).json();
+  const original = await (await request.get(personal.url("workbench"))).json();
   const second = {
     ...original,
     projectId: "second",
@@ -211,29 +214,34 @@ test("changing projects clears filters that belong to the previous project", asy
       })),
     })),
   };
-  await page.route("**/api/projects", async (route) => {
+  await page.route("**/api/repositories?*", async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     await route.fulfill({
       json: {
-        projects: [
-          ...body.projects,
-          { id: "second", name: "第二项目", snapshotId: original.id },
+        ...body,
+        items: [
+          ...body.items,
+          {
+            ...body.items[0],
+            key: "second",
+            repository: { ...body.items[0].repository, fullName: "第二项目" },
+          },
         ],
       },
     });
   });
-  await page.route("**/api/projects/second/workbench*", (route) =>
+  await page.route("**/api/repositories/second/workbench*", (route) =>
     route.fulfill({ json: second }),
   );
-  await page.goto("/?project=fixture&m=changes&spec=platform&filter=阅读");
+  await page.goto(`/?${repositoryQuery}&m=changes&spec=platform&filter=阅读`);
   await expect(
     page.getByRole("button", {
       name: "打开 让工程文档成为清晰的阅读体验",
       exact: true,
     }),
   ).toBeVisible();
-  await page.getByRole("combobox", { name: "当前项目" }).selectOption("second");
+  await page.getByRole("combobox", { name: "当前仓库" }).selectOption("second");
   await expect(page).not.toHaveURL(/spec=|filter=/);
   await expect(
     page.getByRole("button", {
@@ -246,18 +254,24 @@ test("changing projects clears filters that belong to the previous project", asy
 test("document list distinguishes missing, unreadable and not required material", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=changes&c=document-reader&ct=documents");
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=document-reader&ct=documents`,
+  );
   await expect(
     page.locator(".document-missing").filter({ hasText: "execution.md" }),
   ).toContainText("缺失");
   await expect(
     page.getByRole("button", { name: /独立评审.*review.md/ }),
   ).toContainText("不可读");
-  await page.goto("/?project=fixture&m=changes&c=mobile-reading&ct=documents");
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=mobile-reading&ct=documents`,
+  );
   await expect(
     page.locator(".document-missing").filter({ hasText: "plan.md" }),
   ).toContainText("当前规模不要求");
-  await page.goto("/?project=fixture&m=changes&c=delivery-review&ct=documents");
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=delivery-review&ct=documents`,
+  );
   await expect(
     page.locator(".document-missing").filter({ hasText: "technical.md" }),
   ).toContainText("当前阶段尚未要求");
@@ -267,7 +281,7 @@ test("only active Changes use stage filters and the stage board", async ({
   page,
 }) => {
   await page.goto(
-    "/?project=fixture&m=changes&view=board&stage=execution&wait=confirmation",
+    `/?${repositoryQuery}&m=changes&view=board&stage=execution&wait=confirmation`,
   );
   const scopes = page.getByRole("tablist", {
     name: "Change 状态",
@@ -340,7 +354,7 @@ test("only active Changes use stage filters and the stage board", async ({
 test("legacy scopes preserve Change deep links and inactive filters normalize", async ({
   page,
 }) => {
-  await page.goto("/?project=fixture&m=changes&scope=all&c=source-connect");
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=all&c=source-connect`);
   await expect(page).toHaveURL(/scope=active/);
   await expect(page).toHaveURL(/c=source-connect/);
   await expect(
@@ -350,7 +364,7 @@ test("legacy scopes preserve Change deep links and inactive filters normalize", 
   ).toBeVisible();
   await expect(page.locator(".stage-flow")).toHaveCount(0);
   await page.goto(
-    "/?project=fixture&m=changes&scope=completed&stage=execution&wait=pause&view=board",
+    `/?${repositoryQuery}&m=changes&scope=completed&stage=execution&wait=pause&view=board`,
   );
   await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
   await expect(page.locator(".outcome-list .change-row")).toHaveCount(1);
@@ -377,7 +391,7 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 740 });
-  await page.goto("/?project=fixture&m=changes&scope=cancelled");
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=cancelled`);
   const cancelled = page.getByRole("button", {
     name: "打开 旧版导航实验",
     exact: true,
@@ -424,17 +438,16 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
 test("empty status scopes describe the scope without offering to reset it", async ({
   page,
   request,
+  personal,
 }) => {
-  const data = await (
-    await request.get("/api/projects/fixture/workbench")
-  ).json();
+  const data = await (await request.get(personal.url("workbench"))).json();
   data.changes = data.changes.filter(
     (group: { id: string }) => group.id === "source-connect",
   );
-  await page.route("**/api/projects/fixture/workbench*", (route) =>
+  await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
   );
-  await page.goto("/?project=fixture&m=changes");
+  await page.goto(`/?${repositoryQuery}&m=changes`);
   await expect(
     page.getByText("暂无进行中的 Change", { exact: true }),
   ).toBeVisible();
