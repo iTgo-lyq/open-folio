@@ -2,6 +2,8 @@
 
 本方案落实 [需求](./requirement.md)：平台实例内完全一致的 token 恢复同一工作台，设备会话独立，跨 token 缓存隔离，主动复制当前凭据。主流程由 `token-workspaces` 原型演示，固定预览见本 Change 的 previews 引用。
 
+[打开交互原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/index.html)。顶部可切换新设备恢复、不同 token、凭据失效与旧连接迁移；示例用户名为 demo-user，示例 token 为 demo 或 demo-other。
+
 ## 方案
 
 ### 凭据工作台与设备会话

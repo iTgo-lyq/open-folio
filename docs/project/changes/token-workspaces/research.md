@@ -23,3 +23,5 @@
 `npm run build --workspace prototype` 导出自包含入口，HTML 静态安全检查通过。使用 Playwright Chromium 并开启 OS 沙箱验证登录／恢复、不同 token 隔离、无效切换保留原凭据、复制与手动复制回退、单设备与全部设备退出、旧连接选择；检查 1440×900、834×1194、390×844、320×844 下六个评审场景及当前凭据页无横向溢出，沙箱 iframe 中复制回退可用，无浏览器运行错误。
 
 三个声明设备及 320px 窄屏已截取凭据页。以上是内存示例流程的验证，不表示服务端多设备共享、会话撤销或迁移已经实现。
+
+沿用现有 R2 适配器发布新入口及截图，公开读取和字节比对通过；仅登记 token-workspaces，不替换既有入口固定版本。`node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser` 校验三个已交付入口，Chromium 沙箱加载通过。

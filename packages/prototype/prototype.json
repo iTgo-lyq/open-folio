@@ -7,7 +7,32 @@
       "description": "同 token 恢复工作台、不同 token 隔离、复制凭据和独立设备退出。仅使用示例凭据。",
       "sourcePath": "packages/prototype/src/pages/token-workspaces.html",
       "kind": "page",
-      "devices": ["pc-web", "ipad", "mobile"]
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/index.html",
+        "sourceCommit": "565037c555862bd15908a95eb3b4dcaafd858a74",
+        "digest": "sha256:2ad8e38126908f14da04997eb89c2b98ca1faa47faaafbcc066c7ba6d896882d",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/mobile.png"
+          }
+        ]
+      }
     },
     {
       "id": "personal-workbench",
@@ -15,7 +40,11 @@
       "description": "连接 GitHub、发现 SpecTrail 仓库、阅读工程记录和公开分享原型的完整方案。",
       "sourcePath": "packages/prototype/src/pages/personal-workbench.html",
       "kind": "page",
-      "devices": ["pc-web", "ipad", "mobile"],
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
       "artifact": {
         "type": "hosted",
         "version": "e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f",
@@ -44,7 +73,11 @@
       "description": "基于当前产品的导航、项目上下文与内容容器。",
       "sourcePath": "packages/prototype/src/pages/workspace-shell.html",
       "kind": "page",
-      "devices": ["pc-web", "ipad", "mobile"],
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
       "artifact": {
         "type": "hosted",
         "version": "190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a",

@@ -21,5 +21,38 @@
   "waitingFor": {
     "kind": "confirmation",
     "summary": "需求方向已获用户认可。等待用户审阅并确认完整技术方案与已验证交互原型，确认后进入实施计划；正式实施还需 personal-workbench 完成验收与归档。"
-  }
+  },
+  "previews": [
+    {
+      "id": "token-workspaces",
+      "title": "Token 工作台与多设备登录",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/index.html",
+        "sourceCommit": "565037c555862bd15908a95eb3b4dcaafd858a74",
+        "digest": "sha256:2ad8e38126908f14da04997eb89c2b98ca1faa47faaafbcc066c7ba6d896882d",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }
