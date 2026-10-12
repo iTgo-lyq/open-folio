@@ -4,13 +4,13 @@
   "title": "分支增量采集与工作台后台自动刷新",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/incremental-workspace-refresh",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "按未变化分支复用采集结果并自动更新工作台快照",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
