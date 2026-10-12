@@ -44,6 +44,20 @@ node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 
 固定引用包含源码提交、内容摘要和公开 URL。登记后验证各设备交互，再提交清单、workflow 与新 Change；进入 main 才更新项目总览。首次迁移成功后仅移除本包旧 preview 目录，历史 archive 与标签不动。上传失败不切换 Git 兜底，也不覆盖历史引用。
 
-需要卡片截图时，在 prepare 前将 PNG 放入 `dist/<id>/pc-web.png`、`ipad.png`、`mobile.png`；适配器将存在的图片与入口一起发布并登记。截图应按 1440×900、834×1194、390×844 生成。当前单 HTML 已内联资源；后续改为 ESM 或外部字体时，需要为桶配置允许无 Cookie 跨域读取的 CORS。
+## 截图
+
+需要卡片截图时，构建后、prepare 前运行：
+
+```bash
+npm run screenshot --workspace prototype -- --entry dist/token-workspaces/index.html
+npm run screenshot --workspace prototype -- --entry dist/token-workspaces/index.html --device mobile
+npm run screenshot --workspace prototype -- --entry dist/token-workspaces/index.html --viewport 320x720 --out /tmp/open-folio-screenshots
+```
+
+默认在入口旁生成 `pc-web.png`、`ipad.png`、`mobile.png`，对应 1440×900、834×1194、390×844，尺寸复用产品定义。`--device` 可重复指定；`--viewport WIDTHxHEIGHT` 生成 `custom.png`，每边范围 1–4096，与 `--device` 二选一。`--out` 可指定输出目录；路径按当前工作目录解析，npm workspace 命令的工作目录是本包。
+
+截图使用 Playwright Chromium、OS 沙箱和仅授予 `allow-scripts` 的不透明 iframe，入口须为自包含 HTML，复用既有 HTML 校验与 CSP。页面错误或资源加载失败时明确失败，不降级为无沙箱运行。可用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` 指定已安装的 Chromium；直接调用截图脚本时通过环境或 Node `--env-file` 注入。
+
+现有适配器将标准命名图片与入口一起发布并登记；自定义截图供本地验证，不自动登记为标准设备缩略图。截图脚本负责渲染与导出，具体交互由当次任务的 Agent 验证。当前单 HTML 已内联资源；后续改为 ESM 或外部字体时，需要为桶配置允许无 Cookie 跨域读取的 CORS。
 
 本地 Agent 可从本机配置发布。向远端交接时只传 request/result 的非敏感内容；request 的 artifactDirectory 是发布机器本地路径，远端登记前需指向内容摘要完全相同的构建目录。不要传 S3 凭据。

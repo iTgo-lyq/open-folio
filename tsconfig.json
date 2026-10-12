@@ -35,6 +35,8 @@
   ],
   "exclude": [
     "node_modules",
+    "artifacts",
+    ".openfolio",
     "packages/ui/preview",
     "packages/ui/vite.config.ts",
     "packages/ui/dist"

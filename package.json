@@ -10,6 +10,10 @@
     "dev": "next dev --hostname 127.0.0.1 --port 10681",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 10681",
+    "service:start": "node scripts/service.mjs start",
+    "service:stop": "node scripts/service.mjs stop",
+    "service:status": "node scripts/service.mjs status",
+    "service:update": "node scripts/service.mjs update",
     "typecheck": "tsc --noEmit && npm run typecheck --workspace @open-folio/ui",
     "test": "node --conditions=react-server --test tests/*.test.ts",
     "test:e2e": "playwright test",
@@ -21,6 +25,7 @@
     "ui:test": "node tests/ui-preview.mjs"
   },
   "dependencies": {
+    "@next/env": "16.3.7",
     "lucide-react": "0.577.0",
     "next": "16.3.7",
     "playwright": "1.63.0",

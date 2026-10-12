@@ -21,6 +21,27 @@ npm start
 
 同一平台实例与完全一致的 token 恢复同一工作台；不同 token 即使属于同一账号也分别保存。用户名不参与鉴权或工作台匹配，Git 传输使用平台适配器返回的用户名。所有远程 API、`ls-remote` 和 `fetch` 只使用当前工作台的 token，不读取宿主 helper、netrc、SSH agent 或继承鉴权头，也不会失败后切换其他 token。仓库公开可见也要先验证 token 身份。token 在服务端加密保存，普通摘要不读回秘密；不要把真实 token 放进仓库。
 
+## 开发机长期服务
+
+当前机器上的 Merlin 入口使用 10680 端口，与上面的 10681 本地开发入口分开。长期服务由项目脚本和 tmux 托管，需要 Node.js 24、Git 与 tmux；脚本从自身位置定位项目，可以在其他目录调用。
+
+```bash
+cp .env.example .env.local
+chmod 600 .env.local
+npm run service:update
+npm run service:status
+npm run service:stop
+npm run service:start
+```
+
+`.env.local` 按模板配置监听地址、端口和 tmux 会话；默认监听 `::`、端口 10680、会话 `openfolio-preview`，沿用 Merlin 暴露方式。更改会话、端口或数据目录前先停止原服务。进程退出后会自动重启，日志在 `.openfolio/service.log`，运行与构建来源在 `.openfolio/runtime-version.json` 和 `build-version.json`。已有 tmux 会话或端口由其他进程占用时，脚本拒绝接管。
+
+`service:update` 串行停止服务、构建 `.next`、启动并等待端口就绪；构建失败时保持停止，修复后重新更新。常规更新不创建回滚快照，也不备份或删除当前运行数据。构建来源记录提交与是否存在未提交的跟踪文件改动；直接启动来源未知的现有构建时，提交记录为空，不冒充当前 HEAD。
+
+部署后由负责本次任务的 Agent 按实际改动选择冒烟检查；`OPENFOLIO_VERIFY_BASE_URL` 配置验证地址，`OPENFOLIO_VERIFY_TOKEN` 配置登录真实工作台的 Token。真实值只放未提交的 `.env.local`，不要使用 `NEXT_PUBLIC_` 前缀或打印凭据；模板不包含真实 Token。不提供固定冒烟脚本。
+
+`artifacts/` 仅保存可删除的验证产物，`.openfolio/` 仅保存可重建的服务元数据、日志和操作锁，正式脚本放 `scripts/` 或相应包内。当前工作台数据默认在 `~/.local/share/open-folio`，通常保留；只有破坏性更新或修复 bug 确有需要时针对必要范围处理。下方备份与回退说明用于确需保留数据的部署，不要求这台开发机每次更新都备份。
+
 ## 会话、权限与分享
 
 浏览器使用随机 HttpOnly、SameSite=Lax Cookie，HTTPS 下为 Secure。设备会话默认 30 天未活动到期、90 天绝对到期，活动续期每天写入一次；Cookie 固定存活至 90 天绝对期限，闲置有效性由服务端独立校验，日常读取不重写 Cookie，避免旧响应覆盖成功切换的新登录。不同设备 Cookie 独立。退出与到期仅撤销对应设备，保留工作台凭据；再次提供有效的相同 token 可恢复。退出全部设备撤销该工作台所有会话，不影响其他 token 的工作台。切换先验证新凭据，成功只撤销当前设备旧会话，失败保留当前登录。

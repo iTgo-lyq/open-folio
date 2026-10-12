@@ -14,6 +14,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 常规更新允许短暂停机，按停止服务、构建、启动、验证的顺序执行，不创建回滚快照或例行备份，也不累积备份历史。破坏性更新或排查 bug 确有需要时，只做最小必要备份，用后清理。
 - `/home/tiger/.local/share/open-folio` 是当前运行数据目录，包含登录状态、凭据密钥、工作台偏好及可重建缓存。一般不主动删除；仅在破坏性更新或修复 bug 确有需要时，针对必要范围处理，避免每次部署重置登录和工作台。
 - 部署后的冒烟检查由负责本次任务的 Agent 根据改动自主选择，不维护固定冒烟脚本。需要登录真实工作台时，从 Git 忽略的本地环境配置读取 Token；`.env.example` 仅保存配置项与占位值。
+- 服务管理使用 `npm run service:start`、`service:stop`、`service:status`、`service:update`；配置项见 `.env.example`，真实值放 `.env.local`。原型截图使用 `npm run screenshot --workspace prototype -- --entry dist/<id>/index.html`，参数见包内 README。正式脚本不放在 `artifacts/` 或 `.openfolio/`。
 
 ## 构建产物
 
