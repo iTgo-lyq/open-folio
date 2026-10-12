@@ -4,16 +4,58 @@
   "title": "个人工作台与 SpecTrail 仓库自动发现",
   "size": "large",
   "status": "active",
-  "stage": "technical",
+  "stage": "plan",
   "branch": "codex/personal-workbench",
   "confirmations": {
     "requirement": {
       "at": "2026-10-12T05:53:40.671Z",
       "summary": "沿用已确认的个人工作台、token 鉴权、公开原型和 UI 迁移要求；用户明确公开仓库只支持 GitHub，保留适配器扩展性，其他平台在内部版本维护。",
       "source": "用户先回复“继续吧”，随后明确“这里只要支持 github。模块拓展性要设计好”。"
+    },
+    "technical": {
+      "at": "2026-10-12T06:56:16.754Z",
+      "summary": "用户确认个人工作台技术方案与修订后的玻璃导航原型；沿用 GitHub 首版、用户 token 鉴权、适配器扩展、逐请求授权、隔离缓存及公开原型边界，进入实施计划。",
+      "source": "用户在新版原型与 Change 同步后回复：“可以，继续吧”。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "建立可扩展的 GitHub 仓库适配契约",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "让 Git 读取只使用指定连接的 token",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "提供个人会话与连接生命周期",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "自动发现并诊断 SpecTrail 仓库",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "按个人仓库权限读取工程记录",
+      "status": "todo"
+    },
+    "T6": {
+      "title": "独立交付可匿名访问的固定原型",
+      "status": "todo"
+    },
+    "T7": {
+      "title": "在玻璃外壳中完成连接与仓库发现流程",
+      "status": "todo"
+    },
+    "T8": {
+      "title": "贯通仓库阅读与协作分享",
+      "status": "todo"
+    },
+    "T9": {
+      "title": "完成旧部署迁移与运维边界收敛",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "rework": {
     "at": "2026-10-12T06:39:46.264Z",
@@ -55,6 +97,6 @@
   ],
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "按用户反馈恢复侧边玻璃按钮框架的原型已验证并发布；技术方案和 UI 可审阅，技术确认后进入 Plan。"
+    "summary": "技术方案及玻璃导航原型已确认；实施计划 T1–T9 与 11 项需求验收映射已准备，待整体计划确认后按编号串行执行。"
   }
 }
