@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenFolio · Token 工作台</title>
+    <style>
+      {{include:../shared/personal-workbench.css}}
+      {{include:../shared/token-workspaces.css}}
+    </style>
+  </head>
+  <body>
+    {{include:../shared/icons.html}}
+    <div class="review-bar">
+      <span
+        ><i></i> 交互原型
+        <span class="review-note">· 仅示例数据，勿填真实 token</span></span
+      >
+      <label
+        >场景<select id="scenario" aria-label="切换原型场景">
+          <option value="home">已登录工作台</option>
+          <option value="login">首次登录</option>
+          <option value="device">新设备恢复</option>
+          <option value="other">不同 token</option>
+          <option value="expired">凭据失效</option>
+          <option value="legacy">旧连接迁移</option>
+        </select></label
+      >
+    </div>
+    <div id="app"></div>
+    <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script>
+      {{include:../shared/token-workspaces.js}}
+    </script>
+  </body>
+</html>

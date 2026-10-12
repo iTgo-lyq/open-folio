@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "token-workspaces",
+  "title": "Token 工作台与多设备登录",
+  "size": "large",
+  "status": "active",
+  "stage": "technical",
+  "branch": "codex/personal-workbench",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-12T10:24:43.458Z",
+      "summary": "用户认可完整的 token 工作台方向：同平台实例及同 token 多设备恢复，设备会话独立，跨 token 缓存隔离，切换凭据与主动复制原始 token；保持适配器扩展，不引入 GitHub OAuth。",
+      "source": "用户提出“实际上就是拿 token 做账号，一旦 token 不一致，仓库缓存也不能复用”，在包含多设备、退出、切换、复制与权限校验的完整行为说明后回复“没什么问题”。"
+    }
+  },
+  "tasks": {},
+  "closure": {},
+  "dependsOn": [
+    "personal-workbench"
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求方向已获用户认可。等待用户审阅并确认完整技术方案与已验证交互原型，确认后进入实施计划；正式实施还需 personal-workbench 完成验收与归档。"
+  }
+}

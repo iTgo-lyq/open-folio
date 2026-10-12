@@ -4,6 +4,8 @@
 
 personal-workbench 顶部可切换首次连接、发现中、空结果、部分失败、连接失效、无权限和公开原型。连接表单只接受 `demo`，不验证或保留真实 token；仓库与记录均为示例。URL hash 保留当前页面，全部交互在内存运行。
 
+token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台、复制 token、设备退出与旧连接选择。示例用户名为 `demo-user`，只接受 `demo` 与 `demo-other`；状态仅保存在内存，复制也只处理这两个示例值。顶部场景栏为评审工具，不进入产品。
+
 ## 首次配置
 
 在 Cloudflare 控制台开通 R2，创建 Standard 桶，启用 Settings → Public Development URL。r2.dev 用于开发预览且有限流；正式使用可连接自有域名。不要给历史版本设置自动删除规则。

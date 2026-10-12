@@ -2,16 +2,20 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "token-workspaces",
+      "title": "Token 工作台与多设备登录",
+      "description": "同 token 恢复工作台、不同 token 隔离、复制凭据和独立设备退出。仅使用示例凭据。",
+      "sourcePath": "packages/prototype/src/pages/token-workspaces.html",
+      "kind": "page",
+      "devices": ["pc-web", "ipad", "mobile"]
+    },
+    {
       "id": "personal-workbench",
       "title": "个人工作台",
       "description": "连接 GitHub、发现 SpecTrail 仓库、阅读工程记录和公开分享原型的完整方案。",
       "sourcePath": "packages/prototype/src/pages/personal-workbench.html",
       "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
+      "devices": ["pc-web", "ipad", "mobile"],
       "artifact": {
         "type": "hosted",
         "version": "e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f",
@@ -40,11 +44,7 @@
       "description": "基于当前产品的导航、项目上下文与内容容器。",
       "sourcePath": "packages/prototype/src/pages/workspace-shell.html",
       "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
+      "devices": ["pc-web", "ipad", "mobile"],
       "artifact": {
         "type": "hosted",
         "version": "190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a",

@@ -1,0 +1,133 @@
+.credential-login {
+  max-width: 520px;
+  margin: 52px auto;
+  padding: 0 28px;
+}
+.credential-login h1 {
+  margin-top: 12px;
+}
+.credential-login > p {
+  margin: 14px 0 26px;
+  color: var(--muted);
+}
+.credential-login form {
+  display: grid;
+  gap: 10px;
+}
+.credential-login label {
+  margin-top: 8px;
+  font-weight: 500;
+}
+.credential-login .btn {
+  margin-top: 12px;
+  width: 100%;
+}
+.credential-login .form-help {
+  margin-top: 16px;
+}
+.platform-caption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 22px;
+}
+.platform-caption span {
+  color: var(--muted);
+}
+.workspace-restored {
+  margin-bottom: 22px;
+}
+.credential-topline {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.credential-topline .badge {
+  font-size: 12px;
+}
+.credential-section {
+  margin-top: 36px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+.credential-section > p {
+  color: var(--muted);
+  margin-top: 8px;
+}
+.device-list {
+  margin-top: 18px;
+}
+.device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 19px 0;
+  border-bottom: 1px solid var(--line);
+}
+.device-row p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.device-row .row {
+  flex-wrap: wrap;
+}
+.credential-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.demo-copy-field {
+  margin: 18px 0;
+}
+.legacy-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.legacy-choice p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+@media (max-width: 760px) {
+  .credential-login {
+    margin: 34px auto;
+    padding: 0 24px;
+  }
+  .device-row {
+    align-items: flex-start;
+  }
+  .credential-actions .btn {
+    flex: 1 1 auto;
+  }
+  .credential-login h1 {
+    font-size: 25px;
+  }
+}
+@media (max-width: 360px) {
+  .credential-login {
+    padding: 0 16px;
+  }
+  .credential-login h1 {
+    font-size: 23px;
+  }
+  .device-row {
+    gap: 8px;
+  }
+  .device-row .btn {
+    padding: 8px;
+  }
+  .credential-topline {
+    gap: 8px;
+  }
+}
