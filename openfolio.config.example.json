@@ -1,11 +1,4 @@
 {
-  "schemaVersion": 1,
-  "projects": [
-    {
-      "id": "open-folio",
-      "name": "OpenFolio",
-      "repositoryUrl": "https://github.com/iTgo-lyq/open-folio.git",
-      "inviteCode": "replace-with-a-random-invitation"
-    }
-  ]
+  "schemaVersion": 2,
+  "limits": { "refreshMs": 120000, "markdownBytes": 1048576 }
 }

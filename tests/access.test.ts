@@ -15,10 +15,7 @@ import {
   adminPassword,
   adminPasswordPath,
   login,
-  accessFor,
   requireAdmin,
-  requireProject,
-  recheckProject,
   requireSameOrigin,
 } from "../src/server/access.ts";
 import {
@@ -52,10 +49,7 @@ async function setup(t: TestContext) {
     await rm(root, { recursive: true, force: true });
   });
   const snapshot = await readConfigSnapshot();
-  await saveConfig(
-    { schemaVersion: 1, projects: [project] },
-    snapshot.revision,
-  );
+  await saveConfig({ schemaVersion: 2 }, snapshot.revision);
 }
 const request = (cookie = "", url = "http://localhost/api/access") =>
   new Request(url, { headers: { cookie } });
@@ -96,40 +90,7 @@ test("admin initialization is private, concurrent-safe, persistent and overridab
   await assert.rejects(adminPassword(), { code: "ACCESS_SECRET_UNAVAILABLE" });
 });
 
-test("project credentials cannot manage config or unlock other projects; rotation revokes them", async (t) => {
-  await setup(t);
-  const guestCookie = await login(request(), project.inviteCode, project);
-  assert.match(guestCookie, /HttpOnly; SameSite=Lax; Max-Age=34560000/);
-  assert.ok(!guestCookie.includes(project.inviteCode));
-  const guest = withCookie(guestCookie);
-  await requireProject(guest, project);
-  assert.equal(
-    (await accessFor(guest)).canRead({ ...project, id: "other" }),
-    false,
-  );
-  await assert.rejects(requireAdmin(guest), { code: "ADMIN_REQUIRED" });
-  assert.equal((await GET(guest)).status, 401);
-  assert.equal((await PUT(new Request(guest, { method: "PUT" }))).status, 401);
-  await writeFile(
-    configPath(),
-    JSON.stringify({
-      schemaVersion: 1,
-      projects: [{ ...project, inviteCode: "new-code" }],
-    }),
-  );
-  await assert.rejects(recheckProject(guest, project.id), {
-    code: "INVITE_REQUIRED",
-  });
-  await writeFile(
-    configPath(),
-    JSON.stringify({ schemaVersion: 1, projects: [] }),
-  );
-  await assert.rejects(recheckProject(guest, project.id), {
-    code: "PROJECT_NOT_FOUND",
-  });
-});
-
-test("admin authorizes every project and secure cookies, password rotation revokes old credentials", async (t) => {
+test("admin cookies authorize operations only and rotate with the deployment password", async (t) => {
   await setup(t);
   const password = await adminPassword();
   const header = await login(
@@ -140,49 +101,32 @@ test("admin authorizes every project and secure cookies, password rotation revok
   assert.ok(!header.includes(password));
   const admin = withCookie(header);
   await requireAdmin(admin);
-  await requireProject(admin, { ...project, inviteCode: undefined });
-  const guest = withCookie(await login(request(), project.inviteCode, project));
+  const { GET: retired } = await import(
+    "../src/app/api/[...segments]/route.ts"
+  );
+  assert.equal((await retired()).status, 410);
+  await assert.rejects(requireAdmin(request("openfolio-project-legacy=old")), {
+    code: "ADMIN_REQUIRED",
+  });
   process.env.OPENFOLIO_ADMIN_PASSWORD = "rotated-password";
   await assert.rejects(requireAdmin(admin), { code: "ADMIN_REQUIRED" });
-  await assert.rejects(requireProject(guest, project), {
-    code: "INVITE_REQUIRED",
-  });
   await assert.rejects(login(request(), "wrong"), { code: "ACCESS_DENIED" });
-});
-
-test("legacy projects without an invitation are private and must receive a code before saving", async (t) => {
-  await setup(t);
-  const legacy = { ...project, inviteCode: undefined };
-  await writeFile(
-    configPath(),
-    JSON.stringify({ schemaVersion: 1, projects: [legacy] }),
-  );
-  const snapshot = await readConfigSnapshot();
-  assert.equal(snapshot.config.projects[0].inviteCode, undefined);
-  await assert.rejects(requireProject(request(), legacy), {
-    code: "INVITE_REQUIRED",
-  });
-  await assert.rejects(login(request(), "", legacy), { code: "ACCESS_DENIED" });
-  await assert.rejects(saveConfig(snapshot.config, snapshot.revision), {
-    code: "CONFIG_INVALID",
-    status: 400,
-  });
 });
 
 test("access endpoint validates scope and bounded JSON without disclosing secrets", async (t) => {
   await setup(t);
   assert.equal(
     (await post({ secret: project.inviteCode, project: project.id })).status,
-    200,
+    410,
   );
   assert.equal((await post({ secret: project.inviteCode })).status, 401);
   assert.equal(
     (await post({ secret: "wrong", project: project.id })).status,
-    401,
+    410,
   );
   assert.equal(
     (await post({ secret: project.inviteCode, project: "missing" })).status,
-    404,
+    410,
   );
   for (const body of [
     null,
@@ -236,14 +180,10 @@ test("mutating endpoints reject cross-origin requests including opaque preview f
   );
 });
 
-test("guest credentials do not let a known invitation validate a guessed administrator password", async (t) => {
+test("knowing the administrator password does not reveal the independent cookie signing secret", async (t) => {
   await setup(t);
   process.env.OPENFOLIO_ADMIN_PASSWORD = "known-admin-password";
-  const guest = await login(request(), project.inviteCode, project);
-  const oldVerifier = createHmac("sha256", process.env.OPENFOLIO_ADMIN_PASSWORD)
-    .update(JSON.stringify(["project-v1", project.id, project.inviteCode]))
-    .digest("base64url");
-  assert.notEqual(guest.split(";")[0].split("=")[1], oldVerifier);
+  await login(request(), process.env.OPENFOLIO_ADMIN_PASSWORD);
   assert.equal(
     (await stat(join(process.env.OPENFOLIO_DATA_DIR!, "access-secret"))).mode &
       0o777,

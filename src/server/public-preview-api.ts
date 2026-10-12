@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { requireAdmin, requireSameOrigin } from "./access.ts";
 import {
   publicPreviews,
   publicPreviewUrl,
@@ -125,5 +126,20 @@ export async function publicPreviewResponse(
         },
       },
     );
+  }
+}
+
+export async function withdrawPreviewResponse(
+  request: Request,
+  id: string,
+  store: PublicPreviews = publicPreviews(),
+) {
+  try {
+    requireSameOrigin(request);
+    await requireAdmin(request);
+    await store.withdraw(id);
+    return personalJson({ withdrawn: true });
+  } catch (e) {
+    return personalError(e);
   }
 }

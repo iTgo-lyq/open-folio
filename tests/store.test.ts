@@ -1,3 +1,4 @@
+import { legacySchema } from "../src/server/legacy-config.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { rename, rm, symlink, readFile } from "node:fs/promises";
@@ -132,7 +133,9 @@ test("configuration rejects unsafe remotes and duplicate project ids", () => {
       },
     ],
   };
-  parseConfig(good);
+  legacySchema.parse(good);
+  assert.throws(() => parseConfig(good));
+  parseConfig({ schemaVersion: 2 });
   for (const url of [
     "file:///tmp/repo",
     "https://user:token@example.test/repo",
@@ -140,13 +143,16 @@ test("configuration rejects unsafe remotes and duplicate project ids", () => {
     "https://example.test/repo?token=x",
   ])
     assert.throws(() =>
-      parseConfig({
+      legacySchema.parse({
         ...good,
         projects: [{ ...good.projects[0], repositoryUrl: url }],
       }),
     );
   assert.throws(() =>
-    parseConfig({ ...good, projects: [...good.projects, ...good.projects] }),
+    legacySchema.parse({
+      ...good,
+      projects: [...good.projects, ...good.projects],
+    }),
   );
 });
 

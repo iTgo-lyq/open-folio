@@ -52,7 +52,7 @@ export async function PUT(request: Request) {
           await reader.cancel();
           throw new AppError(
             "CONFIG_TOO_LARGE",
-            "配置内容超过 1 MiB，请减少项目或来源条目。",
+            "配置内容超过 1 MiB，请检查资源限制。",
             413,
           );
         }

@@ -7,6 +7,7 @@ import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
   publicPreviewResponse,
   preparePreviewResponse,
+  withdrawPreviewResponse,
 } from "../src/server/public-preview-api.ts";
 import { ThumbnailCache } from "../src/server/thumbnail-cache.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
@@ -288,6 +289,142 @@ test("prepare HTTP requires an owned connection and same origin; published versi
       true,
     );
   } finally {
+    await t.cleanup();
+  }
+});
+
+test("legacy links expose no mapping before authorization and redirect only prepared public versions without Git", async () => {
+  const t = await setup();
+  const previous = {
+    OPENFOLIO_CONFIG: process.env.OPENFOLIO_CONFIG,
+    OPENFOLIO_DATA_DIR: process.env.OPENFOLIO_DATA_DIR,
+  };
+  process.env.OPENFOLIO_CONFIG = join(t.f.root, "legacy-config.json");
+  process.env.OPENFOLIO_DATA_DIR = t.f.root;
+  const { legacyResolveResponse } = await import("../src/server/legacy-api.ts");
+  const { handlePreview } = await import("../src/server/preview-response.ts");
+  const { readConfig } = await import("../src/server/config.ts");
+  try {
+    await writeFile(
+      process.env.OPENFOLIO_CONFIG,
+      JSON.stringify({
+        schemaVersion: 1,
+        projects: [
+          {
+            id: "old",
+            name: "Secret old name",
+            repositoryUrl: t.repo.webUrl,
+            inviteCode: "old-invite",
+          },
+        ],
+      }),
+    );
+    const resolve = (cookie = t.c.cookie) =>
+      legacyResolveResponse(
+        new Request("https://folio.test/api/legacy-projects/old/resolve", {
+          method: "POST",
+          headers: {
+            origin: "https://folio.test",
+            "content-type": "application/json",
+            cookie: `openfolio-session=${cookie}`,
+          },
+          body: JSON.stringify({ connectionId: t.c.connection.id }),
+        }),
+        "old",
+        t.service,
+        t.f.root,
+      );
+    let response = await resolve("");
+    assert.equal(response.status, 401);
+    assert.ok(!(await response.text()).includes(t.repo.fullName));
+    t.f.controls.deny.add(t.repo.repositoryId);
+    response = await resolve();
+    assert.equal(response.status, 403);
+    t.f.controls.deny.clear();
+    response = await resolve();
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).key, t.key);
+    assert.deepEqual(await readConfig(), { schemaVersion: 2 });
+    const revision = t.g.git(["rev-parse", "HEAD"]);
+    const context = {
+      params: Promise.resolve({
+        segments: ["old", revision, "screen", "index.html"],
+      }),
+    };
+    const old = (method = "GET") =>
+      handlePreview(
+        new Request("https://folio.test/current-preview/old", { method }),
+        context,
+        true,
+        t.store,
+        t.f.root,
+      );
+    assert.equal((await old()).status, 404);
+    const meta = await t.prepare();
+    const calls = t.f.controls.gitCalls;
+    await t.f.sessions.remove(t.c.cookie);
+    t.f.provider.authenticate = async () => {
+      throw Error("Anonymous legacy path called provider");
+    };
+    t.f.provider.gitTransport = async () => {
+      throw Error("Anonymous legacy path called Git");
+    };
+    for (const method of ["GET", "HEAD"]) {
+      const response = await old(method);
+      assert.equal(response.status, 302);
+      assert.equal(
+        response.headers.get("location"),
+        `/api/public-previews/${meta.id}/index.html`,
+      );
+    }
+    assert.equal(t.f.controls.gitCalls, calls);
+    const { adminPassword, login } = await import("../src/server/access.ts");
+    const url = `https://folio.test/api/public-previews/${meta.id}`;
+    assert.equal(
+      (
+        await withdrawPreviewResponse(
+          new Request(url, { method: "DELETE" }),
+          meta.id,
+          t.store,
+        )
+      ).status,
+      401,
+    );
+    const admin = (await login(new Request(url), await adminPassword())).split(
+      ";",
+    )[0];
+    assert.equal(
+      (
+        await withdrawPreviewResponse(
+          new Request(url, {
+            method: "DELETE",
+            headers: { cookie: admin, origin: "https://attacker.test" },
+          }),
+          meta.id,
+          t.store,
+        )
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await withdrawPreviewResponse(
+          new Request(url, {
+            method: "DELETE",
+            headers: { cookie: admin, origin: "https://folio.test" },
+          }),
+          meta.id,
+          t.store,
+        )
+      ).status,
+      200,
+    );
+    assert.equal((await old()).status, 410);
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
     await t.cleanup();
   }
 });

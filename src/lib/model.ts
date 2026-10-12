@@ -25,7 +25,6 @@ export type ProjectConfig = {
   id: string;
   name: string;
   repositoryUrl: string;
-  inviteCode?: string;
   specBranch?: string;
 };
 export type Limits = {
@@ -53,8 +52,7 @@ export const DEFAULT_LIMITS: Limits = {
   previewEntries: 2000,
 };
 export type AppConfig = {
-  schemaVersion: 1;
-  projects: ProjectConfig[];
+  schemaVersion: 2;
   limits?: Partial<Limits>;
 };
 export type ConfigSnapshot = {

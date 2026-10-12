@@ -25,10 +25,12 @@ import {
   discoveryResponse,
   repositoryListResponse,
 } from "../src/server/discovery-api.ts";
+import { legacyResolveResponse } from "../src/server/legacy-api.ts";
 import { repositoryResponse } from "../src/server/repository-api.ts";
 import {
   preparePreviewResponse,
   publicPreviewResponse,
+  withdrawPreviewResponse,
 } from "../src/server/public-preview-api.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 const f = await seed(),
@@ -38,11 +40,19 @@ const root = join(f.root, "personal-data"),
   config = join(f.root, "config.json");
 process.env.GIT_SSL_CAINFO = git.cert;
 process.env.OPENFOLIO_DATA_DIR = root;
+process.env.OPENFOLIO_CONFIG = config;
 await writeFile(
   config,
   JSON.stringify({
     schemaVersion: 1,
-    projects: [{ ...f.project, inviteCode: "fixture-invitation" }],
+    projects: [
+      {
+        id: f.project.id,
+        name: f.project.name,
+        repositoryUrl: "https://github.com/acme/fixture",
+        inviteCode: "fixture-invitation",
+      },
+    ],
   }),
 );
 const repository: RepositoryIdentity = {
@@ -168,9 +178,13 @@ const server = createServer(async (req, res) => {
       });
     } else if (
       s[0] === "api" &&
-      ["session", "connections", "repositories", "public-previews"].includes(
-        s[1],
-      )
+      [
+        "session",
+        "connections",
+        "repositories",
+        "public-previews",
+        "legacy-projects",
+      ].includes(s[1])
     ) {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
@@ -199,6 +213,8 @@ const server = createServer(async (req, res) => {
                   discoveries,
                 )
               : await connectionResponse(request, s[2], sessions, discoveries);
+      else if (s[1] === "legacy-projects")
+        response = await legacyResolveResponse(request, s[2], repos, root);
       else if (s[1] === "repositories")
         response =
           s.length === 2
@@ -218,6 +234,8 @@ const server = createServer(async (req, res) => {
                   repos,
                   DEFAULT_LIMITS,
                 );
+      else if (req.method === "DELETE" && s.length === 3)
+        response = await withdrawPreviewResponse(request, s[2], publications);
       else
         response = await publicPreviewResponse(
           request,

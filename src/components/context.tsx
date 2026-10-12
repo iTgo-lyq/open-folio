@@ -7,12 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type {
-  AppConfig,
-  DocumentRef,
-  ProjectSummary,
-  Workbench,
-} from "@/lib/model";
+import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
@@ -30,9 +25,7 @@ type Value = {
   refreshing: boolean;
   error: string;
   refresh: () => Promise<void>;
-  accessChanged: () => void;
   locked: boolean;
-  configurationSaved: (before: AppConfig, after: AppConfig) => void;
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
   notice: (message: string) => void;
   message: string;
@@ -97,6 +90,50 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("popstate", read);
     return () => window.removeEventListener("popstate", read);
   }, []);
+  const [legacyError, setLegacyError] = useState("");
+  useEffect(() => {
+    setLegacyError("");
+    if (!q.project || q.repo || !connection) return;
+    const controller = new AbortController();
+    api<{ key: string; repository: RepositoryIdentity; specBranch?: string }>(
+      `/api/legacy-projects/${encodeURIComponent(q.project)}/resolve`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId: connection.id }),
+        signal: controller.signal,
+      },
+    )
+      .then(({ key, repository, specBranch }) => {
+        if (!controller.signal.aborted)
+          nav(
+            {
+              project: null,
+              repo: key,
+              provider: repository.providerId,
+              instance: repository.instanceId,
+              repositoryId: repository.repositoryId,
+              fullName: repository.fullName,
+              branch: q.branch || specBranch || null,
+              m: q.m || "specs",
+            },
+            true,
+          );
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted) setLegacyError(e.message);
+      });
+    return () => controller.abort();
+  }, [
+    q.project,
+    q.repo,
+    q.branch,
+    q.m,
+    connection?.id,
+    connection?.revision,
+    personal.epoch,
+    nav,
+  ]);
   const readUrl = useCallback(
     (path: string) => {
       const [name, query] = path.split("?");
@@ -242,11 +279,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         repository,
         loading,
         refreshing,
-        error,
+        error: legacyError || error,
         refresh,
-        accessChanged: () => void personal.reloadSession(),
         locked: !connection,
-        configurationSaved: () => {},
         openDocument,
         notice: setMessage,
         message,

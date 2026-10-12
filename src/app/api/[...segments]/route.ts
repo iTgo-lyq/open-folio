@@ -1,4 +1,4 @@
-import { personalJson } from "@/server/personal-http";
+import { personalJson } from "../../../server/personal-http.ts";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 function retired() {

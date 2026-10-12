@@ -14,38 +14,10 @@ import { z } from "zod";
 import { DEFAULT_LIMITS } from "../lib/model.ts";
 import type { AppConfig, ConfigSnapshot, Limits } from "../lib/model.ts";
 import { AppError } from "./errors.ts";
-const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
-const remoteUrl = z
-  .string()
-  .url()
-  .refine((value) => {
-    if (!URL.canParse(value)) return false;
-    const u = new URL(value);
-    return (
-      u.protocol === "https:" &&
-      !u.username &&
-      !u.password &&
-      !u.search &&
-      !u.hash &&
-      u.pathname !== "/"
-    );
-  }, "仓库必须是无凭据的 HTTPS 地址");
+import { legacySchema, migrateLegacyConfig } from "./legacy-config.ts";
 const configSchema = z
   .object({
-    schemaVersion: z.literal(1),
-    projects: z.array(
-      z
-        .object({
-          id,
-          name: z.string().trim().min(1),
-          repositoryUrl: remoteUrl,
-          inviteCode: z.string().trim().min(1).max(256).optional(),
-          specBranch: z.string().min(1).optional(),
-          prototypeOrigins: z.unknown().optional(), // Legacy field: ignored on read, removed on save.
-        })
-        .strict()
-        .transform(({ prototypeOrigins: _legacy, ...project }) => project),
-    ),
+    schemaVersion: z.literal(2),
     limits: z
       .object(
         Object.fromEntries(
@@ -64,13 +36,8 @@ export function parseConfig(value: unknown): AppConfig {
   if (!result.success)
     throw new AppError(
       "CONFIG_INVALID",
-      "配置不合法，请检查项目字段、HTTPS 仓库地址，以及资源限制（必须为正整数）。",
+      "配置仅支持 schemaVersion: 2 和正整数资源限制。",
     );
-  if (
-    new Set(result.data.projects.map((p) => p.id)).size !==
-    result.data.projects.length
-  )
-    throw new AppError("CONFIG_INVALID", "配置中存在重复的项目 id。");
   return result.data as AppConfig;
 }
 export const dataDirectory = () =>
@@ -99,7 +66,7 @@ async function initialize(path: string) {
   const tmp = `${path}.${randomUUID()}.tmp`;
   try {
     await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-    await writeFile(tmp, serialize({ schemaVersion: 1, projects: [] }), {
+    await writeFile(tmp, serialize({ schemaVersion: 2 }), {
       flag: "wx",
       mode: 0o600,
     });
@@ -141,6 +108,27 @@ async function readState(path: string, create = true): Promise<ConfigSnapshot> {
       "配置文件不是有效 JSON，请修复文件后重新加载。",
     );
   }
+  if (
+    value &&
+    typeof value === "object" &&
+    "schemaVersion" in value &&
+    value.schemaVersion === 1
+  ) {
+    const legacy = legacySchema.safeParse(value);
+    if (!legacy.success)
+      throw new AppError(
+        "CONFIG_INVALID",
+        "旧配置不合法；未改写原文件，请修复后重试。",
+      );
+    const config = parseConfig({
+      schemaVersion: 2,
+      ...(legacy.data.limits === undefined
+        ? {}
+        : { limits: legacy.data.limits }),
+    });
+    await migrateLegacyConfig(path, dataDirectory(), body, config);
+    return readState(path, false);
+  }
   return {
     config: parseConfig(value),
     revision: revisionOf(body),
@@ -168,8 +156,6 @@ export async function saveConfig(
   let config: AppConfig;
   try {
     config = parseConfig(value);
-    if (config.projects.some((p) => !p.inviteCode))
-      throw new AppError("CONFIG_INVALID", "每个项目都需要邀请码。");
   } catch (e) {
     if (e instanceof AppError) throw new AppError(e.code, e.message, 400);
     throw e;

@@ -7,8 +7,7 @@ import {
 } from "node:crypto";
 import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ProjectConfig } from "../lib/model.ts";
-import { dataDirectory, readConfig } from "./config.ts";
+import { dataDirectory } from "./config.ts";
 import { AppError } from "./errors.ts";
 
 const digest = (value: string) => createHash("sha256").update(value).digest();
@@ -58,27 +57,10 @@ async function signingCredentials() {
   ]);
   return { password, key };
 }
-const cookieName = (project?: ProjectConfig) =>
-  project
-    ? `openfolio-project-${digest(project.id).toString("hex").slice(0, 24)}`
-    : "openfolio-admin";
-const token = (
-  { password, key }: { password: string; key: string },
-  project?: ProjectConfig,
-) =>
+const cookieName = () => "openfolio-admin";
+const token = ({ password, key }: { password: string; key: string }) =>
   createHmac("sha256", key)
-    .update(
-      JSON.stringify(
-        project
-          ? [
-              "project-v1",
-              digest(password).toString("hex"),
-              project.id,
-              project.inviteCode,
-            ]
-          : ["admin-v1", digest(password).toString("hex")],
-      ),
-    )
+    .update(JSON.stringify(["admin-v1", digest(password).toString("hex")]))
     .digest("base64url");
 function cookie(request: Request, name: string) {
   return (
@@ -90,52 +72,19 @@ function cookie(request: Request, name: string) {
       ?.slice(name.length + 1) ?? ""
   );
 }
-export async function accessFor(request: Request) {
-  const credentials = await signingCredentials();
-  const admin = equal(cookie(request, cookieName()), token(credentials));
-  return {
-    admin,
-    canRead: (project: ProjectConfig) =>
-      admin ||
-      (!!project.inviteCode &&
-        equal(
-          cookie(request, cookieName(project)),
-          token(credentials, project),
-        )),
-  };
-}
 export async function requireAdmin(request: Request) {
-  if (!(await accessFor(request)).admin)
-    throw new AppError("ADMIN_REQUIRED", "请先输入管理密码。", 401);
-}
-export async function requireProject(request: Request, project: ProjectConfig) {
-  if (!(await accessFor(request)).canRead(project))
-    throw new AppError("INVITE_REQUIRED", "请输入项目邀请码。", 401);
-}
-// Recheck after long reads: rotation/removal must also apply to in-flight responses.
-export async function recheckProject(request: Request, id: string) {
-  const project = (await readConfig()).projects.find((p) => p.id === id);
-  if (!project)
-    throw new AppError("PROJECT_NOT_FOUND", "项目未登记或已移除。", 404);
-  await requireProject(request, project);
-}
-export async function login(
-  request: Request,
-  secret: string,
-  project?: ProjectConfig,
-) {
   const credentials = await signingCredentials();
-  const expected = project ? project.inviteCode : credentials.password;
-  if (!expected || !equal(secret, expected))
-    throw new AppError(
-      "ACCESS_DENIED",
-      project ? "邀请码不正确或已更换。" : "管理密码不正确。",
-      401,
-    );
+  if (!equal(cookie(request, cookieName()), token(credentials)))
+    throw new AppError("ADMIN_REQUIRED", "需要部署管理凭据。", 401);
+}
+export async function login(request: Request, secret: string) {
+  const credentials = await signingCredentials();
+  if (!equal(secret, credentials.password))
+    throw new AppError("ACCESS_DENIED", "管理密码不正确。", 401);
   const secure =
     new URL(request.url).protocol === "https:" ||
     request.headers.get("x-forwarded-proto") === "https";
-  return `${cookieName(project)}=${token(credentials, project)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=34560000${secure ? "; Secure" : ""}`;
+  return `${cookieName()}=${token(credentials)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=34560000${secure ? "; Secure" : ""}`;
 }
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");

@@ -24,19 +24,8 @@ import {
 import { login } from "../src/server/access.ts";
 import { GET, PUT } from "../src/app/api/config/route.ts";
 
-const empty = { schemaVersion: 1, projects: [] };
-const configured = {
-  schemaVersion: 1,
-  projects: [
-    {
-      id: "example",
-      name: "Example",
-      repositoryUrl: "https://example.com/team/repo.git",
-      inviteCode: "test-invitation",
-    },
-  ],
-  limits: { refreshMs: 30000 },
-};
+const empty = { schemaVersion: 2 };
+const configured = { schemaVersion: 2, limits: { refreshMs: 30000 } };
 async function setup(t: TestContext) {
   const root = await mkdtemp(join(tmpdir(), "openfolio-config-"));
   const before = {
@@ -118,26 +107,56 @@ test("saving persists valid configuration and serializes concurrent edits with t
   assert.deepEqual(await readConfig(), empty);
 });
 
-test("obsolete prototype origins are ignored on read and removed on save", async (t) => {
+test("legacy config is backed up privately before migration, keeps limits and caches, and supports restart and offline rollback", async (t) => {
   await setup(t);
   await readConfig();
   const legacy = {
-    ...configured,
+    schemaVersion: 1,
     projects: [
       {
-        ...configured.projects[0],
-        prototypeOrigins: ["not an origin", "http://local/path"],
+        id: "example",
+        name: "Example",
+        repositoryUrl: "https://github.com/owner/repo.git",
+        inviteCode: "old-secret",
+        specBranch: "trunk",
+        prototypeOrigins: ["legacy"],
       },
     ],
+    limits: configured.limits,
   };
-  await writeFile(configPath(), JSON.stringify(legacy));
-  const loaded = await readConfigSnapshot();
-  assert.deepEqual(loaded.config, configured);
+  const original = JSON.stringify(legacy);
+  await writeFile(configPath(), original);
+  await mkdir(join(dataDirectory(), "cache"));
+  await writeFile(join(dataDirectory(), "cache", "old"), "old snapshot");
+  const loaded = await Promise.all(
+    Array.from({ length: 12 }, () => readConfigSnapshot()),
+  );
+  assert.ok(
+    loaded.every(
+      (s) => JSON.stringify(s.config) === JSON.stringify(configured),
+    ),
+  );
+  const dir = join(dataDirectory(), "legacy-v1"),
+    files = await readdir(dir);
+  const backup = join(dir, files.find((f) => f.startsWith("config-"))!);
+  assert.equal(await readFile(backup, "utf8"), original);
+  assert.equal((await stat(backup)).mode & 0o777, 0o600);
+  assert.equal((await stat(dir)).mode & 0o777, 0o700);
+  const mapping = await readFile(join(dir, "projects.json"), "utf8");
+  assert.ok(mapping.includes("owner/repo"));
+  assert.ok(!mapping.includes("old-secret"));
+  assert.deepEqual(await readConfig(), configured);
+  assert.equal(
+    await readFile(join(dataDirectory(), "cache", "old"), "utf8"),
+    "old snapshot",
+  );
+  // Stop and restore this backup to run the previous binary; retrying an upgrade is idempotent.
+  await writeFile(configPath(), await readFile(backup));
   assert.deepEqual(JSON.parse(await readFile(configPath(), "utf8")), legacy);
-  await saveConfig(legacy, loaded.revision);
-  assert.deepEqual(
-    JSON.parse(await readFile(configPath(), "utf8")),
-    configured,
+  assert.deepEqual(await readConfig(), configured);
+  assert.equal(
+    (await readdir(dir)).filter((f) => f.startsWith("config-")).length,
+    1,
   );
 });
 
@@ -146,20 +165,8 @@ test("invalid fields and malformed files preserve original bytes, and absent fil
   const first = await readConfigSnapshot();
   const original = await readFile(configPath(), "utf8");
   for (const config of [
-    {
-      ...configured,
-      projects: [...configured.projects, ...configured.projects],
-    },
-    {
-      ...configured,
-      projects: [
-        { ...configured.projects[0], repositoryUrl: "file:///etc/passwd" },
-      ],
-    },
-    {
-      ...configured,
-      projects: [{ ...configured.projects[0], repositoryUrl: "invalid url" }],
-    },
+    { ...configured, projects: [] },
+    { schemaVersion: 1, projects: [] },
     { ...configured, limits: { refreshMs: -1 } },
     { ...configured, limits: { refreshMs: 1.5 } },
     { ...configured, unexpected: true },

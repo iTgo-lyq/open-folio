@@ -17,6 +17,13 @@ test("built-in public assets load modules, styles and images on same and other o
   browser,
   baseURL,
 }) => {
+  expect(
+    (
+      await request.post("/api/access", {
+        data: { secret: "fixture-admin-password" },
+      })
+    ).ok(),
+  ).toBe(true);
   const discovery = await request.get("/api/prototype-hosting");
   expect(discovery.ok()).toBeTruthy();
   const { uploadPath } = await discovery.json();

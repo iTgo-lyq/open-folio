@@ -85,7 +85,8 @@ export class GitReader {
       ...(signal ? [signal] : []),
       ...(this.signal ? [this.signal] : []),
     ]);
-    signal.throwIfAborted();
+    if (signal.aborted)
+      throw new AppError("GIT_READ_FAILED", "Git 读取已取消。", 503);
     if (this.protocol === "https" && !this.transport)
       throw new AppError(
         "TOKEN_REQUIRED",

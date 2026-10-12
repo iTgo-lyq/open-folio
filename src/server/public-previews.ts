@@ -131,6 +131,31 @@ export class PublicPreviews {
       { mode: 0o600, flag: "wx" },
     );
   }
+  private aliasPath(key: string, input: PrepareInput) {
+    return join(
+      this.root,
+      "aliases",
+      digest(
+        JSON.stringify([key, input.revision, input.change ?? "", input.entry]),
+      ),
+    );
+  }
+  private async alias(key: string, input: PrepareInput, meta: PublicPreview) {
+    await mkdir(join(this.root, "aliases"), { recursive: true, mode: 0o700 });
+    const path = this.aliasPath(key, { ...input, revision: meta.revision });
+    await writeFile(path, meta.id, { flag: "wx", mode: 0o600 }).catch(
+      async (e: NodeJS.ErrnoException) => {
+        if (e.code !== "EEXIST" || (await readFile(path, "utf8")) !== meta.id)
+          throw e;
+      },
+    );
+  }
+  async resolveAlias(key: string, input: PrepareInput) {
+    const id = await readFile(this.aliasPath(key, input), "utf8").catch(
+      () => "",
+    );
+    return this.get(id);
+  }
   async prepare(context: ReadContext, input: PrepareInput, limits: Limits) {
     const { store, project } = context;
     const result = input.change
@@ -179,6 +204,7 @@ export class PublicPreviews {
     await context.assertRead();
     try {
       const existing = await this.get(id);
+      await this.alias(project.id, input, existing);
       return existing;
     } catch (e) {
       if (!(e instanceof AppError) || e.code !== "PREVIEW_NOT_READY") throw e;
@@ -241,6 +267,7 @@ export class PublicPreviews {
             409,
           );
       }
+      await this.alias(project.id, input, meta);
       return meta;
     } finally {
       await rm(temporary, { recursive: true, force: true });
