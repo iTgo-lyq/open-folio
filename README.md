@@ -107,7 +107,7 @@ Change 页面的原型模块展示本次固定交付，未合入 main 也可分�
 
 旧 HTML 引用使用子 skill 的 `migrate.mjs --change <id>` 一次性迁移：从原保留提交复制字节到 Change 存档，更新为 artifact 引用，提交后建立新的 archive-v2 标签。运行时不支持旧 previews.path；旧格式固定链接需换成迁移后的链接，原 Git 历史与标签仍保留。
 
-当前仓库采用 Git 直接存储，只维护一个工作台页面外壳，设计依据见 [DESIGN.md](packages/prototype/DESIGN.md)。旧测试 demo 已从当前原型工程移除，已归档快照保留；引用合入 main 后更新总览，UI 组件预览单独维护。宿主侧验证命令：
+当前仓库只维护一个工作台页面外壳，通过项目 custom 适配器发布至 Cloudflare R2；源码留在 Git，dist 与上传凭据不提交。发布步骤见[原型包 README](packages/prototype/README.md)，设计依据见 [DESIGN.md](packages/prototype/DESIGN.md)。旧 Change 继续使用各自的 Git 快照及归档标签；当前引用合入 main 后更新总览，UI 组件预览单独维护。宿主侧验证命令：
 
 ```bash
 npm run build --workspace prototype

@@ -13,9 +13,25 @@
         "mobile"
       ],
       "artifact": {
-        "type": "git",
-        "path": "packages/prototype/preview/workspace-shell",
-        "sourceCommit": "95175dfdcae0fab149a3920c49f2261de24a340d"
+        "type": "hosted",
+        "version": "190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/index.html",
+        "sourceCommit": "192ede7a37346df8ce4acd2bafe61c5f56218a1a",
+        "digest": "sha256:ea9924681db706ae084a6da640c19decfb07ea8cfdd5c9090b09a6be09a7b75d",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/mobile.png"
+          }
+        ]
       }
     }
   ]

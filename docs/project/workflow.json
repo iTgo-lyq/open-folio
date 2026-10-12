@@ -7,7 +7,7 @@
     "status": "enabled",
     "packagePath": "packages/prototype",
     "hosting": {
-      "provider": "git"
+      "provider": "custom"
     }
   }
 }
