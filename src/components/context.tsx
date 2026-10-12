@@ -4,7 +4,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -14,30 +13,10 @@ import type {
   ProjectSummary,
   Workbench,
 } from "@/lib/model";
-export class ApiError extends Error {
-  code: string;
-  constructor(code: string, message: string) {
-    super(message);
-    this.code = code;
-  }
-}
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, { ...init, cache: "no-store" });
-  const data = await response.json();
-  if (!response.ok) {
-    if (data.error?.code === "INVITE_REQUIRED" && typeof window !== "undefined")
-      window.dispatchEvent(
-        new CustomEvent("openfolio-access-expired", {
-          detail: path.split("/")[3],
-        }),
-      );
-    throw new ApiError(
-      data.error?.code ?? "FAILED",
-      data.error?.message ?? "读取失败。",
-    );
-  }
-  return data;
-}
+import type { RepositoryIdentity } from "@/server/providers/types";
+import { api, ApiError } from "./api";
+import { usePersonal } from "./personal-context";
+export { api, ApiError } from "./api";
 export type Query = Record<string, string>;
 type Value = {
   q: Query;
@@ -46,6 +25,7 @@ type Value = {
   projects: ProjectSummary[];
   projectId: string;
   data: Workbench | null;
+  repository?: RepositoryIdentity;
   loading: boolean;
   refreshing: boolean;
   error: string;
@@ -56,26 +36,34 @@ type Value = {
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
   notice: (message: string) => void;
   message: string;
+  readUrl: (path: string) => string;
+  selectRepository: (key: string) => void;
 };
 const Context = createContext<Value | null>(null);
 export const useWorkspace = () => useContext(Context)!;
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
+  const personal = usePersonal();
   const [q, setQ] = useState<Query>({}),
-    [revealVersion, setRevealVersion] = useState(0),
     [ready, setReady] = useState(false),
-    [configured, setConfigured] = useState(false),
-    [configurationVersion, setConfigurationVersion] = useState(0),
-    [projects, setProjects] = useState<ProjectSummary[]>([]),
-    [data, setData] = useState<Workbench | null>(null),
-    [loading, setLoading] = useState(true),
+    [revealVersion, setRevealVersion] = useState(0),
+    [loaded, setLoaded] = useState<{
+      key: string;
+      value: Workbench & { repository?: RepositoryIdentity };
+    } | null>(null),
+    [loading, setLoading] = useState(false),
     [refreshing, setRefreshing] = useState(false),
     [error, setError] = useState(""),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [retry, setRetry] = useState(0);
   const generation = useRef(0),
-    auto = useRef(new Set<string>()),
-    sources = useRef(new Map<string, string>()),
-    sharing = useRef(false),
-    refreshGeneration = useRef(0);
+    active = useRef<AbortController | null>(null);
+  const projectId = q.repo ?? "",
+    connection = personal.connection;
+  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}`;
+  const data = loaded?.key === scope ? loaded.value : null;
+  const repository =
+    data?.repository ??
+    personal.items.find((r) => r.key === projectId)?.repository;
   const nav = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
       const params = new URLSearchParams(window.location.search);
@@ -91,264 +79,148 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
-  const accessChanged = useCallback(() => {
-    generation.current++;
-    refreshGeneration.current++;
-    auto.current.clear();
-    setConfigured(false);
-    setData(null);
-    setLoading(true);
-    setRefreshing(false);
-    setError("");
-    setConfigurationVersion((v) => v + 1);
-  }, []);
   useEffect(() => {
-    const read = () =>
+    const read = () => {
       setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
-    const share = () => {
-      read();
-      const fragment = new URLSearchParams(window.location.hash.slice(1));
-      const invite = fragment.get("invite");
-      const project = new URLSearchParams(window.location.search).get(
-        "project",
-      );
-      if (invite === null) {
-        if (!sharing.current) setReady(true);
-        return;
-      }
-      sharing.current = true;
-      setReady(false);
-      setLoading(true);
-      setError("");
-      window.history.replaceState(
-        {},
-        "",
-        window.location.pathname + window.location.search,
-      );
-      void api("/api/access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project: project ?? "", secret: invite }),
-      })
-        .then(accessChanged)
-        .catch((e) => setError(e.message))
-        .finally(() => {
-          sharing.current = false;
-          setReady(true);
-        });
+      setReady(true);
     };
-    share();
-    window.addEventListener("popstate", read);
-    window.addEventListener("hashchange", share);
-    return () => {
-      window.removeEventListener("popstate", read);
-      window.removeEventListener("hashchange", share);
-    };
-  }, [accessChanged]);
-  useEffect(() => {
-    const c = new AbortController();
-    api<{ projects: ProjectSummary[] }>("/api/projects", { signal: c.signal })
-      .then((r) => {
-        if (c.signal.aborted) return;
-        setProjects(r.projects);
-        setConfigured(true);
-        if (!r.projects.length) setLoading(false);
-      })
-      .catch((e) => {
-        if (!c.signal.aborted) {
-          setError(e.message);
-          setLoading(false);
-        }
-      });
-    return () => c.abort();
-  }, [configurationVersion]);
-  const projectId = q.project || projects[0]?.id || "";
-  const locked = projects.find((p) => p.id === projectId)?.locked === true;
-  useEffect(() => {
-    const expire = (event: Event) => {
-      if ((event as CustomEvent).detail === encodeURIComponent(projectId))
-        accessChanged();
-    };
-    window.addEventListener("openfolio-access-expired", expire);
-    return () => window.removeEventListener("openfolio-access-expired", expire);
-  }, [projectId, accessChanged]);
-  const configurationSaved = useCallback(
-    (before: AppConfig, after: AppConfig) => {
-      generation.current++;
-      refreshGeneration.current++;
-      auto.current.clear();
-      setConfigured(false);
-      setData(null);
-      setError("");
-      setRefreshing(false);
-      setLoading(after.projects.length > 0);
-      setProjects(after.projects.map(({ id, name }) => ({ id, name })));
-      const previous = before.projects.find((p) => p.id === projectId);
-      const current = after.projects.find((p) => p.id === projectId);
-      if (
-        !current ||
-        previous?.repositoryUrl !== current.repositoryUrl ||
-        previous?.specBranch !== current.specBranch
-      ) {
-        nav(
-          {
-            ...Object.fromEntries(
-              Object.keys(q)
-                .filter((key) => key !== "m")
-                .map((key) => [key, null]),
-            ),
-            project: current?.id ?? after.projects[0]?.id ?? null,
-          },
-          true,
+    if (window.location.hash) {
+      const f = new URLSearchParams(window.location.hash.slice(1));
+      if (f.has("invite"))
+        window.history.replaceState(
+          {},
+          "",
+          window.location.pathname + window.location.search,
         );
+    }
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, []);
+  const readUrl = useCallback(
+    (path: string) => {
+      const [name, query] = path.split("?");
+      const params = new URLSearchParams(query);
+      params.set("connectionId", connection?.id ?? "");
+      if (q.repositoryId && q.fullName) {
+        params.set("repositoryId", q.repositoryId);
+        params.set("fullName", q.fullName);
       }
-      setConfigurationVersion((v) => v + 1);
+      return `/api/repositories/${encodeURIComponent(projectId)}/${name}?${params}`;
     },
-    [projectId, q, nav],
+    [connection?.id, projectId, q.repositoryId, q.fullName],
+  );
+  const selectRepository = useCallback(
+    (key: string) => {
+      const item = personal.items.find((r) => r.key === key);
+      if (!item) return;
+      const params: Record<string, string | null> = Object.fromEntries(
+        Object.keys(q).map((k) => [k, null]),
+      );
+      nav({
+        ...params,
+        repo: key,
+        provider: item.repository.providerId,
+        instance: item.repository.instanceId,
+        repositoryId: item.repository.repositoryId,
+        fullName: item.repository.fullName,
+        m: ["specs", "changes", "prototypes"].includes(q.m) ? q.m : "specs",
+      });
+    },
+    [personal.items, q, nav],
   );
   useEffect(() => {
-    if (!ready || !configured || !projectId) return;
-    if (locked) {
-      setData(null);
+    const clear = () => {
+      setLoaded(null);
+      setError("读取权限暂时无法确认，请重试或更新连接。");
+    };
+    window.addEventListener("openfolio-read-denied", clear);
+    return () => window.removeEventListener("openfolio-read-denied", clear);
+  }, []);
+  useEffect(() => {
+    setLoaded(null);
+    setError("");
+    setRefreshing(false);
+    if (
+      !ready ||
+      !connection ||
+      !projectId ||
+      ["home", "connections"].includes(q.m ?? "home")
+    ) {
       setLoading(false);
       return;
     }
-    const version = ++generation.current,
-      controller = new AbortController();
-    ++refreshGeneration.current;
-    setRefreshing(false);
+    const c = new AbortController(),
+      version = ++generation.current;
+    active.current = c;
     setLoading(true);
-    setError(projects.find((p) => p.id === projectId)?.lastError ?? "");
-    setData(null);
-    const run = async () => {
-      const path = `/api/projects/${encodeURIComponent(projectId)}`;
+    const read = async () => {
       try {
         let next: Workbench;
         try {
           next = await api<Workbench>(
-            `${path}/workbench${q.branch ? `?branch=${encodeURIComponent(q.branch)}` : ""}`,
-            { signal: controller.signal },
+            readUrl(
+              `workbench${q.branch ? `?branch=${encodeURIComponent(q.branch)}` : ""}`,
+            ),
+            { signal: c.signal },
           );
         } catch (e) {
-          if (
-            e instanceof ApiError &&
-            e.code === "BRANCH_NOT_FOUND" &&
-            version === generation.current
-          ) {
-            nav({ branch: null }, true);
-            setMessage("原分支不存在，已返回默认来源。");
-            return;
-          }
-          if (
-            !(e instanceof ApiError) ||
-            e.code !== "NO_SNAPSHOT" ||
-            auto.current.has(projectId)
-          )
-            throw e;
-          auto.current.add(projectId);
-          if (version === generation.current) setRefreshing(true);
-          await api(`${path}/refresh`, {
-            method: "POST",
-            signal: controller.signal,
-          });
+          if (!(e instanceof ApiError) || e.code !== "NO_SNAPSHOT") throw e;
+          setRefreshing(true);
+          await api(readUrl("refresh"), { method: "POST", signal: c.signal });
           next = await api<Workbench>(
-            `${path}/workbench${q.branch ? `?branch=${encodeURIComponent(q.branch)}` : ""}`,
-            { signal: controller.signal },
+            readUrl(
+              `workbench${q.branch ? `?branch=${encodeURIComponent(q.branch)}` : ""}`,
+            ),
+            { signal: c.signal },
           );
         }
-        if (version === generation.current) {
-          const previous = sources.current.get(projectId);
-          sources.current.set(projectId, next.fingerprint);
-          if (previous && previous !== next.fingerprint) {
-            const params = new URLSearchParams(window.location.search);
-            nav(
-              Object.fromEntries(
-                [...params.keys()]
-                  .filter((key) => !["project", "m"].includes(key))
-                  .map((key) => [key, null]),
-              ),
-              true,
-            );
-          }
-          setData(next);
-        }
+        if (!c.signal.aborted && version === generation.current)
+          setLoaded({ key: scope, value: next });
       } catch (e) {
-        if (!controller.signal.aborted && version === generation.current)
-          setError((e as Error).message);
+        if (!c.signal.aborted && version === generation.current) {
+          if (e instanceof ApiError && e.code === "BRANCH_NOT_FOUND") {
+            nav({ branch: null }, true);
+            setMessage("原分支不存在，已返回默认来源。");
+          } else setError((e as Error).message);
+        }
       } finally {
-        if (version === generation.current && !controller.signal.aborted) {
+        if (!c.signal.aborted && version === generation.current) {
           setLoading(false);
           setRefreshing(false);
         }
       }
     };
-    void run();
+    void read();
     return () => {
-      controller.abort();
+      c.abort();
       generation.current++;
     };
-  }, [ready, configured, projectId, q.branch, nav, locked]);
+  }, [scope, ready, readUrl, q.branch, q.m, retry, nav]);
   const refresh = useCallback(async () => {
-    if (!projectId || refreshing) return;
-    const version = ++refreshGeneration.current,
-      source = generation.current;
+    if (!projectId || !connection || refreshing) return;
+    const version = ++generation.current;
+    active.current?.abort();
+    const c = new AbortController();
+    active.current = c;
     setRefreshing(true);
     setError("");
     try {
-      const path = `/api/projects/${encodeURIComponent(projectId)}`;
-      const r = await api<{ snapshotId: string }>(`${path}/refresh`, {
-        method: "POST",
-      });
-      let next: Workbench;
-      try {
-        next = await api<Workbench>(
-          `${path}/workbench?snapshot=${r.snapshotId}${q.branch ? `&branch=${encodeURIComponent(q.branch)}` : ""}`,
-        );
-      } catch (e) {
-        if (!(e instanceof ApiError) || e.code !== "BRANCH_NOT_FOUND") throw e;
-        next = await api<Workbench>(
-          `${path}/workbench?snapshot=${r.snapshotId}`,
-        );
-        if (
-          version === refreshGeneration.current &&
-          source === generation.current
-        ) {
-          nav({ branch: null }, true);
-          setMessage("原分支已从中心仓库删除，已返回默认来源。");
-        }
-      }
-      if (
-        version === refreshGeneration.current &&
-        source === generation.current
-      ) {
-        const updated = await api<{ projects: ProjectSummary[] }>(
-          "/api/projects",
-        );
-        if (
-          version === refreshGeneration.current &&
-          source === generation.current
-        ) {
-          setData(next);
-          setProjects(updated.projects);
-        }
-      }
+      await api(readUrl("refresh"), { method: "POST", signal: c.signal });
+      setRetry((v) => v + 1);
     } catch (e) {
-      if (
-        version === refreshGeneration.current &&
-        source === generation.current
-      )
+      if (!c.signal.aborted && version === generation.current) {
+        setLoaded(null);
         setError((e as Error).message);
-    } finally {
-      if (version === refreshGeneration.current) {
-        setRefreshing(false);
-        setLoading(false);
       }
+    } finally {
+      if (version === generation.current) setRefreshing(false);
     }
-  }, [projectId, refreshing, q.branch, nav]);
+  }, [projectId, connection, refreshing, readUrl]);
   useEffect(() => {
     if (!message) return;
-    const id = window.setTimeout(() => setMessage(""), 6000);
-    return () => window.clearTimeout(id);
+    const timer = setTimeout(() => setMessage(""), 6000);
+    return () => clearTimeout(timer);
   }, [message]);
   const openDocument = useCallback(
     (id: string, anchor = "", raw = false) =>
@@ -361,19 +233,25 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         q,
         revealVersion,
         nav,
-        projects,
+        projects: personal.items.map((r) => ({
+          id: r.key,
+          name: r.repository.fullName,
+        })),
         projectId,
         data,
+        repository,
         loading,
         refreshing,
         error,
         refresh,
-        configurationSaved,
-        accessChanged,
-        locked,
+        accessChanged: () => void personal.reloadSession(),
+        locked: !connection,
+        configurationSaved: () => {},
         openDocument,
         notice: setMessage,
         message,
+        readUrl,
+        selectRepository,
       }}
     >
       {children}
@@ -381,7 +259,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   );
 }
 export function useDocument(id: string | undefined) {
-  const { data, projectId } = useWorkspace();
+  const { data, projectId, readUrl } = useWorkspace();
   const [value, setValue] = useState<{
       document: DocumentRef;
       body: string;
@@ -399,10 +277,12 @@ export function useDocument(id: string | undefined) {
     const c = new AbortController();
     setLoading(true);
     api<{ document: DocumentRef; body: string }>(
-      `/api/projects/${encodeURIComponent(projectId)}/documents/${encodeURIComponent(id)}?snapshot=${snapshot}`,
+      readUrl(`documents/${encodeURIComponent(id)}?snapshot=${snapshot}`),
       { signal: c.signal },
     )
-      .then(setValue)
+      .then((value) => {
+        if (!c.signal.aborted) setValue(value);
+      })
       .catch((e) => {
         if (!c.signal.aborted) setError(e.message);
       })
@@ -410,7 +290,7 @@ export function useDocument(id: string | undefined) {
         if (!c.signal.aborted) setLoading(false);
       });
     return () => c.abort();
-  }, [id, snapshot, projectId]);
+  }, [id, snapshot, projectId, readUrl]);
   // A changing id is hidden immediately, before its next request settles.
   return {
     value:

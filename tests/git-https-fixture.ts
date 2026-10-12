@@ -4,8 +4,10 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { fixture } from "./fixture.ts";
-export async function gitHttpsFixture() {
-  const f = await fixture();
+export async function gitHttpsFixture(
+  source?: Awaited<ReturnType<typeof fixture>>,
+) {
+  const f = source ?? (await fixture());
   const cert = join(f.root, "cert.pem"),
     key = join(f.root, "key.pem");
   execFileSync(

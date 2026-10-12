@@ -1,11 +1,43 @@
+import { connect } from "node:net";
 import { spawn } from "node:child_process";
-import { writeFile, unlink, mkdir } from "node:fs/promises";
+import { createServer, request as proxyRequest } from "node:http";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { seed } from "./seed.ts";
+import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { hostedServer } from "./hosted-server.ts";
+import { PersonalSessions } from "../src/server/personal-sessions.ts";
+import { ProviderRegistry } from "../src/server/providers/registry.ts";
+import {
+  ProviderError,
+  repositoryKey,
+  type RepositoryProvider,
+  type RepositoryIdentity,
+} from "../src/server/providers/types.ts";
+import { Discovery } from "../src/server/discovery.ts";
+import { Repositories } from "../src/server/repositories.ts";
+import { PublicPreviews } from "../src/server/public-previews.ts";
+import {
+  sessionResponse,
+  connectionResponse,
+} from "../src/server/connection-api.ts";
+import {
+  discoveryResponse,
+  repositoryListResponse,
+} from "../src/server/discovery-api.ts";
+import { repositoryResponse } from "../src/server/repository-api.ts";
+import {
+  preparePreviewResponse,
+  publicPreviewResponse,
+} from "../src/server/public-preview-api.ts";
+import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 const f = await seed(),
+  git = await gitHttpsFixture(f),
+  host = await hostedServer(join(f.root, "host-fixture"));
+const root = join(f.root, "personal-data"),
   config = join(f.root, "config.json");
-const host = await hostedServer(f.root);
+process.env.GIT_SSL_CAINFO = git.cert;
+process.env.OPENFOLIO_DATA_DIR = root;
 await writeFile(
   config,
   JSON.stringify({
@@ -13,12 +45,214 @@ await writeFile(
     projects: [{ ...f.project, inviteCode: "fixture-invitation" }],
   }),
 );
+const repository: RepositoryIdentity = {
+  providerId: "github",
+  instanceId: "fixture.test",
+  repositoryId: "1",
+  fullName: "acme/fixture",
+  displayName: "测试项目",
+  webUrl: "https://github.com/acme/fixture",
+  cloneUrl: git.url,
+  defaultBranch: "main",
+};
+const valid = new Set(["token-a", "token-b"]);
+let unavailable = false;
+const provider: RepositoryProvider = {
+  id: "github",
+  describeConnection: () => ({
+    id: "github",
+    instance: "fixture.test",
+    name: "GitHub",
+    tokenUrl: "https://github.com/settings/personal-access-tokens/new",
+    permissions: ["Contents: Read-only"],
+  }),
+  parseRepositoryUrl: (value) => {
+    if (!/^https:\/\/github\.com\/acme\/fixture(?:\.git)?\/?$/.test(value))
+      throw new ProviderError(
+        "INVALID_REPOSITORY_URL",
+        "请选择受控测试仓库。",
+        400,
+      );
+    return { fullName: repository.fullName };
+  },
+  authenticate: async (secret) => {
+    if (unavailable)
+      throw new ProviderError(
+        "PROVIDER_UNAVAILABLE",
+        "平台暂时不可达，请重试。",
+        503,
+      );
+    const token = secret.use((v) => v);
+    if (!valid.has(token))
+      throw new ProviderError(
+        "TOKEN_INVALID",
+        "token 已失效，请替换连接。",
+        401,
+      );
+    return {
+      providerId: "github",
+      instanceId: "fixture.test",
+      subjectId: token === "token-b" ? "2" : "1",
+      login: token === "token-b" ? "collaborator" : "reader",
+      displayName: "Fixture Reader",
+    };
+  },
+  listRepositories: async () => ({ items: [repository], nextCursor: null }),
+  resolveRepository: async (_ctx, selector) => {
+    if (
+      (selector.repositoryId && selector.repositoryId !== "1") ||
+      (!selector.repositoryId && selector.fullName !== repository.fullName)
+    )
+      throw new ProviderError("READ_DENIED", "当前连接无法读取这个仓库。", 403);
+    return repository;
+  },
+  assertRead: async () => {
+    if (unavailable)
+      throw new ProviderError("PROVIDER_UNAVAILABLE", "平台暂时不可达。", 503);
+  },
+  probeWorkflow: async () => ({
+    kind: "file",
+    commit: f.git(["rev-parse", "refs/heads/main"], f.remote),
+    bytes: Buffer.from(
+      f.git(["show", "refs/heads/main:docs/project/workflow.json"], f.remote),
+    ),
+  }),
+  gitTransport: async (ctx) => ({
+    url: git.url,
+    username: "reader",
+    secret: ctx.secret,
+  }),
+};
+const sessions = new PersonalSessions(
+  join(root, "sessions"),
+  new ProviderRegistry([provider]),
+  join(root, "key"),
+);
+const discoveries = new Discovery(join(root, "discoveries"), sessions),
+  repos = new Repositories(join(root, "repos"), sessions, discoveries),
+  publications = new PublicPreviews(join(root, "public-previews"));
+const key = repositoryKey(repository);
 await mkdir("artifacts", { recursive: true });
 await writeFile(
   "artifacts/e2e-runtime.json",
-  JSON.stringify({ config, root: f.root }),
+  JSON.stringify({ config, root: f.root, repositoryKey: key }),
 );
-await unlink(join(f.root, "cache", "writer.lock"));
+const server = createServer(async (req, res) => {
+  try {
+    const url = new URL(req.url!, "http://127.0.0.1:10682"),
+      s = url.pathname.split("/").filter(Boolean);
+    let response: Response | undefined;
+    if (s[0] === "_fixture") {
+      if (s[1] === "control") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const input = JSON.parse(Buffer.concat(chunks).toString());
+        if (input.reset) {
+          valid.add("token-a");
+          valid.add("token-b");
+          git.allowed.add("reader:token-a");
+          git.allowed.add("reader:token-b");
+          unavailable = false;
+        }
+        if (input.revoke) {
+          valid.delete(input.revoke);
+          git.allowed.delete(`reader:${input.revoke}`);
+        }
+        if (input.unavailable !== undefined) unavailable = input.unavailable;
+      }
+      response = Response.json({
+        key,
+        repository,
+        attempts: git.attempts.length,
+      });
+    } else if (
+      s[0] === "api" &&
+      ["session", "connections", "repositories", "public-previews"].includes(
+        s[1],
+      )
+    ) {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const body = Buffer.concat(chunks);
+      const request = new Request(url, {
+        method: req.method,
+        headers: req.headers as Record<string, string>,
+        ...(body.length ? { body } : {}),
+      });
+      if (s[1] === "session")
+        response = await sessionResponse(request, sessions);
+      else if (s[1] === "connections")
+        response =
+          s.length === 2
+            ? await connectionResponse(
+                request,
+                undefined,
+                sessions,
+                discoveries,
+              )
+            : s[3] === "discovery" || s[3] === "repository-checks"
+              ? await discoveryResponse(
+                  request,
+                  s[2],
+                  s[3] === "discovery" ? "discovery" : "check",
+                  discoveries,
+                )
+              : await connectionResponse(request, s[2], sessions, discoveries);
+      else if (s[1] === "repositories")
+        response =
+          s.length === 2
+            ? await repositoryListResponse(request, discoveries)
+            : s[3] === "previews" && s[4] === "prepare"
+              ? await preparePreviewResponse(
+                  request,
+                  s[2],
+                  repos,
+                  publications,
+                  DEFAULT_LIMITS,
+                )
+              : await repositoryResponse(
+                  request,
+                  s[2],
+                  s.slice(3),
+                  repos,
+                  DEFAULT_LIMITS,
+                );
+      else
+        response = await publicPreviewResponse(
+          request,
+          s[2],
+          s.slice(3).join("/"),
+          publications,
+        );
+    }
+    if (response) {
+      res.writeHead(response.status, Object.fromEntries(response.headers));
+      res.end(Buffer.from(await response.arrayBuffer()));
+      return;
+    }
+    const upstream = proxyRequest(
+      {
+        hostname: "127.0.0.1",
+        port: 10684,
+        path: req.url,
+        method: req.method,
+        headers: req.headers,
+      },
+      (out) => {
+        res.writeHead(out.statusCode ?? 502, out.headers);
+        out.pipe(res);
+      },
+    );
+    upstream.on("error", () => {
+      res.writeHead(502);
+      res.end("Starting test app");
+    });
+    req.pipe(upstream);
+  } catch {
+    res.writeHead(500);
+    res.end("Fixture handler failed");
+  }
+});
 const child = spawn(
   process.execPath,
   [
@@ -27,25 +261,42 @@ const child = spawn(
     "--hostname",
     "127.0.0.1",
     "--port",
-    "10682",
+    "10684",
   ],
   {
     stdio: "inherit",
     env: {
       ...process.env,
+      NODE_ENV: "development",
       OPENFOLIO_ADMIN_PASSWORD: "fixture-admin-password",
       OPENFOLIO_CONFIG: config,
-      OPENFOLIO_DATA_DIR: join(f.root, "cache"),
+      OPENFOLIO_DATA_DIR: root,
       OPENFOLIO_BUILD_DIR: ".next-e2e",
     },
   },
 );
-for (const signal of ["SIGINT", "SIGTERM"] as const)
-  process.on(signal, () => {
-    child.kill(signal);
+server.on("upgrade", (req, socket, head) => {
+  const upstream = connect(10684, "127.0.0.1", () => {
+    upstream.write(
+      `${req.method} ${req.url} HTTP/${req.httpVersion}\r\n${Object.entries(
+        req.headers,
+      )
+        .map(([name, value]) => `${name}: ${value}`)
+        .join("\r\n")}\r\n\r\n`,
+    );
+    if (head.length) upstream.write(head);
+    socket.pipe(upstream);
+    upstream.pipe(socket);
   });
+  upstream.on("error", () => socket.destroy());
+  socket.on("error", () => upstream.destroy());
+});
+server.listen(10682, "127.0.0.1");
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+  process.on(signal, () => child.kill(signal));
 child.on("exit", async (code) => {
+  server.close();
   host.close();
-  await f.cleanup();
+  await git.cleanup();
   process.exit(code ?? 0);
 });

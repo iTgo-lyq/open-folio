@@ -129,14 +129,14 @@ export async function seed() {
             thumbnails: [
               {
                 device: "pc-web",
-                url: "https://127.0.0.1:10685/v1/pc-web.png",
+                url: "https://127.0.0.1:10686/v1/pc-web.png",
               },
               {
                 device: "mobile",
-                url: "https://127.0.0.1:10685/v1/mobile.png",
+                url: "https://127.0.0.1:10686/v1/mobile.png",
               },
             ],
-            url: "https://127.0.0.1:10685/v1/index.html",
+            url: "https://127.0.0.1:10686/v1/index.html",
             sourceCommit,
             digest: "sha256:" + "a".repeat(64),
           },
@@ -149,7 +149,7 @@ export async function seed() {
           artifact: {
             type: "hosted",
             version: "v1",
-            url: "https://127.0.0.1:10685/v1/index.html#no-bridge",
+            url: "https://127.0.0.1:10686/v1/index.html#no-bridge",
             sourceCommit,
             digest: "sha256:" + "a".repeat(64),
           },

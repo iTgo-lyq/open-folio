@@ -1,28 +1,29 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "radix-ui";
 import {
   BookOpen,
   ChevronRight,
   GitBranch,
   GitPullRequest,
+  Home,
+  KeyRound,
   LoaderCircle,
-  PanelLeftClose,
   PanelsTopLeft,
   RefreshCw,
   Search,
-  Settings2,
   X,
+  Share2,
 } from "lucide-react";
 import type { SearchResult } from "@/lib/model";
 import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
 import { api, useWorkspace, WorkspaceProvider } from "./context";
+import { PersonalProvider, usePersonal } from "./personal-context";
+import { Connections, PersonalHome, ConnectionPicker } from "./personal";
 import { DocumentModal, Empty, ErrorNotice } from "./document";
 import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
-import { AccessForm } from "./access";
-import { SettingsDialog } from "./settings";
 import { Button } from "@open-folio/ui";
 function Shell() {
   const {
@@ -30,8 +31,6 @@ function Shell() {
     nav,
     projects,
     projectId,
-    locked,
-    accessChanged,
     data,
     loading,
     refreshing,
@@ -39,28 +38,23 @@ function Shell() {
     refresh,
     message,
     notice,
+    selectRepository,
   } = useWorkspace();
+  const personal = usePersonal();
   const [collapsed, setCollapsed] = useState(false),
-    [search, setSearch] = useState(false),
-    [settings, setSettings] = useState(false);
-  const settingsTrigger = useRef<HTMLElement | null>(null);
-  const openSettings = (event: React.MouseEvent<HTMLButtonElement>) => {
-    settingsTrigger.current = event.currentTarget;
-    setSettings(true);
+    [search, setSearch] = useState(false);
+  const module = ["specs", "changes", "prototypes", "connections"].includes(q.m)
+    ? q.m
+    : "home";
+  const reading = ["specs", "changes", "prototypes"].includes(module),
+    focusedPreview = module === "prototypes" && !!q.prototype;
+  const titles: Record<string, string> = {
+    home: "我的仓库",
+    connections: "我的连接",
+    specs: "Specs",
+    changes: "Changes",
+    prototypes: "原型",
   };
-  const module =
-    q.m === "prototypes"
-      ? "prototypes"
-      : q.m === "changes"
-        ? "changes"
-        : "specs";
-  const focusedPreview = module === "prototypes" && !!q.prototype;
-  const moduleTitle =
-    module === "prototypes"
-      ? "原型"
-      : module === "changes"
-        ? "Changes"
-        : "Specs";
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem("openfolio.rail") === "closed");
@@ -81,38 +75,41 @@ function Shell() {
       } catch {}
       return !v;
     });
+  const go = (m: string) =>
+    nav({
+      m,
+      doc: null,
+      ...CLEAR_PROTOTYPE_VIEW,
+    });
   const navigation = (
     <nav className="module-nav" aria-label="模块导航">
       {[
+        { id: "home", title: "仓库", icon: Home },
         { id: "specs", title: "Specs", icon: BookOpen },
         { id: "changes", title: "Changes", icon: GitPullRequest },
         { id: "prototypes", title: "原型", icon: PanelsTopLeft },
-      ].map((item) => (
-        <a
-          key={item.id}
-          href={`?project=${encodeURIComponent(projectId)}&m=${item.id}`}
-          aria-label={item.title}
-          aria-current={module === item.id ? "page" : undefined}
-          onClick={(e) => {
-            e.preventDefault();
-            nav({
-              m: item.id,
-              doc: null,
-              c: null,
-              ct: null,
-              pdetail: null,
-              prototype: null,
-              preview: null,
-              device: null,
-              orientation: null,
-              revision: null,
-              zoom: null,
-            });
-          }}
-        >
-          <item.icon size={20} />
-          <span>{item.title}</span>
-        </a>
+      ].map((item, index) => (
+        <span className="personal-nav-item" key={item.id}>
+          {index === 1 && <span className="personal-nav-divider" />}
+          <a
+            href={`?repo=${encodeURIComponent(projectId)}&m=${item.id}`}
+            aria-label={item.title}
+            aria-current={module === item.id ? "page" : undefined}
+            aria-disabled={
+              item.id !== "home" && (!projectId || !personal.connection)
+                ? true
+                : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              if (item.id === "home" || (projectId && personal.connection))
+                go(item.id);
+            }}
+          >
+            <item.icon size={20} />
+            <span>{item.title}</span>
+          </a>
+        </span>
       ))}
     </nav>
   );
@@ -133,12 +130,11 @@ function Shell() {
           {navigation}
           <button
             className="rail-footer"
-            title="工作台配置"
-            aria-label="工作台配置"
-            data-config-trigger
-            onClick={openSettings}
+            title="我的连接"
+            aria-label="我的连接"
+            onClick={() => go("connections")}
           >
-            <Settings2 size={18} />
+            <KeyRound size={17} />
           </button>
         </aside>
       )}
@@ -147,47 +143,25 @@ function Shell() {
           <div className="header-context">
             <label className="project-select">
               <span className="project-monogram">
-                {(projects.find((p) => p.id === projectId)?.name || "O").slice(
-                  0,
-                  1,
-                )}
+                {reading
+                  ? (
+                      projects.find((p) => p.id === projectId)?.name || "O"
+                    ).slice(0, 1)
+                  : "O"}
               </span>
               <select
-                aria-label="当前项目"
-                value={projectId}
+                aria-label="当前仓库"
+                value={reading ? projectId : ""}
                 onChange={(e) =>
-                  nav({
-                    project: e.target.value,
-                    branch: null,
-                    s: null,
-                    c: null,
-                    doc: null,
-                    anchor: null,
-                    filter: null,
-                    spec: null,
-                    stage: null,
-                    size: null,
-                    wait: null,
-                    taskStatus: null,
-                    scope: null,
-                    ct: null,
-                    da: null,
-                    raw: null,
-                    pdetail: null,
-                    prototype: null,
-                    preview: null,
-                    device: null,
-                    orientation: null,
-                    revision: null,
-                    zoom: null,
-                    pq: null,
-                    pkind: null,
-                    pdevice: null,
-                    pcount: null,
-                  })
+                  e.target.value ? selectRepository(e.target.value) : go("home")
                 }
               >
-                {!projects.length && <option value="">OpenFolio</option>}
+                <option value="">个人工作台</option>
+                {projectId && !projects.some((p) => p.id === projectId) && (
+                  <option value={projectId}>
+                    {q.fullName ?? "分享的仓库"}
+                  </option>
+                )}
                 {projects.map((p) => (
                   <option value={p.id} key={p.id}>
                     {p.name}
@@ -197,55 +171,32 @@ function Shell() {
             </label>
             <ChevronRight size={14} className="header-chevron" />
             {focusedPreview ? (
-              <>
-                <button
-                  className="preview-back"
-                  onClick={() => nav(CLEAR_PROTOTYPE_VIEW)}
-                  aria-label="返回原型总览"
-                >
-                  原型总览
-                </button>
-                <ChevronRight size={14} className="header-chevron" />
-                <span className="header-module">预览</span>
-              </>
+              <button
+                className="preview-back"
+                onClick={() => nav(CLEAR_PROTOTYPE_VIEW)}
+                aria-label="返回原型总览"
+              >
+                原型总览
+              </button>
             ) : (
-              <>
-                <span className="header-module">{moduleTitle}</span>
-                <span className="read-only">只读</span>
-              </>
+              <span className="header-module">{titles[module]}</span>
             )}
+            {reading && <span className="read-only">只读</span>}
           </div>
           <div className="header-actions">
             <button
               className="icon-button settings-mobile-trigger"
-              aria-label="工作台配置"
-              data-config-trigger
-              onClick={openSettings}
+              aria-label="我的连接"
+              onClick={() => go("connections")}
             >
-              <Settings2 size={18} />
+              <KeyRound size={18} />
             </button>
-            {focusedPreview ? (
-              <select
-                aria-label="跳转工作台模块"
-                className="preview-module-select"
-                value={module}
-                onChange={(event) =>
-                  nav({
-                    ...CLEAR_PROTOTYPE_VIEW,
-                    doc: null,
-                    m: event.target.value,
-                  })
-                }
-              >
-                <option value="prototypes">原型</option>
-                <option value="specs">Specs</option>
-                <option value="changes">Changes</option>
-              </select>
-            ) : (
+            {reading && !focusedPreview && (
               <>
                 <button
                   className="search-launch"
                   onClick={() => setSearch(true)}
+                  disabled={!data}
                   aria-label="搜索工作台"
                 >
                   <Search size={16} />
@@ -255,9 +206,8 @@ function Shell() {
                 <button
                   className="icon-button refresh-button"
                   onClick={() => void refresh()}
-                  disabled={!projectId || refreshing}
+                  disabled={!personal.connection || refreshing}
                   aria-label={refreshing ? "正在读取中心仓库" : "刷新中心仓库"}
-                  title="读取最新已推送记录"
                 >
                   <RefreshCw size={17} className={refreshing ? "spin" : ""} />
                 </button>
@@ -265,7 +215,7 @@ function Shell() {
             )}
           </div>
         </header>
-        {!focusedPreview && (
+        {reading && !focusedPreview && (
           <div className="workspace-source">
             <div className="row">
               <GitBranch size={14} />
@@ -292,75 +242,69 @@ function Shell() {
                     </option>
                   ))}
                 </select>
-              ) : module === "prototypes" ? (
-                <span>
-                  main <span className="source-separator">/</span> 当前页面
-                </span>
               ) : (
                 <span>
-                  全部已推送分支 <span className="source-separator">/</span> 各
-                  Change 主来源
+                  {module === "prototypes"
+                    ? `${data?.defaultBranch ?? "默认分支"} / 当前页面`
+                    : "全部已推送分支 / 各 Change 主来源"}
                 </span>
               )}
             </div>
             <span className="snapshot-time">
+              {personal.connection?.label} ·{" "}
               {refreshing
                 ? "正在读取…"
                 : data
-                  ? `读取于 ${new Date(data.capturedAt).toLocaleTimeString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}`
+                  ? `读取于 ${new Date(data.capturedAt).toLocaleTimeString("zh-CN", { hour12: false })}`
                   : "尚未读取"}
             </span>
           </div>
         )}
-        {error && (!focusedPreview || !data) && (
+        {reading && error && (
           <ErrorNotice>
             {error}
-            {data && " 当前继续显示上次成功版本。"}
-            <button className="text-button" onClick={() => void refresh()}>
+            <Button variant="text" onClick={() => void refresh()}>
               重试
-            </button>
+            </Button>
+            <Button variant="text" onClick={() => go("connections")}>
+              管理连接
+            </Button>
           </ErrorNotice>
         )}
-        {!focusedPreview &&
+        {reading &&
+          !focusedPreview &&
           data?.diagnostics.map((d, i) => (
             <div className="source-warning" key={i}>
               {d.message}
             </div>
           ))}
         <div className="workspace-body">
-          {loading && !data ? (
+          {module === "home" ? (
+            <PersonalHome />
+          ) : module === "connections" ? (
+            <Connections />
+          ) : !personal.session?.connected ? (
+            <PersonalHome />
+          ) : !personal.connection ? (
+            <Empty title="用自己的连接打开仓库">
+              <p>请选择具有该仓库读取权限的连接。</p>
+              <ConnectionPicker />
+            </Empty>
+          ) : !projectId ? (
+            <Empty title="先选择一个仓库">
+              <Button onClick={() => go("home")}>查看我的仓库</Button>
+            </Empty>
+          ) : loading && !data ? (
             <Empty
               title={refreshing ? "正在读取中心仓库…" : "正在打开工作台…"}
               icon={<LoaderCircle className="spin" />}
             />
-          ) : !projects.length ? (
-            <Empty title="连接你的中心 Git 仓库">
-              <p>添加项目仓库，开始浏览 Specs、Changes 和原型。</p>
-              <Button
-                variant="primary"
-                data-config-trigger
-                onClick={openSettings}
-              >
-                配置项目
-              </Button>
-            </Empty>
-          ) : locked ? (
-            <AccessForm
-              key={projectId}
-              project={projectId}
-              name={projects.find((p) => p.id === projectId)?.name}
-              onSuccess={accessChanged}
-            />
           ) : !data ? (
             <Empty title="暂时没有可读取的版本">
-              <p>检查仓库访问权限后重新读取。</p>
-              <button
-                className="button"
-                onClick={() => void refresh()}
-                disabled={refreshing}
-              >
+              <p>确认当前连接能够访问该仓库后重试。</p>
+              <Button onClick={() => void refresh()} disabled={refreshing}>
                 读取中心仓库
-              </button>
+              </Button>
             </Empty>
           ) : module === "specs" ? (
             <Specs />
@@ -373,12 +317,7 @@ function Shell() {
       </main>
       {!focusedPreview && <div className="mobile-navigation">{navigation}</div>}
       <SearchDialog open={search} setOpen={setSearch} />
-      <SettingsDialog
-        open={settings}
-        setOpen={setSettings}
-        trigger={settingsTrigger}
-      />
-      <DocumentModal />
+      {reading && data && <DocumentModal />}
       {message && (
         <div className="toast" role="status">
           {message}
@@ -401,7 +340,7 @@ function SearchDialog({
   open: boolean;
   setOpen: (v: boolean) => void;
 }) {
-  const { data, projectId, q, nav, openDocument } = useWorkspace(),
+  const { data, projectId, q, nav, openDocument, readUrl } = useWorkspace(),
     [term, setTerm] = useState(""),
     [results, setResults] = useState<SearchResult[]>([]),
     [busy, setBusy] = useState(false),
@@ -419,7 +358,9 @@ function SearchDialog({
     setError("");
     const timer = setTimeout(() => {
       void api<{ results: SearchResult[] }>(
-        `/api/projects/${encodeURIComponent(projectId)}/search?snapshot=${data.id}&kind=${kind}${data.selectedBranch ? `&branch=${encodeURIComponent(data.selectedBranch)}` : ""}&q=${encodeURIComponent(term)}`,
+        readUrl(
+          `search?snapshot=${data.id}&kind=${kind}${data.selectedBranch ? `&branch=${encodeURIComponent(data.selectedBranch)}` : ""}&q=${encodeURIComponent(term)}`,
+        ),
         { signal: c.signal },
       )
         .then((r) => setResults(r.results))
@@ -434,7 +375,7 @@ function SearchDialog({
       clearTimeout(timer);
       c.abort();
     };
-  }, [term, open, data, projectId, kind]);
+  }, [term, open, data, projectId, kind, readUrl]);
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
@@ -511,8 +452,10 @@ function SearchDialog({
 }
 export default function Workspace() {
   return (
-    <WorkspaceProvider>
-      <Shell />
-    </WorkspaceProvider>
+    <PersonalProvider>
+      <WorkspaceProvider>
+        <Shell />
+      </WorkspaceProvider>
+    </PersonalProvider>
   );
 }

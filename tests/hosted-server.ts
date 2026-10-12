@@ -37,7 +37,7 @@ export async function hostedServer(root: string) {
   const server = createServer(
     { key: await readFile(key), cert: await readFile(cert) },
     async (req, res) => {
-      const path = new URL(req.url!, "https://127.0.0.1:10685").pathname;
+      const path = new URL(req.url!, "https://127.0.0.1:10686").pathname;
       const relative = path.replace(/^\/v1\//, "");
       if (
         relative === path ||
@@ -70,7 +70,7 @@ export async function hostedServer(root: string) {
     },
   );
   await new Promise<void>((resolve) =>
-    server.listen(10685, "127.0.0.1", resolve),
+    server.listen(10686, "127.0.0.1", resolve),
   );
   const browser = await chromium.launch({
     chromiumSandbox: true,
@@ -87,7 +87,7 @@ export async function hostedServer(root: string) {
         ignoreHTTPSErrors: true,
         viewport: { width, height },
       });
-      await page.goto("https://127.0.0.1:10685/v1/index.html");
+      await page.goto("https://127.0.0.1:10686/v1/index.html");
       await page.getByRole("button", { name: "已添加 0 次" }).waitFor();
       await page.screenshot({ path: join(dist, `${device}.png`) });
       await page.close();

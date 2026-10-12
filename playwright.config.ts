@@ -3,11 +3,9 @@ export default defineConfig({
   testDir: "./tests/browser",
   timeout: 30_000,
   expect: { timeout: 10_000 },
-  globalSetup: "./tests/auth-setup.ts",
   fullyParallel: false,
   workers: 1,
   use: {
-    storageState: "artifacts/e2e-admin.json",
     baseURL: "http://127.0.0.1:10682",
     browserName: "chromium",
     ignoreHTTPSErrors: true,
@@ -20,8 +18,8 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "node tests/serve.ts",
-    url: "http://127.0.0.1:10682/api/projects",
+    command: "node --conditions=react-server tests/serve.ts",
+    url: "http://127.0.0.1:10682/",
     timeout: 120_000,
     reuseExistingServer: false,
   },
