@@ -172,30 +172,47 @@ export class SnapshotStore {
     } catch {}
     return summary;
   }
-  refresh(p: ProjectConfig, limits: Limits): Promise<Snapshot> {
+  refresh(
+    p: ProjectConfig,
+    limits: Limits,
+    context?: {
+      signal: AbortSignal;
+      beforePublish: () => Promise<void>;
+    },
+  ): Promise<Snapshot> {
     const key = this.directory(p),
       existing = this.pending.get(key);
     if (existing) return existing;
-    const promise = this.collect(p, limits).finally(() =>
+    const promise = this.collect(p, limits, context).finally(() =>
       this.pending.delete(key),
     );
     this.pending.set(key, promise);
     return promise;
   }
-  private async collect(p: ProjectConfig, limits: Limits) {
+  private async collect(
+    p: ProjectConfig,
+    limits: Limits,
+    context?: {
+      signal: AbortSignal;
+      beforePublish: () => Promise<void>;
+    },
+  ) {
     const dir = this.directory(p);
     try {
       await this.acquire();
       await mkdir(join(dir, "snapshots"), { recursive: true, mode: 0o700 });
       await mkdir(join(dir, "blobs"), { recursive: true, mode: 0o700 });
-      const signal = AbortSignal.timeout(limits.refreshMs);
+      const signal = AbortSignal.any([
+        AbortSignal.timeout(limits.refreshMs),
+        ...(context ? [context.signal] : []),
+      ]);
       const reader = this.readerFactory(join(dir, "git"), p);
       const data = await reader.collect(limits, signal);
       const s: Snapshot = {
         cacheSchemaVersion: 3,
         currentPrototype: await readCurrentPrototype(
           reader,
-          data.branches.find((b) => b.name === "main")?.commit,
+          data.branches.find((b) => b.name === data.defaultBranch)?.commit,
           {
             ...limits,
             totalBytes: Math.max(
@@ -228,6 +245,8 @@ export class SnapshotStore {
         signal.throwIfAborted();
         await atomic(join(dir, "blobs", blob), body);
       }
+      signal.throwIfAborted();
+      await context?.beforePublish();
       signal.throwIfAborted();
       await atomic(join(dir, "snapshots", `${s.id}.json`), JSON.stringify(s));
       await atomic(join(dir, "current"), s.id);

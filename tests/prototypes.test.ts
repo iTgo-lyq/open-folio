@@ -65,7 +65,7 @@ test("main catalog needs no Change; branch edits, source changes, renames and de
     branchRevision,
     DEFAULT_LIMITS,
   );
-  assert.match(denied.descriptor.message!, /main/);
+  assert.match(denied.descriptor.message!, /默认分支/);
   f.git(["checkout", "main"]);
   await f.put(f.entry.sourcePath, "updated source without rebuild");
   f.commit();
@@ -166,7 +166,7 @@ test("current catalog diagnoses missing main/manifest and invalid entries withou
   assert.equal((await f.store.prototypes(f.project)).items.length, 0);
   assert.equal(
     (await f.store.snapshot(f.project)).currentPrototype.revision,
-    null,
+    f.git(["rev-parse", "trunk"]),
   );
 });
 test("fixed project links and old snapshots use current main config with original artifacts and explicit path failures", async (t) => {
@@ -245,7 +245,7 @@ test("fixed project links and old snapshots use current main config with origina
   );
   assert.equal(moved.html, undefined);
   assert.equal(moved.descriptor.failed, true);
-  assert.match(moved.descriptor.message!, /main 当前配置.*尚未登记/);
+  assert.match(moved.descriptor.message!, /默认分支当前配置.*尚未登记/);
   await f.put("docs/project/workflow.json", "{broken");
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);

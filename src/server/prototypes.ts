@@ -34,7 +34,7 @@ export async function readCurrentPrototype(
     issues: [],
   };
   if (!revision)
-    return { ...base, message: "项目没有 main 分支，无法读取当前页面。" };
+    return { ...base, message: "项目没有默认分支，无法读取当前页面。" };
   try {
     const configuration = await readPrototypeConfiguration(
       reader,
@@ -50,7 +50,7 @@ export async function readCurrentPrototype(
       return {
         ...base,
         message:
-          "该版本在 main 当前配置的原型包路径下尚未登记 prototype.json。",
+          "该版本在默认分支当前配置的原型包路径下尚未登记 prototype.json。",
       };
     const manifest = JSON.parse(
       await body(
@@ -146,12 +146,14 @@ export async function resolveCurrentPreview(
       latest.prototype.message,
       latest.prototype.status === "invalid",
     );
-  const main = latest.branches.find((b) => b.name === "main")?.commit;
+  const main = latest.branches.find(
+    (b) => b.name === latest.defaultBranch,
+  )?.commit;
   const target = revision ?? current.revision;
-  if (!main || !target) return fail("项目没有 main 分支，无法读取当前页面。");
+  if (!main || !target) return fail("项目没有默认分支，无法读取当前页面。");
   const signal = AbortSignal.timeout(limits.refreshMs);
   if (!(await reader.ancestor(target, main, signal)))
-    return fail("该版本不在 main 的已推送历史中。");
+    return fail("该版本不在默认分支的已推送历史中。");
   current =
     target === main
       ? latest.currentPrototype

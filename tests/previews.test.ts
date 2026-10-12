@@ -240,7 +240,7 @@ test("Change previews ignore historical workflow and fail on invalid current con
   const moved = await preview(f, f.revision);
   assert.equal(moved.html, undefined);
   assert.equal(moved.descriptor.entries[0].available, false);
-  assert.match(moved.descriptor.entries[0].message!, /main 当前配置/);
+  assert.match(moved.descriptor.entries[0].message!, /默认分支当前配置/);
   await f.put("docs/project/workflow.json", JSON.stringify(workflow));
   f.commit();
   f.git(["checkout", state.branch]);

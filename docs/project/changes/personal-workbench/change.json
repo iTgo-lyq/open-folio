@@ -46,7 +46,8 @@
     },
     "T5": {
       "title": "按个人仓库权限读取工程记录",
-      "status": "todo"
+      "status": "done",
+      "verification": "33 项授权读取及工程回归、类型检查通过；真实 GitHub 正向发现、工作流识别、fetch 和正文读取通过。"
     },
     "T6": {
       "title": "独立交付可匿名访问的固定原型",

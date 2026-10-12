@@ -46,6 +46,7 @@ export class GitReader {
   url: string;
   protocol: "https" | "file";
   private transport?: GitTransport;
+  signal?: AbortSignal;
   constructor(
     directory: string,
     source: string | GitTransport,
@@ -80,6 +81,11 @@ export class GitReader {
     signal?: AbortSignal,
     inputLimit = 16 * 1024 * 1024,
   ): Promise<Buffer> {
+    signal = AbortSignal.any([
+      ...(signal ? [signal] : []),
+      ...(this.signal ? [this.signal] : []),
+    ]);
+    signal.throwIfAborted();
     if (this.protocol === "https" && !this.transport)
       throw new AppError(
         "TOKEN_REQUIRED",

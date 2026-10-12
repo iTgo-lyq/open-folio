@@ -22,7 +22,7 @@ export function prototypePolicy(
   data: Collected,
   project: ProjectConfig,
 ): Snapshot["prototype"] {
-  const branch = "main";
+  const branch = data.defaultBranch;
   const doc = data.documents.find(
     (d) => d.branch === branch && d.path === "docs/project/workflow.json",
   );
@@ -148,12 +148,12 @@ export async function readPrototypeConfiguration(
     signal.throwIfAborted();
     throw new AppError(
       "PROTOTYPE_CONFIG_INVALID",
-      "main 当前 workflow.json 原型配置无效或不可读。",
+      "默认分支当前 workflow.json 原型配置无效或不可读。",
       400,
     );
   }
   if (configuration?.status !== "enabled")
-    throw new AppError("PROTOTYPE_DISABLED", "main 尚未启用原型协作。", 400);
+    throw new AppError("PROTOTYPE_DISABLED", "默认分支尚未启用原型协作。", 400);
   return configuration;
 }
 export async function resolvePreview(
@@ -297,14 +297,14 @@ export async function resolvePreview(
   try {
     configuration = await readPrototypeConfiguration(
       reader,
-      latest.branches.find((b) => b.name === "main")?.commit,
+      latest.branches.find((b) => b.name === latest.defaultBranch)?.commit,
       limits,
       signal,
     );
   } catch (e) {
     signal.throwIfAborted();
     return fail(
-      e instanceof AppError ? e.message : "main 当前原型配置读取失败。",
+      e instanceof AppError ? e.message : "默认分支当前原型配置读取失败。",
     );
   }
   return resolveEntries(
@@ -413,7 +413,7 @@ export async function resolveEntries(
       file = files.find((f) => f.path === path);
     if (!path) {
       info.message =
-        "入口路径不属于 main 当前配置的原型包或该 Change 的快照目录。";
+        "入口路径不属于默认分支当前配置的原型包或该 Change 的快照目录。";
       continue;
     }
     try {

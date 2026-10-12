@@ -29,3 +29,13 @@ GitReader 接收显式 GitTransport。HTTPS 没有凭据时在启动 Git 前拒�
 连接验证成功后启动后台发现；分页和未完成队列按连接 revision 持久化，单批最多 4 个检查、进程总计最多 8 个，单仓库设超时。完整工作流 schema、普通文件类型、默认分支提交与守护分支共同决定 ready／attention；缺失、损坏、来源异常和暂时失败分别呈现，未完成扫描不会成为完整空结果。目录分页返回前重新验证身份、仓库 Contents 权限和指定 token 的 Git refs。补充地址检查通过 Provider 解析，发现进行时提示稍后重试，避免与后台目录写入竞争。
 
 验证：发现服务 6 项测试通过，覆盖六类样本、多页、限流续传、重启中断、并发合并与上限、撤权目录过滤、连接移除取消、跨会话拒绝和 HTTP 自动发现。连同 Provider／会话 20 项先前测试及 `npm run typecheck` 通过；新加并发用例单独复验通过。发现仅执行元数据、workflow blob 与 refs 检查，不 fetch 候选仓库。真实 GitHub 已有 T2 的发现及未接入负向证据，正向 SpecTrail 识别和正文读取留待 T5 联调，不以受控样本宣称真实正向通过。
+
+## T5 按个人仓库权限读取工程记录
+
+新增 ReadContext 和个人仓库读取接口。每次请求在读取前与交付前验证 token 身份、稳定仓库 id、平台 Contents 与 Git refs；长刷新在发布 current 指针前再次检查。Git／快照按会话、连接、revision 隔离，刷新串行但不借用其他请求的授权。连接取消信号绑定到每个 Git 命令。旧 projects 工程接口与旧 Git 预览入口返回 410，管理员 Cookie 和邀请码不再能读取旧缓存。
+
+复用 Specs、Changes、文档、搜索和图片读取，当前原型配置与清单改读实际默认分支，固定 Change 来源规则保留。双用户使用各自 token 得到共同提交，但不能读取对方快照；失败刷新保留旧指针，仅后续重新授权成功时可读。
+
+验证：新增 3 项个人仓库集成测试，覆盖 GET／HEAD、正文、搜索、图片、历史快照、双用户、替换、交付前撤权和失败刷新。真实 HTTPS Git fixture 完成整个 HTTP 刷新与读取链路，并在已缓存后撤销 token 的 Git 权限，确认仍拒绝；所有捕获传输只含当前测试 token。既有 store／Changes／previews／prototypes 回归共 33 项及类型检查通过。
+
+真实 GitHub 联调使用此前授权 token、关闭终端回显的临时 stdin 输入，仅调用 GitHub API 与显式凭据 GitReader：身份、单页完整仓库枚举、OpenFolio 工作流普通文件识别与 schemaVersion、refs、fetch 和 Specs 正文均通过；采集 22 个分支、1255 个受限文档。未修改远端，临时 Git 数据已删除。这补齐 T4 的真实正向识别证据。

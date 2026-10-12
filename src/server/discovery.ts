@@ -569,6 +569,12 @@ export class Discovery {
       lease.release();
     }
   }
+  async lookup(lease: ConnectionLease, key: string) {
+    await lease.assertCurrent();
+    return (await this.read(lease))?.results.find(
+      (item) => item.key === key && ["ready", "attention"].includes(item.state),
+    );
+  }
 }
 export function discovery() {
   const sessions = personalSessions(),
