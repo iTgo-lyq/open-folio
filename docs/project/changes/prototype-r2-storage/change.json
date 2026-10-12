@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "发布 workspace-shell 到 R2 并切换当前及本 Change 的固定引用",
-      "status": "doing"
+      "status": "done",
+      "verification": "25 项相关测试通过；R2 四对象公开字节及 MIME 校验、同请求重试一致；四视口沙箱交互、真实工作台 Change 预览、最新 custom 配置下五个历史 Git 入口解析通过；旧归档与标签未改，见 execution.md。",
+      "commitTitle": "prototype-r2-storage T1: verify R2 delivery and historical compatibility"
     }
   },
   "closure": {},
