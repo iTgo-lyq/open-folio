@@ -26,7 +26,8 @@
   "tasks": {
     "T1": {
       "title": "建立可扩展的 GitHub 仓库适配契约",
-      "status": "doing"
+      "status": "done",
+      "verification": "8 项 Provider 契约测试与 npm run typecheck 通过；真实 Git fetch 和发现集成由后续任务验证。"
     },
     "T2": {
       "title": "让 Git 读取只使用指定连接的 token",
