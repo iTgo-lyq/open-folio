@@ -2,6 +2,8 @@
 
 依据：[Requirement](./requirement.md)、[Research](./research.md)。公开版本仅交付 GitHub.com，保留平台适配边界；应用继续是单 Node 进程、单实例和持久磁盘上的只读工作台。正式实现仍需本方案确认后再编写 Plan。
 
+[打开个人工作台交互原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/index.html)。顶部可切换首次连接、发现中、空结果、部分失败、连接过期、分享无权限和公开预览；表单输入 `demo` 体验流程，使用示例数据。
+
 ## 方案总览
 
 采用“个人会话 → 代码托管连接 → 仓库身份 → 受保护的读取上下文”。连接保存用户凭据和经平台验证的身份，平台适配器统一输出账号、仓库、权限和接入诊断；工作台与索引不依赖 GitHub 原始字段。GitHub 首版使用 REST API 发现与探测，使用 Git HTTPS 采集已推送内容。
@@ -111,7 +113,7 @@ Cookie 使用 HttpOnly、SameSite=Lax，HTTPS 使用 Secure；远程部署要求
 
 ### 持久化与撤销
 
-会话及连接存于数据目录的新版本目录，复用原子写入与进程锁。token 用 AES-256-GCM 加密；每次写入使用独立随机 nonce，AAD 绑定 schema、sessionId、connectionId 与 credentialRevision。加密密钥来自 `OPENFOLIO_CREDENTIAL_KEY_FILE`，未设置时私有生成 `credential-key`；目录 0700、秘密文件 0600。密钥与数据的备份／轮换说明进入部署文档；不宣称磁盘加密能抵御已控制同一运行账号的攻击者。
+会话及连接存于数据目录的新版本目录，复用原子写入与进程锁。token 用 AES-256-GCM 加密；每次写入使用独立随机 nonce，AAD 绑定 schema、sessionId、connectionId 与 credentialRevision。加密密钥来自 `OPENFOLIO_CREDENTIAL_KEY_FILE`，首次初始化且没有已有密文时私有生成默认 `credential-key`；已有密文但密钥缺失或解密失败时拒绝恢复连接，不生成新密钥覆盖现场。目录 0700、秘密文件 0600。密钥与数据的备份／轮换说明进入部署文档；不宣称磁盘加密能抵御已控制同一运行账号的攻击者。
 
 客户端只收到连接标签、账号名、状态及发现进度，永不读回 token。原值不进入 localStorage、Git、错误、URL 或响应。连接替换先完成验证，再原子替换密文并递增 revision；失败保留原连接。移除、退出或 revision 变化取消该版本的发现和采集；在途响应交付前复核会话、connectionId 与 revision。
 

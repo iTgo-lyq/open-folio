@@ -7,7 +7,32 @@
       "description": "连接 GitHub、发现 SpecTrail 仓库、阅读工程记录和公开分享原型的完整方案。",
       "sourcePath": "packages/prototype/src/pages/personal-workbench.html",
       "kind": "page",
-      "devices": ["pc-web", "ipad", "mobile"]
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/index.html",
+        "sourceCommit": "33e7633e7958451ab886038651db11b3c6f1aa46",
+        "digest": "sha256:37579e612aeb825867d664d33ca2879bc6c2bc4300ed604220106d44bbf87edd",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/mobile.png"
+          }
+        ]
+      }
     },
     {
       "id": "workspace-shell",
@@ -15,7 +40,11 @@
       "description": "基于当前产品的导航、项目上下文与内容容器。",
       "sourcePath": "packages/prototype/src/pages/workspace-shell.html",
       "kind": "page",
-      "devices": ["pc-web", "ipad", "mobile"],
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
       "artifact": {
         "type": "hosted",
         "version": "190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a",

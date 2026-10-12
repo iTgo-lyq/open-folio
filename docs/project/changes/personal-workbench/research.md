@@ -56,3 +56,5 @@
 Playwright 使用 1440×900、834×1194、390×844、320×760 四种视口，拦截非本地网络请求，覆盖仓库搜索／无结果、Specs 与 Changes 阅读、弹窗 Escape、公开原型、连接表单、发现完成、连接移除及退出。检查空结果、部分失败、连接失效、无权限和公开预览的页面横向溢出；修复 320px 公开页头后四视口复验通过。浏览器未记录 JavaScript 异常。
 
 PC Web、iPad、Mobile 截图随原型发布。原型只证明布局与交互路径，不能替代真实 token 鉴权、Git fetch、存储和跨用户隔离的实现验收。
+
+R2 固定发布已校验字节与公开读取，源码提交为 `33e7633e7958451ab886038651db11b3c6f1aa46`，预览已登记到本 Change。[交互原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0b61fa9445ab656966dcb698aec5caf4e4e79e468dd57db52ecefb1eca0bc88e/personal-workbench/index.html) 的匿名 HTTP 请求返回 200；在公开地址复验连接、发现和公开预览成功。`node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser` 对当前两个入口的 Chromium sandbox 验证通过。
