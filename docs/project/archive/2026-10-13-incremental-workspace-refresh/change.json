@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "incremental-workspace-refresh",
+  "title": "分支增量采集与工作台后台自动刷新",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/incremental-workspace-refresh",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "按未变化分支复用采集结果并自动更新工作台快照",
+      "status": "done",
+      "verification": "147 项单元/集成、40 项相关浏览器场景及最终 5 项定向复验、类型/格式/构建通过；本地服务已更新；原工作台 8 项 Specs 与 3 项原型只来自 main，无变化刷新复用快照 4.3–4.8 秒，真实推送约 30.9 秒后正文自动更新。",
+      "commitTitle": "incremental-workspace-refresh T1: reuse branch scans and refresh workspaces automatically"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-12T17:15:00.709Z",
+      "summary": "Agent 自查全部差异与验收项；147 项单元/集成、40 项相关浏览器场景及最终 5 项定向复验通过，类型/格式/构建通过；开发机已部署，真实工作台验证分支增量、main-only Specs/原型和无操作后台更新，无未解决阻塞。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-12T17:15:00.775Z",
+      "summary": "Agent 自验收通过：无变化分支无文档树扫描、相同 refs 不新建快照；增删/强推/默认来源及旧缓存兼容正确，Specs/当前原型仅保护主分支；真实服务自动接收新提交，后台失败/隐藏/撤权路径有验证。",
+      "source": "用户要求完成增量缓存、后台自动刷新及 Specs/原型保护主分支收敛后部署复测；按 small 自验收直接归档规则。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-12T17:15:53.814Z",
+      "summary": "同步项目知识工作台、Spec 阅读及原型浏览三份 Specs：分支增量缓存、可见页面自动刷新与失败恢复、Specs/当前原型固定默认保护分支及引用边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-12T17:15:53.877Z",
+      "summary": "Agent 完成 small 自验收，147 项单元/集成及相关浏览器验证通过，开发机服务已更新，同一真实工作台验证增量缓存与后台自动读取新推送，Specs 已同步，完整材料归档。",
+      "path": "docs/project/archive/2026-10-13-incremental-workspace-refresh"
+    }
+  },
+  "dependsOn": [
+    "faster-workspace-reads"
+  ]
+}

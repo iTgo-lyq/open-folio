@@ -16,7 +16,7 @@ workflow 的可选 openfolioUrl 保存 OpenFolio 服务 HTTP/HTTPS 地址，null
 
 工作台目录与公开版本准备从已推送默认分支的最新成功快照读取 workflow.json 的开关与包配置，不随 Specs 分支、产物提交或旧索引快照切换。历史来源只提供当时的原型记录、清单和产物，不读取或兼容历史 workflow 字段。当前配置无效或停用时拒绝新的准备；按当前字段、包路径无法读取历史清单或产物时明确失败，不回退旧配置或替换为新产物。已准备的公开版本独立于此开关继续可读。
 
-包内 prototype.json 是当前总览唯一清单，schemaVersion 为 1，entries 按稳定 id 声明 title、可选 description、sourcePath、kind、适配和可选 artifact。源码路径位于原型包内，id 在项目内唯一。页面声明 pc-web/ipad/mobile 中非空、去重的设备集合；组件在设备集合和 1–4096 CSS px 的整数 viewport 中二选一。无 artifact 表示尚未交付，不从 Change 历史推算当前版本。
+包内 prototype.json 是当前总览唯一清单，只读取已登记为守护分支的实际默认分支，其他分支不扫描当前清单。清单保存在持久快照中；默认分支提交及读取规则未变化时复用有效清单，页面后台发现新快照后自动更新总览。schemaVersion 为 1，entries 按稳定 id 声明 title、可选 description、sourcePath、kind、适配和可选 artifact。源码路径位于原型包内，id 在项目内唯一。页面声明 pc-web/ipad/mobile 中非空、去重的设备集合；组件在设备集合和 1–4096 CSS px 的整数 viewport 中二选一。无 artifact 表示尚未交付，不从 Change 历史推算当前版本。
 
 Git 保存源码和描述，普通 dist 默认忽略。删除默认分支清单项即从总览移除，不删除历史交付和已公开版本；开发分支或仅上传未登记的产物不改变总览。源码、主题变化不强制重发参考原型。
 
