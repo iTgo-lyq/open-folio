@@ -141,4 +141,4 @@ npm run test:e2e
 npm run format:check
 ```
 
-浏览器测试在 10682，使用两个独立用户、虚构 Provider 与真实受控 HTTPS Git 远端，不依赖真实 token，也不在生产代码开放测试开关。测试 file transport 仅能由内部测试工厂注入。截图输出到忽略目录 `artifacts/`。默认构建 `.next`，浏览器 `.next-e2e`；保留运行中生产服务时才用 `.next-verify` 验证并在结束后清理。
+浏览器测试在 10682，使用两个独立用户、虚构 Provider 与真实受控 HTTPS Git 远端，不依赖真实 token，也不在生产代码开放测试开关。测试 file transport 仅能由内部测试工厂注入。截图输出到忽略目录 `artifacts/`。生产与验证构建统一使用 `.next`，浏览器测试使用 `.next-e2e`，不新建其他 `.next-*` 目录。开发机允许短暂停机；构建 `.next` 前先停止使用该目录的服务，构建成功后再启动并验证，同目录的生产构建须串行。
