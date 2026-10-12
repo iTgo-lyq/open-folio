@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "periodic-repository-permissions",
+  "title": "按周期复用仓库权限检查",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/periodic-repository-permissions",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "共享短期权限检查、按错误复验并部署同工作台验证",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "dependsOn": [
+    "faster-unchanged-refresh"
+  ]
+}
