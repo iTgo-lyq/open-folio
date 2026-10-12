@@ -7,7 +7,7 @@ test("deployment limits and upload discovery stay separate from personal connect
   expect((await request.get("/api/config")).status()).toBe(401);
   expect((await request.get("/api/prototype-hosting")).status()).toBe(401);
   await page.goto("/?m=connections");
-  await expect(page.getByRole("heading", { name: "我的连接" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "当前凭据" })).toBeVisible();
   await expect(page.getByRole("button", { name: "添加项目" })).toHaveCount(0);
   const ops = await browser.newContext();
   try {

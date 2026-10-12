@@ -77,7 +77,11 @@ export async function sessionResponse(
           ...(discoveryError ? { discoveryError } : {}),
         },
         201,
-        cookieHeader(request, connected.cookie, connected.session.expiresAt),
+        cookieHeader(
+          request,
+          connected.cookie,
+          connected.session.absoluteExpiresAt,
+        ),
       );
     }
     if (request.method === "DELETE") {
@@ -98,18 +102,8 @@ export async function sessionResponse(
     }
     if (request.method !== "GET")
       throw new AppError("METHOD_NOT_ALLOWED", "不支持此操作。", 405);
-    const { renewed, replacementCookie, ...session } = await store.get(cookie);
-    return personalJson(
-      { ...session, providers: store.registry.describe() },
-      200,
-      replacementCookie
-        ? cookieHeader(request, replacementCookie, session.expiresAt)
-        : cookie && !session.connected && !session.legacyChoices?.length
-          ? cookieHeader(request, "")
-          : renewed
-            ? cookieHeader(request, cookie, session.expiresAt)
-            : undefined,
-    );
+    const { renewed: _renewed, ...session } = await store.get(cookie);
+    return personalJson({ ...session, providers: store.registry.describe() });
   } catch (e) {
     return personalError(e);
   }
@@ -141,7 +135,11 @@ export async function restoreSessionResponse(
     return personalJson(
       { session: restored.session, connection: restored.connection },
       200,
-      cookieHeader(request, restored.cookie, restored.session.expiresAt),
+      cookieHeader(
+        request,
+        restored.cookie,
+        restored.session.absoluteExpiresAt,
+      ),
     );
   } catch (e) {
     return personalError(e);

@@ -76,3 +76,16 @@ test("same-token devices appear together and one can revoke another", async ({
     await second.close();
   }
 });
+
+test("successful explicit copy writes the current token to the clipboard", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/?m=connections");
+  await page.getByRole("button", { name: "复制 token", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("token 已复制");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "token-a",
+  );
+});

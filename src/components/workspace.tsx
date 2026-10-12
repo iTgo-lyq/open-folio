@@ -50,15 +50,12 @@ function Shell() {
     focusedPreview = module === "prototypes" && !!q.prototype;
   const titles: Record<string, string> = {
     home: "我的仓库",
-    connections: "我的连接",
+    connections: "当前凭据",
     specs: "Specs",
     changes: "Changes",
     prototypes: "原型",
   };
   useEffect(() => {
-    try {
-      setCollapsed(localStorage.getItem("openfolio.rail") === "closed");
-    } catch {}
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -68,13 +65,21 @@ function Shell() {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
-  const toggle = () =>
-    setCollapsed((v) => {
-      try {
-        localStorage.setItem("openfolio.rail", v ? "open" : "closed");
-      } catch {}
-      return !v;
-    });
+  useEffect(() => {
+    setCollapsed(
+      personal.session?.workspace?.preferences.railCollapsed ?? false,
+    );
+  }, [
+    personal.session?.workspace?.id,
+    personal.session?.workspace?.preferences.railCollapsed,
+  ]);
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    void personal
+      .updatePreferences({ railCollapsed: next })
+      .catch((e) => notice(e.message));
+  };
   const go = (m: string) =>
     nav({
       m,
@@ -130,8 +135,8 @@ function Shell() {
           {navigation}
           <button
             className="rail-footer"
-            title="我的连接"
-            aria-label="我的连接"
+            title="当前凭据"
+            aria-label="当前凭据"
             onClick={() => go("connections")}
           >
             <KeyRound size={17} />
@@ -186,7 +191,7 @@ function Shell() {
           <div className="header-actions">
             <button
               className="icon-button settings-mobile-trigger"
-              aria-label="我的连接"
+              aria-label="当前凭据"
               onClick={() => go("connections")}
             >
               <KeyRound size={18} />
@@ -281,7 +286,7 @@ function Shell() {
               重试
             </Button>
             <Button variant="text" onClick={() => go("connections")}>
-              管理连接
+              当前凭据
             </Button>
           </ErrorNotice>
         )}

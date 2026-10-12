@@ -38,9 +38,9 @@ POST /api/session 承载登录与切换；GET /api/session 返回 `{ connected, 
 
 ### 会话有效期与撤销
 
-Cookie 延续 openfolio-session、Path=/、HttpOnly、SameSite=Lax、HTTPS 下 Secure。默认 30 天未活动过期、90 天绝对有效期；已认证请求更新活动记录，以一天为写入与 Set-Cookie 节流间隔，续期不轮换其他设备 Cookie。绝对期限到达后要求重新提供 token。客户端定时发现请求也属于已认证活动，绝对期限保证不会无限延长。
+Cookie 延续 openfolio-session、Path=/、HttpOnly、SameSite=Lax、HTTPS 下 Secure。默认 30 天未活动过期、90 天绝对有效期；已认证请求更新活动记录，每天至多写一次。Cookie 初次签发即覆盖 90 天绝对期限，服务端独立校验并续期 30 天闲置期限；普通读取不写或清 Cookie，避免晚到响应覆盖成功切换后的新 Cookie。登录、恢复和退出操作才变更 Cookie，不轮换其他设备 Cookie。绝对期限到达后要求重新提供 token。客户端定时发现请求也属于已认证活动，绝对期限保证不会无限延长。
 
-GET /api/session 返回当前工作台摘要及有效期；会话过期时清 Cookie，不删除工作台。DELETE /api/session 只撤销当前设备。POST /api/session/logout-all 撤销该工作台所有会话。GET /api/session/devices 与 DELETE /api/session/devices/:id 仅列出或撤销当前工作台的设备；列表不返回 Cookie、摘要或详细网络指纹。
+GET /api/session 返回当前工作台摘要及有效期；过期 Cookie 只返回未登录摘要，不写清除响应，不删除工作台；主动退出时清 Cookie。DELETE /api/session 只撤销当前设备。POST /api/session/logout-all 撤销该工作台所有会话。GET /api/session/devices 与 DELETE /api/session/devices/:id 仅列出或撤销当前工作台的设备；列表不返回 Cookie、摘要或详细网络指纹。
 
 所有设备写操作复用现有 HTTPS 与同源校验。设备注销前先原子持久化撤销，随后中止该设备的读取请求；长操作 assertCurrent 同时检查设备会话、workspaceId 和工作台凭据，不能因为工作台仍存在就交付已撤销设备的响应。
 
@@ -70,7 +70,7 @@ ReadContext 包含 deviceSessionId、workspaceId、工作台连接摘要和 Prov
 
 先完成并验证所有新文件，再原子发布 state.json，作为启用新 schema 的完成标记。中断可按映射幂等继续，已发布时不重新生成 workspaceId；原 personal-v1、repositories-v1、discovery-v1 保持受控备份，不在升级时删除。实施验证包括密钥缺失、中间失败、重复运行及错误归并负例。
 
-单连接旧 Cookie 可兑换为对应新设备会话。多连接旧 Cookie 进入一次性的凭据选择页，摘要只包含原会话已拥有的连接；选择后用对应 token 重新验证，兑换为一个工作台会话并使旧选择凭证失效。其他工作台保留，之后用其 token 登录恢复；新设备输入某一个 token 不能看到旧会话其他 token 的选择列表。
+单连接旧 Cookie 的摘要触发前端自动 POST 兑换为对应新设备会话；GET 只展示原归属选择，不修改 Cookie。多连接旧 Cookie 进入一次性的凭据选择页，摘要只包含原会话已拥有的连接；选择后用对应 token 重新验证，兑换为一个工作台会话并使旧选择凭证失效。其他工作台保留，之后用其 token 登录恢复；新设备输入某一个 token 不能看到旧会话其他 token 的选择列表。
 
 POST /api/session/restore 只接受 legacyChoices 中的旧 connectionId，复核有效旧 Cookie、来源映射和当前 token 后完成兑换；不能凭 connectionId 单独登录。选择摘要请求不会解密后返回 token，移除旧选择凭证和签发新设备会话属于同一次提交。
 

@@ -8,7 +8,6 @@ import {
   GitBranch,
   Github,
   KeyRound,
-  Plus,
   Search,
   X,
 } from "lucide-react";
@@ -42,23 +41,12 @@ import type {
 import type { DiscoveredRepository } from "@/server/discovery";
 import { ErrorNotice } from "./document";
 export function ConnectionPicker() {
-  const { session, connection, selectConnection } = usePersonal();
-  return (
-    <select
-      aria-label="当前连接"
-      value={connection?.id ?? ""}
-      onChange={(e) => selectConnection(e.target.value)}
-    >
-      <option value="" disabled>
-        选择自己的连接
-      </option>
-      {session?.connections.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.label} · @{c.identity.login}
-        </option>
-      ))}
-    </select>
-  );
+  const { connection } = usePersonal();
+  return connection ? (
+    <span className="personal-current-account">
+      @{connection.identity.login} · {connection.label}
+    </span>
+  ) : null;
 }
 export function PersonalHome() {
   const p = usePersonal(),
@@ -101,6 +89,9 @@ export function PersonalHome() {
       >
         {!p.session.connected ? (
           <div className="personal-welcome-inner">
+            {!!p.session.legacyChoices?.length && (
+              <LegacyRestore choices={p.session.legacyChoices} />
+            )}
             <div className="personal-welcome-mark">
               <img src="/brand/openfolio-mark.png" alt="" />
               OpenFolio
@@ -108,7 +99,7 @@ export function PersonalHome() {
             <h1>
               你的工程工作台，
               <br />
-              从连接 GitHub 开始。
+              从登录自己的工作台开始。
             </h1>
             <p>
               自动发现你有权读取、已接入 SpecTrail 的仓库。Specs、Changes
@@ -116,10 +107,10 @@ export function PersonalHome() {
             </p>
             <Button variant="primary" onClick={() => setConnect(true)}>
               <Github data-icon="inline-start" />
-              连接 GitHub
+              登录工作台
             </Button>
             <div className="personal-welcome-route">
-              <span>连接账号</span>
+              <span>登录工作台</span>
               <ChevronRight size={14} />
               <span>发现仓库</span>
               <ChevronRight size={14} />
@@ -138,13 +129,13 @@ export function PersonalHome() {
                 <p>把正在参与的工程，放回清晰的上下文。</p>
               </div>
               <Button onClick={() => nav({ m: "connections" })}>
-                <Plus data-icon="inline-start" />
-                管理连接
+                <KeyRound data-icon="inline-start" />
+                当前凭据
               </Button>
             </div>
             <div className="personal-connection-context">
               <ConnectionPicker />
-              <span className="muted">使用所选连接的读取权限</span>
+              <span className="muted">使用当前 token 的读取权限</span>
             </div>
             {(failure || p.directoryError) && (
               <ErrorNotice>
@@ -156,7 +147,7 @@ export function PersonalHome() {
                   variant="text"
                   onClick={() => nav({ m: "connections" })}
                 >
-                  更新连接
+                  切换凭据
                 </Button>
               </ErrorNotice>
             )}
@@ -308,8 +299,8 @@ export function PersonalHome() {
                   <CardTitle>协作从仓库开始</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  分享工程记录给协作者，对方用自己的 GitHub
-                  连接打开，阅读权限随仓库保持一致。
+                  分享工程记录给协作者，对方用自己的 token
+                  登录后打开，阅读权限随仓库保持一致。
                 </CardContent>
               </Card>
               <Card>
@@ -317,7 +308,7 @@ export function PersonalHome() {
                   <CardTitle>原型可以直接分享</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  准备好的固定版本拥有公开链接，查看原型无需连接 GitHub。
+                  准备好的固定版本拥有公开链接，查看原型无需登录。
                 </CardContent>
               </Card>
             </div>
@@ -329,15 +320,66 @@ export function PersonalHome() {
     </>
   );
 }
+function LegacyRestore({ choices }: { choices: ConnectionSummary[] }) {
+  const p = usePersonal();
+  const [busy, setBusy] = useState(""),
+    [error, setError] = useState("");
+  const restore = async (id: string) => {
+    setBusy(id);
+    setError("");
+    try {
+      await api("/api/session/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId: id }),
+      });
+      await p.reloadSession();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  };
+  useEffect(() => {
+    if (choices.length === 1) void restore(choices[0].id);
+  }, [choices.length, choices[0]?.id]);
+  return (
+    <div className="personal-notice">
+      <h2>恢复原工作台</h2>
+      <p>
+        选择旧会话中自己的凭据。恢复时重新验证权限，之后每次登录只进入当前 token
+        的工作台。
+      </p>
+      {choices.map((c) => (
+        <Button key={c.id} disabled={!!busy} onClick={() => void restore(c.id)}>
+          恢复 {c.label} · @{c.identity.login}
+        </Button>
+      ))}
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
 export function Connections() {
   const p = usePersonal();
   const [login, setLogin] = useState(false);
   if (p.connection)
     return (
-      <CredentialDetails key={p.connection.id} connection={p.connection} />
+      <CredentialDetails
+        key={`${p.connection.id}:${p.session?.deviceSessionId ?? ""}:${p.epoch}`}
+        connection={p.connection}
+      />
     );
   return (
     <section className="personal-connections">
+      {!!p.session?.legacyChoices?.length && (
+        <LegacyRestore choices={p.session.legacyChoices} />
+      )}
+      {p.sessionError && (
+        <ErrorNotice>
+          {p.sessionError}
+          <Button onClick={() => void p.reloadSession()}>重试</Button>
+        </ErrorNotice>
+      )}
       <EmptyState title="登录自己的工作台">
         <p>使用 Git 用户名与 token，在多台设备恢复同一工作台。</p>
         <Button onClick={() => setLogin(true)}>登录工作台</Button>
@@ -356,6 +398,7 @@ function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
   const controller = useRef<AbortController | null>(null);
+  const copyTrigger = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const c = new AbortController();
     controller.current = c;
@@ -455,7 +498,13 @@ function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
         </CardContent>
         <CardFooter className="personal-connection-actions">
           <Button onClick={() => nav({ m: "home" })}>查看仓库</Button>
-          <Button disabled={!!busy} onClick={() => void copy()}>
+          <Button
+            disabled={!!busy}
+            onClick={(e) => {
+              copyTrigger.current = e.currentTarget;
+              void copy();
+            }}
+          >
             <Copy data-icon="inline-start" />
             {busy === "copy" ? "正在复制…" : "复制 token"}
           </Button>
@@ -508,7 +557,11 @@ function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
         />
       )}
       {manual && (
-        <PersonalDialog title="手动复制 token" onClose={() => setManual("")}>
+        <PersonalDialog
+          title="手动复制 token"
+          focusTarget={copyTrigger.current}
+          onClose={() => setManual("")}
+        >
           <p className="muted">剪贴板不可用，请选中并复制。关闭后清除显示。</p>
           <Field>
             <FieldLabel htmlFor="manual-token">当前 token</FieldLabel>
@@ -532,15 +585,18 @@ function PersonalDialog({
   title,
   children,
   onClose,
+  focusTarget,
 }: {
   title: string;
+  focusTarget?: HTMLElement | null;
   children: React.ReactNode;
   onClose: () => void;
 }) {
   const trigger = useRef<HTMLElement | null>(
-    typeof document !== "undefined"
-      ? (document.activeElement as HTMLElement)
-      : null,
+    focusTarget ??
+      (typeof document !== "undefined"
+        ? (document.activeElement as HTMLElement)
+        : null),
   );
   return (
     <Dialog.Root
@@ -640,7 +696,9 @@ export function ConnectDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="connection-label">连接名称（可选）</FieldLabel>
+            <FieldLabel htmlFor="connection-label">
+              工作台名称（可选）
+            </FieldLabel>
             <Input
               id="connection-label"
               value={label}
@@ -698,7 +756,7 @@ export function ConnectDialog({
             loading={busy}
             disabled={!token.trim()}
           >
-            {connection ? "替换 token" : "连接并发现仓库"}
+            {connection ? "切换并恢复" : "登录并发现仓库"}
           </Button>
         </div>
       </form>

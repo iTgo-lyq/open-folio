@@ -1,4 +1,5 @@
 "use client";
+import { usePersonal } from "./personal-context";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -41,7 +42,7 @@ export default function Specs() {
     [closed, setClosed] = useState<string[]>([]);
   const specs = data?.specs ?? [],
     selected = q.s ? specs.find((s) => s.id === q.s) : specs[0];
-  const storageKey = `openfolio.tree.${projectId}.${data?.selectedBranch}`;
+  const storageKey = `openfolio.tree.${usePersonal().connection?.id ?? ""}.${projectId}.${data?.selectedBranch}`;
   useEffect(() => {
     try {
       setClosed(JSON.parse(localStorage.getItem(storageKey) ?? "[]"));

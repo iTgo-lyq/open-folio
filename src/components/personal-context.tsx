@@ -5,10 +5,12 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
 } from "react";
 import type {
   SessionSummary,
   ConnectionSummary,
+  WorkspacePreferences,
 } from "@/server/personal-sessions";
 import type { ConnectionDescriptor } from "@/server/providers/types";
 import type { DiscoveredRepository } from "@/server/discovery";
@@ -21,7 +23,7 @@ type PersonalValue = {
   session: PersonalSession | null;
   sessionError: string;
   connection: ConnectionSummary | undefined;
-  selectConnection: (id: string) => void;
+  updatePreferences: (patch: WorkspacePreferences) => Promise<void>;
   reloadSession: (select?: string) => Promise<void>;
   items: DiscoveredRepository[];
   discovery: DiscoverySummary | null;
@@ -39,7 +41,6 @@ export const usePersonal = () => useContext(Personal)!;
 export function PersonalProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<PersonalSession | null>(null),
     [sessionError, setSessionError] = useState(""),
-    [selected, setSelected] = useState(""),
     [epoch, setEpoch] = useState(0),
     [items, setItems] = useState<DiscoveredRepository[]>([]),
     [discovery, setDiscovery] = useState<DiscoverySummary | null>(null),
@@ -49,37 +50,91 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     [more, setMore] = useState<number | null>(null),
     [version, setVersion] = useState(0),
     [cursor, setCursor] = useState(0);
-  const connection = session?.connections.find((c) => c.id === selected);
-  const reloadSession = useCallback(async (select?: string) => {
-    setEpoch((v) => v + 1);
-    setItems([]);
-    setSessionError("");
+  const snapshot = useRef<PersonalSession | null>(null),
+    sequence = useRef(0);
+  const connection: ConnectionSummary | undefined = session?.workspace
+    ? {
+        id: session.workspace.id,
+        identity: session.workspace.identity,
+        label: session.workspace.label,
+        revision: 1,
+      }
+    : undefined;
+  const recover = useCallback(async (explicit = false) => {
+    const version = ++sequence.current;
+    if (explicit) {
+      snapshot.current = null;
+      setEpoch((v) => v + 1);
+      setItems([]);
+      setSession(null);
+    }
     try {
       const next = await api<PersonalSession>("/api/session");
+      if (version !== sequence.current) return;
+      if (
+        snapshot.current?.deviceSessionId !== next.deviceSessionId ||
+        snapshot.current?.workspace?.id !== next.workspace?.id
+      ) {
+        setEpoch((v) => v + 1);
+        setItems([]);
+      }
+      snapshot.current = next;
       setSession(next);
-      setSelected((current) =>
-        select && next.connections.some((c) => c.id === select)
-          ? select
-          : next.connections.some((c) => c.id === current)
-            ? current
-            : next.connections.length === 1
-              ? next.connections[0].id
-              : "",
-      );
+      setSessionError("");
     } catch (e) {
+      if (version !== sequence.current) return;
+      snapshot.current = null;
       setSession(null);
+      setItems([]);
+      setEpoch((v) => v + 1);
       setSessionError((e as Error).message);
     }
   }, []);
+  const reloadSession = useCallback(
+    async (_select?: string) => recover(true),
+    [recover],
+  );
   useEffect(() => {
-    void reloadSession();
-  }, [reloadSession]);
-  const selectConnection = useCallback((id: string) => {
-    setEpoch((v) => v + 1);
-    setItems([]);
-    setSelected(id);
-    setCursor(0);
-    setMore(null);
+    void recover();
+    const check = () => {
+      if (document.visibilityState === "visible") void recover();
+    };
+    const timer = setInterval(check, 30_000);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      sequence.current++;
+      clearInterval(timer);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [recover]);
+  const updatePreferences = useCallback(async (patch: WorkspacePreferences) => {
+    const current = snapshot.current?.workspace,
+      version = sequence.current;
+    if (!current) return;
+    await api("/api/session/preferences", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-OpenFolio-Workspace": current.id,
+      },
+      body: JSON.stringify(patch),
+    });
+    if (
+      sequence.current === version &&
+      snapshot.current?.workspace?.id === current.id
+    ) {
+      const next = {
+        ...snapshot.current,
+        workspace: {
+          ...snapshot.current.workspace,
+          preferences: { ...snapshot.current.workspace.preferences, ...patch },
+        },
+      };
+      snapshot.current = next;
+      setSession(next);
+    }
   }, []);
   const reloadDirectory = useCallback(() => {
     setCursor(0);
@@ -169,7 +224,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
         session,
         sessionError,
         connection,
-        selectConnection,
+        updatePreferences,
         reloadSession,
         items,
         discovery,

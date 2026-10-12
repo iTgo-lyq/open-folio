@@ -28,10 +28,11 @@ test("engineering share links use each collaborator's connection and restore the
       other.getByRole("heading", { name: /你的工程工作台/ }),
     ).toBeVisible();
     await other
-      .getByRole("button", { name: "连接 GitHub", exact: true })
+      .getByRole("button", { name: "登录工作台", exact: true })
       .click();
+    await other.getByLabel("Git 用户名", { exact: true }).fill("collaborator");
     await other.getByLabel("GitHub token", { exact: true }).fill("token-b");
-    await other.getByRole("button", { name: "连接并发现仓库" }).click();
+    await other.getByRole("button", { name: "登录并发现仓库" }).click();
     await expect(
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toBeVisible();
@@ -43,7 +44,7 @@ test("engineering share links use each collaborator's connection and restore the
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toHaveCount(0);
     await expect(
-      other.getByRole("button", { name: "管理连接", exact: true }),
+      other.getByRole("button", { name: "当前凭据", exact: true }),
     ).toBeVisible();
   } finally {
     await collaborator.close();

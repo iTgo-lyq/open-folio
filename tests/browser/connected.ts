@@ -37,7 +37,7 @@ export const test = base.extend<{
   personal: [
     async ({ context }, use) => {
       await context.request.post("/_fixture/control", {
-        data: { reset: true },
+        data: { reset: true, newSessionScope: true },
       });
       await use(await connectRequest(context.request));
     },

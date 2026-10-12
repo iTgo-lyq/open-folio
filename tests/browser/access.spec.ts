@@ -4,7 +4,9 @@ test("legacy invites and administrator sessions cannot grant repository reads", 
   page,
   request,
 }) => {
-  await request.post("/_fixture/control", { data: { reset: true } });
+  await request.post("/_fixture/control", {
+    data: { reset: true, newSessionScope: true },
+  });
   const invite = await request.post("/api/access", {
     data: { project: "fixture", secret: "fixture-invitation" },
   });
@@ -42,7 +44,7 @@ test("legacy invites and administrator sessions cannot grant repository reads", 
   expect(await denied.text()).not.toContain("acme");
   await page.goto("/?project=fixture&m=specs#invite=fixture-invitation");
   await expect(
-    page.getByRole("button", { name: "连接 GitHub", exact: true }),
+    page.getByRole("button", { name: "登录工作台", exact: true }),
   ).toBeVisible();
   await expect.poll(() => new URL(page.url()).hash).toBe("");
   await expect(page.getByRole("button", { name: "保存配置" })).toHaveCount(0);
@@ -51,7 +53,9 @@ test("a legacy deep link recovers through the reader's own connection without im
   page,
   context,
 }) => {
-  await context.request.post("/_fixture/control", { data: { reset: true } });
+  await context.request.post("/_fixture/control", {
+    data: { reset: true, newSessionScope: true },
+  });
   await connectRequest(context.request);
   await page.goto(
     "/?project=fixture&m=specs&s=platform%2Faccess#invite=fixture-invitation",

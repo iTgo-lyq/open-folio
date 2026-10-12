@@ -50,7 +50,9 @@
     },
     "T5": {
       "title": "贯通登录、切换与跨设备阅读恢复",
-      "status": "todo"
+      "status": "done",
+      "verification": "140 项单元／集成、67 个浏览器场景、类型／格式及生产构建通过；独立评审两项 P2 已修并复验，覆盖跨设备恢复、旧 Cookie、偏好并发和延迟响应。",
+      "commitTitle": "token-workspaces T5: restore workspace reading and isolate stale responses"
     }
   },
   "closure": {},

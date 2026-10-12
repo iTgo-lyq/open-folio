@@ -96,7 +96,7 @@ test("public assets survive removing the publisher connection and never prepare 
   personal,
 }) => {
   const meta = await prepare(request, personal);
-  await request.delete(`/api/connections/${personal.id}`, {
+  await request.delete("/api/session", {
     headers: { origin: "http://127.0.0.1:10682" },
   });
   const before = await (await request.get("/_fixture/info")).json();

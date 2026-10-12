@@ -421,3 +421,70 @@ test("trusted provider instances isolate identical tokens", async () => {
     await f.cleanup();
   }
 });
+
+test("daily renewal and invalid old GET responses cannot overwrite a switched Cookie", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  let now = Date.now();
+  const store = new PersonalSessions(
+    join(f.root, "cookie-race"),
+    f.registry,
+    join(f.root, "race-key"),
+    () => now,
+  );
+  const a = await store.login(
+    "",
+    "sample",
+    "first",
+    "reader",
+    undefined,
+    signal(),
+  );
+  const initial = await sessionResponse(
+    req("POST", "", {
+      providerId: "sample",
+      username: "reader",
+      token: "first",
+    }),
+    store,
+  );
+  const maxAge = Number(
+    initial.headers.get("set-cookie")!.match(/Max-Age=(\d+)/)![1],
+  );
+  assert.ok(maxAge > 89 * 24 * 60 * 60);
+  now += 2 * 24 * 60 * 60 * 1000;
+  const get = store.get.bind(store);
+  let captured!: () => void, release!: () => void;
+  const blocked = new Promise<void>((r) => {
+    captured = r;
+  });
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
+  store.get = async (cookie) => {
+    const result = await get(cookie);
+    captured();
+    await gate;
+    return result;
+  };
+  const old = sessionResponse(req("GET", a.cookie), store);
+  await blocked;
+  const b = await store.login(
+    a.cookie,
+    "sample",
+    "second",
+    "reader",
+    undefined,
+    signal(),
+  );
+  release();
+  assert.equal((await old).headers.get("set-cookie"), null);
+  store.get = get;
+  assert.equal(
+    (await sessionResponse(req("GET", a.cookie), store)).headers.get(
+      "set-cookie",
+    ),
+    null,
+  );
+  assert.equal((await store.get(b.cookie)).connected, true);
+});

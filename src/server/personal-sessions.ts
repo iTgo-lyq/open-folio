@@ -121,12 +121,13 @@ export type ConnectionSummary = Pick<
 > & { revision: number };
 export interface SessionSummary {
   connected: boolean;
+  deviceSessionId?: string;
   expiresAt?: number;
+  absoluteExpiresAt?: number;
   workspace?: WorkspaceSummary;
   connections: ConnectionSummary[];
   renewed?: boolean;
   legacyChoices?: ConnectionSummary[];
-  replacementCookie?: string;
 }
 export interface ConnectionLease {
   sessionId: string;
@@ -165,7 +166,9 @@ const summary = (
   s && w
     ? {
         connected: true,
+        deviceSessionId: s.id,
         expiresAt: s.expiresAt,
+        absoluteExpiresAt: s.absoluteExpiresAt,
         workspace: workspaceSummary(w),
         connections: [connectionSummary(w)],
         ...(renewed ? { renewed: true } : {}),
@@ -474,14 +477,6 @@ export class PersonalSessions {
       decryptWorkspace(w, (await this.keys(false)).credential);
       return summary(s, w, await this.touch(state, s));
     });
-    if (result.legacyChoices?.length === 1) {
-      const restored = await this.restore(
-        cookie,
-        result.legacyChoices[0].id,
-        AbortSignal.timeout(20_000),
-      );
-      return { ...restored.session, replacementCookie: restored.cookie };
-    }
     return result;
   }
   async login(
@@ -814,6 +809,42 @@ export class PersonalSessions {
   workspaceLease(cookie: string, id: string) {
     return this.lease(cookie, id, undefined, true);
   }
+  async updatePreferences(
+    cookie: string,
+    input: unknown,
+    expectedWorkspaceId?: string,
+  ) {
+    const parsed = preferencesSchema.safeParse(input);
+    if (!parsed.success)
+      throw new AppError("INVALID_PARAMETER", "工作台偏好不合法。", 400);
+    return this.lock(async () => {
+      const state = await this.load();
+      await this.prune(state);
+      const current = this.find(state, cookie),
+        workspace = state.workspaces.find((w) => w.id === current?.workspaceId);
+      if (!current || !workspace) throw denied();
+      if (expectedWorkspaceId && workspace.id !== expectedWorkspaceId)
+        throw new AppError(
+          "WORKSPACE_CHANGED",
+          "凭据已切换，请在当前工作台重试。",
+          409,
+        );
+      const repository = parsed.data.repository;
+      if (
+        repository &&
+        (repository.providerId !== workspace.providerId ||
+          repository.instanceId !== workspace.instanceId)
+      )
+        throw new AppError(
+          "INVALID_PARAMETER",
+          "最近仓库必须属于当前平台实例。",
+          400,
+        );
+      workspace.preferences = { ...workspace.preferences, ...parsed.data };
+      await this.save(state);
+      return workspace.preferences;
+    });
+  }
   async devices(cookie: string) {
     return this.lock(async () => {
       const state = await this.load();
@@ -829,6 +860,7 @@ export class PersonalSessions {
           createdAt: s.createdAt,
           lastSeenAt: s.lastSeenAt,
           expiresAt: s.expiresAt,
+          absoluteExpiresAt: s.absoluteExpiresAt,
         }));
     });
   }

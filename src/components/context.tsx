@@ -90,6 +90,66 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("popstate", read);
     return () => window.removeEventListener("popstate", read);
   }, []);
+  const restored = useRef("");
+  useEffect(() => {
+    const workspace = personal.session?.workspace;
+    if (!ready || !workspace || restored.current === workspace.id) return;
+    restored.current = workspace.id;
+    const before = window.location.search,
+      preferences = workspace.preferences;
+    if (before || !preferences.repository) return;
+    let stopped = false;
+    const r = preferences.repository;
+    void crypto.subtle
+      .digest(
+        "SHA-256",
+        new TextEncoder().encode(
+          JSON.stringify([r.providerId, r.instanceId, r.repositoryId]),
+        ),
+      )
+      .then((bytes) => {
+        if (stopped || window.location.search !== before) return;
+        const key = Array.from(new Uint8Array(bytes), (b) =>
+          b.toString(16).padStart(2, "0"),
+        ).join("");
+        nav(
+          {
+            repo: key,
+            provider: r.providerId,
+            instance: r.instanceId,
+            repositoryId: r.repositoryId,
+            fullName: r.fullName,
+            m: preferences.module ?? "specs",
+          },
+          true,
+        );
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [ready, personal.session?.workspace?.id, nav]);
+  const savedPosition = useRef("");
+  useEffect(() => {
+    const r = data?.repository;
+    if (!r || !["specs", "changes", "prototypes"].includes(q.m)) return;
+    const signature = JSON.stringify([connection?.id, r.repositoryId, q.m]);
+    if (savedPosition.current === signature) return;
+    savedPosition.current = signature;
+    void personal
+      .updatePreferences({
+        repository: {
+          providerId: r.providerId,
+          instanceId: r.instanceId,
+          repositoryId: r.repositoryId,
+          fullName: r.fullName,
+        },
+        module: q.m as "specs" | "changes" | "prototypes",
+      })
+      .catch((e) => {
+        savedPosition.current = "";
+        setMessage(e.message);
+      });
+  }, [data?.repository, q.m, connection?.id, personal.updatePreferences]);
   const [legacyError, setLegacyError] = useState("");
   useEffect(() => {
     setLegacyError("");
@@ -171,7 +231,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const clear = () => {
       setLoaded(null);
-      setError("读取权限暂时无法确认，请重试或更新连接。");
+      setError("读取权限暂时无法确认，请重试或切换凭据。");
     };
     window.addEventListener("openfolio-read-denied", clear);
     return () => window.removeEventListener("openfolio-read-denied", clear);
@@ -342,7 +402,8 @@ export function useDocument(id: string | undefined) {
     loading,
   };
 }
-export function useSavedScroll(key: string, anchor?: string) {
+export function useSavedScroll(pageKey: string, anchor?: string) {
+  const key = `${usePersonal().connection?.id ?? ""}.${pageKey}`;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;

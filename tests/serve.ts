@@ -1,12 +1,18 @@
+import { randomBytes, randomUUID } from "node:crypto";
 import { connect } from "node:net";
 import { spawn } from "node:child_process";
 import { createServer, request as proxyRequest } from "node:http";
-import { writeFile, mkdir, readFile } from "node:fs/promises";
+import { writeFile, mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { seed } from "./seed.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { hostedServer } from "./hosted-server.ts";
-import { PersonalSessions } from "../src/server/personal-sessions.ts";
+import {
+  PersonalSessions,
+  workspaceStateSchema,
+  atomicPrivate,
+  cookieHash,
+} from "../src/server/personal-sessions.ts";
 import { ProviderRegistry } from "../src/server/providers/registry.ts";
 import {
   ProviderError,
@@ -38,6 +44,7 @@ import {
   tokenResponse,
   devicesResponse,
 } from "../src/server/credential-api.ts";
+import { preferencesResponse } from "../src/server/preferences-api.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 const f = await seed(),
   git = await gitHttpsFixture(f),
@@ -159,11 +166,31 @@ const server = createServer(async (req, res) => {
       s = url.pathname.split("/").filter(Boolean);
     let response: Response | undefined;
     if (s[0] === "_fixture") {
+      if (s[1] === "legacy") {
+        const statePath = join(root, "sessions", "state.json"),
+          state = workspaceStateSchema.parse(
+            JSON.parse(await readFile(statePath, "utf8")),
+          );
+        const cookie = randomBytes(32).toString("base64url");
+        state.legacySelections.push({
+          cookieHash: cookieHash(cookie),
+          sessionId: randomUUID(),
+          expiresAt: Date.now() + 60_000,
+          choices: state.workspaces.map((w) => ({
+            connectionId: randomUUID(),
+            workspaceId: w.id,
+          })),
+        });
+        await atomicPrivate(statePath, JSON.stringify(state));
+        response = Response.json({ cookie });
+      }
       if (s[1] === "control") {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const input = JSON.parse(Buffer.concat(chunks).toString());
         if (input.reset) {
+          if (input.newSessionScope)
+            await rm(join(root, "sessions", "state.json"), { force: true });
           valid.add("token-a");
           valid.add("token-b");
           git.allowed.add("reader:token-a");
@@ -177,7 +204,7 @@ const server = createServer(async (req, res) => {
         if (input.gitRevoke) git.allowed.delete(`reader:${input.gitRevoke}`);
         if (input.unavailable !== undefined) unavailable = input.unavailable;
       }
-      response = Response.json({
+      response ??= Response.json({
         key,
         repository,
         attempts: git.attempts.length,
@@ -202,15 +229,21 @@ const server = createServer(async (req, res) => {
       });
       if (s[1] === "session")
         response =
-          s[2] === "token"
-            ? await tokenResponse(request, sessions)
-            : s[2] === "devices"
-              ? await devicesResponse(request, s[3], sessions)
-              : s[2] === "logout-all"
-                ? await logoutAllResponse(request, sessions)
-                : s[2] === "restore"
-                  ? await restoreSessionResponse(request, sessions, discoveries)
-                  : await sessionResponse(request, sessions, discoveries);
+          s[2] === "preferences"
+            ? await preferencesResponse(request, sessions)
+            : s[2] === "token"
+              ? await tokenResponse(request, sessions)
+              : s[2] === "devices"
+                ? await devicesResponse(request, s[3], sessions)
+                : s[2] === "logout-all"
+                  ? await logoutAllResponse(request, sessions)
+                  : s[2] === "restore"
+                    ? await restoreSessionResponse(
+                        request,
+                        sessions,
+                        discoveries,
+                      )
+                    : await sessionResponse(request, sessions, discoveries);
       else if (s[1] === "connections")
         response =
           s.length === 2

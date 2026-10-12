@@ -230,15 +230,24 @@ test("migration groups exact tokens, chooses latest complete cache and preserves
 test("one old connection automatically restores its device; multi-choice restore is owned, revalidated and one-use", async () => {
   const t = await setup([["first"], ["first", "third"]]);
   try {
-    const response = await sessionResponse(
+    const listing = await sessionResponse(
       request(t.entries[0].cookie),
+      t.store,
+    );
+    const choices = await listing.json();
+    assert.equal(listing.headers.get("set-cookie"), null);
+    assert.equal(choices.connected, false);
+    assert.equal(choices.legacyChoices.length, 1);
+    const response = await restoreSessionResponse(
+      request(t.entries[0].cookie, {
+        connectionId: choices.legacyChoices[0].id,
+      }),
       t.store,
     );
     assert.equal(response.status, 200);
     const body = await response.json(),
       cookie = response.headers.get("set-cookie")!.split(";")[0].split("=")[1];
-    assert.equal(body.connected, true);
-    assert.ok(!JSON.stringify(body).includes("replacementCookie"));
+    assert.equal(body.session.connected, true);
     assert.notEqual(cookie, t.entries[0].cookie);
     const lease = await t.store.lease(
       cookie,
@@ -247,9 +256,9 @@ test("one old connection automatically restores its device; multi-choice restore
     lease.release();
     assert.equal((await t.store.get(t.entries[0].cookie)).connected, false);
     const legacyCookie = t.entries[1].cookie,
-      choices = await t.store.get(legacyCookie);
-    assert.equal(choices.legacyChoices?.length, 2);
-    const id = choices.legacyChoices![0].id;
+      multiChoices = await t.store.get(legacyCookie);
+    assert.equal(multiChoices.legacyChoices?.length, 2);
+    const id = multiChoices.legacyChoices![0].id;
     assert.equal(
       (
         await restoreSessionResponse(

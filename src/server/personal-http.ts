@@ -85,13 +85,8 @@ export async function renewPersonalResponse(
   const current = await store.get(cookie);
   if (response.ok && !current.connected)
     throw new AppError("SESSION_REQUIRED", "设备会话已失效，请重新登录。", 401);
-  if (current.renewed)
-    response.headers.set(
-      "Set-Cookie",
-      cookieHeader(request, cookie, current.expiresAt),
-    );
-  else if (cookie && !current.connected)
-    response.headers.set("Set-Cookie", cookieHeader(request, ""));
+  // The browser Cookie lives until the absolute deadline. Idle renewal stays
+  // server-side so a delayed read cannot overwrite a newer login Cookie.
   return response;
 }
 export async function readPersonalBody(request: Request) {
