@@ -23,7 +23,10 @@ export interface ReadContext {
   project: ProjectConfig;
   store: SnapshotStore;
   assertRead(): Promise<void>;
-  refresh(limits: Limits): ReturnType<SnapshotStore["refresh"]>;
+  refresh(
+    limits: Limits,
+    automatic?: boolean,
+  ): ReturnType<SnapshotStore["refresh"]>;
 }
 type ReaderFactory = (directory: string, transport: GitTransport) => GitReader;
 const state = globalThis as typeof globalThis & {
@@ -134,7 +137,7 @@ export class Repositories {
         project,
         store,
         assertRead,
-        refresh: async (limits) => {
+        refresh: async (limits, automatic = false) => {
           const locks = (state.folioRefreshes ??= new Map());
           const path = store.directory(project);
           // A credential-owned job survives an individual device logout. Each
@@ -150,6 +153,7 @@ export class Repositories {
                 await owner.assertCurrent();
                 const shared = await makeStore(owner);
                 return await shared.refresh(project, limits, {
+                  automatic,
                   signal: owner.context.signal,
                   beforePublish: () => assertPermission(owner),
                 });

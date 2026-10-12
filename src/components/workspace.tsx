@@ -238,28 +238,7 @@ function Shell() {
             <div className="row">
               <GitBranch size={14} />
               {module === "specs" ? (
-                <select
-                  aria-label="Specs 来源分支"
-                  value={data?.selectedBranch ?? q.branch ?? ""}
-                  onChange={(e) =>
-                    nav({
-                      branch: e.target.value || null,
-                      s: null,
-                      anchor: null,
-                      doc: null,
-                    })
-                  }
-                >
-                  <option value="">选择来源分支</option>
-                  {data?.branches.map((b) => (
-                    <option key={b.name} value={b.name}>
-                      {b.name}
-                      {data.protectedBranches.includes(b.name)
-                        ? " · 守护分支"
-                        : ""}
-                    </option>
-                  ))}
-                </select>
+                <span>{data?.selectedBranch ?? "默认分支"} · 守护分支</span>
               ) : (
                 <span>
                   {module === "prototypes"

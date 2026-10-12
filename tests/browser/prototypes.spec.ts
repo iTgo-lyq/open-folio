@@ -217,7 +217,10 @@ test("focused viewer keeps directory, viewport controls and history in the workb
     .selectOption("specs");
   await expect(
     page.getByRole("combobox", { name: "Specs 来源分支" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(page.locator(".workspace-source")).toContainText(
+    "main · 守护分支",
+  );
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
 });
 

@@ -51,6 +51,7 @@ export const DEFAULT_LIMITS: Limits = {
   previewTotalBytes: 100 * 1024 * 1024,
   previewEntries: 2000,
 };
+export const AUTO_REFRESH_MS = 60_000;
 export type AppConfig = {
   schemaVersion: 2;
   limits?: Partial<Limits>;
@@ -187,6 +188,7 @@ export type CurrentPrototypeEntry = PreviewEntry & {
   description?: string;
 };
 export type CurrentPrototype = {
+  manifestBytes?: number;
   configuration?: PrototypeConfig;
   revision: string | null;
   packagePath?: string;
@@ -196,6 +198,7 @@ export type CurrentPrototype = {
 };
 export type Snapshot = {
   cacheSchemaVersion: 3;
+  scanFingerprint?: string;
   currentPrototype: CurrentPrototype;
   archiveRefs: { id: string; commit: string }[];
   archivePins: Record<string, string>;

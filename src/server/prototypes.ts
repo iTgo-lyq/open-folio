@@ -52,6 +52,7 @@ export async function readCurrentPrototype(
         message:
           "该版本在默认分支当前配置的原型包路径下尚未登记 prototype.json。",
       };
+    base.manifestBytes = entries.find((f) => f.path === path)?.bytes;
     const manifest = JSON.parse(
       await body(
         reader,
@@ -152,7 +153,7 @@ export async function resolveCurrentPreview(
   const target = revision ?? current.revision;
   if (!main || !target) return fail("项目没有默认分支，无法读取当前页面。");
   const signal = AbortSignal.timeout(limits.refreshMs);
-  if (!(await reader.ancestor(target, main, signal)))
+  if (target !== main && !(await reader.ancestor(target, main, signal)))
     return fail("该版本不在默认分支的已推送历史中。");
   current =
     target === main

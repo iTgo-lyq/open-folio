@@ -9,7 +9,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { primaryRecord } from "../lib/model.ts";
+import { AUTO_REFRESH_MS, primaryRecord } from "../lib/model.ts";
 import type {
   Limits,
   ProjectConfig,
@@ -18,7 +18,7 @@ import type {
   Workbench,
   SearchResult,
 } from "../lib/model.ts";
-import { GitReader, hash } from "./git.ts";
+import { GitReader, hash, scanFingerprint } from "./git.ts";
 import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
@@ -30,6 +30,11 @@ import {
 } from "./prototypes.ts";
 
 const snapshotPattern = /^[a-f0-9-]{36}$/;
+type RefreshContext = {
+  signal: AbortSignal;
+  beforePublish: () => Promise<void>;
+  automatic?: boolean;
+};
 const alive = (pid: number) => {
   try {
     process.kill(pid, 0);
@@ -136,6 +141,7 @@ export class SnapshotStore {
         throw new Error();
       if (Number(s.cacheSchemaVersion) === 2) {
         s.cacheSchemaVersion = 3;
+        delete s.scanFingerprint;
         s.currentPrototype = {
           revision: null,
           entries: [],
@@ -181,10 +187,7 @@ export class SnapshotStore {
   refresh(
     p: ProjectConfig,
     limits: Limits,
-    context?: {
-      signal: AbortSignal;
-      beforePublish: () => Promise<void>;
-    },
+    context?: RefreshContext,
   ): Promise<Snapshot> {
     const key = this.directory(p),
       existing = this.pending.get(key);
@@ -198,14 +201,24 @@ export class SnapshotStore {
   private async collect(
     p: ProjectConfig,
     limits: Limits,
-    context?: {
-      signal: AbortSignal;
-      beforePublish: () => Promise<void>;
-    },
+    context?: RefreshContext,
   ) {
     const dir = this.directory(p);
     try {
       await this.acquire();
+      const previous = await this.snapshot(p).catch(() => undefined);
+      const checked = await readFile(join(dir, "last-checked.json"), "utf8")
+        .then((body) => JSON.parse(body) as { snapshotId: string; at: number })
+        .catch(() => undefined);
+      if (
+        context?.automatic &&
+        previous &&
+        previous.scanFingerprint === scanFingerprint(limits) &&
+        checked?.snapshotId === previous.id &&
+        Date.now() - checked.at >= 0 &&
+        Date.now() - checked.at < AUTO_REFRESH_MS
+      )
+        return previous;
       await mkdir(join(dir, "snapshots"), { recursive: true, mode: 0o700 });
       await mkdir(join(dir, "blobs"), { recursive: true, mode: 0o700 });
       const signal = AbortSignal.any([
@@ -213,25 +226,72 @@ export class SnapshotStore {
         ...(context ? [context.signal] : []),
       ]);
       const reader = this.readerFactory(join(dir, "git"), p);
-      const data = await reader.collect(limits, signal);
+      const persisted = new Set<string>();
+      const data = await reader.collect(
+        limits,
+        signal,
+        previous
+          ? {
+              snapshot: previous,
+              readBlob: async (blob) => {
+                const body = await readFile(join(dir, "blobs", blob));
+                persisted.add(blob);
+                return body;
+              },
+            }
+          : undefined,
+      );
+      const markChecked = (id: string) =>
+        atomic(
+          join(dir, "last-checked.json"),
+          JSON.stringify({ snapshotId: id, at: Date.now() }),
+        );
+      if (data.unchanged && previous) {
+        await context?.beforePublish();
+        signal.throwIfAborted();
+        await markChecked(previous.id);
+        await unlink(join(dir, "last-error.json")).catch(() => {});
+        return previous;
+      }
+      const base = indexBase(data, p);
+      const main = data.branches.find(
+        (b) => b.name === data.defaultBranch,
+      )?.commit;
+      const prototypeLimits = {
+        ...limits,
+        totalBytes: Math.max(
+          0,
+          limits.totalBytes -
+            [...data.blobs.values()].reduce((sum, b) => sum + b.length, 0),
+        ),
+      };
       const s: Snapshot = {
         cacheSchemaVersion: 3,
-        currentPrototype: await readCurrentPrototype(
-          reader,
-          data.branches.find((b) => b.name === data.defaultBranch)?.commit,
-          {
-            ...limits,
-            totalBytes: Math.max(
-              0,
-              limits.totalBytes -
-                [...data.blobs.values()].reduce((sum, b) => sum + b.length, 0),
-            ),
-          },
-          signal,
-        ),
+        scanFingerprint: scanFingerprint(limits),
+        currentPrototype:
+          previous?.scanFingerprint === scanFingerprint(limits) &&
+          previous.defaultBranch === data.defaultBranch &&
+          previous.currentPrototype.revision === main &&
+          !previous.currentPrototype.message &&
+          (previous.currentPrototype.manifestBytes ?? 0) <=
+            prototypeLimits.totalBytes
+            ? previous.currentPrototype
+            : !base.specBranch
+              ? {
+                  revision: main ?? null,
+                  entries: [],
+                  issues: [],
+                  message: "默认分支未登记为有效守护分支，无法读取当前页面。",
+                }
+              : await readCurrentPrototype(
+                  reader,
+                  main,
+                  prototypeLimits,
+                  signal,
+                ),
         archiveRefs: data.archiveRefs,
         archivePins: {
-          ...(await this.snapshot(p).catch(() => null))?.archivePins,
+          ...previous?.archivePins,
         },
         prototype: prototypePolicy(data, p),
         id: randomUUID(),
@@ -242,20 +302,21 @@ export class SnapshotStore {
         branches: data.branches,
         documents: data.documents,
         changes: await indexChanges(data, reader, signal),
-        ...indexBase(data, p),
+        ...base,
       };
       for (const ref of s.archiveRefs)
         if (!Object.hasOwn(s.archivePins, `spec-trail/archive-v2/${ref.id}`))
           s.archivePins[`spec-trail/archive-v2/${ref.id}`] = ref.commit;
       for (const [blob, body] of data.blobs) {
         signal.throwIfAborted();
-        await atomic(join(dir, "blobs", blob), body);
+        if (!persisted.has(blob)) await atomic(join(dir, "blobs", blob), body);
       }
       signal.throwIfAborted();
       await context?.beforePublish();
       signal.throwIfAborted();
       await atomic(join(dir, "snapshots", `${s.id}.json`), JSON.stringify(s));
       await atomic(join(dir, "current"), s.id);
+      await markChecked(s.id).catch(() => {});
       await unlink(join(dir, "last-error.json")).catch(() => {});
       // Cleanup must never turn a published refresh into a reported failure.
       await this.prune(dir, s.id).catch(() => {});
@@ -302,16 +363,13 @@ export class SnapshotStore {
   async workbench(
     p: ProjectConfig,
     id?: string,
-    branch?: string,
+    _branch?: string,
   ): Promise<Workbench> {
     const s = await this.snapshot(p, id),
-      selectedBranch = branch ?? s.specBranch;
-    if (selectedBranch && !s.branches.some((b) => b.name === selectedBranch))
-      throw new AppError(
-        "BRANCH_NOT_FOUND",
-        "该分支不在当前已推送记录中。",
-        404,
-      );
+      selectedBranch =
+        s.defaultBranch && s.protectedBranches.includes(s.defaultBranch)
+          ? s.defaultBranch
+          : null;
     return {
       ...s,
       specs: s.specs.filter((v) => v.branch === selectedBranch),

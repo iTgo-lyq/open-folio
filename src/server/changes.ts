@@ -248,7 +248,7 @@ export async function indexChanges(
       for (const { path, line } of paths)
         if (
           data.documents.some(
-            (ref) => ref.branch === d.branch && ref.path === path,
+            (ref) => ref.branch === data.defaultBranch && ref.path === path,
           ) &&
           /^docs\/project\/specs\/.+\/spec.md$/.test(path)
         ) {

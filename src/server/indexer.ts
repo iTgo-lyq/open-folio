@@ -26,7 +26,7 @@ export function indexBase(data: Collected, project: ProjectConfig) {
       severity: "warning",
     });
   }
-  const requested = project.specBranch ?? data.defaultBranch;
+  const requested = data.defaultBranch;
   const specBranch =
     requested &&
     protectedBranches.includes(requested) &&
@@ -36,7 +36,7 @@ export function indexBase(data: Collected, project: ProjectConfig) {
   if (!specBranch)
     diagnostics.push({
       code: "SPEC_BASELINE_UNKNOWN",
-      message: "未找到已登记的默认守护分支，请显式选择阅读来源。",
+      message: "默认分支未登记为守护分支，请修复 workflow.json 后重新读取。",
       severity: "warning",
     });
   const specs = data.documents.flatMap((d: DocumentRef) => {
@@ -44,7 +44,7 @@ export function indexBase(data: Collected, project: ProjectConfig) {
       /^docs\/project\/specs\/([a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)\/spec\.md$/.exec(
         d.path,
       );
-    return m
+    return m && d.branch === specBranch
       ? [{ id: m[1], title: d.title, branch: d.branch, documentId: d.id }]
       : [];
   });

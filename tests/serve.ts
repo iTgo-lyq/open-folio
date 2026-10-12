@@ -155,6 +155,7 @@ const discoveries = new Discovery(join(root, "discoveries"), sessions),
   repos = new Repositories(join(root, "repos"), sessions, discoveries),
   publications = new PublicPreviews(join(root, "public-previews"));
 const key = repositoryKey(repository);
+const originalMain = f.git(["rev-parse", "main"]);
 await mkdir("artifacts", { recursive: true });
 await writeFile(
   "artifacts/e2e-runtime.json",
@@ -203,6 +204,28 @@ const server = createServer(async (req, res) => {
         }
         if (input.gitRevoke) git.allowed.delete(`reader:${input.gitRevoke}`);
         if (input.unavailable !== undefined) unavailable = input.unavailable;
+        if (input.advanceMain) {
+          f.git(["checkout", "main"]);
+          await f.put(
+            "docs/project/specs/platform/spec.md",
+            "# 自动更新后的能力\n\n远端新增正文。",
+          );
+          const path = "packages/prototype/prototype.json";
+          const manifest = JSON.parse(f.git(["show", `main:${path}`]));
+          manifest.entries[0].title = "自动更新后的原型";
+          await f.put(path, JSON.stringify(manifest));
+          f.commit();
+        }
+        if (input.restoreMain) {
+          f.git(["checkout", "main"]);
+          f.git(["reset", "--hard", originalMain]);
+          f.git(["push", "--force", "origin", "main"]);
+        }
+        if (input.expireRefresh)
+          await rm(
+            join(root, "repos", input.expireRefresh, key, "last-checked.json"),
+            { force: true },
+          );
       }
       response ??= Response.json({
         key,

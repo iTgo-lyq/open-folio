@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
+import { AUTO_REFRESH_MS } from "@/lib/model";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
@@ -230,7 +231,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   );
   useEffect(() => {
     const clear = () => {
+      active.current?.abort();
+      generation.current++;
       setLoaded(null);
+      setLoading(false);
+      setRefreshing(false);
       setError("读取权限暂时无法确认，请重试或切换凭据。");
     };
     window.addEventListener("openfolio-read-denied", clear);
@@ -296,6 +301,59 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       generation.current++;
     };
   }, [scope, ready, readUrl, q.branch, q.m, retry, nav]);
+  const hasData = !!data;
+  useEffect(() => {
+    if (!data || loading || refreshing) return;
+    const c = new AbortController(),
+      version = generation.current;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let running = false,
+      snapshotId = data.id;
+    const check = async () => {
+      if (running || c.signal.aborted || document.visibilityState !== "visible")
+        return;
+      running = true;
+      clearTimeout(timer);
+      try {
+        const result = await api<{ snapshotId: string }>(
+          readUrl("refresh?automatic=1"),
+          {
+            method: "POST",
+            signal: c.signal,
+            background: true,
+          },
+        );
+        if (result.snapshotId !== snapshotId) {
+          const next = await api<Workbench>(readUrl("workbench"), {
+            signal: c.signal,
+            background: true,
+          });
+          if (!c.signal.aborted && version === generation.current) {
+            snapshotId = next.id;
+            setLoaded({ key: scope, value: next });
+          }
+        }
+        if (!c.signal.aborted && version === generation.current) setError("");
+      } catch (e) {
+        if (!c.signal.aborted && version === generation.current)
+          setError(`自动更新失败：${(e as Error).message}`);
+      } finally {
+        running = false;
+        if (!c.signal.aborted)
+          timer = setTimeout(() => void check(), AUTO_REFRESH_MS);
+      }
+    };
+    void check();
+    const resume = () => void check();
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      c.abort();
+      clearTimeout(timer);
+      window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
+  }, [hasData, scope, loading, refreshing, readUrl, q.m]);
   const refresh = useCallback(async () => {
     if (!projectId || !connection || refreshing) return;
     const version = ++generation.current;
@@ -309,7 +367,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setRetry((v) => v + 1);
     } catch (e) {
       if (!c.signal.aborted && version === generation.current) {
-        setLoaded(null);
         setError((e as Error).message);
       }
     } finally {

@@ -13,11 +13,14 @@ import { tmpdir } from "node:os";
 import type { GitTransport } from "./providers/types.ts";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import type { Branch, DocumentRef, Limits } from "../lib/model.ts";
+import type { Branch, DocumentRef, Limits, Snapshot } from "../lib/model.ts";
 import { inspectMarkdown } from "../lib/markdown.ts";
 import { AppError } from "./errors.ts";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
+// Bump the version when scanning or indexing semantics change.
+export const scanFingerprint = (limits: Limits) =>
+  hash(JSON.stringify([1, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -210,7 +213,13 @@ export class GitReader {
       await this.run(["ls-remote", "--symref", this.url, "HEAD"], signal)
     ).toString();
   }
-  async collect(limits: Limits, signal: AbortSignal) {
+  async collect(
+    limits: Limits,
+    signal: AbortSignal,
+    cache?: { snapshot: Snapshot; readBlob: (blob: string) => Promise<Buffer> },
+  ) {
+    if (cache?.snapshot.scanFingerprint !== scanFingerprint(limits))
+      cache = undefined;
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
     try {
       await access(join(this.directory, "HEAD"));
@@ -300,7 +309,70 @@ export class GitReader {
         archiveId: r.id,
       })),
     ];
+    const previous = cache?.snapshot;
+    if (
+      previous &&
+      previous.defaultBranch === defaultBranch &&
+      JSON.stringify(previous.branches) === JSON.stringify(branches) &&
+      JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs)
+    )
+      return {
+        defaultBranch,
+        branches,
+        archiveRefs,
+        documents: previous.documents,
+        blobs,
+        unchanged: true,
+      };
     for (const branch of sources) {
+      const prior = branch.archiveId
+        ? previous?.archiveRefs.find((r) => r.id === branch.archiveId)
+        : previous?.branches.find((b) => b.name === branch.name);
+      if (
+        cache &&
+        prior?.commit === branch.commit &&
+        (branch.name === defaultBranch) ===
+          (branch.name === previous!.defaultBranch)
+      ) {
+        for (const doc of previous!.documents.filter(
+          (d) => d.branch === branch.name,
+        )) {
+          signal.throwIfAborted();
+          if (documents.length >= limits.documents)
+            throw new AppError(
+              "SOURCE_LIMIT",
+              "文档条目超过配置限制，已保留上次快照。",
+            );
+          documents.push(doc);
+          if (
+            doc.kind === "unsupported" ||
+            doc.diagnostics.some((d) =>
+              ["FILE_MODE", "FILE_SIZE"].includes(d.code),
+            ) ||
+            blobs.has(doc.blob)
+          )
+            continue;
+          total += doc.bytes;
+          if (total > limits.totalBytes)
+            throw new AppError(
+              "SOURCE_LIMIT",
+              "正文总量超过配置限制，已保留上次快照。",
+            );
+          blobs.set(
+            doc.blob,
+            await cache
+              .readBlob(doc.blob)
+              .catch(() =>
+                this.run(
+                  ["cat-file", "blob", doc.blob],
+                  signal,
+                  doc.bytes + 1024,
+                ),
+              ),
+          );
+        }
+        continue;
+      }
       const raw = (
         await this.run(
           [
@@ -309,7 +381,11 @@ export class GitReader {
             "--full-tree",
             branch.commit,
             "--",
-            "docs/project/",
+            ...(branch.archiveId
+              ? ["docs/project/archive/"]
+              : branch.name === defaultBranch
+                ? ["docs/project/"]
+                : ["docs/project/changes/", "docs/project/archive/"]),
           ],
           signal,
         )

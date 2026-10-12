@@ -32,6 +32,7 @@ export function prototypePolicy(
     const workflow = workflowSchema.parse(
       JSON.parse(data.blobs.get(doc.blob)!.toString()),
     );
+    if (!branch || !workflow.protectedBranches.includes(branch)) throw Error();
     const status = workflow.prototype?.status ?? "unconfigured";
     return {
       ...base,

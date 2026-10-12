@@ -75,8 +75,9 @@ export function Markdown({
     const target = data?.documents.find(
       (d) =>
         d.path === link.path &&
-        d.branch === document.branch &&
-        d.commit === document.commit,
+        (link.path.startsWith("docs/project/specs/")
+          ? d.branch === data?.selectedBranch
+          : d.branch === document.branch && d.commit === document.commit),
     );
     if (!target) {
       notice(`当前提交中找不到 ${link.path}`);

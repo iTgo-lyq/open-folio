@@ -68,6 +68,7 @@ export async function repositoryResponse(
           }
           const snap = await ctx.refresh(
             limits ?? limitsFor(await readConfig()),
+            q.get("automatic") === "1",
           );
           return personalJson({
             snapshotId: snap.id,
