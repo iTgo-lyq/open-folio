@@ -76,15 +76,22 @@ Specs、Changes、原型目录／详情和截图统一使用当前连接的授�
 
 验证：完整 `npm test` 119 项通过，`npm run test:e2e` 54 项通过，`npm run typecheck` 与 `npm run format:check` 通过。`OPENFOLIO_BUILD_DIR=.next-verify npm run build` 通过，运行中 `.next` 未覆盖；临时目录及新增类型引用已清理。独立评审者复验发现／公开产物 13 项通过，报告无剩余阻塞项。最终别名兼容修正另运行公开预览／分享浏览器回归，5 项通过。截图保存在 artifacts/personal-home-desktop.png、personal-home-320.png、specs-desktop.png、collaborator-reading.png 与 public-preview-mobile.png，已实际查看桌面与窄屏；UI 包源码未变化。
 
+## T11 修复运行实例的反向代理同源校验
+
+更新既有生产预览后，实际 HTTP 请求发现 Next.js 的 Request URL 使用内部监听地址，合法外部 Origin 因此被误判为跨源。个人写接口改用实际 HTTP Host 与代理协议构造外部来源；不采纳任意 X-Forwarded-Host，继续拒绝跨源、缺失来源证明、非法 Host 和远程明文 HTTP。连接 Cookie 的 Secure 约束保留。
+
+新增内部 URL／外部 Host 的受控连接测试，验证正常请求返回 201 与 Secure Cookie，并覆盖伪造 forwarded-host、跨站标记、缺失 Origin 和远程 HTTP。定向会话／发现／仓库／公开预览 24 项测试通过；最终完整 `npm test` 120 项、类型检查和格式检查通过。停止预览进程并备份当前构建与数据后，`npm run build` 通过，以 d47dba5 的实现重启原 10680 服务。
+
+对运行中的生产服务使用 curl 发送真实 Host／Origin／X-Forwarded-Proto 请求：同源空表单返回 400 INVALID_PARAMETER，证明已进入输入校验；跨源、缺失 Origin、伪造 forwarded-host 均返回 403 ORIGIN_DENIED，远程 HTTP 返回 400 HTTPS_REQUIRED。未注入用户 token、未调用远端仓库。实际 Chromium 打开原查询参数，页面返回 200、显示个人工作台和 GitHub 连接表单、保留 project 参数与 84px 侧轨，无脚本错误；已查看更新后的运行截图。
+
 ## 整体交付证据与限制
 
 需求 1–7 由 Provider、会话、发现、受控真实 HTTPS Git 和仓库服务集成覆盖；T2／T5 已使用用户授权凭据完成真实 GitHub 身份、分页、接入识别、refs、fetch 和正文读取，未改变来源仓库、未落盘 token。需求 8–9 的双用户分享、匿名原型、玻璃导航及四种尺寸由浏览器覆盖；需求 10 的升级、重启、私有备份、旧权限失效与回退由 T9 覆盖；需求 11 的三类公开来源、匿名不触发远端、固定版本和撤回由公开产物及浏览器集成覆盖。
 
 公开版本只支持 GitHub.com；其他 Provider 只验证扩展契约。部署保持单进程单实例；密钥轮换采用停机备份并要求用户重新连接，旧私有缓存按部署文档停机清理。远端授权与 HTTP 交付无法组成跨平台事务，保证观察到撤权后的请求失败；已下载内容无法收回。外部 hosted URL 的持续可用性由其宿主管理。当前代码在 Change 分支，已更新既有 Merlin 预览服务，未合入 main；人工验收后再同步 Specs、归档。
 
-
 ## 运行实例更新验证
 
-2026-10-12 将既有 Merlin 私有链接对应的 10680 端口更新到 649d561 的实现。停止旧进程后，在私有忽略目录保存旧 `.next` 与完整运行数据备份，再构建新的 `.next`、迁移运行配置至 schemaVersion 2，并通过原 tmux 启动脚本恢复 IPv6 监听。沿用原链接及其访问范围，没有新建公开代理。
+2026-10-12 将既有 Merlin 私有链接对应的 10680 端口先更新到 649d561，再随 T11 更新到 d47dba5 的实现。每次均停止旧进程后，在私有忽略目录保存旧 `.next` 与完整运行数据备份，再构建新的 `.next`，通过原 tmux 启动脚本恢复 IPv6 监听；首次更新已将运行配置迁移至 schemaVersion 2。沿用原链接及其访问范围，没有新建公开代理。
 
 生产构建通过；IPv4／IPv6 的个人会话接口均返回 200、GitHub Provider 和未连接状态。真实浏览器使用原 project／Changes 参数打开运行实例，显示个人工作台与 GitHub 连接入口，阅读位置参数保留，页面无脚本错误。运行截图位于 artifacts/personal-workbench-live.png。代理层仍要求原有 Merlin 身份，匿名外部探测返回 401；已核对平台链接映射和本地上游。未注入用户 token，也未将旧管理员／邀请码迁入个人授权。
