@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "personal-workbench",
+  "title": "个人工作台与 SpecTrail 仓库自动发现",
+  "size": "large",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/personal-workbench",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "请确认个人工作台、三平台自动发现、用户 token 全链路鉴权、UI 重构与迁移的完整需求及验收；静态托管暂按保留现状并明确公开范围，确认后进入技术方案与原型。"
+  }
+}
