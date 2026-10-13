@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "fix-prototype-viewer",
+  "title": "修正原型目录排版与加载反馈",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/simplify-workspace-ui",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一原型目录图标与标题对齐",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "修正原型加载与应用就绪反馈",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "dependsOn": [
+    "simplify-workspace-ui"
+  ]
+}
