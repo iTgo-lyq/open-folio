@@ -211,6 +211,45 @@ function Shell() {
             )}
             {reading && !focusedPreview && (
               <>
+                <details className="header-source">
+                  <summary aria-label="查看读取状态">
+                    <GitBranch size={14} />
+                    <span className="header-source-label">
+                      {module === "changes"
+                        ? "全部分支"
+                        : (data?.selectedBranch ?? "默认分支")}
+                    </span>
+                    <span className="snapshot-time">
+                      {refreshing
+                        ? "正在读取…"
+                        : data
+                          ? new Date(data.capturedAt).toLocaleTimeString(
+                              "zh-CN",
+                              { hour12: false },
+                            )
+                          : "尚未读取"}
+                    </span>
+                  </summary>
+                  <div className="header-source-details">
+                    <strong>读取来源</strong>
+                    <span>
+                      {module === "specs"
+                        ? `${data?.selectedBranch ?? "默认分支"} · 守护分支`
+                        : module === "prototypes"
+                          ? `${data?.defaultBranch ?? "默认分支"} / 当前页面`
+                          : "全部已推送分支 / 各 Change 主来源"}
+                    </span>
+                    <span>{personal.connection?.label}</span>
+                    <span>
+                      {refreshing
+                        ? "正在读取…"
+                        : data
+                          ? `读取于 ${new Date(data.capturedAt).toLocaleString("zh-CN", { hour12: false })}`
+                          : "尚未读取"}
+                    </span>
+                  </div>
+                </details>
+                {data && module !== "specs" && <CopyPageLink />}
                 <button
                   className="search-launch"
                   onClick={() => setSearch(true)}
@@ -233,31 +272,6 @@ function Shell() {
             )}
           </div>
         </header>
-        {reading && !focusedPreview && (
-          <div className="workspace-source">
-            <div className="row">
-              <GitBranch size={14} />
-              {module === "specs" ? (
-                <span>{data?.selectedBranch ?? "默认分支"} · 守护分支</span>
-              ) : (
-                <span>
-                  {module === "prototypes"
-                    ? `${data?.defaultBranch ?? "默认分支"} / 当前页面`
-                    : "全部已推送分支 / 各 Change 主来源"}
-                </span>
-              )}
-            </div>
-            {data && module !== "specs" && <CopyPageLink />}
-            <span className="snapshot-time">
-              {personal.connection?.label} ·{" "}
-              {refreshing
-                ? "正在读取…"
-                : data
-                  ? `读取于 ${new Date(data.capturedAt).toLocaleTimeString("zh-CN", { hour12: false })}`
-                  : "尚未读取"}
-            </span>
-          </div>
-        )}
         {reading && error && (
           <ErrorNotice>
             {error}

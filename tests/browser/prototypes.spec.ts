@@ -12,7 +12,10 @@ test("navigation hints stay above the prototype gallery", async ({ page }) => {
       const box = el.getBoundingClientRect();
       const previous = el.style.pointerEvents;
       el.style.pointerEvents = "auto";
-      const top = document.elementFromPoint(box.right - 2, box.y + box.height / 2);
+      const top = document.elementFromPoint(
+        box.right - 2,
+        box.y + box.height / 2,
+      );
       el.style.pointerEvents = previous;
       return el === top;
     });
@@ -242,7 +245,7 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   await expect(
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
-  await expect(page.locator(".workspace-source")).toContainText(
+  await expect(page.locator(".header-source-details")).toContainText(
     "main · 守护分支",
   );
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);

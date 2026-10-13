@@ -470,6 +470,10 @@ input {
 .header-module {
   font-weight: 600;
 }
+.header-actions {
+  position: relative;
+  flex-shrink: 0;
+}
 .read-only {
   font-size: 10px;
   color: #8796a2;
@@ -505,28 +509,57 @@ input {
   background: #f0f5f9;
   color: #355e7f;
 }
-.workspace-source {
-  height: 39px;
-  flex-shrink: 0;
-  padding: 0 26px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.header-source {
   color: #8997a2;
   font-size: 11px;
-  border-bottom: 1px solid #eff2f4;
-  gap: 10px;
 }
-.workspace-source .row {
+.header-source summary {
+  display: flex;
+  align-items: center;
   gap: 7px;
+  min-height: 30px;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  list-style: none;
 }
-.workspace-source select {
-  font-size: 11px;
-  max-width: 320px;
+.header-source summary::-webkit-details-marker {
+  display: none;
 }
-.source-separator {
-  color: #c1cbd3;
-  padding: 0 7px;
+.header-source summary:hover,
+.header-source[open] summary {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+.header-source summary:focus-visible {
+  outline: 2px solid #749ebb;
+  outline-offset: 3px;
+}
+.header-source-label {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-source-details {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, calc(100vw - 40px));
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 8px 24px #354b6012;
+  overflow-wrap: anywhere;
+}
+.workspace-header:has(.header-source[open]) {
+  position: relative;
+  z-index: 1;
 }
 .snapshot-time {
   white-space: nowrap;
@@ -1222,6 +1255,14 @@ input {
   .header-actions {
     gap: 3px;
   }
+  .header-actions .text-button {
+    width: 30px;
+    height: 30px;
+    padding: 4px;
+  }
+  .header-actions .text-button span {
+    display: none;
+  }
   .search-launch {
     border: 0;
     padding: 5px;
@@ -1230,17 +1271,9 @@ input {
   .header-chevron {
     width: 10px;
   }
-  .workspace-source {
-    height: 37px;
-    padding: 0 14px;
-    font-size: 10px;
-  }
-  .workspace-source select {
-    max-width: 200px;
-    font-size: 10px;
-  }
+  .header-source-label,
   .snapshot-time {
-    font-size: 9px;
+    display: none;
   }
   .spec-workspace {
     display: flex;
@@ -1415,9 +1448,6 @@ input {
   }
   .header-context {
     gap: 5px;
-  }
-  .workspace-source {
-    padding: 0 10px;
   }
   .snapshot-time {
     display: none;
@@ -4431,12 +4461,6 @@ input {
   }
   .workspace-header .project-select select {
     max-width: 112px;
-  }
-  .workspace-source .snapshot-time {
-    max-width: 42%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 @media (max-width: 360px) {

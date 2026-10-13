@@ -16,7 +16,9 @@
     },
     "T2": {
       "title": "将框架第二行必要内容合并到右上角",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型检查通过；自动刷新及聚焦原型返回工作台两项浏览器回归通过。第二行已删除，完整读取来源移至页头右侧可展开状态。",
+      "commitTitle": "simplify-workspace-ui T2: consolidate workspace header"
     },
     "T3": {
       "title": "完整删除工作台及原型副本中的搜索功能",
