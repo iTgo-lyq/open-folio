@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-root-env",
+  "title": "原型发布配置统一到根目录环境文件",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/prototype-root-env",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一配置入口、迁移本机 R2 环境并验证发布加载",
+      "status": "done",
+      "verification": "原型包 13 项测试通过；三个调用目录自动加载、覆盖优先级与缺失配置失败通过；原型构建及格式检查通过；本机五项配置迁移一致、权限 600、旧文件删除且真实凭据未进入差异。",
+      "commitTitle": "prototype-root-env T1: load prototype publishing configuration from root env"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-13T03:59:50.118Z",
+      "summary": "Agent 自查通过：CLI 自动加载仅作用于入口，测试隔离真实凭据与网络；根目录定位、覆盖顺序、配置缺失、既有上传行为和截图共 13 项通过，构建与格式校验通过，本机配置迁移完整。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-13T03:59:50.190Z",
+      "summary": "Agent 自验收通过：用户要求的根目录 .env 自动加载、模板合并、旧配置清理及本机迁移均已实现验证；范围仍为一个发布工具的 small 改动，无未解决验收项。",
+      "source": "SpecTrail small 自验收规则；用户明确要求统一原型发布环境变量到根目录 .env 并自动加载。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-13T03:59:50.254Z",
+      "summary": "发布机器环境提供凭据的既有产品约束仍准确；本次仅调整工具配置文件位置与加载方式，细节已更新根目录和原型包 README。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-13T03:59:50.324Z",
+      "summary": "根目录发布配置统一已验证，Agent 自验收通过后按 small 规则归档。",
+      "path": "docs/project/archive/2026-10-13-prototype-root-env"
+    }
+  }
+}
