@@ -22,7 +22,9 @@
     },
     "T3": {
       "title": "完整删除工作台及原型副本中的搜索功能",
-      "status": "doing"
+      "status": "done",
+      "verification": "搜索全链路与当前原型副本已删除；类型/格式、154项单元测试覆盖、50项浏览器用例最终通过，原型包13项及9组沙箱交互通过。生产构建和本机真实工作台桌面/320px冒烟通过，服务运行c3fa5d5。详见execution.md。",
+      "commitTitle": "simplify-workspace-ui T3: verify search removal and deployed workspace"
     }
   },
   "closure": {}
