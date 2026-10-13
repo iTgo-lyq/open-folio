@@ -4,7 +4,7 @@
   "title": "清理历史兼容并统一当前契约",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/remove-history-compatibility",
   "confirmations": {
     "requirement": {
@@ -37,5 +37,15 @@
       "commitTitle": "remove-history-compatibility T2: record successful independent acceptance"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-13T07:46:00.873Z",
+      "summary": "146 单元、69 完整浏览器、13 原型工具及类型格式构建通过；开发机真实工作台验证通过；用户指定的 iclaude 二轮独立复验通过，首轮 R1–R5 均已解决，无阻塞项。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实施与用户指定的 iclaude 独立验收完成；medium Change 等待用户验收或明确合入授权，尚未归档。"
+  }
 }
