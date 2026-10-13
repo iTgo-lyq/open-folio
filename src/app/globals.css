@@ -3510,6 +3510,7 @@ input {
 }
 .prototype-viewer .preview-entry {
   width: 100%;
+  justify-content: flex-start;
   border: 0;
   padding: 13px 10px;
   border-radius: 7px;

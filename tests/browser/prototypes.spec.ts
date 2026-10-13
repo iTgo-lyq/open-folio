@@ -187,6 +187,22 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   await page.goto(path + "&prototype=orders&preview=orders");
   const panel = page.getByRole("region", { name: "当前页面预览" });
   await expect(panel.locator("iframe")).toHaveAttribute("width", "1440");
+  const expectAlignedDirectory = async () => {
+    const rows = await panel.locator(".preview-entry").evaluateAll((entries) =>
+      entries.map((entry) => ({
+        icon: entry.querySelector("svg")!.getBoundingClientRect().left,
+        title: entry.querySelector("span")!.getBoundingClientRect().left,
+        fits: entry.scrollWidth <= entry.clientWidth,
+      })),
+    );
+    expect(rows.length).toBeGreaterThan(1);
+    for (const row of rows) {
+      expect(Math.abs(row.icon - rows[0].icon)).toBeLessThan(1);
+      expect(Math.abs(row.title - rows[0].title)).toBeLessThan(1);
+      expect(row.fits).toBe(true);
+    }
+  };
+  await expectAlignedDirectory();
   await panel.getByRole("button", { name: "iPad", exact: true }).click();
   await expect(panel.locator("iframe")).toHaveAttribute("width", "834");
   await panel.getByRole("button", { name: "移动设备", exact: true }).click();
@@ -224,6 +240,7 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   await expect(
     page.getByRole("complementary", { name: "原型目录" }),
   ).toBeVisible();
+  await expectAlignedDirectory();
   await panel
     .getByRole("button", { name: "价格卡片 组件", exact: true })
     .click();
