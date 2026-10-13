@@ -12,8 +12,14 @@ README、当前 Specs、SpecTrail skill 和原型包说明改为当前契约。I
 
 ## T2 开发机验证与 iclaude 独立验收
 
-最终相关浏览器回归 23 项通过（Specs、自动刷新、Change 原型和原型总览）。`service:update` 生产构建成功并运行在 10680，代码来源为 9984dd3；构建时唯一未提交跟踪差异为本 Change 的 T2 doing 状态，因此构建元数据如实标为 dirty。
+iclaude 第一轮发现两项当前能力测试被一并删除，以及若干文档/样式残留。补回晚到偏好响应的 switch/logout 浏览器测试，新增独立原型撤回 HTTP 鉴权测试，完成文案、无引用样式、目录参数和空目录清理；问题与复验结论见 review.md。
 
-停机时仅整理当前状态中的废弃字段；保留 1 个工作台和 1 个设备会话。状态 schema 校验通过，工作台/设备 UUID 和两个密钥摘要在验证前后一致。最小状态临时备份留在受限临时目录，完成全部验收后清理。
+最终验证：单元测试 146 项通过，类型检查及格式检查通过；在已提交、干净的 064c755 上启动完整浏览器回归，69 项全部通过（无重试）。原型工具测试 13 项通过。`service:update` 生产构建成功，服务运行在 10680，commit 为 064c755、dirty=false，buildId 为 rOgIPFWc_HrxYKtpDwR_c。
 
-真实工作台验证：token 登录、仓库发现、Specs/Changes 和正文读取成功；删除的入口普通 404；桌面 1440px 与手机 320px 的三个已发布原型、列表对齐、目录切换、加载及重新加载通过。验证设备均独立退出，原设备保持有效。证据日志：`/tmp/openfolio-cleanup-unit.log`、`/tmp/openfolio-cleanup-types.log`、`/tmp/openfolio-cleanup-e2e.log`、`/tmp/openfolio-cleanup-e2e-final.log`、`/tmp/openfolio-cleanup-prototype.log`、`/tmp/openfolio-cleanup-service.log`、`/tmp/openfolio-cleanup-smoke.log`、`/tmp/openfolio-cleanup-live.log`。
+停机时仅整理当前状态中的废弃字段；保留 1 个工作台和 1 个原设备会话。状态 schema 校验通过，工作台/设备 UUID 和两个密钥摘要在最终验证后仍一致。iclaude 复验通过后，本次最小状态临时备份及其索引已删除；没有删除其他运行数据。
+
+真实工作台验证：token 登录、仓库发现、Specs/Changes 和正文读取成功；删除的入口普通 404；桌面 1440px 与手机 320px 的三个已发布原型、列表对齐、目录切换、加载及重新加载通过。验证设备均独立退出，原设备保持有效。
+
+证据：`/tmp/openfolio-cleanup-unit.log`、`/tmp/openfolio-cleanup-types.log`、`/tmp/openfolio-cleanup-format-check.log`、`/tmp/openfolio-cleanup-e2e-release.log`、`/tmp/openfolio-cleanup-prototype.log`、`/tmp/openfolio-cleanup-service-final.log`、`/tmp/openfolio-cleanup-smoke-final.log`、`/tmp/openfolio-cleanup-live-final.log`、`/tmp/openfolio-iclaude-recheck.log`。
+
+独立复验确认 R1–R5 均解决、未引入新缺陷、无阻塞项。单元与类型测试先通过，再提交相同实现；完整浏览器及生产构建在该固定提交上执行。iclaude 仅查看代码和测试日志，真实环境操作由实施 Agent 完成，未冒称由独立评审者重做。

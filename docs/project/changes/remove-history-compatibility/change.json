@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "开发机验证与 iclaude 独立验收",
-      "status": "doing"
+      "status": "done",
+      "verification": "生产构建和真实工作台验证通过；146 单元、69 完整浏览器、13 原型工具及类型格式检查通过；iclaude 二轮复验通过，R1–R5 已解决，无阻塞项；临时备份已清理。详见 execution.md、review.md。",
+      "commitTitle": "remove-history-compatibility T2: record successful independent acceptance"
     }
   },
   "closure": {}
