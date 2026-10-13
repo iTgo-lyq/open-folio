@@ -154,7 +154,7 @@ export async function personalFixture() {
     ),
     discovery = new Discovery(join(root, "discovery"), sessions, git);
   const connect = (cookie = "", secret = "first") =>
-    sessions.connect(
+    sessions.login(
       cookie,
       "sample",
       secret,

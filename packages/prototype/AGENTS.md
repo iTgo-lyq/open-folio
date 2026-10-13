@@ -4,4 +4,4 @@
 
 token-workspaces 原型演示凭据工作台与独立设备会话，仅接受 demo / demo-other 示例 token；复制入口也只处理示例值。保留 personal-workbench 的原源码与固定引用。
 
-原型构建输出各页面对应的自包含 dist/<id>/index.html，脚本、CSS 和图片全部内联；dist 不入 Git。按 README.md 使用项目 R2 适配器发布，凭据只放发布机器。上传验证成功后登记当前清单与新 Change，才移除当前旧 Git 产物；发布前保留已有引用。历史 Change、Git 快照和标签不改写。
+原型构建输出各页面对应的自包含 dist/<id>/index.html，脚本、CSS 和图片全部内联；dist 不入 Git。按 README.md 使用项目 R2 适配器发布，凭据只放发布机器。上传验证成功后登记当前清单与 Change；发布失败保留已有引用。历史 Change、Git 快照和标签不改写。

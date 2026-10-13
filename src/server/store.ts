@@ -59,25 +59,21 @@ export class SnapshotStore {
     directory: string,
     project: ProjectConfig,
   ) => GitReader;
-  private cacheIdentity?: string;
+  private cacheIdentity: string;
   constructor(
     root: string,
-    readerFactory = (directory: string, p: ProjectConfig) =>
-      new GitReader(directory, p.repositoryUrl),
-    cacheIdentity?: string,
+    readerFactory: (directory: string, p: ProjectConfig) => GitReader,
+    cacheIdentity: string,
   ) {
     this.root = root;
     this.readerFactory = readerFactory;
     this.cacheIdentity = cacheIdentity;
   }
-  fingerprint(p: ProjectConfig) {
-    if (this.cacheIdentity)
-      return hash(JSON.stringify([2, this.cacheIdentity]));
-    return hash(JSON.stringify([1, p.repositoryUrl, p.specBranch ?? null]));
+  fingerprint() {
+    return hash(JSON.stringify([2, this.cacheIdentity]));
   }
-  directory(p: ProjectConfig) {
-    if (this.cacheIdentity) return join(this.root, this.cacheIdentity);
-    return join(this.root, `${p.id}-${this.fingerprint(p).slice(0, 16)}`);
+  directory(_p: ProjectConfig) {
+    return join(this.root, this.cacheIdentity);
   }
   private async acquire() {
     if (!this.lock)
@@ -132,27 +128,12 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        ![2, 3].includes(s.cacheSchemaVersion) ||
+        s.cacheSchemaVersion !== 3 ||
         s.id !== target ||
         s.projectId !== p.id ||
-        s.fingerprint !== this.fingerprint(p)
+        s.fingerprint !== this.fingerprint()
       )
         throw new Error();
-      if (Number(s.cacheSchemaVersion) === 2) {
-        s.cacheSchemaVersion = 3;
-        delete s.scanFingerprint;
-        s.currentPrototype = {
-          revision: null,
-          entries: [],
-          issues: [],
-          message: "请重新读取中心仓库以建立 main 当前清单。",
-        };
-        s.prototype = {
-          status: "invalid",
-          branch: "main",
-          message: "请重新读取中心仓库以载入 main 原型配置。",
-        };
-      }
       return s;
     } catch {
       throw new AppError(
@@ -293,10 +274,10 @@ export class SnapshotStore {
         archivePins: {
           ...previous?.archivePins,
         },
-        prototype: prototypePolicy(data, p),
+        prototype: prototypePolicy(data),
         id: randomUUID(),
         projectId: p.id,
-        fingerprint: this.fingerprint(p),
+        fingerprint: this.fingerprint(),
         capturedAt: new Date().toISOString(),
         defaultBranch: data.defaultBranch,
         branches: data.branches,
@@ -360,11 +341,7 @@ export class SnapshotStore {
       if (/^[a-f0-9]{40,64}$/.test(blob) && !used.has(blob))
         await unlink(join(dir, "blobs", blob));
   }
-  async workbench(
-    p: ProjectConfig,
-    id?: string,
-    _branch?: string,
-  ): Promise<Workbench> {
+  async workbench(p: ProjectConfig, id?: string): Promise<Workbench> {
     const s = await this.snapshot(p, id),
       selectedBranch =
         s.defaultBranch && s.protectedBranches.includes(s.defaultBranch)
@@ -397,7 +374,6 @@ export class SnapshotStore {
       this.readerFactory(join(this.directory(p), "git"), p),
       latest,
       source,
-      p,
       revision,
       limits,
       entry,
@@ -427,7 +403,6 @@ export class SnapshotStore {
       limits,
       entry,
       selectedOnly,
-      p,
     );
   }
   async document(p: ProjectConfig, id: string, snapshot: string) {

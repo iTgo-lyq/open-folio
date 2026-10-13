@@ -116,13 +116,12 @@ test("short reads use entry authorization; subsequent reads detect revocation an
     t.f.controls.deny.clear();
     assert.equal((await (await t.request("workbench")).json()).id, first.id);
     const lease = await t.f.sessions.lease(t.c.cookie, t.c.connection.id);
-    const replacement = await t.f.sessions.connect(
+    const replacement = await t.f.sessions.login(
       t.c.cookie,
       "sample",
       "updated",
       undefined,
       new AbortController().signal,
-      t.c.connection.id,
     );
     assert.equal(lease.context.signal.aborted, true);
     lease.release();

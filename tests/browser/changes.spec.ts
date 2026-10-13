@@ -99,7 +99,9 @@ test("dependencies, parent children, cancellation, archived evidence and invalid
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: /已取消/ }).click();
-  await page.getByRole("button", { name: /旧版导航实验.*old-layout/ }).click();
+  await page
+    .getByRole("button", { name: /导航布局实验.*layout-experiment/ })
+    .click();
   await expect(page.getByText("收敛为统一工作台")).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: /已归档/ }).click();
@@ -315,10 +317,12 @@ test("only active Changes use stage filters and the stage board", async ({
   await expect(row).toBeVisible();
 });
 
-test("legacy scopes preserve Change deep links and inactive filters normalize", async ({
+test("invalid scopes preserve Change deep links and inactive filters normalize", async ({
   page,
 }) => {
-  await page.goto(`/?${repositoryQuery}&m=changes&scope=all&c=source-connect`);
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&scope=invalid&c=source-connect`,
+  );
   await expect(page).toHaveURL(/scope=active/);
   await expect(page).toHaveURL(/c=source-connect/);
   await expect(
@@ -355,7 +359,7 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto(`/?${repositoryQuery}&m=changes&scope=cancelled`);
   const cancelled = page.getByRole("button", {
-    name: "打开 旧版导航实验",
+    name: "打开 导航布局实验",
     exact: true,
   });
   await expect(cancelled).toContainText("收敛为统一工作台");

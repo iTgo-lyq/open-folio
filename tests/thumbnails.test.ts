@@ -247,18 +247,22 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
   ]);
   let unrelatedReads = 0;
   let blobReads = 0;
-  const store = new SnapshotStore(join(f.root, "cache"), (directory) => {
-    const reader = new GitReader(directory, f.remote, "file");
-    const run = reader.run.bind(reader);
-    reader.run = (...args: Parameters<GitReader["run"]>) => {
-      if (args[0][0] === "cat-file" && args[0][1] === "blob") {
-        blobReads++;
-        if (args[0][2] === otherBlob) unrelatedReads++;
-      }
-      return run(...args);
-    };
-    return reader;
-  });
+  const store = new SnapshotStore(
+    join(f.root, "cache"),
+    (directory) => {
+      const reader = new GitReader(directory, f.remote, "file");
+      const run = reader.run.bind(reader);
+      reader.run = (...args: Parameters<GitReader["run"]>) => {
+        if (args[0][0] === "cat-file" && args[0][1] === "blob") {
+          blobReads++;
+          if (args[0][2] === otherBlob) unrelatedReads++;
+        }
+        return run(...args);
+      };
+      return reader;
+    },
+    f.project.id,
+  );
   let renders = 0;
   const cache = new ThumbnailCache(join(f.root, "thumbnails"), async () => {
     renders++;

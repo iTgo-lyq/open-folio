@@ -48,8 +48,7 @@ export async function repositoryResponse(
       key,
       async (ctx) => {
         const { store, project: p } = ctx;
-        const snapshot = q.get("snapshot") ?? undefined,
-          branch = q.get("branch") ?? undefined;
+        const snapshot = q.get("snapshot") ?? undefined;
         if (
           segments.length === 1 &&
           segments[0] === "refresh" &&
@@ -79,7 +78,7 @@ export async function repositoryResponse(
           throw new AppError("METHOD_NOT_ALLOWED", "当前接口仅支持读取。", 405);
         if (segments.length === 1 && segments[0] === "workbench")
           return personalJson({
-            ...(await store.workbench(p, snapshot, branch)),
+            ...(await store.workbench(p, snapshot)),
             repository: ctx.repository,
           });
         if (segments.length === 1 && segments[0] === "prototypes")

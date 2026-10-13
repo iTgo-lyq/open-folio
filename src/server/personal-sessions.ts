@@ -67,7 +67,6 @@ export const workspaceSchema = z
     tag: z.string(),
     preferences: preferencesSchema,
     createdAt: z.number().int().positive(),
-    legacyConnectionIds: z.array(z.string().uuid()).optional(),
   })
   .strict();
 export const deviceSchema = z
@@ -82,29 +81,11 @@ export const deviceSchema = z
     displayLabel: z.string().min(1).max(100),
   })
   .strict();
-export const legacySelectionSchema = z
-  .object({
-    cookieHash: z.string().regex(/^[a-f0-9]{64}$/),
-    sessionId: z.string().uuid(),
-    expiresAt: z.number().int().positive(),
-    choices: z
-      .array(
-        z
-          .object({
-            connectionId: z.string().uuid(),
-            workspaceId: z.string().uuid(),
-          })
-          .strict(),
-      )
-      .max(32),
-  })
-  .strict();
 export const workspaceStateSchema = z
   .object({
     schemaVersion: z.literal(2),
     workspaces: z.array(workspaceSchema).max(10000),
     sessions: z.array(deviceSchema).max(10000),
-    legacySelections: z.array(legacySelectionSchema).max(10000),
   })
   .strict();
 export type Workspace = z.infer<typeof workspaceSchema>;
@@ -127,7 +108,6 @@ export interface SessionSummary {
   workspace?: WorkspaceSummary;
   connections: ConnectionSummary[];
   renewed?: boolean;
-  legacyChoices?: ConnectionSummary[];
 }
 export interface ConnectionLease {
   sessionId: string;
@@ -341,21 +321,7 @@ export class PersonalSessions {
         raw = await readFile(join(this.root, "state.json"), "utf8");
       } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-        const { migratePersonalV1 } = await import("./workspace-migration.ts");
-        if (
-          !(await migratePersonalV1(
-            this.root,
-            this.keyPath,
-            this.identityKeyPath,
-          ))
-        )
-          return {
-            schemaVersion: 2,
-            workspaces: [],
-            sessions: [],
-            legacySelections: [],
-          };
-        raw = await readFile(join(this.root, "state.json"), "utf8");
+        return { schemaVersion: 2, workspaces: [], sessions: [] };
       }
       const state = workspaceStateSchema.parse(JSON.parse(raw));
       const ids = new Set(state.workspaces.map((w) => w.id));
@@ -374,9 +340,6 @@ export class PersonalSessions {
           (w) =>
             w.providerId !== w.identity.providerId ||
             w.instanceId !== w.identity.instanceId,
-        ) ||
-        state.legacySelections.some((s) =>
-          s.choices.some((c) => !ids.has(c.workspaceId)),
         )
       )
         throw Error();
@@ -388,7 +351,6 @@ export class PersonalSessions {
           schemaVersion: 2,
           workspaces: [],
           sessions: [],
-          legacySelections: [],
         };
       if (e instanceof AppError) throw e;
       throw new AppError(
@@ -425,13 +387,8 @@ export class PersonalSessions {
     const expired = state.sessions.filter(
       (s) => s.expiresAt <= this.now() || s.absoluteExpiresAt <= this.now(),
     );
-    const choices = state.legacySelections.filter(
-      (s) => s.expiresAt > this.now(),
-    );
-    if (!expired.length && choices.length === state.legacySelections.length)
-      return;
+    if (!expired.length) return;
     state.sessions = state.sessions.filter((s) => !expired.includes(s));
-    state.legacySelections = choices;
     await this.save(state);
     expired.forEach((s) => this.stopDevice(s));
   }
@@ -458,22 +415,7 @@ export class PersonalSessions {
       await this.prune(state);
       const s = this.find(state, cookie),
         w = state.workspaces.find((w) => w.id === s?.workspaceId);
-      if (!s || !w) {
-        const legacy = state.legacySelections.find(
-          (x) => x.cookieHash === cookieHash(cookie),
-        );
-        return legacy
-          ? {
-              ...summary(),
-              legacyChoices: legacy.choices.map((c) => ({
-                ...connectionSummary(
-                  state.workspaces.find((w) => w.id === c.workspaceId)!,
-                ),
-                id: c.connectionId,
-              })),
-            }
-          : summary();
-      }
+      if (!s || !w) return summary();
       decryptWorkspace(w, (await this.keys(false)).credential);
       return summary(s, w, await this.touch(state, s));
     });
@@ -484,30 +426,20 @@ export class PersonalSessions {
     providerId: string,
     input: string,
     username: string | undefined,
-    label: string | undefined,
     signal: AbortSignal,
     displayLabel = "浏览器",
   ) {
     const secret = new SecretHandle(input),
-      cleanName = username?.trim() || undefined,
-      cleanLabel = label?.trim(),
-      displayName = cleanLabel ?? cleanName;
+      displayName = username?.trim() || undefined;
     if (
-      cleanName !== undefined &&
-      (cleanName.length > 100 || /[\x00-\x1f\x7f]/.test(cleanName))
+      displayName !== undefined &&
+      (displayName.length > 100 || /[\x00-\x1f\x7f]/.test(displayName))
     )
       throw new AppError(
         "INVALID_USERNAME",
         "用户名最多 100 个字符，不能包含控制字符。",
         400,
       );
-    if (
-      cleanLabel !== undefined &&
-      (!cleanLabel ||
-        cleanLabel.length > 100 ||
-        /[\x00-\x1f\x7f]/.test(cleanLabel))
-    )
-      throw new AppError("INVALID_LABEL", "名称需为 1–100 个字符。", 400);
     const provider = this.registry.get(providerId),
       authenticated = await provider.authenticate(secret, signal);
     const identity = identitySchema.parse({
@@ -535,9 +467,7 @@ export class PersonalSessions {
       await this.prune(state);
       const old = this.find(state, cookie);
       const keys = await this.keys(
-        state.workspaces.length === 0 &&
-          state.sessions.length === 0 &&
-          state.legacySelections.length === 0,
+        state.workspaces.length === 0 && state.sessions.length === 0,
       );
       const fingerprint = credentialFingerprint(
         keys.identity,
@@ -597,9 +527,6 @@ export class PersonalSessions {
       };
       state.sessions = state.sessions.filter((s) => s.id !== old?.id);
       state.sessions.push(device);
-      state.legacySelections = state.legacySelections.filter(
-        (x) => x.cookieHash !== cookieHash(cookie),
-      );
       await this.save(state);
       if (old) this.stopDevice(old);
       return {
@@ -609,126 +536,13 @@ export class PersonalSessions {
       };
     });
   }
-  async restore(cookie: string, connectionId: string, signal: AbortSignal) {
-    const material = await this.lock(async () => {
-      const state = await this.load();
-      await this.prune(state);
-      const choice = state.legacySelections
-        .find((x) => x.cookieHash === cookieHash(cookie))
-        ?.choices.find((x) => x.connectionId === connectionId);
-      const workspace = state.workspaces.find(
-        (w) => w.id === choice?.workspaceId,
-      );
-      if (!choice || !workspace) throw denied();
-      return {
-        workspace,
-        secret: decryptWorkspace(
-          workspace,
-          (await this.keys(false)).credential,
-        ),
-      };
-    });
-    const provider = this.registry.get(material.workspace.providerId);
-    const authenticated = await provider.authenticate(material.secret, signal);
-    const identity = identitySchema.parse({
-      providerId: authenticated.providerId,
-      instanceId: authenticated.instanceId,
-      subjectId: authenticated.subjectId,
-      login: authenticated.login,
-      displayName: authenticated.displayName,
-    });
-    if (
-      identity.providerId !== material.workspace.providerId ||
-      identity.instanceId !== material.workspace.instanceId
-    )
-      throw new AppError("PROVIDER_MISMATCH", "旧凭据的平台实例不匹配。", 401);
-    return this.lock(async () => {
-      signal.throwIfAborted();
-      const state = await this.load();
-      await this.prune(state);
-      const selection = state.legacySelections.find(
-        (x) => x.cookieHash === cookieHash(cookie),
-      );
-      if (
-        !selection?.choices.some(
-          (x) =>
-            x.connectionId === connectionId &&
-            x.workspaceId === material.workspace.id,
-        )
-      )
-        throw denied();
-      const w = state.workspaces.find((w) => w.id === material.workspace.id)!;
-      if (w.credentialFingerprint !== material.workspace.credentialFingerprint)
-        throw denied();
-      if (
-        state.sessions.length >= 10000 ||
-        state.sessions.filter((s) => s.workspaceId === w.id).length >= 32
-      )
-        throw new AppError("SESSION_LIMIT", "请先退出不用的设备。", 409);
-      w.identity = identity;
-      w.gitUsername = authenticated.gitUsername ?? identity.login;
-      const token = randomBytes(32).toString("base64url"),
-        now = this.now();
-      const device: DeviceSession = {
-        id: randomUUID(),
-        cookieHash: cookieHash(token),
-        workspaceId: w.id,
-        createdAt: now,
-        lastSeenAt: now,
-        expiresAt: now + sessionIdleTtl,
-        absoluteExpiresAt: now + sessionAbsoluteTtl,
-        displayLabel: "升级的浏览器",
-      };
-      state.legacySelections = state.legacySelections.filter(
-        (x) => x !== selection,
-      );
-      state.sessions.push(device);
-      await this.save(state);
-      return {
-        cookie: token,
-        session: summary(device, w),
-        connection: connectionSummary(w),
-      };
-    });
-  }
-  async connect(
-    cookie: string,
-    providerId: string,
-    input: string,
-    label: string | undefined,
-    signal: AbortSignal,
-    replaceId?: string,
-  ) {
-    if (replaceId) {
-      const current = await this.get(cookie);
-      if (!current.connections.some((c) => c.id === replaceId)) throw denied();
-    }
-    return this.login(cookie, providerId, input, undefined, label, signal);
-  }
   async remove(cookie: string, id?: string, all = false) {
     return this.lock(async () => {
       const state = await this.load();
       await this.prune(state);
       const s = this.find(state, cookie),
         w = state.workspaces.find((w) => w.id === s?.workspaceId);
-      if (
-        !s &&
-        !id &&
-        !all &&
-        state.legacySelections.some((x) => x.cookieHash === cookieHash(cookie))
-      ) {
-        state.legacySelections = state.legacySelections.filter(
-          (x) => x.cookieHash !== cookieHash(cookie),
-        );
-        await this.save(state);
-        return summary();
-      }
-      if (
-        !s ||
-        !w ||
-        (id && id !== w.id && !w.legacyConnectionIds?.includes(id))
-      )
-        throw denied();
+      if (!s || !w || (id && id !== w.id)) throw denied();
       const removed = state.sessions.filter((x) =>
         all ? x.workspaceId === w.id : x.id === s.id,
       );
@@ -750,12 +564,7 @@ export class PersonalSessions {
       await this.prune(state);
       const s = this.find(state, cookie),
         w = state.workspaces.find((w) => w.id === s?.workspaceId);
-      if (
-        !s ||
-        !w ||
-        (id && id !== w.id && !w.legacyConnectionIds?.includes(id))
-      )
-        throw denied();
+      if (!s || !w || (id && id !== w.id)) throw denied();
       const secret = decryptWorkspace(w, (await this.keys(false)).credential),
         controller = new AbortController(),
         key = `${this.root}/${workspaceOwned ? w.id : s.id}`,

@@ -1,18 +1,12 @@
-import { randomBytes, randomUUID } from "node:crypto";
 import { connect } from "node:net";
 import { spawn } from "node:child_process";
 import { createServer, request as proxyRequest } from "node:http";
-import { writeFile, mkdir, readFile, rm } from "node:fs/promises";
+import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { seed } from "./seed.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { hostedServer } from "./hosted-server.ts";
-import {
-  PersonalSessions,
-  workspaceStateSchema,
-  atomicPrivate,
-  cookieHash,
-} from "../src/server/personal-sessions.ts";
+import { PersonalSessions } from "../src/server/personal-sessions.ts";
 import { ProviderRegistry } from "../src/server/providers/registry.ts";
 import {
   ProviderError,
@@ -27,14 +21,11 @@ import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
   sessionResponse,
   logoutAllResponse,
-  restoreSessionResponse,
-  connectionResponse,
 } from "../src/server/connection-api.ts";
 import {
   discoveryResponse,
   repositoryListResponse,
 } from "../src/server/discovery-api.ts";
-import { legacyResolveResponse } from "../src/server/legacy-api.ts";
 import { repositoryResponse } from "../src/server/repository-api.ts";
 import {
   preparePreviewResponse,
@@ -55,20 +46,7 @@ const root = join(f.root, "personal-data"),
 process.env.GIT_SSL_CAINFO = git.cert;
 process.env.OPENFOLIO_DATA_DIR = root;
 process.env.OPENFOLIO_CONFIG = config;
-await writeFile(
-  config,
-  JSON.stringify({
-    schemaVersion: 1,
-    projects: [
-      {
-        id: f.project.id,
-        name: f.project.name,
-        repositoryUrl: "https://github.com/acme/fixture",
-        inviteCode: "fixture-invitation",
-      },
-    ],
-  }),
-);
+await writeFile(config, JSON.stringify({ schemaVersion: 2 }));
 const repository: RepositoryIdentity = {
   providerId: "github",
   instanceId: "fixture.test",
@@ -172,24 +150,6 @@ const server = createServer(async (req, res) => {
       s = url.pathname.split("/").filter(Boolean);
     let response: Response | undefined;
     if (s[0] === "_fixture") {
-      if (s[1] === "legacy") {
-        const statePath = join(root, "sessions", "state.json"),
-          state = workspaceStateSchema.parse(
-            JSON.parse(await readFile(statePath, "utf8")),
-          );
-        const cookie = randomBytes(32).toString("base64url");
-        state.legacySelections.push({
-          cookieHash: cookieHash(cookie),
-          sessionId: randomUUID(),
-          expiresAt: Date.now() + 60_000,
-          choices: state.workspaces.map((w) => ({
-            connectionId: randomUUID(),
-            workspaceId: w.id,
-          })),
-        });
-        await atomicPrivate(statePath, JSON.stringify(state));
-        response = Response.json({ cookie });
-      }
       if (s[1] === "control") {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
@@ -242,13 +202,9 @@ const server = createServer(async (req, res) => {
       });
     } else if (
       s[0] === "api" &&
-      [
-        "session",
-        "connections",
-        "repositories",
-        "public-previews",
-        "legacy-projects",
-      ].includes(s[1])
+      ["session", "connections", "repositories", "public-previews"].includes(
+        s[1],
+      )
     ) {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
@@ -268,32 +224,19 @@ const server = createServer(async (req, res) => {
                 ? await devicesResponse(request, s[3], sessions)
                 : s[2] === "logout-all"
                   ? await logoutAllResponse(request, sessions)
-                  : s[2] === "restore"
-                    ? await restoreSessionResponse(
-                        request,
-                        sessions,
-                        discoveries,
-                      )
-                    : await sessionResponse(request, sessions, discoveries);
+                  : s.length === 2
+                    ? await sessionResponse(request, sessions, discoveries)
+                    : new Response(null, { status: 404 });
       else if (s[1] === "connections")
         response =
-          s.length === 2
-            ? await connectionResponse(
+          s[3] === "discovery" || s[3] === "repository-checks"
+            ? await discoveryResponse(
                 request,
-                undefined,
-                sessions,
+                s[2],
+                s[3] === "discovery" ? "discovery" : "check",
                 discoveries,
               )
-            : s[3] === "discovery" || s[3] === "repository-checks"
-              ? await discoveryResponse(
-                  request,
-                  s[2],
-                  s[3] === "discovery" ? "discovery" : "check",
-                  discoveries,
-                )
-              : await connectionResponse(request, s[2], sessions, discoveries);
-      else if (s[1] === "legacy-projects")
-        response = await legacyResolveResponse(request, s[2], repos, root);
+            : new Response(null, { status: 404 });
       else if (s[1] === "repositories")
         response =
           s.length === 2

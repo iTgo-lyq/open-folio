@@ -216,7 +216,7 @@ export async function seed() {
       confirmations: {},
       tasks: {},
     }),
-    make("old-layout", "旧版导航实验", {
+    make("layout-experiment", "导航布局实验", {
       status: "cancelled",
       cancellation: { at, reason: "收敛为统一工作台" },
     }),

@@ -8,13 +8,13 @@ OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块�
 
 docs/project/workflow.json 的 prototype 记录选择：缺失为未选择，disabled 为拒绝接入，pending 为接入未完成，enabled 为可用。拒绝接入后不重复提议或新增关联；已有明确同意直接沿用，初始化失败保留现场。已启用时按 UI 影响范围判断：小型变化先询问是否绘制，较长时间未回复可说明后跳过；大范围变化必须在实现前绘制或更新原型并提供预览。
 
-workflow 的可选 openfolioUrl 保存 OpenFolio 服务 HTTP/HTTPS 地址，null 表示无自建实例，缺失表示未记录。prototype 除 status 和适用的 packagePath 外，可保存 hosting.provider（openfolio/custom/git）及适用的 uploadUrl。OpenFolio 方式要求服务地址和专用上传地址，custom 可保存项目适配器使用的上传地址，git 不需要上传地址；旧配置没有托管选择仍可读取。
+workflow 的可选 openfolioUrl 保存 OpenFolio 服务 HTTP/HTTPS 地址，null 表示无自建实例，缺失表示未记录。prototype 除 status 和适用的 packagePath 外，可保存 hosting.provider（openfolio/custom/git）及适用的 uploadUrl。OpenFolio 方式要求服务地址和专用上传地址，custom 可保存项目适配器使用的上传地址，git 不需要上传地址。
 
 托管方式尚未选择时，skill 先询问自建 OpenFolio 实例，再询问三种方式并保存选择；已有会话或配置选择直接复用，仅补该方式必需信息。setup 原子保存配置，保留不相关字段及启停前后的托管选择；接入决定的历史由 Git 保存。
 
 原型包 DESIGN.md 记录项目设计依据、视觉方向、色彩角色与数值、字阶、布局断点、组件及交互约定。初始化可引用已有权威规范，没有时提供中立模板和简短编写指南，绘制前依据现有产品补全；不覆盖用户已有文件，不把新设计提案描述为现有事实。
 
-工作台目录与公开版本准备从已推送默认分支的最新成功快照读取 workflow.json 的开关与包配置，不随 Specs 分支、产物提交或旧索引快照切换。历史来源只提供当时的原型记录、清单和产物，不读取或兼容历史 workflow 字段。当前配置无效或停用时拒绝新的准备；按当前字段、包路径无法读取历史清单或产物时明确失败，不回退旧配置或替换为新产物。已准备的公开版本独立于此开关继续可读。
+工作台目录与公开版本准备从已推送默认分支的最新成功快照读取 workflow.json 的开关与包配置。固定提交提供原型记录、清单和产物，按当前配置校验与读取；当前配置无效、停用或无法读取时明确失败。已准备的公开版本独立于此开关继续可读。
 
 包内 prototype.json 是当前总览唯一清单，只读取已登记为守护分支的实际默认分支，其他分支不扫描当前清单。清单保存在持久快照中；默认分支提交及读取规则未变化时复用有效清单，页面后台发现新快照后自动更新总览。schemaVersion 为 1，entries 按稳定 id 声明 title、可选 description、sourcePath、kind、适配和可选 artifact。源码路径位于原型包内，id 在项目内唯一。页面声明 pc-web/ipad/mobile 中非空、去重的设备集合；组件在设备集合和 1–4096 CSS px 的整数 viewport 中二选一。无 artifact 表示尚未交付，不从 Change 历史推算当前版本。
 
@@ -39,7 +39,7 @@ register 校验成功结果后更新当前清单及可选 Change 引用；发布
 
 ## OpenFolio 内置静态托管
 
-管理员通过 GET /api/prototype-hosting 获取稳定的专用上传地址；也可在本地设置管理密码环境变量，通过 setup 自动获取并保存。上传密钥私有保存在数据目录的 prototype-upload-key。持有该地址即可上传，不要求管理 Cookie、项目登记或邀请码，也不能凭此地址访问管理接口。轮换上传密钥撤销旧上传地址，不影响已发布静态链接。
+管理员通过 GET /api/prototype-hosting 获取稳定的专用上传地址；也可在本地设置管理密码环境变量，通过 setup 自动获取并保存。上传密钥私有保存在数据目录的 prototype-upload-key。持有该地址即可上传，不要求管理 Cookie，也不能凭此地址访问管理接口。轮换上传密钥撤销旧上传地址，不影响已发布静态链接。
 
 服务接收有明确边界的文件流，不解压压缩包、不执行构建。每次上传最多 2000 文件和 100 MiB，请求元数据最多 1 MiB，同时最多两次上传，120 秒超时。文件路径、类型、长度、摘要和入口完整性均校验；错误地址、非法或半截内容不发布可访问版本。
 
@@ -51,7 +51,7 @@ GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验�
 
 本仓库的原型包通过 custom 适配器发布至 Cloudflare R2。源码保存在 Git，dist 与桶级 S3 凭据不提交；凭据由发布机器环境提供。适配器以 requestId 固定对象路径，使用条件创建并核对重复请求的既有字节，拒绝覆盖不同内容；全部文件公开 GET 的内容和类型验证通过后，才输出可登记的成功结果。
 
-原型 HTML 与 PC Web、iPad、Mobile 截图一起发布，当前清单与 Change 记录固定 hosted 地址、源码提交和摘要。失败不替换引用；迁移当前入口仅删除当前包内旧 Git 产物，已归档 Change、旧快照及保留标签不变。R2 已引用版本长期保留，发布与配置说明见[原型包 README](../../../../../packages/prototype/README.md)。
+原型 HTML 与 PC Web、iPad、Mobile 截图一起发布，当前清单与 Change 记录固定 hosted 地址、源码提交和摘要。失败不替换引用。R2 已引用版本长期保留，发布与配置说明见[原型包 README](../../../../../packages/prototype/README.md)。
 
 ## 总览、详情与二级预览
 
@@ -75,11 +75,9 @@ GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验�
 
 读取失败显示失败标题及具体原因，与尚未关联原型的正常空态区分；单个入口的无效引用、路径或产物保留不可用状态与原因。
 
-旧 previews.path 已迁移到 artifact 和 Change 内 HTML 快照，运行时拒绝旧格式。迁移从确定的原交付提交读取字节，不改写旧 Git 历史或旧标签；使用迁移后的新固定链接。新标签 pin 与旧命名空间分开保存，快照升级保留已观察的历史 pin。
-
 ## 托管预览与隔离
 
-页面及截图使用任意 HTTP/HTTPS 来源，可与工作台同源，不需要配置来源白名单。旧 prototypeOrigins 字段读取时忽略，保存配置时移除。服务端不请求远端地址、不代理登录、下载或转发凭据；外部宿主负责资源策略、版本保留和允许嵌入。
+页面及截图使用任意 HTTP/HTTPS 来源，可与工作台同源，不需要配置来源白名单。服务端不请求远端地址、不代理登录、下载或转发凭据；外部宿主负责资源策略、版本保留和允许嵌入。
 
 iframe 只授予 allow-scripts，不授予 allow-same-origin，保持 opaque origin。宿主 ESM、动态模块和字体等静态资源须支持无 Cookie 的 CORS，路由使用 hash/memory；不兼容的登录流由用户独立打开宿主页面。宿主响应 CSP 约束其资源和连接，工作台不为兼容而放宽沙箱。
 
@@ -89,7 +87,7 @@ iframe 只授予 allow-scripts，不授予 allow-same-origin，保持 opaque ori
 
 Git 兜底入口是 UTF-8 自包含 index.html，脚本、样式及 mock 内联，图片/字体用 data URL。不依赖外部 import、动态 chunk、网络、真实后端、持久存储、Worker 或 eval；普通 Vite dist 不等于单文件兜底，宿主负责必要的内联构建。
 
-Git 公开版本准备只读取已登记入口和固定提交，拒绝任意文件路径、符号链接、LFS、超限或非法产物；最终 HTML 包含固定的就绪、脚本错误与 CSP 诊断桥，摘要覆盖最终字节。无 previews 的 Change 正常显示尚未关联。同域 HTML 同时受 iframe 沙箱和响应头 CSP sandbox 限制，直接导航仍受限；CSP 禁止网络连接、外部资源、嵌套 iframe、表单、对象及 worker。公开响应使用 `public, no-cache, must-revalidate`，并校验文件摘要与撤回标记；旧合法别名与字节保持不变，不因渲染器升级而覆盖。
+Git 公开版本准备只读取已登记入口和固定提交，拒绝任意文件路径、符号链接、LFS、超限或非法产物；最终 HTML 包含固定的就绪、脚本错误与 CSP 诊断桥，摘要覆盖最终字节。无 previews 的 Change 正常显示尚未关联。同域 HTML 同时受 iframe 沙箱和响应头 CSP sandbox 限制，直接导航仍受限；CSP 禁止网络连接、外部资源、嵌套 iframe、表单、对象及 worker。公开响应使用 `public, no-cache, must-revalidate`，并校验文件摘要与撤回标记；已发布字节保持不变，不因渲染器更新而覆盖。
 
 可见卡片按需加载截图，默认采用第一个声明设备；设备筛选后截图与交互预览尺寸一致。截图保持比例，加载、失败、重试和预览入口独立。托管截图由宿主提供固定 PNG/WebP 地址，通过 no-referrer 加载；缺失时使用占位，OpenFolio 不联网为托管地址截图。
 

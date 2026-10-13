@@ -1,4 +1,4 @@
-import { test, expect, repoKey } from "./connected";
+import { test, expect } from "./connected";
 test("personal API reads cached records and enforces input boundaries", async ({
   request,
   personal,
@@ -56,7 +56,7 @@ test("periodic revalidation detects revoked credentials and then rejects cached 
     expect((await request.head(personal.url(path))).status()).toBe(401);
   }
 });
-test("platform failure does not return stale snapshots and retired endpoints expose no old project names", async ({
+test("platform failure does not return stale snapshots", async ({
   request,
   personal,
 }) => {
@@ -68,16 +68,6 @@ test("platform failure does not return stale snapshots and retired endpoints exp
   const denied = await request.get(personal.url("workbench"));
   expect(denied.status()).toBe(503);
   expect(await denied.text()).not.toContain("工程协作");
-  for (const path of [
-    "/api/projects",
-    "/api/projects/fixture/workbench",
-    "/api/projects/fixture/search",
-    "/api/projects/fixture/documents/old",
-  ]) {
-    const res = await request.get(path);
-    expect(res.status()).toBe(410);
-    expect(await res.text()).not.toContain("测试项目");
-  }
   await request.post("/_fixture/control", { data: { reset: true } });
   expect((await request.get(personal.url("workbench"))).status()).toBe(200);
 });

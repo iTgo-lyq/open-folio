@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { createServer } from "node:http";
 import { uploadToOpenFolio } from "../.agents/skills/spec-trail/prototype/scripts/openfolio-client.mjs";
 import assert from "node:assert/strict";
-import { readFile, writeFile, mkdir, symlink, rm } from "node:fs/promises";
+import { readFile, writeFile, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import {
@@ -300,7 +300,7 @@ test("Git fallback copies an independent Change snapshot and rejects symlinks an
     /uncommitted/,
   );
 });
-test("strict contracts reject URL credentials, malformed thumbnails and mixed legacy fields", () => {
+test("strict contracts reject URL credentials, malformed thumbnails and unknown fields", () => {
   const artifact = {
     type: "hosted",
     version: "v1",
@@ -321,7 +321,7 @@ test("strict contracts reject URL credentials, malformed thumbnails and mixed le
       {
         ...current,
         sourcePath: undefined,
-        path: "packages/prototype/preview/screen",
+        unknown: true,
         artifact,
       },
     ]).length,

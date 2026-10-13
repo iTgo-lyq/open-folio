@@ -9,7 +9,6 @@ import {
 } from "../src/server/personal-sessions.ts";
 import { personalFixture } from "./personal-fixture.ts";
 import {
-  connectionResponse,
   sessionResponse,
   logoutAllResponse,
 } from "../src/server/connection-api.ts";
@@ -49,7 +48,7 @@ test("same token converges across concurrent devices and survives restart withou
     );
     const [a, b] = await Promise.all([
       f.connect(),
-      secondStore.login("", "sample", "first", "reader", undefined, signal()),
+      secondStore.login("", "sample", "first", "reader", signal()),
     ]);
     assert.equal(a.connection.id, b.connection.id);
     assert.notEqual(a.cookie, b.cookie);
@@ -59,6 +58,11 @@ test("same token converges across concurrent devices and survives restart withou
       state = JSON.parse(raw);
     assert.equal(state.workspaces.length, 1);
     assert.equal(state.sessions.length, 2);
+    assert.deepEqual(Object.keys(state).sort(), [
+      "schemaVersion",
+      "sessions",
+      "workspaces",
+    ]);
     assert.ok(!raw.includes(a.cookie));
     assert.ok(!raw.includes('"first"'));
     assert.ok(!JSON.stringify(a.session).includes("credentialFingerprint"));
@@ -104,7 +108,6 @@ test("different tokens for the same identity stay separate; rename and adapter G
       "sample",
       "first",
       "自定义用户名",
-      undefined,
       signal(),
     );
     assert.equal(c.connection.id, a.connection.id);
@@ -155,7 +158,6 @@ test("optional display usernames default to the Git account and never become aut
       "sample",
       "first",
       "",
-      undefined,
       signal(),
     );
     assert.equal(restored.connection.label, connection.label);
@@ -165,7 +167,6 @@ test("optional display usernames default to the Git account and never become aut
       "sample",
       "first",
       "另一个名称",
-      undefined,
       signal(),
     );
     assert.equal(renamed.connection.id, workspaceId);
@@ -174,7 +175,6 @@ test("optional display usernames default to the Git account and never become aut
       "sample",
       "third",
       "另一个名称",
-      undefined,
       signal(),
     );
     assert.notEqual(other.connection.id, workspaceId);
@@ -239,14 +239,7 @@ test("daily idle renewal is bounded by absolute lifetime and inactivity retains 
     () => now,
   );
   try {
-    const a = await store.login(
-      "",
-      "sample",
-      "first",
-      "reader",
-      undefined,
-      signal(),
-    );
+    const a = await store.login("", "sample", "first", "reader", signal());
     const start = now;
     now += 25 * 60 * 60 * 1000;
     const renewed = await store.get(a.cookie);
@@ -263,14 +256,7 @@ test("daily idle renewal is bounded by absolute lifetime and inactivity retains 
     );
     now = start + sessionAbsoluteTtl;
     assert.equal((await store.get(a.cookie)).connected, false);
-    const again = await store.login(
-      "",
-      "sample",
-      "first",
-      "reader",
-      undefined,
-      signal(),
-    );
+    const again = await store.login("", "sample", "first", "reader", signal());
     assert.equal(again.connection.id, a.connection.id);
     now += sessionIdleTtl + 1;
     assert.equal((await store.get(again.cookie)).connected, false);
@@ -326,7 +312,7 @@ test("device limit preserves existing sessions and admits a replacement current 
     await f.cleanup();
   }
 });
-test("new session HTTP issues independent secure cookies, retires old connection writes and clears logout cookies", async () => {
+test("session HTTP issues independent secure cookies and clears logout cookies", async () => {
   const f = await personalFixture();
   try {
     const a = await sessionResponse(req("POST", "", input()), f.sessions);
@@ -347,16 +333,6 @@ test("new session HTTP issues independent secure cookies, retires old connection
     assert.equal(
       (await current.json()).workspace.id,
       body.session.workspace.id,
-    );
-    assert.equal(
-      (
-        await connectionResponse(
-          req("POST", "", input()),
-          undefined,
-          f.sessions,
-        )
-      ).status,
-      410,
     );
     const logout = await sessionResponse(req("DELETE", cookie), f.sessions);
     assert.match(logout.headers.get("set-cookie")!, /Max-Age=0/);
@@ -499,14 +475,7 @@ test("daily renewal and invalid old GET responses cannot overwrite a switched Co
     join(f.root, "race-key"),
     () => now,
   );
-  const a = await store.login(
-    "",
-    "sample",
-    "first",
-    "reader",
-    undefined,
-    signal(),
-  );
+  const a = await store.login("", "sample", "first", "reader", signal());
   const initial = await sessionResponse(
     req("POST", "", {
       providerId: "sample",
@@ -536,14 +505,7 @@ test("daily renewal and invalid old GET responses cannot overwrite a switched Co
   };
   const old = sessionResponse(req("GET", a.cookie), store);
   await blocked;
-  const b = await store.login(
-    a.cookie,
-    "sample",
-    "second",
-    "reader",
-    undefined,
-    signal(),
-  );
+  const b = await store.login(a.cookie, "sample", "second", "reader", signal());
   release();
   assert.equal((await old).headers.get("set-cookie"), null);
   store.get = get;
@@ -554,4 +516,34 @@ test("daily renewal and invalid old GET responses cannot overwrite a switched Co
     null,
   );
   assert.equal((await store.get(b.cookie)).connected, true);
+});
+
+test("invalid workspace state is rejected without rewriting credentials or sessions", async () => {
+  const f = await personalFixture();
+  try {
+    const logged = await f.connect();
+    const path = join(f.sessions.root, "state.json");
+    const original = await readFile(path, "utf8");
+    const state = JSON.parse(original);
+    for (const invalid of [
+      { ...state, unknown: [] },
+      { ...state, workspaces: [{ ...state.workspaces[0], unknown: [] }] },
+      { ...state, schemaVersion: 0 },
+    ]) {
+      const body = JSON.stringify(invalid);
+      await writeFile(path, body);
+      await assert.rejects(f.sessions.get(logged.cookie), {
+        code: "SESSION_DATA_INVALID",
+      });
+      await assert.rejects(f.connect(), { code: "SESSION_DATA_INVALID" });
+      assert.equal(await readFile(path, "utf8"), body);
+    }
+    await writeFile(path, original);
+    assert.equal(
+      (await f.sessions.get(logged.cookie)).workspace?.id,
+      logged.connection.id,
+    );
+  } finally {
+    await f.cleanup();
+  }
 });

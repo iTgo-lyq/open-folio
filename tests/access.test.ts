@@ -18,19 +18,8 @@ import {
   requireAdmin,
   requireSameOrigin,
 } from "../src/server/access.ts";
-import {
-  configPath,
-  readConfigSnapshot,
-  saveConfig,
-} from "../src/server/config.ts";
+import { readConfigSnapshot, saveConfig } from "../src/server/config.ts";
 import { POST } from "../src/app/api/access/route.ts";
-import { GET, PUT } from "../src/app/api/config/route.ts";
-const project = {
-  id: "example",
-  name: "Example",
-  repositoryUrl: "https://example.com/repo.git",
-  inviteCode: "long-lived-code",
-};
 async function setup(t: TestContext) {
   const root = await mkdtemp(join(tmpdir(), "openfolio-access-"));
   const before = Object.fromEntries(
@@ -101,13 +90,6 @@ test("admin cookies authorize operations only and rotate with the deployment pas
   assert.ok(!header.includes(password));
   const admin = withCookie(header);
   await requireAdmin(admin);
-  const { GET: retired } = await import(
-    "../src/app/api/[...segments]/route.ts"
-  );
-  assert.equal((await retired()).status, 410);
-  await assert.rejects(requireAdmin(request("openfolio-project-legacy=old")), {
-    code: "ADMIN_REQUIRED",
-  });
   process.env.OPENFOLIO_ADMIN_PASSWORD = "rotated-password";
   await assert.rejects(requireAdmin(admin), { code: "ADMIN_REQUIRED" });
   await assert.rejects(login(request(), "wrong"), { code: "ACCESS_DENIED" });
@@ -115,23 +97,10 @@ test("admin cookies authorize operations only and rotate with the deployment pas
 
 test("access endpoint validates scope and bounded JSON without disclosing secrets", async (t) => {
   await setup(t);
-  assert.equal(
-    (await post({ secret: project.inviteCode, project: project.id })).status,
-    410,
-  );
-  assert.equal((await post({ secret: project.inviteCode })).status, 401);
-  assert.equal(
-    (await post({ secret: "wrong", project: project.id })).status,
-    410,
-  );
-  assert.equal(
-    (await post({ secret: project.inviteCode, project: "missing" })).status,
-    410,
-  );
   for (const body of [
     null,
     [],
-    { secret: "test", project: null },
+    { secret: "test", unknown: null },
     { secret: "test", admin: true },
     { secret: 7 },
   ])

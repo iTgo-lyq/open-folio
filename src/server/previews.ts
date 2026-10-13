@@ -2,7 +2,6 @@ import type { Collected } from "./indexer.ts";
 import type { GitReader } from "./git.ts";
 import type {
   Limits,
-  ProjectConfig,
   Snapshot,
   PreviewDescriptor,
   PreviewEntry,
@@ -18,10 +17,7 @@ import {
 import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
-export function prototypePolicy(
-  data: Collected,
-  project: ProjectConfig,
-): Snapshot["prototype"] {
+export function prototypePolicy(data: Collected): Snapshot["prototype"] {
   const branch = data.defaultBranch;
   const doc = data.documents.find(
     (d) => d.branch === branch && d.path === "docs/project/workflow.json",
@@ -166,7 +162,6 @@ export async function resolvePreview(
   limits: Limits,
   selectedId?: string,
   selectedOnly = false,
-  project?: ProjectConfig,
 ) {
   if (
     !identity.safeParse(changeId).success ||
@@ -310,13 +305,11 @@ export async function resolvePreview(
   }
   return resolveEntries(
     reader,
-    latest.projectId,
     descriptor,
     revision,
     configuration,
     raw.previews,
     limits,
-    project,
     selectedId,
     selectedOnly,
     stateFiles[0].path.slice(0, -12),
@@ -324,13 +317,11 @@ export async function resolvePreview(
 }
 export async function resolveEntries(
   reader: GitReader,
-  projectId: string,
   descriptor: PreviewDescriptor,
   revision: string,
   configuration: PrototypeConfig,
   rawEntries: unknown[],
   limits: Limits,
-  project?: ProjectConfig,
   selectedId?: string,
   selectedOnly = false,
   changeDirectory?: string,
@@ -426,9 +417,6 @@ export async function resolveEntries(
       }
       info.available = true;
       info.bytes = file!.bytes;
-      info.url = changeDirectory
-        ? `/preview/${encodeURIComponent(projectId)}/${revision}/${descriptor.changeId}/${entry.id}/index.html`
-        : `/current-preview/${encodeURIComponent(projectId)}/${revision}/${entry.id}/index.html`;
       if (entry.id === selectedId) selectedHtml = html;
     } catch (e) {
       info.message =

@@ -3,7 +3,6 @@ import type {
   CurrentPrototypeEntry,
   Limits,
   PreviewDescriptor,
-  ProjectConfig,
   Snapshot,
 } from "../lib/model.ts";
 import type { PrototypeCatalog } from "../lib/prototypes.ts";
@@ -119,7 +118,6 @@ export async function resolveCurrentPreview(
   reader: GitReader,
   latest: Snapshot,
   source: Snapshot,
-  project: ProjectConfig,
   revision: string | undefined,
   limits: Limits,
   selectedId?: string,
@@ -171,13 +169,11 @@ export async function resolveCurrentPreview(
   );
   const result = await resolveEntries(
     reader,
-    latest.projectId,
     descriptor,
     target,
     current.configuration!,
     entries.filter((e) => e.artifact).map(currentPreview),
     limits,
-    project,
     selectedId,
     selectedOnly,
   );

@@ -19,7 +19,6 @@ const loginInput = z
     providerId: z.string().min(1).max(80).default("github"),
     username: z.string().trim().max(100).optional(),
     token: z.string().max(4096),
-    label: z.string().max(100).optional(),
   })
   .strict();
 export async function sessionResponse(
@@ -38,7 +37,7 @@ export async function sessionResponse(
           "请填写有效的 token，用户名可选且最多 100 个字符。",
           400,
         );
-      const { providerId, username, token, label } = result.data;
+      const { providerId, username, token } = result.data;
       const userAgent = request.headers.get("user-agent") ?? "";
       const deviceLabel = /Android/i.test(userAgent)
         ? "Android 浏览器"
@@ -54,7 +53,6 @@ export async function sessionResponse(
         providerId,
         token,
         username,
-        label,
         request.signal,
         deviceLabel,
       );
@@ -108,43 +106,6 @@ export async function sessionResponse(
     return personalError(e);
   }
 }
-export async function restoreSessionResponse(
-  request: Request,
-  store: PersonalSessions = personalSessions(),
-  discover?: Discovery,
-) {
-  try {
-    requirePersonalOrigin(request);
-    const input = z
-      .object({ connectionId: z.string().uuid() })
-      .strict()
-      .safeParse(await readPersonalBody(request));
-    if (!input.success)
-      throw new AppError("INVALID_PARAMETER", "请选择旧会话中的凭据。", 400);
-    const restored = await store.restore(
-      sessionCookie(request),
-      input.data.connectionId,
-      request.signal,
-    );
-    const service =
-      discover ?? (store === personalSessions() ? discovery() : undefined);
-    if (service)
-      await service
-        .ensure(restored.cookie, restored.connection.id)
-        .catch(() => {});
-    return personalJson(
-      { session: restored.session, connection: restored.connection },
-      200,
-      cookieHeader(
-        request,
-        restored.cookie,
-        restored.session.absoluteExpiresAt,
-      ),
-    );
-  } catch (e) {
-    return personalError(e);
-  }
-}
 export async function logoutAllResponse(
   request: Request,
   store: PersonalSessions = personalSessions(),
@@ -156,23 +117,6 @@ export async function logoutAllResponse(
       { connected: false, connections: [] },
       200,
       cookieHeader(request, ""),
-    );
-  } catch (e) {
-    return personalError(e);
-  }
-}
-export async function connectionResponse(
-  request: Request,
-  _id?: string,
-  _store?: PersonalSessions,
-  _discover?: Discovery,
-) {
-  try {
-    requirePersonalOrigin(request);
-    throw new AppError(
-      "CONNECTIONS_RETIRED",
-      "连接新增与替换已停用，请使用 token 登录或切换凭据。",
-      410,
     );
   } catch (e) {
     return personalError(e);

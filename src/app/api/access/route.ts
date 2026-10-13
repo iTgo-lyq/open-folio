@@ -45,16 +45,9 @@ export async function POST(request: Request) {
       Array.isArray(input) ||
       typeof input.secret !== "string" ||
       !input.secret ||
-      Object.keys(input).some((key) => !["secret", "project"].includes(key)) ||
-      (input.project !== undefined && typeof input.project !== "string")
+      Object.keys(input).some((key) => key !== "secret")
     )
       throw new AppError("INVALID_PARAMETER", "请填写有效的访问凭据。", 400);
-    if (input.project !== undefined)
-      throw new AppError(
-        "LEGACY_ACCESS_RETIRED",
-        "邀请码访问已停用，请连接自己的 GitHub token。",
-        410,
-      );
     const credential = await login(request, input.secret);
     return Response.json(
       { ok: true },

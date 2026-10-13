@@ -1,6 +1,6 @@
 # OpenFolio
 
-基于中心 Git 已推送记录的个人工程工作台。连接自己的 GitHub token，自动发现接入 SpecTrail 的仓库，阅读 Specs、Changes 与原型。协作者各自使用仓库已有权限，无需空间、邀请码或工作台成员管理。界面保留窄侧轨、玻璃胶囊与圆角工作面。
+基于中心 Git 已推送记录的个人工程工作台。连接自己的 GitHub token，自动发现接入 SpecTrail 的仓库，阅读 Specs、Changes 与原型。协作者各自使用仓库已有权限，使用 GitHub 仓库权限协作。界面保留窄侧轨、玻璃胶囊与圆角工作面。
 
 ## 启动与个人连接
 
@@ -67,7 +67,7 @@ npm run service:start
 }
 ```
 
-资源限制默认为：120 秒刷新、1 MiB Markdown、256 KiB JSON、5 MiB 图片、256 分支、10,000 文档、64 MiB 去重正文，单 HTML 10 MiB、相关 HTML 合计 100 MiB、2000 原型入口。`openfolio.config.example.json` 是新版示例。配置 API 使用 revision 防止覆盖并发修改，资源超限不发布部分快照。Git 获取分支历史，首读成本随仓库大小增长。
+资源限制默认为：120 秒刷新、1 MiB Markdown、256 KiB JSON、5 MiB 图片、256 分支、10,000 文档、64 MiB 去重正文，单 HTML 10 MiB、相关 HTML 合计 100 MiB、2000 原型入口。`openfolio.config.example.json` 提供配置示例。配置 API 使用 revision 防止覆盖并发修改，资源超限不发布部分快照。Git 获取分支历史，首读成本随仓库大小增长。
 
 管理密码仅用于资源配置、上传地址和公开版本撤回，不授予工程读取权限。使用 `OPENFOLIO_ADMIN_PASSWORD`，或首次需要管理凭据时创建的私有 `admin-password` 文件；独立签名密钥为 `access-secret`。个人 UI 不显示项目登记或管理密码表单。运维客户端通过 JSON `POST /api/access`（`{ "secret": "部署管理密码" }`）获得管理员 Cookie，再访问 `GET/PUT /api/config`、`GET /api/prototype-hosting` 或 `DELETE /api/public-previews/<publicationId>`。浏览器写请求须同源；CLI 沿用已有管理协议，不在命令行参数中传密码。更换管理密码会使旧管理员 Cookie 失效。
 
@@ -77,9 +77,8 @@ npm run service:start
 | ---------------------------------------------------------- | ---------------------------------------------------- |
 | `personal-v2/state.json`、`credential-key`、`identity-key` | 工作台密文、设备会话与独立匹配索引密钥，必须配套保存 |
 | `repositories-v2`、`discovery-v2`                          | 按 token 工作台隔离的私有 Git、快照与发现状态        |
-| `personal-v1`、`repositories-v1`、`discovery-v1`           | 升级保留的完整旧数据与密钥备份                       |
-| `config.json`、`legacy-v1`                                 | 运维配置、旧配置原始备份与旧链接私有映射             |
-| `public-previews`                                          | 已分享的固定版本与别名，不能当缓存随意删除           |
+| `config.json`                                              | 运维资源配置                                         |
+| `public-previews`                                          | 已分享的固定版本，不能当缓存随意删除                 |
 | `prototype-artifacts`、`prototype-upload-key`              | 内置托管公开版本与上传授权                           |
 | `admin-password`、`access-secret`                          | 独立运维登录与签名密钥                               |
 
@@ -87,21 +86,7 @@ npm run service:start
 
 密钥轮换必须停机并备份完整目录。运行 `node --conditions=react-server scripts/rotate-workspace-keys.ts <personal-v2路径> <全新待安装目录> [旧外置credential-key路径]`，生成配套的新加密密钥、身份密钥及状态；先验证全部原密文与索引，不修改源目录，保持工作台 UUID、设备和缓存引用。把原 `personal-v2` 移入受控备份，再将待安装目录改名为 `personal-v2`；外置密钥部署还需把新目录的 `credential-key` 安装到已配置位置（0600），保留旧配套文件供回退。不要混搭两套状态与密钥。轮换后既有缓存仍归原工作台，相同 token 登录不会新建 UUID。密钥疑似泄漏时另行撤销设备及平台 token；换一个平台 token 仍是独立工作台。
 
-过期会话在下一次会话操作时清除设备授权，工作台密文与缓存保留。为回收私有缓存，可停机后移除 `repositories-v2`、`discovery-v2`，用户下次重新发现和 fetch；同时保留配套 `personal-v2`、旧版本备份、`public-previews` 和 `prototype-artifacts`。该清理会丢失本地历史快照，中心 Git 不受影响。没有自动 Git GC 或跨 token 缓存复用；部署者需要监控总磁盘使用。
-
-## 从旧部署升级与回退
-
-从个人连接版升级前停止旧服务，备份 `personal-v1`、`repositories-v1`、`discovery-v1` 及外置密钥。新版首次读取在独占锁内验证旧状态和全部密文，以平台实例与完整 token 分组，创建新工作台；相同 token 的同仓库只选择一份完整且最新的缓存，不拼接不同版本。不能证明来源或不完整的缓存仅留旧备份。迁移在 `personal-v2/migration.json` 保存来源摘要与映射，经 staging 完成新目录后，最后原子发布 `state.json`。中断保留现场，修复原问题后重启可继续；有迁移记录时不能补生成丢失密钥或换用其他旧状态。
-
-单连接旧 Cookie 在页面获取摘要后自动发起 POST，经 token 验证换成新设备 Cookie，多连接旧 Cookie 需要选一次原会话已有的凭据；兑换后旧选择 Cookie 失效。其他 token 的工作台仍保留，之后需分别提供自己的 token 登录。新设备不能用一个 token 枚举旧会话的其他凭据。回退须停止服务，保留新目录完整备份后使用原版本及配套 v1 数据／密钥；新 Cookie 不能转换成旧 Cookie，需要重新连接。新版目录不自动删除，禁止两个版本同时写入。
-
-升级前停止旧服务，备份数据目录、外置配置／密钥和原二进制版本。首次新版配置读取将 schemaVersion 1 转成 2：先在 `legacy-v1/config-<摘要>.json` 保存原始字节，再生成不含邀请码的私有项目映射，最后原子替换配置，仅保留 limits。失败保留原文件，损坏配置需修复后重试；重复升级不会覆盖备份。旧缓存、上传文件、上传密钥及管理密码不改变。
-
-旧项目、邀请码、管理员 Cookie 和缓存都不转换成个人授权。旧 `/api/projects/...` 返回 410，邀请码登录停用。旧 `?project=...` 链接在用户连接自己的 token 后解析旧地址，验证平台身份、仓库权限、SpecTrail 和 Git 后恢复阅读位置；鉴权前不返回映射。无法定位或无权时提示从个人仓库重新选择。旧 `#invite` 会从地址栏清除。
-
-旧 Git 原型链接需要先由有权用户恢复旧项目链接，并在新版准备对应的固定版本，才能映射到已发布文件；未准备返回 404，匿名访问不会自动补齐。内置 hosted 和外部 hosted 的既有公开静态 URL 继续有效。
-
-回退时停止新版，将匹配的原始配置备份恢复到原配置路径，再用旧二进制和原数据目录启动；保留新版独立目录用于再次升级。旧版本会恢复原有邀请码权限模型，应在维护窗口或受限网络内核对后开放流量。回退不会让旧版本理解新 publicationId 链接，恢复新版及其 `public-previews` 后链接可继续使用。不要在服务运行中替换配置／密钥／数据，也不要同时运行两个版本。
+过期会话在下一次会话操作时清除设备授权，工作台密文与缓存保留。为回收私有缓存，可停机后移除 `repositories-v2`、`discovery-v2`，用户下次重新发现和 fetch；同时保留配套 `personal-v2`、`public-previews` 和 `prototype-artifacts`。该清理会丢失本地历史快照，中心 Git 不受影响。没有自动 Git GC 或跨 token 缓存复用；部署者需要监控总磁盘使用。
 
 ## 阅读规则
 
@@ -117,7 +102,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 当前原型总览读取已登记为守护分支的实际默认分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 原型绑定记录提交与入口，归档标签 `spec-trail/archive-v2/<id>` 保留 Git 记录。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 
-通过 [SpecTrail 原型 skill](.agents/skills/spec-trail/prototype/SKILL.md) 维护源码、mock 和构建。产物可选 OpenFolio 内置托管、外部托管或 Git 自包含 HTML；服务不安装仓库依赖、不执行仓库构建。旧 path 格式通过 skill 的 `migrate.mjs --change <id>` 迁移。
+通过 [SpecTrail 原型 skill](.agents/skills/spec-trail/prototype/SKILL.md) 维护源码、mock 和构建。产物可选 OpenFolio 内置托管、外部托管或 Git 自包含 HTML；服务不安装仓库依赖、不执行仓库构建。
 
 部署管理员可使用既有 skill 协议获取上传地址（密码通过环境安全注入）：
 

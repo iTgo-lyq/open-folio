@@ -193,7 +193,7 @@ test("archive with obsolete workflow preserves HTML using current main config af
   assert.match(result.descriptor.message!, /引用|版本/);
 });
 
-test("Change previews ignore historical workflow and fail on invalid current config, moved paths or legacy references", async (t) => {
+test("Change previews ignore historical workflow and fail on invalid current config, moved paths or invalid references", async (t) => {
   const f = await source();
   t.after(f.cleanup);
   for (const oldWorkflow of [
@@ -244,17 +244,17 @@ test("Change previews ignore historical workflow and fail on invalid current con
   await f.put("docs/project/workflow.json", JSON.stringify(workflow));
   f.commit();
   f.git(["checkout", state.branch]);
-  const { artifact, ...legacy } = entry;
+  const { artifact, ...metadata } = entry;
   await f.put(
     changePath,
     JSON.stringify({
       ...state,
-      previews: [{ ...legacy, path: artifact.path }],
+      previews: [{ ...metadata, artifact: { ...artifact, type: "invalid" } }],
     }),
   );
-  const legacyRevision = f.commit();
+  const invalidRevision = f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
-  const rejected = await preview(f, legacyRevision);
+  const rejected = await preview(f, invalidRevision);
   assert.equal(rejected.html, undefined);
   assert.equal(rejected.descriptor.entries[0].available, false);
   assert.match(rejected.descriptor.entries[0].message!, /关联字段不合法/);
@@ -312,16 +312,16 @@ test("previews reject unreachable revisions, invalid entries, symlinks, LFS and 
   assert.equal(partial.descriptor.entries[1].available, false);
 });
 
-test("legacy archives without previews need no retention tag, including fixed revision links", async (t) => {
+test("archives without previews need no retention tag, including fixed revision links", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   await f.put("docs/project/workflow.json", JSON.stringify(workflow));
   const at = confirmedAt,
     step = (result: string) => ({ at, summary: "已验证", result });
-  const directory = "docs/project/archive/2026-10-03-legacy";
-  const legacy = {
+  const directory = "docs/project/archive/2026-10-03-example";
+  const archived = {
     ...state,
-    id: "legacy",
+    id: "example",
     branch: "main",
     status: "completed",
     stage: "close",
@@ -337,14 +337,14 @@ test("legacy archives without previews need no retention tag, including fixed re
   for (const previews of [undefined, []]) {
     await f.put(
       `${directory}/change.json`,
-      JSON.stringify({ ...legacy, previews }),
+      JSON.stringify({ ...archived, previews }),
     );
     const revision = f.commit();
     await f.store.refresh(f.project, DEFAULT_LIMITS);
     for (const version of [undefined, revision]) {
       const result = await f.store.preview(
         f.project,
-        "legacy",
+        "example",
         version,
         DEFAULT_LIMITS,
       );

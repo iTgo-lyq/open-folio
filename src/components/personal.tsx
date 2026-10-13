@@ -83,9 +83,6 @@ export function PersonalHome() {
       >
         {!p.session.connected ? (
           <div className="personal-welcome-inner">
-            {!!p.session.legacyChoices?.length && (
-              <LegacyRestore choices={p.session.legacyChoices} />
-            )}
             <div className="personal-welcome-mark">
               <img src="/brand/openfolio-mark.png" alt="" />
               OpenFolio
@@ -305,45 +302,6 @@ export function PersonalHome() {
     </>
   );
 }
-function LegacyRestore({ choices }: { choices: ConnectionSummary[] }) {
-  const p = usePersonal();
-  const [busy, setBusy] = useState(""),
-    [error, setError] = useState("");
-  const restore = async (id: string) => {
-    setBusy(id);
-    setError("");
-    try {
-      await api("/api/session/restore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connectionId: id }),
-      });
-      await p.reloadSession();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy("");
-    }
-  };
-  useEffect(() => {
-    if (choices.length === 1) void restore(choices[0].id);
-  }, [choices.length, choices[0]?.id]);
-  return (
-    <div className="personal-notice">
-      <h2>恢复原工作台</h2>
-      <p>
-        选择旧会话中自己的凭据。恢复时重新验证权限，之后每次登录只进入当前 token
-        的工作台。
-      </p>
-      {choices.map((c) => (
-        <Button key={c.id} disabled={!!busy} onClick={() => void restore(c.id)}>
-          恢复 {c.label} · @{c.identity.login}
-        </Button>
-      ))}
-      {error && <p role="alert">{error}</p>}
-    </div>
-  );
-}
 export function Connections() {
   const p = usePersonal();
   const [login, setLogin] = useState(false);
@@ -356,9 +314,6 @@ export function Connections() {
     );
   return (
     <section className="personal-connections">
-      {!!p.session?.legacyChoices?.length && (
-        <LegacyRestore choices={p.session.legacyChoices} />
-      )}
       {p.sessionError && (
         <ErrorNotice>
           {p.sessionError}

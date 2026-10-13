@@ -4,7 +4,7 @@
   "title": "清理历史兼容并统一当前契约",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "change/remove-history-compatibility",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "当前契约清理与回归验证",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、145 项单元、67 项浏览器、13 项原型工具、格式检查通过；当前文档与代码残留扫描完成，归档无修改。详见 execution.md。",
+      "commitTitle": "remove-history-compatibility T1: remove historical adapters and documentation"
     },
     "T2": {
       "title": "开发机验证与 iclaude 独立验收",

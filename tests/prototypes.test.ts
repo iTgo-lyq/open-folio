@@ -1,7 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 const path = "packages/prototype/prototype.json";
@@ -173,7 +171,7 @@ test("fixed project links and old snapshots use current main config with origina
   for (const oldWorkflow of [
     JSON.stringify({
       ...workflow,
-      prototype: { ...workflow.prototype, decision: { summary: "旧配置字段" } },
+      prototype: { ...workflow.prototype, unknown: true },
     }),
     "{broken",
   ]) {
@@ -255,29 +253,4 @@ test("fixed project links and old snapshots use current main config with origina
   );
   assert.equal(invalid.html, undefined);
   assert.equal(invalid.descriptor.policy.status, "invalid");
-});
-test("v2 cache migration preserves previously observed archive pins across refresh", async (t) => {
-  const f = await source();
-  t.after(f.cleanup);
-  const snapshot = await f.store.snapshot(f.project);
-  const file = join(
-    f.store.directory(f.project),
-    "snapshots",
-    `${snapshot.id}.json`,
-  );
-  const old = JSON.parse(await readFile(file, "utf8"));
-  old.cacheSchemaVersion = 2;
-  delete old.currentPrototype;
-  old.archivePins = { historical: "a".repeat(40) };
-  await writeFile(file, JSON.stringify(old));
-  const cold = f.makeStore();
-  const migrated = await cold.snapshot(f.project);
-  assert.equal(migrated.archivePins.historical, "a".repeat(40));
-  assert.match((await cold.prototypes(f.project)).message!, /重新读取/);
-  await cold.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(
-    (await cold.snapshot(f.project)).archivePins.historical,
-    "a".repeat(40),
-  );
-  assert.equal((await cold.prototypes(f.project)).items.length, 1);
 });

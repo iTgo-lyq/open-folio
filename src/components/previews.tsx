@@ -108,8 +108,8 @@ export function ChangePreviews({
           height: Math.max(base.width, base.height),
         };
   const load = useMemo(
-    () => (entry?.available && entry.url ? crypto.randomUUID() : ""),
-    [entry?.available, entry?.url, attempt],
+    () => (entry?.available ? crypto.randomUUID() : ""),
+    [entry?.available, entry?.id, result?.revision, attempt],
   );
   const hosted =
     entry?.artifact?.type === "hosted" ? entry.artifact : undefined;

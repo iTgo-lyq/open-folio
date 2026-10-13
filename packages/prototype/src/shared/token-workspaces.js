@@ -43,9 +43,9 @@ function reset(scenario = "home") {
   state = {
     scenario,
     token: scenario === "other" ? "demo-other" : "demo",
-    connected: !["login", "device", "legacy"].includes(scenario),
+    connected: !["login", "device"].includes(scenario),
     device: scenario === "device" ? "mobile" : "desktop",
-    page: scenario === "legacy" ? "legacy" : "home",
+    page: "home",
     restored: false,
     collapsed: false,
   };
@@ -98,25 +98,19 @@ function credentials() {
   const w = workspace();
   return `<section class="connections"><div class="intro"><div><div class="eyebrow">CREDENTIALS</div><h1>当前凭据</h1><p>在其他设备使用同一个 token，恢复这份工作台。</p></div>${btn("切换凭据", "switch")}</div><article class="connection-card"><div class="connection-detail"><div class="row"><span class="repo-symbol">GH</span><div><h3>@demo-user</h3><p class="repo-meta">GitHub · github.com</p></div></div>${badge(state.scenario === "expired" ? "需要检查" : "已登录", state.scenario === "expired" ? "danger" : "success")}</div><div class="credential-topline">${badge(w.label, "neutral")}<span class="repo-meta">工作台 ${w.id}</span></div><p>Token 已保存在服务端。复制后可在另一台设备登录。</p><div class="credential-actions">${btn("复制 token", "copy", true)}${btn("重新发现", "discover")}</div></article><section class="credential-section"><h2>登录设备</h2><p>每台设备独立登录，退出一台设备后可以在其他设备继续使用。</p><div class="device-list">${w.devices.map((d) => `<div class="device-row"><div><div class="row"><strong>${d.label}</strong>${d.id === state.device ? badge("当前设备") : ""}</div><p>最近使用 · ${d.seen}</p></div>${d.id !== state.device ? `<button class="btn quiet" data-action="revoke" data-device="${d.id}">退出此设备</button>` : ""}</div>`).join("")}</div><div class="credential-actions">${btn("退出当前设备", "logout")}${btn("退出全部设备", "logout-all")}</div></section></section>`;
 }
-function legacy() {
-  return `<section class="connections"><div class="intro"><div><div class="eyebrow">CONTINUE READING</div><h1>选择要继续的凭据</h1><p>找到了这台设备原来保存的连接。选择一份继续阅读。</p></div></div>${["demo", "demo-other"].map((token, i) => `<div class="legacy-choice"><div><h3>@demo-user · ${i ? "另一个凭据" : "日常阅读"}</h3><p>GitHub · ${i ? "独立工作台" : "3 个已接入仓库"}</p></div><button class="btn" data-action="legacy-login" data-token="${token}">继续使用</button></div>`).join("")}<p class="connection-tip">其他凭据会保留，之后可使用对应 token 登录。</p></section>`;
-}
 function reading() {
   return `<article class="document"><div class="doc-byline"><span>SPEC</span><span>项目知识 / 示例记录</span></div><h1>项目知识工作台</h1><p>从仓库已推送的记录，了解项目当前的能力与改动。</p><h2>继续上次的阅读</h2><p>这份示例快照已经存在于当前凭据工作台。在另一台设备使用相同 token 登录后，可以从这里继续。</p><h2>来源</h2><p class="mono">docs/project/specs/project-knowledge/spec.md</p><p>main · 8bd2a6c · 示例快照</p></article>`;
 }
 function render() {
-  $("#app").innerHTML =
-    state.page === "legacy"
-      ? shell(legacy(), "恢复原有连接")
-      : !state.connected
-        ? shell(login(), "登录")
-        : state.page === "switch"
-          ? shell(login(true), "切换凭据")
-          : state.page === "credentials"
-            ? shell(credentials(), "当前凭据")
-            : state.page === "reading"
-              ? shell(reading(), "Specs")
-              : shell(home());
+  $("#app").innerHTML = !state.connected
+    ? shell(login(), "登录")
+    : state.page === "switch"
+      ? shell(login(true), "切换凭据")
+      : state.page === "credentials"
+        ? shell(credentials(), "当前凭据")
+        : state.page === "reading"
+          ? shell(reading(), "Specs")
+          : shell(home());
   bind($("#app"));
   const form = $("#login-form");
   if (form)
@@ -191,10 +185,6 @@ async function action(name, el) {
   if (["home", "credentials", "switch", "reading"].includes(name)) {
     state.page = name;
     render();
-    return;
-  }
-  if (name === "legacy-login") {
-    signIn(el.dataset.token);
     return;
   }
   if (name === "retry") {

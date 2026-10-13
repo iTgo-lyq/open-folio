@@ -139,7 +139,7 @@ function shell(content, title = "我的仓库") {
 }
 function welcome() {
   return shell(
-    `<section class="welcome"><div class="welcome-inner"><div class="welcome-mark"><img src="${mark}" alt="">OpenFolio</div><h1>连接 GitHub，找到你的项目</h1><p>自动发现已接入 SpecTrail 的仓库，<br>在这里阅读 Specs、跟进 Changes、查看原型。</p>${button("连接 GitHub", "connect", true, "branch")}<div class="welcome-route"><span>连接自己的账号</span>${icon("chevron")}<span>发现仓库</span>${icon("chevron")}<span>开始阅读</span></div><p class="welcome-bottom">使用个人访问令牌连接，只需仓库读取权限。<br>协作者用自己的账号查看同一仓库，无需邀请码。</p><a class="text-link small" style="display:inline-block;margin-top:23px" href="#public">查看公开原型示例 ↗</a></div></section>`,
+    `<section class="welcome"><div class="welcome-inner"><div class="welcome-mark"><img src="${mark}" alt="">OpenFolio</div><h1>连接 GitHub，找到你的项目</h1><p>自动发现已接入 SpecTrail 的仓库，<br>在这里阅读 Specs、跟进 Changes、查看原型。</p>${button("连接 GitHub", "connect", true, "branch")}<div class="welcome-route"><span>连接自己的账号</span>${icon("chevron")}<span>发现仓库</span>${icon("chevron")}<span>开始阅读</span></div><p class="welcome-bottom">使用个人访问令牌连接，只需仓库读取权限。<br>协作者用自己的账号查看同一仓库。</p><a class="text-link small" style="display:inline-block;margin-top:23px" href="#public">查看公开原型示例 ↗</a></div></section>`,
     "个人工作台",
   );
 }

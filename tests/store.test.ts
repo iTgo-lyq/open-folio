@@ -1,11 +1,9 @@
-import { legacySchema } from "../src/server/legacy-config.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rename, rm, symlink, readFile } from "node:fs/promises";
+import { rename, symlink, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
-import { parseConfig } from "../src/server/config.ts";
 import { resolveDocumentLink, inspectMarkdown } from "../src/lib/markdown.ts";
 
 test("only pushed trees are visible, immutable snapshots survive restart and failed refresh", async (t) => {
@@ -74,7 +72,7 @@ test("refreshes coalesce, deleted and rewritten branches disappear, retention ex
     (
       await f.store.summary({
         ...f.project,
-        repositoryUrl: "https://example.test/other.git",
+        id: "different-repository",
       })
     ).snapshotId,
     undefined,
@@ -122,40 +120,6 @@ test("file limits and symlinks never read outside blobs; overall limit keeps cur
   );
 });
 
-test("configuration rejects unsafe remotes and duplicate project ids", () => {
-  const good = {
-    schemaVersion: 1,
-    projects: [
-      {
-        id: "demo",
-        name: "Demo",
-        repositoryUrl: "https://example.test/demo.git",
-      },
-    ],
-  };
-  legacySchema.parse(good);
-  assert.throws(() => parseConfig(good));
-  parseConfig({ schemaVersion: 2 });
-  for (const url of [
-    "file:///tmp/repo",
-    "https://user:token@example.test/repo",
-    "ssh://example.test/repo",
-    "https://example.test/repo?token=x",
-  ])
-    assert.throws(() =>
-      legacySchema.parse({
-        ...good,
-        projects: [{ ...good.projects[0], repositoryUrl: url }],
-      }),
-    );
-  assert.throws(() =>
-    legacySchema.parse({
-      ...good,
-      projects: [...good.projects, ...good.projects],
-    }),
-  );
-});
-
 test("Markdown headings and link boundaries handle Chinese and duplicate ids", () => {
   assert.deepEqual(
     inspectMarkdown("# 中文\n## *重复*\n## 重复\n## 重复-1").headings.map(
@@ -188,4 +152,24 @@ test("reference style links retain their actual citation location", () => {
     ).links,
     [{ url: "../../specs/platform/spec.md", line: 2 }],
   );
+});
+
+test("unsupported snapshot schemas fail without rewriting stored bytes", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const path = join(
+    f.store.directory(f.project),
+    "snapshots",
+    `${snapshot.id}.json`,
+  );
+  const original = JSON.stringify({ ...snapshot, cacheSchemaVersion: 0 });
+  await writeFile(path, original);
+  await assert.rejects(f.makeStore().snapshot(f.project), {
+    code: "CACHE_INVALID",
+  });
+  assert.equal(await readFile(path, "utf8"), original);
+  const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.equal(rebuilt.cacheSchemaVersion, 3);
+  assert.equal(rebuilt.specs[0].title, "平台");
 });

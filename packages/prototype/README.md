@@ -4,7 +4,7 @@
 
 personal-workbench 顶部可切换首次连接、发现中、空结果、部分失败、连接失效、无权限和公开原型。连接表单只接受 `demo`，不验证或保留真实 token；仓库与记录均为示例。URL hash 保留当前页面，全部交互在内存运行。
 
-token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台、复制 token、设备退出与旧连接选择。示例用户名为 `demo-user`，只接受 `demo` 与 `demo-other`；状态仅保存在内存，复制也只处理这两个示例值。顶部场景栏为评审工具，不进入产品。
+token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台、复制 token、设备退出。示例用户名为 `demo-user`，只接受 `demo` 与 `demo-other`；状态仅保存在内存，复制也只处理这两个示例值。顶部场景栏为评审工具，不进入产品。
 
 ## 首次配置
 
@@ -44,7 +44,7 @@ node .agents/skills/spec-trail/prototype/scripts/publish.mjs register \
 node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 ```
 
-固定引用包含源码提交、内容摘要和公开 URL。登记后验证各设备交互，再提交清单、workflow 与新 Change；进入 main 才更新项目总览。首次迁移成功后仅移除本包旧 preview 目录，历史 archive 与标签不动。上传失败不切换 Git 兜底，也不覆盖历史引用。
+固定引用包含源码提交、内容摘要和公开 URL。登记后验证各设备交互，再提交清单、workflow 与新 Change；进入 main 才更新项目总览。上传失败不切换 Git 兜底，也不覆盖历史引用。
 
 ## 截图
 

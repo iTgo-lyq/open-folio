@@ -14,7 +14,6 @@ import { z } from "zod";
 import { DEFAULT_LIMITS } from "../lib/model.ts";
 import type { AppConfig, ConfigSnapshot, Limits } from "../lib/model.ts";
 import { AppError } from "./errors.ts";
-import { legacySchema, migrateLegacyConfig } from "./legacy-config.ts";
 const configSchema = z
   .object({
     schemaVersion: z.literal(2),
@@ -107,27 +106,6 @@ async function readState(path: string, create = true): Promise<ConfigSnapshot> {
       "CONFIG_INVALID_JSON",
       "配置文件不是有效 JSON，请修复文件后重新加载。",
     );
-  }
-  if (
-    value &&
-    typeof value === "object" &&
-    "schemaVersion" in value &&
-    value.schemaVersion === 1
-  ) {
-    const legacy = legacySchema.safeParse(value);
-    if (!legacy.success)
-      throw new AppError(
-        "CONFIG_INVALID",
-        "旧配置不合法；未改写原文件，请修复后重试。",
-      );
-    const config = parseConfig({
-      schemaVersion: 2,
-      ...(legacy.data.limits === undefined
-        ? {}
-        : { limits: legacy.data.limits }),
-    });
-    await migrateLegacyConfig(path, dataDirectory(), body, config);
-    return readState(path, false);
   }
   return {
     config: parseConfig(value),

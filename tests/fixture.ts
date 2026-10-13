@@ -49,6 +49,7 @@ export async function fixture() {
     new SnapshotStore(
       join(root, "cache"),
       (dir) => new GitReader(dir, remote, "file"),
+      project.id,
     );
   return {
     root,

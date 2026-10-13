@@ -101,7 +101,7 @@ test("offline key rotation preserves UUIDs, devices and source bytes with new ma
   const rotated = new PersonalSessions(target, f.registry);
   assert.equal((await rotated.get(a.cookie)).workspace?.id, a.connection.id);
   assert.equal((await rotated.get(b.cookie)).workspace?.id, b.connection.id);
-  const next = await rotated.connect(
+  const next = await rotated.login(
     "",
     "sample",
     "first",

@@ -20,6 +20,7 @@ async function traced() {
     new SnapshotStore(
       join(f.root, "cache"),
       (dir) => new Reader(dir, f.remote, "file"),
+      f.project.id,
     );
   await f.put(
     "docs/project/workflow.json",
@@ -115,7 +116,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert(!f.calls.some((a) => a.includes("packages/prototype/prototype.json")));
   assert.deepEqual(next.currentPrototype, first.currentPrototype);
   f.calls.length = 0;
-  const work = await restart.workbench(f.project, undefined, "change/demo");
+  const work = await restart.workbench(f.project);
   assert.equal(work.selectedBranch, "main");
   await restart.document(f.project, work.specs[0].documentId, next.id);
   await restart.prototypes(f.project);

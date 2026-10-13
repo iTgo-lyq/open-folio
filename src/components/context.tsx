@@ -78,15 +78,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
       setReady(true);
     };
-    if (window.location.hash) {
-      const f = new URLSearchParams(window.location.hash.slice(1));
-      if (f.has("invite"))
-        window.history.replaceState(
-          {},
-          "",
-          window.location.pathname + window.location.search,
-        );
-    }
     read();
     window.addEventListener("popstate", read);
     return () => window.removeEventListener("popstate", read);
@@ -151,50 +142,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         setMessage(e.message);
       });
   }, [data?.repository, q.m, connection?.id, personal.updatePreferences]);
-  const [legacyError, setLegacyError] = useState("");
-  useEffect(() => {
-    setLegacyError("");
-    if (!q.project || q.repo || !connection) return;
-    const controller = new AbortController();
-    api<{ key: string; repository: RepositoryIdentity; specBranch?: string }>(
-      `/api/legacy-projects/${encodeURIComponent(q.project)}/resolve`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connectionId: connection.id }),
-        signal: controller.signal,
-      },
-    )
-      .then(({ key, repository, specBranch }) => {
-        if (!controller.signal.aborted)
-          nav(
-            {
-              project: null,
-              repo: key,
-              provider: repository.providerId,
-              instance: repository.instanceId,
-              repositoryId: repository.repositoryId,
-              fullName: repository.fullName,
-              branch: q.branch || specBranch || null,
-              m: q.m || "specs",
-            },
-            true,
-          );
-      })
-      .catch((e) => {
-        if (!controller.signal.aborted) setLegacyError(e.message);
-      });
-    return () => controller.abort();
-  }, [
-    q.project,
-    q.repo,
-    q.branch,
-    q.m,
-    connection?.id,
-    connection?.revision,
-    personal.epoch,
-    nav,
-  ]);
   const readUrl = useCallback(
     (path: string) => {
       const [name, query] = path.split("?");
@@ -262,31 +209,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       try {
         let next: Workbench;
         try {
-          next = await api<Workbench>(
-            readUrl(
-              `workbench${q.branch ? `?branch=${encodeURIComponent(q.branch)}` : ""}`,
-            ),
-            { signal: c.signal },
-          );
+          next = await api<Workbench>(readUrl("workbench"), {
+            signal: c.signal,
+          });
         } catch (e) {
           if (!(e instanceof ApiError) || e.code !== "NO_SNAPSHOT") throw e;
           setRefreshing(true);
           await api(readUrl("refresh"), { method: "POST", signal: c.signal });
-          next = await api<Workbench>(
-            readUrl(
-              `workbench${q.branch ? `?branch=${encodeURIComponent(q.branch)}` : ""}`,
-            ),
-            { signal: c.signal },
-          );
+          next = await api<Workbench>(readUrl("workbench"), {
+            signal: c.signal,
+          });
         }
         if (!c.signal.aborted && version === generation.current)
           setLoaded({ key: scope, value: next });
       } catch (e) {
         if (!c.signal.aborted && version === generation.current) {
-          if (e instanceof ApiError && e.code === "BRANCH_NOT_FOUND") {
-            nav({ branch: null }, true);
-            setMessage("原分支不存在，已返回默认来源。");
-          } else setError((e as Error).message);
+          setError((e as Error).message);
         }
       } finally {
         if (!c.signal.aborted && version === generation.current) {
@@ -300,7 +238,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       c.abort();
       generation.current++;
     };
-  }, [scope, ready, readUrl, q.branch, q.m, retry, nav]);
+  }, [scope, ready, readUrl, q.m, retry]);
   const hasData = !!data;
   useEffect(() => {
     if (!data || loading || refreshing) return;
@@ -396,7 +334,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         repository,
         loading,
         refreshing,
-        error: legacyError || error,
+        error,
         refresh,
         locked: !connection,
         openDocument,

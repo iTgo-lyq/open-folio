@@ -107,59 +107,6 @@ test("saving persists valid configuration and serializes concurrent edits with t
   assert.deepEqual(await readConfig(), empty);
 });
 
-test("legacy config is backed up privately before migration, keeps limits and caches, and supports restart and offline rollback", async (t) => {
-  await setup(t);
-  await readConfig();
-  const legacy = {
-    schemaVersion: 1,
-    projects: [
-      {
-        id: "example",
-        name: "Example",
-        repositoryUrl: "https://github.com/owner/repo.git",
-        inviteCode: "old-secret",
-        specBranch: "trunk",
-        prototypeOrigins: ["legacy"],
-      },
-    ],
-    limits: configured.limits,
-  };
-  const original = JSON.stringify(legacy);
-  await writeFile(configPath(), original);
-  await mkdir(join(dataDirectory(), "cache"));
-  await writeFile(join(dataDirectory(), "cache", "old"), "old snapshot");
-  const loaded = await Promise.all(
-    Array.from({ length: 12 }, () => readConfigSnapshot()),
-  );
-  assert.ok(
-    loaded.every(
-      (s) => JSON.stringify(s.config) === JSON.stringify(configured),
-    ),
-  );
-  const dir = join(dataDirectory(), "legacy-v1"),
-    files = await readdir(dir);
-  const backup = join(dir, files.find((f) => f.startsWith("config-"))!);
-  assert.equal(await readFile(backup, "utf8"), original);
-  assert.equal((await stat(backup)).mode & 0o777, 0o600);
-  assert.equal((await stat(dir)).mode & 0o777, 0o700);
-  const mapping = await readFile(join(dir, "projects.json"), "utf8");
-  assert.ok(mapping.includes("owner/repo"));
-  assert.ok(!mapping.includes("old-secret"));
-  assert.deepEqual(await readConfig(), configured);
-  assert.equal(
-    await readFile(join(dataDirectory(), "cache", "old"), "utf8"),
-    "old snapshot",
-  );
-  // Stop and restore this backup to run the previous binary; retrying an upgrade is idempotent.
-  await writeFile(configPath(), await readFile(backup));
-  assert.deepEqual(JSON.parse(await readFile(configPath(), "utf8")), legacy);
-  assert.deepEqual(await readConfig(), configured);
-  assert.equal(
-    (await readdir(dir)).filter((f) => f.startsWith("config-")).length,
-    1,
-  );
-});
-
 test("invalid fields and malformed files preserve original bytes, and absent files cannot be silently recreated by save", async (t) => {
   await setup(t);
   const first = await readConfigSnapshot();

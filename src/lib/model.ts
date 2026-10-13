@@ -25,7 +25,6 @@ export type ProjectConfig = {
   id: string;
   name: string;
   repositoryUrl: string;
-  specBranch?: string;
 };
 export type Limits = {
   refreshMs: number;
