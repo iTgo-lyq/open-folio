@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-root-env",
+  "title": "原型发布配置统一到根目录环境文件",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/prototype-root-env",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一配置入口、迁移本机 R2 环境并验证发布加载",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
