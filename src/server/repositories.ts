@@ -130,7 +130,7 @@ export class Repositories {
         assertRead,
         refresh: async (limits, automatic = false) => {
           const locks = (state.folioRefreshes ??= new Map());
-          const path = store.directory(project);
+          const path = store.directory();
           // A credential-owned job survives an individual device logout. Each
           // waiting device must still have a valid session before delivery.
           let next = locks.get(path);

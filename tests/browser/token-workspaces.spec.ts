@@ -142,3 +142,62 @@ for (const width of [1440, 834, 390, 320])
       page.getByRole("heading", { name: "登录自己的工作台" }),
     ).toBeVisible();
   });
+
+for (const action of ["switch", "logout"])
+  test(`late preferences cannot restore the old account after ${action}`, async ({
+    page,
+  }) => {
+    await page.goto("/?m=connections");
+    await expect(page.locator(".personal-connection-card")).toContainText(
+      "@reader",
+    );
+    let finishPreferences: (() => Promise<void>) | undefined,
+      finishSession: (() => Promise<void>) | undefined;
+    await page.route("**/api/session/preferences", async (route) => {
+      const response = await route.fetch();
+      await new Promise<void>((resolve) => {
+        finishPreferences = async () => {
+          await route.fulfill({ response });
+          resolve();
+        };
+      });
+    });
+    await page.getByRole("button", { name: "收起侧栏" }).click();
+    await expect.poll(() => !!finishPreferences).toBe(true);
+    await page.route("**/api/session", async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      const response = await route.fetch();
+      await new Promise<void>((resolve) => {
+        finishSession = async () => {
+          await route.fulfill({ response });
+          resolve();
+        };
+      });
+    });
+    if (action === "switch") {
+      await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+      await page
+        .getByLabel("用户名（可选）", { exact: true })
+        .fill("collaborator");
+      await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
+      await page
+        .getByRole("button", { name: "切换并恢复", exact: true })
+        .click();
+    } else
+      await page
+        .getByRole("button", { name: "退出当前设备", exact: true })
+        .click();
+    await expect.poll(() => !!finishSession).toBe(true);
+    await expect(page.locator(".personal-connection-card")).toHaveCount(0);
+    await finishPreferences!();
+    await expect(page.locator(".personal-connection-card")).toHaveCount(0);
+    await finishSession!();
+    if (action === "switch")
+      await expect(page.locator(".personal-connection-card")).toContainText(
+        "@collaborator",
+      );
+    else
+      await expect(
+        page.getByRole("heading", { name: "登录自己的工作台" }),
+      ).toBeVisible();
+  });

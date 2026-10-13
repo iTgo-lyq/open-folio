@@ -158,11 +158,7 @@ test("unsupported snapshot schemas fail without rewriting stored bytes", async (
   const f = await fixture();
   t.after(f.cleanup);
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  const path = join(
-    f.store.directory(f.project),
-    "snapshots",
-    `${snapshot.id}.json`,
-  );
+  const path = join(f.store.directory(), "snapshots", `${snapshot.id}.json`);
   const original = JSON.stringify({ ...snapshot, cacheSchemaVersion: 0 });
   await writeFile(path, original);
   await assert.rejects(f.makeStore().snapshot(f.project), {

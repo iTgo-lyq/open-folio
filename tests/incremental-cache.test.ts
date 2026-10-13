@@ -168,11 +168,7 @@ test("default branch changes invalidate source scope even at identical commits, 
       (d) => d.branch === "main" && d.path.includes("/specs/"),
     ),
   );
-  const path = join(
-    f.store.directory(f.project),
-    "snapshots",
-    next.id + ".json",
-  );
+  const path = join(f.store.directory(), "snapshots", next.id + ".json");
   delete next.scanFingerprint;
   await writeFile(path, JSON.stringify(next));
   f.calls.length = 0;
@@ -251,7 +247,7 @@ test("automatic refresh shares persisted freshness, manual refresh bypasses it, 
   );
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.equal(next.specs[0].title, "新能力");
-  const checked = join(f.store.directory(f.project), "last-checked.json");
+  const checked = join(f.store.directory(), "last-checked.json");
   await writeFile(checked, JSON.stringify({ snapshotId: next.id, at: 0 }));
   await rename(f.remote, f.remote + ".offline");
   await assert.rejects(f.store.refresh(f.project, DEFAULT_LIMITS, context), {

@@ -8,7 +8,7 @@ OpenFolio 在 workspace 包 `@open-folio/ui` 维护基础 React 组件、公共�
 
 主应用通过包入口消费按钮、图标按钮、标签和空态；示例不属于公共入口。包导出 TypeScript 源码，由消费方编译，React 使用 peer dependency。
 
-公共样式通过 `@open-folio/ui/styles.css` 在消费方入口导入一次，使用 `of-ui-` 类名前缀与 `--of-*` CSS 变量维护共享颜色、间距、圆角及字体；主应用适用的旧变量引用公共 token。当前提供默认浅色主题，调用方可覆盖变量；不提供完整主题切换功能。
+公共样式通过 `@open-folio/ui/styles.css` 在消费方入口导入一次，使用 `of-ui-` 类名前缀与 `--of-*` CSS 变量维护共享颜色、间距、圆角及字体；主应用的主题变量引用公共 token。当前提供默认浅色主题，调用方可覆盖变量；不提供完整主题切换功能。
 
 ## 独立预览
 

@@ -190,7 +190,7 @@ test("Git refresh uses the supplied HTTPS token; cached API-authorized reads do 
     assert.equal((await (await t.request("workbench")).json()).id, w.id);
     const dump = await t
       .read(async (ctx) =>
-        readFile(join(ctx.store.directory(ctx.project), "git/config"), "utf8"),
+        readFile(join(ctx.store.directory(), "git/config"), "utf8"),
       )
       .catch(() => "");
     assert.ok(!String(dump).includes("token-a"));
@@ -288,14 +288,12 @@ test("same-token devices reuse snapshots and directories while another token can
       ).id,
       first.id,
     );
-    const ownPath = await t.read(async (ctx) =>
-      ctx.store.directory(ctx.project),
-    );
+    const ownPath = await t.read(async (ctx) => ctx.store.directory());
     const secondPath = await t.service.read(
       second.cookie,
       second.connection.id,
       t.key,
-      async (ctx) => ctx.store.directory(ctx.project),
+      async (ctx) => ctx.store.directory(),
     );
     assert.equal(ownPath, secondPath);
     const different = await t.f.connect("", "third");
@@ -325,7 +323,7 @@ test("same-token devices reuse snapshots and directories while another token can
       different.cookie,
       different.connection.id,
       t.key,
-      async (ctx) => ctx.store.directory(ctx.project),
+      async (ctx) => ctx.store.directory(),
     );
     assert.notEqual(differentPath, ownPath);
     assert.ok(String(ownPath).includes(t.c.connection.id));

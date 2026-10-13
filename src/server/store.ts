@@ -72,7 +72,7 @@ export class SnapshotStore {
   fingerprint() {
     return hash(JSON.stringify([2, this.cacheIdentity]));
   }
-  directory(_p: ProjectConfig) {
+  directory() {
     return join(this.root, this.cacheIdentity);
   }
   private async acquire() {
@@ -106,7 +106,7 @@ export class SnapshotStore {
     await this.lock;
   }
   async snapshot(p: ProjectConfig, id?: string): Promise<Snapshot> {
-    const dir = this.directory(p);
+    const dir = this.directory();
     if (id && !snapshotPattern.test(id))
       throw new AppError("INVALID_PARAMETER", "快照参数不合法。", 400);
     let target = id;
@@ -158,7 +158,7 @@ export class SnapshotStore {
     try {
       summary.lastError = (
         JSON.parse(
-          await readFile(join(this.directory(p), "last-error.json"), "utf8"),
+          await readFile(join(this.directory(), "last-error.json"), "utf8"),
         ) as { message: string }
       ).message;
     } catch {}
@@ -169,7 +169,7 @@ export class SnapshotStore {
     limits: Limits,
     context?: RefreshContext,
   ): Promise<Snapshot> {
-    const key = this.directory(p),
+    const key = this.directory(),
       existing = this.pending.get(key);
     if (existing) return existing;
     const promise = this.collect(p, limits, context).finally(() =>
@@ -183,7 +183,7 @@ export class SnapshotStore {
     limits: Limits,
     context?: RefreshContext,
   ) {
-    const dir = this.directory(p);
+    const dir = this.directory();
     try {
       await this.acquire();
       const previous = await this.snapshot(p).catch(() => undefined);
@@ -371,7 +371,7 @@ export class SnapshotStore {
     const source =
       snapshotId && !revision ? await this.snapshot(p, snapshotId) : latest;
     return resolveCurrentPreview(
-      this.readerFactory(join(this.directory(p), "git"), p),
+      this.readerFactory(join(this.directory(), "git"), p),
       latest,
       source,
       revision,
@@ -393,7 +393,7 @@ export class SnapshotStore {
     const latest = await this.snapshot(p);
     const source =
       snapshotId && !revision ? await this.snapshot(p, snapshotId) : latest;
-    const reader = this.readerFactory(join(this.directory(p), "git"), p);
+    const reader = this.readerFactory(join(this.directory(), "git"), p);
     return resolvePreview(
       reader,
       latest,
@@ -417,7 +417,7 @@ export class SnapshotStore {
         400,
       );
     const body = await readFile(
-      join(this.directory(p), "blobs", document.blob),
+      join(this.directory(), "blobs", document.blob),
     ).catch(() => {
       throw new AppError("CACHE_INVALID", "正文缓存不可读，请重新读取。");
     });

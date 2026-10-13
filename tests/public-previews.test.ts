@@ -8,6 +8,7 @@ import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
   publicPreviewResponse,
   preparePreviewResponse,
+  withdrawPreviewResponse,
 } from "../src/server/public-preview-api.ts";
 import { ThumbnailCache } from "../src/server/thumbnail-cache.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
@@ -347,6 +348,56 @@ test("renderer changes preserve published bytes while allowing a new publication
     assert.equal((await t.prepare()).id, current.id);
     await assert.rejects(t.store.get(oldId), { code: "PREVIEW_WITHDRAWN" });
   } finally {
+    await t.cleanup();
+  }
+});
+
+test("withdrawing public previews requires same-origin administrator authorization", async () => {
+  const t = await setup();
+  const previous = process.env.OPENFOLIO_DATA_DIR;
+  process.env.OPENFOLIO_DATA_DIR = t.f.root;
+  try {
+    const meta = await t.prepare();
+    const { adminPassword, login } = await import("../src/server/access.ts");
+    const url = `https://folio.test/api/public-previews/${meta.id}`;
+    const withdraw = (headers: Record<string, string> = {}) =>
+      withdrawPreviewResponse(
+        new Request(url, { method: "DELETE", headers }),
+        meta.id,
+        t.store,
+      );
+    assert.equal(
+      (await withdraw({ origin: "https://folio.test" })).status,
+      401,
+    );
+    assert.equal((await t.store.get(meta.id)).id, meta.id);
+    const admin = (await login(new Request(url), await adminPassword())).split(
+      ";",
+    )[0];
+    assert.equal(
+      (await withdraw({ cookie: admin, origin: "https://attacker.test" }))
+        .status,
+      403,
+    );
+    assert.equal((await t.store.get(meta.id)).id, meta.id);
+    assert.equal(
+      (await withdraw({ cookie: admin, origin: "https://folio.test" })).status,
+      200,
+    );
+    assert.equal(
+      (
+        await publicPreviewResponse(
+          new Request(url),
+          meta.id,
+          "metadata",
+          t.store,
+        )
+      ).status,
+      410,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.OPENFOLIO_DATA_DIR;
+    else process.env.OPENFOLIO_DATA_DIR = previous;
     await t.cleanup();
   }
 });
