@@ -267,6 +267,63 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
 });
 
+test("loaded hosted pages need no ready bridge and explicit errors survive page load", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.addInitScript(() => {
+    if (!location.href.startsWith("https://127.0.0.1:10686/")) return;
+    window.addEventListener(
+      "message",
+      (event) => {
+        if (event.data?.type !== "openfolio:preview:init") return;
+        event.stopImmediatePropagation();
+        document.documentElement.dataset.previewRequest = event.data.requestId;
+      },
+      true,
+    );
+  });
+  await page.goto(path + "&prototype=hosted&preview=hosted");
+  const panel = page.getByRole("region", { name: "当前页面预览" });
+  const frame = page.frameLocator('iframe[title="原型：托管 React"]');
+  await expect(frame.getByRole("heading")).toBeVisible();
+  await frame.getByRole("button", { name: "已添加 0 次" }).click();
+  await expect(
+    frame.getByRole("button", { name: "已添加 1 次" }),
+  ).toBeVisible();
+  await expect(panel.locator(".preview-host-status")).toHaveCount(0);
+  await page.clock.fastForward(5500);
+  await expect(panel.locator(".preview-host-status")).toHaveCount(0);
+  await expect(page.getByText(/尚未确认页面就绪/)).toHaveCount(0);
+  await frame.locator("html").evaluate((html) => {
+    parent.postMessage(
+      {
+        type: "openfolio:preview:status",
+        requestId: html.dataset.previewRequest,
+        version: location.pathname.split("/")[1],
+        status: "error",
+      },
+      "*",
+    );
+  });
+  await expect(panel.getByRole("alert")).toHaveText(
+    /宿主报告页面运行失败，请在独立页面检查。/,
+  );
+  await expect(panel.getByRole("link", { name: "独立打开" })).toHaveAttribute(
+    "href",
+    "https://127.0.0.1:10686/v1/index.html",
+  );
+  await panel.getByRole("button", { name: "重新加载原型" }).click();
+  await expect(
+    frame.getByRole("button", { name: "已添加 0 次" }),
+  ).toBeVisible();
+  await expect(panel.locator(".preview-host-status")).toHaveCount(0);
+  await expect(panel.locator("iframe")).toHaveAttribute(
+    "sandbox",
+    "allow-scripts",
+  );
+});
+
 test("card captions open details and full-size images while covers enter the canvas", async ({
   page,
   request,

@@ -40,6 +40,7 @@ export function ChangePreviews({
   }>({ key: "" });
   const [attempt, setAttempt] = useState(0),
     [ready, setReady] = useState(""),
+    [loaded, setLoaded] = useState(""),
     [loadError, setLoadError] = useState(""),
     [runtimeError, setRuntimeError] = useState("");
   const [directoryOpen, setDirectoryOpen] = useState(false);
@@ -182,7 +183,7 @@ export function ChangePreviews({
         "*",
       );
     const timer = window.setTimeout(() => {
-      if (!confirmed) setHostStatus("unconfirmed");
+      if (!confirmed) setHostStatus("slow");
     }, 5000);
     const interval = window.setInterval(send, 500);
     const report = (event: MessageEvent) => {
@@ -465,16 +466,23 @@ export function ChangePreviews({
         {hosted &&
           entry?.available &&
           !loadError &&
-          (!current || hostStatus !== "ready") && (
-            <div className="preview-host-status" role="status">
+          (!current ||
+            hostStatus === "error" ||
+            (loaded !== load && hostStatus !== "ready")) && (
+            <div
+              className="preview-host-status"
+              role={hostStatus === "error" ? "alert" : "status"}
+            >
               <span>
                 {hostStatus === "ready"
                   ? "页面已就绪"
                   : hostStatus === "error"
                     ? "宿主报告页面运行失败，请在独立页面检查。"
-                    : hostStatus === "unconfirmed"
-                      ? "尚未确认页面就绪；若画布空白，可在独立页面查看。"
-                      : "正在等待页面就绪…"}
+                    : loaded === load
+                      ? "页面已加载"
+                      : hostStatus === "slow"
+                        ? "页面加载较慢，可在独立页面查看。"
+                        : "正在加载页面…"}
               </span>
               <a
                 href={hosted.url}
@@ -517,6 +525,7 @@ export function ChangePreviews({
                   key={load}
                   title={`原型：${entry.title}`}
                   src={url}
+                  onLoad={() => setLoaded(load)}
                   sandbox="allow-scripts"
                   allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
                   referrerPolicy="no-referrer"

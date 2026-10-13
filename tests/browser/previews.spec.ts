@@ -126,6 +126,7 @@ test("narrow screens keep component dimensions and unsupported links recover to 
 test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted URLs never get HEAD or load query", async ({
   page,
 }) => {
+  await page.clock.install();
   const requests: { method: string; url: string }[] = [];
   page.on("request", (r) => {
     if (r.url().startsWith("https://127.0.0.1:10686"))
@@ -152,15 +153,14 @@ test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted 
     .getByRole("button", { name: "未接就绪回报 页面", exact: true })
     .click();
   await expect(
-    page.getByText("尚未确认页面就绪；若画布空白，可在独立页面查看。", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
     page
       .frameLocator('iframe[title="原型：未接就绪回报"]')
       .getByRole("heading"),
   ).toBeVisible();
+  await expect(page.getByText("页面已加载", { exact: true })).toBeVisible();
+  await page.clock.fastForward(5500);
+  await expect(page.getByText("页面已加载", { exact: true })).toBeVisible();
+  await expect(page.getByText(/尚未确认页面就绪/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "独立打开" })).toHaveAttribute(
     "href",
     /#no-bridge$/,

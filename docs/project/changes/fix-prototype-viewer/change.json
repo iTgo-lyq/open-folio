@@ -16,7 +16,9 @@
     },
     "T2": {
       "title": "修正原型加载与应用就绪反馈",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型及格式检查通过；原型两组浏览器回归16项全部通过，覆盖无桥接加载/超时、ready/error、重载状态重置、固定URL与沙箱，以及目录/分享/设备/历史/窄屏。详见execution.md。",
+      "commitTitle": "fix-prototype-viewer T2: distinguish page load from optional readiness"
     }
   },
   "closure": {},
