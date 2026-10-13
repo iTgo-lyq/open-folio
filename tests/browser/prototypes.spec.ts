@@ -1,5 +1,29 @@
 import { test, expect, repositoryQuery, repoKey } from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
+test("navigation hints stay above the prototype gallery", async ({ page }) => {
+  await page.goto(path);
+  await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
+  const link = page
+    .getByRole("navigation", { name: "模块导航" })
+    .getByRole("link", { name: "Changes", exact: true });
+  const hint = link.locator("span");
+  const aboveContent = () =>
+    hint.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const previous = el.style.pointerEvents;
+      el.style.pointerEvents = "auto";
+      const top = document.elementFromPoint(box.right - 2, box.y + box.height / 2);
+      el.style.pointerEvents = previous;
+      return el === top;
+    });
+  await link.hover();
+  await expect(hint).toHaveCSS("opacity", "1");
+  expect(await aboveContent()).toBe(true);
+  await page.mouse.move(500, 100);
+  await link.focus();
+  await expect(hint).toHaveCSS("opacity", "1");
+  expect(await aboveContent()).toBe(true);
+});
 test("main gallery opens current pages directly without Change/version selectors", async ({
   page,
   context,

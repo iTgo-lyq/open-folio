@@ -4,13 +4,15 @@
   "title": "简化工作台框架并修正提示层级",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/simplify-workspace-ui",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "修正原型卡片与导航提示的层级",
-      "status": "todo"
+      "status": "done",
+      "verification": "原型桌面/320px 卡片用例及导航提示鼠标/键盘层级回归均通过；CSS 格式检查通过。",
+      "commitTitle": "simplify-workspace-ui T1: keep navigation hints above content"
     },
     "T2": {
       "title": "将框架第二行必要内容合并到右上角",
