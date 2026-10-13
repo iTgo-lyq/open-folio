@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "simplify-workspace-ui",
+  "title": "简化工作台框架并修正提示层级",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/simplify-workspace-ui",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修正原型卡片与导航提示的层级",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "将框架第二行必要内容合并到右上角",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "完整删除工作台及原型副本中的搜索功能",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
