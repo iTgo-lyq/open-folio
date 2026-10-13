@@ -47,7 +47,6 @@ function reset(scenario = "home") {
     device: scenario === "device" ? "mobile" : "desktop",
     page: scenario === "legacy" ? "legacy" : "home",
     restored: false,
-    query: "",
     collapsed: false,
   };
   if (scenario === "other")
@@ -84,7 +83,7 @@ function shell(content, title = "我的仓库") {
         `<button aria-label="${name}" ${i && !allowed ? "disabled" : ""} ${state.page === page && i < 2 ? 'aria-current="page"' : ""} data-action="${page}">${icon(svg)}<span>${name}</span></button>`,
     )
     .join("");
-  return `<div class="shell ${state.collapsed ? "rail-collapsed" : ""}"><aside class="module-rail"><button class="shell-brand" data-action="rail" aria-label="${state.collapsed ? "展开侧栏" : "收起侧栏"}" aria-expanded="${!state.collapsed}"><img src="${mark}" alt="OpenFolio"><span class="restore-handle"></span></button><nav class="module-nav" aria-label="工作台模块">${nav}</nav><button class="rail-footer" data-action="credentials" aria-label="当前凭据">${icon("settings")}</button></aside><main class="work-area"><header class="topbar"><div class="header-context row"><span class="project-monogram">O</span><span class="header-module">${title}</span></div><div class="header-actions row">${state.connected ? `<button class="btn quiet" data-action="credentials">@demo-user</button>` : ""}<button class="icon-btn" data-action="credentials" aria-label="当前凭据">${icon("settings")}</button></div></header><div class="source"><span class="row"><span class="status-dot ${state.scenario === "expired" ? "warning" : ""}"></span>${state.connected ? `GitHub · ${esc(workspace().label)}` : "使用 Git 凭据登录"}</span><span class="source-caption">${state.connected ? "当前凭据工作台" : "OpenFolio"}</span></div><div class="body">${content}</div></main></div><nav class="module-nav mobile-navigation" aria-label="移动工作台模块">${nav}</nav>`;
+  return `<div class="shell ${state.collapsed ? "rail-collapsed" : ""}"><aside class="module-rail"><button class="shell-brand" data-action="rail" aria-label="${state.collapsed ? "展开侧栏" : "收起侧栏"}" aria-expanded="${!state.collapsed}"><img src="${mark}" alt="OpenFolio"><span class="restore-handle"></span></button><nav class="module-nav" aria-label="工作台模块">${nav}</nav><button class="rail-footer" data-action="credentials" aria-label="当前凭据">${icon("settings")}</button></aside><main class="work-area"><header class="topbar"><div class="header-context row"><span class="project-monogram">O</span><span class="header-module">${title}</span></div><div class="header-actions row"><details class="header-source"><summary aria-label="查看读取状态">${icon("branch")}<span class="header-source-label">${state.connected ? esc(workspace().label) : "GitHub"}</span></summary><div class="header-source-details"><span>${state.connected ? `GitHub · ${esc(workspace().label)}` : "使用 Git 凭据登录"}</span><span>${state.connected ? "当前凭据工作台" : "OpenFolio"}</span></div></details>${state.connected ? `<button class="btn quiet" data-action="credentials">@demo-user</button>` : ""}<button class="icon-btn" data-action="credentials" aria-label="当前凭据">${icon("settings")}</button></div></header><div class="body">${content}</div></main></div><nav class="module-nav mobile-navigation" aria-label="移动工作台模块">${nav}</nav>`;
 }
 function login(switching = false) {
   return `<section class="credential-login"><div class="eyebrow">YOUR WORKSPACE</div><h1>${switching ? "切换凭据" : "登录你的工作台"}</h1><p>使用相同 token，在另一台设备继续阅读。</p><div class="platform-caption"><span class="repo-symbol">GH</span><div><strong>GitHub</strong><p><span>github.com</span></p></div></div><form id="login-form"><label for="git-username">Git 用户名</label><input id="git-username" name="username" autocomplete="username" placeholder="例如 demo-user" value="demo-user" required><label for="git-token">Token</label><input id="git-token" name="token" type="password" autocomplete="off" placeholder="原型中输入 demo 或 demo-other" aria-describedby="demo-help" required><p class="form-error" id="login-error" role="alert"></p><button class="btn primary" type="submit">${switching ? "验证并切换" : "登录工作台"}</button>${switching ? btn("返回当前工作台", "credentials") : ""}</form><p class="form-help" id="demo-help">示例 token：demo 恢复已有工作台；demo-other 进入另一个工作台。请勿输入真实凭据。</p></section>`;
@@ -93,12 +92,7 @@ function home() {
   const w = workspace();
   if (state.scenario === "expired")
     return `<section class="home"><div class="empty">${icon("branch")}<h2>当前 token 无法验证</h2><p>重新检查凭据后继续阅读，或使用另一个 token 登录。</p><div class="row">${btn("重试验证", "retry", true)}${btn("切换凭据", "switch")}</div></div></section>`;
-  const results = w.repos.filter(
-    (r) =>
-      !state.query ||
-      (r.name + r.path).toLowerCase().includes(state.query.toLowerCase()),
-  );
-  return `<section class="home"><div class="intro"><div><div class="eyebrow">MY REPOSITORIES</div><h1>我的仓库</h1><p>项目的上下文，从你参与的仓库开始。</p></div>${btn("重新发现", "discover")}</div>${state.restored ? '<div class="notice workspace-restored">工作台已恢复，可以继续上次的阅读。</div>' : ""}<div class="toolbar"><span>${w.repos.length} 个已接入仓库</span><label class="search">${icon("search")}<input type="search" id="repo-search" aria-label="查找仓库" placeholder="查找仓库…" value="${esc(state.query)}"></label></div>${results.map((r) => `<a class="repo-row" href="#reading" data-action="reading"><div class="row"><span class="repo-symbol">${r.symbol}</span><div><strong>${r.name}</strong><p class="repo-meta mono">${r.path}</p></div></div><div class="repo-content">${r.count} Specs · 1 Change</div>${badge("已接入")}${icon("chevron")}</a>`).join("")}${!w.repos.length ? `<div class="empty">${icon("branch")}<h2>开始发现你的仓库</h2><p>这是另一个 token 的工作台。发现并读取后，你可以在其他设备继续使用。</p>${btn("发现仓库", "discover", true)}</div>` : !results.length ? '<div class="empty"><h2>没有匹配的仓库</h2></div>' : ""}<div class="section-note"><span>${w.cached ? "已恢复 · 最近阅读可用" : "尚未采集工程记录"}<br>当前凭据：${esc(w.label)}</span><button data-action="credentials">管理凭据 →</button></div></section>`;
+  return `<section class="home"><div class="intro"><div><div class="eyebrow">MY REPOSITORIES</div><h1>我的仓库</h1><p>项目的上下文，从你参与的仓库开始。</p></div>${btn("重新发现", "discover")}</div>${state.restored ? '<div class="notice workspace-restored">工作台已恢复，可以继续上次的阅读。</div>' : ""}<div class="toolbar"><span>${w.repos.length} 个已接入仓库</span></div>${w.repos.map((r) => `<a class="repo-row" href="#reading" data-action="reading"><div class="row"><span class="repo-symbol">${r.symbol}</span><div><strong>${r.name}</strong><p class="repo-meta mono">${r.path}</p></div></div><div class="repo-content">${r.count} Specs · 1 Change</div>${badge("已接入")}${icon("chevron")}</a>`).join("")}${!w.repos.length ? `<div class="empty">${icon("branch")}<h2>开始发现你的仓库</h2><p>这是另一个 token 的工作台。发现并读取后，你可以在其他设备继续使用。</p>${btn("发现仓库", "discover", true)}</div>` : ""}<div class="section-note"><span>${w.cached ? "已恢复 · 最近阅读可用" : "尚未采集工程记录"}<br>当前凭据：${esc(w.label)}</span><button data-action="credentials">管理凭据 →</button></div></section>`;
 }
 function credentials() {
   const w = workspace();
@@ -142,18 +136,6 @@ function render() {
       }
       signIn(token);
     };
-  const search = $("#repo-search");
-  if (search)
-    search.oninput = () => {
-      const start = search.selectionStart;
-      state.query = search.value;
-      render();
-      const next = $("#repo-search");
-      next.focus();
-      try {
-        next.setSelectionRange(start, start);
-      } catch {}
-    };
 }
 function signIn(token) {
   if (state.connected)
@@ -170,7 +152,6 @@ function signIn(token) {
     });
   state.connected = true;
   state.page = "home";
-  state.query = "";
   state.restored = w.cached;
   state.scenario = token === "demo" ? "home" : "other";
   $("#scenario").value = state.scenario;

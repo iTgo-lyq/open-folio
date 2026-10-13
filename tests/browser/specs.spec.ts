@@ -1,7 +1,5 @@
 import { test, expect, repositoryQuery } from "./connected";
-test("Specs tree, body search, anchors, raw view and safe links", async ({
-  page,
-}) => {
+test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
@@ -35,12 +33,10 @@ test("Specs tree, body search, anchors, raw view and safe links", async ({
       .getByRole("heading", { name: "访问与来源", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "搜索工作台" }).click();
-  await page.getByRole("textbox", { name: "全文搜索" }).fill("正在输入");
-  await page.getByRole("textbox", { name: "全文搜索" }).fill("");
-  await expect(page.getByText("搜索当前来源中的真实文档")).toBeVisible();
-  await page.getByRole("textbox", { name: "全文搜索" }).fill("星河检索");
-  await page.getByRole("button", { name: /访问与来源.*星河检索/ }).click();
+  await page
+    .getByRole("navigation", { name: "能力目录" })
+    .getByRole("button", { name: "访问与来源", exact: true })
+    .click();
   await expect(page).toHaveURL(/s=platform%2Faccess/);
   await expect(
     page.getByRole("heading", { name: "访问与来源", exact: true }),
@@ -91,51 +87,21 @@ test("deep namespace, invalid selection and mobile navigation remain usable", as
   ).toBeVisible();
 });
 
-test("search and deep links reveal selected capability ancestors", async ({
-  page,
-}) => {
+test("deep links reveal selected capability ancestors", async ({ page }) => {
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
   await page
     .getByRole("button", { name: "收起 platform", exact: true })
     .click();
-  await page.getByRole("textbox", { name: "筛选能力" }).fill("交付");
-  await page.getByRole("button", { name: "搜索工作台" }).click();
-  await page.getByRole("textbox", { name: "全文搜索" }).fill("星河检索");
-  await page.getByRole("button", { name: /访问与来源.*星河检索/ }).click();
-  await expect(page.getByRole("textbox", { name: "筛选能力" })).toHaveValue("");
-  await expect(
-    page
-      .getByRole("navigation", { name: "能力目录" })
-      .getByRole("button", { name: "访问与来源", exact: true }),
-  ).toBeVisible();
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
+  const selected = page
+    .getByRole("navigation", { name: "能力目录" })
+    .getByRole("button", { name: "访问与来源", exact: true });
+  await expect(selected).toBeVisible();
   await page
     .getByRole("button", { name: "收起 platform", exact: true })
     .click();
   await page.reload();
-  await expect(
-    page
-      .getByRole("navigation", { name: "能力目录" })
-      .getByRole("button", { name: "访问与来源", exact: true }),
-  ).toBeVisible();
-});
-
-test("selecting the same search result explicitly reveals it again", async ({
-  page,
-}) => {
-  await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
-  await page
-    .getByRole("button", { name: "收起 platform", exact: true })
-    .click();
-  await page.getByRole("textbox", { name: "筛选能力" }).fill("交付");
-  await page.getByRole("button", { name: "搜索工作台" }).click();
-  await page.getByRole("textbox", { name: "全文搜索" }).fill("星河检索");
-  await page.getByRole("button", { name: /访问与来源.*星河检索/ }).click();
-  await expect(page.getByRole("textbox", { name: "筛选能力" })).toHaveValue("");
-  await expect(
-    page
-      .getByRole("navigation", { name: "能力目录" })
-      .getByRole("button", { name: "访问与来源", exact: true }),
-  ).toBeVisible();
+  await expect(selected).toBeVisible();
 });
 
 test("copying a document link includes its actual capability and branch", async ({

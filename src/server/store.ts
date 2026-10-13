@@ -9,14 +9,13 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { AUTO_REFRESH_MS, primaryRecord } from "../lib/model.ts";
+import { AUTO_REFRESH_MS } from "../lib/model.ts";
 import type {
   Limits,
   ProjectConfig,
   ProjectSummary,
   Snapshot,
   Workbench,
-  SearchResult,
 } from "../lib/model.ts";
 import { GitReader, hash, scanFingerprint } from "./git.ts";
 import { indexChanges } from "./changes.ts";
@@ -448,73 +447,5 @@ export class SnapshotStore {
       throw new AppError("CACHE_INVALID", "正文缓存不可读，请重新读取。");
     });
     return { document, body };
-  }
-  async search(
-    p: ProjectConfig,
-    snapshot: string,
-    branch: string | undefined,
-    query: string,
-    kind: string,
-  ) {
-    const s = await this.workbench(p, snapshot, branch),
-      q = query.trim().toLocaleLowerCase();
-    if (!q || q.length > 200) return [];
-    const results: SearchResult[] = [];
-    if (kind === "changes")
-      for (const group of s.changes) {
-        const c = primaryRecord(group);
-        if (!c?.state) continue;
-        if (`${group.id} ${group.title}`.toLocaleLowerCase().includes(q))
-          results.push({
-            changeId: group.id,
-            title: group.title,
-            path: c.directory,
-            excerpt: group.id,
-            branch: c.branch,
-          });
-        for (const [taskId, task] of Object.entries(c.state.tasks))
-          if (`${taskId} ${task.title}`.toLocaleLowerCase().includes(q))
-            results.push({
-              changeId: group.id,
-              taskId,
-              title: `${taskId} · ${task.title}`,
-              path: c.directory,
-              excerpt: group.title,
-              branch: c.branch,
-            });
-      }
-    const refs =
-      kind === "specs"
-        ? new Set(s.specs.map((x) => x.documentId))
-        : new Set(
-            s.changes.flatMap((g) =>
-              g.candidates
-                .filter((c) => c.key === g.primary || !g.primary)
-                .flatMap((c) => c.documentIds),
-            ),
-          );
-    for (const d of s.documents.filter(
-      (d) =>
-        refs.has(d.id) && d.readable && ["markdown", "json"].includes(d.kind),
-    )) {
-      const body = (await this.document(p, d.id, snapshot)).body.toString(),
-        at = body.toLocaleLowerCase().indexOf(q);
-      if (at < 0 && !`${d.title} ${d.path}`.toLocaleLowerCase().includes(q))
-        continue;
-      const change = s.changes.find((g) =>
-        g.candidates.some((c) => c.documentIds.includes(d.id)),
-      );
-      results.push({
-        documentId: d.id,
-        changeId: change?.id,
-        specId: s.specs.find((v) => v.documentId === d.id)?.id,
-        title: d.title,
-        path: d.path,
-        branch: d.branch,
-        excerpt: body.slice(Math.max(0, at - 40), Math.max(0, at - 40) + 160),
-      });
-      if (results.length >= 100) break;
-    }
-    return results.slice(0, 100);
   }
 }

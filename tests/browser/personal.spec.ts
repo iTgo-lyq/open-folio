@@ -174,7 +174,9 @@ test("switching credentials restores only the current token and revoked permissi
   );
   await page.goto("/");
   await expect(page.locator(".personal-repo-row")).toHaveCount(1);
-  await request.post("/_fixture/control", { data: { revoke: "token-b" } });
+  await request.post("/_fixture/control", {
+    data: { revoke: "token-b", advancePermissions: 300_000 },
+  });
   await page.reload();
   await expect(
     page.getByRole("alert").filter({ hasText: "token 已失效，请替换连接。" }),

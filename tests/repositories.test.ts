@@ -9,7 +9,7 @@ import {
   repositoryPermissions,
   PERMISSION_CHECK_MS,
 } from "../src/server/repository-permissions.ts";
-test("personal repository reads isolate snapshots and expire cached permissions for documents, search, images and HEAD", async () => {
+test("personal repository reads isolate snapshots and expire cached permissions for documents, images and HEAD", async () => {
   const t = await setup();
   try {
     assert.equal((await t.request("refresh", "POST")).status, 200);
@@ -31,7 +31,6 @@ test("personal repository reads isolate snapshots and expire cached permissions 
     );
     const paths = [
       `documents/${doc.id}?snapshot=${w.id}`,
-      `search?snapshot=${w.id}&q=中心`,
       `assets/${image.id}?snapshot=${w.id}`,
       `workbench?snapshot=${w.id}`,
       "prototypes",

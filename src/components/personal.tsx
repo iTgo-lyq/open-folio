@@ -8,7 +8,6 @@ import {
   GitBranch,
   Github,
   KeyRound,
-  Search,
   X,
 } from "lucide-react";
 import {
@@ -53,7 +52,6 @@ export function PersonalHome() {
     { nav, selectRepository } = useWorkspace();
   const [connect, setConnect] = useState(false),
     [check, setCheck] = useState(false),
-    [term, setTerm] = useState(""),
     [filter, setFilter] = useState("all"),
     [failure, setFailure] = useState("");
   const discover = async () => {
@@ -64,11 +62,7 @@ export function PersonalHome() {
       setFailure((e as Error).message);
     }
   };
-  const items = p.items.filter(
-    (i) =>
-      (filter === "all" || i.state === filter) &&
-      i.repository.fullName.toLowerCase().includes(term.toLowerCase()),
-  );
+  const items = p.items.filter((i) => filter === "all" || i.state === filter);
   if (!p.session)
     return (
       <EmptyState
@@ -182,15 +176,6 @@ export function PersonalHome() {
               </ErrorNotice>
             )}
             <div className="personal-toolbar">
-              <label className="personal-search">
-                <Search size={16} />
-                <Input
-                  aria-label="搜索仓库"
-                  placeholder="搜索仓库名称…"
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                />
-              </label>
               <Tabs value={filter} onValueChange={setFilter}>
                 <TabsList aria-label="仓库状态">
                   <TabsTrigger value="all">全部</TabsTrigger>
@@ -255,7 +240,7 @@ export function PersonalHome() {
                 title={
                   p.listing
                     ? "正在读取仓库目录…"
-                    : term || filter !== "all"
+                    : filter !== "all"
                       ? "没有匹配的仓库"
                       : p.discovery?.state === "complete"
                         ? "还没有发现 SpecTrail 仓库"

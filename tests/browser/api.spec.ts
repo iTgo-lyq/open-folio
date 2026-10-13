@@ -19,9 +19,9 @@ test("personal API reads cached records and enforces input boundaries", async ({
   ).toBe(400);
   expect(
     (
-      await request.get(personal.url(`search?snapshot=${work.id}&kind=bad`))
+      await request.get(personal.url(`search?snapshot=${work.id}&q=工程`))
     ).status(),
-  ).toBe(400);
+  ).toBe(404);
   expect(
     (
       await request.post(personal.url("refresh"), {
@@ -50,7 +50,6 @@ test("periodic revalidation detects revoked credentials and then rejects cached 
     "workbench",
     `documents/${doc.id}?snapshot=${work.id}`,
     `assets/${image.id}?snapshot=${work.id}`,
-    `search?snapshot=${work.id}&q=工程`,
     "prototypes",
   ]) {
     expect((await request.get(personal.url(path))).status()).toBe(401);

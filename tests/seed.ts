@@ -48,7 +48,7 @@ export async function seed() {
   );
   await f.put(
     "docs/project/specs/platform/access/spec.md",
-    "# 访问与来源\n\n## 项目读取\n\n项目通过 HTTPS 从中心 Git 读取，保留可核对的来源。\n\n## 权限边界\n\n独特正文词：星河检索。\n\n[返回工程协作](../spec.md#能力边界)\n",
+    "# 访问与来源\n\n## 项目读取\n\n项目通过 HTTPS 从中心 Git 读取，保留可核对的来源。\n\n## 权限边界\n\n读取权限由当前凭据决定。\n\n[返回工程协作](../spec.md#能力边界)\n",
   );
   await f.put(
     "docs/project/specs/delivery/history/record/spec.md",
@@ -189,7 +189,7 @@ export async function seed() {
         },
       },
     }),
-    make("search-navigation", "全文搜索与阅读导航", {
+    make("reading-navigation", "文档阅读与导航", {
       size: "medium",
       stage: "technical",
       confirmations: { requirement: confirmed },

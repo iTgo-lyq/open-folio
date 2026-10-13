@@ -13,24 +13,6 @@ export const DEVICE_LABELS = {
   ipad: "iPad",
   mobile: "移动设备",
 };
-export function matchesPrototype(
-  item: PrototypeItem,
-  query: string,
-  device: string,
-) {
-  const term = query.trim().toLocaleLowerCase();
-  return (
-    (!device ||
-      (device === "custom"
-        ? !!item.viewport
-        : item.devices?.some((d) => d === device))) &&
-    (!term ||
-      `${item.title} ${item.description ?? ""} ${item.id}`
-        .toLocaleLowerCase()
-        .includes(term))
-  );
-}
-
 /** Transient preview/detail routing; catalog filters and scroll remain intact. */
 export const CLEAR_PROTOTYPE_VIEW = {
   prototype: null,

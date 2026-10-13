@@ -7,7 +7,6 @@ import {
   FileText,
   Folder,
   ListTree,
-  Search,
 } from "lucide-react";
 import type { SpecRef } from "@/lib/model";
 import { useWorkspace } from "./context";
@@ -37,7 +36,6 @@ function treeOf(specs: SpecRef[]) {
 }
 export default function Specs() {
   const { data, q, nav, projectId, revealVersion } = useWorkspace(),
-    [filter, setFilter] = useState(""),
     [mobileTree, setMobileTree] = useState(false),
     [closed, setClosed] = useState<string[]>([]);
   const specs = data?.specs ?? [],
@@ -51,7 +49,6 @@ export default function Specs() {
     }
   }, [storageKey]);
   useEffect(() => {
-    setFilter("");
     if (!selected?.id) return;
     setClosed((prev) => {
       const next = prev.filter((path) => !selected.id.startsWith(`${path}/`));
@@ -71,17 +68,7 @@ export default function Specs() {
       } catch {}
       return next;
     });
-  const tree = useMemo(
-    () =>
-      treeOf(
-        specs.filter((s) =>
-          `${s.title} ${s.id}`
-            .toLocaleLowerCase()
-            .includes(filter.toLocaleLowerCase()),
-        ),
-      ),
-    [specs, filter],
-  );
+  const tree = useMemo(() => treeOf(specs), [specs]);
   function nodes(items: Tree[], depth = 0): React.ReactNode {
     return items.map((n) => (
       <li key={n.path}>
@@ -115,7 +102,7 @@ export default function Specs() {
             <span>{n.spec?.title ?? n.name}</span>
           </button>
         </div>
-        {n.children.length > 0 && (!closed.includes(n.path) || filter) && (
+        {n.children.length > 0 && !closed.includes(n.path) && (
           <ul>{nodes(n.children, depth + 1)}</ul>
         )}
       </li>
@@ -135,20 +122,8 @@ export default function Specs() {
             <ChevronRight size={18} />
           </button>
         </div>
-        <label className="small-search">
-          <Search size={14} />
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="筛选能力…"
-            aria-label="筛选能力"
-          />
-        </label>
         <nav className="capability-tree" aria-label="能力目录">
           <ul>{nodes(tree.children)}</ul>
-          {filter && !tree.children.length && (
-            <p className="muted inset">没有匹配的能力</p>
-          )}
         </nav>
         <footer className="sidebar-footer">
           <span className="status-dot" />

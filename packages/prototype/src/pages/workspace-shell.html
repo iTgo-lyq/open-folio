@@ -20,23 +20,16 @@
 <label class="project-select"><span class="project-monogram">O</span><select aria-label="当前项目"><option>OpenFolio</option></select></label>
 <svg class="icon header-chevron" aria-hidden="true"><use href="#icon-chevron"></use></svg><span class="header-module">Specs</span><span class="read-only">只读</span>
 </div>
-<div class="header-actions">
+<div class="header-actions"><details class="header-source"><summary aria-label="查看读取状态"><svg class="icon" aria-hidden="true"><use href="#icon-branch"></use></svg><span class="header-source-label" id="source-label">main</span></summary><div class="header-source-details"><strong>读取来源</strong><span id="source">main · 守护分支</span><span>页面外壳预览</span></div></details>
 <button class="icon-button settings-mobile-trigger" aria-label="工作台配置" data-settings><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg></button>
-<button class="search-launch" aria-label="搜索工作台"><svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg><span>搜索文档、变更…</span><kbd>⌘ K</kbd></button>
 <button class="icon-button" id="refresh" aria-label="刷新中心仓库"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
 </div>
 </header>
-<div class="workspace-source"><div class="row"><svg class="icon" aria-hidden="true"><use href="#icon-branch"></use></svg><span id="source">main · 守护分支</span></div><span class="snapshot-time">页面外壳预览</span></div>
 <section class="shell-content" aria-labelledby="canvas-title"><div class="content-outline"><h1 id="canvas-title">Specs 内容区</h1><p>保留页面结构，业务内容后续补充</p></div></section>
 </main>
 </div>
 <div class="mobile-navigation" data-navigation></div>
 <div class="feedback" role="status" aria-live="polite"></div>
-<dialog class="quick-search" aria-labelledby="search-title">
-<div class="dialog-heading"><h2 id="search-title">搜索工作台</h2><button class="icon-button" aria-label="关闭搜索"><svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg></button></div>
-<label class="sr-only" for="search-input">搜索模块</label><input id="search-input" type="search" placeholder="搜索模块…" autocomplete="off">
-<ul><li><button data-target="specs">Specs</button></li><li><button data-target="changes">Changes</button></li><li><button data-target="prototypes">原型</button></li></ul><p id="no-results" hidden>没有匹配的模块</p>
-</dialog>
 <script>
 const $ = (selector) => document.querySelector(selector);
 const labels = { specs: 'Specs', changes: 'Changes', prototypes: '原型' };
@@ -47,6 +40,7 @@ function render() {
  $('.header-module').textContent = labels[id];
  $('#canvas-title').textContent = labels[id] + ' 内容区';
  $('#source').textContent = sources[id];
+ $('#source-label').textContent = id === 'changes' ? '全部分支' : 'main';
  document.querySelectorAll('[data-module]').forEach(link => {
   if (link.dataset.module === id) link.setAttribute('aria-current', 'page');
   else link.removeAttribute('aria-current');
@@ -67,39 +61,5 @@ function feedback(text) {
 }
 document.querySelectorAll('[data-settings]').forEach(button => button.onclick = () => feedback('工作台配置入口 · 当前为外壳预览'));
 $('#refresh').onclick = () => feedback('当前为页面外壳预览');
-const dialog = $('.quick-search');
-let trigger;
-function openSearch() {
- if (dialog.open) return;
- trigger = document.activeElement;
- $('#search-input').value = '';
- filter();
- dialog.showModal();
- $('#search-input').focus();
-}
-$('.search-launch').onclick = openSearch;
-dialog.querySelector('[aria-label="关闭搜索"]').onclick = () => dialog.close();
-dialog.addEventListener('close', () => trigger?.focus());
-dialog.querySelectorAll('[data-target]').forEach(button => button.onclick = () => {
- location.hash = button.dataset.target;
- render();
- dialog.close();
-});
-function filter() {
- const query = $('#search-input').value.trim().toLowerCase();
- let count = 0;
- dialog.querySelectorAll('li').forEach(item => {
-  item.hidden = !item.textContent.toLowerCase().includes(query);
-  if (!item.hidden) count++;
- });
- $('#no-results').hidden = count > 0;
-}
-$('#search-input').addEventListener('input', filter);
-window.addEventListener('keydown', event => {
- if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-  event.preventDefault();
-  if (dialog.open) dialog.close(); else openSearch();
- }
-});
 </script>
 </body></html>

@@ -4,7 +4,6 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
-import { matchesPrototype } from "../src/lib/prototypes.ts";
 const path = "packages/prototype/prototype.json";
 const workflow = {
   schemaVersion: 1,
@@ -44,8 +43,6 @@ test("main catalog needs no Change; branch edits, source changes, renames and de
   t.after(f.cleanup);
   let catalog = await f.store.prototypes(f.project);
   assert.equal(catalog.items.length, 1);
-  assert(matchesPrototype(catalog.items[0], "管理设置", "mobile"));
-  assert(!matchesPrototype(catalog.items[0], "change", ""));
   f.git(["checkout", "-b", "change/development"]);
   await f.put(
     path,

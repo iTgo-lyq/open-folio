@@ -159,42 +159,6 @@ test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
   ).toBe(true);
 });
 
-test("task numbers remain searchable at task granularity", async ({ page }) => {
-  await page.goto(`/?${repositoryQuery}&m=changes&level=tasks`);
-  await page.getByRole("textbox", { name: "筛选变更或任务" }).fill("T2");
-  await expect(
-    page.getByRole("button", {
-      name: "查看任务 T2 完成文档阅读体验",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /查看任务 T1/ })).toHaveCount(
-    0,
-  );
-});
-
-test("Change body search opens the exact document and keeps its Change context", async ({
-  page,
-}) => {
-  await page.goto(`/?${repositoryQuery}&m=changes`);
-  await page.getByRole("button", { name: "搜索工作台" }).click();
-  await page.getByRole("textbox", { name: "全文搜索" }).fill("一致的文档快照");
-  await page
-    .getByRole("button", { name: /技术方案.*一致的文档快照/ })
-    .first()
-    .click();
-  await expect(
-    page
-      .locator(".document-modal")
-      .getByRole("heading", { name: "技术方案", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator("[role=dialog]")).toHaveCount(2);
-  await page.keyboard.press("Escape");
-  await expect(
-    page.getByRole("tab", { name: "文档", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-});
-
 test("changing projects clears filters that belong to the previous project", async ({
   page,
   request,
@@ -234,7 +198,7 @@ test("changing projects clears filters that belong to the previous project", asy
   await page.route("**/api/repositories/second/workbench*", (route) =>
     route.fulfill({ json: second }),
   );
-  await page.goto(`/?${repositoryQuery}&m=changes&spec=platform&filter=阅读`);
+  await page.goto(`/?${repositoryQuery}&m=changes&spec=platform`);
   await expect(
     page.getByRole("button", {
       name: "打开 让工程文档成为清晰的阅读体验",
@@ -242,7 +206,7 @@ test("changing projects clears filters that belong to the previous project", asy
     }),
   ).toBeVisible();
   await page.getByRole("combobox", { name: "当前仓库" }).selectOption("second");
-  await expect(page).not.toHaveURL(/spec=|filter=/);
+  await expect(page).not.toHaveURL(/spec=/);
   await expect(
     page.getByRole("button", {
       name: "打开 让工程文档成为清晰的阅读体验",
@@ -368,9 +332,7 @@ test("legacy scopes preserve Change deep links and inactive filters normalize", 
   );
   await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
   await expect(page.locator(".outcome-list .change-row")).toHaveCount(1);
-  await page
-    .getByRole("textbox", { name: "筛选变更或任务" })
-    .fill("不存在的变更");
+  await page.getByRole("combobox", { name: "筛选规模" }).selectOption("medium");
   await expect(
     page.getByText("没有符合条件的记录", { exact: true }),
   ).toBeVisible();

@@ -107,30 +107,16 @@ export async function repositoryResponse(
               )
             ).descriptor,
           );
-        if (!snapshot)
-          throw new AppError(
-            "INVALID_PARAMETER",
-            "读取正文和搜索时必须指定快照。",
-            400,
-          );
-        if (segments.length === 1 && segments[0] === "search") {
-          const kind = q.get("kind") ?? "specs";
-          if (!["specs", "changes"].includes(kind))
-            throw new AppError("INVALID_PARAMETER", "搜索类型不合法。", 400);
-          return personalJson({
-            results: await store.search(
-              p,
-              snapshot,
-              branch,
-              q.get("q") ?? "",
-              kind,
-            ),
-          });
-        }
         if (
           segments.length === 2 &&
           ["documents", "assets"].includes(segments[0])
         ) {
+          if (!snapshot)
+            throw new AppError(
+              "INVALID_PARAMETER",
+              "读取正文时必须指定快照。",
+              400,
+            );
           const { document, body } = await store.document(
             p,
             segments[1],

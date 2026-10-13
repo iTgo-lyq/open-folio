@@ -18,7 +18,6 @@ import {
   List,
   ListChecks,
   Network,
-  Search,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -180,12 +179,6 @@ export default function Changes() {
       s = c?.state;
     return (
       inScope(g, scope) &&
-      (!q.filter ||
-        `${g.id} ${g.title} ${Object.entries(s?.tasks ?? {})
-          .map(([id, t]) => `${id} ${t.title}`)
-          .join(" ")}`
-          .toLowerCase()
-          .includes(q.filter.toLowerCase())) &&
       (!activeScope || !q.stage || s?.stage === q.stage) &&
       (!q.size || s?.size === q.size) &&
       (!activeScope ||
@@ -198,7 +191,6 @@ export default function Changes() {
   });
   const scopeCount = groups.filter((g) => inScope(g, scope)).length;
   const hasFilters = !!(
-    q.filter ||
     q.size ||
     q.spec ||
     (activeScope && (q.stage || q.wait)) ||
@@ -278,15 +270,6 @@ export default function Changes() {
         ))}
       </div>
       <div className="changes-toolbar">
-        <label className="change-search">
-          <Search size={14} />
-          <input
-            aria-label="筛选变更或任务"
-            placeholder="筛选名称、编号…"
-            value={q.filter ?? ""}
-            onChange={(e) => nav({ filter: e.target.value || null }, true)}
-          />
-        </label>
         <div className="filter-controls">
           {level === "tasks" && (
             <select
@@ -404,7 +387,6 @@ export default function Changes() {
                     size: null,
                     wait: null,
                     spec: null,
-                    filter: null,
                     taskStatus: null,
                   })
                 }
@@ -689,14 +671,7 @@ function TasksView({
         ([id, task]) => ({ g, id, task }),
       ),
     )
-    .filter(
-      ({ g, id, task }) =>
-        (!q.taskStatus || task.status === q.taskStatus) &&
-        (!q.filter ||
-          `${g.id} ${g.title} ${id} ${task.title}`
-            .toLowerCase()
-            .includes(q.filter.toLowerCase())),
-    );
+    .filter(({ task }) => !q.taskStatus || task.status === q.taskStatus);
   if (!tasks.length)
     return (
       <Empty title="这些 Change 尚无实现任务">

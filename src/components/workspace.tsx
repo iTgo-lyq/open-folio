@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Dialog } from "radix-ui";
 import {
   BookOpen,
   ChevronRight,
@@ -11,13 +10,10 @@ import {
   LoaderCircle,
   PanelsTopLeft,
   RefreshCw,
-  Search,
   X,
-  Share2,
 } from "lucide-react";
-import type { SearchResult } from "@/lib/model";
 import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
-import { api, useWorkspace, WorkspaceProvider } from "./context";
+import { useWorkspace, WorkspaceProvider } from "./context";
 import { PersonalProvider, usePersonal } from "./personal-context";
 import { Connections, PersonalHome, ConnectionPicker } from "./personal";
 import { DocumentModal, Empty, ErrorNotice, CopyPageLink } from "./document";
@@ -41,8 +37,7 @@ function Shell() {
     selectRepository,
   } = useWorkspace();
   const personal = usePersonal();
-  const [collapsed, setCollapsed] = useState(false),
-    [search, setSearch] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const module = ["specs", "changes", "prototypes", "connections"].includes(q.m)
     ? q.m
     : "home";
@@ -55,16 +50,6 @@ function Shell() {
     changes: "Changes",
     prototypes: "原型",
   };
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setSearch((v) => !v);
-      }
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, []);
   useEffect(() => {
     setCollapsed(
       personal.session?.workspace?.preferences.railCollapsed ?? false,
@@ -251,16 +236,6 @@ function Shell() {
                 </details>
                 {data && module !== "specs" && <CopyPageLink />}
                 <button
-                  className="search-launch"
-                  onClick={() => setSearch(true)}
-                  disabled={!data}
-                  aria-label="搜索工作台"
-                >
-                  <Search size={16} />
-                  <span>搜索文档、变更…</span>
-                  <kbd>⌘ K</kbd>
-                </button>
-                <button
                   className="icon-button refresh-button"
                   onClick={() => void refresh()}
                   disabled={!personal.connection || refreshing}
@@ -328,7 +303,6 @@ function Shell() {
         </div>
       </main>
       {!focusedPreview && <div className="mobile-navigation">{navigation}</div>}
-      <SearchDialog open={search} setOpen={setSearch} />
       {reading && data && <DocumentModal />}
       {message && (
         <div className="toast" role="status">
@@ -343,123 +317,6 @@ function Shell() {
         </div>
       )}
     </div>
-  );
-}
-function SearchDialog({
-  open,
-  setOpen,
-}: {
-  open: boolean;
-  setOpen: (v: boolean) => void;
-}) {
-  const { data, projectId, q, nav, openDocument, readUrl } = useWorkspace(),
-    [term, setTerm] = useState(""),
-    [results, setResults] = useState<SearchResult[]>([]),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const kind = ["changes", "prototypes"].includes(q.m) ? "changes" : "specs";
-  useEffect(() => {
-    if (!open || !data || !term.trim()) {
-      setResults([]);
-      setBusy(false);
-      setError("");
-      return;
-    }
-    const c = new AbortController();
-    setBusy(true);
-    setError("");
-    const timer = setTimeout(() => {
-      void api<{ results: SearchResult[] }>(
-        readUrl(
-          `search?snapshot=${data.id}&kind=${kind}${data.selectedBranch ? `&branch=${encodeURIComponent(data.selectedBranch)}` : ""}&q=${encodeURIComponent(term)}`,
-        ),
-        { signal: c.signal },
-      )
-        .then((r) => setResults(r.results))
-        .catch((e) => {
-          if (!c.signal.aborted) setError(e.message);
-        })
-        .finally(() => {
-          if (!c.signal.aborted) setBusy(false);
-        });
-    }, 200);
-    return () => {
-      clearTimeout(timer);
-      c.abort();
-    };
-  }, [term, open, data, projectId, kind, readUrl]);
-  return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="modal-overlay" />
-        <Dialog.Content
-          className="search-dialog"
-          aria-describedby={undefined}
-          onCloseAutoFocus={(e) => {
-            if (q.c || q.doc) e.preventDefault();
-          }}
-        >
-          <Dialog.Title className="sr-only">
-            搜索 {kind === "specs" ? "Specs" : "Changes"}
-          </Dialog.Title>
-          <div className="search-dialog-input">
-            <Search size={20} />
-            <input
-              autoFocus
-              aria-label="全文搜索"
-              placeholder={`搜索 ${kind === "specs" ? "能力标题、路径或正文" : "Change、任务或正文"}…`}
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-            />
-            <Dialog.Close className="icon-button" aria-label="关闭搜索">
-              <X size={18} />
-            </Dialog.Close>
-          </div>
-          <div className="search-results">
-            {error && <ErrorNotice>{error}</ErrorNotice>}
-            {busy ? (
-              <p className="muted inset">正在搜索…</p>
-            ) : results.length ? (
-              results.map((r, i) => (
-                <button
-                  className="search-result"
-                  key={i}
-                  onClick={() => {
-                    setOpen(false);
-                    if (r.specId)
-                      nav({ m: "specs", s: r.specId, anchor: null });
-                    else if (r.documentId && r.changeId)
-                      nav({
-                        m: "changes",
-                        c: r.changeId,
-                        ct: "documents",
-                        doc: r.documentId,
-                        da: null,
-                        raw: null,
-                      });
-                    else if (r.changeId)
-                      nav({
-                        m: "changes",
-                        c: r.changeId,
-                        ct: r.taskId ? "tasks" : "overview",
-                      });
-                    else if (r.documentId) openDocument(r.documentId);
-                  }}
-                >
-                  <strong>{r.title}</strong>
-                  <span>{r.excerpt}</span>
-                  <code>{r.path}</code>
-                </button>
-              ))
-            ) : (
-              <p className="muted inset">
-                {term.trim() ? "没有找到匹配记录" : "搜索当前来源中的真实文档"}
-              </p>
-            )}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
   );
 }
 export default function Workspace() {

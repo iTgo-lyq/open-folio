@@ -174,7 +174,6 @@ export function CopyPageLink({ document: doc }: { document?: DocumentRef }) {
           "da",
           "anchor",
           "raw",
-          "filter",
           "spec",
           "stage",
           "size",
@@ -347,7 +346,7 @@ export function DocumentModal() {
     let frame: number;
     const show = () => {
       // Mount the parent focus scope before opening a document from a deep link
-      // or search result. Simultaneous modal roots can hide one another from AT.
+      // or document link. Simultaneous modal roots can hide one another from AT.
       if (
         q.m === "changes" &&
         q.c &&

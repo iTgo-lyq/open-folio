@@ -13,7 +13,6 @@ const esc = (value) =>
 const state = {
   scenario: "home",
   filter: "all",
-  query: "",
   connected: true,
   accounts: 2,
   accountNames: ["demo-user", "another-user"],
@@ -84,7 +83,6 @@ function button(text, action, primary = false, svg = "") {
 function setScenario(value) {
   clearTimeout(scanTimer);
   state.scenario = value;
-  state.query = "";
   state.filter = "all";
   state.connected = value !== "welcome";
   state.accounts = 2;
@@ -137,7 +135,7 @@ function shell(content, title = "我的仓库") {
   const source = activeRepo
     ? `<span class="row">${icon("branch")}<span>${route.tab === "changes" ? "全部已推送分支" : "main · 守护分支"}</span><span class="source-path mono">${activeRepo.path}</span></span><span class="source-actions">${route.tab === "specs" ? '<button class="mobile-docs" data-action="docs">目录</button>' : ""}<button data-action="share">分享${route.tab === "prototypes" ? "入口" : "记录"} ↗</button></span>`
     : `<span class="row"><span class="status-dot ${state.scenario === "expired" ? "warning" : ""}"></span>${state.connected ? connectionLabel : "连接 GitHub 后自动发现 SpecTrail 仓库"}</span><span class="source-caption">${state.connected ? "仓库权限跟随你的账号" : "个人工作台"}</span>`;
-  return `<div class="shell ${state.railCollapsed ? "rail-collapsed" : ""}"><aside class="module-rail"><button class="shell-brand" data-action="toggle-rail" aria-label="${state.railCollapsed ? "展开侧栏" : "收起侧栏"}" aria-expanded="${!state.railCollapsed}"><img src="${mark}" alt="OpenFolio"><span class="restore-handle"></span></button><nav class="module-nav" aria-label="模块导航">${navigation}</nav><a class="rail-footer" href="#connections" aria-label="我的连接" ${route.page === "connections" ? 'aria-current="page"' : ""}>${icon("settings")}<span class="rail-tooltip">我的连接</span>${state.scenario === "expired" ? '<i class="connection-alert"></i>' : ""}</a></aside><main class="work-area"><header class="topbar"><div class="header-context">${context}${activeRepo ? '<span class="read-only">只读</span>' : ""}</div><div class="header-actions"><a class="icon-btn settings-mobile-trigger" href="#connections" aria-label="我的连接">${icon("settings")}</a><button class="search-launch" data-action="search" aria-label="搜索仓库">${icon("search")}<span>搜索仓库…</span><kbd>⌘ K</kbd></button><button class="icon-btn" data-action="${activeRepo ? "refresh-repo" : state.connected ? "rescan" : "connect"}" aria-label="${activeRepo ? "刷新当前仓库" : state.connected ? "重新发现仓库" : "连接 GitHub"}">${icon("refresh")}</button></div></header><div class="source">${source}</div><div class="body">${content}</div></main></div><nav class="module-nav mobile-navigation" aria-label="移动模块导航">${navigation}</nav>`;
+  return `<div class="shell ${state.railCollapsed ? "rail-collapsed" : ""}"><aside class="module-rail"><button class="shell-brand" data-action="toggle-rail" aria-label="${state.railCollapsed ? "展开侧栏" : "收起侧栏"}" aria-expanded="${!state.railCollapsed}"><img src="${mark}" alt="OpenFolio"><span class="restore-handle"></span></button><nav class="module-nav" aria-label="模块导航">${navigation}</nav><a class="rail-footer" href="#connections" aria-label="我的连接" ${route.page === "connections" ? 'aria-current="page"' : ""}>${icon("settings")}<span class="rail-tooltip">我的连接</span>${state.scenario === "expired" ? '<i class="connection-alert"></i>' : ""}</a></aside><main class="work-area"><header class="topbar"><div class="header-context">${context}${activeRepo ? '<span class="read-only">只读</span>' : ""}</div><div class="header-actions"><details class="header-source"><summary aria-label="查看读取状态">${icon("branch")}</summary><div class="header-source-details">${source}</div></details><a class="icon-btn settings-mobile-trigger" href="#connections" aria-label="我的连接">${icon("settings")}</a><button class="icon-btn" data-action="${activeRepo ? "refresh-repo" : state.connected ? "rescan" : "connect"}" aria-label="${activeRepo ? "刷新当前仓库" : state.connected ? "重新发现仓库" : "连接 GitHub"}">${icon("refresh")}</button></div></header><div class="body">${content}</div></main></div><nav class="module-nav mobile-navigation" aria-label="移动模块导航">${navigation}</nav>`;
 }
 function welcome() {
   return shell(
@@ -158,22 +156,17 @@ function repoRow(r) {
   return `<a class="repo-row" href="#repo/${r.id}/specs"><div class="row"><span class="repo-symbol ${r.tone}">${r.symbol}</span><div><div class="repo-name"><strong>${r.name}</strong></div><div class="repo-meta mono">${r.path}</div><div class="repo-description">${r.description}</div></div></div><div class="repo-content"><strong>${r.specs}</strong> Specs <span style="padding:0 5px">·</span><strong>${r.changes}</strong> 进行中<br>${r.prototypes} 个公开原型</div>${badge("已接入")}${icon("chevron")}</a>`;
 }
 function home() {
-  let selected = availableRepos().filter(
-    (r) =>
-      (state.filter !== "mine" || r.path.startsWith("demo-user")) &&
-      (!state.query ||
-        (r.name + " " + r.path)
-          .toLowerCase()
-          .includes(state.query.toLowerCase())),
+  const selected = availableRepos().filter(
+    (r) => state.filter !== "mine" || r.path.startsWith("demo-user"),
   );
   const empty =
     state.scenario === "empty"
       ? `<div class="empty">${icon("branch")}<h2>还没有发现 SpecTrail 仓库</h2><p>GitHub 已连接。确认 token 包含目标仓库，并已将 SpecTrail 配置推送到默认分支。</p><div class="row">${button("重新发现", "rescan", true)}${button("检查仓库地址", "check")}</div></div>`
       : !selected.length
-        ? `<div class="empty">${icon("search")}<h2>没有匹配的仓库</h2><p>试试仓库名称或所属账号。</p>${button("清除搜索", "clear-search")}</div>`
+        ? `<div class="empty"><h2>没有匹配的仓库</h2><p>切换仓库范围，查看其他已接入仓库。</p></div>`
         : "";
   return shell(
-    `<section class="home"><div class="intro"><div><div class="eyebrow">MY REPOSITORIES</div><h1>我的仓库</h1><p>你参与的项目，和每一次有迹可循的推进。</p></div>${button("重新发现", "rescan", false, "refresh")}</div>${notice()}<div class="toolbar"><div class="filter-tabs" aria-label="仓库筛选"><button data-filter="all" class="${state.filter === "all" ? "active" : ""}" aria-pressed="${state.filter === "all"}">全部仓库</button><button data-filter="mine" class="${state.filter === "mine" ? "active" : ""}" aria-pressed="${state.filter === "mine"}">我的仓库</button></div><label class="search">${icon("search")}<input id="repo-search" type="search" aria-label="查找仓库" placeholder="查找仓库…" value="${esc(state.query)}"></label></div><div class="list-head"><span>仓库</span><span class="repo-content">工程记录</span><span>SpecTrail</span><span></span></div><div id="repo-results">${selected.map(repoRow).join("")}${empty}</div><div class="section-note"><span>${state.scenario === "scanning" ? "发现仍在进行中" : state.scenario === "partial" ? "上次发现部分完成" : state.scenario === "empty" ? "已检查 12 个仓库，暂无接入" : `发现完成 · ${availableRepos().length} 个已接入仓库`}<br>只显示当前连接有权读取的仓库</span><button data-action="check">找不到仓库？</button></div><div class="reading-corner"><div class="note-panel"><h3>协作，已经在仓库里</h3><p>分享一份 Spec 或 Change，对方用自己的 GitHub 账号继续阅读。无需再维护一份成员名单。</p><a href="#repo/open-folio/specs" class="text-link">打开项目知识 ${icon("chevron")}</a></div><div class="note-panel"><h3>让原型更容易被看见</h3><p>原型链接可以公开打开。让没有仓库账号的伙伴，也能直接体验这次改动。</p><a href="#public" class="text-link">查看公开预览 ${icon("chevron")}</a></div></div></section>`,
+    `<section class="home"><div class="intro"><div><div class="eyebrow">MY REPOSITORIES</div><h1>我的仓库</h1><p>你参与的项目，和每一次有迹可循的推进。</p></div>${button("重新发现", "rescan", false, "refresh")}</div>${notice()}<div class="toolbar"><div class="filter-tabs" aria-label="仓库筛选"><button data-filter="all" class="${state.filter === "all" ? "active" : ""}" aria-pressed="${state.filter === "all"}">全部仓库</button><button data-filter="mine" class="${state.filter === "mine" ? "active" : ""}" aria-pressed="${state.filter === "mine"}">我的仓库</button></div></div><div class="list-head"><span>仓库</span><span class="repo-content">工程记录</span><span>SpecTrail</span><span></span></div><div id="repo-results">${selected.map(repoRow).join("")}${empty}</div><div class="section-note"><span>${state.scenario === "scanning" ? "发现仍在进行中" : state.scenario === "partial" ? "上次发现部分完成" : state.scenario === "empty" ? "已检查 12 个仓库，暂无接入" : `发现完成 · ${availableRepos().length} 个已接入仓库`}<br>只显示当前连接有权读取的仓库</span><button data-action="check">找不到仓库？</button></div><div class="reading-corner"><div class="note-panel"><h3>协作，已经在仓库里</h3><p>分享一份 Spec 或 Change，对方用自己的 GitHub 账号继续阅读。无需再维护一份成员名单。</p><a href="#repo/open-folio/specs" class="text-link">打开项目知识 ${icon("chevron")}</a></div><div class="note-panel"><h3>让原型更容易被看见</h3><p>原型链接可以公开打开。让没有仓库账号的伙伴，也能直接体验这次改动。</p><a href="#public" class="text-link">查看公开预览 ${icon("chevron")}</a></div></div></section>`,
   );
 }
 function connections() {
@@ -295,18 +288,6 @@ function bind(root = $("#app")) {
           ? "home"
           : `repo/${picker.value}/${current().page === "repo" ? current().tab : "specs"}`,
       );
-  const search = $("#repo-search", root);
-  if (search)
-    search.oninput = () => {
-      const position = search.selectionStart;
-      state.query = search.value;
-      render();
-      const next = $("#repo-search");
-      next.focus();
-      try {
-        next.setSelectionRange(position, position);
-      } catch {}
-    };
 }
 function action(name, el) {
   const close = () => $("#dialog").close();
@@ -318,11 +299,6 @@ function action(name, el) {
       state.railCollapsed ? "展开侧栏" : "收起侧栏",
     );
     el.setAttribute("aria-expanded", String(!state.railCollapsed));
-    return;
-  }
-  if (name === "search") {
-    go("home");
-    setTimeout(() => $("#repo-search")?.focus(), 0);
     return;
   }
   if (name === "refresh-repo") return toast("示例仓库已刷新，当前为最新快照");
@@ -362,11 +338,6 @@ function action(name, el) {
     $("#scenario").value = "home";
     render();
     toast("发现完成，3 个仓库已接入 SpecTrail");
-    return;
-  }
-  if (name === "clear-search") {
-    state.query = "";
-    render();
     return;
   }
   if (name === "check") {
@@ -469,13 +440,6 @@ function action(name, el) {
 window.addEventListener("hashchange", () => {
   if ($("#dialog").open) $("#dialog").close();
   render();
-});
-window.addEventListener("keydown", (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-    event.preventDefault();
-    go("home");
-    setTimeout(() => $("#repo-search")?.focus(), 0);
-  }
 });
 if (!location.hash) location.hash = "home";
 render();

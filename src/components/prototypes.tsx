@@ -2,13 +2,12 @@
 import { usePublication, publicationThumbnail } from "./publication";
 import { Badge, Button, IconButton } from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
-import { ImageOff, LoaderCircle, PanelsTopLeft, Search, X } from "lucide-react";
+import { ImageOff, LoaderCircle, PanelsTopLeft, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { previewViewport } from "@/lib/preview-viewport";
 import {
   CLEAR_PROTOTYPE_VIEW,
   DEVICE_LABELS,
-  matchesPrototype,
   type PrototypeCatalog,
   type PrototypeItem,
 } from "@/lib/prototypes";
@@ -102,20 +101,22 @@ function PrototypeGallery({
   const device = ["pc-web", "ipad", "mobile", "custom"].includes(q.pdevice)
     ? q.pdevice
     : "";
-  const query = q.pq ?? "",
-    items = catalog?.items ?? [];
+  const items = catalog.items;
   const rows = items.filter(
     (item) =>
-      (!kind || item.kind === kind) && matchesPrototype(item, query, device),
+      (!kind || item.kind === kind) &&
+      (!device ||
+        (device === "custom"
+          ? !!item.viewport
+          : item.devices?.some((d) => d === device))),
   );
   const requestedLimit = Number(q.pcount);
   const limit =
     Number.isSafeInteger(requestedLimit) && requestedLimit > 24
       ? Math.min(requestedLimit, Math.max(24, rows.length))
       : 24;
-  const filtered = !!(query || kind || device);
-  const clear = () =>
-    nav({ pq: null, pkind: null, pdevice: null, pcount: null });
+  const filtered = !!(kind || device);
+  const clear = () => nav({ pkind: null, pdevice: null, pcount: null });
   return (
     <section className="prototypes-workspace" aria-label="项目原型总览">
       <div className="changes-heading prototype-gallery-heading">
@@ -152,17 +153,6 @@ function PrototypeGallery({
           ))}
         </div>
         <div className="changes-toolbar prototype-catalog-toolbar">
-          <label className="change-search">
-            <Search size={15} />
-            <input
-              aria-label="筛选原型"
-              placeholder="搜索页面名称或说明…"
-              value={query}
-              onChange={(e) =>
-                nav({ pq: e.target.value || null, pcount: null }, true)
-              }
-            />
-          </label>
           <div className="filter-controls">
             <select
               aria-label="筛选原型适配"
@@ -219,7 +209,7 @@ function PrototypeGallery({
               </div>
               {!rows.length ? (
                 <Empty title="没有匹配的原型">
-                  <p>调整搜索词或适配范围，查看其他页面与组件。</p>
+                  <p>调整类型或适配范围，查看其他页面与组件。</p>
                   <Button onClick={clear}>清除筛选</Button>
                 </Empty>
               ) : (

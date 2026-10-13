@@ -13,7 +13,6 @@ import {
   PanelsTopLeft,
   ExternalLink,
   List,
-  Search,
   X,
 } from "lucide-react";
 import type { ChangeCandidate, Device, PreviewDescriptor } from "@/lib/model";
@@ -43,7 +42,6 @@ export function ChangePreviews({
     [ready, setReady] = useState(""),
     [loadError, setLoadError] = useState(""),
     [runtimeError, setRuntimeError] = useState("");
-  const [directoryQuery, setDirectoryQuery] = useState("");
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 440 });
@@ -270,16 +268,9 @@ export function ChangePreviews({
         )}
       </Empty>
     );
-  const directoryItems = result.entries.filter(
-    (item) =>
-      !current ||
-      `${item.title} ${item.id}`
-        .toLocaleLowerCase()
-        .includes(directoryQuery.trim().toLocaleLowerCase()),
-  );
   const entries = (
     <div className="preview-entries" role="group" aria-label="原型入口">
-      {directoryItems.map((item) => (
+      {result.entries.map((item) => (
         <button
           type="button"
           key={item.id}
@@ -309,9 +300,6 @@ export function ChangePreviews({
           </span>
         </button>
       ))}
-      {current && !directoryItems.length && (
-        <p className="preview-directory-empty">没有匹配的原型</p>
-      )}
     </div>
   );
   return (
@@ -334,15 +322,6 @@ export function ChangePreviews({
               <X size={16} />
             </button>
           </div>
-          <label className="preview-directory-search">
-            <Search size={14} />
-            <input
-              aria-label="筛选预览目录"
-              placeholder="查找页面…"
-              value={directoryQuery}
-              onChange={(e) => setDirectoryQuery(e.target.value)}
-            />
-          </label>
           {entries}
         </aside>
       ) : (

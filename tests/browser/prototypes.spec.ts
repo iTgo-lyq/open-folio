@@ -46,11 +46,10 @@ test("main gallery opens current pages directly without Change/version selectors
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
   await expect(page.locator("iframe")).toHaveCount(0);
-  await region.getByRole("textbox", { name: "筛选原型" }).fill("批量操作");
   await region
     .getByRole("combobox", { name: "筛选原型适配" })
     .selectOption("mobile");
-  await expect(region.getByRole("listitem")).toHaveCount(1);
+  await expect(region.getByRole("listitem")).toHaveCount(3);
   await region.getByRole("button", { name: "预览订单列表" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -73,9 +72,9 @@ test("main gallery opens current pages directly without Change/version selectors
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await page.goBack();
   await page.getByRole("button", { name: "返回原型总览" }).click();
-  await expect(region.getByRole("textbox", { name: "筛选原型" })).toHaveValue(
-    "批量操作",
-  );
+  await expect(
+    region.getByRole("combobox", { name: "筛选原型适配" }),
+  ).toHaveValue("mobile");
   await page.goBack();
   await expect(page.locator("iframe")).toBeVisible();
   await page.goForward();

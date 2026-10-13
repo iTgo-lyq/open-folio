@@ -234,16 +234,6 @@ export type Workbench = Snapshot & {
   selectedBranch: string | null;
   projectName: string;
 };
-export type SearchResult = {
-  documentId?: string;
-  changeId?: string;
-  taskId?: string;
-  title: string;
-  path: string;
-  excerpt: string;
-  branch: string;
-  specId?: string;
-};
 export const STAGES = [
   "requirement",
   "technical",
