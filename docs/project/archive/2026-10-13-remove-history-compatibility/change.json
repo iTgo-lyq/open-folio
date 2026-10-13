@@ -3,7 +3,7 @@
   "id": "remove-history-compatibility",
   "title": "清理历史兼容并统一当前契约",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/remove-history-compatibility",
   "confirmations": {
@@ -42,10 +42,23 @@
       "result": "passed",
       "at": "2026-10-13T07:46:00.873Z",
       "summary": "146 单元、69 完整浏览器、13 原型工具及类型格式构建通过；开发机真实工作台验证通过；用户指定的 iclaude 二轮独立复验通过，首轮 R1–R5 均已解决，无阻塞项。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-13T08:02:02.796Z",
+      "summary": "用户在查看最终删除清单及 iclaude 通过结论后，明确要求合入并归档本次交付。",
+      "source": "用户原话：合入归档吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-13T08:02:02.919Z",
+      "summary": "已核对并同步个人访问、配置、工程读取、原型预览、Change 追踪、工作流及 UI 开发共 7 处当前 Specs，删除历史契约说明并保留当前行为及数据保留约束；与最终验收实现一致。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-13T08:02:03.039Z",
+      "summary": "用户明确验收并授权合入归档；整体验证、iclaude 独立复验及当前 Specs 核对已完成，完整材料归档。",
+      "path": "docs/project/archive/2026-10-13-remove-history-compatibility"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实施与用户指定的 iclaude 独立验收完成；medium Change 等待用户验收或明确合入授权，尚未归档。"
   }
 }
