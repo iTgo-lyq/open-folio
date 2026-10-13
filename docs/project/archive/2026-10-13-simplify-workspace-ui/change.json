@@ -3,8 +3,8 @@
   "id": "simplify-workspace-ui",
   "title": "简化工作台框架并修正提示层级",
   "size": "small",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/simplify-workspace-ui",
   "confirmations": {},
   "tasks": {
@@ -27,5 +27,28 @@
       "commitTitle": "simplify-workspace-ui T3: verify search removal and deployed workspace"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-13T04:32:45.508Z",
+      "summary": "Agent自查全部差异；三项需求均有浏览器及真实工作台证据，搜索调用链无残留，服务已更新，无未解决验收项。验证证据见execution.md。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-13T04:32:45.586Z",
+      "summary": "Agent 自验收通过：导航提示层级、单行页头及右上角状态/操作、搜索彻底删除均通过桌面/320px和真实工作台验证；范围仍为small。",
+      "source": "SpecTrail small直接归档规则；用户明确选择直接修改并验证。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-13T04:33:26.171Z",
+      "summary": "同步项目知识外壳、Spec目录定位、Change/任务状态筛选、原型总览/目录和授权文档，删除当前能力中的搜索描述。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-13T04:33:26.244Z",
+      "summary": "三项UI需求完成，Agent自验收、Specs同步及开发服务验证完成。",
+      "path": "docs/project/archive/2026-10-13-simplify-workspace-ui"
+    }
+  }
 }
