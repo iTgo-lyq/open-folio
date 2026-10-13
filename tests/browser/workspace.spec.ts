@@ -36,6 +36,11 @@ test("workspace uses one header with accessible source and actions on desktop an
       expect(layout.bodyTop).toBeCloseTo(layout.headerBottom, 0);
       expect(layout.overflow).toBe(false);
       expect(layout.actionsLeft).toBeGreaterThanOrEqual(layout.contextRight);
+      expect(
+        await page
+          .locator(".header-module")
+          .evaluate((el) => el.getBoundingClientRect().height),
+      ).toBeLessThan(30);
       await page.locator(".header-source summary").click();
       const source = page.locator(".header-source-details");
       await expect(source).toBeVisible();

@@ -446,6 +446,7 @@ input {
   min-width: 0;
 }
 .project-select select {
+  min-width: 0;
   font-weight: 600;
   font-size: 13px;
   max-width: 220px;
@@ -469,6 +470,8 @@ input {
 }
 .header-module {
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .header-actions {
   position: relative;
