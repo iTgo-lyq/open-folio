@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, rename, rm } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import nextEnv from "@next/env";
 import {
   S3Client,
   PutObjectCommand,
@@ -217,6 +218,10 @@ if (
     request = JSON.parse(await readFile(values.request, "utf8"));
     validateRequest(request);
     output = values.result;
+    nextEnv.loadEnvConfig(
+      fileURLToPath(new URL("../../", import.meta.url)),
+      false,
+    );
     await writeResult(output, await publishToR2(request));
     console.log(
       "R2 publication verified. Register the saved result to update references.",

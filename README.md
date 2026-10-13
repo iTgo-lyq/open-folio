@@ -34,7 +34,7 @@ npm run service:stop
 npm run service:start
 ```
 
-`.env` 按模板配置监听地址、端口和 tmux 会话；默认监听 `::`、端口 10680、会话 `openfolio-preview`，沿用 Merlin 暴露方式。需要额外覆盖时也支持 `.env.local`。更改会话、端口或数据目录前先停止原服务。进程退出后会自动重启，日志在 `.openfolio/service.log`，运行与构建来源在 `.openfolio/runtime-version.json` 和 `build-version.json`。已有 tmux 会话或端口由其他进程占用时，脚本拒绝接管。
+`.env` 按模板配置监听地址、端口和 tmux 会话；默认监听 `::`、端口 10680、会话 `openfolio-preview`，沿用 Merlin 暴露方式。需要额外覆盖时也支持 `.env.local`。原型 R2 发布的五项 `R2_*` 配置也统一放在根目录 `.env`，发布脚本自动加载，步骤见[原型包 README](packages/prototype/README.md)。更改会话、端口或数据目录前先停止原服务。进程退出后会自动重启，日志在 `.openfolio/service.log`，运行与构建来源在 `.openfolio/runtime-version.json` 和 `build-version.json`。已有 tmux 会话或端口由其他进程占用时，脚本拒绝接管。
 
 `service:update` 串行停止服务、构建 `.next`、启动并等待端口就绪；构建失败时保持停止，修复后重新更新。常规更新不创建回滚快照，也不备份或删除当前运行数据。构建来源记录提交与是否存在未提交的跟踪文件改动；直接启动来源未知的现有构建时，提交记录为空，不冒充当前 HEAD。
 

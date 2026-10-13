@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  readFile,
+  rm,
+  copyFile,
+  symlink,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -38,6 +46,48 @@ async function fixture(t) {
   request.requestId = requestIdentity(request);
   return { dir, request };
 }
+async function cliFixture(t) {
+  const { dir, request } = await fixture(t);
+  const root = join(dir, "repository"),
+    packageDirectory = join(root, "packages/prototype"),
+    script = join(packageDirectory, "publish-r2.mjs"),
+    input = join(dir, "request.json"),
+    output = join(dir, "result.json");
+  await mkdir(packageDirectory, { recursive: true });
+  await copyFile(
+    fileURLToPath(new URL("./publish-r2.mjs", import.meta.url)),
+    script,
+  );
+  for (const name of ["node_modules", ".agents"]) {
+    await symlink(
+      fileURLToPath(new URL(`../../${name}`, import.meta.url)),
+      join(root, name),
+    );
+  }
+  await writeFile(input, JSON.stringify(request));
+  return {
+    root,
+    packageDirectory,
+    dir,
+    request,
+    output,
+    run: (options = {}) =>
+      spawnSync(
+        process.execPath,
+        [script, "--request", input, "--result", output],
+        {
+          env: {},
+          encoding: "utf8",
+          timeout: 10000,
+          ...options,
+        },
+      ),
+  };
+}
+const envText = (values) =>
+  Object.entries(values)
+    .map(([key, value]) => `${key}=${value}\n`)
+    .join("");
 function storage() {
   const objects = new Map(),
     calls = [];
@@ -234,21 +284,50 @@ test("rejects missing credentials and non-public or credential-bearing URLs", as
   assert.equal(host.calls.length, 0);
 });
 
-test("CLI replaces stale success with a failed result and exits unsuccessfully", async (t) => {
-  const { dir, request } = await fixture(t);
-  const input = join(dir, "request.json"),
-    output = join(dir, "result.json");
-  await writeFile(input, JSON.stringify(request));
-  await writeFile(output, JSON.stringify({ status: "published" }));
-  const script = fileURLToPath(new URL("./publish-r2.mjs", import.meta.url));
-  const run = spawnSync(
-    process.execPath,
-    [script, "--request", input, "--result", output],
-    { env: {}, encoding: "utf8" },
+test("CLI loads repository .env from the root, package and outside directories", async (t) => {
+  const { root, packageDirectory, dir, output, run } = await cliFixture(t);
+  await writeFile(
+    join(root, ".env"),
+    envText({ ...env, R2_PUBLIC_BASE_URL: "http://pub-test.r2.dev" }),
   );
-  assert.equal(run.status, 1);
+  for (const cwd of [root, packageDirectory, dir]) {
+    const result = run({ cwd });
+    assert.equal(result.status, 1);
+    const failure = JSON.parse(await readFile(output, "utf8"));
+    assert.equal(failure.code, "CONFIGURATION");
+    assert.match(failure.message, /R2_PUBLIC_BASE_URL must be.*HTTPS/);
+    assert.ok(!result.stdout.includes(env.R2_SECRET_ACCESS_KEY));
+    assert.ok(!result.stderr.includes(env.R2_SECRET_ACCESS_KEY));
+  }
+});
+
+test("CLI gives process variables priority over .env.local and .env", async (t) => {
+  const { root, output, run } = await cliFixture(t);
+  await writeFile(join(root, ".env"), envText(env));
+  await writeFile(
+    join(root, ".env.local"),
+    envText({ R2_ACCOUNT_ID: "invalid-local-account" }),
+  );
+  assert.equal(run().status, 1);
+  assert.equal(
+    JSON.parse(await readFile(output, "utf8")).message,
+    "Invalid R2 account ID or bucket name",
+  );
+  assert.equal(run({ env: { R2_ACCOUNT_ID: "" } }).status, 1);
+  assert.equal(
+    JSON.parse(await readFile(output, "utf8")).message,
+    "Missing R2_ACCOUNT_ID",
+  );
+});
+
+test("CLI replaces stale success with a failed result when configuration is missing", async (t) => {
+  const { request, output, run } = await cliFixture(t);
+  await writeFile(output, JSON.stringify({ status: "published" }));
+  assert.equal(run().status, 1);
   const result = JSON.parse(await readFile(output, "utf8"));
   assert.equal(result.status, "failed");
+  assert.equal(result.code, "CONFIGURATION");
+  assert.equal(result.message, "Missing R2_ACCOUNT_ID");
   assert.throws(
     () => validateResult(request, result),
     /Host publication failed/,

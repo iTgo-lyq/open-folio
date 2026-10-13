@@ -4,13 +4,15 @@
   "title": "原型发布配置统一到根目录环境文件",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/prototype-root-env",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一配置入口、迁移本机 R2 环境并验证发布加载",
-      "status": "todo"
+      "status": "done",
+      "verification": "原型包 13 项测试通过；三个调用目录自动加载、覆盖优先级与缺失配置失败通过；原型构建及格式检查通过；本机五项配置迁移一致、权限 600、旧文件删除且真实凭据未进入差异。",
+      "commitTitle": "prototype-root-env T1: load prototype publishing configuration from root env"
     }
   },
   "closure": {}
