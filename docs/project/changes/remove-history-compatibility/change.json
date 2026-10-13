@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "remove-history-compatibility",
+  "title": "清理历史兼容并统一当前契约",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "change/remove-history-compatibility",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-13T07:09:49.617Z",
+      "summary": "用户明确要求完整清除历史说明与兼容代码，保留源码部署和历史归档，完成后交 iclaude 验收。",
+      "source": "本轮用户执行指令"
+    },
+    "technical": {
+      "at": "2026-10-13T07:09:49.682Z",
+      "summary": "沿用用户已指定的直接删除方向；当前数据定点整理属于必要实施，不新增兼容层。",
+      "source": "本轮用户明确清除全部兼容代码的授权"
+    },
+    "plan": {
+      "at": "2026-10-13T07:09:49.747Z",
+      "summary": "按用户要求先执行清理验证，再交 iclaude 验收。",
+      "source": "本轮用户指定执行顺序"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "当前契约清理与回归验证",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "开发机验证与 iclaude 独立验收",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
