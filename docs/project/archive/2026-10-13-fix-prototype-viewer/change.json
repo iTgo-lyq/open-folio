@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "fix-prototype-viewer",
+  "title": "修正原型目录排版与加载反馈",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/simplify-workspace-ui",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一原型目录图标与标题对齐",
+      "status": "done",
+      "verification": "focused viewer 浏览器回归通过：桌面与320px抽屉各目录项图标和文字起点一致、无溢出，入口切换及历史恢复正常；CSS与测试格式检查通过。",
+      "commitTitle": "fix-prototype-viewer T1: align directory entries"
+    },
+    "T2": {
+      "title": "修正原型加载与应用就绪反馈",
+      "status": "done",
+      "verification": "类型及格式检查通过；原型两组浏览器回归16项全部通过，覆盖无桥接加载/超时、ready/error、重载状态重置、固定URL与沙箱，以及目录/分享/设备/历史/窄屏。详见execution.md。",
+      "commitTitle": "fix-prototype-viewer T2: distinguish page load from optional readiness"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-13T06:42:03.040Z",
+      "summary": "Agent自查通过；目录布局、加载反馈及错误路径有16项浏览器回归和真实3个原型桌面/320px证据，类型/格式/生产构建通过，服务运行2d78feb，无未解决验收项。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-13T06:42:03.112Z",
+      "summary": "Agent 自验收通过：两项截图问题均修正，实际目录对齐且加载后无误导提示；ready/error、重载及沙箱回归通过，范围仍为small。",
+      "source": "SpecTrail small直接归档规则；沿用用户明确选择直接修改并验证。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-13T06:42:03.217Z",
+      "summary": "更新原型能力的加载/就绪反馈：无桥接不持续警告，聚焦预览加载后收起正常状态，保留明确错误。目录布局为恢复预期的缺陷修复，无需新增Spec。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-13T06:42:03.292Z",
+      "summary": "目录与加载反馈修复完成，Agent自验收及真实预览验证通过，Specs同步，开发机服务已更新。",
+      "path": "docs/project/archive/2026-10-13-fix-prototype-viewer"
+    }
+  },
+  "dependsOn": [
+    "simplify-workspace-ui"
+  ]
+}
