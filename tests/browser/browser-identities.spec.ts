@@ -98,3 +98,100 @@ test("other tabs clear their identity immediately and ignore a delayed old sessi
     await other.close();
   }
 });
+for (const width of [1440, 834, 390, 320])
+  test(`identity removal, selection and keyboard focus fit ${width}px`, async ({
+    page,
+    personal,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/?m=connections");
+    await expect(page.locator(".personal-connection-card")).toContainText(
+      "@reader",
+    );
+    await addOther(page);
+    await page
+      .getByRole("button", { name: "切换到reader", exact: true })
+      .click();
+    await expect(page.locator(".personal-connection-card")).toContainText(
+      "@reader",
+    );
+    const original = await (await page.request.get("/api/session")).json();
+    const remove = page.getByRole("button", {
+      name: "移除组织工程",
+      exact: true,
+    });
+    await remove.click();
+    await page.keyboard.press("Escape");
+    await expect(remove).toBeFocused();
+    await remove.click();
+    await page.getByRole("button", { name: "移除身份", exact: true }).click();
+    await expect(page.locator(".personal-identity-row")).toHaveCount(1);
+    await expect(page.locator(".personal-connection-card")).toContainText(
+      "@reader",
+    );
+    expect(
+      (await (await page.request.get("/api/session")).json()).selectionRevision,
+    ).toBe(original.selectionRevision);
+    await addOther(page);
+    await page.screenshot({
+      path: `artifacts/browser-identities-${width}.png`,
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "移除组织工程", exact: true })
+      .click();
+    await page.getByRole("button", { name: "移除身份", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "选择身份", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "切换到reader", exact: true })
+      .click();
+    await expect(page.locator(".personal-connection-card")).toContainText(
+      "@reader",
+    );
+    expect(
+      (await (await page.request.get("/api/session")).json()).workspace.id,
+    ).toBe(personal.id);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+test("a failed saved-token switch keeps the current identity and permits retry after a temporary failure", async ({
+  page,
+}) => {
+  await page.goto("/?m=connections");
+  await expect(page.locator(".personal-connection-card")).toContainText(
+    "@reader",
+  );
+  await addOther(page);
+  await page.getByRole("button", { name: "切换到reader", exact: true }).click();
+  await expect(page.locator(".personal-connection-card")).toContainText(
+    "@reader",
+  );
+  await page.request.post("/_fixture/control", { data: { unavailable: true } });
+  await page
+    .getByRole("button", { name: "切换到组织工程", exact: true })
+    .click();
+  await expect(
+    page.getByText("平台暂时不可达，请重试。", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".personal-connection-card")).toContainText(
+    "@reader",
+  );
+  await page.request.post("/_fixture/control", {
+    data: { unavailable: false, revoke: "token-b" },
+  });
+  await page
+    .getByRole("button", { name: "切换到组织工程", exact: true })
+    .click();
+  await expect(
+    page.getByText("token 已失效，请替换连接。", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".personal-identity-row")).toHaveCount(2);
+  await expect(page.locator(".personal-connection-card")).toContainText(
+    "@reader",
+  );
+});

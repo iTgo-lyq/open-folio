@@ -11,7 +11,9 @@ import {
 import {
   sessionResponse,
   switchIdentityResponse,
+  removeIdentityResponse,
 } from "../src/server/connection-api.ts";
+import { rotateWorkspaceKeys } from "../src/server/workspace-key-rotation.ts";
 import { tokenResponse } from "../src/server/credential-api.ts";
 import { ProviderError } from "../src/server/providers/types.ts";
 const signal = () => new AbortController().signal;
@@ -250,4 +252,172 @@ test("late token add with stale revision cannot change the selected identity", a
   release();
   assert.equal((await adding).status, 409);
   assert.equal((await f.sessions.get(a.cookie)).identities.length, 2);
+});
+test("removing a non-current identity leaves current delivery and another browser intact", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect(),
+    other = await f.connect(),
+    b = await f.connect(a.cookie, "third");
+  const lease = await f.sessions.lease(a.cookie, b.connection.id);
+  const response = await removeIdentityResponse(
+    new Request("https://folio.test/api/session/identities/x", {
+      method: "DELETE",
+      headers: {
+        origin: "https://folio.test",
+        cookie: `openfolio-session=${a.cookie}`,
+        "X-OpenFolio-Revision": "2",
+      },
+    }),
+    a.session.deviceSessionId!,
+    f.sessions,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("set-cookie"), null);
+  const current = await f.sessions.get(a.cookie);
+  assert.equal(current.workspace?.id, b.connection.id);
+  assert.equal(current.selectionRevision, b.session.selectionRevision);
+  await lease.assertCurrent();
+  lease.release();
+  assert.equal(current.identities.length, 1);
+  assert.equal((await f.sessions.get(other.cookie)).connected, true);
+  await assert.rejects(
+    f.sessions.switchIdentity(a.cookie, a.session.deviceSessionId!, signal()),
+    { code: "IDENTITY_REQUIRED" },
+  );
+  assert.equal(
+    JSON.parse(await readFile(join(f.sessions.root, "state.json"), "utf8"))
+      .workspaces.length,
+    2,
+  );
+});
+test("removing the current identity leaves a selection of other remembered identities", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect(),
+    b = await f.connect(a.cookie, "third");
+  const lease = await f.sessions.lease(a.cookie, b.connection.id);
+  const next = await f.sessions.removeIdentity(
+    a.cookie,
+    b.session.deviceSessionId!,
+  );
+  assert.equal(next.connected, false);
+  assert.equal(next.identities.length, 1);
+  await assert.rejects(lease.assertCurrent);
+  lease.release();
+  const restored = await f.sessions.switchIdentity(
+    a.cookie,
+    next.identities[0].id,
+    signal(),
+  );
+  assert.equal(restored.connection.id, a.connection.id);
+});
+test("another device can revoke a remembered inactive identity without revoking its other current identity", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect(),
+    owner = await f.connect(),
+    b = await f.connect(a.cookie, "third");
+  const lease = await f.sessions.lease(a.cookie, b.connection.id),
+    shared = await f.sessions.workspaceLease(owner.cookie, owner.connection.id);
+  const devices = await f.sessions.devices(owner.cookie);
+  assert.ok(devices.some((d) => d.id === a.session.deviceSessionId));
+  await f.sessions.revokeDevice(owner.cookie, a.session.deviceSessionId!);
+  await lease.assertCurrent();
+  assert.equal((await f.sessions.get(a.cookie)).identities.length, 1);
+  await f.sessions.remove(owner.cookie, undefined, true);
+  await assert.rejects(shared.assertCurrent);
+  shared.release();
+  await lease.assertCurrent();
+  lease.release();
+  assert.equal((await f.sessions.get(a.cookie)).workspace?.id, b.connection.id);
+});
+test("device revocation clears its selected identity but preserves another saved identity", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect(),
+    owner = await f.connect(),
+    b = await f.connect(a.cookie, "third");
+  await f.sessions.switchIdentity(
+    a.cookie,
+    a.session.deviceSessionId!,
+    signal(),
+  );
+  const lease = await f.sessions.lease(a.cookie, a.connection.id);
+  await f.sessions.revokeDevice(owner.cookie, a.session.deviceSessionId!);
+  assert.equal((await f.sessions.get(a.cookie)).connected, false);
+  await assert.rejects(lease.assertCurrent);
+  lease.release();
+  const restored = await f.sessions.switchIdentity(
+    a.cookie,
+    b.session.deviceSessionId!,
+    signal(),
+  );
+  assert.equal(restored.connection.id, b.connection.id);
+  await assert.rejects(
+    f.sessions.removeIdentity(owner.cookie, b.session.deviceSessionId!),
+    { code: "IDENTITY_NOT_FOUND" },
+  );
+});
+test("invalid browser membership and duplicate grants fail closed without rewriting bytes", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect(),
+    other = await f.connect();
+  const path = join(f.sessions.root, "state.json"),
+    raw = await readFile(path, "utf8"),
+    source = JSON.parse(raw);
+  const cross = structuredClone(source);
+  cross.browsers[0].activeSessionId = other.session.deviceSessionId;
+  const duplicate = structuredClone(source);
+  duplicate.sessions.push({
+    ...duplicate.sessions[0],
+    id: crypto.randomUUID(),
+  });
+  for (const candidate of [cross, duplicate, { ...source, browsers: [] }]) {
+    const text = JSON.stringify(candidate);
+    await writeFile(path, text);
+    await assert.rejects(f.sessions.get(a.cookie), {
+      code: "SESSION_DATA_INVALID",
+    });
+    assert.equal(await readFile(path, "utf8"), text);
+  }
+  await writeFile(path, raw);
+});
+test("key rotation preserves a browser's saved identities and selection", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect(),
+    b = await f.connect(a.cookie, "third");
+  const target = join(f.root, "rotated");
+  await rotateWorkspaceKeys(f.sessions.root, target, f.sessions.keyPath);
+  const rotated = new PersonalSessions(target, f.registry);
+  assert.deepEqual(await rotated.get(a.cookie), b.session);
+  const selected = await rotated.switchIdentity(
+    a.cookie,
+    a.session.deviceSessionId!,
+    signal(),
+  );
+  assert.equal(selected.connection.id, a.connection.id);
+});
+test("the per-browser limit preserves the selection and permits re-authenticating an existing identity", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect();
+  let current = a;
+  for (let n = 1; n < 32; n++)
+    current = await f.connect(a.cookie, `fixture-token-${n}`);
+  const before = await readFile(join(f.sessions.root, "state.json"), "utf8");
+  await assert.rejects(f.connect(a.cookie, "over-limit"), {
+    code: "SESSION_LIMIT",
+  });
+  assert.equal(
+    await readFile(join(f.sessions.root, "state.json"), "utf8"),
+    before,
+  );
+  assert.equal(
+    (await f.sessions.get(a.cookie)).workspace?.id,
+    current.connection.id,
+  );
+  assert.equal((await f.connect(a.cookie)).session.identities.length, 32);
 });

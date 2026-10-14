@@ -141,3 +141,22 @@ export async function switchIdentityResponse(
     return personalError(e);
   }
 }
+export async function removeIdentityResponse(
+  request: Request,
+  id: string,
+  store: PersonalSessions = personalSessions(),
+) {
+  try {
+    requirePersonalOrigin(request);
+    if (!z.string().uuid().safeParse(id).success)
+      throw new AppError("INVALID_PARAMETER", "身份参数不合法。", 400);
+    const session = await store.removeIdentity(
+      sessionCookie(request),
+      id,
+      requestRevision(request),
+    );
+    return personalJson({ session });
+  } catch (e) {
+    return personalError(e);
+  }
+}

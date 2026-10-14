@@ -797,6 +797,24 @@ export class PersonalSessions {
       return summary(state, this.browser(state, cookie));
     });
   }
+  async removeIdentity(cookie: string, id: string, expectedRevision?: number) {
+    return this.lock(async () => {
+      const state = await this.load();
+      await this.prune(state);
+      const browser = this.browser(state, cookie);
+      if (!browser) throw denied();
+      this.checkRevision(browser, expectedRevision);
+      const target = state.sessions.find(
+        (s) => s.id === id && s.browserId === browser.id,
+      );
+      if (!target)
+        throw new AppError("IDENTITY_NOT_FOUND", "此浏览器没有该身份。", 404);
+      this.detach(state, [target]);
+      await this.save(state);
+      this.stopDevice(target);
+      return summary(state, this.browser(state, cookie));
+    });
+  }
   async lease(
     cookie: string,
     id: string | undefined,

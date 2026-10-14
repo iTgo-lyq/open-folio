@@ -22,6 +22,7 @@ import {
   sessionResponse,
   logoutAllResponse,
   switchIdentityResponse,
+  removeIdentityResponse,
 } from "../src/server/connection-api.ts";
 import {
   discoveryResponse,
@@ -217,19 +218,21 @@ const server = createServer(async (req, res) => {
       });
       if (s[1] === "session")
         response =
-          s[2] === "switch"
-            ? await switchIdentityResponse(request, sessions)
-            : s[2] === "preferences"
-              ? await preferencesResponse(request, sessions)
-              : s[2] === "token"
-                ? await tokenResponse(request, sessions)
-                : s[2] === "devices"
-                  ? await devicesResponse(request, s[3], sessions)
-                  : s[2] === "logout-all"
-                    ? await logoutAllResponse(request, sessions)
-                    : s.length === 2
-                      ? await sessionResponse(request, sessions, discoveries)
-                      : new Response(null, { status: 404 });
+          s[2] === "identities" && s[3] && request.method === "DELETE"
+            ? await removeIdentityResponse(request, s[3], sessions)
+            : s[2] === "switch"
+              ? await switchIdentityResponse(request, sessions)
+              : s[2] === "preferences"
+                ? await preferencesResponse(request, sessions)
+                : s[2] === "token"
+                  ? await tokenResponse(request, sessions)
+                  : s[2] === "devices"
+                    ? await devicesResponse(request, s[3], sessions)
+                    : s[2] === "logout-all"
+                      ? await logoutAllResponse(request, sessions)
+                      : s.length === 2
+                        ? await sessionResponse(request, sessions, discoveries)
+                        : new Response(null, { status: 404 });
       else if (s[1] === "connections")
         response =
           s[3] === "discovery" || s[3] === "repository-checks"

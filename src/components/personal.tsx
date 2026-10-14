@@ -36,6 +36,7 @@ import { api, ApiError } from "./api";
 import type {
   ConnectionSummary,
   DeviceSummary,
+  SessionSummary,
 } from "@/server/personal-sessions";
 import type { DiscoveredRepository } from "@/server/discovery";
 import { ErrorNotice } from "./document";
@@ -307,6 +308,8 @@ export function PersonalHome() {
 export function Connections() {
   const p = usePersonal();
   const [login, setLogin] = useState(false);
+  if (!p.session && !p.sessionError)
+    return <EmptyState title="正在恢复身份…" />;
   if (p.connection)
     return (
       <CredentialDetails
@@ -347,7 +350,10 @@ export function Connections() {
 function IdentityList() {
   const p = usePersonal();
   const [busy, setBusy] = useState(""),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [removing, setRemoving] = useState<{ id: string; label: string } | null>(
+      null,
+    );
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   const switchTo = async (id: string) => {
@@ -371,6 +377,47 @@ function IdentityList() {
           ["SESSION_CHANGED", "IDENTITY_REQUIRED", "SESSION_REQUIRED"].includes(
             e.code,
           )
+        )
+          await p.reloadSession(undefined, true);
+      }
+    } finally {
+      if (!c.signal.aborted) setBusy("");
+    }
+  };
+  const remove = async () => {
+    if (!removing) return;
+    const c = new AbortController();
+    controller.current = c;
+    setBusy(`remove:${removing.id}`);
+    setError("");
+    try {
+      const result = await api<{
+        session: SessionSummary;
+      }>(`/api/session/identities/${removing.id}`, {
+        method: "DELETE",
+        signal: c.signal,
+      });
+      if (c.signal.aborted) return;
+      setRemoving(null);
+      const listOnly =
+        result.session.selectionRevision === p.session?.selectionRevision;
+      await p.reloadSession(undefined, listOnly);
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLButtonElement>(".personal-intro button")
+          ?.focus(),
+      );
+    } catch (e) {
+      if (!c.signal.aborted) {
+        setRemoving(null);
+        setError((e as Error).message);
+        if (
+          e instanceof ApiError &&
+          [
+            "SESSION_CHANGED",
+            "IDENTITY_NOT_FOUND",
+            "SESSION_REQUIRED",
+          ].includes(e.code)
         )
           await p.reloadSession(undefined, true);
       }
@@ -406,10 +453,43 @@ function IdentityList() {
               >
                 {identity.current ? "正在使用" : "切换"}
               </Button>
+              <Button
+                variant="text"
+                disabled={!!busy}
+                aria-label={`移除${identity.connection.label}`}
+                onClick={() =>
+                  setRemoving({
+                    id: identity.id,
+                    label: identity.connection.label,
+                  })
+                }
+              >
+                移除
+              </Button>
             </div>
           </div>
         ))}
       </CardContent>
+      {removing && (
+        <PersonalDialog title="移除此身份？" onClose={() => setRemoving(null)}>
+          <p>
+            从此浏览器移除“{removing.label}”后，需要重新输入 token
+            登录。工作台和其他设备的登录会保留。
+          </p>
+          <div className="personal-dialog-actions">
+            <Button disabled={!!busy} onClick={() => setRemoving(null)}>
+              取消
+            </Button>
+            <Button
+              variant="primary"
+              loading={!!busy}
+              onClick={() => void remove()}
+            >
+              移除身份
+            </Button>
+          </div>
+        </PersonalDialog>
+      )}
     </Card>
   );
 }
@@ -486,6 +566,7 @@ function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
   const revoke = (id: string) =>
     run(id, async (signal) => {
       await api(`/api/session/devices/${id}`, { method: "DELETE", signal });
+      await p.reloadSession(undefined, true);
       const r = await api<{ devices: DeviceSummary[] }>(
         "/api/session/devices",
         { signal },
@@ -540,7 +621,7 @@ function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
         <CardHeader>
           <CardTitle>已登录设备</CardTitle>
           <CardDescription>
-            退出设备会立即停止它的私有读取权限。
+            退出设备会同时取消它记住此身份的授权，需要重新输入 token。
           </CardDescription>
         </CardHeader>
         <CardContent>

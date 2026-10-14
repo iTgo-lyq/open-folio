@@ -32,6 +32,12 @@
     },
     "T2": {
       "title": "移除身份并统一设备撤销",
+      "status": "done",
+      "verification": "身份集中 15 项、全量单元 161 项与完整浏览器 76 项通过，typecheck/format 通过；独立评审的 R1–R3 追加 T3 修复。",
+      "commitTitle": "browser-identities T2: remove remembered identities and revoke devices"
+    },
+    "T3": {
+      "title": "补齐并发交付与分页恢复边界",
       "status": "todo"
     }
   },
