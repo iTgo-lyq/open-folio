@@ -27,3 +27,23 @@
 - `npm run test:e2e -- --reporter=line`：完整 77 项通过，包含新增的无 BroadcastChannel 的 A → B → A 分页恢复。多页 fixture 首次取第二页的空样本失败，修正为复用首页样本，单项和完整回归均通过。
 - `npm run typecheck`、`npm run format:check` 通过。独立 Agent identity_review 复验 R1–R4，无剩余可操作代码问题；问题与结论见 review.md。
 - 服务更新前确认真实验证 token 已在 Git 忽略的本地配置就绪；未输出凭据、Cookie 或密钥。后续按服务管理脚本完成停止、生产构建、启动及真实验证，保留整个运行数据目录。
+
+### 生产构建与独立开发机实例
+
+`npm run service:update` 的首次停止校验发现旧服务记录的进程已退出，原端口已由另一个仓库的实例使用；核实进程与工作目录后，仅清理本仓库已失效的 runtime-version.json。用户随后明确要求“和 open-folio-internal 独立开”“生成新的链接”“不要复用”，因此本仓库使用独立端口、链接和数据目录，不执行内部仓库的同步或更新。
+
+生产 `.next` 构建通过，运行源提交 `4d501abd22525c4e6daacbed5f4b9f10201ddb7f`，BUILD_ID 为 `C8Fgp0ftzxvFTuVBC4kLP`。先在独立临时实例验证，再将该实例数据移至 `/home/tiger/.local/share/open-folio-public`；正式独立实例使用已分配且未导出的端口 11117，tmux 会话 `openfolio-public-preview`，监听 `::`。`.env.local` 保存该实例配置且确认被 Git 忽略；`npm run service:start`／`service:stop`／`service:status` 均读取同一配置。Merlin 代理创建返回 active 且 is_public=false；匿名外部访问由平台返回 401，本机 IPv4 与 IPv6 应用入口均可用。原内部实例的进程、构建与数据继续保留。
+
+### 真实凭据与数据冒烟
+
+在最终独立实例使用忽略配置中的一个真实 token、两个隔离浏览器授权，以下检查通过，普通日志未包含 token、Cookie 或密钥：
+
+- 真实登录的安全摘要和 HttpOnly／SameSite Cookie；重复添加相同 token 保持单项与原工作台 UUID；无效 token 添加返回 401，当前身份保留。
+- 点选已保存授权只发送 identityId；主动复制返回当前 token，其他响应不包含 token。
+- 同 token 的两个浏览器共享工作台，撤销第二浏览器后无法恢复授权，第一浏览器仍有效。
+- 真实仓库发现、刷新与工作台读取通过；生产窄屏“当前凭据”可用，无横向溢出，URL、localStorage、sessionStorage 不包含 token。
+- 通过正式管理脚本停止和启动服务后，同 Cookie 恢复当前身份与列表。
+- 移除身份后工作台数组保持原内容，重新输入 token 恢复原 UUID；没有 Cookie 的浏览器看不到先前列表。仅清理本次测试授权，保留验证工作台与缓存；状态和凭据密钥权限均为 0600。
+- 模拟新链接的 HTTPS 代理 Host 与 forwarded-proto，真实登录返回 Secure／HttpOnly Cookie，同源复制通过，其他 Origin 返回 403。最初模拟使用 fetch 时自定义 Host 未保留，改用原生 HTTP 请求后通过；应用实现未变。
+
+两个不同的真实 token 未配置；同账号不同 token 的双身份切换、偏好／缓存隔离、失败切换、期限、旧版本登录拒绝及旧工作台保留由单元与完整浏览器 fixture 覆盖。真实读取的第一次临时冒烟未正确准备工作台快照，并以 snapshotId 检查 Workbench；修正为显式刷新后检查 id，临时和最终实例均通过。

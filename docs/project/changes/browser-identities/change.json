@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "补齐并发交付与分页恢复边界",
-      "status": "doing"
+      "status": "done",
+      "verification": "R1–R4 独立复验通过；167 项单元、77 项浏览器、类型、格式和生产构建通过；独立服务真实凭据、重启恢复、HTTPS 代理及移除／撤销冒烟通过，Merlin 私有链接已生成。",
+      "commitTitle": "browser-identities T3: verify and deploy independent public instance"
     }
   },
   "closure": {},
