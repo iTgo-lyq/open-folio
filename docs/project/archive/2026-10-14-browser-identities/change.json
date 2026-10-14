@@ -3,7 +3,7 @@
   "id": "browser-identities",
   "title": "浏览器记住多个身份并点选切换",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/browser-identities",
   "confirmations": {
@@ -48,6 +48,23 @@
       "result": "passed",
       "at": "2026-10-14T10:02:59.680Z",
       "summary": "隔离上下文的独立 Agent identity_review 已复验 R1–R4；167 项单元、77 项浏览器、类型、格式、生产构建及真实凭据冒烟通过。独立 OpenFolio 服务在端口 11117 运行，独立数据与 Merlin 私有链接已就绪，代理同源／Secure Cookie 检查通过。两个不同真实 token 的切换由 fixture 覆盖。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-14T10:13:19.523Z",
+      "summary": "用户验收通过浏览器多身份实现，包含已独立部署的服务和验证证据。",
+      "source": "用户答复：验收通过。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-14T10:13:53.446Z",
+      "summary": "已同步 project-knowledge 的总览、个人访问与分享、配置 Specs，以及 README；记录浏览器身份集合、点选切换、移除／撤销、期限、并发契约与版本 3 数据保留。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-14T10:13:53.522Z",
+      "summary": "用户验收通过，Specs 与使用文档同步，实施、独立评审、验证和固定原型引用完整归档。",
+      "path": "docs/project/archive/2026-10-14-browser-identities"
     }
   },
   "rework": {
@@ -87,9 +104,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与独立服务已交付并验证，等待用户按 medium 流程人工验收；通过后同步 Specs 并归档。"
-  }
+  ]
 }
