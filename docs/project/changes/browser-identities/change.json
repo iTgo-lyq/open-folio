@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "browser-identities",
+  "title": "浏览器记住多个身份并点选切换",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/browser-identities",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "启动方向已获确认；等待用户确认 requirement.md 中的完整行为、退出与撤销边界及验收标准。"
+  }
+}
