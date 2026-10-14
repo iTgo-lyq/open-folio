@@ -71,7 +71,7 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
   expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
   const id = new URL(link).pathname.split("/").pop()!;
   await request.delete("/api/session", {
-    headers: { origin: "http://127.0.0.1:10682" },
+    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "1" },
   });
   const anonymous = await browser.newContext({
     baseURL: "http://127.0.0.1:10682",

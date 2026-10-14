@@ -72,7 +72,7 @@ export const workspaceSchema = z
 export const deviceSchema = z
   .object({
     id: z.string().uuid(),
-    cookieHash: z.string().regex(/^[a-f0-9]{64}$/),
+    browserId: z.string().uuid(),
     workspaceId: z.string().uuid(),
     createdAt: z.number().int().positive(),
     lastSeenAt: z.number().int().positive(),
@@ -81,15 +81,43 @@ export const deviceSchema = z
     displayLabel: z.string().min(1).max(100),
   })
   .strict();
-export const workspaceStateSchema = z
+export const browserSchema = z
+  .object({
+    id: z.string().uuid(),
+    cookieHash: z.string().regex(/^[a-f0-9]{64}$/),
+    activeSessionId: z.string().uuid().nullable(),
+    revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    selectionRevision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    createdAt: z.number().int().positive(),
+  })
+  .strict();
+const legacyStateSchema = z
   .object({
     schemaVersion: z.literal(2),
     workspaces: z.array(workspaceSchema).max(10000),
+    sessions: z
+      .array(
+        deviceSchema
+          .omit({ browserId: true })
+          .extend({
+            cookieHash: browserSchema.shape.cookieHash,
+          })
+          .strict(),
+      )
+      .max(10000),
+  })
+  .strict();
+export const workspaceStateSchema = z
+  .object({
+    schemaVersion: z.literal(3),
+    workspaces: z.array(workspaceSchema).max(10000),
     sessions: z.array(deviceSchema).max(10000),
+    browsers: z.array(browserSchema).max(10000),
   })
   .strict();
 export type Workspace = z.infer<typeof workspaceSchema>;
 export type DeviceSession = z.infer<typeof deviceSchema>;
+export type BrowserSession = z.infer<typeof browserSchema>;
 export type WorkspaceState = z.infer<typeof workspaceStateSchema>;
 export type WorkspacePreferences = z.infer<typeof preferencesSchema>;
 export type WorkspaceSummary = Pick<
@@ -107,6 +135,15 @@ export interface SessionSummary {
   absoluteExpiresAt?: number;
   workspace?: WorkspaceSummary;
   connections: ConnectionSummary[];
+  identities: {
+    id: string;
+    connection: ConnectionSummary;
+    current: boolean;
+    expiresAt: number;
+    absoluteExpiresAt: number;
+  }[];
+  browserRevision?: number;
+  selectionRevision?: number;
   renewed?: boolean;
 }
 export interface ConnectionLease {
@@ -139,21 +176,99 @@ export const connectionSummary = (w: Workspace): ConnectionSummary => ({
   label: w.label,
 });
 const summary = (
-  s?: DeviceSession,
-  w?: Workspace,
+  state: WorkspaceState,
+  browser?: BrowserSession,
   renewed = false,
-): SessionSummary =>
-  s && w
-    ? {
-        connected: true,
-        deviceSessionId: s.id,
-        expiresAt: s.expiresAt,
-        absoluteExpiresAt: s.absoluteExpiresAt,
-        workspace: workspaceSummary(w),
-        connections: [connectionSummary(w)],
-        ...(renewed ? { renewed: true } : {}),
-      }
-    : { connected: false, connections: [] };
+): SessionSummary => {
+  const s = state.sessions.find((s) => s.id === browser?.activeSessionId),
+    w = state.workspaces.find((w) => w.id === s?.workspaceId);
+  return {
+    connected: !!(s && w),
+    connections: w ? [connectionSummary(w)] : [],
+    identities: browser
+      ? state.sessions
+          .filter((s) => s.browserId === browser.id)
+          .map((s) => ({
+            id: s.id,
+            connection: connectionSummary(
+              state.workspaces.find((w) => w.id === s.workspaceId)!,
+            ),
+            current: s.id === browser.activeSessionId,
+            expiresAt: s.expiresAt,
+            absoluteExpiresAt: s.absoluteExpiresAt,
+          }))
+      : [],
+    ...(browser
+      ? {
+          browserRevision: browser.revision,
+          selectionRevision: browser.selectionRevision,
+        }
+      : {}),
+    ...(s && w
+      ? {
+          connected: true,
+          deviceSessionId: s.id,
+          expiresAt: s.expiresAt,
+          absoluteExpiresAt: s.absoluteExpiresAt,
+          workspace: workspaceSummary(w),
+          ...(renewed ? { renewed: true } : {}),
+        }
+      : {}),
+  };
+};
+const emptyState = (): WorkspaceState => ({
+  schemaVersion: 3,
+  workspaces: [],
+  sessions: [],
+  browsers: [],
+});
+export function parseWorkspaceState(input: unknown): WorkspaceState {
+  const parsed = z
+    .union([workspaceStateSchema, legacyStateSchema])
+    .parse(input);
+  const ids = new Set(parsed.workspaces.map((w) => w.id));
+  if (
+    ids.size !== parsed.workspaces.length ||
+    new Set(parsed.workspaces.map((w) => w.credentialFingerprint)).size !==
+      parsed.workspaces.length ||
+    new Set(parsed.sessions.map((s) => s.id)).size !== parsed.sessions.length ||
+    parsed.sessions.some(
+      (s) => !ids.has(s.workspaceId) || s.expiresAt > s.absoluteExpiresAt,
+    ) ||
+    parsed.workspaces.some(
+      (w) =>
+        w.providerId !== w.identity.providerId ||
+        w.instanceId !== w.identity.instanceId,
+    )
+  )
+    throw Error("Invalid workspace relationships");
+  if (parsed.schemaVersion === 2) {
+    if (
+      new Set(parsed.sessions.map((s) => s.cookieHash)).size !==
+      parsed.sessions.length
+    )
+      throw Error("Duplicate legacy cookies");
+    return { ...emptyState(), workspaces: parsed.workspaces };
+  }
+  const browsers = new Map(parsed.browsers.map((b) => [b.id, b]));
+  if (
+    browsers.size !== parsed.browsers.length ||
+    new Set(parsed.browsers.map((b) => b.cookieHash)).size !==
+      parsed.browsers.length ||
+    new Set(parsed.sessions.map((s) => `${s.browserId}/${s.workspaceId}`))
+      .size !== parsed.sessions.length ||
+    parsed.sessions.some((s) => !browsers.has(s.browserId)) ||
+    parsed.browsers.some(
+      (b) =>
+        b.activeSessionId &&
+        !parsed.sessions.some(
+          (s) => s.id === b.activeSessionId && s.browserId === b.id,
+        ),
+    )
+  )
+    throw Error("Invalid browser relationships");
+  return parsed;
+}
 const globals = globalThis as typeof globalThis & {
   folioWorkspaceLocks?: Map<string, Promise<unknown>>;
   folioDeviceOperations?: Map<string, Set<AbortController>>;
@@ -321,37 +436,13 @@ export class PersonalSessions {
         raw = await readFile(join(this.root, "state.json"), "utf8");
       } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-        return { schemaVersion: 2, workspaces: [], sessions: [] };
+        return emptyState();
       }
-      const state = workspaceStateSchema.parse(JSON.parse(raw));
-      const ids = new Set(state.workspaces.map((w) => w.id));
-      if (
-        ids.size !== state.workspaces.length ||
-        new Set(state.workspaces.map((w) => w.credentialFingerprint)).size !==
-          state.workspaces.length ||
-        new Set(state.sessions.map((s) => s.cookieHash)).size !==
-          state.sessions.length ||
-        new Set(state.sessions.map((s) => s.id)).size !==
-          state.sessions.length ||
-        state.sessions.some(
-          (s) => !ids.has(s.workspaceId) || s.expiresAt > s.absoluteExpiresAt,
-        ) ||
-        state.workspaces.some(
-          (w) =>
-            w.providerId !== w.identity.providerId ||
-            w.instanceId !== w.identity.instanceId,
-        )
-      )
-        throw Error();
+      const state = parseWorkspaceState(JSON.parse(raw));
       await this.keys(false);
       return state;
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === "ENOENT")
-        return {
-          schemaVersion: 2,
-          workspaces: [],
-          sessions: [],
-        };
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") return emptyState();
       if (e instanceof AppError) throw e;
       throw new AppError(
         "SESSION_DATA_INVALID",
@@ -383,24 +474,53 @@ export class PersonalSessions {
       controller.abort();
     workspaceOperations().delete(key);
   }
+  private detach(state: WorkspaceState, removed: DeviceSession[]) {
+    state.sessions = state.sessions.filter((s) => !removed.includes(s));
+    for (const browser of state.browsers) {
+      if (!removed.some((s) => s.browserId === browser.id)) continue;
+      browser.revision++;
+      if (removed.some((s) => s.id === browser.activeSessionId)) {
+        browser.activeSessionId = null;
+        browser.selectionRevision++;
+      }
+    }
+    state.browsers = state.browsers.filter((b) =>
+      state.sessions.some((s) => s.browserId === b.id),
+    );
+  }
   private async prune(state: WorkspaceState) {
     const expired = state.sessions.filter(
       (s) => s.expiresAt <= this.now() || s.absoluteExpiresAt <= this.now(),
     );
     if (!expired.length) return;
-    state.sessions = state.sessions.filter((s) => !expired.includes(s));
+    this.detach(state, expired);
     await this.save(state);
     expired.forEach((s) => this.stopDevice(s));
   }
-  private find(state: WorkspaceState, cookie: string) {
+  private browser(state: WorkspaceState, cookie: string) {
     return /^[A-Za-z0-9_-]{43}$/.test(cookie)
-      ? state.sessions.find(
-          (s) =>
-            s.cookieHash === cookieHash(cookie) &&
-            s.expiresAt > this.now() &&
-            s.absoluteExpiresAt > this.now(),
-        )
+      ? state.browsers.find((b) => b.cookieHash === cookieHash(cookie))
       : undefined;
+  }
+  private find(state: WorkspaceState, cookie: string) {
+    const browser = this.browser(state, cookie);
+    return state.sessions.find(
+      (s) =>
+        s.id === browser?.activeSessionId &&
+        s.expiresAt > this.now() &&
+        s.absoluteExpiresAt > this.now(),
+    );
+  }
+  private checkRevision(
+    browser: BrowserSession | undefined,
+    expected?: number,
+  ) {
+    if (expected !== undefined && browser && browser.revision !== expected)
+      throw new AppError(
+        "SESSION_CHANGED",
+        "身份列表或当前身份已改变，请重试。",
+        409,
+      );
   }
   private async touch(state: WorkspaceState, s: DeviceSession) {
     if (this.now() - s.lastSeenAt < touchInterval) return false;
@@ -410,16 +530,16 @@ export class PersonalSessions {
     return true;
   }
   async get(cookie: string): Promise<SessionSummary> {
-    const result = await this.lock(async () => {
+    return this.lock(async () => {
       const state = await this.load();
       await this.prune(state);
-      const s = this.find(state, cookie),
-        w = state.workspaces.find((w) => w.id === s?.workspaceId);
-      if (!s || !w) return summary();
+      const browser = this.browser(state, cookie),
+        s = this.find(state, cookie);
+      if (!s) return summary(state, browser);
+      const w = state.workspaces.find((w) => w.id === s.workspaceId)!;
       decryptWorkspace(w, (await this.keys(false)).credential);
-      return summary(s, w, await this.touch(state, s));
+      return summary(state, browser, await this.touch(state, s));
     });
-    return result;
   }
   async login(
     cookie: string,
@@ -428,6 +548,7 @@ export class PersonalSessions {
     username: string | undefined,
     signal: AbortSignal,
     displayLabel = "浏览器",
+    expectedRevision?: number,
   ) {
     const secret = new SecretHandle(input),
       displayName = username?.trim() || undefined;
@@ -466,6 +587,8 @@ export class PersonalSessions {
       const state = await this.load();
       await this.prune(state);
       const old = this.find(state, cookie);
+      let browser = this.browser(state, cookie);
+      this.checkRevision(browser, expectedRevision);
       const keys = await this.keys(
         state.workspaces.length === 0 && state.sessions.length === 0,
       );
@@ -503,21 +626,40 @@ export class PersonalSessions {
         w.gitUsername = gitUsername;
         if (displayName) w.label = displayName;
       }
+      const existing = state.sessions.find(
+        (s) => s.browserId === browser?.id && s.workspaceId === w.id,
+      );
       if (
-        state.sessions.filter((s) => s.workspaceId === w.id && s.id !== old?.id)
+        state.sessions.filter((s) => s.workspaceId === w.id && s !== existing)
           .length >= 32 ||
-        state.sessions.length - (old ? 1 : 0) >= 10000
+        state.sessions.length - (existing ? 1 : 0) >= 10000 ||
+        (browser &&
+          state.sessions.filter(
+            (s) => s.browserId === browser?.id && s !== existing,
+          ).length >= 32) ||
+        (!browser && state.browsers.length >= 10000)
       )
         throw new AppError(
           "SESSION_LIMIT",
-          "设备会话数量达到上限，请先退出不用的设备。",
+          "身份或设备数量达到上限，请先移除不用的身份或设备。",
           409,
         );
-      const token = randomBytes(32).toString("base64url"),
+      const token = browser ? cookie : randomBytes(32).toString("base64url"),
         now = this.now();
+      if (!browser) {
+        browser = {
+          id: randomUUID(),
+          cookieHash: cookieHash(token),
+          activeSessionId: null,
+          revision: 0,
+          selectionRevision: 0,
+          createdAt: now,
+        };
+        state.browsers.push(browser);
+      }
       const device: DeviceSession = {
         id: randomUUID(),
-        cookieHash: cookieHash(token),
+        browserId: browser.id,
         workspaceId: w.id,
         createdAt: now,
         lastSeenAt: now,
@@ -525,32 +667,134 @@ export class PersonalSessions {
         absoluteExpiresAt: now + sessionAbsoluteTtl,
         displayLabel: displayLabel.slice(0, 100) || "浏览器",
       };
-      state.sessions = state.sessions.filter((s) => s.id !== old?.id);
+      state.sessions = state.sessions.filter((s) => s !== existing);
       state.sessions.push(device);
+      browser.activeSessionId = device.id;
+      browser.revision++;
+      browser.selectionRevision++;
       await this.save(state);
       if (old) this.stopDevice(old);
+      if (existing && existing !== old) this.stopDevice(existing);
       return {
         cookie: token,
-        session: summary(device, w),
+        cookieExpiresAt: Math.max(
+          ...state.sessions
+            .filter((s) => s.browserId === browser.id)
+            .map((s) => s.absoluteExpiresAt),
+        ),
+        session: summary(state, browser),
         connection: connectionSummary(w),
       };
     });
   }
-  async remove(cookie: string, id?: string, all = false) {
+  async switchIdentity(
+    cookie: string,
+    id: string,
+    signal: AbortSignal,
+    expectedRevision?: number,
+  ) {
+    const initial = await this.lock(async () => {
+      const state = await this.load();
+      await this.prune(state);
+      const browser = this.browser(state, cookie);
+      if (!browser) throw denied();
+      this.checkRevision(browser, expectedRevision);
+      const device = state.sessions.find(
+        (s) => s.id === id && s.browserId === browser.id,
+      );
+      if (!device)
+        throw new AppError(
+          "IDENTITY_REQUIRED",
+          "此身份未在本浏览器登录或已过期，请重新添加。",
+          401,
+        );
+      const w = state.workspaces.find((w) => w.id === device.workspaceId)!;
+      return {
+        revision: browser.revision,
+        device,
+        workspace: w,
+        secret: decryptWorkspace(w, (await this.keys(false)).credential),
+      };
+    });
+    const provider = this.registry.get(initial.workspace.providerId),
+      authenticated = await provider.authenticate(initial.secret, signal);
+    const identity = identitySchema.parse({
+      providerId: authenticated.providerId,
+      instanceId: authenticated.instanceId,
+      subjectId: authenticated.subjectId,
+      login: authenticated.login,
+      displayName: authenticated.displayName,
+    });
+    const gitUsername = authenticated.gitUsername ?? identity.login;
+    if (
+      identity.providerId !== initial.workspace.providerId ||
+      identity.instanceId !== initial.workspace.instanceId ||
+      identity.subjectId !== initial.workspace.identity.subjectId
+    )
+      throw new AppError(
+        "IDENTITY_CHANGED",
+        "身份已变化，请重新输入 token 登录。",
+        401,
+      );
+    if (!workspaceSchema.shape.gitUsername.safeParse(gitUsername).success)
+      throw new AppError("INVALID_USERNAME", "平台未返回有效的用户名。", 502);
+    return this.lock(async () => {
+      signal.throwIfAborted();
+      const state = await this.load();
+      await this.prune(state);
+      const browser = this.browser(state, cookie);
+      if (!browser) throw denied();
+      this.checkRevision(browser, initial.revision);
+      const target = state.sessions.find(
+          (s) => s.id === id && s.browserId === browser.id,
+        ),
+        w = state.workspaces.find((w) => w.id === initial.workspace.id);
+      if (
+        !target ||
+        !w ||
+        w.credentialFingerprint !== initial.workspace.credentialFingerprint
+      )
+        throw denied();
+      const old = this.find(state, cookie);
+      w.identity = identity;
+      w.gitUsername = gitUsername;
+      browser.activeSessionId = target.id;
+      browser.revision++;
+      browser.selectionRevision++;
+      target.lastSeenAt = this.now();
+      target.expiresAt = Math.min(
+        this.now() + sessionIdleTtl,
+        target.absoluteExpiresAt,
+      );
+      await this.save(state);
+      if (old) this.stopDevice(old);
+      return {
+        session: summary(state, browser),
+        connection: connectionSummary(w),
+      };
+    });
+  }
+  async remove(
+    cookie: string,
+    id?: string,
+    all = false,
+    expectedRevision?: number,
+  ) {
     return this.lock(async () => {
       const state = await this.load();
       await this.prune(state);
       const s = this.find(state, cookie),
         w = state.workspaces.find((w) => w.id === s?.workspaceId);
       if (!s || !w || (id && id !== w.id)) throw denied();
+      this.checkRevision(this.browser(state, cookie), expectedRevision);
       const removed = state.sessions.filter((x) =>
         all ? x.workspaceId === w.id : x.id === s.id,
       );
-      state.sessions = state.sessions.filter((x) => !removed.includes(x));
+      this.detach(state, removed);
       await this.save(state);
       removed.forEach((x) => this.stopDevice(x));
       if (all) this.stopWorkspace(w.id);
-      return summary();
+      return summary(state, this.browser(state, cookie));
     });
   }
   async lease(
@@ -558,6 +802,7 @@ export class PersonalSessions {
     id: string | undefined,
     signal?: AbortSignal,
     workspaceOwned = false,
+    expectedRevision?: number,
   ): Promise<ConnectionLease> {
     return this.lock(async () => {
       const state = await this.load();
@@ -565,6 +810,9 @@ export class PersonalSessions {
       const s = this.find(state, cookie),
         w = state.workspaces.find((w) => w.id === s?.workspaceId);
       if (!s || !w || (id && id !== w.id)) throw denied();
+      const browser = this.browser(state, cookie)!;
+      this.checkRevision(browser, expectedRevision);
+      const selectionRevision = browser.selectionRevision;
       const secret = decryptWorkspace(w, (await this.keys(false)).credential),
         controller = new AbortController(),
         key = `${this.root}/${workspaceOwned ? w.id : s.id}`,
@@ -596,7 +844,14 @@ export class PersonalSessions {
                 x.absoluteExpiresAt > this.now(),
             );
           if (
-            (!workspaceOwned && !current) ||
+            (!workspaceOwned &&
+              (!current ||
+                !latest.browsers.some(
+                  (b) =>
+                    b.id === browser.id &&
+                    b.activeSessionId === s.id &&
+                    b.selectionRevision === selectionRevision,
+                ))) ||
             !latest.workspaces.some(
               (x) =>
                 x.id === w.id &&
@@ -621,6 +876,7 @@ export class PersonalSessions {
     cookie: string,
     input: unknown,
     expectedWorkspaceId?: string,
+    expectedRevision?: number,
   ) {
     const parsed = preferencesSchema.safeParse(input);
     if (!parsed.success)
@@ -631,6 +887,7 @@ export class PersonalSessions {
       const current = this.find(state, cookie),
         workspace = state.workspaces.find((w) => w.id === current?.workspaceId);
       if (!current || !workspace) throw denied();
+      this.checkRevision(this.browser(state, cookie), expectedRevision);
       if (expectedWorkspaceId && workspace.id !== expectedWorkspaceId)
         throw new AppError(
           "WORKSPACE_CHANGED",
@@ -653,12 +910,13 @@ export class PersonalSessions {
       return workspace.preferences;
     });
   }
-  async devices(cookie: string) {
+  async devices(cookie: string, expectedRevision?: number) {
     return this.lock(async () => {
       const state = await this.load();
       await this.prune(state);
       const current = this.find(state, cookie);
       if (!current) throw denied();
+      this.checkRevision(this.browser(state, cookie), expectedRevision);
       return state.sessions
         .filter((s) => s.workspaceId === current.workspaceId)
         .map((s) => ({
@@ -672,18 +930,19 @@ export class PersonalSessions {
         }));
     });
   }
-  async revokeDevice(cookie: string, id: string) {
+  async revokeDevice(cookie: string, id: string, expectedRevision?: number) {
     return this.lock(async () => {
       const state = await this.load();
       await this.prune(state);
       const current = this.find(state, cookie);
       if (!current) throw denied();
+      this.checkRevision(this.browser(state, cookie), expectedRevision);
       const device = state.sessions.find(
         (s) => s.id === id && s.workspaceId === current.workspaceId,
       );
       if (!device)
         throw new AppError("DEVICE_NOT_FOUND", "设备会话不存在。", 404);
-      state.sessions = state.sessions.filter((s) => s !== device);
+      this.detach(state, [device]);
       await this.save(state);
       this.stopDevice(device);
       return { revoked: true, current: device.id === current.id };

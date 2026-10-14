@@ -6,6 +6,7 @@ import {
   privateKey,
   atomicPrivate,
   workspaceStateSchema,
+  parseWorkspaceState,
   decryptWorkspace,
   credentialFingerprint,
   encryptWorkspace,
@@ -30,7 +31,7 @@ export async function rotateWorkspaceKeys(
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
   }
-  const state = workspaceStateSchema.parse(
+  const state = parseWorkspaceState(
     JSON.parse(await readFile(join(source, "state.json"), "utf8")),
   );
   const credential = await privateKey(sourceCredentialKey, false),

@@ -15,7 +15,7 @@ import type {
 import type { ConnectionDescriptor } from "@/server/providers/types";
 import type { DiscoveredRepository } from "@/server/discovery";
 import type { DiscoverySummary } from "@/lib/personal";
-import { api } from "./api";
+import { api, ApiError, setPersonalRevision } from "./api";
 export type PersonalSession = SessionSummary & {
   providers: ConnectionDescriptor[];
 };
@@ -24,7 +24,7 @@ type PersonalValue = {
   sessionError: string;
   connection: ConnectionSummary | undefined;
   updatePreferences: (patch: WorkspacePreferences) => Promise<void>;
-  reloadSession: (select?: string) => Promise<void>;
+  reloadSession: (select?: string, listOnly?: boolean) => Promise<void>;
   items: DiscoveredRepository[];
   discovery: DiscoverySummary | null;
   directoryError: string;
@@ -51,7 +51,8 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     [version, setVersion] = useState(0),
     [cursor, setCursor] = useState(0);
   const snapshot = useRef<PersonalSession | null>(null),
-    sequence = useRef(0);
+    sequence = useRef(0),
+    channel = useRef<BroadcastChannel | null>(null);
   const connection: ConnectionSummary | undefined = session?.workspace
     ? {
         id: session.workspace.id,
@@ -64,6 +65,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     const version = ++sequence.current;
     if (explicit) {
       snapshot.current = null;
+      setPersonalRevision();
       setEpoch((v) => v + 1);
       setItems([]);
       setSession(null);
@@ -73,17 +75,20 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       if (version !== sequence.current) return;
       if (
         snapshot.current?.deviceSessionId !== next.deviceSessionId ||
+        snapshot.current?.selectionRevision !== next.selectionRevision ||
         snapshot.current?.workspace?.id !== next.workspace?.id
       ) {
         setEpoch((v) => v + 1);
         setItems([]);
       }
       snapshot.current = next;
+      setPersonalRevision(next.browserRevision);
       setSession(next);
       setSessionError("");
     } catch (e) {
       if (version !== sequence.current) return;
       snapshot.current = null;
+      setPersonalRevision();
       setSession(null);
       setItems([]);
       setEpoch((v) => v + 1);
@@ -91,10 +96,21 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
   const reloadSession = useCallback(
-    async (_select?: string) => recover(true),
+    async (_select?: string, listOnly = false) => {
+      channel.current?.postMessage({ type: listOnly ? "list" : "selection" });
+      await recover(!listOnly);
+    },
     [recover],
   );
   useEffect(() => {
+    if (typeof BroadcastChannel !== "undefined") {
+      const c = new BroadcastChannel("openfolio-identities");
+      channel.current = c;
+      c.onmessage = (event) => {
+        if (event.data?.type === "selection") void recover(true);
+        else if (event.data?.type === "list") void recover();
+      };
+    }
     void recover();
     const check = () => {
       if (document.visibilityState === "visible") void recover();
@@ -104,38 +120,55 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     document.addEventListener("visibilitychange", check);
     return () => {
       sequence.current++;
+      channel.current?.close();
+      channel.current = null;
+      setPersonalRevision();
       clearInterval(timer);
       window.removeEventListener("focus", check);
       document.removeEventListener("visibilitychange", check);
     };
   }, [recover]);
-  const updatePreferences = useCallback(async (patch: WorkspacePreferences) => {
-    const current = snapshot.current?.workspace,
-      version = sequence.current;
-    if (!current) return;
-    await api("/api/session/preferences", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-OpenFolio-Workspace": current.id,
-      },
-      body: JSON.stringify(patch),
-    });
-    if (
-      sequence.current === version &&
-      snapshot.current?.workspace?.id === current.id
-    ) {
-      const next = {
-        ...snapshot.current,
-        workspace: {
-          ...snapshot.current.workspace,
-          preferences: { ...snapshot.current.workspace.preferences, ...patch },
-        },
-      };
-      snapshot.current = next;
-      setSession(next);
-    }
-  }, []);
+  const updatePreferences = useCallback(
+    async (patch: WorkspacePreferences) => {
+      const current = snapshot.current?.workspace,
+        version = sequence.current;
+      if (!current) return;
+      try {
+        await api("/api/session/preferences", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-OpenFolio-Workspace": current.id,
+          },
+          body: JSON.stringify(patch),
+        });
+      } catch (e) {
+        if (e instanceof ApiError && e.code === "SESSION_CHANGED") {
+          await recover(true);
+          return;
+        }
+        throw e;
+      }
+      if (
+        sequence.current === version &&
+        snapshot.current?.workspace?.id === current.id
+      ) {
+        const next = {
+          ...snapshot.current,
+          workspace: {
+            ...snapshot.current.workspace,
+            preferences: {
+              ...snapshot.current.workspace.preferences,
+              ...patch,
+            },
+          },
+        };
+        snapshot.current = next;
+        setSession(next);
+      }
+    },
+    [recover],
+  );
   const reloadDirectory = useCallback(() => {
     setCursor(0);
     setVersion((v) => v + 1);

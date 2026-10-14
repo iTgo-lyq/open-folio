@@ -4,7 +4,7 @@
   "title": "浏览器记住多个身份并点选切换",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/browser-identities",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "记住身份并安全点选切换",
-      "status": "todo"
+      "status": "done",
+      "verification": "npm test 154 项通过；新增身份及 token 浏览器回归 10 项通过，个人登录与凭据复制回归通过；typecheck 和 format:check 通过。",
+      "commitTitle": "browser-identities T1: remember identities and switch without token input"
     },
     "T2": {
       "title": "移除身份并统一设备撤销",

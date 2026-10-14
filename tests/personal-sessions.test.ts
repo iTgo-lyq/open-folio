@@ -24,6 +24,7 @@ const req = (
     method,
     headers: {
       origin: "https://folio.test",
+      "X-OpenFolio-Revision": "1",
       "content-type": "application/json",
       ...(cookie ? { cookie: `openfolio-session=${cookie}` } : {}),
       ...headers,
@@ -59,6 +60,7 @@ test("same token converges across concurrent devices and survives restart withou
     assert.equal(state.workspaces.length, 1);
     assert.equal(state.sessions.length, 2);
     assert.deepEqual(Object.keys(state).sort(), [
+      "browsers",
       "schemaVersion",
       "sessions",
       "workspaces",
@@ -182,7 +184,7 @@ test("optional display usernames default to the Git account and never become aut
     await f.cleanup();
   }
 });
-test("failed switch retains old session; successful switch revokes only the switching device", async () => {
+test("failed add retains current identity; successful add preserves remembered identities and cancels old delivery", async () => {
   const f = await personalFixture();
   try {
     const a = await f.connect(),
@@ -196,7 +198,11 @@ test("failed switch retains old session; successful switch revokes only the swit
     await lease.assertCurrent();
     const switched = await f.connect(a.cookie, "new-token");
     assert.notEqual(switched.connection.id, a.connection.id);
-    assert.equal((await f.sessions.get(a.cookie)).connected, false);
+    assert.equal(
+      (await f.sessions.get(a.cookie)).workspace?.id,
+      switched.connection.id,
+    );
+    assert.equal((await f.sessions.get(a.cookie)).identities.length, 2);
     assert.equal((await f.sessions.get(other.cookie)).connected, true);
     assert.equal(lease.context.signal.aborted, true);
     await assert.rejects(() => lease.assertCurrent());
@@ -312,7 +318,7 @@ test("device limit preserves existing sessions and admits a replacement current 
     await f.cleanup();
   }
 });
-test("session HTTP issues independent secure cookies and clears logout cookies", async () => {
+test("session HTTP issues independent secure browser cookies and never lets logout responses replace them", async () => {
   const f = await personalFixture();
   try {
     const a = await sessionResponse(req("POST", "", input()), f.sessions);
@@ -335,7 +341,8 @@ test("session HTTP issues independent secure cookies and clears logout cookies",
       body.session.workspace.id,
     );
     const logout = await sessionResponse(req("DELETE", cookie), f.sessions);
-    assert.match(logout.headers.get("set-cookie")!, /Max-Age=0/);
+    assert.equal(logout.headers.get("set-cookie"), null);
+    assert.equal(logout.status, 200);
     assert.equal((await f.sessions.get(cookieOf(b))).connected, true);
     assert.equal(
       (await logoutAllResponse(req("POST", cookieOf(b)), f.sessions)).status,

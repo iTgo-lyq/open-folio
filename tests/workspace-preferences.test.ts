@@ -50,6 +50,7 @@ test("devices atomically merge changed preference fields and isolate other crede
         cookie: `openfolio-session=${a.cookie}`,
         "Content-Type": "application/json",
         "X-OpenFolio-Workspace": id,
+        "X-OpenFolio-Revision": "1",
       },
       body: JSON.stringify(body),
     });

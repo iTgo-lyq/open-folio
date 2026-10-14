@@ -17,6 +17,13 @@ export function sessionCookie(request: Request) {
     .filter((p) => p.startsWith(`${sessionCookieName}=`));
   return parts.length === 1 ? parts[0].slice(sessionCookieName.length + 1) : "";
 }
+export function requestRevision(request: Request) {
+  const value = request.headers.get("x-openfolio-revision");
+  if (value === null) return -1;
+  if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value)))
+    throw new AppError("INVALID_PARAMETER", "身份版本参数不合法。", 400);
+  return Number(value);
+}
 export function requirePersonalOrigin(request: Request) {
   const url = new URL(request.url);
   const secure =
@@ -85,6 +92,12 @@ export async function renewPersonalResponse(
   const current = await store.get(cookie);
   if (response.ok && !current.connected)
     throw new AppError("SESSION_REQUIRED", "设备会话已失效，请重新登录。", 401);
+  if (
+    response.ok &&
+    request.headers.has("x-openfolio-revision") &&
+    current.browserRevision !== requestRevision(request)
+  )
+    throw new AppError("SESSION_CHANGED", "当前身份已改变，请重试。", 409);
   // The browser Cookie lives until the absolute deadline. Idle renewal stays
   // server-side so a delayed read cannot overwrite a newer login Cookie.
   return response;

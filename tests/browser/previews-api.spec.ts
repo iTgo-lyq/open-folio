@@ -97,7 +97,7 @@ test("public assets survive removing the publisher connection and never prepare 
 }) => {
   const meta = await prepare(request, personal);
   await request.delete("/api/session", {
-    headers: { origin: "http://127.0.0.1:10682" },
+    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "1" },
   });
   const before = await (await request.get("/_fixture/info")).json();
   for (const suffix of ["index.html", "mobile.jpg", "metadata"])

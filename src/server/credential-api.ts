@@ -12,7 +12,7 @@ import {
   personalJson,
   personalError,
   renewPersonalResponse,
-  cookieHeader,
+  requestRevision,
 } from "./personal-http.ts";
 export async function tokenResponse(
   request: Request,
@@ -37,6 +37,8 @@ export async function tokenResponse(
       sessionCookie(request),
       undefined,
       request.signal,
+      false,
+      requestRevision(request),
     );
     try {
       const response = lease.context.secret.use((token) =>
@@ -61,21 +63,23 @@ export async function devicesResponse(
     if (request.method === "GET" && !id)
       return await renewPersonalResponse(
         request,
-        personalJson({ devices: await store.devices(sessionCookie(request)) }),
+        personalJson({
+          devices: await store.devices(
+            sessionCookie(request),
+            requestRevision(request),
+          ),
+        }),
         store,
       );
     requirePersonalOrigin(request);
     if (request.method !== "DELETE" || !z.string().uuid().safeParse(id).success)
       throw new AppError("INVALID_PARAMETER", "设备参数不合法。", 400);
-    const result = await store.revokeDevice(sessionCookie(request), id!);
-    const response = personalJson(
-      result,
-      200,
-      result.current ? cookieHeader(request, "") : undefined,
+    const result = await store.revokeDevice(
+      sessionCookie(request),
+      id!,
+      requestRevision(request),
     );
-    return result.current
-      ? response
-      : await renewPersonalResponse(request, response, store);
+    return personalJson(result);
   } catch (e) {
     return personalError(e);
   }

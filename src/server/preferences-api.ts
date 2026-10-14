@@ -10,6 +10,7 @@ import {
   personalJson,
   personalError,
   renewPersonalResponse,
+  requestRevision,
 } from "./personal-http.ts";
 export async function preferencesResponse(
   request: Request,
@@ -21,6 +22,7 @@ export async function preferencesResponse(
       sessionCookie(request),
       await readPersonalBody(request),
       request.headers.get("x-openfolio-workspace") ?? undefined,
+      requestRevision(request),
     );
     return await renewPersonalResponse(
       request,

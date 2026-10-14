@@ -22,6 +22,7 @@ function request(
     headers: {
       cookie: `openfolio-session=${cookie}`,
       origin: foreign ? "https://foreign.test" : origin,
+      "X-OpenFolio-Revision": "1",
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -151,7 +152,8 @@ test("device enumeration and revocation stay within the current credential", asy
     own.id,
     f.sessions,
   );
-  assert.match(out.headers.get("set-cookie")!, /Max-Age=0/);
+  assert.equal(out.headers.get("set-cookie"), null);
+  assert.equal(out.status, 200);
   assert.equal((await f.sessions.get(other.cookie)).connected, true);
 });
 test("logout-all revokes only this workspace while preserving later recovery", async (t) => {

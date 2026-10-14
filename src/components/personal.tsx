@@ -32,7 +32,7 @@ import {
 } from "@open-folio/ui";
 import { usePersonal } from "./personal-context";
 import { useWorkspace } from "./context";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import type {
   ConnectionSummary,
   DeviceSummary,
@@ -63,6 +63,8 @@ export function PersonalHome() {
     }
   };
   const items = p.items.filter((i) => filter === "all" || i.state === filter);
+  if (p.session && !p.session.connected && p.session.identities.length)
+    return <Connections />;
   if (!p.session)
     return (
       <EmptyState
@@ -312,6 +314,20 @@ export function Connections() {
         connection={p.connection}
       />
     );
+  if (p.session?.identities.length)
+    return (
+      <section className="personal-connections">
+        <div className="personal-intro">
+          <div>
+            <h1>选择身份</h1>
+            <p>选择已添加的身份，继续自己的工作台。</p>
+          </div>
+          <Button onClick={() => setLogin(true)}>添加身份</Button>
+        </div>
+        <IdentityList />
+        {login && <ConnectDialog onClose={() => setLogin(false)} />}
+      </section>
+    );
   return (
     <section className="personal-connections">
       {p.sessionError && (
@@ -326,6 +342,75 @@ export function Connections() {
       </EmptyState>
       {login && <ConnectDialog onClose={() => setLogin(false)} />}
     </section>
+  );
+}
+function IdentityList() {
+  const p = usePersonal();
+  const [busy, setBusy] = useState(""),
+    [error, setError] = useState("");
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  const switchTo = async (id: string) => {
+    const c = new AbortController();
+    controller.current = c;
+    setBusy(id);
+    setError("");
+    try {
+      await api("/api/session/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identityId: id }),
+        signal: c.signal,
+      });
+      if (!c.signal.aborted) await p.reloadSession();
+    } catch (e) {
+      if (!c.signal.aborted) {
+        setError((e as Error).message);
+        if (
+          e instanceof ApiError &&
+          ["SESSION_CHANGED", "IDENTITY_REQUIRED", "SESSION_REQUIRED"].includes(
+            e.code,
+          )
+        )
+          await p.reloadSession(undefined, true);
+      }
+    } finally {
+      if (!c.signal.aborted) setBusy("");
+    }
+  };
+  return (
+    <Card className="personal-identities">
+      <CardHeader>
+        <CardTitle>此浏览器的身份</CardTitle>
+        <CardDescription>
+          直接切换到已添加的身份，每个身份保留自己的仓库和阅读记录。
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && <ErrorNotice>{error}</ErrorNotice>}
+        {p.session?.identities.map((identity) => (
+          <div className="personal-identity-row" key={identity.id}>
+            <div className="personal-identity-name">
+              <strong>{identity.connection.label}</strong>
+              <p className="muted">
+                @{identity.connection.identity.login} · GitHub
+              </p>
+            </div>
+            {identity.current && <Badge>当前身份</Badge>}
+            <div className="personal-identity-actions">
+              <Button
+                disabled={identity.current || !!busy}
+                loading={busy === identity.id}
+                aria-label={`切换到${identity.connection.label}`}
+                onClick={() => void switchTo(identity.id)}
+              >
+                {identity.current ? "正在使用" : "切换"}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
@@ -416,11 +501,12 @@ function CredentialDetails({ connection }: { connection: ConnectionSummary }) {
           <p>同一 token 的设备共享工作台；每台设备独立登录。</p>
         </div>
         <Button disabled={!!busy} onClick={() => setEditing(true)}>
-          切换凭据
+          添加身份
         </Button>
       </div>
       {error && <ErrorNotice>{error}</ErrorNotice>}
       {status && <p role="status">{status}</p>}
+      <IdentityList />
       <Card className="personal-connection-card">
         <CardHeader>
           <CardTitle>
@@ -611,12 +697,12 @@ export function ConnectDialog({
   const provider = p.session?.providers.find((v) => v.id === "github");
   return (
     <PersonalDialog
-      title={connection ? "切换凭据" : "登录工作台"}
+      title={connection ? "添加身份" : "登录工作台"}
       onClose={onClose}
     >
       <p className="muted">
         {connection
-          ? "相同 token 恢复原工作台，不同 token 使用独立工作台。失败时保留当前登录。"
+          ? "添加后可以直接点选切换，相同 token 不会重复添加。失败时保留当前登录。"
           : "使用 token，恢复自己的工作台并发现 SpecTrail 仓库。"}
       </p>
       <form onSubmit={submit}>
@@ -686,7 +772,7 @@ export function ConnectDialog({
             loading={busy}
             disabled={!token.trim()}
           >
-            {connection ? "切换并恢复" : "登录并发现仓库"}
+            {connection ? "添加并使用" : "登录并发现仓库"}
           </Button>
         </div>
       </form>

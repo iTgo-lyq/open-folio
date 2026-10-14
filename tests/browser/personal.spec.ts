@@ -74,10 +74,10 @@ test("optional username defaults to the Git account and accepts a custom name ac
   );
   const original = await (await page.request.get("/api/session")).json();
   await page.locator('.module-rail [aria-label="当前凭据"]').click();
-  await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+  await page.getByRole("button", { name: "添加身份", exact: true }).click();
   await username.fill("我的 用户名: 自定义");
   await page.getByLabel("GitHub token", { exact: true }).fill("token-a");
-  await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
+  await page.getByRole("button", { name: "添加并使用", exact: true }).click();
   await expect(page.locator(".personal-connection-card")).toContainText(
     "我的 用户名: 自定义",
   );
@@ -118,9 +118,9 @@ test("invalid credentials, replacement rollback, removal and logout remain expli
   await page.keyboard.press("Escape");
   await connect(page);
   await page.locator('.module-rail [aria-label="当前凭据"]').click();
-  await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+  await page.getByRole("button", { name: "添加身份", exact: true }).click();
   await page.getByLabel("GitHub token", { exact: true }).fill("wrong");
-  await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
+  await page.getByRole("button", { name: "添加并使用", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("失效");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "查看仓库" }).click();
@@ -164,10 +164,10 @@ test("switching credentials restores only the current token and revoked permissi
   await page.goto("/");
   await connect(page);
   await page.locator('.module-rail [aria-label="当前凭据"]').click();
-  await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+  await page.getByRole("button", { name: "添加身份", exact: true }).click();
   await page.getByLabel("用户名（可选）", { exact: true }).fill("范围 B");
   await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
-  await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
+  await page.getByRole("button", { name: "添加并使用", exact: true }).click();
   await expect(page.locator(".personal-connection-card")).toHaveCount(1);
   await expect(page.locator(".personal-connection-card")).toContainText(
     "@collaborator",

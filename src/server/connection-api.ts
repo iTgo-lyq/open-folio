@@ -13,6 +13,7 @@ import {
   personalJson,
   personalError,
   readPersonalBody,
+  requestRevision,
 } from "./personal-http.ts";
 const loginInput = z
   .object({
@@ -55,6 +56,7 @@ export async function sessionResponse(
         username,
         request.signal,
         deviceLabel,
+        requestRevision(request),
       );
       let discoveryError: { code: string; message: string } | undefined;
       try {
@@ -75,28 +77,25 @@ export async function sessionResponse(
           ...(discoveryError ? { discoveryError } : {}),
         },
         201,
-        cookieHeader(
-          request,
-          connected.cookie,
-          connected.session.absoluteExpiresAt,
-        ),
+        cookieHeader(request, connected.cookie, connected.cookieExpiresAt),
       );
     }
     if (request.method === "DELETE") {
       requirePersonalOrigin(request);
       if (cookie) {
         try {
-          await store.remove(cookie);
+          await store.remove(
+            cookie,
+            undefined,
+            false,
+            requestRevision(request),
+          );
         } catch (e) {
           if (!(e instanceof AppError) || e.code !== "SESSION_REQUIRED")
             throw e;
         }
       }
-      return personalJson(
-        { connected: false, connections: [] },
-        200,
-        cookieHeader(request, ""),
-      );
+      return personalJson(await store.get(cookie));
     }
     if (request.method !== "GET")
       throw new AppError("METHOD_NOT_ALLOWED", "不支持此操作。", 405);
@@ -112,12 +111,32 @@ export async function logoutAllResponse(
 ) {
   try {
     requirePersonalOrigin(request);
-    await store.remove(sessionCookie(request), undefined, true);
-    return personalJson(
-      { connected: false, connections: [] },
-      200,
-      cookieHeader(request, ""),
+    const cookie = sessionCookie(request);
+    await store.remove(cookie, undefined, true, requestRevision(request));
+    return personalJson(await store.get(cookie));
+  } catch (e) {
+    return personalError(e);
+  }
+}
+export async function switchIdentityResponse(
+  request: Request,
+  store: PersonalSessions = personalSessions(),
+) {
+  try {
+    requirePersonalOrigin(request);
+    const input = z
+      .object({ identityId: z.string().uuid() })
+      .strict()
+      .safeParse(await readPersonalBody(request));
+    if (!input.success)
+      throw new AppError("INVALID_PARAMETER", "请选择有效的身份。", 400);
+    const result = await store.switchIdentity(
+      sessionCookie(request),
+      input.data.identityId,
+      request.signal,
+      requestRevision(request),
     );
+    return personalJson(result);
   } catch (e) {
     return personalError(e);
   }

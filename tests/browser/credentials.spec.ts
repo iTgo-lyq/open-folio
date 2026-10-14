@@ -45,10 +45,14 @@ test("same-token devices appear together and one can revoke another", async ({
     expect(b.id).toBe(personal.id);
     await page.goto("/?m=connections");
     const devices = await (
-      await page.request.get("/api/session/devices")
+      await page.request.get("/api/session/devices", {
+        headers: { "X-OpenFolio-Revision": "1" },
+      })
     ).json();
     const secondDevices = await (
-      await second.request.get("/api/session/devices")
+      await second.request.get("/api/session/devices", {
+        headers: { "X-OpenFolio-Revision": "1" },
+      })
     ).json();
     const own = secondDevices.devices.find((d: any) => d.current);
     await page

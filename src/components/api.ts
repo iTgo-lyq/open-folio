@@ -5,8 +5,19 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
+let personalRevision: number | undefined;
+export function setPersonalRevision(revision?: number) {
+  personalRevision = revision;
+}
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, { ...init, cache: "no-store" });
+  const headers = new Headers(init?.headers);
+  if (
+    path.startsWith("/api/session") &&
+    personalRevision !== undefined &&
+    !headers.has("X-OpenFolio-Revision")
+  )
+    headers.set("X-OpenFolio-Revision", String(personalRevision));
+  const response = await fetch(path, { ...init, headers, cache: "no-store" });
   const data = await response.json();
   if (!response.ok) {
     if (

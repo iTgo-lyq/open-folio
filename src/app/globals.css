@@ -4160,3 +4160,44 @@ input {
   font-size: 0.8rem;
   margin-top: 0.4rem;
 }
+
+.personal-identities {
+  margin-bottom: 24px;
+}
+.personal-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--of-line);
+}
+.personal-identity-row:last-child {
+  border-bottom: 0;
+}
+.personal-identity-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.personal-identity-name p {
+  margin-top: 4px;
+}
+.personal-identity-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 760px) {
+  .personal-identity-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .personal-identity-name {
+    flex-basis: 55%;
+  }
+  .personal-identity-actions {
+    flex-basis: 100%;
+  }
+  .personal-identity-actions > button {
+    flex: 1;
+  }
+}

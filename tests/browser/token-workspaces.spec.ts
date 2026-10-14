@@ -45,7 +45,10 @@ test("another device restores the same snapshot, reading module and sidebar; dif
     ).json();
     expect(resumed.id).toBe(original.id);
     const switched = await second.request.post("/api/session", {
-      headers: { origin: "http://127.0.0.1:10682" },
+      headers: {
+        origin: "http://127.0.0.1:10682",
+        "X-OpenFolio-Revision": String(a.session.browserRevision),
+      },
       data: { username: "collaborator", token: "token-b" },
     });
     const other = await switched.json();
@@ -81,7 +84,7 @@ test("a revoked device clears its page and a delayed old response cannot restore
   await page.goto(`/?${repositoryQuery}&m=specs`);
   await expect.poll(() => !!deliver).toBe(true);
   await page.request.delete("/api/session", {
-    headers: { origin: "http://127.0.0.1:10682" },
+    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "1" },
   });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
@@ -122,12 +125,12 @@ for (const width of [1440, 834, 390, 320])
     await expect(
       page.getByRole("button", { name: "复制 token", exact: true }),
     ).toBeFocused();
-    await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+    await page.getByRole("button", { name: "添加身份", exact: true }).click();
     await page
       .getByLabel("用户名（可选）", { exact: true })
       .fill("collaborator");
     await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
-    await page.getByRole("button", { name: "切换并恢复", exact: true }).click();
+    await page.getByRole("button", { name: "添加并使用", exact: true }).click();
     await expect(page.locator(".personal-connection-card")).toContainText(
       "@collaborator",
     );
@@ -138,9 +141,7 @@ for (const width of [1440, 834, 390, 320])
     await page
       .getByRole("button", { name: "退出当前设备", exact: true })
       .click();
-    await expect(
-      page.getByRole("heading", { name: "登录自己的工作台" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "选择身份" })).toBeVisible();
   });
 
 for (const action of ["switch", "logout"])
@@ -175,13 +176,13 @@ for (const action of ["switch", "logout"])
       });
     });
     if (action === "switch") {
-      await page.getByRole("button", { name: "切换凭据", exact: true }).click();
+      await page.getByRole("button", { name: "添加身份", exact: true }).click();
       await page
         .getByLabel("用户名（可选）", { exact: true })
         .fill("collaborator");
       await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
       await page
-        .getByRole("button", { name: "切换并恢复", exact: true })
+        .getByRole("button", { name: "添加并使用", exact: true })
         .click();
     } else
       await page
