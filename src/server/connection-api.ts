@@ -70,6 +70,14 @@ export async function sessionResponse(
           message: "登录已完成，但发现未启动，请重新发现仓库。",
         };
       }
+      const current = await store.get(connected.cookie);
+      if (
+        !current.connected ||
+        current.deviceSessionId !== connected.session.deviceSessionId ||
+        current.selectionRevision !== connected.session.selectionRevision ||
+        current.browserRevision !== connected.session.browserRevision
+      )
+        throw new AppError("SESSION_CHANGED", "当前身份已改变，请重试。", 409);
       return personalJson(
         {
           session: connected.session,

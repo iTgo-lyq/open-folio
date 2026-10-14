@@ -20,11 +20,13 @@ export async function discoveryResponse(
     if (!z.string().uuid().safeParse(id).success)
       throw new AppError("CONNECTION_NOT_FOUND", "连接不存在。", 404);
     const cookie = sessionCookie(request);
+    const selection = await service.sessions.get(cookie);
     if (kind === "discovery" && request.method === "GET")
       return await renewPersonalResponse(
         request,
         personalJson({ discovery: await service.status(cookie, id) }),
         service.sessions,
+        selection,
       );
     requirePersonalOrigin(request);
     const body = await readPersonalBody(request);
@@ -39,6 +41,7 @@ export async function discoveryResponse(
         request,
         personalJson(await service.check(cookie, id, input.data.url)),
         service.sessions,
+        selection,
       );
     }
     const input = z
@@ -54,6 +57,7 @@ export async function discoveryResponse(
         202,
       ),
       service.sessions,
+      selection,
     );
   } catch (e) {
     return personalError(e);
@@ -71,12 +75,14 @@ export async function repositoryListResponse(
     const cursor = params.get("cursor") ?? "0";
     if (!/^\d{1,6}$/.test(cursor))
       throw new AppError("INVALID_PARAMETER", "目录页码不合法。", 400);
+    const selection = await service.sessions.get(sessionCookie(request));
     return await renewPersonalResponse(
       request,
       personalJson(
         await service.list(sessionCookie(request), id, Number(cursor)),
       ),
       service.sessions,
+      selection,
     );
   } catch (e) {
     return personalError(e);

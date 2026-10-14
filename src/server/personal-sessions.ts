@@ -561,8 +561,26 @@ export class PersonalSessions {
         "用户名最多 100 个字符，不能包含控制字符。",
         400,
       );
-    const provider = this.registry.get(providerId),
-      authenticated = await provider.authenticate(secret, signal);
+    const provider = this.registry.get(providerId);
+    const initial = await this.lock(async () => {
+      const state = await this.load();
+      await this.prune(state);
+      const browser = this.browser(state, cookie);
+      this.checkRevision(browser, expectedRevision);
+      if (
+        !browser &&
+        cookie &&
+        expectedRevision !== undefined &&
+        expectedRevision >= 0
+      )
+        throw new AppError(
+          "SESSION_CHANGED",
+          "登录已改变，请重新添加身份。",
+          409,
+        );
+      return { id: browser?.id, revision: browser?.revision };
+    });
+    const authenticated = await provider.authenticate(secret, signal);
     const identity = identitySchema.parse({
       providerId: authenticated.providerId,
       instanceId: authenticated.instanceId,
@@ -588,6 +606,13 @@ export class PersonalSessions {
       await this.prune(state);
       const old = this.find(state, cookie);
       let browser = this.browser(state, cookie);
+      if (browser?.id !== initial.id)
+        throw new AppError(
+          "SESSION_CHANGED",
+          "登录已改变，请重新添加身份。",
+          409,
+        );
+      this.checkRevision(browser, initial.revision);
       this.checkRevision(browser, expectedRevision);
       const keys = await this.keys(
         state.workspaces.length === 0 && state.sessions.length === 0,

@@ -4,6 +4,7 @@ import { ProviderError } from "./providers/types.ts";
 import {
   personalSessions,
   type PersonalSessions,
+  type SessionSummary,
 } from "./personal-sessions.ts";
 export const sessionCookieName = "openfolio-session";
 export const privateHeaders = {
@@ -87,11 +88,19 @@ export async function renewPersonalResponse(
   request: Request,
   response: Response,
   store: PersonalSessions = personalSessions(),
+  selection?: Pick<SessionSummary, "deviceSessionId" | "selectionRevision">,
 ) {
   const cookie = sessionCookie(request);
   const current = await store.get(cookie);
   if (response.ok && !current.connected)
     throw new AppError("SESSION_REQUIRED", "设备会话已失效，请重新登录。", 401);
+  if (
+    response.ok &&
+    selection &&
+    (current.deviceSessionId !== selection.deviceSessionId ||
+      current.selectionRevision !== selection.selectionRevision)
+  )
+    throw new AppError("SESSION_CHANGED", "当前身份已改变，请重试。", 409);
   if (
     response.ok &&
     request.headers.has("x-openfolio-revision") &&

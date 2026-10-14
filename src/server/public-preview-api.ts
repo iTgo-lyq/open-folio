@@ -49,6 +49,7 @@ export async function preparePreviewResponse(
     if (!body.success)
       throw new AppError("INVALID_PARAMETER", "原型准备参数不合法。", 400);
     const input = body.data;
+    const selection = await repos.sessions.get(sessionCookie(request));
     const effectiveLimits = limits ?? limitsFor(await readConfig());
     const result = await repos.read(
       sessionCookie(request),
@@ -67,6 +68,7 @@ export async function preparePreviewResponse(
         url: publicPreviewUrl(result.id),
       }),
       repos.sessions,
+      selection,
     );
   } catch (e) {
     return personalError(e);

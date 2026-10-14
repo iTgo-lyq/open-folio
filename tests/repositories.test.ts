@@ -331,6 +331,25 @@ test("same-token devices reuse snapshots and directories while another token can
     await t.cleanup();
   }
 });
+test("the final HTTP check rejects old workbench content after a switch using the same browser Cookie", async () => {
+  const t = await setup();
+  try {
+    await t.request("refresh", "POST");
+    const get = t.f.sessions.get.bind(t.f.sessions);
+    let calls = 0;
+    t.f.sessions.get = async (cookie) => {
+      if (++calls === 2) await t.f.connect(t.c.cookie, "third");
+      return get(cookie);
+    };
+    const response = await t.request("workbench");
+    assert.equal(response.status, 409);
+    const body = await response.json();
+    assert.equal(body.error.code, "SESSION_CHANGED");
+    assert.equal(body.documents, undefined);
+  } finally {
+    await t.cleanup();
+  }
+});
 
 for (const cached of [false, true])
   test(`concurrent refresh (cached=${cached}) has one credential-owned Git job and never delivers to a revoked device`, async () => {

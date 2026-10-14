@@ -195,3 +195,63 @@ test("a failed saved-token switch keeps the current identity and permits retry a
     "@reader",
   );
 });
+test("focus recovery after A-B-A without BroadcastChannel restarts the repository list at its first page", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(window, "BroadcastChannel", {
+      configurable: true,
+      value: undefined,
+    }),
+  );
+  const cursors: number[] = [];
+  let savedSample: unknown;
+  await page.route("**/api/repositories?*", async (route) => {
+    const response = await route.fetch(),
+      original = await response.json();
+    const cursor = Number(
+      new URL(route.request().url()).searchParams.get("cursor") ?? 0,
+    );
+    cursors.push(cursor);
+    const sample = original.items[0] ?? savedSample;
+    if (!sample) throw Error("Fixture repository sample missing");
+    savedSample = sample;
+    const items = Array.from({ length: cursor ? 2 : 20 }, (_, i) => ({
+      ...sample,
+      key: (cursor + i + 1).toString(16).padStart(64, "0"),
+      repository: {
+        ...sample.repository,
+        repositoryId: `fixture-${cursor + i}`,
+        fullName: `acme/fixture-${cursor + i}`,
+      },
+    }));
+    await route.fulfill({
+      json: { ...original, items, nextOffset: cursor ? null : 20 },
+    });
+  });
+  await page.goto("/?m=home");
+  await expect(page.locator(".personal-repo-row")).toHaveCount(20);
+  await page.getByRole("button", { name: "加载更多", exact: true }).click();
+  await expect(page.locator(".personal-repo-row")).toHaveCount(22);
+  const initial = await (await page.request.get("/api/session")).json();
+  const added = await page.request.post("/api/session", {
+    headers: {
+      origin: "http://127.0.0.1:10682",
+      "X-OpenFolio-Revision": String(initial.browserRevision),
+    },
+    data: { token: "token-b" },
+  });
+  expect(added.status()).toBe(201);
+  const other = await added.json();
+  const switched = await page.request.post("/api/session/switch", {
+    headers: {
+      origin: "http://127.0.0.1:10682",
+      "X-OpenFolio-Revision": String(other.session.browserRevision),
+    },
+    data: { identityId: initial.deviceSessionId },
+  });
+  expect(switched.status()).toBe(200);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.locator(".personal-repo-row")).toHaveCount(20);
+  expect(cursors.at(-1)).toBe(0);
+});

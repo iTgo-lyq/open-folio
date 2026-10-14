@@ -68,6 +68,10 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       setPersonalRevision();
       setEpoch((v) => v + 1);
       setItems([]);
+      setCursor(0);
+      setMore(null);
+      setDiscovery(null);
+      setDirectoryError("");
       setSession(null);
     }
     try {
@@ -80,6 +84,10 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       ) {
         setEpoch((v) => v + 1);
         setItems([]);
+        setCursor(0);
+        setMore(null);
+        setDiscovery(null);
+        setDirectoryError("");
       }
       snapshot.current = next;
       setPersonalRevision(next.browserRevision);

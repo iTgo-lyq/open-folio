@@ -19,3 +19,13 @@ T3 在私有 HTTP 操作前捕获设备授权 id 和 selectionRevision，最终�
 无 BroadcastChannel 时由 focus／定时恢复 A → B → A，选择代次变化仅清空 items，cursor 仍停在第二页，重新读取会跳过首页。
 
 T3 在选择代次变化时同时重置分页、发现和错误元数据；浏览器回归使用多页列表、禁用 BroadcastChannel，触发服务端 A → B → A 后 focus 恢复，要求从 cursor=0 重新读取第一页。
+
+## R4 已提交登录的延迟响应可覆盖新 Cookie（P2）
+
+初次复验发现登录在状态提交后仍等待发现启动，返回前没有检查原选择。等待期间退出最后身份并重新登录创建新集合时，旧请求仍可能写回已失效 Cookie，覆盖新登录；仅切换身份时也会返回旧摘要。
+
+T3 在发现启动后、构建成功响应和 Set-Cookie 前复核登录结果的授权 id、selectionRevision、browserRevision 与 connected。变化时返回 SESSION_CHANGED，且无 Cookie 写入。两个确定性回归暂停 ensure，分别切换以及退出最后身份再登录新集合，要求旧响应 409、不写 Cookie，新身份仍有效。
+
+## 独立复验结论
+
+identity_review 再次只读检查完整差异及所有私有接口、Cookie 写入路径，确认 R1–R4 均已解决，无剩余可操作代码问题。集中单元 38 项通过；无 BroadcastChannel 的 A → B → A 分页浏览器回归 1 项通过。该浏览器回归首次运行因 fixture 第二页无样本而失败，修复为复用首页样本后通过。最终全量验证、生产构建与真实开发机证据继续记录在 execution.md。

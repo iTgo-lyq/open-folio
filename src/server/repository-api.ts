@@ -42,6 +42,7 @@ export async function repositoryResponse(
       (selector.repositoryId.length > 128 || selector.fullName.length > 256)
     )
       throw new AppError("INVALID_PARAMETER", "仓库参数不合法。", 400);
+    const selection = await service.sessions.get(sessionCookie(request));
     const response = await service.read(
       sessionCookie(request),
       connectionId,
@@ -149,7 +150,7 @@ export async function repositoryResponse(
       selector,
       request.signal,
     );
-    await renewPersonalResponse(request, response, service.sessions);
+    await renewPersonalResponse(request, response, service.sessions, selection);
     return request.method === "HEAD"
       ? new Response(null, {
           status: response.status,

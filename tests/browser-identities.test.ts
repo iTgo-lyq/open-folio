@@ -16,6 +16,10 @@ import {
 import { rotateWorkspaceKeys } from "../src/server/workspace-key-rotation.ts";
 import { tokenResponse } from "../src/server/credential-api.ts";
 import { ProviderError } from "../src/server/providers/types.ts";
+import {
+  discoveryResponse,
+  repositoryListResponse,
+} from "../src/server/discovery-api.ts";
 const signal = () => new AbortController().signal;
 const request = (cookie: string, body: unknown, revision?: number) =>
   new Request("https://folio.test/api/session/switch", {
@@ -421,3 +425,96 @@ test("the per-browser limit preserves the selection and permits re-authenticatin
   );
   assert.equal((await f.connect(a.cookie)).session.identities.length, 32);
 });
+test("a delayed token login cannot recreate a collection after its final identity is removed", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect();
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((r) => (release = r)),
+    start = new Promise<void>((r) => (entered = r));
+  const authenticate = f.provider.authenticate;
+  f.provider.authenticate = async (secret, sig) => {
+    entered();
+    await gate;
+    return authenticate(secret, sig);
+  };
+  const adding = sessionResponse(
+    request(a.cookie, { providerId: "sample", token: "third" }, 1),
+    f.sessions,
+  );
+  await start;
+  await f.sessions.removeIdentity(a.cookie, a.session.deviceSessionId!);
+  release();
+  const response = await adding;
+  assert.equal(response.status, 409);
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.equal((await f.sessions.get(a.cookie)).connected, false);
+  assert.equal(
+    JSON.parse(await readFile(join(f.sessions.root, "state.json"), "utf8"))
+      .browsers.length,
+    0,
+  );
+});
+for (const kind of ["switch", "replace"])
+  test(`a delayed login response cannot write its Cookie after a ${kind}`, async (t) => {
+    const f = await personalFixture();
+    t.after(f.cleanup);
+    const a = await f.connect();
+    let release!: () => void, entered!: () => void;
+    const gate = new Promise<void>((r) => (release = r)),
+      start = new Promise<void>((r) => (entered = r));
+    const ensure = f.discovery.ensure.bind(f.discovery);
+    f.discovery.ensure = async (cookie, id) => {
+      entered();
+      await gate;
+      return ensure(cookie, id);
+    };
+    const adding = sessionResponse(
+      request(a.cookie, { providerId: "sample", token: "first" }, 1),
+      f.sessions,
+      f.discovery,
+    );
+    await start;
+    if (kind === "replace") await f.sessions.remove(a.cookie);
+    const b = await f.connect(kind === "replace" ? "" : a.cookie, "third");
+    release();
+    const response = await adding;
+    assert.equal(response.status, 409);
+    assert.equal(response.headers.get("set-cookie"), null);
+    assert.equal((await response.json()).error.code, "SESSION_CHANGED");
+    assert.equal(
+      (await f.sessions.get(b.cookie)).workspace?.id,
+      b.connection.id,
+    );
+    assert.equal(
+      (await f.sessions.get(b.cookie)).identities.length,
+      kind === "replace" ? 1 : 2,
+    );
+  });
+for (const kind of ["status", "list"])
+  test(`discovery ${kind} rejects a switch between service delivery and HTTP renewal`, async (t) => {
+    const f = await personalFixture();
+    t.after(f.cleanup);
+    const a = await f.connect();
+    const get = f.sessions.get.bind(f.sessions);
+    let calls = 0;
+    f.sessions.get = async (cookie) => {
+      if (++calls === 2) await f.connect(a.cookie, "third");
+      return get(cookie);
+    };
+    const req = new Request(
+      `https://folio.test/api/repositories?connectionId=${a.connection.id}`,
+      { headers: { cookie: `openfolio-session=${a.cookie}` } },
+    );
+    const response =
+      kind === "status"
+        ? await discoveryResponse(
+            req,
+            a.connection.id,
+            "discovery",
+            f.discovery,
+          )
+        : await repositoryListResponse(req, f.discovery);
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).error.code, "SESSION_CHANGED");
+  });
