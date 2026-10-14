@@ -4,7 +4,7 @@
   "title": "浏览器记住多个身份并点选切换",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/browser-identities",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "browser-identities T3: verify and deploy independent public instance"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-14T10:02:59.680Z",
+      "summary": "隔离上下文的独立 Agent identity_review 已复验 R1–R4；167 项单元、77 项浏览器、类型、格式、生产构建及真实凭据冒烟通过。独立 OpenFolio 服务在端口 11117 运行，独立数据与 Merlin 私有链接已就绪，代理同源／Secure Cookie 检查通过。两个不同真实 token 的切换由 fixture 覆盖。"
+    }
+  },
   "rework": {
     "at": "2026-10-14T08:30:36.444Z",
     "reason": "用户明确不需要旧登录兼容。",
@@ -81,5 +87,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立服务已交付并验证，等待用户按 medium 流程人工验收；通过后同步 Specs 并归档。"
+  }
 }
