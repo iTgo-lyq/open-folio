@@ -32,7 +32,7 @@ function reset(scenario = "home") {
       ],
     },
     "demo-other": {
-      label: "另一个凭据",
+      label: "组织工程",
       id: "2d91 · 示例",
       token: "demo-other",
       repos: [],
@@ -45,11 +45,19 @@ function reset(scenario = "home") {
     token: scenario === "other" ? "demo-other" : "demo",
     connected: !["login", "device"].includes(scenario),
     device: scenario === "device" ? "mobile" : "desktop",
-    page: "home",
+    remembered: ["login", "device"].includes(scenario)
+      ? []
+      : ["multi", "switch-error", "network"].includes(scenario)
+        ? ["demo", "demo-other"]
+        : [scenario === "other" ? "demo-other" : "demo"],
+    page: ["multi", "switch-error", "network"].includes(scenario)
+      ? "credentials"
+      : "home",
+    invalid: scenario === "switch-error" ? "demo-other" : "",
     restored: false,
     collapsed: false,
   };
-  if (scenario === "other")
+  if (state.remembered.includes("demo-other"))
     workspaces["demo-other"].devices.push({
       id: "desktop",
       label: "Chrome · 桌面",
@@ -86,7 +94,19 @@ function shell(content, title = "我的仓库") {
   return `<div class="shell ${state.collapsed ? "rail-collapsed" : ""}"><aside class="module-rail"><button class="shell-brand" data-action="rail" aria-label="${state.collapsed ? "展开侧栏" : "收起侧栏"}" aria-expanded="${!state.collapsed}"><img src="${mark}" alt="OpenFolio"><span class="restore-handle"></span></button><nav class="module-nav" aria-label="工作台模块">${nav}</nav><button class="rail-footer" data-action="credentials" aria-label="当前凭据">${icon("settings")}</button></aside><main class="work-area"><header class="topbar"><div class="header-context row"><span class="project-monogram">O</span><span class="header-module">${title}</span></div><div class="header-actions row"><details class="header-source"><summary aria-label="查看读取状态">${icon("branch")}<span class="header-source-label">${state.connected ? esc(workspace().label) : "GitHub"}</span></summary><div class="header-source-details"><span>${state.connected ? `GitHub · ${esc(workspace().label)}` : "使用 Git 凭据登录"}</span><span>${state.connected ? "当前凭据工作台" : "OpenFolio"}</span></div></details>${state.connected ? `<button class="btn quiet" data-action="credentials">@demo-user</button>` : ""}<button class="icon-btn" data-action="credentials" aria-label="当前凭据">${icon("settings")}</button></div></header><div class="body">${content}</div></main></div><nav class="module-nav mobile-navigation" aria-label="移动工作台模块">${nav}</nav>`;
 }
 function login(switching = false) {
-  return `<section class="credential-login"><div class="eyebrow">YOUR WORKSPACE</div><h1>${switching ? "切换凭据" : "登录你的工作台"}</h1><p>使用相同 token，在另一台设备继续阅读。</p><div class="platform-caption"><span class="repo-symbol">GH</span><div><strong>GitHub</strong><p><span>github.com</span></p></div></div><form id="login-form"><label for="git-username">Git 用户名</label><input id="git-username" name="username" autocomplete="username" placeholder="例如 demo-user" value="demo-user" required><label for="git-token">Token</label><input id="git-token" name="token" type="password" autocomplete="off" placeholder="原型中输入 demo 或 demo-other" aria-describedby="demo-help" required><p class="form-error" id="login-error" role="alert"></p><button class="btn primary" type="submit">${switching ? "验证并切换" : "登录工作台"}</button>${switching ? btn("返回当前工作台", "credentials") : ""}</form><p class="form-help" id="demo-help">示例 token：demo 恢复已有工作台；demo-other 进入另一个工作台。请勿输入真实凭据。</p></section>`;
+  return `<section class="credential-login"><div class="eyebrow">YOUR WORKSPACE</div><h1>${switching ? "添加身份" : "登录你的工作台"}</h1><p>首次添加输入 token，以后在此浏览器直接点选切换。</p><div class="platform-caption"><span class="repo-symbol">GH</span><div><strong>GitHub</strong><p><span>github.com</span></p></div></div><form id="login-form"><label for="git-username">显示名称（可选）</label><input id="git-username" name="username" autocomplete="off" maxlength="100" placeholder="例如：日常阅读、组织工程"><label for="git-token">Token</label><input id="git-token" name="token" type="password" autocomplete="off" placeholder="原型中输入 demo 或 demo-other" aria-describedby="demo-help" required><p class="form-error" id="login-error" role="alert"></p><button class="btn primary" type="submit">${switching ? "添加并使用" : "登录工作台"}</button>${switching ? btn(state.connected ? "返回当前凭据" : "返回身份列表", "credentials") : ""}</form><p class="form-help" id="demo-help">示例 token：demo 恢复已有工作台；demo-other 进入另一个工作台。请勿输入真实凭据。</p></section>`;
+}
+function identityList() {
+  return `<section class="identity-section" aria-label="此浏览器的身份"><h2>此浏览器的身份</h2><p>直接切换到已添加的身份。每个身份保留自己的仓库和阅读记录。</p><div class="identity-list">${state.remembered
+    .map((token) => {
+      const w = workspaces[token],
+        current = state.connected && state.token === token;
+      return `<div class="identity-row" data-identity="${token}"><div class="identity-name"><strong>${esc(w.label)}</strong><p>@demo-user · GitHub</p></div>${current ? badge("当前身份") : state.invalid === token ? badge("需要重新登录", "danger") : ""}<div class="identity-actions"><button class="btn" data-action="activate" data-token="${token}" aria-label="切换到${esc(w.label)}" ${current ? "disabled" : ""}>${current ? "正在使用" : state.invalid === token ? "重新登录" : "切换"}</button><button class="btn quiet" data-action="remove" data-token="${token}" aria-label="移除${esc(w.label)}">移除</button></div></div>`;
+    })
+    .join("")}</div></section>`;
+}
+function selection() {
+  return `<section class="connections"><div class="intro"><div><div class="eyebrow">YOUR IDENTITIES</div><h1>选择身份</h1><p>当前身份已退出，选择其他身份继续阅读。</p></div>${btn("添加身份", "switch", true)}</div>${identityList()}</section>`;
 }
 function home() {
   const w = workspace();
@@ -96,26 +116,30 @@ function home() {
 }
 function credentials() {
   const w = workspace();
-  return `<section class="connections"><div class="intro"><div><div class="eyebrow">CREDENTIALS</div><h1>当前凭据</h1><p>在其他设备使用同一个 token，恢复这份工作台。</p></div>${btn("切换凭据", "switch")}</div><article class="connection-card"><div class="connection-detail"><div class="row"><span class="repo-symbol">GH</span><div><h3>@demo-user</h3><p class="repo-meta">GitHub · github.com</p></div></div>${badge(state.scenario === "expired" ? "需要检查" : "已登录", state.scenario === "expired" ? "danger" : "success")}</div><div class="credential-topline">${badge(w.label, "neutral")}<span class="repo-meta">工作台 ${w.id}</span></div><p>Token 已保存在服务端。复制后可在另一台设备登录。</p><div class="credential-actions">${btn("复制 token", "copy", true)}${btn("重新发现", "discover")}</div></article><section class="credential-section"><h2>登录设备</h2><p>每台设备独立登录，退出一台设备后可以在其他设备继续使用。</p><div class="device-list">${w.devices.map((d) => `<div class="device-row"><div><div class="row"><strong>${d.label}</strong>${d.id === state.device ? badge("当前设备") : ""}</div><p>最近使用 · ${d.seen}</p></div>${d.id !== state.device ? `<button class="btn quiet" data-action="revoke" data-device="${d.id}">退出此设备</button>` : ""}</div>`).join("")}</div><div class="credential-actions">${btn("退出当前设备", "logout")}${btn("退出全部设备", "logout-all")}</div></section></section>`;
+  return `<section class="connections"><div class="intro"><div><div class="eyebrow">CREDENTIALS</div><h1>当前凭据</h1><p>记住多个身份，在此浏览器点选切换。</p></div>${btn("添加身份", "switch")}</div>${identityList()}<article class="connection-card"><div class="connection-detail"><div class="row"><span class="repo-symbol">GH</span><div><h3>${esc(w.label)}</h3><p class="repo-meta">@demo-user · GitHub</p></div></div>${badge(state.scenario === "expired" ? "需要检查" : "已登录", state.scenario === "expired" ? "danger" : "success")}</div><p>复制 token 后，可在另一台设备恢复同一工作台。</p><div class="credential-actions">${btn("复制 token", "copy", true)}${btn("重新发现", "discover")}</div></article><section class="credential-section"><h2>当前身份的登录设备</h2><p>退出设备会同时取消它记住此身份的授权，需要重新输入 token。</p><div class="device-list">${w.devices.map((d) => `<div class="device-row"><div><div class="row"><strong>${d.label}</strong>${d.id === state.device ? badge("当前设备") : ""}</div><p>最近使用 · ${d.seen}</p></div>${d.id !== state.device ? `<button class="btn quiet" data-action="revoke" data-device="${d.id}">退出此设备</button>` : ""}</div>`).join("")}</div><div class="credential-actions">${btn("退出当前设备", "logout")}${btn("退出全部设备", "logout-all")}</div></section></section>`;
 }
 function reading() {
   return `<article class="document"><div class="doc-byline"><span>SPEC</span><span>项目知识 / 示例记录</span></div><h1>项目知识工作台</h1><p>从仓库已推送的记录，了解项目当前的能力与改动。</p><h2>继续上次的阅读</h2><p>这份示例快照已经存在于当前凭据工作台。在另一台设备使用相同 token 登录后，可以从这里继续。</p><h2>来源</h2><p class="mono">docs/project/specs/project-knowledge/spec.md</p><p>main · 8bd2a6c · 示例快照</p></article>`;
 }
 function render() {
-  $("#app").innerHTML = !state.connected
-    ? shell(login(), "登录")
-    : state.page === "switch"
-      ? shell(login(true), "切换凭据")
-      : state.page === "credentials"
-        ? shell(credentials(), "当前凭据")
-        : state.page === "reading"
-          ? shell(reading(), "Specs")
-          : shell(home());
+  $("#app").innerHTML =
+    state.page === "switch"
+      ? shell(login(true), "添加身份")
+      : !state.connected
+        ? state.remembered.length
+          ? shell(selection(), "选择身份")
+          : shell(login(), "登录")
+        : state.page === "credentials"
+          ? shell(credentials(), "当前凭据")
+          : state.page === "reading"
+            ? shell(reading(), "Specs")
+            : shell(home());
   bind($("#app"));
   const form = $("#login-form");
-  if (form)
-    form.onsubmit = (e) => {
+  if (form) {
+    const submit = (e) => {
       e.preventDefault();
+      if (!form.reportValidity()) return;
       const token = $("#git-token").value.trim(),
         username = $("#git-username").value.trim();
       $("#git-token").value = "";
@@ -124,20 +148,18 @@ function render() {
           "原型仅接受 demo 或 demo-other，不验证或保留真实 token。";
         return;
       }
-      if (username !== "demo-user") {
-        $("#login-error").textContent = "示例用户名为 demo-user。凭据未切换。";
-        return;
-      }
-      signIn(token);
+      if (state.invalid === token) state.invalid = "";
+      signIn(token, username);
     };
+    form.onsubmit = submit;
+    form.querySelector('button[type="submit"]').onclick = submit;
+  }
 }
-function signIn(token) {
-  if (state.connected)
-    workspace().devices = workspace().devices.filter(
-      (d) => d.id !== state.device,
-    );
+function signIn(token, username = "") {
   state.token = token;
   const w = workspace();
+  if (username) w.label = username;
+  if (!state.remembered.includes(token)) state.remembered.push(token);
   if (!w.devices.some((d) => d.id === state.device))
     w.devices.push({
       id: state.device,
@@ -145,15 +167,40 @@ function signIn(token) {
       seen: "刚刚",
     });
   state.connected = true;
-  state.page = "home";
+  state.page = "credentials";
   state.restored = w.cached;
-  state.scenario = token === "demo" ? "home" : "other";
+  if (!["switch-error", "network"].includes(state.scenario))
+    state.scenario = token === "demo" ? "home" : "other";
   $("#scenario").value = state.scenario;
   render();
+  focusHeading();
   toast(
     w.cached
       ? "已恢复相同 token 的工作台"
       : "已进入独立工作台，可以开始发现仓库",
+  );
+}
+function focusHeading() {
+  const heading = $("#app h1");
+  heading.tabIndex = -1;
+  heading.focus();
+}
+function forget(token, all = false) {
+  const w = workspaces[token];
+  w.devices = all ? [] : w.devices.filter((d) => d.id !== state.device);
+  state.remembered = state.remembered.filter((t) => t !== token);
+  if (state.token === token) {
+    state.connected = false;
+    state.restored = false;
+  }
+  if ($("#dialog").open) $("#dialog").close();
+  state.page = "credentials";
+  render();
+  focusHeading();
+  toast(
+    all
+      ? "已退出此身份的全部设备，工作台已保留"
+      : "已从此浏览器移除身份，工作台已保留",
   );
 }
 function openDialog(title, body, actions = "") {
@@ -173,6 +220,37 @@ function bind(root) {
   );
 }
 async function action(name, el) {
+  if (name === "activate") {
+    const token = el.dataset.token;
+    if (!state.remembered.includes(token)) return;
+    if (state.invalid === token) {
+      toast("该身份需要重新登录；当前身份保持登录");
+      state.page = "switch";
+      render();
+      $("#git-username").focus();
+      return;
+    }
+    if (state.scenario === "network" && token !== state.token) {
+      toast("平台暂时不可达，请稍后重试。当前身份保持登录");
+      return;
+    }
+    signIn(token);
+    return;
+  }
+  if (name === "remove") {
+    const token = el.dataset.token;
+    openDialog(
+      "移除此身份？",
+      `<p>从此浏览器移除“${esc(workspaces[token].label)}”后，需要重新输入 token 登录。工作台和其他设备的登录会保留。</p>`,
+      btn("取消", "close") +
+        `<button class="btn primary" data-action="remove-confirm" data-token="${token}">移除身份</button>`,
+    );
+    return;
+  }
+  if (name === "remove-confirm") {
+    forget(el.dataset.token);
+    return;
+  }
   if (name === "rail") {
     state.collapsed = !state.collapsed;
     render();
@@ -185,6 +263,8 @@ async function action(name, el) {
   if (["home", "credentials", "switch", "reading"].includes(name)) {
     state.page = name;
     render();
+    if (name === "switch") $("#git-username").focus();
+    else focusHeading();
     return;
   }
   if (name === "retry") {
@@ -235,17 +315,7 @@ async function action(name, el) {
   }
   if (name === "logout" || name === "logout-confirm") {
     const all = name === "logout-confirm";
-    workspace().devices = all
-      ? []
-      : workspace().devices.filter((d) => d.id !== state.device);
-    if ($("#dialog").open) $("#dialog").close();
-    state.connected = false;
-    state.page = "home";
-    state.restored = false;
-    render();
-    toast(
-      all ? "已退出全部示例设备，工作台已保留" : "已退出当前设备，工作台已保留",
-    );
+    forget(state.token, all);
   }
 }
 $("#scenario").onchange = (e) => reset(e.target.value);
@@ -256,4 +326,4 @@ $("#dialog").addEventListener("close", () => {
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && $("#dialog").open) $("#dialog").close();
 });
-reset();
+reset("multi");

@@ -86,6 +86,39 @@
 .demo-copy-field {
   margin: 18px 0;
 }
+.identity-section {
+  margin-bottom: 28px;
+}
+.identity-section > p {
+  color: var(--muted);
+  margin: 8px 0 14px;
+}
+.identity-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.identity-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.identity-name p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.identity-actions {
+  display: flex;
+  gap: 8px;
+}
+.identity-actions .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+  background: var(--surface);
+}
 @media (max-width: 760px) {
   .credential-login {
     margin: 34px auto;
@@ -99,6 +132,19 @@
   }
   .credential-login h1 {
     font-size: 25px;
+  }
+  .identity-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .identity-name {
+    flex-basis: 55%;
+  }
+  .identity-actions {
+    flex-basis: 100%;
+  }
+  .identity-actions .btn {
+    flex: 1;
   }
 }
 @media (max-width: 360px) {

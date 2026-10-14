@@ -13,11 +13,24 @@
       "source": "用户：确认，继续技术方案。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "记住身份并安全点选切换",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "移除身份并统一设备撤销",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "rework": {
     "at": "2026-10-14T08:30:36.444Z",
     "reason": "用户明确不需要旧登录兼容。",
     "approach": "取消旧 Cookie 和设备会话延续及自动迁移；上线后重新添加身份，保留既有 token 工作台与数据。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求已确认；技术方案、T1/T2 计划与多身份交互原型已准备，等待用户一并确认后实施。"
   }
 }

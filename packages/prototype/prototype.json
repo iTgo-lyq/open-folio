@@ -3,8 +3,8 @@
   "entries": [
     {
       "id": "token-workspaces",
-      "title": "Token 工作台与多设备登录",
-      "description": "同 token 恢复工作台、不同 token 隔离、复制凭据和独立设备退出。仅使用示例凭据。",
+      "title": "Token 工作台与浏览器多身份",
+      "description": "浏览器记住身份与点选切换、移除、同 token 多设备恢复和设备撤销。仅使用示例凭据。",
       "sourcePath": "packages/prototype/src/pages/token-workspaces.html",
       "kind": "page",
       "devices": [
