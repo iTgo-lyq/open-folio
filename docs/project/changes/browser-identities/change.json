@@ -4,18 +4,20 @@
   "title": "浏览器记住多个身份并点选切换",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "codex/browser-identities",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-14T08:32:32.361Z",
+      "summary": "用户确认修订后的完整需求：浏览器多身份添加、点选切换和移除，撤销与过期边界；不兼容旧登录，保留工作台数据。",
+      "source": "用户：确认，继续技术方案。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "rework": {
     "at": "2026-10-14T08:30:36.444Z",
     "reason": "用户明确不需要旧登录兼容。",
     "approach": "取消旧 Cookie 和设备会话延续及自动迁移；上线后重新添加身份，保留既有 token 工作台与数据。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "已按用户要求移除旧登录兼容；等待确认修订后的完整需求与验收。"
   }
 }
