@@ -32,5 +32,38 @@
   "waitingFor": {
     "kind": "confirmation",
     "summary": "需求已确认；技术方案、T1/T2 计划与多身份交互原型已准备，等待用户一并确认后实施。"
-  }
+  },
+  "previews": [
+    {
+      "id": "token-workspaces",
+      "title": "Token 工作台与浏览器多身份",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/index.html",
+        "sourceCommit": "2c139b4886ec3cc7d8ef6d1baa7826ef44953371",
+        "digest": "sha256:b18ea83c1c11752eea9018fc09b2137cb8afebf59c975f924b9c53ef746b871f",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }

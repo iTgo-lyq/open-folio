@@ -14,22 +14,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/index.html",
-        "sourceCommit": "565037c555862bd15908a95eb3b4dcaafd858a74",
-        "digest": "sha256:2ad8e38126908f14da04997eb89c2b98ca1faa47faaafbcc066c7ba6d896882d",
+        "version": "0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/index.html",
+        "sourceCommit": "2c139b4886ec3cc7d8ef6d1baa7826ef44953371",
+        "digest": "sha256:b18ea83c1c11752eea9018fc09b2137cb8afebf59c975f924b9c53ef746b871f",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e21b69aa1a1a3e6d991ec6f67fa56fd64a3897a42191c6302f5c98561b4be3e8/token-workspaces/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/mobile.png"
           }
         ]
       }

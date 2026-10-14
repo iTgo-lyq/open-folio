@@ -82,6 +82,6 @@ Cookie 仍名为 `openfolio-session`，随机值只在新集合建立时产生�
 
 ### 技术阶段原型证据
 
-2026-10-14 更新项目现有 token-workspaces 原型；`npm run build --workspace prototype`、原型静态校验及修改的 HTML／CSS／JS 格式检查通过。使用启用 OS 沙箱的 Chromium，在 `sandbox="allow-scripts"` iframe 内验证 1440、834、390、320px：添加与去重、A → B → A 无 token 表单、复制及 Escape 清除、取消移除后的焦点返回、当前身份移除后选择其他身份、全设备退出、目标失效和网络失败保留原身份均通过，未出现页面错误或横向溢出。
+2026-10-14 更新项目现有 token-workspaces 原型；`npm run build --workspace prototype`、原型静态校验及修改的 HTML／CSS／JS 格式检查通过。使用启用 OS 沙箱的 Chromium，在 `sandbox="allow-scripts"` iframe 内验证 1440、834、390、320px：添加与去重（含 Enter 提交）、A → B → A 无 token 表单、复制及 Escape 清除、取消移除后的焦点返回、当前身份移除后选择其他身份、全设备退出、目标失效和网络失败保留原身份均通过，未出现页面错误或横向溢出。
 
-`npm run screenshot --workspace prototype -- --entry dist/token-workspaces/index.html` 生成桌面、平板和手机截图。原型表单由脚本处理点击，保留表单验证，避免嵌入沙箱禁止原生提交；不请求真实接口、不读取或保存真实凭据。本次固定预览登记在 change.json.previews，历史版本保留。
+`npm run screenshot --workspace prototype -- --entry dist/token-workspaces/index.html` 生成桌面、平板和手机截图。R2 发布逐文件验证公开字节及 Content-Type，截图引用也逐一核对；`node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser` 对三个当前托管入口的沙箱初始化检查通过。原型表单由脚本处理点击，保留表单验证，避免嵌入沙箱禁止原生提交；不请求真实接口、不读取或保存真实凭据。本次固定预览登记在 change.json.previews，历史版本保留。
