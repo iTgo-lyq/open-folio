@@ -9,8 +9,13 @@
   "confirmations": {},
   "tasks": {},
   "closure": {},
+  "rework": {
+    "at": "2026-10-14T08:30:36.444Z",
+    "reason": "用户明确不需要旧登录兼容。",
+    "approach": "取消旧 Cookie 和设备会话延续及自动迁移；上线后重新添加身份，保留既有 token 工作台与数据。"
+  },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "启动方向已获确认；等待用户确认 requirement.md 中的完整行为、退出与撤销边界及验收标准。"
+    "summary": "已按用户要求移除旧登录兼容；等待确认修订后的完整需求与验收。"
   }
 }
