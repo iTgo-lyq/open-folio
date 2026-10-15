@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenFolio · 澄清问答</title>
+<style>{{include:../shared/style.css}}
+{{include:../shared/clarification-detail.css}}</style>
+</head>
+<body>
+<header class="review-bar"><span>原型 · 示例数据</span><label>场景 <select id="scenario"><option value="normal">澄清问答</option><option value="empty">无问答</option><option value="long">长文本</option></select></label></header>
+<main class="review-canvas"><div><p>Change 详情 · 概览</p><button id="reopen">打开详情</button></div></main>
+<section class="change-drawer" aria-label="Change 详情">
+  <div class="drawer-toolbar"><span>Change 详情</span><button id="close" class="icon-button" aria-label="关闭变更详情">✕</button></div>
+  <div class="drawer-summary">
+    <code class="drawer-id">reading-experience</code>
+    <h2>阅读体验优化</h2>
+    <div class="drawer-badges"><span class="badge">进行中</span><span class="badge">小型</span><span class="badge">需求</span></div>
+  </div>
+  <div class="drawer-tabs" role="tablist" aria-label="Change 详情页签">
+    <button role="tab" aria-selected="true">概览</button>
+    <button role="tab" aria-selected="false" disabled>任务</button>
+    <button role="tab" aria-selected="false" disabled>文档</button>
+    <button role="tab" aria-selected="false" disabled>原型</button>
+    <button role="tab" aria-selected="false" disabled>依据</button>
+  </div>
+  <div class="drawer-body">
+    <h3 class="section-title">目标与材料</h3>
+    <p class="subtle-note">目标和验收以 Requirement 正文为准。</p>
+    <div class="document-link"><span>需求说明</span><small>requirement.md</small></div>
+    <section id="clarifications" aria-labelledby="clarification-title">
+      <h3 class="section-title" id="clarification-title">澄清问答</h3>
+      <dl class="clarification-list"></dl>
+    </section>
+    <h3 class="section-title">任务进展</h3><p class="subtle-note">0 / 1 · 优化文档阅读体验</p>
+    <h3 class="section-title">主来源</h3><p class="subtle-note">change/reading-experience</p>
+  </div>
+</section>
+<script>
+const drawer = document.querySelector('.change-drawer');
+const reopen = document.querySelector('#reopen');
+const close = document.querySelector('#close');
+const scenario = document.querySelector('#scenario');
+const samples = [
+  { id: 'Q1', question: '目录在手机上如何显示？', answer: '默认收起，需要时从顶部打开。' },
+  { id: 'Q2', question: '是否记住上次阅读的位置？' },
+  { id: 'Q3', question: '是否保留左右翻页入口？', answer: '保留，放在正文底部。', withdrawn: true },
+];
+function render() {
+  document.querySelector('#clarifications').hidden = scenario.value === 'empty';
+  const rows = scenario.value === 'long' ? [{ id: 'Q1', question: '长文档在移动端的目录、代码块和引用链接应如何处理，才能保持阅读连续性？', answer: '目录默认收起，点击标题后跳转并关闭。\n代码块保留独立横向滚动，正文不横向溢出。\n长链接完整保留并自动换行：\nhttps://example.test/' + 'long-document-reference-'.repeat(7) }] : samples;
+  document.querySelector('.clarification-list').replaceChildren(...rows.map(item => {
+    const row = document.createElement('div'); row.className = 'clarification-item';
+    const question = document.createElement('dt');
+    const id = document.createElement('code'); id.className = 'clarification-id'; id.textContent = item.id;
+    const text = document.createElement('span'); text.className = 'clarification-question'; text.textContent = item.question;
+    if (item.withdrawn) { const badge = document.createElement('span'); badge.className = 'clarification-status'; badge.textContent = '已撤回'; text.append(badge); }
+    question.append(id, text);
+    const answer = document.createElement('dd'); answer.textContent = item.answer || '未回答';
+    if (!item.answer) answer.className = 'clarification-pending';
+    row.append(question, answer); return row;
+  }));
+}
+function hide() { drawer.hidden = true; reopen.focus(); }
+close.onclick = hide;
+reopen.onclick = () => { drawer.hidden = false; close.focus(); };
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !drawer.hidden) hide(); });
+scenario.onchange = () => { drawer.hidden = false; render(); };
+render();
+</script>
+</body>
+</html>

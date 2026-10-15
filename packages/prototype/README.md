@@ -2,6 +2,8 @@
 
 本包维护 workspace-shell 外壳与 personal-workbench 个人工作台方案，设计依据见 [DESIGN.md](DESIGN.md)。源码入 Git，`npm run build --workspace prototype` 输出各自的自包含 `dist/<id>/index.html`。构建不会上传或改动清单，dist 不提交。
 
+clarification-detail 聚焦 Change 详情概览中的澄清问答，沿用当前抽屉布局；顶部可切换问答、无记录和长文本示例，支持关闭与重新打开详情。
+
 personal-workbench 顶部可切换首次连接、发现中、空结果、部分失败、连接失效、无权限和公开原型。连接表单只接受 `demo`，不验证或保留真实 token；仓库与记录均为示例。URL hash 保留当前页面，全部交互在内存运行。
 
 token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台、浏览器记住多个身份与点选切换、单独移除、复制 token 和设备退出。两个示例 token 都属于 `demo-user`，可填写显示名称；只接受 `demo` 与 `demo-other`。顶部可选择双身份、目标凭据失效及切换时网络故障；状态仅保存在内存，复制也只处理这两个示例值。顶部场景栏为评审工具，不进入产品。

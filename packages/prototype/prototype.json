@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "clarification-detail",
+      "title": "Change 澄清问答",
+      "description": "详情概览中的问题与最终回答，含未回答、撤回、无记录及长文本示例。",
+      "sourcePath": "packages/prototype/src/pages/clarification-detail.html",
+      "kind": "page",
+      "devices": ["pc-web", "ipad", "mobile"]
+    },
+    {
       "id": "token-workspaces",
       "title": "Token 工作台与浏览器多身份",
       "description": "浏览器记住身份与点选切换、移除、同 token 多设备恢复和设备撤销。仅使用示例凭据。",

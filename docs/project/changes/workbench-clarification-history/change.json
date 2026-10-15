@@ -4,13 +4,13 @@
   "title": "工作台展示澄清问答",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/workbench-clarification-history",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "绘制原型并在 Change 详情展示澄清问答",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
