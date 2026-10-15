@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "bounded-requirement-clarification",
+  "title": "需求分轮澄清与精简确认摘要",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "change/bounded-requirement-clarification",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {}
+}
