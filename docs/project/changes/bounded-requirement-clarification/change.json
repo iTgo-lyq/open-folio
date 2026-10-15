@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "分轮澄清与确认摘要契约",
-      "status": "doing"
+      "status": "done",
+      "verification": "40 项相关测试、类型与 skill 校验、独立评审、生产构建及真实登录工作台读取通过；详见 execution.md。",
+      "commitTitle": "bounded-requirement-clarification T1: verify bounded interviews and deployed reader"
     }
   },
   "closure": {},
