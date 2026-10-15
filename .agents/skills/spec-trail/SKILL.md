@@ -111,7 +111,7 @@ interface Clarification {
   round: number; // 从 1 开始的轮次，同轮共享；正安全整数
   question: string;
   recommendation: string; // 推荐及简短理由
-  answer?: string; // 用户实际回答或忠实摘要，未答省略
+  answer?: string; // 用户最终有效回答或忠实摘要，未答省略，更正覆盖
   source?: string; // 回答来源，按需记录
   withdrawn?: string; // 不再适用的原因，保留原问答
 }
@@ -286,7 +286,7 @@ Requirement 按“背景与目标、范围、行为变化、验收标准”组�
 
 ### 问答记录
 
-用 `clarification-ask / clarification-answer / clarification-withdraw` 将实际问题、推荐与回答写入 `clarifications`，创建时补录创建前问答；Q 编号稳定且不复用。未答省略 `answer`，撤回写原因并保留原问答、不退额度；回答更正保留在 Git 历史中，实质改变需求按返工处理。轮数按不同 `round` 数量、问题数按全部记录计算，不另存计数器；问答不代替阶段确认。
+用 `clarification-ask / clarification-answer / clarification-withdraw` 保存实际提过的问题、推荐和用户最终有效回答，便于回溯需求遗漏与澄清偏差，不记录用户思考过程。创建时补录创建前问答，Q 编号稳定且不复用；未答省略 `answer`，明确更正覆盖原答案，含糊冲突先澄清再更新。撤回保留原问答与原因、不退额度；实质改变需求按返工处理。轮数按不同 `round` 数量、问题数按全部记录计算，不另存计数器；问答不代替阶段确认。
 
 每轮将结论写回 Requirement，较长调查证据放 Research；不复制完整访谈。继续会话先读问答与正文，重建决策树和剩余额度；命令保存已发生事实，预算在发问前由 Agent 执行，不因超额而漏记。
 

@@ -2,7 +2,7 @@
 
 将分轮指导、规模预算及摘要规则直接写入主 skill，保持可独立分发。clarifications 为可选 Q 编号映射，条目含 round、question、recommendation，可选 answer、source、withdrawn；withdrawn 保存不再适用的原因，原问答仍保留。
 
-新增 clarification-ask / clarification-answer / clarification-withdraw 命令，复用分支、状态、锁、原子写入和 dry-run 约束。提问记录仅追加稳定编号，回答可按新反馈更正，撤回不可继续回答；轮次、问题数由记录推导。命令保存已发生事实，追问预算由 Agent 在发问前执行，用户明确允许的超额问题仍可记录。
+新增 clarification-ask / clarification-answer / clarification-withdraw 命令，复用分支、状态、锁、原子写入和 dry-run 约束。提问记录仅追加稳定编号，answer 保存最终有效回答，更正直接覆盖，不另存回答历史；撤回不可继续回答，轮次、问题数由记录推导。命令保存已发生事实，追问预算由 Agent 在发问前执行，用户明确允许的超额问题仍可记录。
 
 共享校验导出问答校验入口供工作台复用，模型补充可选类型。confirm 写入时按 Unicode 码点统计 summary，拒绝超过 60 字符和换行；单句与内容质量由 Agent 核对，读校验不追溯限制旧摘要。
 

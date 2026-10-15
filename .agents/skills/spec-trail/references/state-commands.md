@@ -10,7 +10,7 @@
 | `retitle` | `--title`；仅修改活动 Change 的展示标题，保留 id、阶段、任务与确认；需在所属分支运行。 |
 | `confirm` | `--phase requirement/technical/plan/merge --summary --source`。summary 写阶段内容，优先 20–40 字符，最多 60 个 Unicode 码点、单句且不换行；source 写实际确认依据。需求确认进入 technical，large 技术确认进入 plan；执行另用 execute。medium/xlarge 技术与计划同次获确认时连续记录两次。merge 可附 `--source-commit --target-commit --base-commit`。 |
 | `clarification-ask` | `--round --text --recommendation`；可选 `--question Qn`，默认下一个编号，只能递增。保存实际问过的问题，round 为从 1 开始的正整数，同轮问题用同一值。 |
-| `clarification-answer` | `--question Qn --answer`，可附 `--source`。记录实际回答；允许根据新反馈更正，未提供 source 时清除旧来源；实质改变需求先按返工处理。 |
+| `clarification-answer` | `--question Qn --answer`，可附 `--source`。保存用户最终有效回答，更正覆盖同题答案；未提供 source 时清除旧来源，实质改变需求先按返工处理。 |
 | `clarification-withdraw` | `--question Qn --reason`。保留原问答并记不再适用的原因，不退额度；撤回后不再回答，需要时新增问题。 |
 | `task-add` | `--title`；可选 `--task Tn --branch`，默认分配下一个编号。完成任务不可覆盖，返修追加任务并更新 Plan。 |
 | `task-start` | `--task Tn`；检查当前执行安排与整条前置链均已完成，再从 todo/blocked → doing，并移除旧阻塞原因。 |

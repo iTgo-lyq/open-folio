@@ -8,7 +8,7 @@
 
 - MODIFIED：需求澄清按决策依赖分轮；先调查事实，再向用户提出已就绪的产品取舍，每题提供推荐与理由。回答后重算 frontier，未决前置的后续问题延后；独立调查不阻塞其他问题。
 - MODIFIED：small / medium / large / xlarge 的轮数、每轮问题数、总数上限分别为 1/3/3、2/3/6、3/4/12、4/4/16；额度跨会话累计，允许提前收敛，不自动超额追问，不把关键缺口默认为同意。
-- ADDED：change.json 可选 clarifications 保存稳定 Q 编号、轮次、问题、推荐、实际回答及按需来源、撤回原因；通过语义命令维护，结论同步 Requirement。
+- ADDED：change.json 可选 clarifications 保存稳定 Q 编号、轮次、实际问题、推荐、用户最终有效回答及按需来源、撤回原因，用于回溯需求遗漏与澄清偏差，不记录思考过程；通过语义命令维护，结论同步 Requirement。
 - MODIFIED：confirmations 下 requirement、technical、plan、merge 的 summary 均为内容简述，优先 20–40 字符、最多 60 字符、单句；source 记录确认依据。不新增顶层 summary。
 - 保留现有规模与阶段确认机制，旧记录可读，归档不批量改写；工作台接受并保留新增问答字段，本次不增加专用问答界面。
 
