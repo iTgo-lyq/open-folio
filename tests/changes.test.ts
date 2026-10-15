@@ -104,6 +104,56 @@ test("strict schema agrees with current skill hook on shared structural examples
     );
 });
 
+test("workbench and shared validators preserve clarification records and historical summaries", () => {
+  const entries = {
+    Q1: {
+      round: 1,
+      question: "导出哪些数据？",
+      recommendation: "当前筛选结果。",
+    },
+    Q2: {
+      round: 1,
+      question: "哪些人可导出？",
+      recommendation: "沿用报表权限。",
+      answer: "管理员",
+      source: "用户本轮回答",
+    },
+    Q3: {
+      round: 2,
+      question: "导出格式？",
+      recommendation: "CSV。",
+      answer: "CSV",
+      withdrawn: "本期取消导出",
+    },
+  };
+  const valid = state("clarified", {
+    clarifications: entries,
+    confirmations: { requirement: { at, summary: "旧摘要".repeat(40) } },
+  });
+  assert.deepEqual(validateChange(valid), []);
+  assert.deepEqual(changeSchema.parse(valid).clarifications, entries);
+  const badEntries = [
+    null,
+    [],
+    { Q0: entries.Q1 },
+    { Q9007199254740992: entries.Q1 },
+    { Q1: { ...entries.Q1, round: 0 } },
+    { Q1: { ...entries.Q1, round: 1.5 } },
+    { Q1: { ...entries.Q1, round: Number.MAX_SAFE_INTEGER + 1 } },
+    { Q1: { ...entries.Q1, question: " " } },
+    { Q1: { ...entries.Q1, recommendation: " " } },
+    { Q1: { ...entries.Q1, answer: " " } },
+    { Q1: { ...entries.Q1, withdrawn: " " } },
+    { Q1: { ...entries.Q1, source: " " } },
+    { Q1: { ...entries.Q1, status: "confirmed" } },
+  ];
+  for (const clarifications of badEntries) {
+    const sample = { ...valid, clarifications };
+    assert(validateChange(sample).length, JSON.stringify(sample));
+    assert(!changeSchema.safeParse(sample).success, JSON.stringify(sample));
+  }
+});
+
 test("explicit task order overrides defaults and rejects ambiguous or invalid declarations", () => {
   const s = state("plan", {
     size: "large",

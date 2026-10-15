@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { PreviewEntry, PrototypeConfig } from "../lib/model.ts";
+import type {
+  Clarification,
+  PreviewEntry,
+  PrototypeConfig,
+} from "../lib/model.ts";
+import { validateClarifications } from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
 import {
   validatePreviews,
   validatePrototype,
@@ -78,6 +83,11 @@ export const changeSchema = z
     stage: z.enum(["requirement", "technical", "plan", "execution", "close"]),
     branch: branchName,
     previews: previewsSchema.optional(),
+    clarifications: z
+      .custom<
+        Record<`Q${number}`, Clarification>
+      >((value) => !validateClarifications(value).length, "澄清问答格式不合法")
+      .optional(),
     dependsOn: list.optional(),
     parent: identity.optional(),
     children: list.optional(),

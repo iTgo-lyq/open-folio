@@ -108,6 +108,14 @@ export type PreviewEntry = {
   devices?: Device[];
   viewport?: { width: number; height: number };
 };
+export type Clarification = {
+  round: number;
+  question: string;
+  recommendation: string;
+  answer?: string;
+  source?: string;
+  withdrawn?: string;
+};
 export type ChangeState = {
   schemaVersion: 1;
   id: string;
@@ -117,6 +125,7 @@ export type ChangeState = {
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string;
   previews?: PreviewEntry[];
+  clarifications?: Record<`Q${number}`, Clarification>;
   dependsOn?: string[];
   parent?: string;
   children?: string[];

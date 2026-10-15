@@ -159,6 +159,180 @@ test("semantic small lifecycle writes ordered ISO timestamps, preserves evidence
   assert.equal(readFileSync(join(f.root, archived.path), "utf8"), original);
 });
 
+test("clarification records persist questions, corrections and withdrawal across rework", (t) => {
+  const f = fixture(t);
+  f.create("medium");
+  const ask = (round: string, extras: string[] = []) =>
+    f.run("clarification-ask", [
+      "--round",
+      round,
+      "--text",
+      "导出范围？",
+      "--recommendation",
+      "仅当前筛选，沿用列表权限。",
+      ...extras,
+    ]);
+  const before = readFileSync(f.path(), "utf8");
+  ask("1", ["--dry-run"]);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  ask("1");
+  ask("1");
+  assert.deepEqual(f.state().clarifications.Q1, {
+    round: 1,
+    question: "导出范围？",
+    recommendation: "仅当前筛选，沿用列表权限。",
+  });
+  f.run("clarification-answer", [
+    "--question",
+    "Q1",
+    "--answer",
+    "按推荐",
+    "--source",
+    "本轮回答",
+  ]);
+  f.run("clarification-answer", [
+    "--question",
+    "Q1",
+    "--answer",
+    "只导出已选记录",
+  ]);
+  assert.equal(f.state().clarifications.Q1.answer, "只导出已选记录");
+  assert(!f.state().clarifications.Q1.source);
+  f.run("clarification-withdraw", [
+    "--question",
+    "Q1",
+    "--reason",
+    "导出功能移出本次范围",
+  ]);
+  assert.equal(f.state().clarifications.Q1.answer, "只导出已选记录");
+  f.run("clarification-withdraw", [
+    "--question",
+    "Q2",
+    "--reason",
+    "已无关联需求",
+  ]);
+  f.confirm();
+  const entries = f.state().clarifications;
+  f.run("rework", [
+    "--stage",
+    "requirement",
+    "--reason",
+    "重新明确范围",
+    "--approach",
+    "保留访谈，重审需求",
+  ]);
+  assert.deepEqual(f.state().clarifications, entries);
+  ask("2");
+  assert.deepEqual(Object.keys(f.state().clarifications), ["Q1", "Q2", "Q3"]);
+  assert.equal(f.state().clarifications.Q3.round, 2);
+  assert.deepEqual(f.state().confirmations, {});
+  // Historical facts, including explicitly authorized extra rounds, remain recordable.
+  ask("3");
+  assert.equal(f.state().clarifications.Q4.round, 3);
+});
+
+test("invalid clarification writes preserve state and cannot reuse withdrawn question ids", (t) => {
+  const f = fixture(t);
+  f.create();
+  const args = [
+    "--round",
+    "1",
+    "--text",
+    "范围？",
+    "--recommendation",
+    "本次只做导出。",
+  ];
+  f.run("clarification-ask", args);
+  f.run("clarification-withdraw", [
+    "--question",
+    "Q1",
+    "--reason",
+    "已移出范围",
+  ]);
+  const before = readFileSync(f.path(), "utf8");
+  for (const round of ["0", "-1", "1.5", "1e2", "9007199254740992"])
+    f.run("clarification-ask", ["--round", round, ...args.slice(2)], 1);
+  for (const id of ["Q1", "Q0", "__proto__", "Q9007199254740992"])
+    f.run("clarification-ask", [...args, "--question", id], 1);
+  f.run(
+    "clarification-ask",
+    ["--round", "1", "--text", " ", "--recommendation", "建议"],
+    1,
+  );
+  for (const id of ["Q1", "Q99", "__proto__"])
+    f.run("clarification-answer", ["--question", id, "--answer", "确认"], 1);
+  f.run("clarification-withdraw", ["--question", "Q1", "--reason", "重复"], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  f.run("clarification-ask", args);
+  const pending = readFileSync(f.path(), "utf8");
+  f.run("clarification-answer", ["--question", "Q2", "--answer", " "], 1);
+  f.run(
+    "clarification-answer",
+    ["--question", "Q2", "--answer", "导出筛选结果", "--source", " "],
+    1,
+  );
+  f.run("clarification-answer", [
+    "--question",
+    "Q2",
+    "--answer",
+    "导出筛选结果",
+    "--dry-run",
+  ]);
+  f.run("clarification-withdraw", [
+    "--question",
+    "Q2",
+    "--reason",
+    "已移出范围",
+    "--dry-run",
+  ]);
+  assert.equal(readFileSync(f.path(), "utf8"), pending);
+  f.run("cancel", ["--reason", "不再实施"]);
+  const cancelled = readFileSync(f.path(), "utf8");
+  f.run("clarification-ask", args, 1);
+  assert.equal(readFileSync(f.path(), "utf8"), cancelled);
+});
+
+test("all confirmation phases enforce 60 Unicode characters and single-line summaries on new writes", (t) => {
+  const f = fixture(t);
+  f.create("medium");
+  const exactly60 = "😀".repeat(59) + "。";
+  for (const phase of ["requirement", "technical", "plan", "merge"]) {
+    const before = readFileSync(f.path(), "utf8");
+    for (const summary of [
+      exactly60 + "字",
+      "字".repeat(61),
+      "第一行\n第二行",
+      "第一行\r第二行",
+      "甲\u0085乙",
+      "甲\u2028乙",
+      "甲\u2029乙",
+    ])
+      f.run(
+        "confirm",
+        ["--phase", phase, "--summary", summary, "--source", "本轮明确确认"],
+        1,
+      );
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+    f.run("confirm", [
+      "--phase",
+      phase,
+      "--summary",
+      exactly60,
+      "--source",
+      "本轮明确确认",
+    ]);
+    assert.equal(f.state().confirmations[phase].summary, exactly60);
+  }
+  const prior = f.state();
+  prior.confirmations.requirement.summary = "历史摘要".repeat(30);
+  writeFileSync(f.path(), JSON.stringify(prior));
+  f.run("retitle", ["--title", "仍可操作旧记录"]);
+  assert.equal(
+    f.state().confirmations.requirement.summary,
+    prior.confirmations.requirement.summary,
+  );
+});
+
 test("medium/large confirmations, repair tasks and explicit acceptance preserve completed work", (t) => {
   for (const size of ["medium", "large"]) {
     const f = fixture(t);
