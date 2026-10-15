@@ -4,9 +4,30 @@
   "title": "需求分轮澄清与精简确认摘要",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/bounded-requirement-clarification",
-  "confirmations": {},
-  "tasks": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-15T08:23:57.563Z",
+      "summary": "按规模限制分轮澄清，记录问答并精简全部确认摘要。",
+      "source": "用户：按这个方案开始实现，把分轮澄清、规模限制、问答记录和所有确认摘要的规则一起改好。"
+    },
+    "technical": {
+      "at": "2026-10-15T08:23:57.631Z",
+      "summary": "内置决策树与轮次预算，扩展问答命令及校验，写入时限制摘要长度。",
+      "source": "用户认可前述字段、语义命令、共享校验和读取类型方案，并要求开始实现。"
+    },
+    "plan": {
+      "at": "2026-10-15T08:23:57.694Z",
+      "summary": "一次交付澄清指导与状态契约，完成验证、独立评审和服务更新。",
+      "source": "用户要求按已讨论方案一起实现。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "分轮澄清与确认摘要契约",
+      "status": "doing"
+    }
+  },
   "closure": {}
 }
