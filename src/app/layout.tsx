@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "@open-folio/ui/styles.css";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "OpenFolio · 工程工作台",
+  title: "OpenFolio",
   description: "从中心 Git 阅读 Specs 与 Changes",
 };
 export default function RootLayout({
