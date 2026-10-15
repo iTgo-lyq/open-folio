@@ -4,7 +4,7 @@
   "title": "需求分轮澄清与精简确认摘要",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/bounded-requirement-clarification",
   "confirmations": {
     "requirement": {
@@ -31,10 +31,20 @@
       "commitTitle": "bounded-requirement-clarification T1: verify bounded interviews and deployed reader"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-15T08:35:21.378Z",
+      "summary": "40 项测试、类型检查、skill 校验、独立评审及部署冒烟通过，详见 execution.md。"
+    }
+  },
   "rework": {
     "at": "2026-10-15T08:30:00.422Z",
     "reason": "按最终问答契约与摘要规则整理阶段简述",
     "approach": "沿用已批准方案，摘要仅保留交付内容"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与开发机更新已验证，等待用户验收分轮澄清、问答契约和确认摘要规则。"
   }
 }
