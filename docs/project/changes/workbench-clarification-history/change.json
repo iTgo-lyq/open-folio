@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "绘制原型并在 Change 详情展示澄清问答",
-      "status": "doing"
+      "status": "done",
+      "verification": "原型四视口、12 项浏览器测试、类型检查、生产构建及真实仓库问答冒烟通过。",
+      "commitTitle": "workbench-clarification-history T1: verify clarification display"
     }
   },
   "closure": {},
