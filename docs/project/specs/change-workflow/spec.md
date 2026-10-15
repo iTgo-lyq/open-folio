@@ -1,6 +1,6 @@
 # Change 状态维护
 
-SpecTrail 通过仓库内的语义 JavaScript 命令维护 docs/project 下的 Change 状态。change.json 是流程事实来源，Markdown 保存需求、方案和证据，Git 保存版本与已推送记录；OpenFolio 工作台继续只读展示。
+SpecTrail 通过仓库内的语义 JavaScript 命令维护 docs/project 下的 Change 状态。change.json 是流程事实来源，并保存澄清问答；Markdown 保存需求、方案和证据，Git 保存版本与已推送记录，OpenFolio 工作台继续只读展示。
 
 ## 规模判断
 
@@ -10,11 +10,30 @@ SpecTrail 通过仓库内的语义 JavaScript 命令维护 docs/project 下的 C
 
 默认取满足的最高档位，数字用于事前估算，不逐行审计；临界情况结合职责边界和验证范围判断，偏离默认档位需给出具体依据。信息不足先调查或澄清，后续按同一标准调整。具体指引见 [SpecTrail 规模规则](../../../../.agents/skills/spec-trail/SKILL.md#创建与规模)。
 
+## 需求澄清与问答
+
+需求按决策树分轮澄清，每轮只问前置已明确的 frontier 问题，逐题给出推荐与理由，等待回答后重算；事实由 Agent 调查，未决调查只阻塞相关分支。具体指导见 [分轮澄清](../../../../.agents/skills/spec-trail/SKILL.md#分轮澄清)。
+
+| 规模 | 最多轮数 | 每轮最多问题 | 总问题上限 |
+| --- | --- | --- | --- |
+| small | 1 | 3 | 3 |
+| medium | 2 | 3 | 6 |
+| large | 3 | 4 | 12 |
+| xlarge | 4 | 4 | 16 |
+
+预算包括创建前提问，跨会话累计；上限不是配额，明确时零追问，不拆碎或藏题。用户要求收敛或达到上限时停止扩展，集中说明关键缺口；追加轮次须用户明确要求。子 Change 继承父级结论，只补齐自身未决细节；阶段确认沿用规模规则。
+
+可选 clarifications 以稳定 Q 编号保存 round、question、recommendation，以及可选 answer、source、withdrawn。记录实际提过的问题与用户最终有效回答，用于回溯需求遗漏和澄清偏差，不记录思考过程；更正覆盖同题答案，含糊冲突先澄清。撤回保留原问答及原因，不退额度；返工不清空问答，记录不授予阶段确认。轮次与问题数由记录计算，结论同步 Requirement。
+
+问答通过 clarification-ask / clarification-answer / clarification-withdraw 维护，命令保存已发生事实，预算由 Agent 在发问前执行。共享校验与工作台读取使用同一问答契约，旧记录可以省略该字段。
+
 ## 命令与责任
 
 主 skill 自带 scripts/change.mjs，使用 Node.js 内置模块，无第三方依赖。命令覆盖创建、修改展示标题、阶段确认、任务登记/执行/阻塞/完成、等待与恢复、返工、关闭四步、取消及原型关联。修改标题保留 Change id 与已有流程记录。具体调用参见仓库 [.agents 状态命令说明](../../../../.agents/skills/spec-trail/references/state-commands.md)。
 
 Agent 根据实际用户授权、验证与评审结果传入摘要和来源，脚本负责既有 JSON 契约、阶段前置、时间、失效字段清理与本地写入。脚本不判断正文质量、不替用户确认、不运行测试，不自动提交/推送或合入分支。命令成功不等于中心仓库状态已持久化。
+
+confirmations 下所有 summary 均为阶段内容简述：requirement 写目标与行为，technical 写机制与取舍，plan 写交付与顺序，merge 写合码策略与关键决策。优先 20–40 字符、最多 60 字符、单句，省略确认措辞及常规验证清单；确认依据写 source。confirm 按 Unicode 码点拒绝超长或换行的新摘要，内容质量由 Agent 核对，历史读取不追溯长度限制。
 
 创建与修改在 Change 声明的主分支进行，守护分支不直接写状态。同一分支只有一个执行/关闭中的 Change；取消冻结相关分支，归档默认只读。用户明确要求历史勘误时在所属分支最小修正并保留普通 Git 提交，不改写已推送历史。
 

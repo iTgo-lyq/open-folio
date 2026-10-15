@@ -3,7 +3,7 @@
   "id": "bounded-requirement-clarification",
   "title": "需求分轮澄清与精简确认摘要",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/bounded-requirement-clarification",
   "confirmations": {
@@ -36,15 +36,28 @@
       "result": "passed",
       "at": "2026-10-15T08:35:21.378Z",
       "summary": "40 项测试、类型检查、skill 校验、独立评审及部署冒烟通过，详见 execution.md。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-15T09:39:52.734Z",
+      "summary": "用户验收通过，授权归档并合入 main。",
+      "source": "用户：可以，验收通过，归档并合入 main。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-15T09:40:22.020Z",
+      "summary": "同步 change-workflow 的分轮澄清预算、问答契约及全部确认摘要规则。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-15T09:40:22.141Z",
+      "summary": "分轮澄清与精简确认摘要已验收，Specs 已同步。",
+      "path": "docs/project/archive/2026-10-15-bounded-requirement-clarification"
     }
   },
   "rework": {
     "at": "2026-10-15T08:30:00.422Z",
     "reason": "按最终问答契约与摘要规则整理阶段简述",
     "approach": "沿用已批准方案，摘要仅保留交付内容"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与开发机更新已验证，等待用户验收分轮澄清、问答契约和确认摘要规则。"
   }
 }
