@@ -44,7 +44,9 @@ export function ConnectionPicker() {
   const { connection } = usePersonal();
   return connection ? (
     <span className="personal-current-account">
-      @{connection.identity.login} · {connection.label}
+      @{connection.identity.login}
+      {connection.label !== connection.identity.login &&
+        ` · ${connection.label}`}
     </span>
   ) : null;
 }
