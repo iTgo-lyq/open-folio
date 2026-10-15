@@ -3,8 +3,8 @@
   "id": "workbench-clarification-history",
   "title": "工作台展示澄清问答",
   "size": "small",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "change/workbench-clarification-history",
   "confirmations": {},
   "tasks": {
@@ -15,7 +15,30 @@
       "commitTitle": "workbench-clarification-history T1: verify clarification display"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-15T10:04:28.343Z",
+      "summary": "Agent 自查通过；原型、12 项浏览器测试、类型检查、生产构建和真实问答显示均通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-15T10:04:28.414Z",
+      "summary": "Agent 自验收通过：问题与最终回答可读，未答、撤回、空记录及窄屏行为符合需求。",
+      "source": "SpecTrail small 默认由 Agent 对照需求自验收后归档；验证依据见 execution.md。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-15T10:04:28.525Z",
+      "summary": "Change 追踪 Spec 补充澄清问答展示规则。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-15T10:04:28.597Z",
+      "summary": "澄清问答原型与工作台实现已验证归档。",
+      "path": "docs/project/archive/2026-10-15-workbench-clarification-history"
+    }
+  },
   "clarifications": {
     "Q1": {
       "round": 1,
