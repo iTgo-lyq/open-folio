@@ -1953,6 +1953,56 @@ input {
   line-height: 1.8;
   margin: 0 0 13px;
 }
+.clarification-list {
+  margin: 0;
+}
+.clarification-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--of-line);
+}
+.clarification-item:first-child {
+  padding-top: 0;
+}
+.clarification-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.clarification-item dt {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--of-ink);
+}
+.clarification-id {
+  flex: none;
+  color: var(--of-muted);
+  font-size: 11px;
+}
+.clarification-question {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.clarification-status {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--of-muted);
+  font-weight: 400;
+}
+.clarification-item dd {
+  margin: 7px 0 0;
+  color: #657480;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.clarification-item dd.clarification-pending {
+  color: var(--of-muted);
+}
 .waiting-card {
   display: flex;
   align-items: flex-start;

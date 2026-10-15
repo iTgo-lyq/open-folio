@@ -1066,6 +1066,7 @@ export function ChangeDrawer() {
                   目标和验收以 Requirement 正文为准。
                 </p>
                 <DocumentList c={c} shortlist />
+                <Clarifications items={s?.clarifications} />
                 {s && ongoing && (
                   <>
                     <SectionTitle>
@@ -1142,6 +1143,35 @@ export function ChangeDrawer() {
 const BookIcon = () => <FileText size={15} />;
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="section-title">{children}</h3>;
+}
+function Clarifications({ items }: { items: ChangeState["clarifications"] }) {
+  const entries = Object.entries(items ?? {}).sort(([a], [b]) =>
+    a.localeCompare(b, "en", { numeric: true }),
+  );
+  if (!entries.length) return null;
+  return (
+    <section aria-label="澄清问答">
+      <SectionTitle>澄清问答</SectionTitle>
+      <dl className="clarification-list">
+        {entries.map(([id, item]) => (
+          <div className="clarification-item" key={id}>
+            <dt>
+              <code className="clarification-id">{id}</code>
+              <span className="clarification-question">
+                {item.question}
+                {item.withdrawn && (
+                  <span className="clarification-status">已撤回</span>
+                )}
+              </span>
+            </dt>
+            <dd className={item.answer ? undefined : "clarification-pending"}>
+              {item.answer ?? "未回答"}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 function formatTime(at: string) {
   if (Number.isNaN(new Date(at).getTime())) return at;

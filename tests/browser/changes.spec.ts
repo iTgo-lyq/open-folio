@@ -1,4 +1,107 @@
 import { test, expect, repositoryQuery } from "./connected";
+import { primaryRecord, type Snapshot } from "../../src/lib/model";
+
+test("clarifications show final answers in numeric order across updates and narrow screens", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const group = data.changes.find((g) => g.id === "document-reader")!;
+  const state = primaryRecord(group)!.state!;
+  state.clarifications = {
+    Q10: {
+      round: 2,
+      question: "是否保留翻页入口？",
+      recommendation: "不要展示推荐",
+      answer: "保留在正文底部。",
+      withdrawn: "不要把撤回原因当成回答",
+    },
+    Q2: {
+      round: 1,
+      question: "是否记住阅读位置？",
+      recommendation: "不要展示推荐",
+    },
+    Q1: {
+      round: 1,
+      question: "目录如何显示？",
+      recommendation: "不要展示推荐",
+      answer: "最初回答",
+      source: "不要展示来源",
+    },
+  };
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader`);
+  const section = page.getByRole("region", { name: "澄清问答" });
+  await expect(section.locator(".clarification-id")).toHaveText([
+    "Q1",
+    "Q2",
+    "Q10",
+  ]);
+  await expect(section.getByText("最初回答", { exact: true })).toBeVisible();
+
+  const finalAnswer = `默认收起。\n完整链接：https://example.test/${"reference".repeat(30)}\n<img src=x onerror=alert(1)>`;
+  state.clarifications.Q1.answer = finalAnswer;
+  await page.reload();
+  const items = section.locator(".clarification-item");
+  await expect(items.nth(0).locator("dd")).toHaveText(finalAnswer);
+  await expect(section).not.toContainText("最初回答");
+  await expect(items.nth(1).locator("dd")).toHaveText("未回答");
+  await expect(items.nth(2)).toContainText("已撤回");
+  await expect(items.nth(2).locator("dd")).toHaveText("保留在正文底部。");
+  await expect(section).not.toContainText("不要");
+  await expect(section.locator("img")).toHaveCount(0);
+  await page.screenshot({ path: "artifacts/clarifications-desktop.png" });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await section.scrollIntoViewIfNeeded();
+  expect(
+    await page
+      .locator(".drawer-body")
+      .evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true);
+  await expect(items.nth(0).locator("dd")).toHaveCSS("white-space", "pre-wrap");
+  await page.screenshot({ path: "artifacts/clarifications-mobile.png" });
+});
+
+test("clarifications are hidden for old and empty records and available in archives", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const archived = primaryRecord(
+    data.changes.find((g) => g.id === "source-connect")!,
+  )!.state!;
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=changes&c=source-connect`);
+  await expect(page.getByRole("dialog").getByText("交付已归档")).toBeVisible();
+  const section = page.getByRole("region", { name: "澄清问答" });
+  await expect(section).toHaveCount(0);
+  archived.clarifications = {};
+  await page.reload();
+  await expect(page.getByRole("dialog").getByText("交付已归档")).toBeVisible();
+  await expect(section).toHaveCount(0);
+  archived.clarifications.Q1 = {
+    round: 1,
+    question: "首先接入哪个平台？",
+    recommendation: "GitHub",
+    answer: "先接入 GitHub。",
+  };
+  await page.reload();
+  await expect(section.getByText("首先接入哪个平台？")).toBeVisible();
+  await expect(
+    section.getByText("先接入 GitHub。", { exact: true }),
+  ).toBeVisible();
+});
+
 test("a narrative Plan uses default serial order without a source warning", async ({
   page,
 }) => {
