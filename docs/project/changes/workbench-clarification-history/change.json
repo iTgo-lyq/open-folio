@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "workbench-clarification-history",
+  "title": "工作台展示澄清问答",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "change/workbench-clarification-history",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "绘制原型并在 Change 详情展示澄清问答",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "这次是否需要先画原型？",
+      "recommendation": "直接沿用现有样式实现；这是详情中的简洁问答列表。",
+      "answer": "先绘制原型"
+    }
+  }
+}
