@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "central-change-routing",
+  "title": "集中管理 Change 入口与独立工作区执行",
+  "size": "large",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "change/central-change-routing",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "定义集中入口与引用契约",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "实现集中规划与可恢复移交",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "实现工作区定位与会话续接",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "实现后台定向收集与增量刷新",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "统一工作台与关联材料的权威来源",
+      "status": "todo"
+    },
+    "T6": {
+      "title": "交付迁移接入与本仓库试运行",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "待评审完整需求；技术方案与执行计划已按本轮要求一并整理供审阅"
+  }
+}
