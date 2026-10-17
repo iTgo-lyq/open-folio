@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "clear-requirement-writing",
+  "title": "简明且可判断的需求写作",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/clear-requirement-writing",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "完善需求写作并核对相关文档规则",
+      "status": "done",
+      "verification": "技能校验、差异及引用检查通过；iclaude 独立评审和两项修正复验通过，证据见 review.md。",
+      "commitTitle": "clear-requirement-writing T1: clarify concise requirement writing"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-17T23:34:57.918Z",
+      "summary": "技能与差异检查通过；iclaude 独立评审、样本检验及修正复验通过，见 review.md。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-17T23:34:57.983Z",
+      "summary": "Agent 自验收通过：写作指引覆盖本次需求，校验与 iclaude 复验通过。",
+      "source": "SpecTrail small 自验收规则；本次未要求人工验收。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-17T23:34:58.046Z",
+      "summary": "本次完善需求写作方法与说明组织，未改变产品能力、流程状态或长期技术契约，既有 Specs 仍适用。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-17T23:34:58.109Z",
+      "summary": "需求写作规则完成校验、独立评审和自验收，保存复验记录后归档。",
+      "path": "docs/project/archive/2026-10-18-clear-requirement-writing"
+    }
+  }
+}
