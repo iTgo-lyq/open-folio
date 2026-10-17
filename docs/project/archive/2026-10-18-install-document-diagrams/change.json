@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "install-document-diagrams",
+  "title": "项目安装文档绘图 skill",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/install-document-diagrams",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "安装并校验项目绘图 skill",
+      "status": "done",
+      "verification": "83 个发布文件与源提交一致；安装完整性、内部引用、skill 格式、24 个 Python 语法及差异检查通过",
+      "commitTitle": "chore: install document diagrams skill"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-17T23:04:25.113Z",
+      "summary": "Agent 自查确认项目级安装完整、无外部工作区依赖；全部来源一致性和安装检查通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-17T23:04:25.178Z",
+      "summary": "按用户安装并推送 main 的明确授权交付项目绘图 skill",
+      "source": "用户：我们自己安装一下推送main吧"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-17T23:04:25.240Z",
+      "summary": "仅安装现有绘图 skill，未改变应用能力或既有 SpecTrail 配图规则，无产品 Spec 变更"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-17T23:04:25.303Z",
+      "summary": "document-diagrams 项目级安装、来源和完整性校验完成，沿用用户推送 main 授权归档",
+      "path": "docs/project/archive/2026-10-18-install-document-diagrams"
+    }
+  }
+}
