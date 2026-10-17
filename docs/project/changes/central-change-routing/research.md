@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | skill 默认每个 Change 一条分支，JSON 只在所属分支更新；同分支只允许一个普通执行/关闭 Change | [主 skill](../../../../.agents/skills/spec-trail/SKILL.md) | 集中规划、执行移交及规划父项需要显式调整规则，不能只改提示词。 |
 | 状态命令从当前工作树枚举 records，要求 `state.branch` 等于当前分支；JSON 写入使用 common-dir 锁 | [change.mjs](../../../../.agents/skills/spec-trail/scripts/change.mjs) | 需要跨来源定位与专用移交语义；既有锁不覆盖 Markdown 编辑和 Git 发布全过程。 |
-| WorkflowConfig 与 ChangeState 的 schemaVersion 均严格为 1；CLI/hook 共用校验，后台另有 Zod 定义并复用澄清与原型校验 | [state-schema.mjs](../../../../.agents/skills/spec-trail/scripts/state-schema.mjs)、[server/schema.ts](../../../../src/server/schema.ts) | 新配置与引用契约要统一维护，不能偷偷增加现有记录字段或继续复制新定义。 |
-| hook 校验暂存区 workflow/change JSON，另有原型跨文件检查 | [pre-commit.js](../../../../.agents/skills/spec-trail/setup/scripts/pre-commit.js) | 引用形态与目录互斥需新增暂存区校验；仍须由命令核对远端条件。 |
+| WorkflowConfig 与 ChangeState 的 schemaVersion 均严格为 1；CLI/hook 共用校验，后台另有 Zod 定义并复用澄清与原型校验 | [state-schema.mjs](../../../../.agents/skills/spec-trail/scripts/state-schema.mjs)、[server/schema.ts](../../../../src/server/schema.ts) | 新配置与 branch 定位规则要统一维护；ChangeState 沿用现有结构。 |
+| hook 校验暂存区 workflow/change JSON，另有原型跨文件检查 | [pre-commit.js](../../../../.agents/skills/spec-trail/setup/scripts/pre-commit.js) | 保持完整 JSON 结构校验，来源相关语义先判断 branch 归属；集中副本与目标副本并存不构成互斥错误，远端条件由命令核对。 |
 | GitReader 查询全量 heads 与 archive-v2 tags，宽泛 fetch；默认分支扫 docs/project，其余分支扫 changes/archive | [git.ts](../../../../src/server/git.ts) | 定向读取要同时改变发现、拉取与正文来源；仅过滤列表不能减少收集成本。 |
 | 未变化分支复用文档，blob 内容按 SHA 去重；来源语义由 scanFingerprint 区分 | [git.ts](../../../../src/server/git.ts) | 保留增量能力，新增引用目标提交清单；集中分支未变不能成为跳过目标查询的条件。 |
 | 接入探测查询全部 heads，并检查默认分支、守护分支存在性 | [discovery.ts](../../../../src/server/discovery.ts) | 新模式的接入探测也必须改成配置后定向查询。 |
@@ -28,7 +28,7 @@
 
 本方案明确修正或不采用的建议：
 
-- 不保留带陈旧 stage/tasks 的完整 JSON 当指针；采用独立引用，遵循用户最后明确的入口语义。
+- 用户明确要求复用 `change.json.branch`。集中副本可保留旧 stage/tasks 和正文，读取端沿 branch 找权威记录，不将旧字段作为当前状态；不新建引用文件、不清空目录或增加格式替换提交。
 - 不以全分支扫描作为新模式运行时兜底；只在显式旧模式和一次性迁移中使用。
 - 不把本机未提交状态排在已推送状态之上作为共享流程事实；本机现场只用于继续工作与恢复。
 - 不能声称完全没有会话发现/创建工具；当前存在相关工具，但对任意已有 worktree 的绑定有接口限制。
@@ -37,6 +37,8 @@
 - 不使用“若干天后达到扫描上限”的估算作为优先级依据；本次目标来自用户明确的协作方式，而非未经测量的增长预言。
 
 这些是讨论后的设计判断，具体契约以 Technical 草案为准，实际批准以用户确认记录为准。
+
+2026-10-18 用户进一步澄清：“这样子我觉得会产生无意义的多余提交，没必要。就靠 change.json 记录 branch 就行了。”据此取消独立引用文件的提案，保留原 Change 目录，直接使用已有 branch 字段定位。这是用户的明确约束，不是 iclaude 的能力结论。
 
 ## 会话工具能力与限制
 

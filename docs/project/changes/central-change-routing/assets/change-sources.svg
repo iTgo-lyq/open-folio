@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="change-sources-title change-sources-desc">
   <title id="change-sources-title">集中 Change 入口与独立执行来源</title>
-  <desc id="change-sources-desc">主工作区固定在协作分支，移交后的集中入口指向保存完整状态的工作分支，后台定向读取，执行会话绑定对应独立工作区。</desc>
+  <desc id="change-sources-desc">主工作区固定在协作分支，原有 change.json 的 branch 定位保存最新状态的工作分支，后台定向读取，执行会话绑定对应独立工作区。</desc>
   <defs>
     <style>
       text { font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif; }
@@ -28,7 +28,7 @@
   <rect x="280" y="184" width="64" height="14" rx="2" fill="#ffffff"/>
   <text x="312" y="195" class="secondary" text-anchor="middle">讨论 / 查找</text>
   <rect x="608" y="168" width="80" height="14" rx="2" fill="#ffffff"/>
-  <text x="648" y="179" class="secondary" text-anchor="middle">工作分支引用</text>
+  <text x="648" y="179" class="secondary" text-anchor="middle">branch 指向</text>
   <rect x="488" y="328" width="72" height="14" rx="2" fill="#ffffff"/>
   <text x="492" y="339" class="secondary">先读集中目录</text>
   <rect x="272" y="400" width="80" height="14" rx="2" fill="#ffffff"/>
@@ -50,9 +50,9 @@
   <rect x="372" y="140" width="44" height="16" rx="2" fill="#ffffff"/>
   <text x="394" y="152" class="secondary" text-anchor="middle">Git</text>
   <text x="376" y="180" class="label">协作分支 · 集中入口</text>
-  <text x="376" y="208" class="body">规划时：完整 Change 记录</text>
-  <text x="376" y="236" class="body">移交后：仅 reference.json</text>
-  <text x="376" y="264" class="secondary">不复制执行状态或本机路径</text>
+  <text x="376" y="208" class="body">保留 change.json 与原正文</text>
+  <text x="376" y="236" class="body">branch 定位当前所属分支</text>
+  <text x="376" y="264" class="secondary">移交后，旧状态不再作为当前依据</text>
 
   <rect x="696" y="160" width="200" height="96" rx="6" fill="#ffffff"/>
   <rect x="696" y="160" width="200" height="96" rx="6" fill="#d1fae5" stroke="#22c55e"/>
@@ -76,7 +76,7 @@
   <text x="712" y="416" class="label">独立 worktree</text>
   <text x="712" y="440" class="secondary">执行会话核验绑定后写入</text>
 
-  <text x="64" y="512" class="body">本机位置与会话由运行信息管理；远端入口只保存分支。</text>
+  <text x="64" y="512" class="body">入口复用 change.json.branch；当前状态与正文以目标分支为准。</text>
   <line x1="40" y1="540" x2="920" y2="540" stroke="#94a3b8" stroke-width="0.8"/>
   <text x="40" y="568" class="secondary">箭头表示定位或读取方向；正文另述移交顺序、恢复与历史来源。</text>
 </svg>

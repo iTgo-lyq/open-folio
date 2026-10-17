@@ -34,8 +34,13 @@
     }
   },
   "closure": {},
+  "rework": {
+    "at": "2026-10-17T23:55:20.146Z",
+    "reason": "用户明确入口仅复用 change.json.branch，独立引用文件会增加无意义提交",
+    "approach": "保留集中 change.json 和原正文，按 branch 读取目标最新状态，移除文件替换和目录清理步骤"
+  },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "待评审完整需求；技术方案与执行计划已按本轮要求一并整理供审阅"
+    "summary": "已按用户明确要求改用 change.json.branch；完整需求、方案与计划待评审"
   }
 }
