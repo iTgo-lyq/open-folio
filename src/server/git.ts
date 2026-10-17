@@ -16,11 +16,12 @@ import { createHash } from "node:crypto";
 import type { Branch, DocumentRef, Limits, Snapshot } from "../lib/model.ts";
 import { inspectMarkdown } from "../lib/markdown.ts";
 import { AppError } from "./errors.ts";
+import { isSvgImage } from "./svg.ts";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([1, limits]));
+  hash(JSON.stringify([2, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -43,6 +44,7 @@ export function imageMime(b: Buffer): string | undefined {
     ["avif", "avis"].includes(b.subarray(8, 12).toString())
   )
     return "image/avif";
+  if (isSvgImage(b)) return "image/svg+xml";
 }
 export class GitReader {
   directory: string;
@@ -461,7 +463,7 @@ export class GitReader {
             ? "markdown"
             : path.endsWith(".json")
               ? "json"
-              : /\.(png|jpe?g|gif|webp|avif)$/i.test(path)
+              : /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(path)
                 ? "image"
                 : "unsupported",
           title: path.split("/").at(-1)!,
@@ -518,7 +520,8 @@ export class GitReader {
           if (!doc.readable)
             doc.diagnostics.push({
               code: "IMAGE_FORMAT",
-              message: "图片签名不属于支持的格式。",
+              message:
+                "图片格式无效或不受支持；SVG 需为 UTF-8 XML，且不含 DTD 或处理指令。",
               path,
               severity: "warning",
             });

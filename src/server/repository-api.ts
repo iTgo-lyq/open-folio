@@ -132,8 +132,14 @@ export async function repositoryResponse(
             return new Response(new Uint8Array(body), {
               headers: {
                 ...privateHeaders,
-                "Content-Type": document.mime,
-                "Content-Security-Policy": "default-src 'none'; sandbox",
+                "Content-Type":
+                  document.mime === "image/svg+xml"
+                    ? "image/svg+xml; charset=utf-8"
+                    : document.mime,
+                "Content-Security-Policy":
+                  document.mime === "image/svg+xml"
+                    ? "default-src 'none'; style-src 'unsafe-inline'; sandbox; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+                    : "default-src 'none'; sandbox",
               },
             });
           }

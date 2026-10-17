@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "document-diagram-support",
+  "title": "文档绘图接入与 SVG 阅读支持",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/document-diagram-support",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "接入可选绘图 skill、精简配图指引并整合 SVG 阅读交付",
+      "status": "done",
+      "verification": "SVG 与同步测试 5/5、setup 测试 10/10、两个 skill 格式校验及差异检查通过；11 个保留文件与原 main 完全一致",
+      "commitTitle": "feat: consolidate document diagrams and SVG reading"
+    },
+    "T2": {
+      "title": "落实 iclaude 评审与统一验收证据",
+      "status": "done",
+      "verification": "核对并保留原 SVG 实现的 173 项单元、类型及 9 项浏览器验证依据；两个 skill 校验和差异检查通过，评审项及改写范围已记录"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-17T19:17:09.336Z",
+      "summary": "本轮 15 项测试和 skill 校验通过；iclaude 独立评审未发现代码阻塞，已补齐评审证据与交付说明"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-17T22:25:49.928Z",
+      "summary": "用户验收通过，同意以单一整合提交覆盖 main 并清理临时分支",
+      "source": "用户：可以，强制覆盖 main 吧，临时分支也清理掉，最后只保留一个主工作区和 main 分支。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-17T22:25:50.000Z",
+      "summary": "核对并保留文档阅读 Spec 和 README 的 SVG 行为与边界；绘图接入规则维护在 SpecTrail skill"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-17T22:25:50.069Z",
+      "summary": "SVG 阅读与可选绘图接入统一交付；iclaude 复核和用户验收通过，三个旧 Change 整合为一个归档",
+      "path": "docs/project/archive/2026-10-18-document-diagram-support"
+    }
+  },
+  "rework": {
+    "at": "2026-10-17T19:16:51.953Z",
+    "reason": "落实 iclaude 独立评审要求的证据与交付说明",
+    "approach": "补齐统一验证依据、安装询问措辞和评审记录，再核对单提交候选与人工验收等待"
+  }
+}

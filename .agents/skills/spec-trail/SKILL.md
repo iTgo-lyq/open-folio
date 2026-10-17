@@ -56,6 +56,12 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 
 Markdown 不维护阶段、完成勾选、任务或审批状态，也不能用正文证据替代 JSON 状态。JSON 只使用已声明字段，文本不填空字符串，尚未发生的可选记录省略。
 
+### 文档配图
+
+需求与技术方案涉及跨角色流程、组件关系或状态变化，且仅靠文字不易理解时，考虑补充图片；简单内容不强制配图。
+
+图片保存到所属文档旁的 `assets/` 目录，以 Markdown 相对图片链接引用。
+
 ## 状态操作入口
 
 常规 `change.json` 创建和修改统一使用主 skill 自带的 [语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/scripts/change.mjs <command> --change <id>`。调用前按需读取命令说明；不要手写 JSON、用通用 patch 或临时 Python/JS 拼接状态。正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。

@@ -2,6 +2,7 @@ import { symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, type ChangeState } from "../src/lib/model.ts";
+import { diagramSvg, isolatedSvg } from "./svg-fixture.ts";
 export async function seed() {
   const f = await fixture();
   const at = "2026-10-02T08:00:00+08:00",
@@ -39,6 +40,14 @@ export async function seed() {
     "docs/project/specs/platform/spec.md",
     "# 工程协作\n\n让已实现的能力、正在发生的变化与交付依据保持清晰。\n\n## 能力边界\n\n每个项目由一个中心仓库承载。工作台读取已推送记录，提供持续可追溯的工程文档。\n\n| 对象 | 职责 |\n| --- | --- |\n| Spec | 当前已实现且有效的能力 |\n| Change | 目标、实现过程与验收依据 |\n\n## 阅读方式\n\n- 以完整能力路径组织文档。\n- 页面保留分支和提交来源。\n- 内容仅通过工程流程更新。\n\n[阅读权限能力](./access/spec.md) · [缺失文档](./missing.md) · [危险链接](javascript:alert(1))\n\n## 重复标题\n\n第一节内容。\n\n## 重复标题\n\n第二节内容用于定位验证。\n\n<script>window.injected = true</script>\n\n![外部图片](https://example.test/track.png)\n\n![仓库示意](./pixel.png)\n",
   );
+  // Keep SVG checks on their own capability so existing navigation fixtures stay stable.
+  await f.put(
+    "docs/project/specs/diagrams/spec.md",
+    "# 图表阅读\n\n![架构示意](./diagram.svg)\n\n[打开架构图](./diagram.svg)\n\n![隔离示意](./isolated.svg)\n\n![损坏示意](./broken.svg)\n\n![外部示意](https://example.test/svg-probe-external.svg)\n",
+  );
+  await f.put("docs/project/specs/diagrams/diagram.svg", diagramSvg);
+  await f.put("docs/project/specs/diagrams/isolated.svg", isolatedSvg);
+  await f.put("docs/project/specs/diagrams/broken.svg", "<html>not SVG</html>");
   await f.put(
     "docs/project/specs/platform/pixel.png",
     Buffer.from(
