@@ -16,7 +16,7 @@ Don't mix orientations on one diagram.
   - **Name label** centered inside the trapezoid — `node-name` role, 12px 600.
   - **Sublabel** below or beside the name — `sublabel` role, 10px.
   - **Side annotation** (right or left) — optional. For funnels: drop-off percentage here (`−40%`).
-- Fill: subtle graded tints OR all paper-2 with hairline dividers (cleaner). Pick one.
+- Fill: use consistent semantic or categorical surfaces per level; quantities remain encoded by the type's geometry, not arbitrary hue or saturation.
 - Stroke: 1px hairline between layers; outer silhouette 1px muted or ink.
 - **accent on ONE layer only**: apex of pyramid, conversion layer of funnel, or critical bottleneck.
 - Optional left-margin axis arrow + `eyebrow`-role label (`rarer ↑`, `drop-off ↓`).

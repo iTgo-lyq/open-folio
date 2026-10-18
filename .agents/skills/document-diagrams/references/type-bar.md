@@ -12,7 +12,7 @@
 - **Y-axis labels:** right-aligned `arrow-label` role 10px in `muted`, at x=72 (8px left of the plot area).
 - **X-axis labels:** centered below each bar, `node-name` role 12px 600 for category names.
 - **Value labels:** `arrow-label` role 10px above each bar. Focal bar label in `ink`; others in `muted`.
-- **Focal bar:** 1 bar max in accent fill/stroke. All others in `muted @ 0.15` fill + `muted` stroke.
+- **Bar colors:** use semantic or categorical fills and matching strokes for all bars. Emphasize at most one focal bar with a heavier outline; it retains its role color.
 - **Y-axis line:** thin vertical `<line>` at x=80 from y=40 to y=420.
 
 ### Bar element pattern
@@ -21,25 +21,25 @@
 <!-- Opaque paper mask prevents bleed from background -->
 <rect x="X" y="Y" width="W" height="H" fill="{paper}"/>
 <!-- Bar body -->
-<rect x="X" y="Y" width="W" height="H" fill="{muted @ 0.15}" stroke="{muted}" stroke-width="1"/>
+<rect x="X" y="Y" width="W" height="H" fill="{role-fill}" stroke="{role-stroke}" stroke-width="1"/>
 <!-- Value label above bar -->
 <text x="X+W/2" y="Y-8" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">VALUE</text>
 ```
 
-Focal bar: replace fill with `accent @ 0.12`, stroke with `accent`, label fill with `accent`.
+Focal bar: keep its role fill and dark label color; increase the outline weight.
 
 ## Anti-patterns
 
 - More than 8 bars without grouping (illegible at normal scale).
 - Truncated y-axis (not starting at 0) — distorts the magnitude comparison.
-- Accent on more than 1 bar ("everything is important" = nothing is).
+- Focal weight on more than one bar. Repeated semantic/category colors are allowed.
 - 3-D bar extrusion — no shadows, no depth.
 - Category labels rotated more than 45°; prefer short labels or horizontal chart instead.
 
 ## Variants
 
 - **Grouped bars:** two bars per category, side by side. Use `accent` for the primary series and `series-1` for the secondary. Max 2 groups.
-- **Stacked bars:** segments stacked to total. Use `accent` for the focal segment; muted tints for others. Document the total at the top of each stack.
+- **Stacked bars:** segments stacked to total. Use a stable semantic/category color per segment series across bars, with one optional focal segment outlined more heavily. Document the total at the top of each stack.
 - **Dumbbell:** one row per category, two dots on a single shared horizontal scale joined by a hairline. Use it for a two-state comparison where the *distance* between the ends is the message — before/after, two cohorts, target vs actual. Two series only; a third dot makes the connector meaningless and the figure is a dot plot.
 
 ### Dumbbell layout
@@ -60,7 +60,7 @@ Focal bar: replace fill with `accent @ 0.12`, stroke with `accent`, label fill w
 - **Tick labels:** centered under each gridline at y=440, `arrow-label` role 10px `muted`.
 - **Axis title:** the value axis carries the family's axis label — `eyebrow` role 10px `muted`, ``, centered at x=580, y=456, below the tick labels and clear of the legend rule. A horizontal axis takes the un-rotated form the scatter x-axis uses, not the `rotate(-90 24 230)` form the column charts apply to their y-axis. The category axis needs no title: the row labels name themselves.
 - **Dots:** r=6, positioned by value. Style by *series*: the reference end hollow (paper fill, `muted` stroke 1.5px), the focal end solid `accent` with a 1px `ink` stroke. Both marks therefore have a boundary above 3:1 with contrast measured against the actual background — see below. Fill weight, not hue, carries the pairing.
-- **Accent marks the series, not a focal row.** The solid dot repeats on every row — the one place this variant departs from the one-accent rule above, because the two ends must be told apart in each pair. Do not additionally accent a "most changed" row; the sort order already carries rank.
+- **The hollow/solid treatment identifies the paired series, not a focal row.** Repeat it on every row, with stable series hues. Do not additionally emphasize a most-changed row; the sort order already carries rank.
 - **Connector:** `ink @ 0.55` 1px (`rgba(30,41,59,0.55)` under the white background, the value `scripts/verify-dumbbell.py` checks), declared before both dots so the dots cap it. It is not the axis hairline: the connector is what says *these two dots are one row*, so it has to clear 3:1 (verify the actual composited color rather than reusing a ratio from another palette).
 - **Endpoint positions round, they never snap.** `x = 200 + (v − floor) ÷ (ceil − floor) × 760`, with `floor` and `ceil` set by the axis rule below, rounded to the nearest integer pixel — at most 0.5px, below one rendered pixel. Data coordinates are exempt from the 4px grid; snapping them moves the data.
 - **Value labels sit outside the pair, placed by geometry rather than by series.** A focal value *below* its reference reverses the dots, so derive `x_left = min(x_ref, x_focal)` and `x_right = max(x_ref, x_focal)`: left label right-anchored at `x_left − 12`, right label left-anchored at `x_right + 12`, both baseline `y + 4`, `arrow-label` role 10px `muted`, each still carrying its own series' value. Keying the offsets to start/end instead puts both labels *inside* the pair on every decreasing row.

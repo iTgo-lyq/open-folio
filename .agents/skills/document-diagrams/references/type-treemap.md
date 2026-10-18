@@ -10,8 +10,8 @@ Not for: ranked lists where exact values matter more than proportion (use a **ba
 - **Squarified layout** (Bruls et al., 2000): sort descending, lay each row against the *shorter* side of the remaining rectangle. Aspect ratios stay near 1, which is what makes two areas comparable by eye. Never lay cells out in simple stripes — long thin cells cannot be compared.
 - **Cell count:** 4–8. Past 8, the tail becomes unlabelable slivers — group the tail into a single explicit "Other" cell and name what it contains in the source line.
 - **4px grid:** cell edges snap to the grid like everything else, with a 4px gutter between cells. Snapping and gutters both move area, so check the result — and check it as **relative** error (`(drawn − true) ÷ true`), not percentage points. A 0.1pp slip is nothing on a 59% cell and a quarter of a 0.5% cell; absolute error hides exactly the mistake you need to catch. Keep every cell within a few percent of its true share — the illustrative example is within 2.7%, its worst case being the sliver, where the grid cannot do better — and state the encoding in the source line (`AREA = POPULATION`). `scripts/verify-treemap.py` gates this.
-- **Fill:** a rank-ordered `ink` opacity ramp (e.g. `0.16 → 0.04`), so the non-focal order survives greyscale printing and colour-blind readers. One accent cell only — the editorially focal one, not automatically the largest. Note what this does *not* buy you: the focal cell is painted off-ramp, so in greyscale it lands wherever its tint happens to fall, not at its rank. Identify it by the accent stroke, and never let tone carry meaning the area doesn't already carry.
-- **Stroke:** 1px `ink @ 0.30` hairline on every cell; the focal cell takes a 1.5px `accent` stroke.
+- **Fill:** use semantic/category light fills for the cells. Keep category colors stable and label every category. Area carries the share; an optional tonal ramp must not replace area or introduce a second quantity. Emphasize at most one focal cell with its heavier outline.
+- **Stroke:** 1px contrasting role/category outline on each cell; the focal cell retains its hue with a 1.5px outline.
 - **Labels sit inside the cell**, top-left, 16px in from the edge: name in the `node-name` role 12px 600, value in the `sublabel` role 10px on the next line. Three tiers by cell size:
   - large — name + value + share (`4.78B · 59% of world`)
   - medium — name + value
@@ -44,12 +44,12 @@ Without it, a verifier has to infer the intended share from the text inside the 
 <!-- Opaque white mask keeps the tint independent of content behind it -->
 <rect x="X" y="Y" width="W" height="H" rx="2" fill="{paper}"/>
 <!-- Cell body -->
-<rect x="X" y="Y" width="W" height="H" rx="2" data-share="18.29" fill="{ink @ 0.16}" stroke="{ink @ 0.30}" stroke-width="1"/>
+<rect x="X" y="Y" width="W" height="H" rx="2" data-share="18.29" fill="{role-fill}" stroke="{role-stroke}" stroke-width="1"/>
 <text x="X+16" y="Y+28" fill="{ink}" font-size="{node-size}" font-weight="600" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">NAME</text>
 <text x="X+16" y="Y+46" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">VALUE · SHARE</text>
 ```
 
-Focal cell: replace the fill with `accent @ 0.16` and the stroke with `accent` at 1.5px.
+Focal cell: retain its semantic/category fill and stroke hue; use a 1.5px outline and `data-focal="true"`.
 
 ## Honest-data rule
 
@@ -62,7 +62,7 @@ Watch the smallest cell hardest: it is the one that grid snapping and gutters di
 - More than 8 cells without an "Other" bucket (unlabelable slivers).
 - A stated total the cells contradict by more than display rounding — or rounding that is never disclosed. Rounded parts that miss the total by a hair are honest once the source line says so; silently printing figures that don't reconcile is not.
 - Stripe layout instead of squarified — defeats area comparison.
-- Rainbow fills: one hue per cell destroys the rank reading and the one-accent rule.
+- Unlabeled or inconsistent category hues; changing cell area to accommodate color.
 - Nesting more than two levels deep in a static diagram; a second level needs a heavier border and its own label tier, and a third is unreadable without interaction.
 - 3-D or shadowed cells — area is already the message.
 
@@ -88,7 +88,7 @@ Not for: a one-way split (that is the parent treemap, and a marimekko with one s
 
 #### Colour
 
-The treemap's colour section holds here with one change: the ramp runs **per series, not per cell**. Every segment of one series takes one `ink` opacity — strongest on the series with the largest overall total (`0.16 → 0.10 → 0.05`) — so a row reads as one thing across the figure and the legend needs one key per series, not a direction word. One accent segment, marked by its `accent` stroke at 1.5px and the accent tint, on the editorially focal cell. Labels stay `ink` (names) and `muted` (amounts) everywhere, and the top of the ramp stays at the treemap's contrast ceiling for the same reason.
+Use one semantic/category color per series, repeated across every column and keyed in the legend. One optional focal segment keeps its series hue and uses the 1.5px outline plus `data-focal="true"`. Preserve column-width, conditional-height and joint-area encodings; labels use primary or semantic dark text.
 
 #### Honest-data rule
 
@@ -103,7 +103,7 @@ The treemap's colour section holds here with one change: the ramp runs **per ser
 Every segment is one `<rect>` (over its paper mask, as in the parent) carrying the category, the series and the amount. Every visible string is bound to what it describes.
 
 ```svg
-<rect x="580" y="106" width="216" height="314" rx="2" data-column="mobile" data-segment="macOS" data-amount="1980" fill="{accent @ 0.16}" stroke="{accent}" stroke-width="1.5"/>
+<rect x="580" y="106" width="216" height="314" rx="2" data-column="mobile" data-segment="macOS" data-amount="1980" fill="{accent @ 0.16}" stroke="{accent}" stroke-width="1.5" data-focal="true"/>
 <text data-column="mobile" data-segment="macOS" data-role="label" x="596" y="152" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">1,980 min · 83% of mobile</text>
 <text data-column="mobile" data-role="caption" x="688" y="438" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">mobile · 24%</text>
 <!-- Key: the node-name family at regular weight; swap in the visual palette's sans stack -->
@@ -117,8 +117,10 @@ Every segment is one `<rect>` (over its paper mask, as in the parent) carrying t
 - Equal-width columns — that is a 100% stacked bar, and the category sizes are gone.
 - Columns of different heights, or a gutter between segments — height stops being a share of anything.
 - A series in a different order in one column, or one drawn at zero height where it is absent.
-- One hue per series instead of the ink ramp plus a single accent; a legend that names the ramp by tone instead of by series.
+- Inconsistent hues for the same series across columns, or a legend that gives decorative tone a numeric meaning.
 - A column widened, or a segment padded, to fit its label.
 - A category or series silently dropped from the grid.
 - More than 5 series or 8 categories without an "Other".
 - A stated total the segments contradict by more than display rounding.
+
+Focal metadata: declare `data-focal="true"` on the bound focal mark itself. Semantic blue on any other mark does not make it focal; apply the existing outline/weight cues independently of hue.

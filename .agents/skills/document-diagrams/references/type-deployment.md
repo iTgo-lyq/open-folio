@@ -14,7 +14,7 @@ Three nesting levels, outermost to innermost — reuses the containment grammar 
 
 **Network paths.** Orthogonal elbows between nodes (SKILL.md §6, elbow formula and port-selection rules in `type-architecture.md`), labelled with protocol and port in the `arrow-label` role at 10px (`HTTPS:443`, `TLS:5432`). A path that crosses a zone boundary is `link`-blue; a path that stays inside one zone is `muted`. Async or replication paths are dashed `5,4`.
 
-**Focal rule.** The 2 accent elements are the single-point-of-failure or the newly-introduced piece — never more than 2. In the canonical example: the RDS primary (accent-tint fill, accent stroke) and the replication path to its standby (accent, dashed).
+**Focal rule.** The 2 focal elements are the single-point-of-failure or the newly-introduced piece — never more than 2. In the canonical example: the RDS primary (accent-tint fill, accent stroke) and the replication path to its standby (accent, dashed).
 
 ## Complexity budget
 
@@ -24,7 +24,7 @@ Three nesting levels, outermost to innermost — reuses the containment grammar 
 | Max infrastructure nodes | 6 |
 | Max artifact chips | 9 |
 | Max network paths | 8 |
-| Max accent elements | 2 |
+| Max focal elements | 2 |
 
 Over budget → split into one deployment diagram per environment.
 

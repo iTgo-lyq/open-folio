@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "update-document-diagrams",
+  "title": "同步 document-diagrams 上游最新源码",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/update-document-diagrams",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "同步完整技能目录并验证安装与配色校验行为",
+      "status": "done",
+      "verification": "83 个文件与上游固定提交一致，安装引用及 24 个 Python 语法检查通过，项目副本上 21 项配色和运行测试通过",
+      "commitTitle": "update-document-diagrams T1: sync latest upstream source"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T09:43:13.530Z",
+      "summary": "Agent 自查通过，83 个文件一致性、安装引用、24 个 Python 语法及 21 项运行回归均通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T09:43:15.173Z",
+      "summary": "Agent 自验收：最新源提交完整同步，安装及运行检查通过，无未解决验收项",
+      "source": "requirement.md 验收项与 execution.md 验证证据"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-18T09:43:16.871Z",
+      "summary": "仅更新项目内技能源码，未改变 OpenFolio 产品能力或长期核心方案"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T09:43:18.642Z",
+      "summary": "最新 document-diagrams 源码同步已通过完整性和运行验证，Agent 自验收后归档",
+      "path": "docs/project/archive/2026-10-18-update-document-diagrams"
+    }
+  }
+}

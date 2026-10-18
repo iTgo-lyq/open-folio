@@ -11,7 +11,7 @@ The resulting pixels-per-unit scale and relative comparisons must also be finite
 - **Nodes are vertical bars**, `width=12`, solid `ink` fill, no stroke. Height is proportional to the quantity passing through, rounded to the nearest 4px so it stays on-grid — the rounding is a rendering step, not a data change; the true value still prints in the quantity sublabel.
 - **Flows are filled ribbons**, not stroked lines: a single closed `<path>` per flow. Top edge is a cubic Bézier from the source node's top-offset to the target node's top-offset; bottom edge is the same curve run in reverse from target-bottom back to source-bottom. **Both** control points sit at the horizontal midpoint between the two columns, each at the y of the end it belongs to: `C midX,y0 midX,y1 targetX,y1`. That is what makes the band leave and arrive **horizontally**, so it plugs into each bar square-on. Putting the second control on the target's x instead (`C midX,y0 targetX,y1 targetX,y1`) collapses it onto the endpoint, the arrival tangent degenerates, and every ribbon meets its bar at a visible slant — it looks like the band is not attached.
 - **No arrowheads, ever.** Direction is implied by the left-to-right column order. This is a deliberate, explicit exemption from SKILL.md §6's orthogonal-elbow-and-arrowhead rule: ribbons are area encodings, not connectors, and a marker on a filled band reads as clutter, not information.
-- **Ribbon fill:** `muted` at `0.18` opacity for ordinary flows. The one editorial focal path (see below) uses `accent` at `0.28` opacity. A focal path may span more than one ribbon segment (e.g. two flows that both feed the same downstream node as halves of one story) — accenting every ribbon that belongs to that single path still counts as **one** focal element, not one per ribbon. Never per-flow rainbow coloring — color is reserved for the one path that deserves attention.
+- **Ribbon fill:** use consistent semantic/category colors for source groups or flow kinds, carried through their ribbon segments and named in the legend. Use light/translucent fills with distinguishable boundaries. The one editorial focal path may span several segments and still counts as one focus; strengthen its outline while preserving its hue. Ribbon width alone encodes quantity.
 - **Node ordering minimizes crossings.** Order nodes within each column so that flows converging on (or diverging from) the same node stay in a consistent top-to-bottom sequence across columns. If two ribbons still cross more than once, reorder the nodes — don't let them tangle.
 - **Labels:** node name in the `node-name` role 12px 600, quantity directly under it in the `sublabel` role 10px `muted`. Placement is column-specific: column 1 sits outside the bar, `text-anchor="end"`; column 2 sits in the gutter above its bar, `text-anchor="middle"`, **vertically centred in that gutter** rather than flush to the top, or the cap line grazes the bar above; column 3 sits outside the bar, `text-anchor="start"`.
 
@@ -50,7 +50,7 @@ Each column's node heights sum to the same 240px total — that invariant (total
 | Max stage columns | 3 |
 | Max nodes | 8 |
 | Max flows (ribbons) | 12 |
-| Max accent elements | 2 (a focal path's ribbons count as one, regardless of how many segments it spans) |
+| Max focal elements | 2 (a focal path's ribbons count as one, regardless of how many segments it spans) |
 
 Over budget → split into two linked Sankeys (e.g. an overview stage-1→stage-2 diagram plus a detail stage-2→stage-3 diagram) rather than cramming a fourth column or a ninth node into one canvas.
 
@@ -62,7 +62,7 @@ Over budget → split into two linked Sankeys (e.g. an overview stage-1→stage-
 - **A bar whose height disagrees with the number printed beside it.** See the scale rule: choose grid-friendly quantities when the data is yours to choose.
 - **Ribbons crossing more than once.** Reorder the nodes in the offending column; a Sankey with a tangle in the middle is unreadable.
 - **Ribbons thinner than 4px.** Merge them into an "other" band instead of drawing a sliver no one can see.
-- **Per-flow rainbow coloring.** One `muted` treatment for ordinary flows, one `accent` treatment for the flow that carries the editorial point — never a distinct hue per ribbon.
+- **Unexplained ribbon colors.** Map hues to stable source groups or flow meanings, not unrelated decoration on each segment.
 - **Using Sankey for a simple funnel.** A single narrowing quantity with no splits or merges is a pyramid/funnel, not a Sankey.
 - **Using Sankey for a plain step sequence.** If nothing splits, merges, or varies in thickness, it's a process diagram — the whole point of Sankey is quantity that branches.
 - **Stacking two flows at the same node-edge offset.** Every flow gets its own offset range within the node's height, in a consistent top-to-bottom order — never two ribbons overlapping at the same attach point.

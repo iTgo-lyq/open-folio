@@ -13,16 +13,14 @@ Four invariants:
    vocabulary is present. A missing cell is a gap in the reading that looks
    like "zero" but was never drawn.
 
-2. MONOTONE FILL — non-focal cells whose data-value is higher must have a fill
+2. MONOTONE SHARED-HUE FILL — non-focal cells whose data-value is higher must have a fill
    opacity that is >= the opacity of any cell with a lower data-value. The ramp
    must be non-decreasing: a lighter cell at a higher value inverts the visual
    scale and reverses every comparison. Cells with the same value must have the
    same opacity (tolerance ±0.03 to absorb floating-point representation).
 
-3. ONE FOCAL MAX — at most one cell carries data-focal="true" or uses accent
-   fill (RGB 59, 130, 246). The focal accent is an editorial marker
-   for the single cell whose story the figure is about; using it on more than one
-   inverts the ink-ramp contract the rest of the figure depends on.
+3. ONE FOCAL MAX — at most one cell declares data-focal="true".
+   Color alone never makes a cell focal.
 
 4. FAIL CLOSED — zero parseable cells is a finding. A heatmap with no cells is
    not an empty-data edge case; it is an authoring error or a parse failure, and
@@ -121,11 +119,6 @@ def _attr(attrs_str: str, name: str) -> str | None:
         if match.group("name") == name:
             return html.unescape(match.group("value"))
     return None
-
-
-def _is_accent(r: int, g: int, b: int) -> bool:
-    """Detect the blue accent before alpha compositing."""
-    return (r, g, b) == (59, 130, 246)
 
 
 def _parse_color(
@@ -293,14 +286,14 @@ def parse_cells(source: str, errors: list[str] | None = None) -> list[dict]:
             else:
                 if not (0.0 <= opacity <= 1.0):
                     opacity = None
-                elif _is_accent(r_ch, g_ch, b_ch):
-                    focal = True
-                    if _attr(attrs_str, "data-focal") != "true" and errors is not None:
-                        errors.append("accent fill requires data-focal=true")
 
-        expected_rgb = (59, 130, 246) if focal else (30, 41, 59)
-        if raw_rgb != expected_rgb and errors is not None:
-            errors.append("focal cells require accent blue RGB (59,130,246); non-focal cells require ink RGB (30,41,59)")
+        palette = {(30, 41, 59), (59, 130, 246), (245, 158, 11),
+                   (34, 197, 94), (168, 85, 247), (236, 72, 153)}
+        if focal:
+            palette |= {(219, 234, 254), (254, 243, 199), (209, 250, 229),
+                        (243, 232, 255), (252, 231, 243)}
+        if raw_rgb not in palette and errors is not None:
+            errors.append("heatmap fill must use a semantic palette hue or neutral ink")
 
         cells.append(
             {
@@ -308,6 +301,7 @@ def parse_cells(source: str, errors: list[str] | None = None) -> list[dict]:
                 "col": col,
                 "value": value,
                 "opacity": opacity,
+                "rgb": raw_rgb,
                 "focal": focal,
                 "fill": fill,
                 "x": _length_px(x, "x", errors),
@@ -451,6 +445,8 @@ def check_file(path: Path) -> list[str]:
 
     # Invariant 2: monotone fill ramp for non-focal cells.
     if non_focal:
+        if len({c["rgb"] for c in non_focal}) > 1:
+            errors.append(f"{path.name}: non-focal cells must share one hue for a comparable opacity ramp")
         opaque_missing = [c for c in non_focal if c["opacity"] is None]
         if opaque_missing:
             for c in opaque_missing:

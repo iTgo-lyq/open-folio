@@ -29,7 +29,7 @@ Round the content bounding box **up** to the next multiple of 4, then add the fi
 
 ### Type sizes
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ### Safe areas
 

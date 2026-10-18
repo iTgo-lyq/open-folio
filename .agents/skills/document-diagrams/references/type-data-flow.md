@@ -195,14 +195,16 @@ Four styles, bound to topology. Connectors are drawn **before** all node rects (
 
 ## 4. Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 5. Focal rule
 
+Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots.
+
 The data-flow diagram is built around **one cross-role handoff** that defines its central claim. Three focal slots, exactly one entry each:
 
-- **One focal step** (`steps[j].focal: true`) — typically the analytical pivot (Analyze, Model, …). Header chip and legend chip both render in accent.
-- **One focal node** (`nodes[i].focal: true`) — the node that *receives* the focal handoff. Accent border + accent role chip + ink title.
+- **One focal step** (`steps[j].focal: true`) — typically the analytical pivot (Analyze, Model, …). Header and legend chips retain their semantic color with focal weight.
+- **One focal node** (`nodes[i].focal: true`) — the node that *receives* the focal handoff. Heavier role-colored border + semantic role chip + dark role title.
 - **One focal arrow** (`arrows[i].style: "accent"`) — the cross-role handoff into the focal node. Solid accent stroke + labeled with a short payload descriptor (e.g., `anon data`).
 
 If zero or >1 of any focal slot are declared, halt and ask the user.
@@ -223,7 +225,7 @@ Before emitting SVG, verify **every** item:
 8. All other arrows unlabelled.
 9. All arrows emitted before any node rect (z-order rule).
 10. Single-bend routing only — no diagonals. Q-bezier `r=8` at each bend.
-11. Custom component colors ≤ 3 (in addition to the focal pair). Arrows never recolored by component `color`.
+11. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
 12. Subtitle and tool labels stay muted regardless of any component `color`.
 
 ---
@@ -275,7 +277,7 @@ All legend items align on a single horizontal strip per row. Do not stack vertic
 | Nodes per lane | Nodes = active steps only — empty cells are invisible (no placeholder box) |
 | Labelled arrows | 1 (focal accent only) |
 | Data-type chips per node | 2 |
-| Custom-colored elements (§4) | 3 (in addition to focal node + focal step) |
+| Semantic-colored elements | Not limited by the focal budget; use consistent role colors |
 
 Above 4 lanes or 6 steps: split into two diagrams (e.g., ingestion pipeline / analytics pipeline).
 
@@ -289,8 +291,8 @@ Above 4 lanes or 6 steps: split into two diagrams (e.g., ingestion pipeline / an
 - **`title` role for node titles** — node titles use the `node-name` role (technical context). Only the overall SVG heading uses the 16px `title` role.
 - **Accent on more than one node, one step, one arrow** — focal = one node + one step + one arrow, max.
 - **`node-name` role for role labels** — lane labels always use the `eyebrow` role (they are identifiers, not prose).
-- **`color` override on a focal element** — ignored. Accent always wins.
+- **Discarding a focal element's semantic color.** Keep its role palette and add outline emphasis.
 - **Custom-colored arrows** — arrows are topology-driven. Color on a node never spreads to its edges.
-- **Lane tints over-applied** — a tint on every lane reads as decoration, not signal. Apply to ≤1 lane.
+- **Unexplained lane tints.** Use quiet, consistent role/category surfaces for lanes; retain clear node boundaries and lane labels.
 
 ---

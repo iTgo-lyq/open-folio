@@ -21,9 +21,9 @@ Seven invariants:
    service as 36x the ink. Per-bubble consistency catches the global version
    too, because under r = c*size the ratio r^2/size is not constant.
 
-3. ONE ACCENT BUBBLE - at most one bound circle may carry the accent stroke,
+3. ONE ACCENT BUBBLE - at most one bound circle may declare data-focal=true,
    on either skin. A second accent bubble is a second "focal" claim, and the
-   one-accent rule is the whole colour system of the house style.
+   focal budget is independent of semantic/category colors.
 
 4. LARGEST FIRST - where two bubbles overlap, the one painted earlier must be
    the larger, or the smaller is buried under it and its area cannot be read.
@@ -160,13 +160,7 @@ CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 DECLARES_BUBBLE_RE = re.compile(r"\bdata-size\s*=", re.IGNORECASE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
-# The accent stroke on either skin, hex or rgba. The focal count keys on the
-# STROKE because the fill is a translucent tint the paper shows through; the
-# stroke is the mark's edge and the thing a reader identifies the accent by.
-ACCENT_RE = re.compile(
-    r"#3b82f6\b|#f08a59\b|rgba\(\s*59\s*,\s*130\s*,\s*246\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
-    re.IGNORECASE,
-)
+# Focal identity is declared by data-focal, independently of semantic hue.
 
 # Coordinates ship rounded to one decimal, so an honest point sits within
 # 0.05px of true; whole-pixel rounding sits within 0.5px. 1.0px clears both
@@ -564,7 +558,7 @@ def parse_bubbles(doc: _Scanner, findings: list, name: str) -> list:
                 % (name, line, label, parsed[5])
             )
             continue
-        accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
+        accent = attrs.get("data-focal", "").lower() == "true"
         bubbles.append(Bubble(label, parsed[0], parsed[1], parsed[2], parsed[3],
                               parsed[4], parsed[5], accent, line))
     return bubbles
@@ -703,14 +697,13 @@ def check_area(bubbles: list, findings: list, name: str) -> None:
 
 
 def check_focal(bubbles: list, findings: list, name: str) -> None:
-    """At most one bubble wears the accent."""
+    """At most one bubble declares data-focal=true."""
     accented = [b for b in bubbles if b.accent]
     for extra in accented[1:]:
         findings.append(
-            "%s:%d: bubble %r also carries the accent stroke — one accent bubble "
+            "%s:%d: bubble %r also declares data-focal=true — one focal bubble "
             "max (%r already has it). A second focal mark is a second editorial "
-            "claim, and the ink ramp exists so everything else stays ranked "
-            "without spending the accent"
+            "claim; semantic colors do not consume focal slots"
             % (name, extra.line, extra.name, accented[0].name)
         )
 
@@ -977,7 +970,7 @@ def main() -> int:
         print("OK bubble: no bubble chart found to check%s" % tail)
         return 0
     print("OK bubble: %d file(s), shared x and y scales, area proportional to every "
-          "declared size, at most one accent bubble, largest-first paint order, and "
+          "declared size, at most one focal bubble, largest-first paint order, and "
           "every bound label and tick agreeing with the mark it describes%s"
           % (checked, tail))
     return 0

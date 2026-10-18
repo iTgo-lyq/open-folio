@@ -7,7 +7,7 @@
 - **Plot area margins:** left 80px, bottom 60px, top 40px, right 40px — inside `0 0 1000 500` viewBox.
 - **Point count:** 5–30 points. Fewer → just describe the relationship in prose; more → bin into a density contour.
 - **Axes:** X at y=420 (baseline), Y at x=80. Both use `arrow-label` role 10px gridline labels. Gridlines 4–6 per axis at equal intervals.
-- **Point shape:** `<circle>` r=5 for standard points, r=6 for focal. Focal point in `accent` fill. Others in `muted @ 0.20` fill + `muted` stroke.
+- **Point shape:** `<circle>` r=5 for standard points, r=6 for focal. Use semantic/category fills with contrasting outlines; preserve the focal size cue independently of hue.
 - **Labels on points (optional):** `arrow-label` role 10px next to a point. Use a paper-fill rect mask behind the label. Label at most 2–3 points; not all.
 - **Trend line (optional):** `<line>` from lower-left to upper-right, stroke `ink @ 0.25` dashed 4,3. Never force a perfect fit — only add if the trend is visually obvious.
 - **Quadrant dividers (optional):** light dashed lines at the median x and y to split into quadrants. Label each quadrant in the `arrow-label` role at 10px, `muted`.
@@ -17,7 +17,7 @@
 ```svg
 <!-- Non-focal point — paper mask + circle -->
 <circle cx="X" cy="Y" r="5" fill="{paper}"/>
-<circle cx="X" cy="Y" r="5" fill="{muted @ 0.20}" stroke="{muted}" stroke-width="1"/>
+<circle cx="X" cy="Y" r="5" fill="{role-fill}" stroke="{role-stroke}" stroke-width="1"/>
 
 <!-- Focal point -->
 <circle cx="X" cy="Y" r="6" fill="{paper}"/>
@@ -36,7 +36,7 @@
 
 **Best for:** three quantities per item — x, y, and a magnitude — where the *joint* reading is the story: which items combine a bad position with a big footprint. The illustrative example plots services by p95 latency and error rate with area as request volume, and the point of the figure is exactly the multiplication a two-variable scatter cannot do — the slowest service barely matters and the risky one is not the slowest.
 
-Not for: a third value that is really a category (use the focal accent or facet it); two variables (that is the parent scatter — size on everything is decoration); or magnitudes spanning several orders (the small bubbles vanish; bin, or plot the magnitude on an axis of its own).
+Not for: a third value that is really a category (use a labeled category color or facet it); two variables (that is the parent scatter — size on everything is decoration); or magnitudes spanning several orders (the small bubbles vanish; bin, or plot the magnitude on an axis of its own).
 
 #### Layout conventions
 
@@ -51,10 +51,10 @@ Not for: a third value that is really a category (use the focal accent or facet 
 
 #### Colour
 
-- **One accent bubble, and an `ink` opacity ramp for everything else** — never a hue per item. Every labelled bubble is named where it sits, so hue would re-encode what the labels already carry.
+- **Bubble colors:** use role or category colors consistently, including on non-focal bubbles. At most one focal bubble, declared with `data-focal="true"`, receives a heavier outline without changing its data-scaled area.
 - **The accent marks the editorially focal item, not the biggest or the worst single number.** In the illustrative example it marks the service whose *combination* is the risk: near-peak volume on the worst error rate.
-- **The ramp runs faintest-on-largest** (0.14 on the largest fill up to 0.35 on the smallest in the illustrative example). This is ink-mass compensation, not an encoding: a giant bubble at the same opacity as a small one dominates the page by area alone, so opacity scales down as area scales up and every bubble ends up with comparable visual weight. Tone is **not** a fourth variable — the legend must say which end of the ramp is which, in skin-neutral terms ("faintest fill is the largest bubble" describes the opacity encoding without implying a different variable).
-- **Every bubble keeps a `muted` stroke.** The faint fill is not a boundary: measure the stroke against the actual background and keep it at least 3:1. Focal hue, labels and geometry provide redundant identification.
+- **Fill opacity:** use light semantic/category fills. Optional opacity compensation for large bubbles is decorative, not a numeric encoding; area alone encodes the declared third value.
+- **Every bubble needs a contrasting outline.** Use its role/category stroke or dark counterpart at 3:1; a neutral outline is also valid. A faint fill alone is not a boundary.
 - **Labels stay `ink` (names) and `muted` (values), including focal series.** Accent strokes are not text colors; measure the actual contrast.
 
 #### Honest-data rule
@@ -77,7 +77,7 @@ Not for: a third value that is really a category (use the focal accent or facet 
 <circle cx="537.6" cy="154" r="38.6" fill="{paper}"/>
 <circle data-name="Payments" data-x="260" data-y="2.8" data-size="760"
         cx="537.6" cy="154" r="38.6"
-        fill="{accent @ 0.15}" stroke="{accent}" stroke-width="1.2"/>
+        fill="{accent @ 0.15}" stroke="{accent}" stroke-width="1.2" data-focal="true"/>
 
 <!-- Its label, bound to the bubble it names -->
 <text data-name="Payments" data-role="label" x="538" y="108" fill="{ink}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">PAYMENTS</text>
@@ -96,7 +96,7 @@ What each binding buys, and what it costs to omit:
 | `data-name` on a label | Two labels could be exchanged between bubbles, renaming both, with every number still correct in isolation. |
 | `data-tick` / `data-value` on a tick | The printed axis could be relabelled wholesale — every bubble honestly placed on a scale the axis lies about. |
 
-`scripts/verify-bubble.py` derives both axis scales and the area constant from the set itself (Theil–Sen, leave-one-out, so one dishonest bubble cannot drag the line it is measured against), requires at most one accent bubble, checks paint order on overlaps, and holds every bound label and tick against the mark it describes. Deliberately **not** `data-series`: that attribute is the slopegraph contract, and using it here would put every bubble file inside `verify-slopegraph.py`'s scope.
+`scripts/verify-bubble.py` derives both axis scales and the area constant from the set itself (Theil–Sen, leave-one-out, so one dishonest bubble cannot drag the line it is measured against), requires at most one explicitly declared focal bubble, checks paint order on overlaps, and holds every bound label and tick against the mark it describes. Deliberately **not** `data-series`: that attribute is the slopegraph contract, and using it here would put every bubble file inside `verify-slopegraph.py`'s scope.
 
 **No `transform` on any of it.** The checker reads raw `cx`/`cy`/`r` and `x`/`y` attributes, so a transform on a bubble, a bound label, an ancestor `<g>`, or in a CSS rule moves the rendered mark away from the number that was verified. Bake the offset into the coordinates. The rotated value-axis caption is fine — it is neither verified geometry nor a bound label.
 
@@ -104,7 +104,7 @@ What each binding buys, and what it costs to omit:
 
 - Radius proportional to the value — the type's one unforgivable error.
 - Moving a bubble to stop it overlapping a neighbour, or drawing a small bubble under a large one.
-- A hue per item instead of the ink ramp plus a single accent, or a legend that reads the ramp as data.
+- Arbitrary hues without semantic/category labels, or a legend that presents decorative opacity as data.
 - A log axis the source line never states, or a truncated axis with no stated bounds.
 - Labelling every bubble (the focal plus 2–3 outliers, no more).
 - A `transform` on a bubble, a bound label, an ancestor group, or in CSS.
@@ -127,9 +127,9 @@ Not for: two variables (that is the parent scatter); comparing distributions acr
 
 #### Colour
 
-- **One ink fill for every non-focal dot** (`ink` at 0.55 in the illustrative example) plus a `muted` stroke for the mark's edge, and **at most one accent dot**. Density must read as swarm *thickness*, never as tone: opacity as a value encoding while also dodging says one thing twice in two different lies, so `verify-beeswarm.py` requires the non-focal fill to be literally identical across the swarm.
-- **The accent marks the editorially focal item** — in the illustrative example the single slowest request, the one the title is about — never a hue per group. Groups are a facet decision, not a palette decision.
-- **The focal dot keeps the shared radius.** Its cues are the accent fill and stroke, its label, and the legend naming it in words; a bigger focal dot is a second encoding and breaks the packing.
+- **One uniform non-focal fill per swarm**, chosen from a semantic palette, plus a contrasting outline; **at most one focal dot**, explicitly marked `data-focal="true"`. Density reads from swarm thickness, never from opacity. The verifier retains identical non-focal fills and the shared-radius rule.
+- **Focus marks the editorially focal item**, not a category. A single-distribution swarm keeps one shared role color; separate distributions remain facets.
+- **The focal dot keeps the shared radius.** Use a solid role-hue fill against the ordinary light role fill, a dark 1.5px outline against the ordinary 0.75px outline, its bound label and a legend key. This is editorial emphasis, not a second quantity or a new category.
 
 #### Honest-data rule
 
@@ -147,10 +147,10 @@ Not for: two variables (that is the parent scatter); comparing distributions acr
 ```svg
 <!-- A dot: position on the shared value scale, x = 80 + 2·ms. The cy is
      packing only. -->
-<circle data-value="90" cx="260" cy="250" r="4" fill="{ink @ 0.55}" stroke="{muted}" stroke-width="0.75"/>
+<circle data-value="90" cx="260" cy="250" r="4" fill="{role-fill}" stroke="{role-text}" stroke-width="0.75"/>
 
 <!-- The focal dot — named, accented, same radius as everyone -->
-<circle data-value="431" data-name="req-4c1f" cx="942" cy="230" r="4" fill="{accent @ 0.55}" stroke="{accent}" stroke-width="1.2"/>
+<circle data-value="431" data-name="req-4c1f" cx="942" cy="230" r="4" fill="{accent}" stroke="{role-text}" stroke-width="1.5" data-focal="true"/>
 
 <!-- Its label, bound to the dot it names -->
 <text data-name="req-4c1f" data-role="label" x="942" y="120" fill="{ink}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">REQ-4C1F</text>
@@ -176,8 +176,10 @@ What each binding buys, and what it costs to omit:
 - Binning or averaging before plotting (that is a histogram wearing a costume), or quietly dropping the inconvenient outlier.
 - Dot size as a second encoding (that is the **bubble variant**), or opacity as a value encoding while also dodging.
 - Meaning smuggled into the swarm axis: sorting the dodge by a second variable, or a midline drawn as if it were a scale.
-- A hue per group instead of one ink plus a single accent.
+- Mixing groups inside a single-distribution swarm without facets, or encoding density with opacity.
 - Labelling more than the focal dot and a handful of outliers.
 - Positioning a dot, a bound label, a tick or an ancestor group from CSS — `transform`, `translate`, `rotate`, `scale`, a geometry property (`cx`/`cy`/`r`/`x`/`y`) or a motion path — whether as an attribute, an inline `style`, or a rule in a `<style>` block.
 - Two dots wearing the same `data-name`, or an empty one: a name that identifies two marks identifies neither.
 - An unbound visible string: a label or an axis tick with no attribute stating the same thing.
+
+Focal metadata: declare `data-focal="true"` on the bound focal mark itself. Semantic blue on any other mark does not make it focal; apply the existing outline/weight cues independently of hue.

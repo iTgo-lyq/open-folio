@@ -221,14 +221,16 @@ Avoid. The corridor x position (8 px before destination node) is the only routin
 
 ## 4. Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 5. Focal rule
 
+Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots.
+
 The process diagram has three focal slots, exactly one entry each:
 
-- **One focal step** (`steps[j].focal: true`) — typically the analytical or decision pivot (Test, Approve, Validate). Header chip and legend chip render in accent.
-- **One focal node** (`nodes[i].focal: true`) — the node that *receives* the critical handoff. Accent border + accent role chip + ink title (title text stays ink so it's still readable; only the border + role chip carry the accent).
+- **One focal step** (`steps[j].focal: true`) — typically the analytical or decision pivot (Test, Approve, Validate). Header and legend chips retain their semantic color with focal weight.
+- **One focal node** (`nodes[i].focal: true`) — the node that *receives* the critical handoff. Heavier role-colored border + semantic role chip + dark role title (title text stays ink so it's still readable; only the border + role chip carry the accent).
 - **One focal arrow set** (`style: focal-in` and `focal-out`) — edges into and out of the focal node. Accent solid strokes.
 
 If zero or >1 of any focal slot are declared, halt and ask the user.
@@ -249,7 +251,7 @@ Before emitting SVG, verify **every** item:
 8. All other arrows `style: normal` (muted solid) or `style: trigger` (muted dashed). Unlabelled by default.
 9. All arrows emitted before any node rect (z-order rule).
 10. Single-bend right-angle routing only — exit right, enter top/bottom. No diagonals. Q-bezier `r=8` at each bend.
-11. Custom component colors ≤ 3 (in addition to the focal pair). Arrows never recolored by component `color`.
+11. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
 12. Subtitle and tool labels stay muted regardless of any component `color`. Input chip skipped on first step's nodes, output chip skipped on last step's nodes.
 
 ---
@@ -299,7 +301,7 @@ Each row introduced by a category label at `x = label_col_w + 4` (= 144). The de
 | Nodes per lane | Nodes = active steps only — empty cells are invisible |
 | Labelled arrows | 0 by default (label only for non-step concepts) |
 | Data-type chips per node | 2 (input + output) |
-| Custom-colored elements (§4) | 3 (in addition to focal node + focal step) |
+| Semantic-colored elements | Not limited by the focal budget; use consistent role colors |
 
 Above 6 lanes or 12 steps: split into two diagrams (overview + detail).
 
@@ -313,9 +315,9 @@ Above 6 lanes or 12 steps: split into two diagrams (overview + detail).
 - **More than one focal step / focal node** — pick the single most critical operation.
 - **Unlabelled lanes** — every swimlane must identify its actor.
 - **All arrows the same style** — orchestration triggers must be dashed to distinguish them from data-flow connectors.
-- **`color` override on a focal element** — ignored. Accent always wins.
+- **Discarding a focal element's semantic color.** Keep its role palette and add outline emphasis.
 - **Custom-colored arrows** — connectors are topology-driven; `color` on a node never spreads to its edges.
-- **Lane tints over-applied** — a tint on every lane reads as decoration, not signal. Apply to ≤1 lane.
+- **Unexplained lane tints.** Use quiet, consistent role/category surfaces for lanes; retain clear node boundaries and lane labels.
 - **Data-type chips in a double-line-name node** — skip the chips or shorten the name to one line.
 - **More than 12 steps without splitting** — use an overview + detail pair.
 
@@ -410,7 +412,7 @@ To document a different process, change only the value of these inputs:
 - **Lanes**: rename `lanes[k].name` to your team names; update each `nodes[i].lane` to match. Up to 6 lanes.
 - **Steps**: rename `steps[j].label`, move `focal: true` to the step that defines the diagram's central claim. Up to 12 steps.
 - **Nodes**: write one entry per `(lane, step)` cell that has work. Leave cells empty (no entry) to render nothing.
-- **Colors**: choose `color: "#hex"` on at most 3 nodes (§4 cap). Stick to the recommended palette unless brand demands otherwise.
+- **Colors:** assign the shared semantic palette to every evidenced role. Repeated role colors do not consume focal slots.
 - **Arrows**: declare every edge explicitly with `style: normal | focal-in | focal-out | trigger`. The routing rule (§3.1) fills in the geometry.
 
 Everything else — viewBox sizing, chip positions, legend layout, visual token selection — is derivable. The YAML is the **source of truth**; the SVG is one of many possible renderings of it (light/full all derive from the same inputs with different style tokens).

@@ -15,21 +15,21 @@ Every card renders in exactly one of four states. Document and use all four when
 
 | State | Fill | Stroke | Extra |
 |---|---|---|---|
-| `default` | white | `ink` | — |
-| `blocked` | `accent @ 0.05` | `accent` (full opacity) dashed `4,4` | 4px `accent` bar on the card's left edge |
-| `waiting / external` | `ink @ 0.02` | `ink @ 0.20` dashed `4,3` | — |
-| `done` | `ink @ 0.05` | `muted` | — |
+| `default` | Processing fill | Processing stroke | — |
+| `blocked` | Sensitive/warning fill | Warning stroke dashed `4,4` | 4px warning bar on the card's left edge |
+| `waiting / external` | Neutral or role fill | Role/neutral stroke dashed `4,3` | — |
+| `done` | Data/output fill | Data/output stroke | — |
 
 These map directly onto the node-treatment table in [visual-style.md](visual-style.md) (`security` → blocked, `optional` → waiting/external, `store` → done) — the board reuses the system's existing semantic fills rather than inventing new ones.
 
 ## Over-limit column
 
-When a column's card count `n` exceeds its stated `limit`, the WIP chip's stroke and text go `accent`. That plus one blocked card is the full 2-accent budget for the diagram — don't spend the budget anywhere else.
+When a column's card count `n` exceeds its stated `limit`, use the warning stroke and dark warning text on its WIP chip. Apply warning styling to every over-limit chip and blocked card. These are state encodings; separately choose at most two editorial focal elements and emphasize their outlines.
 
 ## Complexity budget
 
 - Max 5 columns, max 4 cards per column, max 12 cards total.
-- Max 2 accent elements (the over-limit chip counts as one; a blocked card counts as one).
+- Max 2 editorial focal elements; repeated state colors do not consume this budget.
 - Over budget on a single column → aggregate the backlog into one count card (`+14 more`) rather than listing every item.
 
 ## Anti-patterns
@@ -38,6 +38,6 @@ When a column's card count `n` exceeds its stated `limit`, the WIP chip's stroke
 - **More than 4 cards in a column.** Aggregate into a count card; don't let a column scroll off the canvas.
 - **One card per person.** That's an org chart wearing a kanban skin.
 - **In-process columns without WIP limits.** The limit is half the point of the type — a column work flows *through* with no stated limit can't show that it's over budget. The entry queue and the terminal column are the exception: nothing is constrained by holding more done work, so they show a bare count.
-- **Accenting every blocked card.** One or two blocked cards read as signal; a column full of accent reads as noise and erases the focal rule.
+- **Giving every blocked card focal weight.** All blocked cards need the warning treatment; only the selected focal cards receive extra emphasis.
 - **A "Done" column that grows without bound.** Cap it and note the archive point in the sublabel or a footnote — an unbounded Done column just becomes a second Backlog.
 - **Pill-shaped WIP tags.** The chip is a rectangle at `rx=2`, matching the type-tag primitive in the §6 node box ([primitives-core.md](primitives-core.md#node-box--full-pattern)) — pills read as status badges from an unrelated design language.

@@ -177,7 +177,7 @@ bar_w      = zone_w - 2*zone_pad_x       # 664
 bar_cx     = zone_cx                     # 608
 ```
 
-Bars span the full zone width minus 16-px padding on each side. Bars marked `focal: true` use `bar_h_focal=56` and accent styling (fill `rgba(focal_accent, 0.08)`, stroke `focal_accent`). Non-focal bars use `bar_h_default=44` with muted styling (fill `ink @ 0.05`, stroke `ink @ 0.32`).
+Bars span the full zone width minus 16-px padding on each side. Bars marked `focal: true` use `bar_h_focal=56` and accent styling (fill `rgba(focal_accent, 0.08)`, stroke `focal_accent`). Non-focal bars use `bar_h_default=44` with their semantic role fill/stroke.
 
 ### 2.4 Source / consumer placement (side columns)
 
@@ -188,7 +188,7 @@ consumer_y(k)     = source_y(k)                 # mirrored
 consumer_cy(k)    = source_cy(k)
 ```
 
-All side-column nodes use fixed `w=160 h=64`. Same fill / stroke pattern: fill `muted @ 0.06`, stroke `soft`, stroke-width 1.
+All side-column nodes use fixed `w=160 h=64`. Use the semantic role fill/stroke/text triple, stroke-width 1.
 
 ---
 
@@ -260,9 +260,11 @@ Avoid. Re-route via the corridor x positions before accepting a crossing. If una
 
 ## 4. Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 5. Focal rule
+
+Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots.
 
 **Exactly two focal components.** Default: the storage hub (MinIO / S3 / similar) and the federation engine (Trino / Dremio / similar). These two surfaces distinguish a "platform" from a pile of tools. Everything else (NiFi, Jupyter, Airflow, AD, all sources, all consumers) stays ink / muted.
 
@@ -288,7 +290,7 @@ Before emitting SVG, verify **every** item:
 8. Every edge originating from a `kind: bar` component uses `style: trigger` (dashed, unlabelled).
 9. Every Trino → consumer edge uses `style: primary` (the serve-flow rule).
 10. Footer nodes connect only to the zone bottom edge via `auth` style. **No** edge from a footer to a specific component.
-11. Custom component colors ≤ 2 (in addition to the focal pair). Connectors never recolored by component `color`.
+11. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
 12. All connectors emitted before any node rect (z-order rule).
 
 ---
@@ -339,9 +341,9 @@ When this gets unwieldy:
 
 - **Sources or consumers as a single collapsed node** when ≥3 distinct items exist — defeats the whole point of this type. Use Architecture or High-level if you want collapsing.
 - **One bus arrow from "sources" to "the platform"** — every wire is labeled with its protocol; this is how integration teams read the diagram.
-- **Per-tool color coding** (teal-NiFi, magenta-MinIO, yellow-Jupyter) inside the zone — collapses hierarchy; only the two focal accents earn accent, plus up to 2 custom colors on cross-cutting components (§4 cap).
+- **Arbitrary per-tool colors.** Assign stable semantic roles instead; every matching component may use its role color, including non-focal nodes.
 - **More than 2 focal components** — focal exists to distinguish "platform" from "pile of tools"; >2 erases the signal (same rule as SKILL.md §1).
-- **`color` override on a focal component** — ignored. Focal_accent always wins.
+- **Color that contradicts the component role.** Focal and ordinary components use the same role palette.
 - **Footer wired to one specific tool** (e.g., AD → Airflow only) — wrong unless that service truly only protects one tool. The default is the layer-wide connection.
 - **Footer or identity inside the zone** — identity gates the layer from outside. Drawing it inside misrepresents the trust model.
 - **Phase chevrons across the top** — those belong on `high-level`.

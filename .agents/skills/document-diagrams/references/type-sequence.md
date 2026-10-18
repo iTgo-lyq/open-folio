@@ -87,7 +87,7 @@ Use a rectangular **frame** that spans only the lifelines participating in the b
 - Max combined fragments: 1 (hard default); 2 only if each is a single-region `opt`/`loop`.
 - Max `alt` regions: 2.
 - Max fragment nesting depth: 1.
-- Max accent elements: 2 (prefer 1 for fragment diagrams).
+- Max focal elements: 2 (prefer 1 for fragment diagrams).
 
 If you exceed, split: overview (happy path) + detail (failure / refresh path).
 

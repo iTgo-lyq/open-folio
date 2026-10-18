@@ -29,8 +29,8 @@
   8. Support processes (optional) — 48px
 - **Hairlines:** 8px band including stroke. Interaction and internal-interaction are 1px `rule` (`data-role="interaction"` / `data-role="internal-interaction"`). Visibility is 2px `ink` at 0.55 opacity (`data-role="visibility"`), which must clear 3:1 on paper — 0.45 fails that bar on light paper, so do not go thinner.
 - **Cells:** one action per stage per layer. system sans 12px, one line, centered on the column. A second muted system-font line is allowed for a system or wait (`dunning-job · 4h`). Empty required cells are allowed only with an explicit `—` or `Not applicable` as `data-name` and as the printed text.
-- **Fills:** customer and frontstage are paper/white with `ink` stroke. Backstage and support take a light `ink` tint so the below-the-line band reads as hidden work, not another onstage row.
-- **Focal cell (≤1, optional):** the failure, wait, or handoff the figure exists to show — usually on or below the visibility line. Accent fill `rgba(59,130,246,0.12)`, accent stroke, `data-focal="true"`.
+- **Fills:** use semantic role surfaces within each lane. Keep lane headings and the visibility line as the explicit frontstage/backstage distinction; quiet background bands may support it.
+- **Focal cell (≤1, optional):** the failure, wait or handoff the figure exists to show. Retain its semantic fill and dark text, strengthen its outline, and declare `data-focal="true"`.
 - **Legend:** horizontal strip after a hairline rule, three keys in this order — visibility line, backstage layer, focal cell.
 
 ### Machine-readable data contract
@@ -82,7 +82,7 @@ No `transform`, geometry `style`, or `<style>` rules that move marks.
 - **No visibility line**, or a line that sits in the wrong gap (not between frontstage and backstage). Without the line this is just a table of rows.
 - **Sentiment curve on a blueprint.** That is a journey; split the figures.
 - **Arrows crossing layers.** That is a swimlane.
-- **Accent on every failing cell.** One focal cell; the rest of the grid is census.
+- **Focal weight on every failing cell.** Every failure retains warning color and a label; only one receives editorial emphasis.
 - **Empty required layers** with no `—` / `Not applicable` mark.
 - **More than 6 stages**; more than two lines of cell text.
 - **`writing-mode` vertical layer labels.** Horizontal only, in the left margin.

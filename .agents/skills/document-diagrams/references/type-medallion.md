@@ -140,14 +140,14 @@ Four canonical styles, picked per tier via `tiers[i].style`. Default mapping if 
 
 | `style` | Card fill | Card stroke | Header band fill | Bucket text | Example value text |
 |---|---|---|---|---|---|
-| `outer` | `#FFFFFF` | `muted` 1.0 solid | `muted @ 0.10` | `muted` | `muted` |
-| `default` | `#FFFFFF` | `ink` 1.0 solid | `ink @ 0.06` | `muted` | `muted` |
-| `focal` | `accent @ 0.07` | `accent` 1.6 solid | `accent @ 0.14` | `accent` | `accent` |
-| `cold` | `paper-2` | `muted` 1.0 dashed `5,3` | `muted @ 0.18` | `muted` | `muted` |
+| `outer` | `role-fill` | `role-stroke` 1.0 solid | `role-fill` | `role-text` | `role-text` |
+| `default` | `role-fill` | `role-stroke` 1.0 solid | `role-fill` | `role-text` | `role-text` |
+| `focal` | `role-fill` | `role-stroke` 1.6 solid | `role-fill` | `role-text` | `role-text` |
+| `cold` | `role-fill` | `role-stroke` 1.0 dashed `5,3` | `role-fill` | `role-text` | `role-text` |
 
 `rx = 6` on all card rects.
 
-**Focal styling note:** the focal tier's accent treatment cascades — its bucket text and its example-value lines render in accent. Other field values (tool/format/writer) stay muted; only the bucket name and the example payload carry the focal signal so the tier card doesn't fully drown in accent.
+**Focal styling note:** retain the tier's semantic surface and dark role text; the 1.6px outline provides emphasis. Keep all field values legible.
 
 ### 2.4 Promotion arcs (over the top of the tiers)
 
@@ -178,8 +178,8 @@ The cubic geometry: anchor y = 80 (tier top), control y = 0 (top of viewBox). Cu
 
 **Auto-style rules:**
 - If `promotions[k].to` references the **focal tier**, the style auto-promotes to `focal` (accent, width 1.6, `arrow-accent` marker).
-- If `promotions[k].to` references a tier with a **`color` override** (§4), the arrow inherits that hex — stroke = `C`, label fill = `C`, marker-end uses a color-matched marker (e.g., `arrow-yellow` for `#f59e0b`). Width stays at 1.4 — the color override is a "concern" signal, not a focal promotion. Lifecycle/dashed arrows keep their dash but adopt the color.
-- Focal wins if both apply (a colored tier marked focal still uses accent).
+- Choose promotion colors by relationship meaning (processing, output or neutral), with a matching marker. Width stays at 1.4 unless focal; lifecycle arrows keep their dash. A tier's component color does not automatically recolor its edges.
+- A focal promotion keeps its semantic hue and uses width 1.6. The focal paint slot resolves to that hue; it does not overwrite it with blue.
 
 **Label inside the arc:**
 - Anchored at `(arc_peak_x(k), arc_label_y)` = `((arc_src_x + arc_dst_x) / 2, 50)`.
@@ -234,15 +234,17 @@ Add a new `<marker>` for each `color` override used in the diagram. Naming conve
 
 ## 4. Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 5. Focal rule
+
+Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots.
 
 Exactly **one** focal tier per diagram. Defaults to the tier marked `focal: true` in inputs; if none is marked, defaults to the analytical pivot tier (typically `Aggregated` or whichever tier downstream consumers query).
 
 The focal tier:
-- Uses `style: focal` (accent fill + stroke 1.6 + accent header band).
-- Renders bucket text and example-value lines in accent.
+- Uses `style: focal` (role fill + stroke 1.6 + semantic header band).
+- Renders bucket text and example-value lines in dark semantic text.
 - Has its **incoming** promotion arrow auto-promoted to `style: focal` (accent).
 - Has its **outgoing** promotion arrow (if any) — typically into the cold archive — kept at the user-declared style (usually `lifecycle` dashed).
 
@@ -260,9 +262,9 @@ Before emitting SVG, verify **every** item:
 4. Exactly **one** focal tier; its incoming arc auto-styled to `focal`.
 5. Promotion arcs render as cubic Béziers over the top of adjacent tiers; anchors at `(tier_cx(i), 80)` → `(tier_cx(i+1), 80)`, controls at y=0. Label inside the arc at `(arc_peak_x, 50)`, no mask.
 6. Bottom path row only present when `len(paths) > 0`. Cards at `y=476`, height 56.
-7. Custom component colors ≤ 2 in addition to the focal tier. Never on arrows.
+7. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
 8. All promotion arrows + label masks emitted **before** any tier rect (z-order rule — cards mask the line ends inside the cards).
-9. The focal tier's bucket text and example values render in accent; the rest stay muted.
+9. All tiers use readable dark semantic text; the focal tier retains its heavier outline.
 10. `rx=6` on every tier and path card; `rx=2` on tag chips.
 
 ---

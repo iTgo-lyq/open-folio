@@ -11,7 +11,7 @@
 - **Lines:** `<polyline>` with `fill="none"`. Focal series `stroke-width="1.8"`, others `"1.2"`.
 - **Vertex dots:** only on the focal series (`r=4`, filled). Other series: line only.
 - **Area fill (optional):** `<polygon>` closing back to `y=420` (x-axis baseline) at 0.08 opacity. Use for the focal series only when the area meaning is important.
-- **Multi-series:** up to 5 series. Focal = `accent`. Others = `series-1`, `series-2`, `series-3`, `series-4` from visual-style.md. Apply series palette in order — don't skip.
+- **Multi-series:** up to 5 series. Use consistent semantic or categorical series colors from visual-style.md, including on non-focal series. Keep direct labels and the legend; choose a contrasting stroke or dark counterpart when needed. Focal emphasis uses the existing weight/dot treatment and keeps the series hue.
 - **Legend:** horizontal strip at the bottom. Swatch = 16×8px rect with the series fill/stroke. One entry per series.
 
 ### Polyline pattern
@@ -65,9 +65,9 @@ Not for: three or more states (that is the **line chart** above, or a bump chart
 
 #### Colour
 
-- **One accent, and an `ink` opacity ramp for everything else** — not the series palette. In a line chart hue is the only way to follow a series across eight x-positions, so `series-1`…`series-4` earn their place. Here every series is named at both ends, so hue would be a second encoding of something the labels already carry, and it would spend the one-accent rule for nothing.
-- **The ramp runs 0.80 → 0.62**, ordered by the left-hand value. The hard floor is **0.53** — measure the composited ink against white and keep every data line at least 3:1. The illustrative ramp bottoms out at 0.62 (verify its contrast) rather than hugging the floor, because a ramp whose lightest member is only just legible has no room left to add a series.
-- **Note what the ramp does not buy you.** It separates the ends of the range, not adjacent members — 0.80 and 0.74 are not distinguishable at 1.2px, as the illustrative example shows. It is there to help trace one line through a crossing. It must never be the only way to tell two series apart; that is the labels' job.
+- **Series colors:** Use consistent semantic or categorical series colors from visual-style.md, including on non-focal series. Keep direct labels and the legend; choose a contrasting stroke or dark counterpart when needed. Focal emphasis uses the existing weight/dot treatment and keeps the series hue.
+- **Line contrast:** check each actual stroke against the background at 3:1; use its semantic dark counterpart when necessary. Opacity does not encode rank or value.
+- **Redundant identity:** keep endpoint labels and the legend so crossings can be followed without color.
 - **The accent marks the editorially focal series, not the best or the biggest.** In the illustrative example it marks the one service that got *worse*.
 - **Focus is carried by stroke weight, not tone** — 2.4px focal against 1.2px. Measure the actual stroke/background contrast; weight remains a redundant cue in greyscale.
 - **Contrast and redundancy:** a heavier stroke does not improve its contrast ratio. Verify the actual stroke/background pair at 3:1 and text/background at 4.5:1; retain position, endpoint labels, legend and stroke weight as redundant cues.
@@ -108,7 +108,7 @@ Not for: three or more states (that is the **line chart** above, or a bump chart
 <text data-series="Recommender" data-end="to" data-role="name" x="728" y="144" fill="{ink}" font-size="{secondary-size}" font-weight="600" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">Recommender</text>
 ```
 
-Non-focal series: `stroke="{ink @ 0.68}"` at `stroke-width="1.2"`, dots `r=3`, names at `font-weight="500"`.
+Non-focal series: `stroke="{series-color}"` at `stroke-width="1.2"`, dots `r=3`, names at `font-weight="500"`.
 
 What each binding buys, and what it costs to omit:
 
@@ -133,7 +133,7 @@ What each binding buys, and what it costs to omit:
 - Moving an endpoint to make room for its label.
 - More than 10 series (labels collide) or fewer than 4 (a sentence is shorter).
 - Three or more state columns — that is the parent line chart, or a bump chart, not this.
-- One hue per series instead of the ink ramp plus a single accent.
+- Inconsistent or unlabeled series colors, or using decorative tone as a numerical scale.
 - A value label in `accent`, or any text in `soft` (a decorative line role).
 - Gridlines, or a value axis that repeats numbers the endpoints already print.
 - Annotating the crossing with a date, or reading any intermediate value off a slope.
@@ -159,9 +159,9 @@ Not for: a single distribution (that is a histogram — one ridge is a ridgeline
 
 #### Colour
 
-The slopegraph's colour section holds here unchanged, with one addition for the fill. One accent on the editorially focal ridge (stroke `accent`, fill the accent at `0.16`), an `ink` opacity ramp for the rest (`0.80 → 0.62`, floor `0.53`) ordered top row to bottom, and focus carried by stroke weight — 2.4px against 1.2px — rather than tone. Labels stay `ink` (names) and `muted` (ranges) on every ridge including the focal one.
+Use the same series-color rules as the slopegraph, with a light tint of each series hue under its ridge. Focal stroke weight stays 2.4px against 1.2px. Mark the focal ridge path `data-focal="true"`; keep all baseline, bin and amplitude formulas unchanged. Labels use primary or semantic dark text.
 
-- **Fill `ink` at `0.12` on every non-focal ridge**, low enough that two overlapping ridges read as depth rather than as a third tone. This is the one place the type needs a fill at all: the outline alone does not say which side of the curve is mass.
+- **Fill each series hue at `0.12` on its non-focal ridge**, low enough that two overlapping ridges read as depth rather than as a third tone. This is the one place the type needs a fill at all: the outline alone does not say which side of the curve is mass.
 - **Legend wording:** name the encoded quantity and its ordering; do not rely on color alone.
 - **The accent marks the ridge the story is about, not the worst performer.** In the illustrative example it marks the service whose *shape* is unusual, not the slowest one.
 
@@ -182,7 +182,7 @@ The binding contract is the slopegraph's, applied to areas: the outline declares
 
 ```svg
 <line data-ridge="checkout-api" data-role="baseline" x1="320" y1="320" x2="680" y2="320" stroke="{ink @ 0.25}" stroke-width="1"/>
-<path data-ridge="checkout-api" data-baseline="320" data-bins="0,1,6,17,21,14,8,6,7,9,7,4,0" d="M320,320 L350,317.6 L380,305.6 L410,279.2 L440,269.6 L470,286.4 L500,300.8 L530,305.6 L560,303.2 L590,298.4 L620,303.2 L650,310.4 L680,320 Z" fill="{accent @ 0.16}" stroke="{accent}" stroke-width="2.4" stroke-linejoin="round"/>
+<path data-ridge="checkout-api" data-baseline="320" data-bins="0,1,6,17,21,14,8,6,7,9,7,4,0" d="M320,320 L350,317.6 L380,305.6 L410,279.2 L440,269.6 L470,286.4 L500,300.8 L530,305.6 L560,303.2 L590,298.4 L620,303.2 L650,310.4 L680,320 Z" fill="{accent @ 0.16}" stroke="{accent}" stroke-width="2.4" stroke-linejoin="round" data-focal="true"/>
 <text data-ridge="checkout-api" data-role="name" x="304" y="323.5" fill="{ink}" font-size="{secondary-size}" font-weight="600" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="end">checkout-api</text>
 <text data-ridge="checkout-api" data-role="range" x="696" y="323.5" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">40–440 ms</text>
 <text data-tick="2" data-bin="240" x="500" y="400" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">240</text>
@@ -198,7 +198,7 @@ The binding contract is the slopegraph's, applied to areas: the outline declares
 - Smoothing that puts a peak between two bins, and any spline in a figure whose footnote says the drawing is unsmoothed.
 - A ridge clipped mid-mass so the outline closes as a cliff.
 - Pitch so tight that peaks hide behind peaks — increase the pitch, never shrink one ridge.
-- One hue per ridge instead of the ink ramp plus a single accent.
+- Inconsistent or unlabeled series colors, or using decorative tone as a numerical scale.
 - A legend that says "darker is faster", without a quantitative legend.
 - Fewer than 3 ridges (that is a histogram or a pair of small multiples) or more than 12.
 - Reading traffic off ridge height, or shipping a figure whose source line lets a reader do so.
@@ -224,8 +224,8 @@ Not for: exact per-period values (the reader gets shape, not numbers — use a *
 
 #### Colour
 
-- **One accent layer — the editorially focal series — and an `ink` opacity ramp for the rest**, never the series palette. Layers are named in the legend, so hue would re-encode what the labels already say. The illustrative ramp runs 0.78 → 0.30, **strongest tone on the largest layer**; adjacent tones in the stack need at least ~0.15 of separation or the hairline is doing all the work.
-- Fills may run lighter than a line could: these are areas bounded by `paper` hairlines with no text on them, so the 3:1 stroke floor that binds the slopegraph ramp does not bind here. What does bind: every fill must still be `ink` at opacity (or `accent`), and no text ever sits on a layer.
+- **Layer colors:** use stable semantic/category colors keyed by series in the legend. One optional focal layer retains its hue and gains an outline. Thickness and the shared baseline retain all quantitative meaning.
+- Keep adjacent fills distinguishable with contrast-checked boundaries; no text sits on the quantitative layers. Decorative fill opacity is not a value scale.
 - **Legend wording:** name the encoded quantity and its ordering; do not rely on color alone.
 - **Layer names must not contain digits.** The legend prints one number per entry (the total) and the checker refuses a label carrying two numeric tokens — `E2E` fails, `End-to-end` passes.
 
@@ -249,7 +249,7 @@ Not for: exact per-period values (the reader gets shape, not numbers — use a *
      Absolute M/C/L/Z only; on-curve vertices at every period column. -->
 <path data-layer="Docs" data-values="8,9,7,6,0,0,5,7,8,8,9,9"
       d="M 80 297.5 C … L 960 403.8 C … Z"
-      fill="{ink @ 0.30}" stroke="{paper}" stroke-width="1"/>
+      fill="{series-color @ 0.30}" stroke="{paper}" stroke-width="1"/>
 
 <!-- Period captions: data-index places the column, data-period binds the text -->
 <text data-period="W05" data-index="4" x="400" y="440" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">W05</text>
@@ -265,7 +265,7 @@ What the checker holds against those bindings: every layer's on-curve vertices s
 
 - A wiggle-minimised baseline that reorders layers per period — the legend stops meaning anything.
 - A bottom-pinned baseline presented as a streamgraph — that is a stacked area; the symmetric silhouette is the type.
-- One hue per layer instead of the ink ramp plus a single accent.
+- Inconsistent or unlabeled series colors, or using decorative tone as a numerical scale.
 - Y-axis ticks, or reading a precise value off a layer's thickness — totals live in the legend.
 - Bridging or dropping zero periods, or resampling to a bucket the source line does not state.
 - More than 6 layers (indistinguishable tones) or fewer than 3 periods (no flow to show).
@@ -292,7 +292,7 @@ Not for: exactly two snapshots (that is the **slopegraph** above); magnitude sto
 
 #### Colour
 
-Everything the slopegraph's colour section says holds here unchanged: one accent on the editorially focal series, an `ink` opacity ramp (`0.80 → 0.62`, floor 0.53) for the rest — ordered by first-snapshot rank, so the legend can say "strongest tone was highest-ranked", skin-neutrally — focus carried by stroke weight (2.4px against 1.2px) and dot size rather than tone, and labels in `ink`/`muted` on every series including the focal one. The accent marks the series the story is about, never the winner: the illustrative example spends it on the package that *fell*.
+Use the slopegraph's semantic/category series colors. Keep focal weight 2.4px versus 1.2px and the existing dot-size distinction. Declare `data-focal="true"` on the focal bump path, keep its series hue, and retain rank positions, ordering, labels and the shared snapshots. Focus marks the story, not automatically the winner.
 
 #### Honest-data rule
 
@@ -308,8 +308,10 @@ Everything the slopegraph's colour section says holds here unchanged: one accent
 The binding contract is the slopegraph's, one level up: the path declares its ranks, and every visible string is bound to what it describes.
 
 ```svg
-<path data-series="legacy-http" data-ranks="1,2,4,6" d="M320,88 L440,144 L560,256 L680,368" fill="none" stroke="{accent}" stroke-width="2.4"/>
+<path data-series="legacy-http" data-ranks="1,2,4,6" d="M320,88 L440,144 L560,256 L680,368" fill="none" stroke="{accent}" stroke-width="2.4" data-focal="true"/>
 <text data-series="legacy-http" data-end="first" data-role="name" x="272" y="91.5" fill="{ink}" font-size="{secondary-size}" font-weight="600" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="end">legacy-http</text>
 <text data-series="legacy-http" data-end="first" data-role="rank" x="304" y="91.5" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="end">#1</text>
 <text data-axis="0" data-state="Q1" x="320" y="416" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">Q1</text>
 ```
+
+Focal metadata: declare `data-focal="true"` on the bound focal mark itself. Semantic blue on any other mark does not make it focal; apply the existing outline/weight cues independently of hue.
