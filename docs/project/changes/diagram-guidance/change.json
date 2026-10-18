@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-guidance",
+  "title": "按模块评估中型及以上 Change 的配图需要",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补充按模块评估的配图建议",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
