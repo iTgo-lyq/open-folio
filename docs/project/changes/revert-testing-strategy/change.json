@@ -4,13 +4,15 @@
   "title": "回滚测试策略接入并保留数据兼容取舍规则",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/revert-testing-strategy",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "撤回测试策略接入并核对数据兼容规则",
-      "status": "todo"
+      "status": "done",
+      "verification": "SpecTrail 主 skill 与测试接入前的 f6aefb3 内容一致，内置 testing-strategy 已删除；数据兼容取舍规则保留，skill 校验和差异检查通过。",
+      "commitTitle": "revert-testing-strategy T1: remove testing policy and bundled skill"
     }
   },
   "closure": {},
