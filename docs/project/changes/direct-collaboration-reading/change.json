@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "direct-collaboration-reading",
+  "title": "直接读取协作分支并收敛工作流约束",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "develop",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-18T03:46:20.194Z",
+      "summary": "直接读取指定协作分支并删除旧工作流兼容",
+      "source": "用户：那就把这三处一起改掉，后台读取不再依赖默认分支和保护分支，保护分支只保留发布约束，旧版兼容也删掉。"
+    },
+    "technical": {
+      "at": "2026-10-18T03:46:21.828Z",
+      "summary": "协作分支由接入输入贯穿定向读取和缓存",
+      "source": "用户授权本轮实现并验证合入；接入输入为取消默认分支依赖并支持自定义名称的必要实现。"
+    },
+    "plan": {
+      "at": "2026-10-18T03:46:23.341Z",
+      "summary": "交付直接协作读取与当前工作流规则并集成服务",
+      "source": "用户：同步更新 skill 和文档，验证后合入 develop，更新主工作区的长期服务。补充：这轮改完直接合入 develop 吧。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "接入与读取直接使用指定协作分支",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "移除旧版工作流兼容并统一 Skill 规则",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
