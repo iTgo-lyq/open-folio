@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "生成正式合入并安全清理交付来源",
-      "status": "todo"
+      "status": "done",
+      "verification": "6 个真实 Git 集成清理用例及类型检查通过；真实项目只读预检正确拒绝未归档来源",
+      "commitTitle": "change-integration-history T2: integrate and safely clean delivered sources"
     },
     "T3": {
       "title": "在工作台阅读 Change 整体合入差异",
