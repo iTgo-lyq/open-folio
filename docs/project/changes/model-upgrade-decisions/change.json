@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "model-upgrade-decisions",
+  "title": "数据模型不兼容升级由用户决定处理方案",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补充不兼容升级的用户取舍与技术就绪规则",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
