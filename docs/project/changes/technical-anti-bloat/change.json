@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "technical-anti-bloat",
+  "title": "精简整合技术方案反膨胀原则",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "将反膨胀取舍原则融入技术方案指南",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
