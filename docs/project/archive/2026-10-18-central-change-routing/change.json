@@ -3,7 +3,7 @@
   "id": "central-change-routing",
   "title": "集中管理 Change 入口与独立工作区执行",
   "size": "large",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/central-change-routing",
   "confirmations": {
@@ -66,15 +66,28 @@
       "result": "passed",
       "at": "2026-10-18T01:23:50.126Z",
       "summary": "隔离 Codex 全差异独立评审及复验无未解决问题；回归、浏览器、类型检查、构建、迁移演练与候选冒烟通过，证据见 execution.md/review.md"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T03:24:50.001Z",
+      "summary": "用户在查看实现与当前服务来源后明确要求切换到本次交付，按既定 develop 集成和预发布路径交付",
+      "source": "在获知当前长期服务仍运行 main 旧构建、本次 Change 候选已验证且尚未切换 develop 后，用户明确指示：切换吧。此前已约定所有 Change 默认合入 develop；main 不在本次发布范围。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T03:25:25.356Z",
+      "summary": "同步 Change 状态维护、项目知识、Change 追踪、服务配置和原型浏览五项当前 Specs，统一协作入口与工作区/服务流转规则"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T03:25:25.446Z",
+      "summary": "用户明确授权切换已验证交付，完成验收和五项 Specs 同步，归档后默认集成 develop",
+      "path": "docs/project/archive/2026-10-18-central-change-routing"
     }
   },
   "rework": {
     "at": "2026-10-18T00:17:30.494Z",
     "reason": "用户补充 develop 预发布集成、保护分支显式发布及旧全量扫描下线",
     "approach": "统一协作分支默认合入和工作台定向读取，补充 Setup 接入，方案评审后按授权直接实施"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现和独立评审已通过，等待对具体交付验收；随后同步 Specs、归档并合入 develop，完成真实接入和长期服务更新，main 发布仍由用户主动要求"
   }
 }
