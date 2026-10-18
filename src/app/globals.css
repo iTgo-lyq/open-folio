@@ -1368,6 +1368,107 @@ input {
   background: #f8fbfd;
   border-radius: 6px;
 }
+.follow-up-group {
+  margin-top: 12px;
+  border: 1px solid var(--of-line);
+  border-radius: var(--of-radius);
+  overflow: hidden;
+}
+.follow-up-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  background: var(--of-surface);
+}
+.follow-up-toggle {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+  color: var(--of-ink);
+}
+.follow-up-toggle > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.follow-up-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.follow-up-toggle strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.follow-up-toggle > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.follow-up-caption {
+  display: block;
+  font-size: 11px;
+  color: var(--of-muted);
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.follow-up-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.follow-up-warning {
+  color: var(--of-orange);
+  padding: 0 17px 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.follow-up-context {
+  border-bottom: 1px solid var(--of-line);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+.follow-up-context h3 {
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+.follow-up-context p,
+.follow-up-context li {
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.follow-up-context ul {
+  list-style: none;
+  padding: 0;
+}
+.follow-up-context li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.follow-up-context li > :first-child {
+  text-align: left;
+  min-width: 0;
+}
+.follow-up-context li > span {
+  flex-shrink: 0;
+  color: var(--of-muted);
+}
+@media (max-width: 600px) {
+  .follow-up-heading {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px;
+  }
+  .follow-up-actions {
+    padding-left: 26px;
+  }
+}
 .change-row > svg {
   color: #b2c0cb;
 }

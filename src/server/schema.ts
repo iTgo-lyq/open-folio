@@ -95,6 +95,7 @@ export const changeSchema = z
       >((value) => !validateClarifications(value).length, "澄清问答格式不合法")
       .optional(),
     dependsOn: list.optional(),
+    followUpOf: identity.optional(),
     parent: identity.optional(),
     children: list.optional(),
     confirmations: z

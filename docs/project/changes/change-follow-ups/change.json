@@ -4,7 +4,7 @@
   "title": "连续交付通过延续关系折叠展示",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-follow-ups",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "延续关系登记与折叠阅读",
-      "status": "todo"
+      "status": "done",
+      "verification": "224 项单元与集成测试、14 项浏览器回归、类型/格式/skill 校验及生产构建通过；评审边界已补回归。",
+      "commitTitle": "change-follow-ups T1: add continuation links and folded delivery lists"
     },
     "T2": {
       "title": "关联既有交付并完成验收验证",

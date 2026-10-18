@@ -39,6 +39,7 @@ import { useSavedScroll, useWorkspace } from "./context";
 import { documentExpectation } from "@/lib/workflow";
 import { Empty, Source, CopyPageLink } from "./document";
 import { ChangePreviews } from "./previews";
+import { GroupedChangeRows, FollowUpContext } from "./follow-ups";
 const sizes = {
   small: "Small",
   medium: "Medium",
@@ -417,57 +418,63 @@ export default function Changes() {
               <span>当前事项</span>
               <span />
             </div>
-            {filtered.map((g) => {
-              const c = primaryRecord(g),
-                s = c?.state;
-              return (
-                <button
-                  className="change-row"
-                  key={g.id}
-                  onClick={() => open(g.id)}
-                  aria-label={`打开 ${g.title}`}
-                >
-                  <div className="change-row-title">
-                    <span className={`change-symbol ${s?.status ?? "unknown"}`}>
-                      <GitPullRequest size={16} />
-                    </span>
-                    <div>
-                      <strong>{g.title}</strong>
-                      <code>{g.id}</code>
+            <GroupedChangeRows
+              changes={filtered}
+              open={open}
+              render={(g) => {
+                const c = primaryRecord(g),
+                  s = c?.state;
+                return (
+                  <button
+                    className="change-row"
+                    key={g.id}
+                    onClick={() => open(g.id)}
+                    aria-label={`打开 ${g.title}`}
+                  >
+                    <div className="change-row-title">
+                      <span
+                        className={`change-symbol ${s?.status ?? "unknown"}`}
+                      >
+                        <GitPullRequest size={16} />
+                      </span>
+                      <div>
+                        <strong>{g.title}</strong>
+                        <code>{g.id}</code>
+                      </div>
                     </div>
-                  </div>
-                  <span>
-                    {s && activeFlow(g) ? (
-                      <Badge tone={s.stage}>{stageText(s)}</Badge>
-                    ) : (
-                      <Badge tone="warning">来源待核对</Badge>
-                    )}
-                  </span>
-                  <span className="size-label">{s && sizes[s.size]}</span>
-                  <span>{c && activeFlow(g) && <Progress c={c} />}</span>
-                  <span className="row-context">
-                    {quality(g).length ? (
-                      <span className="warning-text">
-                        <AlertCircle size={12} />
-                        来源异常
-                      </span>
-                    ) : s?.waitingFor ? (
-                      <span>
-                        <Clock3 size={12} />
-                        {WAIT_LABELS[s.waitingFor.kind]}
-                      </span>
-                    ) : s?.status === "cancelled" ? (
-                      "已取消"
-                    ) : c?.validCompleted ? (
-                      "已归档"
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </span>
-                  <ChevronRight size={14} />
-                </button>
-              );
-            })}
+                    <span>
+                      {s && activeFlow(g) ? (
+                        <Badge tone={s.stage}>{stageText(s)}</Badge>
+                      ) : (
+                        <Badge tone="warning">来源待核对</Badge>
+                      )}
+                    </span>
+                    <span className="size-label">{s && sizes[s.size]}</span>
+                    <span>{c && activeFlow(g) && <Progress c={c} />}</span>
+                    <span className="row-context">
+                      {quality(g).length ? (
+                        <span className="warning-text">
+                          <AlertCircle size={12} />
+                          来源异常
+                        </span>
+                      ) : s?.waitingFor ? (
+                        <span>
+                          <Clock3 size={12} />
+                          {WAIT_LABELS[s.waitingFor.kind]}
+                        </span>
+                      ) : s?.status === "cancelled" ? (
+                        "已取消"
+                      ) : c?.validCompleted ? (
+                        "已归档"
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </span>
+                    <ChevronRight size={14} />
+                  </button>
+                );
+              }}
+            />
           </div>
         )}
       </div>
@@ -517,67 +524,71 @@ function OutcomeList({
         </span>
         <span />
       </div>
-      {groups.map((group) => {
-        const c = primaryRecord(group),
-          state = c?.state;
-        const at =
-          scope === "completed"
-            ? state?.closure.archive?.at
-            : state?.cancellation?.at;
-        const messages = quality(group);
-        const summary =
-          scope === "completed"
-            ? (state?.closure.acceptance?.summary ??
-              state?.closure.verification?.summary)
-            : scope === "cancelled"
-              ? state?.cancellation?.reason
-              : messages.map((d) => d.message).join("；");
-        return (
-          <button
-            className="change-row"
-            key={group.id}
-            onClick={() => open(group.id)}
-            aria-label={`打开 ${group.title}`}
-          >
-            <div className="change-row-title">
-              <span
-                className={`change-symbol ${scope === "issues" ? "unknown" : (state?.status ?? "unknown")}`}
-              >
-                {scope === "issues" ? (
-                  <AlertCircle size={16} />
-                ) : (
-                  <GitPullRequest size={16} />
-                )}
-              </span>
-              <div>
-                <strong>{group.title}</strong>
-                <code>{group.id}</code>
-              </div>
-            </div>
-            <span className="size-label">
-              {state ? sizes[state.size] : "—"}
-            </span>
-            {scope === "issues" ? (
-              <span className="outcome-source">
-                {c?.branch ?? "主来源未确定"}
-              </span>
-            ) : at ? (
-              <time className="outcome-time" dateTime={at}>
-                {formatTime(at)}
-              </time>
-            ) : (
-              <span className="muted">未记录</span>
-            )}
-            <span
-              className={`outcome-summary${scope === "issues" ? " warning-text" : ""}`}
-              title={summary}
+      <GroupedChangeRows
+        changes={groups}
+        open={open}
+        render={(group) => {
+          const c = primaryRecord(group),
+            state = c?.state;
+          const at =
+            scope === "completed"
+              ? state?.closure.archive?.at
+              : state?.cancellation?.at;
+          const messages = quality(group);
+          const summary =
+            scope === "completed"
+              ? (state?.closure.acceptance?.summary ??
+                state?.closure.verification?.summary)
+              : scope === "cancelled"
+                ? state?.cancellation?.reason
+                : messages.map((d) => d.message).join("；");
+          return (
+            <button
+              className="change-row"
+              key={group.id}
+              onClick={() => open(group.id)}
+              aria-label={`打开 ${group.title}`}
             >
-              {summary || "未记录"}
-            </span>
-            <ChevronRight size={14} />
-          </button>
-        );
-      })}
+              <div className="change-row-title">
+                <span
+                  className={`change-symbol ${scope === "issues" ? "unknown" : (state?.status ?? "unknown")}`}
+                >
+                  {scope === "issues" ? (
+                    <AlertCircle size={16} />
+                  ) : (
+                    <GitPullRequest size={16} />
+                  )}
+                </span>
+                <div>
+                  <strong>{group.title}</strong>
+                  <code>{group.id}</code>
+                </div>
+              </div>
+              <span className="size-label">
+                {state ? sizes[state.size] : "—"}
+              </span>
+              {scope === "issues" ? (
+                <span className="outcome-source">
+                  {c?.branch ?? "主来源未确定"}
+                </span>
+              ) : at ? (
+                <time className="outcome-time" dateTime={at}>
+                  {formatTime(at)}
+                </time>
+              ) : (
+                <span className="muted">未记录</span>
+              )}
+              <span
+                className={`outcome-summary${scope === "issues" ? " warning-text" : ""}`}
+                title={summary}
+              >
+                {summary || "未记录"}
+              </span>
+              <ChevronRight size={14} />
+            </button>
+          );
+        }}
+      />
     </div>
   );
 }
@@ -1027,6 +1038,7 @@ export function ChangeDrawer() {
             ) : (
               <>
                 <Diagnostics items={quality(g)} />
+                <FollowUpContext change={g} />
                 {ongoing && s?.waitingFor && (
                   <div className="waiting-card">
                     <Clock3 size={17} />

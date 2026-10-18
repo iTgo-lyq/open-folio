@@ -8,7 +8,13 @@ import type {
 import { primaryRecord } from "../lib/model.ts";
 import type { Collected } from "./indexer.ts";
 import type { GitReader } from "./git.ts";
-import { branchName, changeSchema, identity, validDate } from "./schema.ts";
+import {
+  branchName,
+  changeSchema,
+  identity,
+  previewsSchema,
+  validDate,
+} from "./schema.ts";
 import { cyclicNodes, parsePlan } from "./plan.ts";
 import { inspectMarkdown, resolveDocumentLink } from "../lib/markdown.ts";
 const issue = (code: string, message: string, path?: string): Diagnostic => ({
@@ -194,20 +200,36 @@ export async function indexChanges(
     const owner = branchName.safeParse(object.branch).success
       ? (object.branch as string)
       : undefined;
-    // Keep core workflow readable when the optional prototype extension is invalid.
+    // Invalid optional reading extensions must not revoke workflow completion.
     let parsed = changeSchema.safeParse(raw);
-    if (!parsed.success && Object.hasOwn(object, "previews")) {
-      const { previews: invalidPreviews, ...core } = object;
-      const fallback = changeSchema.safeParse(core);
-      if (fallback.success) {
-        diagnostics.push({
-          ...issue(
-            "PREVIEWS_INVALID",
-            "原型关联格式不合法，请检查 previews；其余流程仍可阅读。",
-            `${doc.path}#/previews`,
-          ),
+    if (!parsed.success) {
+      const core = { ...object };
+      const warnings: Diagnostic[] = [];
+      for (const [key, schema, code, message] of [
+        [
+          "previews",
+          previewsSchema,
+          "PREVIEWS_INVALID",
+          "原型关联格式不合法，请检查 previews；其余流程仍可阅读。",
+        ],
+        [
+          "followUpOf",
+          identity,
+          "FOLLOW_UP_INVALID",
+          "前序关联格式不合法，请检查 followUpOf；原交付事实仍可阅读。",
+        ],
+      ] as const) {
+        if (!Object.hasOwn(core, key) || schema.safeParse(core[key]).success)
+          continue;
+        delete core[key];
+        warnings.push({
+          ...issue(code, message, `${doc.path}#/${key}`),
           severity: "warning",
         });
+      }
+      const fallback = changeSchema.safeParse(core);
+      if (fallback.success) {
+        diagnostics.push(...warnings);
         parsed = fallback;
       }
     }

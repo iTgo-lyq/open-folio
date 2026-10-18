@@ -151,6 +151,7 @@ interface ChangeState {
   clarifications?: Record<`Q${number}`, Clarification>; // 实际问过的问题，编号递增且不复用
   previews?: PreviewEntry[]; // 可省略；记录本次固定交付；项目当前清单位于原型包 prototype.json
   dependsOn?: string[]; // 前置 Change id，去重；全部满足后执行，xlarge 父 Change 不填
+  followUpOf?: string; // 同仓库已归档的直接前序，仅表示延续交付，不是执行依赖
   parent?: string; // 所属 xlarge 父 Change 的 id
   children?: string[]; // 子 Change id，按 Plan 展示顺序排列且不重复；不表示串行依赖
   confirmations: {
@@ -221,6 +222,14 @@ small / medium / large 用 `dependsOn` 声明同仓库的前置 Change，在 Req
 进入 execution 并开始实现前，所有前置 Change 都须满足：**已完成关闭、归档并推送，且所需交付已在当前分支可用**。默认等上游合入协作分支后同步，不要求先发布到保护分支。阶段状态从集中入口解析，不采用当前分支继承的旧副本；集成交付仍需核对，归档存在不代表代码未被回滚。
 
 依赖未满足时可继续调查、澄清和规划；准备执行时仍未满足，保留当前阶段和有效确认，设置 dependency 等待，说明缺少的交付和解除条件。依赖取消、缺失或状态异常均不算满足。解除等待后保留 `dependsOn`；调整依赖时同步用途说明，涉及目标或关键方案变化时按返工规则处理。
+
+### 延续交付
+
+修正或补充某次交付的具体决定或结果时，未归档 Change 在原范围内返工；已归档则新建 Change，通过 `create --follow-up-of <前序 id>` 或 active Change 的 `follow-up --target <前序 id>` 记录延续关系。Requirement 说明具体延续内容，仅属于同一模块或标题相似不构成关联。原目标已改变时独立新建，不为减少列表条目强行挂链。
+
+`followUpOf` 指向同仓库已推送、完成归档的直接前序，不自指、不成环；可形成多跳或多个后继。关联与规模、`dependsOn`、父子关系正交，不增加等待或关闭约束，不合并任务、阶段、验收和归档事实。工作台按关系折叠展示独立交付，仍可分别阅读；正文是否描述同一目标由 Agent 核对。
+
+active Change 可用 `follow-up --target none` 移除关联。已归档记录不自动补写；规则接入时需要关联既有交付，仅在用户明确授权的迁移 Change 中限定目标记录和字段，以独立普通提交保存迁移证据，保留原正文、任务、验收与时间。常规命令不提供归档编辑入口。
 
 ### xlarge 父子 Change
 

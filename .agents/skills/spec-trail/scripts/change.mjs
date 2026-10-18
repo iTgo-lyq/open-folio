@@ -16,6 +16,7 @@ import { isDeepStrictEqual, parseArgs } from "node:util";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
+import { closedRecord } from "./routing.mjs";
 import {
   repository,
   collaborationCatalog,
@@ -23,7 +24,8 @@ import {
 } from "./repository.mjs";
 
 const commands = {
-  create: ["title", "size", "depends-on", "parent", "children"],
+  create: ["title", "size", "depends-on", "parent", "children", "follow-up-of"],
+  "follow-up": ["target"],
   show: [],
   retitle: ["title"],
   "clarification-ask": ["question", "round", "text", "recommendation"],
@@ -291,6 +293,9 @@ function main() {
               : {}),
             ...(opts.parent ? { parent: opts.parent } : {}),
             ...(opts.children ? { children: list(opts.children) } : {}),
+            ...(opts["follow-up-of"]
+              ? { followUpOf: opts["follow-up-of"] }
+              : {}),
           }
         : JSON.parse(original);
     assert(
@@ -353,8 +358,7 @@ function main() {
     };
     const uniqueActive = () =>
       assert(
-        (branch === config.collaborationBranch &&
-          state.size === "xlarge") ||
+        (branch === config.collaborationBranch && state.size === "xlarge") ||
           !all.some(
             (r) =>
               !r.archived &&
@@ -367,7 +371,9 @@ function main() {
       );
     const availability = [];
     const dependency = (target, allowCancelled = false) => {
-      const routed = routedRecord(repo, catalog, target, { refresh: !opts["dry-run"] });
+      const routed = routedRecord(repo, catalog, target, {
+        refresh: !opts["dry-run"],
+      });
       const candidates = [{ ...routed, file: join(root, routed.path) }];
       assert(
         candidates.length === 1,
@@ -457,9 +463,171 @@ function main() {
       };
     };
     let archiveDir, indexRecovery;
+    const checkFollowUp = (target) => {
+      const records = new Map(),
+        checked = new Set(),
+        checking = new Set();
+      const readPrior = (priorId) => {
+        if (records.has(priorId)) return records.get(priorId);
+        const record = routedRecord(repo, catalog, priorId, {
+          refresh: !opts["dry-run"],
+        });
+        const prior = record.state;
+        const valid = (condition) =>
+          assert(
+            condition,
+            `Follow-up history ${priorId} is not a valid published record`,
+          );
+        valid(!record.errors.length);
+        valid(
+          prior.size === "xlarge"
+            ? !Object.keys(prior.tasks).length &&
+                !prior.dependsOn?.length &&
+                !prior.parent
+            : !prior.children?.length,
+        );
+        valid(
+          !(
+            prior.size === "small" &&
+            ["technical", "plan"].includes(prior.stage)
+          ),
+        );
+        valid(
+          !(
+            ["medium", "xlarge"].includes(prior.size) && prior.stage === "plan"
+          ),
+        );
+        if (prior.status !== "cancelled") {
+          const phases =
+            prior.size === "small" || prior.stage === "requirement"
+              ? []
+              : prior.stage === "technical"
+                ? ["requirement"]
+                : prior.stage === "plan"
+                  ? ["requirement", "technical"]
+                  : ["requirement", "technical", "plan"];
+          valid(phases.every((phase) => prior.confirmations[phase]));
+          if (prior.stage === "close")
+            valid(
+              Object.values(prior.tasks).every(
+                (task) => task.status === "done",
+              ),
+            );
+        }
+        if (prior.status === "completed") {
+          valid(record.archived && closedRecord(prior, dirname(record.path)));
+          valid(
+            !git([
+              "ls-tree",
+              "-r",
+              "--name-only",
+              record.commit,
+              "--",
+              `docs/project/changes/${priorId}/`,
+            ]).trim(),
+          );
+          valid(
+            prior.size === "xlarge"
+              ? prior.children?.length
+              : Object.keys(prior.tasks).length,
+          );
+          let plan;
+          try {
+            plan = git([
+              "show",
+              `${record.commit}:${dirname(record.path)}/plan.md`,
+            ]);
+          } catch {
+            /* Missing Plan is checked below. */
+          }
+          valid(
+            ["valid", "not-applicable"].includes(
+              parseTaskOrder(prior, plan).status,
+            ),
+          );
+        } else valid(!record.archived);
+        records.set(priorId, record);
+        return record;
+      };
+      // Validate the predecessor's existing history, without making it an
+      // execution prerequisite of the new Change or requiring Git ancestry.
+      const validateHistory = (priorId) => {
+        assert(
+          !checking.has(priorId),
+          "Follow-up history has a dependency/child cycle",
+        );
+        if (checked.has(priorId)) return;
+        checking.add(priorId);
+        const prior = readPrior(priorId).state;
+        if (prior.parent) {
+          const parent = readPrior(prior.parent).state;
+          assert(
+            parent.size === "xlarge" && parent.children?.includes(priorId),
+            `Follow-up history ${priorId} has an invalid parent`,
+          );
+        }
+        for (const dependencyId of prior.dependsOn ?? []) {
+          assert(
+            dependencyId !== prior.parent,
+            `Follow-up history ${priorId} depends on its parent`,
+          );
+          const dependency = readPrior(dependencyId).state;
+          validateHistory(dependencyId);
+          assert(
+            prior.status !== "completed" || dependency.status === "completed",
+            `Follow-up history ${priorId} has an unfinished dependency`,
+          );
+        }
+        for (const childId of prior.children ?? []) {
+          const child = readPrior(childId).state;
+          assert(
+            child.parent === priorId && child.size !== "xlarge",
+            `Follow-up history ${priorId} has an invalid child`,
+          );
+          validateHistory(childId);
+          assert(
+            prior.status !== "completed" ||
+              ["completed", "cancelled"].includes(child.status),
+            `Follow-up history ${priorId} has an unfinished child`,
+          );
+        }
+        checking.delete(priorId);
+        checked.add(priorId);
+      };
+      const visited = new Set([id]);
+      while (target) {
+        assert(
+          !visited.has(target),
+          "Follow-up cannot reference itself or form a cycle",
+        );
+        visited.add(target);
+        const record = readPrior(target);
+        const prior = record.state;
+        assert(
+          record.archived && prior.status === "completed",
+          `Follow-up target ${target} must be a valid published archive`,
+        );
+        validateHistory(target);
+        target = prior.followUpOf;
+      }
+    };
     switch (command) {
       case "create":
+        if (state.followUpOf) checkFollowUp(state.followUpOf);
         break;
+      case "follow-up": {
+        const target = need("target");
+        if (target === "none") delete state.followUpOf;
+        else {
+          assert(
+            /^[a-z0-9]+(-[a-z0-9]+)*$/.test(target),
+            "Invalid follow-up target id",
+          );
+          checkFollowUp(target);
+          state.followUpOf = target;
+        }
+        break;
+      }
       case "retitle":
         state.title = need("title");
         break;

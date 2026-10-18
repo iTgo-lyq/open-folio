@@ -219,6 +219,7 @@ const changeFields = object(
     parent: id,
     children: list(id),
     dependsOn: list(id),
+    followUpOf: id,
     previews: previewsRule,
     clarifications,
     confirmations: object(

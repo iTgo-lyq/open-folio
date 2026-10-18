@@ -6,7 +6,8 @@
 
 | 命令 | 参数与语义 |
 | --- | --- |
-| `create` | `--title --size`；可选 `--depends-on id,id`、`--parent id`、`--children id,id`。在配置的协作分支建立 requirement 状态，不生成正文、不创建或切换 Git 分支、不覆盖已有目录。 |
+| `create` | `--title --size`；可选 `--depends-on id,id`、`--parent id`、`--children id,id`、`--follow-up-of id`。在配置的协作分支建立 requirement 状态，不生成正文、不创建或切换 Git 分支、不覆盖已有目录；延续前序必须为已推送的有效归档。 |
+| `follow-up` | `--target id/none`；为 active Change 设置直接前序或移除关联，沿前序链拒绝未归档、缺失、自指与循环，不影响执行依赖、任务及确认。归档记录仍只读。 |
 | `retitle` | `--title`；仅修改活动 Change 的展示标题，保留 id、阶段、任务与确认；需在所属分支运行。 |
 | `confirm` | `--phase requirement/technical/plan/merge --summary --source`。summary 写阶段内容，优先 20–40 字符，最多 60 个 Unicode 码点、单句且不换行；source 写实际确认依据。需求确认进入 technical，large 技术确认进入 plan；执行另用 execute。medium/xlarge 技术与计划同次获确认时连续记录两次。merge 可附 `--source-commit --target-commit --base-commit`。 |
 | `clarification-ask` | `--round --text --recommendation`；可选 `--question Qn`，默认下一个编号，只能递增。保存实际问过的需求或技术问题，round 为从 1 开始的正整数，同轮问题用同一值，跨阶段继续递增。 |

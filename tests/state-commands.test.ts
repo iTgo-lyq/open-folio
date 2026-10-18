@@ -184,6 +184,139 @@ function fixture(
   };
 }
 
+test("follow-up registration requires a published closed predecessor and stays independent of dependencies", (t) => {
+  const f = fixture(t);
+  const closed = (
+    id: string,
+    followUpOf?: string,
+    patch: Record<string, unknown> = {},
+  ) => {
+    const at = "2026-10-01T00:00:00.000Z";
+    const path = `docs/project/archive/2026-10-01-${id}`;
+    const state = {
+      schemaVersion: 1,
+      id,
+      title: id,
+      branch: `change/${id}`,
+      size: "small",
+      status: "completed",
+      stage: "close",
+      confirmations: {},
+      tasks: { T1: { title: "完成", status: "done" } },
+      closure: {
+        verification: { at, summary: "通过", result: "passed" },
+        acceptance: { at, summary: "验收", result: "accepted" },
+        specs: { at, summary: "同步", result: "synced" },
+        archive: { at, summary: "归档", result: "done", path },
+      },
+      ...(followUpOf ? { followUpOf } : {}),
+      ...patch,
+    };
+    mkdirSync(join(f.root, path), { recursive: true });
+    writeFileSync(join(f.root, path, "change.json"), JSON.stringify(state));
+    return join(f.root, path);
+  };
+  closed("first");
+  closed("second", "first");
+  closed("loop-a", "loop-b");
+  closed("loop-b", "loop-a");
+  const confirmation = { at: "2026-10-01T00:00:00.000Z", summary: "确认" };
+  const confirmations = {
+    requirement: confirmation,
+    technical: confirmation,
+    plan: confirmation,
+  };
+  closed("missing-confirm", undefined, { size: "medium" });
+  closed("missing-plan", undefined, { size: "medium", confirmations });
+  writeFileSync(
+    join(closed("invalid-plan"), "plan.md"),
+    "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | T9 |\n",
+  );
+  closed("missing-dependency", undefined, { dependsOn: ["absent"] });
+  closed("unfinished-dependency", undefined, { dependsOn: ["pending"] });
+  closed("dependency-cycle-a", undefined, {
+    dependsOn: ["dependency-cycle-b"],
+  });
+  closed("dependency-cycle-b", undefined, {
+    dependsOn: ["dependency-cycle-a"],
+  });
+  closed("invalid-parent", undefined, { parent: "first" });
+  closed("invalid-child", undefined, {
+    size: "xlarge",
+    confirmations,
+    tasks: {},
+    children: ["first"],
+  });
+  closed("unfinished-child", undefined, {
+    size: "xlarge",
+    confirmations,
+    tasks: {},
+    children: ["pending"],
+  });
+  closed("valid-parent", undefined, {
+    size: "xlarge",
+    confirmations,
+    tasks: {},
+    children: ["cancelled-child"],
+  });
+  writeFileSync(
+    join(
+      closed("valid-medium", undefined, { size: "medium", confirmations }),
+      "plan.md",
+    ),
+    "# 计划\n\n## T1\n完成实现。\n",
+  );
+  f.commit();
+  f.create("small", "sample", ["--follow-up-of", "second"]);
+  assert.equal(f.state().followUpOf, "second");
+  assert(!f.state().dependsOn);
+  const before = readFileSync(f.path(), "utf8");
+  f.run("follow-up", ["--target", "first", "--dry-run"]);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  f.create("small", "pending", ["--parent", "unfinished-child"]);
+  f.create("small", "cancelled-child", ["--parent", "valid-parent"]);
+  f.run("cancel", ["--reason", "取消不影响已关闭父项"], 0, "cancelled-child");
+  f.commit();
+  for (const target of [
+    "sample",
+    "missing",
+    "loop-a",
+    "pending",
+    "../first",
+    "missing-confirm",
+    "missing-plan",
+    "invalid-plan",
+    "missing-dependency",
+    "unfinished-dependency",
+    "dependency-cycle-a",
+    "invalid-parent",
+    "invalid-child",
+    "unfinished-child",
+  ]) {
+    f.run("follow-up", ["--target", target], 1);
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+  }
+  closed("unpublished");
+  f.commit(false);
+  f.run("follow-up", ["--target", "unpublished"], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  f.run("follow-up", ["--target", "first"]);
+  assert.equal(f.state().followUpOf, "first");
+  f.run("follow-up", ["--target", "valid-medium"]);
+  assert.equal(f.state().followUpOf, "valid-medium");
+  f.run("follow-up", ["--target", "valid-parent"]);
+  assert.equal(f.state().followUpOf, "valid-parent");
+  f.run("follow-up", ["--target", "none"]);
+  assert(!f.state().followUpOf);
+  f.run(
+    "create",
+    ["--title", "bad", "--size", "small", "--follow-up-of", "absent"],
+    1,
+    "bad",
+  );
+  assert(!existsSync(f.path("bad")));
+});
+
 test("small lifecycle on a custom collaboration branch preserves evidence, ordered timestamps and archive files", (t) => {
   const f = fixture(t, "team/integration");
   assert.equal(f.git("ls-remote", "origin", "refs/heads/main"), "");

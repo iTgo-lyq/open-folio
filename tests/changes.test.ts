@@ -11,6 +11,7 @@ import {
   type ChangeState,
 } from "../src/lib/model.ts";
 import { fixture } from "./fixture.ts";
+import { followUpIndex } from "../src/lib/follow-ups.ts";
 const at = "2026-10-02T08:00:00+08:00";
 export function state(
   id: string,
@@ -268,6 +269,59 @@ test("default task order is numeric, includes narrative Plans and ignores Markdo
     parsePlan(s, referenceTable.replace("[one]: #t1", "")).status,
     "invalid",
   );
+});
+
+test("follow-up metadata survives repository reading without becoming a completion dependency", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  for (const [id, patch] of [
+    ["prior", { followUpOf: "missing-predecessor" }],
+    ["consumer", { dependsOn: ["prior"], followUpOf: "prior" }],
+  ] as const) {
+    const s = { ...completed(id), ...patch };
+    await f.put(`${s.closure.archive!.path}/change.json`, JSON.stringify(s));
+    await f.put(`${s.closure.archive!.path}/requirement.md`, "# 已交付\n");
+  }
+  f.commit();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (const id of ["prior", "consumer"]) {
+    const g = snapshot.changes.find((g) => g.id === id)!;
+    assert.equal(primaryRecord(g)!.validCompleted, true);
+    assert.equal(g.diagnostics.length, 0);
+  }
+  const consumer = snapshot.changes.find((g) => g.id === "consumer")!;
+  assert.equal(primaryRecord(consumer)!.state!.followUpOf, "prior");
+  assert.equal(consumer.relations.length, 1);
+  assert.equal(consumer.relations[0].kind, "dependency");
+  assert.equal(consumer.relations[0].process, "satisfied");
+  // Broken optional reading metadata must not invalidate this delivery or its consumers.
+  for (const followUpOf of ["../invalid", 42, null]) {
+    const prior = {
+      ...completed("prior"),
+      followUpOf,
+      previews: "also-invalid",
+    };
+    await f.put(
+      `${prior.closure.archive!.path}/change.json`,
+      JSON.stringify(prior),
+    );
+    f.commit();
+    const reread = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    const predecessor = reread.changes.find((g) => g.id === "prior")!;
+    const dependent = reread.changes.find((g) => g.id === "consumer")!;
+    assert.equal(primaryRecord(predecessor)!.validCompleted, true);
+    assert.equal(primaryRecord(dependent)!.validCompleted, true);
+    assert.equal(dependent.relations[0].process, "satisfied");
+    assert(
+      primaryRecord(predecessor)!.diagnostics.some(
+        (d) => d.code === "FOLLOW_UP_INVALID" && d.severity === "warning",
+      ),
+    );
+    const index = followUpIndex(reread.changes);
+    assert(index.problems.has("prior"));
+    assert(index.problems.has("consumer"));
+    assert.equal(index.roots.get("consumer"), "consumer");
+  }
 });
 
 test("invalid authoritative record survives valid stale copies; conflict and missing owner are explicit", async (t) => {
