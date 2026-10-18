@@ -4,7 +4,7 @@
   "title": "集中管理 Change 入口与独立工作区执行",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/central-change-routing",
   "confirmations": {
     "requirement": {
@@ -61,10 +61,20 @@
       "commitTitle": "feat: add migration preview and verify collaboration onboarding"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T01:23:50.126Z",
+      "summary": "隔离 Codex 全差异独立评审及复验无未解决问题；回归、浏览器、类型检查、构建、迁移演练与候选冒烟通过，证据见 execution.md/review.md"
+    }
+  },
   "rework": {
     "at": "2026-10-18T00:17:30.494Z",
     "reason": "用户补充 develop 预发布集成、保护分支显式发布及旧全量扫描下线",
     "approach": "统一协作分支默认合入和工作台定向读取，补充 Setup 接入，方案评审后按授权直接实施"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现和独立评审已通过，等待对具体交付验收；随后同步 Specs、归档并合入 develop，完成真实接入和长期服务更新，main 发布仍由用户主动要求"
   }
 }
