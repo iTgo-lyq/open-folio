@@ -84,6 +84,30 @@ export async function repositoryResponse(
           });
         if (segments.length === 1 && segments[0] === "prototypes")
           return personalJson(await store.prototypes(p, snapshot));
+        if (
+          segments[0] === "changes" &&
+          segments[2] === "integration" &&
+          (segments.length === 3 ||
+            (segments[3] === "files" && [4, 5].includes(segments.length)))
+        ) {
+          if (
+            !snapshot ||
+            ["base", "head", "path", "revision"].some((key) => q.has(key))
+          )
+            throw new AppError(
+              "INVALID_PARAMETER",
+              "合入差异必须使用指定快照中的固定提交。",
+              400,
+            );
+          const integration = await store.integration(p, segments[1], snapshot);
+          return personalJson(
+            segments.length === 3
+              ? await integration.summary()
+              : segments.length === 4
+                ? await integration.files(q.get("cursor") ?? undefined)
+                : await integration.file(segments[4]),
+          );
+        }
         if (segments.length === 1 && segments[0] === "current-preview")
           return personalJson(
             (

@@ -224,6 +224,12 @@ export class GitReader {
       );
       return r.stdout;
     } catch (e) {
+      if ((e as { code?: string }).code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER")
+        throw new AppError(
+          "GIT_OUTPUT_LIMIT",
+          "Git 读取结果超过展示上限，未返回完整内容。",
+          422,
+        );
       if (args[0] === "merge-base" && (e as { code?: number }).code === 1)
         return Buffer.from("not-ancestor");
       throw new AppError(

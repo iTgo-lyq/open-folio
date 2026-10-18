@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "在工作台阅读 Change 整体合入差异",
-      "status": "todo"
+      "status": "done",
+      "verification": "3 个真实 Git/API 用例、2 个跨视口浏览器场景与类型检查通过；截图核对完成",
+      "commitTitle": "change-integration-history T3: read complete integration diffs in workbench"
     },
     "T4": {
       "title": "以合并提交定位历史原型",

@@ -22,6 +22,7 @@ import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
+import { IntegrationReader } from "./integration.ts";
 import {
   prototypeCatalog,
   readCurrentPrototype,
@@ -364,6 +365,13 @@ export class SnapshotStore {
     const latest = await this.snapshot(p);
     const source = snapshotId ? await this.snapshot(p, snapshotId) : latest;
     return prototypeCatalog(source, latest.prototype);
+  }
+  async integration(p: ProjectConfig, id: string, snapshotId: string) {
+    return new IntegrationReader(
+      this.readerFactory(join(this.directory(), "git"), p),
+      await this.snapshot(p, snapshotId),
+      id,
+    );
   }
   async currentPreview(
     p: ProjectConfig,

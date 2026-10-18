@@ -39,6 +39,7 @@ import { useSavedScroll, useWorkspace } from "./context";
 import { documentExpectation } from "@/lib/workflow";
 import { Empty, Source, CopyPageLink } from "./document";
 import { ChangePreviews } from "./previews";
+import { ChangeIntegration } from "./integration";
 import { GroupedChangeRows, FollowUpContext } from "./follow-ups";
 const sizes = {
   small: "Small",
@@ -904,6 +905,7 @@ export function ChangeDrawer() {
     "documents",
     "evidence",
     "previews",
+    "integration",
   ].includes(q.ct)
     ? q.ct
     : "overview";
@@ -920,13 +922,15 @@ export function ChangeDrawer() {
             orientation: null,
             revision: null,
             zoom: null,
+            cf: null,
+            cv: null,
           });
       }}
     >
       <Dialog.Portal>
         <Dialog.Overlay className="drawer-overlay" />
         <Dialog.Content
-          className={`change-drawer${tab === "previews" ? " with-preview" : ""}`}
+          className={`change-drawer${tab === "previews" ? " with-preview" : tab === "integration" ? " with-integration" : ""}`}
           aria-describedby={undefined}
           onOpenAutoFocus={() => {
             focus.current = document.activeElement as HTMLElement;
@@ -983,13 +987,43 @@ export function ChangeDrawer() {
               ["tasks", s?.size === "xlarge" ? "子项" : "任务"],
               ["documents", "文档"],
               ["previews", "原型"],
+              ["integration", "合入变更"],
               ["evidence", "依据"],
             ].map(([id, title]) => (
               <button
                 role="tab"
                 aria-selected={tab === id}
+                tabIndex={tab === id ? 0 : -1}
                 key={id}
                 onClick={() => nav({ ct: id })}
+                onKeyDown={(event) => {
+                  if (
+                    !["ArrowLeft", "ArrowRight", "Home", "End"].includes(
+                      event.key,
+                    )
+                  )
+                    return;
+                  event.preventDefault();
+                  const buttons = [
+                    ...event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>(
+                      '[role="tab"]',
+                    ),
+                  ];
+                  const index = buttons.indexOf(event.currentTarget);
+                  const next =
+                    event.key === "Home"
+                      ? buttons[0]
+                      : event.key === "End"
+                        ? buttons.at(-1)!
+                        : buttons[
+                            (index +
+                              (event.key === "ArrowRight" ? 1 : -1) +
+                              buttons.length) %
+                              buttons.length
+                          ];
+                  next.focus();
+                  next.click();
+                }}
               >
                 {title}
               </button>
@@ -1003,6 +1037,8 @@ export function ChangeDrawer() {
               <Empty title="当前记录中没有这个 Change">
                 <p>它可能已移动到其他分支，或尚未推送。</p>
               </Empty>
+            ) : tab === "integration" ? (
+              <ChangeIntegration key={`${data!.id}:${g.id}`} id={g.id} />
             ) : !c ? (
               <>
                 <Diagnostics items={g.diagnostics} />
