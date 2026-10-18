@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "change-follow-ups",
+  "title": "连续交付通过延续关系折叠展示",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "延续关系登记与折叠阅读",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "关联既有交付并完成验收验证",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
