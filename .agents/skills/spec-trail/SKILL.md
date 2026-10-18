@@ -65,7 +65,7 @@ Markdown 不维护阶段、完成勾选、任务或审批状态，也不能用�
 
 ## 状态操作入口
 
-常规 `change.json` 创建和修改统一使用主 skill 自带的 [语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/scripts/change.mjs <command> --change <id>`。调用前按需读取命令说明；不要手写 JSON、用通用 patch 或临时 Python/JS 拼接状态。正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。
+分支移交与工作区定位使用 [工作区命令](./references/workspaces.md)，其中 handoff 仅负责 branch 登记。其余常规 `change.json` 创建和修改统一使用主 skill 自带的 [语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/scripts/change.mjs <command> --change <id>`。调用前按需读取命令说明；不要手写 JSON、用通用 patch 或临时 Python/JS 拼接状态。正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。
 
 脚本负责 UTC 毫秒时间、操作前置、失效状态清理和原子写入；Agent 负责实际确认、验证证据、正文一致性与提交推送。历史勘误按[文档与事实来源](#文档与事实来源)处理。共享校验在 `scripts/state-schema.mjs`，hook 与语义命令共用，保持零第三方依赖。
 

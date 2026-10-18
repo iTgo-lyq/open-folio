@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "实现集中规划与可恢复移交",
-      "status": "todo"
+      "status": "done",
+      "verification": "状态命令 16 项、工作区 7 项及 TypeScript 验证通过，覆盖登记推送故障与归档集成",
+      "commitTitle": "feat: add recoverable change handoff and workspace routing"
     },
     "T3": {
       "title": "实现工作区定位与会话续接",

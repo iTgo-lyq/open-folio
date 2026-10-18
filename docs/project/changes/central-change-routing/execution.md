@@ -19,3 +19,9 @@
 更新 SpecTrail 主规则、Setup、Prototype 子 skill 的 develop 规划/集成与保护分支发布边界。Setup 检查保持只读，报告已知协作引用和未验证的权限；hook 对本次暂存 JSON 仍做完整校验，仅跳过继承副本的本地原型产物关联检查。
 
 验证：`node --test tests/routing.test.ts .agents/skills/spec-trail/setup/tests/setup.test.mjs` 16 项通过；`npx tsc --noEmit` 通过；主 skill、Setup、Prototype 的 quick_validate 均通过。覆盖分支名与真实 Git 语法、配置双角色冲突、旧配置待接入、重复入口、归档终态、只读 Setup、继承原型与部分提交。CLI 操作和后台收集接线分别在 T2/T4 完成，尚未部署本检查点。
+
+## T2 — 实现集中规划与可恢复移交
+
+语义命令按协作入口约束创建、写入与读取，继承记录不再作为其他 Change 的当前状态；普通 Change 在协作分支不能进入 execution。handoff 在独立 worktree 创建 branch 登记提交，先发布目标再快进集中入口，两端共用提交；已有登记幂等复用，登记提交失败可重试，规划变化或无关脏文件保留现场并拒绝覆盖。命令使用既有状态锁，没有日志、指针格式或额外镜像状态。
+
+验证：既有状态命令 16 项回归通过；新增工作区测试 7 项均已通过（最后一项修正 fixture 验收来源后单独复跑通过），TypeScript 通过。临时 bare remote/worktree 覆盖限定路径登记、远端目标拒绝、集中推送拒绝、不同规划并发后重试、同项规划变化停止、提交 hook 失败重试、主工作区暂存现场保留、响应后重复调用、新克隆与远端删除。归档交付合回 develop 后仍保留其他规划，工作分支删除不影响归档定位。测试过程发现旧准备分支重试必须无条件同步最新协作提交，已修正并复验。

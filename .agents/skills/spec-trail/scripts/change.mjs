@@ -16,6 +16,11 @@ import { isDeepStrictEqual, parseArgs } from "node:util";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
+import {
+  repository,
+  collaborationCatalog,
+  routedRecord,
+} from "./repository.mjs";
 
 const commands = {
   create: ["title", "size", "depends-on", "parent", "children"],
@@ -132,12 +137,63 @@ function main() {
         ? readdirSync(dir).flatMap((name) => {
             const file = safe(`docs/project/${kind}/${name}/change.json`);
             return existsSync(file)
-              ? [{ file, state: read(file), archived: kind === "archive" }]
+              ? [
+                  {
+                    file,
+                    state: (() => {
+                      try {
+                        return read(file);
+                      } catch {
+                        return {
+                          id: kind === "archive" ? name.slice(11) : name,
+                        };
+                      }
+                    })(),
+                    archived: kind === "archive",
+                  },
+                ]
               : [];
           })
         : [];
     });
+  safe("docs/project/workflow.json");
+  const repo = repository(root);
+  const modern = repo.config.schemaVersion === 2;
+  const catalog = modern
+    ? collaborationCatalog(repo, {
+        refresh: command !== "show" && !opts["dry-run"],
+        local: repo.branch === repo.config.collaborationBranch,
+      })
+    : null;
+  const route = catalog?.routes.find((entry) => entry.id === id);
   const matches = records().filter((r) => r.state.id === id);
+  if (command === "show" && modern) {
+    if (route?.errors.length) throw Error(route.errors.join("; "));
+    const local =
+      (!route || (route.kind !== "archive" && route.branch === repo.branch)) &&
+      matches.filter((r) => r.state.branch === repo.branch);
+    if (
+      local &&
+      local.length === 1 &&
+      (route || repo.branch === repo.config.collaborationBranch)
+    ) {
+      console.log(
+        json({
+          path: relative(root, local[0].file),
+          state: local[0].state,
+          errors: validateChange(local[0].state),
+          source: "working-tree",
+          branch: repo.branch,
+          entryCommit: catalog.commit,
+          freshness: catalog.freshness,
+        }),
+      );
+    } else
+      console.log(
+        json({ ...routedRecord(repo, catalog, id), source: "pushed-record" }),
+      );
+    return;
+  }
   assert(
     matches.length <= 1,
     "Duplicate Change id; resolve the source records first",
@@ -175,13 +231,41 @@ function main() {
       "Use the Change branch, not a protected branch",
     );
     const all = records();
+    if (modern) {
+      assert(
+        branch === repo.branch,
+        "The checkout branch changed; retry after inspecting the workspace",
+      );
+      if (route) {
+        assert(!route.errors.length, route.errors.join("; "));
+        assert(
+          route.branch === branch && route.kind !== "archive",
+          `Use the registered Change branch ${route.branch}; inherited entries are read-only`,
+        );
+      } else
+        assert(
+          branch === config.collaborationBranch,
+          "Register this Change on the collaboration branch before writing it",
+        );
+      if (command === "create") {
+        assert(
+          branch === config.collaborationBranch,
+          "Create planning Changes on the collaboration branch",
+        );
+        assert(
+          !route,
+          "Change id is already registered on the collaboration branch",
+        );
+      }
+    }
     assert(
-      !all.some(
-        (r) =>
-          !r.archived &&
-          r.state.branch === branch &&
-          r.state.status === "cancelled",
-      ),
+      (modern && branch === config.collaborationBranch) ||
+        !all.some(
+          (r) =>
+            !r.archived &&
+            r.state.branch === branch &&
+            r.state.status === "cancelled",
+        ),
       "This branch contains a cancelled Change and is frozen",
     );
     const found = all.filter((r) => r.state.id === id);
@@ -283,25 +367,35 @@ function main() {
     };
     const uniqueActive = () =>
       assert(
-        !all.some(
-          (r) =>
-            !r.archived &&
-            r.state.id !== id &&
-            r.state.branch === branch &&
-            r.state.status === "active" &&
-            ["execution", "close"].includes(r.state.stage),
-        ),
+        (modern &&
+          branch === config.collaborationBranch &&
+          state.size === "xlarge") ||
+          !all.some(
+            (r) =>
+              !r.archived &&
+              r.state.id !== id &&
+              r.state.branch === branch &&
+              r.state.status === "active" &&
+              ["execution", "close"].includes(r.state.stage),
+          ),
         "Another Change is already executing/closing on this branch",
       );
     const availability = [];
     const dependency = (target, allowCancelled = false) => {
-      const candidates = all.filter((r) => r.state.id === target);
+      const routed = modern ? routedRecord(repo, catalog, target) : null;
+      const candidates = routed
+        ? [{ ...routed, file: join(root, routed.path) }]
+        : all.filter((r) => r.state.id === target);
       assert(
         candidates.length === 1,
         `Dependency/child ${target} is missing or ambiguous`,
       );
       const record = candidates[0],
         source = record.state;
+      assert(
+        !validateChange(source).length,
+        `Dependency/child ${target} has invalid state`,
+      );
       assert(
         (allowCancelled && source.status === "cancelled") ||
           (record.archived &&
@@ -320,7 +414,8 @@ function main() {
             )),
         `Dependency/child ${target} is not closed`,
       );
-      const remote = `refs/remotes/origin/${source.branch}`;
+      const remote =
+        routed?.sourceRef ?? `refs/remotes/origin/${source.branch}`;
       const remoteState = JSON.parse(
         git(["show", `${remote}:${relative(root, record.file)}`]),
       );
@@ -760,6 +855,13 @@ function main() {
     }
     const errors = validateChange(state);
     assert(!errors.length, errors.join("; "));
+    assert(
+      !modern ||
+        branch !== config.collaborationBranch ||
+        state.size === "xlarge" ||
+        !["execution", "close"].includes(state.stage),
+      "Handoff this Change to its own worktree before implementation",
+    );
     assert(
       !(state.dependsOn || []).includes(id) &&
         !(state.children || []).includes(id) &&
