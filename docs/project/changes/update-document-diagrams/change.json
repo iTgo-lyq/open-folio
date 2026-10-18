@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "update-document-diagrams",
+  "title": "同步 document-diagrams 上游最新源码",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "同步完整技能目录并验证安装与配色校验行为",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
