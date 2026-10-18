@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "smoke-session-cleanup",
+  "title": "冒烟验证结束后可靠退出测试会话",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一冒烟会话清理并验证成功与失败路径",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
