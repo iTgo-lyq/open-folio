@@ -2,6 +2,8 @@
 
 本包维护 workspace-shell 外壳与 personal-workbench 个人工作台方案，设计依据见 [DESIGN.md](DESIGN.md)。源码入 Git，`npm run build --workspace prototype` 输出各自的自包含 `dist/<id>/index.html`。构建不会上传或改动清单，dist 不提交。
 
+blue-glass-workbench 是蓝色玻璃工作台的独立视觉方案，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据，交互在内存运行；不是正式工作台的已上线界面。源码与设备快照一并内联，不访问外部资源。发布该页时，可单独以 `dist/blue-glass-workbench` 为产物目录，入口为 `index.html`，避免重新发布其他页面。
+
 clarification-detail 聚焦 Change 详情概览中的澄清问答，沿用当前抽屉布局；顶部可切换问答、无记录和长文本示例，支持关闭与重新打开详情。
 
 change-integration 演示“合入变更”页签：切换文件阅读统一 diff，查看归档移动、二进制与大文件限制；顶部切换合入记录、正常空态、异常、读取失败和加载场景。窄屏在文件列表与正文间切换；复制只使用示例提交，失败时提供手动复制。

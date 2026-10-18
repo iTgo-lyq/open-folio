@@ -2,6 +2,39 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "blue-glass-workbench",
+      "title": "蓝色玻璃工作台",
+      "description": "蓝色主题与克制的液态玻璃，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据。",
+      "sourcePath": "packages/prototype/src/pages/blue-glass-workbench.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/index.html",
+        "sourceCommit": "3e404d91958c2c7e403664de9dede7c9a1819324",
+        "digest": "sha256:a7d6b40ea68663defbb82b54884fe93bcdeec8471ad49fdae09afe579b56681e",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/mobile.png"
+          }
+        ]
+      }
+    },
+    {
       "id": "change-integration",
       "title": "Change 合入变更",
       "description": "整体合入差异、文件选择、归档移动、展示限制与缺失及异常状态。仅使用示例数据。",
