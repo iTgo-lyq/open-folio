@@ -186,7 +186,8 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
   const f = await fixture();
   t.after(f.cleanup);
   const workflow = {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    collaborationBranch: "develop",
     protectedBranches: ["main"],
     prototype: {
       status: "enabled",
@@ -240,6 +241,7 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     "<!doctype html><html><body>Unrelated page</body></html>",
   );
   f.commit();
+  await f.register({ demo: "change/demo" });
   let snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
   const otherBlob = f.git([
     "rev-parse",
@@ -342,7 +344,7 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
     "page",
   );
   await rendering;
-  f.git(["checkout", "main"]);
+  f.git(["checkout", "develop"]);
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({

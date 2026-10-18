@@ -15,7 +15,8 @@ export async function repositoryFixture(https = false) {
   await g.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["trunk"],
       prototype: {
         status: "enabled",
@@ -34,6 +35,8 @@ export async function repositoryFixture(https = false) {
   );
   g.commit();
   g.git(["symbolic-ref", "HEAD", "refs/heads/trunk"], g.remote);
+  g.git(["checkout", "-b", "develop"]);
+  g.git(["push", "-u", "origin", "develop"]);
   const repo = f.repositories[0];
   if (https)
     repo.cloneUrl = (g as Awaited<ReturnType<typeof gitHttpsFixture>>).url;

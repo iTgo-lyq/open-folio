@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -33,13 +33,43 @@ export async function fixture() {
   };
   await put(
     "docs/project/workflow.json",
-    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    JSON.stringify({
+      schemaVersion: 2,
+      collaborationBranch: "develop",
+      protectedBranches: ["main"],
+    }),
   );
   await put(
     "docs/project/specs/platform/spec.md",
     "# 平台\n\n中心仓库内容。\n\n## 重复\n一\n\n## 重复\n二\n",
   );
   commit();
+  git(["checkout", "-b", "develop"]);
+  git(["push", "-u", "origin", "develop"]);
+  // Tests explicitly declare every central entry. This helper never discovers branches.
+  const register = async (entries: Record<string, string>) => {
+    const original = git(["branch", "--show-current"]);
+    git(["checkout", "develop"]);
+    for (const [id, branch] of Object.entries(entries)) {
+      await put(
+        `docs/project/changes/${id}/change.json`,
+        JSON.stringify({
+          schemaVersion: 1,
+          id,
+          title: id,
+          branch,
+          size: "small",
+          status: "active",
+          stage: "requirement",
+          confirmations: {},
+          tasks: {},
+          closure: {},
+        }),
+      );
+    }
+    commit();
+    git(["checkout", original]);
+  };
   const project = {
     id: "fixture",
     name: "测试项目",
@@ -59,6 +89,7 @@ export async function fixture() {
     git,
     put,
     commit,
+    register,
     makeStore,
     store: makeStore(),
     cleanup: () => rm(root, { recursive: true, force: true }),

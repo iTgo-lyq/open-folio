@@ -281,7 +281,7 @@ test("invalid authoritative record survives valid stale copies; conflict and mis
   f.commit();
   let snap = await f.store.refresh(f.project, DEFAULT_LIMITS),
     g = snap.changes.find((g) => g.id === "alpha")!;
-  assert.equal(g.candidates.length, 2);
+  assert.equal(g.candidates.length, 1);
   assert.equal(primaryRecord(g)?.branch, "change/alpha");
   assert.equal(primaryRecord(g)?.state, null);
   f.git(["checkout", "-b", "change/second"]);
@@ -292,13 +292,12 @@ test("invalid authoritative record survives valid stale copies; conflict and mis
   f.commit();
   snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
   g = snap.changes.find((g) => g.id === "alpha")!;
-  assert.equal(g.primary, null);
-  assert.equal(g.diagnostics[0].code, "OWNER_CONFLICT");
+  assert.equal(primaryRecord(g)?.branch, "change/alpha"); // unregistered branch is ignored
   f.git(["push", "origin", "--delete", "change/second", "change/alpha"]);
   snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
   g = snap.changes.find((g) => g.id === "alpha")!;
   assert.equal(g.primary, null);
-  assert.equal(g.diagnostics[0].code, "OWNER_MISSING");
+  assert.equal(g.diagnostics[0].code, "SOURCE_INVALID");
 });
 
 test("completion, dependency ancestry, live leftovers, cancellation and parent cycles stay distinct", async (t) => {
@@ -324,6 +323,11 @@ test("completion, dependency ancestry, live leftovers, cancellation and parent c
     JSON.stringify(state("squashed", { dependsOn: ["upstream"] })),
   );
   f.commit();
+  await f.register({
+    upstream: "change/upstream",
+    downstream: "change/downstream",
+    squashed: "change/squashed",
+  });
   let snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
   const rel = (id: string) =>
     snap.changes.find((g) => g.id === id)!.relations[0];
@@ -361,6 +365,7 @@ test("completion, dependency ancestry, live leftovers, cancellation and parent c
     JSON.stringify(state("child", { parent: "parent", dependsOn: ["parent"] })),
   );
   f.commit();
+  await f.register({ parent: "change/parent", child: "change/child" });
   snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert(
     snap.changes
@@ -399,6 +404,14 @@ test("size routes preserve confirmations, closure order and explicit Spec refere
     "# 小修改\n[平台](../../specs/platform/spec.md)\n",
   );
   f.commit();
+  await f.register(
+    Object.fromEntries(
+      ["small", "medium", "large", "cancelled", "early-close"].map((id) => [
+        id,
+        "change/routes",
+      ]),
+    ),
+  );
   const snap = await f.store.refresh(f.project, DEFAULT_LIMITS),
     record = (id: string) =>
       primaryRecord(snap.changes.find((g) => g.id === id)!)!;
@@ -438,6 +451,10 @@ test("completed small Changes reject invalid explicit order and keep the no-Plan
     "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | T8 |\n",
   );
   f.commit();
+  await f.register({
+    "invalid-small": "change/small-order",
+    "default-small": "change/small-order",
+  });
   const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
   const invalid = primaryRecord(
     snap.changes.find((g) => g.id === "invalid-small")!,
@@ -479,6 +496,9 @@ test("invalid archived relationships propagate through consumers and closing par
       JSON.stringify({ ...s, branch: "change/relations" }),
     );
   f.commit();
+  await f.register(
+    Object.fromEntries(records.map((s) => [s.id, "change/relations"])),
+  );
   const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
   for (const id of ["a-parent", "b-consumer", "c-broken"]) {
     const g = snap.changes.find((g) => g.id === id)!;

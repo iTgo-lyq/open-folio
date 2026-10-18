@@ -13,15 +13,27 @@ import { tmpdir } from "node:os";
 import type { GitTransport } from "./providers/types.ts";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import type { Branch, DocumentRef, Limits, Snapshot } from "../lib/model.ts";
+import type {
+  Branch,
+  DocumentRef,
+  Limits,
+  Snapshot,
+  Diagnostic,
+  ChangeRoute,
+} from "../lib/model.ts";
 import { inspectMarkdown } from "../lib/markdown.ts";
 import { AppError } from "./errors.ts";
 import { isSvgImage } from "./svg.ts";
+import { workflowCoreSchema } from "./schema.ts";
+import {
+  routeCatalog,
+  changeLocation,
+} from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([2, limits]));
+  hash(JSON.stringify([3, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -79,7 +91,7 @@ export class GitReader {
   }
   private config() {
     const url = this.url.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    return `[core]\nrepositoryformatversion = 0\nfilemode = true\nbare = true\n[remote "origin"]\nurl = "${url}"\nfetch = +refs/heads/*:refs/remotes/origin/*\n`;
+    return `[core]\nrepositoryformatversion = 0\nfilemode = true\nbare = true\n[remote "origin"]\nurl = "${url}"\n`;
   }
   async run(
     args: string[],
@@ -104,7 +116,15 @@ export class GitReader {
         throw e;
       },
     );
-    if (config !== null && config !== this.config())
+    // Accept only our exact prior cache configuration, then remove its wildcard refspec.
+    if (
+      config ===
+      this.config() + "fetch = +refs/heads/*:refs/remotes/origin/*\n"
+    )
+      await writeFile(join(this.directory, "config"), this.config(), {
+        mode: 0o600,
+      });
+    else if (config !== null && config !== this.config())
       throw new AppError(
         "GIT_CONFIG_UNTRUSTED",
         "仓库缓存配置不兼容，请重新建立个人缓存。",
@@ -232,156 +252,131 @@ export class GitReader {
       });
       await chmod(join(this.directory, "config"), 0o600);
     }
+    const previous = cache?.snapshot;
+    const branches: Branch[] = [],
+      archiveRefs: { id: string; commit: string }[] = [];
+    const sourceDiagnostics: Diagnostic[] = [];
+    let collaborationBranch: string | null = null;
+    let routes: ChangeRoute[] = [];
+    const diagnostic = (message: string, code = "SETUP_REQUIRED") =>
+      sourceDiagnostics.push({ code, message, severity: "warning" });
     const head = (
-      await this.run(
-        [
-          "ls-remote",
-          "--symref",
-          "origin",
-          "HEAD",
-          "refs/heads/*",
-          "refs/tags/spec-trail/archive-v2/*",
-        ],
-        signal,
-      )
+      await this.run(["ls-remote", "--symref", "origin", "HEAD"], signal)
     ).toString();
     const defaultBranch =
       /^ref: refs\/heads\/(.+)\tHEAD$/m.exec(head)?.[1] ?? null;
-    // Compare raw tag objects too: an annotated tag may change without changing
-    // its peeled commit. The live advertisement also catches deletes and force pushes.
-    const remoteRefs = head
-      .trim()
-      .split("\n")
-      .filter(
-        (row) =>
-          /^[a-f0-9]{40,64}\trefs\/(heads\/|tags\/spec-trail\/archive-v2\/)/.test(
-            row,
-          ) && !row.endsWith("^{}"),
-      )
-      .map((row) =>
-        row
-          .replace("\trefs/heads/", "\trefs/remotes/origin/")
-          .replace("\trefs/tags/spec-trail/", "\trefs/openfolio/"),
+    const exact = async (names: string[]) => {
+      if (!names.length) return new Map<string, string>();
+      const rows = (
+        await this.run(["ls-remote", "origin", ...names], signal)
+      ).toString();
+      const requested = new Set(names);
+      return new Map(
+        rows.split("\n").flatMap((row) => {
+          const [commit, ref] = row.split("\t");
+          return requested.has(ref) && /^[a-f0-9]{40,64}$/.test(commit)
+            ? [[ref, commit] as [string, string]]
+            : [];
+        }),
       );
-    const localRefs = (
-      await this.run(
-        [
-          "for-each-ref",
-          "--format=%(objectname)%09%(refname)",
-          "refs/remotes/origin/",
-          "refs/openfolio/archive-v2/",
-        ],
-        signal,
+    };
+    const fetchRef = async (
+      remote: string,
+      local: string,
+      advertised: string,
+    ) => {
+      // Missing live advertisements never consult residual local refs.
+      const found = (
+        await this.run(
+          ["for-each-ref", "--format=%(objectname)%09%(refname)", local],
+          signal,
+        )
       )
-    )
-      .toString()
-      .trim()
-      .split("\n")
-      .filter(Boolean);
-    if (JSON.stringify(remoteRefs.sort()) !== JSON.stringify(localRefs.sort()))
-      await this.run(
-        [
-          "fetch",
-          "--atomic",
-          "--prune",
-          "--no-tags",
-          "--no-recurse-submodules",
-          "origin",
-          "+refs/heads/*:refs/remotes/origin/*",
-          "+refs/tags/spec-trail/archive-v2/*:refs/openfolio/archive-v2/*",
-        ],
-        signal,
-      );
-    const refs = (
-      await this.run(
-        [
-          "for-each-ref",
-          "--format=%(objectname) %(refname)",
-          "refs/remotes/origin/",
-        ],
-        signal,
-      )
-    )
-      .toString()
-      .trim();
-    const branches: Branch[] = refs
-      ? refs.split("\n").map((row) => {
-          const [commit, ref] = row.split(" ");
-          return { name: ref.slice("refs/remotes/origin/".length), commit };
-        })
-      : [];
-    if (branches.length > limits.branches)
-      throw new AppError(
-        "SOURCE_LIMIT",
-        "远端分支数量超过配置限制，已保留上次快照。",
-      );
-    const archiveRows = (
-      await this.run(
-        ["for-each-ref", "--format=%(refname)", "refs/openfolio/archive-v2/"],
-        signal,
-      )
-    )
-      .toString()
-      .trim()
-      .split("\n")
-      .filter(Boolean);
-    const archiveRefs: { id: string; commit: string }[] = [];
-    for (const ref of archiveRows) {
-      const id = ref.slice("refs/openfolio/archive-v2/".length);
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) continue;
+        .toString()
+        .trim()
+        .split("\n")
+        .some((row) => row === `${advertised}\t${local}`);
+      if (!found)
+        await this.run(
+          [
+            "fetch",
+            "--no-tags",
+            "--no-recurse-submodules",
+            "origin",
+            `+${remote}:${local}`,
+          ],
+          signal,
+        );
       try {
-        archiveRefs.push({
-          id,
-          commit: (
-            await this.run(["rev-parse", "--verify", `${ref}^{commit}`], signal)
-          )
-            .toString()
-            .trim(),
-        });
-      } catch {
-        /* A tag to a non-commit is not a preview revision. */
+        return (
+          await this.run(["rev-parse", "--verify", `${local}^{commit}`], signal)
+        )
+          .toString()
+          .trim();
+      } catch (error) {
+        if (remote.startsWith("refs/tags/")) return "";
+        throw error;
       }
-    }
+    };
+    const source = async (name: string, advertised?: string) => {
+      const existing = branches.find((b) => b.name === name);
+      if (existing) return existing;
+      if (!advertised) return null;
+      if (branches.length >= limits.branches)
+        throw new AppError(
+          "SOURCE_LIMIT",
+          "指定来源数量超过配置限制，已保留上次快照。",
+        );
+      const branch = {
+        name,
+        commit: await fetchRef(
+          `refs/heads/${name}`,
+          `refs/remotes/origin/${name}`,
+          advertised,
+        ),
+      };
+      branches.push(branch);
+      return branch;
+    };
     const documents: DocumentRef[] = [],
       blobs = new Map<string, Buffer>();
     let total = 0;
-    const sources = [
-      ...branches.map((b) => ({ ...b, archiveId: "" })),
-      ...archiveRefs.map((r) => ({
-        name: `refs/tags/spec-trail/archive-v2/${r.id}`,
-        commit: r.commit,
-        archiveId: r.id,
-      })),
-    ];
-    const previous = cache?.snapshot;
-    if (
-      previous &&
-      previous.defaultBranch === defaultBranch &&
-      JSON.stringify(previous.branches) === JSON.stringify(branches) &&
-      JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs)
-    )
-      return {
-        defaultBranch,
-        branches,
-        archiveRefs,
-        documents: previous.documents,
-        blobs,
-        unchanged: true,
-      };
-    for (const branch of sources) {
-      const prior = branch.archiveId
-        ? previous?.archiveRefs.find((r) => r.id === branch.archiveId)
-        : previous?.branches.find((b) => b.name === branch.name);
+    const collectSource = async (
+      branch: Branch,
+      scope: string[],
+      ids?: string[],
+    ) => {
+      const selected = (path: string) =>
+        scope.some(
+          (prefix) =>
+            path === prefix ||
+            (prefix.endsWith("/") && path.startsWith(prefix)),
+        ) &&
+        (!ids ||
+          ids.some(
+            (id) =>
+              path.startsWith(`docs/project/changes/${id}/`) ||
+              new RegExp(
+                `^docs/project/archive/[0-9]{4}-[0-9]{2}-[0-9]{2}-${id}/`,
+              ).test(path),
+          ));
+      const prior = previous?.branches.find((b) => b.name === branch.name);
+      const priorIds = previous?.routes
+        .filter((r) => r.branch === branch.name)
+        .map((r) => r.id)
+        .sort();
       if (
         cache &&
         prior?.commit === branch.commit &&
-        (branch.name === defaultBranch) ===
-          (branch.name === previous!.defaultBranch)
+        (branch.name === collaborationBranch) ===
+          (branch.name === previous!.collaborationBranch) &&
+        (!ids || JSON.stringify(ids.toSorted()) === JSON.stringify(priorIds))
       ) {
         for (const doc of previous!.documents.filter(
-          (d) => d.branch === branch.name,
+          (d) => d.branch === branch.name && selected(d.path),
         )) {
           signal.throwIfAborted();
+          if (documents.some((d) => d.id === doc.id)) continue;
           if (documents.length >= limits.documents)
             throw new AppError(
               "SOURCE_LIMIT",
@@ -415,22 +410,11 @@ export class GitReader {
               ),
           );
         }
-        continue;
+        return;
       }
       const raw = (
         await this.run(
-          [
-            "ls-tree",
-            "-rz",
-            "--full-tree",
-            branch.commit,
-            "--",
-            ...(branch.archiveId
-              ? ["docs/project/archive/"]
-              : branch.name === defaultBranch
-                ? ["docs/project/"]
-                : ["docs/project/changes/", "docs/project/archive/"]),
-          ],
+          ["ls-tree", "-rz", "--full-tree", branch.commit, "--", ...scope],
           signal,
         )
       ).toString("utf8");
@@ -441,10 +425,8 @@ export class GitReader {
           path = row.slice(tab + 1);
         if (!safePath(path)) continue;
         if (
-          branch.archiveId &&
-          !new RegExp(
-            `^docs/project/archive/[0-9]{4}-[0-9]{2}-[0-9]{2}-${branch.archiveId}/`,
-          ).test(path)
+          !selected(path) ||
+          documents.some((d) => d.branch === branch.name && d.path === path)
         )
           continue;
         if (documents.length >= limits.documents)
@@ -550,8 +532,160 @@ export class GitReader {
           }
         }
       }
+    };
+    const readJson = (branch: string, path: string) => {
+      const doc = documents.find((d) => d.branch === branch && d.path === path);
+      if (!doc?.readable) throw Error(`无法读取 ${branch}:${path}`);
+      return JSON.parse(blobs.get(doc.blob)!.toString());
+    };
+    const finish = () => {
+      branches.sort((a, b) => a.name.localeCompare(b.name));
+      const same =
+        previous &&
+        previous.defaultBranch === defaultBranch &&
+        previous.collaborationBranch === collaborationBranch &&
+        JSON.stringify(previous.branches) === JSON.stringify(branches) &&
+        JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs) &&
+        JSON.stringify(previous.routes) === JSON.stringify(routes) &&
+        JSON.stringify(previous.sourceDiagnostics) ===
+          JSON.stringify(sourceDiagnostics);
+      return {
+        defaultBranch,
+        collaborationBranch,
+        branches,
+        routes,
+        sourceDiagnostics,
+        archiveRefs,
+        documents,
+        blobs,
+        unchanged: !!same,
+      };
+    };
+    const defaultCommit = /^([a-f0-9]{40,64})\tHEAD$/m.exec(head)?.[1];
+    const baseline = defaultBranch
+      ? await source(defaultBranch, defaultCommit)
+      : null;
+    if (!baseline) {
+      diagnostic("无法定位默认分支，请完成 SpecTrail Setup。");
+      return finish();
     }
-    return { defaultBranch, branches, archiveRefs, documents, blobs };
+    await collectSource(baseline, ["docs/project/workflow.json"]);
+    let discovery;
+    try {
+      discovery = workflowCoreSchema.parse(
+        readJson(baseline.name, "docs/project/workflow.json"),
+      );
+    } catch {
+      diagnostic(
+        "默认分支尚未发布有效的协作分支配置，请完成 SpecTrail Setup。",
+      );
+      return finish();
+    }
+    collaborationBranch = discovery.collaborationBranch;
+    const collab = await source(
+      collaborationBranch,
+      (await exact([`refs/heads/${collaborationBranch}`])).get(
+        `refs/heads/${collaborationBranch}`,
+      ),
+    );
+    if (!collab) {
+      diagnostic(`协作分支 ${collaborationBranch} 不存在，请修复 Setup。`);
+      return finish();
+    }
+    await collectSource(collab, ["docs/project/"]);
+    let workflow;
+    try {
+      workflow = workflowCoreSchema.parse(
+        readJson(collab.name, "docs/project/workflow.json"),
+      );
+      if (workflow.collaborationBranch !== collaborationBranch) throw Error();
+    } catch {
+      diagnostic("默认分支入口与协作分支配置不一致或配置无效，请修复 Setup。");
+      return finish();
+    }
+    routes = routeCatalog(
+      documents
+        .filter(
+          (d) => d.branch === collaborationBranch && changeLocation(d.path),
+        )
+        .map((d) => {
+          try {
+            return { path: d.path, state: readJson(d.branch, d.path) };
+          } catch {
+            return { path: d.path, state: null, error: "入口 JSON 不可读。" };
+          }
+        }),
+      collaborationBranch,
+      workflow.protectedBranches,
+    ) as ChangeRoute[];
+    const targets = [
+      ...new Set(
+        routes
+          .filter((r) => r.kind === "target" && !r.errors.length)
+          .map((r) => r.branch!),
+      ),
+    ].sort();
+    if (targets.length + branches.length > limits.branches)
+      throw new AppError(
+        "SOURCE_LIMIT",
+        "指定来源数量超过配置限制，已保留上次快照。",
+      );
+    const refs = await exact(targets.map((name) => `refs/heads/${name}`));
+    for (const name of targets) {
+      const targetRoutes = routes.filter((r) => r.branch === name);
+      const target = await source(name, refs.get(`refs/heads/${name}`));
+      if (!target) {
+        targetRoutes.forEach((r) =>
+          r.errors.push(
+            `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
+          ),
+        );
+        continue;
+      }
+      await collectSource(
+        target,
+        ["docs/project/changes/", "docs/project/archive/"],
+        targetRoutes.map((r) => r.id),
+      );
+    }
+    // Retention tags only keep explicitly referenced archived preview revisions alive.
+    const pins = routes
+      .filter(
+        (r) =>
+          !r.errors.length &&
+          documents.some((d) => {
+            if (
+              d.branch !== r.branch ||
+              changeLocation(d.path)?.id !== r.id ||
+              !changeLocation(d.path)?.archived
+            )
+              return false;
+            try {
+              const value = readJson(d.branch, d.path);
+              return Array.isArray(value.previews) && value.previews.length > 0;
+            } catch {
+              return false;
+            }
+          }),
+      )
+      .map((r) => r.id)
+      .sort();
+    const tags = await exact(
+      pins.map((id) => `refs/tags/spec-trail/archive-v2/${id}`),
+    );
+    for (const id of pins) {
+      const ref = `refs/tags/spec-trail/archive-v2/${id}`,
+        advertised = tags.get(ref);
+      if (advertised) {
+        const commit = await fetchRef(
+          ref,
+          `refs/openfolio/archive-v2/${id}`,
+          advertised,
+        );
+        if (commit) archiveRefs.push({ id, commit });
+      }
+    }
+    return finish();
   }
   async ancestor(base: string, tip: string, signal?: AbortSignal) {
     try {

@@ -18,7 +18,7 @@ import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/con
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
-  const branch = data.defaultBranch;
+  const branch = data.collaborationBranch;
   const doc = data.documents.find(
     (d) => d.branch === branch && d.path === "docs/project/workflow.json",
   );
@@ -28,7 +28,12 @@ export function prototypePolicy(data: Collected): Snapshot["prototype"] {
     const workflow = workflowSchema.parse(
       JSON.parse(data.blobs.get(doc.blob)!.toString()),
     );
-    if (!branch || !workflow.protectedBranches.includes(branch)) throw Error();
+    if (
+      !branch ||
+      workflow.collaborationBranch !== branch ||
+      data.sourceDiagnostics.length
+    )
+      throw Error();
     const status = workflow.prototype?.status ?? "unconfigured";
     return {
       ...base,
@@ -293,7 +298,8 @@ export async function resolvePreview(
   try {
     configuration = await readPrototypeConfiguration(
       reader,
-      latest.branches.find((b) => b.name === latest.defaultBranch)?.commit,
+      latest.branches.find((b) => b.name === latest.collaborationBranch)
+        ?.commit,
       limits,
       signal,
     );

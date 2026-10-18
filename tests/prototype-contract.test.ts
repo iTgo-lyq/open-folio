@@ -253,14 +253,19 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   assert.equal(run().status, 0);
 });
 
-test("invalid previews retain the Change core and old workflow stays readable", async (t) => {
+test("invalid previews retain the Change core on its registered source", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   await f.put(
     "docs/project/changes/prototype/change.json",
-    JSON.stringify(state([{ ...entry, devices: ["watch"] }])),
+    JSON.stringify({
+      ...state([{ ...entry, devices: ["watch"] }]),
+      branch: "change/prototype",
+    }),
   );
   f.commit();
+  f.git(["checkout", "-b", "change/prototype"]);
+  f.git(["push", "origin", "HEAD"]);
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
   const record = primaryRecord(
     snapshot.changes.find((c) => c.id === "prototype")!,
@@ -268,5 +273,5 @@ test("invalid previews retain the Change core and old workflow stays readable", 
   assert(record.state);
   assert.equal(record.state.previews, undefined);
   assert(record.diagnostics.some((d) => d.code === "PREVIEWS_INVALID"));
-  assert.equal(snapshot.specBranch, "main");
+  assert.equal(snapshot.specBranch, "develop");
 });

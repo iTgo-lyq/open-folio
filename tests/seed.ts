@@ -66,7 +66,8 @@ export async function seed() {
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main"],
       prototype: {
         status: "enabled",
@@ -261,7 +262,7 @@ export async function seed() {
     make("invalid-state", "需要核对的来源记录"),
   ];
   for (const record of records) {
-    f.git(["checkout", "main"]);
+    f.git(["checkout", "develop"]);
     f.git(["checkout", "-b", record.branch]);
     const dir =
       record.status === "completed"
@@ -306,7 +307,7 @@ export async function seed() {
     }
     f.commit();
   }
-  f.git(["checkout", "main"]);
+  f.git(["checkout", "develop"]);
   f.git([
     "checkout",
     "change/document-reader",
@@ -333,6 +334,7 @@ export async function seed() {
     JSON.stringify({ schemaVersion: 1, entries: currentEntries }),
   );
   f.commit();
+  await f.register(Object.fromEntries(records.map((r) => [r.id, r.branch])));
   const snapshot = await f.store.refresh(project, DEFAULT_LIMITS);
   return { ...f, project, snapshot };
 }

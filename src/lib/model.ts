@@ -184,6 +184,12 @@ export type Relation = {
   diagnostics: string[];
 };
 export type ChangeGroup = {
+  source?: {
+    entryBranch: string;
+    entryPath: string;
+    entryCommit: string;
+    recordBranch: string | null;
+  };
   id: string;
   title: string;
   primary: string | null;
@@ -204,8 +210,18 @@ export type CurrentPrototype = {
   issues: string[];
   message?: string;
 };
+export type ChangeRoute = {
+  id: string;
+  entryPath: string;
+  branch: string | null;
+  kind: "planning" | "target" | "archive" | "invalid";
+  errors: string[];
+};
 export type Snapshot = {
-  cacheSchemaVersion: 3;
+  cacheSchemaVersion: 4;
+  collaborationBranch: string | null;
+  routes: ChangeRoute[];
+  sourceDiagnostics: Diagnostic[];
   scanFingerprint?: string;
   currentPrototype: CurrentPrototype;
   archiveRefs: { id: string; commit: string }[];

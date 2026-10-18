@@ -6,7 +6,8 @@ import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
 const confirmedAt = "2026-10-03T01:50:00+08:00";
 const workflow = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  collaborationBranch: "develop",
   protectedBranches: ["main"],
   prototype: { status: "enabled", packagePath: "packages/prototype" },
 };
@@ -45,6 +46,7 @@ async function source() {
   await f.put(changePath, JSON.stringify(state));
   await f.put(`${entry.artifact.path}/index.html`, html("first"));
   const revision = f.commit();
+  await f.register({ [state.id]: state.branch });
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   return { ...f, revision };
 }
@@ -83,7 +85,7 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
     ).html!,
     /first/,
   );
-  f.git(["checkout", "main"]);
+  f.git(["checkout", "develop"]);
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
@@ -138,6 +140,11 @@ test("archive with obsolete workflow preserves HTML using current main config af
     tag = "spec-trail/archive-v2/preview-demo";
   f.git(["tag", tag, archived]);
   f.git(["push", "origin", `refs/tags/${tag}`]);
+  f.git(["checkout", "develop"]);
+  f.git(["rm", "-r", "docs/project/changes/preview-demo"]);
+  f.git(["checkout", archived, "--", directory]);
+  f.commit();
+  f.git(["checkout", state.branch]);
   f.git(["push", "origin", "--delete", state.branch]);
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   const group = (await f.store.snapshot(f.project)).changes.find(
@@ -209,7 +216,7 @@ test("Change previews ignore historical workflow and fail on invalid current con
     assert.match((await preview(f, revision)).html!, /first/);
   }
   const snapshot = await f.store.snapshot(f.project);
-  f.git(["checkout", "main"]);
+  f.git(["checkout", "develop"]);
   await f.put("docs/project/workflow.json", "{broken");
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -367,6 +374,7 @@ test("two Changes can share one exported entry without a separate prototype mani
     }),
   );
   const revision = f.commit();
+  await f.register({ "shared-consumer": "change/shared-consumer" });
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   const original = await preview(f),
     reused = await f.store.preview(
@@ -413,6 +421,10 @@ test("per-commit preview entry limits do not cap lifetime archive tags or block 
     f.git(["tag", tag.slice(10), revision]);
     f.git(["push", "origin", tag]);
   }
+  await f.register({
+    "first-archive": state.branch,
+    "second-archive": state.branch,
+  });
   const limits = { ...DEFAULT_LIMITS, previewEntries: 1 };
   const snapshot = await f.store.refresh(f.project, limits);
   assert.equal(snapshot.archiveRefs.length, 2);
@@ -458,6 +470,7 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
     tag = `refs/tags/spec-trail/archive-v2/${id}`;
   f.git(["tag", tag.slice(10), revision]);
   f.git(["push", "origin", tag]);
+  await f.register({ [id]: state.branch });
   for (const store of [f.store, f.makeStore()]) {
     const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
     assert(Object.hasOwn(snapshot.archivePins, `spec-trail/archive-v2/${id}`));

@@ -4,7 +4,8 @@ import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 const path = "packages/prototype/prototype.json";
 const workflow = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  collaborationBranch: "develop",
   protectedBranches: ["main"],
   prototype: {
     status: "enabled",
@@ -61,7 +62,7 @@ test("main catalog needs no Change; branch edits, source changes, renames and de
     DEFAULT_LIMITS,
   );
   assert.match(denied.descriptor.message!, /默认分支/);
-  f.git(["checkout", "main"]);
+  f.git(["checkout", "develop"]);
   await f.put(f.entry.sourcePath, "updated source without rebuild");
   f.commit();
   await f.store.refresh(f.project, DEFAULT_LIMITS);

@@ -16,18 +16,18 @@ test("personal repository reads isolate snapshots and expire cached permissions 
     const r = await t.request("workbench"),
       w = await r.json();
     assert.equal(w.defaultBranch, "trunk");
-    assert.equal(w.prototype.branch, "trunk");
+    assert.equal(w.prototype.branch, "develop");
     assert.equal(
       w.currentPrototype.revision,
-      w.branches.find((b: { name: string }) => b.name === "trunk").commit,
+      w.branches.find((b: { name: string }) => b.name === "develop").commit,
     );
     const doc = w.documents.find(
       (d: { path: string; branch: string }) =>
-        d.path.endsWith("spec.md") && d.branch === "trunk",
+        d.path.endsWith("spec.md") && d.branch === "develop",
     );
     const image = w.documents.find(
       (d: { path: string; branch: string }) =>
-        d.path.endsWith("image.png") && d.branch === "trunk",
+        d.path.endsWith("image.png") && d.branch === "develop",
     );
     const paths = [
       `documents/${doc.id}?snapshot=${w.id}`,
@@ -62,7 +62,7 @@ test("personal repository reads isolate snapshots and expire cached permissions 
       await t.request("workbench", "GET", other.cookie, other.connection.id)
     ).json();
     assert.equal(
-      own.branches.find((b: { name: string }) => b.name === "trunk").commit,
+      own.branches.find((b: { name: string }) => b.name === "develop").commit,
       doc.commit,
     );
     t.f.controls.deny.add("1");

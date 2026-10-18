@@ -146,7 +146,7 @@ export async function resolveCurrentPreview(
       latest.prototype.status === "invalid",
     );
   const main = latest.branches.find(
-    (b) => b.name === latest.defaultBranch,
+    (b) => b.name === latest.collaborationBranch,
   )?.commit;
   const target = revision ?? current.revision;
   if (!main || !target) return fail("项目没有默认分支，无法读取当前页面。");

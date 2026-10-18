@@ -70,7 +70,7 @@ export class SnapshotStore {
     this.cacheIdentity = cacheIdentity;
   }
   fingerprint() {
-    return hash(JSON.stringify([2, this.cacheIdentity]));
+    return hash(JSON.stringify([3, this.cacheIdentity]));
   }
   directory() {
     return join(this.root, this.cacheIdentity);
@@ -128,7 +128,9 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 3 ||
+        s.cacheSchemaVersion !== 4 ||
+        !Array.isArray(s.routes) ||
+        !Array.isArray(s.sourceDiagnostics) ||
         s.id !== target ||
         s.projectId !== p.id ||
         s.fingerprint !== this.fingerprint()
@@ -236,7 +238,7 @@ export class SnapshotStore {
       }
       const base = indexBase(data, p);
       const main = data.branches.find(
-        (b) => b.name === data.defaultBranch,
+        (b) => b.name === data.collaborationBranch,
       )?.commit;
       const prototypeLimits = {
         ...limits,
@@ -247,11 +249,14 @@ export class SnapshotStore {
         ),
       };
       const s: Snapshot = {
-        cacheSchemaVersion: 3,
+        cacheSchemaVersion: 4,
+        collaborationBranch: data.collaborationBranch,
+        routes: data.routes,
+        sourceDiagnostics: data.sourceDiagnostics,
         scanFingerprint: scanFingerprint(limits),
         currentPrototype:
           previous?.scanFingerprint === scanFingerprint(limits) &&
-          previous.defaultBranch === data.defaultBranch &&
+          previous.collaborationBranch === data.collaborationBranch &&
           previous.currentPrototype.revision === main &&
           !previous.currentPrototype.message &&
           (previous.currentPrototype.manifestBytes ?? 0) <=
@@ -262,7 +267,8 @@ export class SnapshotStore {
                   revision: main ?? null,
                   entries: [],
                   issues: [],
-                  message: "默认分支未登记为有效守护分支，无法读取当前页面。",
+                  message:
+                    "协作分支来源尚未就绪，请完成 Setup 后读取当前页面。",
                 }
               : await readCurrentPrototype(
                   reader,
@@ -343,10 +349,7 @@ export class SnapshotStore {
   }
   async workbench(p: ProjectConfig, id?: string): Promise<Workbench> {
     const s = await this.snapshot(p, id),
-      selectedBranch =
-        s.defaultBranch && s.protectedBranches.includes(s.defaultBranch)
-          ? s.defaultBranch
-          : null;
+      selectedBranch = s.specBranch;
     return {
       ...s,
       specs: s.specs.filter((v) => v.branch === selectedBranch),

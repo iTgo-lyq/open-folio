@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { workflowSchema } from "./schema.ts";
+import { workflowCoreSchema } from "./schema.ts";
 import { GitReader } from "./git.ts";
 import { AppError } from "./errors.ts";
 import { repositoryPermissions } from "./repository-permissions.ts";
@@ -121,8 +121,9 @@ export type GitProbe = (
   provider: RepositoryProvider,
   context: ProviderContext,
   repo: RepositoryIdentity,
+  branches: string[],
 ) => Promise<Map<string, string>>;
-export const probeGit: GitProbe = async (provider, context, repo) => {
+export const probeGit: GitProbe = async (provider, context, repo, branches) => {
   const dir = await mkdtemp(join(tmpdir(), "folio-git-probe-"));
   try {
     const reader = new GitReader(
@@ -131,7 +132,7 @@ export const probeGit: GitProbe = async (provider, context, repo) => {
     );
     const text = (
       await reader.run(
-        ["ls-remote", "--symref", reader.url, "HEAD", "refs/heads/*"],
+        ["ls-remote", reader.url, ...branches.map((b) => `refs/heads/${b}`)],
         context.signal,
       )
     ).toString();
@@ -268,9 +269,9 @@ export class Discovery {
             ? "工作流路径不是普通文件。"
             : "暂时无法检查工作流。",
       };
-    let workflow: z.infer<typeof workflowSchema>;
+    let workflow: z.infer<typeof workflowCoreSchema>;
     try {
-      workflow = workflowSchema.parse(
+      workflow = workflowCoreSchema.parse(
         JSON.parse(Buffer.from(probe.bytes).toString("utf8")),
       );
     } catch {
@@ -278,10 +279,21 @@ export class Discovery {
         key,
         repository,
         state: "attention",
-        message: "SpecTrail 配置损坏或版本不受支持。",
+        message: "请完成 SpecTrail Setup，发布有效的协作分支配置。",
       };
     }
-    const refs = await this.git(provider, context, repository);
+    const refs = await this.git(
+      provider,
+      context,
+      repository,
+      [
+        ...new Set([
+          repository.defaultBranch!,
+          workflow.collaborationBranch,
+          ...workflow.protectedBranches,
+        ]),
+      ].filter(Boolean),
+    );
     if (
       !repository.defaultBranch ||
       refs.get(repository.defaultBranch) !== probe.commit
@@ -299,18 +311,18 @@ export class Discovery {
         state: "attention",
         message: "配置声明的守护分支不存在。",
       };
-    if (!workflow.protectedBranches.includes(repository.defaultBranch))
+    if (!refs.has(workflow.collaborationBranch))
       return {
         key,
         repository,
         state: "attention",
-        message: "默认分支未登记为守护分支，请选择有效阅读来源。",
+        message: "协作分支不存在，请完成 SpecTrail Setup。",
       };
     return {
       key,
       repository,
       state: "ready",
-      specBranch: repository.defaultBranch,
+      specBranch: workflow.collaborationBranch,
     };
   }
   async start(cookie: string, id: string, retry = false) {

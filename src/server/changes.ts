@@ -134,7 +134,29 @@ export async function indexChanges(
   reader: Pick<GitReader, "ancestor">,
   signal?: AbortSignal,
 ): Promise<ChangeGroup[]> {
-  const groups = new Map<string, ChangeGroup>();
+  const groups = new Map<string, ChangeGroup>(
+    data.routes.map((route) => [
+      route.id,
+      {
+        id: route.id,
+        title: route.id,
+        primary: null,
+        candidates: [],
+        relations: [],
+        source: {
+          entryBranch: data.collaborationBranch!,
+          entryPath: route.entryPath,
+          entryCommit: data.branches.find(
+            (b) => b.name === data.collaborationBranch,
+          )!.commit,
+          recordBranch: route.branch,
+        },
+        diagnostics: route.errors.map((message) =>
+          issue("SOURCE_INVALID", message, route.entryPath),
+        ),
+      },
+    ]),
+  );
   for (const doc of data.documents) {
     const m = /^docs\/project\/(changes|archive)\/([^/]+)\/change\.json$/.exec(
       doc.path,
@@ -143,6 +165,8 @@ export async function indexChanges(
     const directory = doc.path.slice(0, -"/change.json".length),
       fallbackId =
         m[1] === "archive" ? m[2].replace(/^\d{4}-\d{2}-\d{2}-/, "") : m[2];
+    const route = data.routes.find((r) => r.id === fallbackId);
+    if (!route || doc.branch !== route.branch || route.errors.length) continue;
     let raw: unknown;
     const diagnostics: Diagnostic[] = [...doc.diagnostics];
     try {
@@ -162,9 +186,11 @@ export async function indexChanges(
       raw && typeof raw === "object" && !Array.isArray(raw)
         ? (raw as Record<string, unknown>)
         : {};
-    const id = identity.safeParse(object.id).success
-      ? (object.id as string)
-      : fallbackId;
+    const id = fallbackId;
+    if (object.id !== fallbackId)
+      diagnostics.push(
+        issue("DIRECTORY_ID", "目标记录 id 与集中入口不匹配。", doc.path),
+      );
     const owner = branchName.safeParse(object.branch).success
       ? (object.branch as string)
       : undefined;
@@ -248,7 +274,8 @@ export async function indexChanges(
       for (const { path, line } of paths)
         if (
           data.documents.some(
-            (ref) => ref.branch === data.defaultBranch && ref.path === path,
+            (ref) =>
+              ref.branch === data.collaborationBranch && ref.path === path,
           ) &&
           /^docs\/project\/specs\/.+\/spec.md$/.test(path)
         ) {
@@ -279,31 +306,29 @@ export async function indexChanges(
     groups.get(id)!.candidates.push(c);
   }
   for (const g of groups.values()) {
-    const owns = g.candidates.filter((c) => c.owner === c.branch);
-    if (owns.length === 1) {
+    const route = data.routes.find((r) => r.id === g.id)!;
+    const owns = g.candidates.filter(
+      (c) =>
+        !c.diagnostics.some((d) => d.code === "DIRECTORY_ID") &&
+        (route.kind === "archive"
+          ? c.archived && c.validCompleted
+          : c.owner === c.branch),
+    );
+    if (
+      !route.errors.length &&
+      g.candidates.length === 1 &&
+      owns.length === 1
+    ) {
       g.primary = owns[0].key;
       g.title = owns[0].title;
-    } else if (
-      !owns.length &&
-      g.candidates.filter(
-        (c) =>
-          c.archived &&
-          c.validCompleted &&
-          c.branch === `refs/tags/spec-trail/archive-v2/${g.id}`,
-      ).length === 1
-    ) {
-      const pinned = g.candidates.find(
-        (c) => c.branch === `refs/tags/spec-trail/archive-v2/${g.id}`,
-      )!;
-      g.primary = pinned.key;
-      g.title = pinned.title;
-    } else
+    } else if (!g.diagnostics.length)
       g.diagnostics.push(
         issue(
-          owns.length ? "OWNER_CONFLICT" : "OWNER_MISSING",
-          owns.length
-            ? "存在多个声明主来源的候选，归属不可判定。"
-            : "未找到声明主分支上的记录，只能阅读已推送副本。",
+          "SOURCE_INVALID",
+          g.candidates.length > 1
+            ? "目标分支存在重复 live/archive 记录，来源不可判定。"
+            : "目标分支缺少匹配的完整记录，或记录身份、归档状态无效；不采用集中旧副本。",
+          route.entryPath,
         ),
       );
   }

@@ -119,7 +119,8 @@ export async function personalFixture() {
           r.displayName === "invalid"
             ? "not-json"
             : JSON.stringify({
-                schemaVersion: 1,
+                schemaVersion: 2,
+                collaborationBranch: "develop",
                 protectedBranches:
                   r.displayName === "source" ? ["deleted"] : ["trunk"],
               }),
@@ -141,7 +142,10 @@ export async function personalFixture() {
         await new Promise((resolve) => setTimeout(resolve, controls.delay));
       if (controls.deny.has(r.repositoryId))
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
-      return new Map([["trunk", commit]]);
+      return new Map([
+        ["trunk", commit],
+        ["develop", commit],
+      ]);
     } finally {
       controls.active--;
     }

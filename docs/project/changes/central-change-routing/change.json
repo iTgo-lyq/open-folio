@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "实现后台定向收集与增量刷新",
-      "status": "todo"
+      "status": "done",
+      "verification": "定向/增量 7 项通过，188 项回归的旧 fixture 修正后单项通过；TypeScript 通过",
+      "commitTitle": "feat: replace branch scans with collaboration-directed reading"
     },
     "T5": {
       "title": "统一工作台与关联材料的权威来源",

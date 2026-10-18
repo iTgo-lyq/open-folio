@@ -25,7 +25,8 @@ async function traced() {
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main", "release"],
       prototype: { status: "enabled", packagePath: "packages/prototype" },
     }),
@@ -47,7 +48,7 @@ async function traced() {
   };
 }
 
-test("restart and unchanged refs reuse the complete snapshot; only changed branches scan Changes, with cached main Specs and prototypes", async (t) => {
+test("restart and unchanged refs reuse the complete snapshot; only changed branches scan Changes, with cached collaboration Specs and prototypes", async (t) => {
   const f = await traced();
   t.after(f.cleanup);
   f.git(["checkout", "-b", "change/demo"]);
@@ -73,10 +74,11 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
     "[平台](../../specs/platform/spec.md)",
   );
   const firstBranch = f.commit();
+  await f.register({ demo: "change/demo" });
   const first = await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.deepEqual(
     first.specs.map((s) => [s.branch, s.title]),
-    [["main", "平台"]],
+    [["develop", "平台"]],
   );
   assert(
     !first.documents.some(
@@ -97,7 +99,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.equal(same.id, first.id);
   assert.equal(same.capturedAt, first.capturedAt);
   assert(!f.calls.some((a) => ["ls-tree", "cat-file"].includes(a[0])));
-  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 1);
+  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 3);
   assert(!f.calls.some((a) => a[0] === "fetch"));
 
   await f.put(
@@ -117,7 +119,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.deepEqual(next.currentPrototype, first.currentPrototype);
   f.calls.length = 0;
   const work = await restart.workbench(f.project);
-  assert.equal(work.selectedBranch, "main");
+  assert.equal(work.selectedBranch, "develop");
   await restart.document(f.project, work.specs[0].documentId, next.id);
   await restart.prototypes(f.project);
   assert.deepEqual(f.calls, []);
@@ -144,11 +146,13 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   f.git(["push", "origin", "--delete", "change/demo"]);
   f.calls.length = 0;
   const deleted = await restart.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(deleted.changes.length, 0);
+  assert.equal(deleted.changes.length, 1);
+  assert.equal(deleted.changes[0].primary, null);
+  assert.match(deleted.changes[0].diagnostics[0].message, /不存在/);
   assert.deepEqual(f.scans(), []);
 });
 
-test("default branch changes invalidate source scope even at identical commits, and old cache rules rebuild", async (t) => {
+test("default branch changes preserve the configured collaboration scope, and old cache rules rebuild", async (t) => {
   const f = await traced();
   t.after(f.cleanup);
   f.git(["branch", "release"]);
@@ -157,11 +161,11 @@ test("default branch changes invalidate source scope even at identical commits, 
   f.git(["symbolic-ref", "HEAD", "refs/heads/release"], f.remote);
   f.calls.length = 0;
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(f.scans().length, 2);
-  assert(!f.calls.some((a) => a[0] === "fetch"));
+  assert.equal(f.scans().length, 1);
+  assert(f.calls.some((a) => a[0] === "fetch"));
   assert.deepEqual(
     next.specs.map((s) => s.branch),
-    ["release"],
+    ["develop"],
   );
   assert(
     !next.documents.some(
@@ -183,9 +187,51 @@ test("default branch changes invalidate source scope even at identical commits, 
   assert.notEqual(first.id, upgraded.id);
 });
 
-test("live refs detect lightweight and annotated archive tag changes, including rewritten tags at the same commit", async (t) => {
+test("registered archive refs detect lightweight and annotated archive tag changes, including rewritten tags at the same commit", async (t) => {
   const f = await traced();
   t.after(f.cleanup);
+  for (const id of ["light", "annotated"]) {
+    const path = `docs/project/archive/2026-10-18-${id}`,
+      step = (result: string) => ({
+        at: "2026-10-18T00:00:00.000Z",
+        result,
+        summary: "verified",
+      });
+    await f.put(
+      `${path}/change.json`,
+      JSON.stringify({
+        schemaVersion: 1,
+        id,
+        title: id,
+        branch: `change/${id}`,
+        size: "small",
+        status: "completed",
+        stage: "close",
+        confirmations: {},
+        tasks: { T1: { title: "done", status: "done" } },
+        closure: {
+          verification: step("passed"),
+          acceptance: step("accepted"),
+          specs: step("synced"),
+          archive: { ...step("done"), path },
+        },
+        previews: [
+          {
+            id: "view",
+            title: "View",
+            kind: "page",
+            devices: ["pc-web"],
+            artifact: {
+              type: "git",
+              path: "prototype/preview/view",
+              sourceCommit: "a".repeat(40),
+            },
+          },
+        ],
+      }),
+    );
+  }
+  f.commit();
   const commit = f.git(["rev-parse", "HEAD"]);
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   const light = "refs/tags/spec-trail/archive-v2/light";
@@ -199,7 +245,7 @@ test("live refs detect lightweight and annotated archive tag changes, including 
     { id: "annotated", commit },
     { id: "light", commit },
   ]);
-  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 1);
+  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 2);
   f.calls.length = 0;
   assert.equal(
     (await f.store.refresh(f.project, DEFAULT_LIMITS)).id,

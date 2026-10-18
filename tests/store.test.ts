@@ -10,7 +10,7 @@ test("only pushed trees are visible, immutable snapshots survive restart and fai
   const f = await fixture();
   t.after(f.cleanup);
   const first = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(first.specBranch, "main");
+  assert.equal(first.specBranch, "develop");
   assert.equal(first.specs.length, 1);
   await f.put("docs/project/specs/platform/spec.md", "# 未推送\n新内容");
   f.commit(false);
@@ -51,9 +51,25 @@ test("refreshes coalesce, deleted and rewritten branches disappear, retention ex
   const first = await a;
   f.git(["checkout", "-b", "change/nested"]);
   await f.put("docs/project/specs/child/spec.md", "# 子能力");
+  await f.put(
+    "docs/project/changes/nested/change.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      id: "nested",
+      title: "Nested",
+      branch: "change/nested",
+      size: "small",
+      status: "active",
+      stage: "requirement",
+      confirmations: {},
+      tasks: {},
+      closure: {},
+    }),
+  );
   f.commit();
+  await f.register({ nested: "change/nested" });
   const second = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(second.branches.length, 2);
+  assert.equal(second.branches.length, 3);
   f.git(["reset", "--hard", "main"]);
   f.git(["push", "--force", "origin", "change/nested"]);
   const third = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -63,7 +79,7 @@ test("refreshes coalesce, deleted and rewritten branches disappear, retention ex
   );
   f.git(["push", "origin", "--delete", "change/nested"]);
   const fourth = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(fourth.branches.length, 1);
+  assert.equal(fourth.branches.length, 2);
   await assert.rejects(f.store.snapshot(f.project, first.id), {
     code: "SNAPSHOT_EXPIRED",
   });
@@ -166,6 +182,6 @@ test("unsupported snapshot schemas fail without rewriting stored bytes", async (
   });
   assert.equal(await readFile(path, "utf8"), original);
   const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(rebuilt.cacheSchemaVersion, 3);
+  assert.equal(rebuilt.cacheSchemaVersion, 4);
   assert.equal(rebuilt.specs[0].title, "平台");
 });
