@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "revert-testing-strategy",
+  "title": "回滚测试策略接入并保留数据兼容取舍规则",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/revert-testing-strategy",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "撤回测试策略接入并核对数据兼容规则",
+      "status": "done",
+      "verification": "SpecTrail 主 skill 与测试接入前的 f6aefb3 内容一致，内置 testing-strategy 已删除；数据兼容取舍规则保留，skill 校验和差异检查通过。",
+      "commitTitle": "revert-testing-strategy T1: remove testing policy and bundled skill"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T07:09:18.258Z",
+      "summary": "Agent 自查通过：仅回滚测试接入的当前实现，主 skill 恢复此前内容，数据兼容决定保留；skill 和差异校验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T07:09:19.938Z",
+      "summary": "Agent 自验收通过：测试策略接入已撤回，数据兼容规则与其他交付保留。",
+      "source": "用户明确要求回滚测试部分、仅保留数据兼容判断；small 自验收规则。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T07:09:36.014Z",
+      "summary": "change-workflow Spec 恢复测试接入前内容，数据模型不兼容升级的用户取舍规则保留。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T07:09:37.697Z",
+      "summary": "测试策略接入已回滚，数据兼容规则保留，校验、自验收与当前 Spec 同步完成。",
+      "path": "docs/project/archive/2026-10-18-revert-testing-strategy"
+    }
+  },
+  "followUpOf": "proportionate-testing",
+  "followUpTitle": "技术方案测试策略取舍"
+}

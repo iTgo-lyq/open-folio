@@ -37,14 +37,6 @@ SpecTrail 通过仓库内的语义 JavaScript 命令维护 docs/project 下的 C
 
 问答通过 clarification-ask / clarification-answer / clarification-withdraw 维护，命令保存已发生事实，预算由 Agent 在发问前执行。共享校验与工作台读取使用同一问答契约，旧记录可以省略该字段。
 
-## 测试策略
-
-SpecTrail 包内包含基于 Anthropic 官方版本适配的 [testing-strategy](../../../../.agents/skills/spec-trail/testing-strategy/SKILL.md)，保留固定来源和上游许可证。制定 Technical 或 small 的方案要点时读取该子 skill，围绕验收行为、实际风险和已有覆盖选择最小充分的验证，优先复用现有检查，仅补有实际价值的缺口。
-
-测试不得过度设计：测试层级和组件示例按需选用，不为覆盖率、数量或层级完整度重复测试，不默认引入框架、复杂 mock 或测试基础设施。低风险文档、样式等修改可采用审阅、静态检查或必要冒烟，不强制新增自动化测试；关键数据、权限等实际风险及项目必需检查仍需验证。
-
-策略直接记录在当前方案中，说明验证对象、方法和通过依据，重要缺口按需说明，不默认新增测试计划文档。执行沿用该范围，只有新增变化、失败或疑点才重复检查或扩大验证。
-
 ## 命令与责任
 
 主 skill 自带 scripts/change.mjs，使用 Node.js 内置模块，无第三方依赖。命令覆盖创建、修改展示标题、阶段确认、任务登记/执行/阻塞/完成、等待与恢复、返工、关闭四步、取消及原型关联。修改标题保留 Change id 与已有流程记录。具体调用参见仓库 [.agents 状态命令说明](../../../../.agents/skills/spec-trail/references/state-commands.md)。
