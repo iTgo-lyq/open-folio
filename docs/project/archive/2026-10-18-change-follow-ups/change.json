@@ -3,7 +3,7 @@
   "id": "change-follow-ups",
   "title": "连续交付通过延续关系分组展示",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/change-follow-ups",
   "confirmations": {
@@ -66,15 +66,22 @@
       "at": "2026-10-18T06:41:50.757Z",
       "summary": "用户验收通过：延续分组、独立组名、始终展开及上下边界符合预期。",
       "source": "用户：这次可以了，验收通过，把这个 Change 收尾归档吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T06:48:36.357Z",
+      "summary": "同步 Change 状态维护与 Change 追踪：延续关系、独立组名、筛选分组与异常隔离。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T06:48:38.056Z",
+      "summary": "用户验收通过并确认不补原型，能力文档与实现证据完整归档。",
+      "path": "docs/project/archive/2026-10-18-change-follow-ups"
     }
   },
   "rework": {
     "at": "2026-10-18T06:37:29.496Z",
     "reason": "分组上方残留普通记录的分割线，导致上下边界不一致。",
     "approach": "隐藏紧邻分组的前一条普通记录底部分割线，分组外侧上下统一留白，保留分组外框和组内分隔线。"
-  },
-  "waitingFor": {
-    "kind": "pause",
-    "summary": "用户要求先暂停归档，核对未关联原型是否符合此前直接实现并验证实际页面的选择。"
   }
 }

@@ -51,6 +51,16 @@ confirmations 下所有 summary 均为阶段内容简述：requirement 写目标
 
 workspace.mjs 的 handoff 先在目标工作区提交并推送唯一的 branch 登记提交，再快进协作分支；两端共用祖先。失败重试检查完整所属目录和真实引用，保留无关脏文件与暂存现场，不制造指针文件、规划清理或执行状态镜像提交。locate 只读报告来源、新鲜度和本地 worktree 状态；prepare 定向刷新并复用或准备工作区，不重置、rebase 或 prune。创建 worktree 不证明会话已绑定，客户端无法自动绑定时使用人工打开与续接提示，再核对 cwd、命名分支及仓库身份。
 
+## 延续交付与分组命名
+
+同一目标在未归档时继续原 Change 返工；已归档交付的补充或修正以新 Change 的可选 `followUpOf` 指向同仓库已推送、有效归档的直接前序。Requirement 说明具体延续内容，仅属于同一模块或标题相似不构成关联；整体目标改变时独立建 Change。延续关系可多跳或分叉，与规模、执行依赖及父子关系独立，各次任务、阶段、验收和归档事实分别保留。
+
+`create --follow-up-of` 与 active Change 的 `follow-up --target` 登记前序，定向核对已推送的关闭记录及其历史，拒绝缺失、无效归档、自指或循环；常规命令不修改归档前序。`follow-up --target none` 解除关系，不影响执行依赖和已有确认。
+
+首次建立延续组时单独生成概括共同用户目标的简洁单行标题，用户指定名称时沿用；各 Change 的 `title` 描述自身交付。通过上述命令的 `--group-title` 将可选 `followUpTitle` 保存在后继，后续关联先读取完整组名，通常省略新声明并继承，分叉同样沿用。移除或更换前序时清除自身旧声明；无关联不可命名，显式名称不得与前序已有声明冲突。旧组没有名称时在当前后继补充，不为每次补充重新命名或改写原交付标题。
+
+历史关联与命名只在用户明确授权的迁移中限定记录和字段，以独立普通提交保留证据，原正文、任务、验收及时间保持不变。工作台分组、筛选和异常降级见 [Change 追踪](../project-knowledge/change-tracking/spec.md#延续交付分组)。
+
 ## 接入与提交校验
 
 首次或更新接入先核实默认分支、权限和保护规则，在 workflow.json v2 配置 collaborationBranch（推荐名称 develop，可自定义）与独立的 protectedBranches。协作分支兼任集中讨论、预发布集成和默认合入目标；准备它并让干净主工作区使用实际配置的协作分支，执行使用独立工作区。SpecTrail 的 [Setup 子 skill](../../../../.agents/skills/spec-trail/setup/SKILL.md) 提供 Node.js 20+、Git、配置及校验资源的只读准备检查，并输出调用命令和 Git 入口信息。检查不创建或复制文件、不修改 core.hooksPath，也不执行业务 hook；准备就绪与 hook 接入分别判断，hook 与远端权限状态均为未验证。已知本地/跟踪引用不证明远端仍存在，需精确查询。
