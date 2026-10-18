@@ -11,9 +11,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 开发机服务与数据
 
 - 默认是开发机环境，Merlin 长期暴露的 OpenFolio 服务用于开发验证。影响服务实现的任务完成后，将该服务更新到已验证的最新实现。
-- 协作分支（默认 `develop`）兼任预发布集成分支。接入后长期服务只使用已集成并验证的协作分支提交和独立、干净的 checkout；主工作区用于协作规划，不再作为构建目录。切换服务目录时先从旧目录停止服务，再在新目录构建、启动和验证，沿用现有运行数据与本地环境配置。
-- 本机固定服务目录为 `/home/tiger/workspace/open-folio-service`，端口 `11117`，tmux 会话 `openfolio-public-preview`。该 checkout 长期保留，以 detached HEAD 固定已验证的 `develop` 提交；主工作区 `/home/tiger/workspace/open-folio` 固定在 `develop`。服务管理命令在服务目录运行，也可使用 `npm --prefix /home/tiger/workspace/open-folio-service run service:status` 等形式。
-- 更新长期服务时先定向 fetch 并确认待部署的协作提交，在服务目录停止服务后将干净 checkout 定位到该提交，再按需安装依赖并执行 `service:update` 和冒烟检查。`service:update` 只构建当前 checkout，不自动拉取、切分支或跟随新的 `develop` 提交；服务进程由 tmux 托管，不依赖 Agent 会话，脚本不提供机器重启后的自启配置。
+- 主工作区 `/home/tiger/workspace/open-folio` 长期保持协作开发分支 `develop` 签出，用于集中讨论、集成和长期服务构建；服务直接使用该目录的 `.next`。Change 实现在独立任务 worktree 推进，不切换主工作区的分支，不另建服务 checkout。
+- 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，本仓库为 `/home/tiger/workspace/open-folio-worktrees/<工作区名>`；Change 默认以 id 命名，已有登记优先复用，明确指定的路径按用户约定。
+- 本机长期服务端口为 `11117`，tmux 会话为 `openfolio-public-preview`。服务管理命令在主工作区运行，也可使用 `npm --prefix /home/tiger/workspace/open-folio run service:status` 等形式。
+- 更新长期服务前核对主工作区仍在 `develop`、待部署提交已集成并验证，保护未提交现场。定向同步协作分支后按需安装依赖，执行 `service:update` 和冒烟检查；该命令只构建当前工作区，不自动拉取或切分支。服务进程由 tmux 托管，不依赖 Agent 会话，脚本不提供机器重启后的自启配置。
 - 常规更新允许短暂停机，按停止服务、构建、启动、验证的顺序执行，不创建回滚快照或例行备份，也不累积备份历史。破坏性更新或排查 bug 确有需要时，只做最小必要备份，用后清理。
 - `/home/tiger/.local/share/open-folio` 是当前运行数据目录，包含登录状态、凭据密钥、工作台偏好及可重建缓存。一般不主动删除；仅在破坏性更新或修复 bug 确有需要时，针对必要范围处理，避免每次部署重置登录和工作台。
 - 部署后的冒烟检查由负责本次任务的 Agent 根据改动自主选择，不维护固定冒烟脚本。需要登录真实工作台时，从 Git 忽略的本地环境配置读取 Token；`.env.example` 仅保存配置项与占位值。
@@ -23,7 +24,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 生产与验证构建统一使用 `.next`，浏览器测试沿用 `.next-e2e`，不新建其他 `.next-*` 目录。开发机允许短暂停机；构建 `.next` 前先停止使用该目录的服务，构建成功后再启动并验证。同目录的生产构建须串行，不得删除或覆盖运行中服务的产物。
 
-`.next` 属于所在 checkout 的构建产物，不与 `main`、`develop` 等分支名称绑定，切换 Git 分支不会自动重建它。当前长期服务使用 `/home/tiger/workspace/open-folio-service/.next`；主工作区原有 `.next` 是迁移前的旧服务产物，当前未被服务使用，也不是另一套运行环境。实际构建与运行提交以服务目录中的 `.openfolio/build-version.json`、`runtime-version.json` 为准；用户数据位于上面的持久数据目录，不在 `.next` 中。
+`.next` 是可重建的构建产物，切换 Git 分支不会自动重建它。本仓库长期服务固定使用主工作区 `/home/tiger/workspace/open-folio/.next`，从主工作区的 `develop` 构建更新；任务 worktree 的 `.next` 仅用于各自验证。实际构建与运行提交以主工作区中的 `.openfolio/build-version.json`、`runtime-version.json` 为准；用户数据位于上面的持久数据目录，不在 `.next` 中。
 
 ## SpecTrail 同步
 

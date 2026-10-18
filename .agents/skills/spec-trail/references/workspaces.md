@@ -2,6 +2,18 @@
 
 需要 Node.js 20+ 和 Git，脚本仅依赖内置模块。Setup 提前准备 workflow v2、远端协作分支和主工作区；`--repo` 可从任意工作区指定仓库。默认分支只供后台发现入口，本地命令使用当前 checkout 的 workflow 并核对协作分支配置。
 
+主工作区长期签出协作开发分支（默认 develop），Change 和任务切换在各自 worktree 内进行。新工作区默认布局如下，项目名取主工作区目录名；Change 的工作区名默认使用 id：
+
+```text
+workspace/
+├── project/                         # 主工作区，长期保持 develop
+└── project-worktrees/
+    ├── change-a/                    # 独立工作分支
+    └── change-b/
+```
+
+构建与长期服务位置由项目约定决定；工作区隔离不要求迁移主工作区原有服务。
+
 ## 规划与移交
 
 在协作分支用 `change.mjs` 创建、确认和登记任务。发布时限定本 Change 路径：`git commit --only -m '<说明>' -- docs/project/changes/<id>`，再正常推送协作分支；不要把其他会话的暂存内容带入提交。发生非快进拒绝时保留现场，在独立工作区整合远端变化，不为推送切换或重置主工作区。
@@ -13,7 +25,7 @@ node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example --
 node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
 ```
 
-默认工作分支 `change/<id>`，路径为主工作区同级的 `<主工作区名>-worktrees/<id>`；可用 `--branch`、`--path` 覆盖。已有登记和 Git worktree 优先复用。命令只在目标 worktree 内修改现有 change.json 的 branch，创建一个两端共享的登记提交，先推送目标，再正常快进推送协作分支；不替换目录、不添加指针文件或日志、不复制执行状态。它不授予阶段确认、不进入 execution。需人工核对依赖交付时先记录证据，再传 `--availability-note`。
+默认工作分支 `change/<id>`，路径为主工作区同级的 `<项目名>-worktrees/<id>`；可用 `--branch`、`--path` 覆盖。已有登记和 Git worktree 优先复用。命令只在目标 worktree 内修改现有 change.json 的 branch，创建一个两端共享的登记提交，先推送目标，再正常快进推送协作分支；不替换目录、不添加指针文件或日志、不复制执行状态。它不授予阶段确认、不进入 execution。需人工核对依赖交付时先记录证据，再传 `--availability-note`。
 
 普通 Change 在协作分支不能进入 execution；移交后须在目标执行会话核验并运行 execute。xlarge 父项可在协作分支聚合。状态命令拒绝改写其他分支所属的继承记录；show 使用集中入口，只有在所属分支才展示未推送的本地状态。
 
