@@ -4,13 +4,15 @@
   "title": "修复托管 iframe 点击回归超时",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/iframe-click-regression",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "定位并修复托管预览点击测试，保留握手与错误恢复验证",
-      "status": "todo"
+      "status": "done",
+      "verification": "最小实验定位缩放 iframe 坐标偏差；两项定向测试及 12 项原型浏览完整回归全部通过，类型与格式检查通过。",
+      "commitTitle": "iframe-click-regression T1: verify scaled pointer input and bridge lifecycle"
     }
   },
   "closure": {}
