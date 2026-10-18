@@ -44,5 +44,38 @@
   "waitingFor": {
     "kind": "confirmation",
     "summary": "执行计划与合入变更原型已准备，等待用户确认计划并验收原型后开始实现。"
-  }
+  },
+  "previews": [
+    {
+      "id": "change-integration",
+      "title": "Change 合入变更",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/index.html",
+        "sourceCommit": "bfbfae4fe99240df2600afe169214a5acf14da71",
+        "digest": "sha256:f0c97a90cdc6a0d72c460466b9618ac9cbd04d1d9a629a17578d46b86a8d01bc",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }
