@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/direct-collaboration-reading",
   "confirmations": {
     "requirement": {
       "at": "2026-10-18T03:46:20.194Z",
