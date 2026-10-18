@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/independent-clarification-budgets",
+  "followUpOf": "technical-clarification",
   "confirmations": {},
   "tasks": {
     "T1": {
