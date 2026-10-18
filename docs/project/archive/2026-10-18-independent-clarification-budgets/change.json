@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "independent-clarification-budgets",
+  "title": "需求与技术问询分别计算额度",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/independent-clarification-budgets",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "拆分澄清额度并明确问答分类与轮次计数",
+      "status": "done",
+      "verification": "skill 校验、40 处 Markdown 链接锚点与 diff 检查通过；自查需求用满后技术可问、混合轮次、small、撤回续接、返工及依赖。",
+      "commitTitle": "independent-clarification-budgets T1: separate requirement and technical quotas"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T05:33:06.536Z",
+      "summary": "Agent 自查完整差异与六类情景；skill 校验、40 处链接锚点及空白检查通过，需求与技术额度相互独立。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T05:33:08.139Z",
+      "summary": "Agent 自验收通过：两类额度独立、保留原上限，需求用满后技术仍可问，记录与续接规则一致。",
+      "source": "SpecTrail small 默认 Agent 自验收；用户明确要求技术问询额度单独计算，不与需求澄清共用总额度。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T05:33:36.499Z",
+      "summary": "同步 change-workflow 的需求与技术独立额度、分类计数及各类到限处理。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T05:33:38.096Z",
+      "summary": "独立问询额度规则通过 small 自验收，Specs 与验证证据已同步归档。",
+      "path": "docs/project/archive/2026-10-18-independent-clarification-budgets"
+    }
+  }
+}
