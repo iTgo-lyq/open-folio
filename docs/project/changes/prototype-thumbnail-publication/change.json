@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-thumbnail-publication",
+  "title": "修复原型截图登记并补齐卡片验收",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/prototype-thumbnail-publication",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复截图发布引用并验证当前卡片展示",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
