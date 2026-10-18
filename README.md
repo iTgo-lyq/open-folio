@@ -23,7 +23,9 @@ npm start
 
 ## 开发机长期服务
 
-当前机器上的 Merlin 入口使用 10680 端口，与上面的 10681 本地开发入口分开。长期服务由项目脚本和 tmux 托管，需要 Node.js 24、Git 与 tmux；脚本从自身位置定位项目，可以在其他目录调用。
+Merlin 长期服务与上面的 10681 本地开发入口分开，监听端口以服务 checkout 的 `.env` / `.env.local` 为准，模板默认 10680。长期服务由项目脚本和 tmux 托管，需要 Node.js 24、Git 与 tmux；使用独立、干净的 checkout，固定已集成并验证的协作分支提交（默认 `develop`），主工作区用于规划。本机固定服务目录与实际端口见 [AGENTS.md](AGENTS.md#开发机服务与数据)。
+
+以下命令在专用服务 checkout 中执行；已有环境文件沿用，仅首次配置时复制模板。脚本从自身位置定位项目，从其他目录调用时须指定该 checkout，例如 `npm --prefix /path/to/service-checkout run service:status`。
 
 ```bash
 cp .env.example .env
@@ -36,7 +38,9 @@ npm run service:start
 
 `.env` 按模板配置监听地址、端口和 tmux 会话；默认监听 `::`、端口 10680、会话 `openfolio-preview`，沿用 Merlin 暴露方式。需要额外覆盖时也支持 `.env.local`。原型 R2 发布的五项 `R2_*` 配置也统一放在根目录 `.env`，发布脚本自动加载，步骤见[原型包 README](packages/prototype/README.md)。更改会话、端口或数据目录前先停止原服务。进程退出后会自动重启，日志在 `.openfolio/service.log`，运行与构建来源在 `.openfolio/runtime-version.json` 和 `build-version.json`。已有 tmux 会话或端口由其他进程占用时，脚本拒绝接管。
 
-`service:update` 串行停止服务、构建 `.next`、启动并等待端口就绪；构建失败时保持停止，修复后重新更新。常规更新不创建回滚快照，也不备份或删除当前运行数据。构建来源记录提交与是否存在未提交的跟踪文件改动；直接启动来源未知的现有构建时，提交记录为空，不冒充当前 HEAD。
+`service:update` 串行停止服务、构建 `.next`、启动并等待端口就绪；构建失败时保持停止，修复后重新更新。它只构建当前 checkout，不执行 Git 拉取、切换或自动部署。更新到新的协作提交时，先定向 fetch 并核对目标，停止服务后将干净服务 checkout 定位到该提交，按需安装依赖，再运行更新和验证。detached HEAD 用于固定已验证的部署版本，不表示临时服务；关闭 Agent 会话不会切回旧服务，脚本未提供机器重启后的自启机制。
+
+`.next` 是所在 checkout 的可重建构建产物，不代表某个分支，也不保存用户数据。切换分支不会自动替换已有产物，服务使用其运行目录里的 `.next`。迁移到独立服务目录后，原主工作区留下的旧 `.next` 不再承担长期服务。常规更新不创建回滚快照，也不备份或删除当前运行数据。构建来源记录提交与是否存在未提交的跟踪文件改动；直接启动来源未知的现有构建时，提交记录为空，不冒充当前 HEAD。
 
 部署后由负责本次任务的 Agent 按实际改动选择冒烟检查；`OPENFOLIO_VERIFY_BASE_URL` 配置验证地址，`OPENFOLIO_VERIFY_TOKEN` 配置登录真实工作台的 Token。真实值只放 Git 忽略的 `.env` 或 `.env.local`，不要使用 `NEXT_PUBLIC_` 前缀或打印凭据；模板不包含真实 Token。不提供固定冒烟脚本。
 
