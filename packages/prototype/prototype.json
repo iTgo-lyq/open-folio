@@ -11,7 +11,28 @@
         "pc-web",
         "ipad",
         "mobile"
-      ]
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/index.html",
+        "sourceCommit": "3e404d91958c2c7e403664de9dede7c9a1819324",
+        "digest": "sha256:a7d6b40ea68663defbb82b54884fe93bcdeec8471ad49fdae09afe579b56681e",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/mobile.png"
+          }
+        ]
+      }
     },
     {
       "id": "change-integration",
