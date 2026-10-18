@@ -514,6 +514,18 @@ function main() {
               ),
             );
         }
+        for (const [i, key] of steps.entries()) {
+          const step = prior.closure[key];
+          if (!step) continue;
+          const previous = prior.closure[steps[i - 1]];
+          valid(prior.stage === "close");
+          if (i)
+            valid(
+              previous &&
+                prior.closure.verification?.result === "passed" &&
+                Date.parse(step.at) >= Date.parse(previous.at),
+            );
+        }
         if (prior.status === "completed") {
           valid(record.archived && closedRecord(prior, dirname(record.path)));
           valid(

@@ -9,3 +9,15 @@
 开发机环境验证在独立 worktree 完成。Turbopack 不接受跨 worktree 的 node_modules 链接，因此在本 worktree 使用 npm ci 安装依赖；浏览器使用 .next-e2e，生产构建使用 .next。
 
 评审修复后重新运行：`npm test` 224/224；`npx playwright test tests/browser/follow-ups.spec.ts tests/browser/changes.spec.ts` 14/14；`npm run typecheck`、`npm run format:check`、`npm run build`、skill quick_validate 与 `git diff --check` 均通过。浏览器覆盖折叠、键盘、筛选后根不匹配、活跃后继、取消记录、独立详情深链接及刷新、格式错误关联提示与 320px。
+
+## T2：历史关联与实际页面验证
+
+历史迁移提交 `9b4ef2d` 仅在 `2026-10-18-independent-clarification-budgets/change.json` 增加 `followUpOf: technical-clarification`。去掉新行后与迁移前文件逐字节一致；JSON 剩余字段深比较一致，前序归档及全部历史正文无差异。迁移保留两次交付的任务、验收结论和时间。
+
+将这两份真实归档材料及当前 Specs 复制到隔离 Git 远端，经实际 SnapshotStore 读取后，两条记录均 validCompleted，关系解析得到单组且无关联问题。实际应用浏览器读取该快照，验证折叠为一个入口、展开两次交付、逐条打开详情、原 id 深链接和刷新，1 项专门验证通过。此处用隔离快照供验收，长期服务待人工验收后随 develop 集成更新。
+
+![两次归档交付折叠为一个入口](./assets/linked-deliveries-collapsed.png)
+
+![展开后保留两次独立交付](./assets/linked-deliveries-expanded.png)
+
+独立复审补查出取消子项也必须遵守关闭阶段、步骤和时间顺序；补齐通用关闭语义后，定向关联测试 4/4 通过。

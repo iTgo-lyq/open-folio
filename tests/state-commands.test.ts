@@ -259,6 +259,12 @@ test("follow-up registration requires a published closed predecessor and stays i
     tasks: {},
     children: ["cancelled-child"],
   });
+  closed("invalid-cancelled-parent", undefined, {
+    size: "xlarge",
+    confirmations,
+    tasks: {},
+    children: ["invalid-cancelled"],
+  });
   writeFileSync(
     join(
       closed("valid-medium", undefined, { size: "medium", confirmations }),
@@ -276,6 +282,18 @@ test("follow-up registration requires a published closed predecessor and stays i
   f.create("small", "pending", ["--parent", "unfinished-child"]);
   f.create("small", "cancelled-child", ["--parent", "valid-parent"]);
   f.run("cancel", ["--reason", "取消不影响已关闭父项"], 0, "cancelled-child");
+  f.create("small", "invalid-cancelled", [
+    "--parent",
+    "invalid-cancelled-parent",
+  ]);
+  f.run("cancel", ["--reason", "取消"], 0, "invalid-cancelled");
+  writeFileSync(
+    f.path("invalid-cancelled"),
+    JSON.stringify({
+      ...f.state("invalid-cancelled"),
+      closure: { verification: { ...confirmation, result: "passed" } },
+    }),
+  );
   f.commit();
   for (const target of [
     "sample",
@@ -292,6 +310,7 @@ test("follow-up registration requires a published closed predecessor and stays i
     "invalid-parent",
     "invalid-child",
     "unfinished-child",
+    "invalid-cancelled-parent",
   ]) {
     f.run("follow-up", ["--target", target], 1);
     assert.equal(readFileSync(f.path(), "utf8"), before);
