@@ -13,6 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 默认是开发机环境，Merlin 长期暴露的 OpenFolio 服务用于开发验证。影响服务实现的任务完成后，将该服务更新到已验证的最新实现。
 - 主工作区 `/home/tiger/workspace/open-folio` 长期保持协作开发分支 `develop` 签出，用于集中讨论、集成和长期服务构建；服务直接使用该目录的 `.next`。Change 实现在独立任务 worktree 推进，不切换主工作区的分支，不另建服务 checkout。
 - 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，本仓库为 `/home/tiger/workspace/open-folio-worktrees/<工作区名>`；Change 默认以 id 命名，已有登记优先复用，明确指定的路径按用户约定。
+- 新 worktree 缺少 `.env` 或 `.env.local` 时，先到主工作区查找并按需复用；测试实例使用独立端口和数据目录。
 - 本机长期服务端口为 `11117`，tmux 会话为 `openfolio-public-preview`。服务管理命令在主工作区运行，也可使用 `npm --prefix /home/tiger/workspace/open-folio run service:status` 等形式。
 - 更新长期服务前核对主工作区仍在 `develop`、待部署提交已集成并验证，保护未提交现场。定向同步协作分支后按需安装依赖，执行 `service:update` 和冒烟检查；该命令只构建当前工作区，不自动拉取或切分支。服务进程由 tmux 托管，不依赖 Agent 会话，脚本不提供机器重启后的自启配置。
 - 常规更新允许短暂停机，按停止服务、构建、启动、验证的顺序执行，不创建回滚快照或例行备份，也不累积备份历史。破坏性更新或排查 bug 确有需要时，只做最小必要备份，用后清理。
