@@ -158,6 +158,17 @@ function prepared(repo, catalog, id, branch, commit) {
     "Prepared target differs from the current planning input; inspect the changes before retrying",
   );
   const base = repo.git(["merge-base", catalog.commit, commit]);
+  assert(
+    !repo.git([
+      "diff",
+      "--name-only",
+      base,
+      catalog.commit,
+      "--",
+      original.directory,
+    ]),
+    "Planning directory changed since preparation; inspect the prose and assets before retrying",
+  );
   const paths = repo
     .git(["diff", "--name-only", base, commit])
     .split("\n")

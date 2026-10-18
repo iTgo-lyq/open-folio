@@ -113,5 +113,5 @@ test("copying a document link includes its actual capability and branch", async 
   await page.getByRole("button", { name: "复制页面链接" }).click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(copied).searchParams.get("s")).toBe("platform/access");
-  expect(new URL(copied).searchParams.get("branch")).toBe("main");
+  expect(new URL(copied).searchParams.get("branch")).toBe("develop");
 });

@@ -45,7 +45,7 @@ test("workspace uses one header with accessible source and actions on desktop an
       const source = page.locator(".header-source-details");
       await expect(source).toBeVisible();
       await expect(source).toContainText(
-        module === "changes" ? "全部已推送分支" : "main",
+        module === "changes" ? "develop 入口" : "develop",
       );
       await expect(source).toContainText("读取于");
       expect(

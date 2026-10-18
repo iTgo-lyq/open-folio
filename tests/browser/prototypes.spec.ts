@@ -262,7 +262,7 @@ test("focused viewer keeps directory, viewport controls and history in the workb
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
   await expect(page.locator(".header-source-details")).toContainText(
-    "main · 守护分支",
+    "develop · 预发布",
   );
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
 });
@@ -365,7 +365,7 @@ test("card captions open details and full-size images while covers enter the can
   await expect(
     details
       .locator(".prototype-detail-source > div")
-      .filter({ hasText: "默认分支清单提交" })
+      .filter({ hasText: "协作分支清单提交" })
       .locator("dd"),
   ).toHaveText(catalog.revision);
   await page.screenshot({ path: "artifacts/prototype-details-desktop.png" });

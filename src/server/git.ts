@@ -58,6 +58,16 @@ export function imageMime(b: Buffer): string | undefined {
     return "image/avif";
   if (isSvgImage(b)) return "image/svg+xml";
 }
+type CollectedData = Pick<
+  Snapshot,
+  | "defaultBranch"
+  | "collaborationBranch"
+  | "branches"
+  | "routes"
+  | "sourceDiagnostics"
+  | "archiveRefs"
+  | "documents"
+> & { blobs: Map<string, Buffer>; unchanged: boolean };
 export class GitReader {
   directory: string;
   url: string;
@@ -239,7 +249,8 @@ export class GitReader {
     limits: Limits,
     signal: AbortSignal,
     cache?: { snapshot: Snapshot; readBlob: (blob: string) => Promise<Buffer> },
-  ) {
+    routingAttempt = 0,
+  ): Promise<CollectedData> {
     if (cache?.snapshot.scanFingerprint !== scanFingerprint(limits))
       cache = undefined;
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
@@ -341,12 +352,17 @@ export class GitReader {
     const documents: DocumentRef[] = [],
       blobs = new Map<string, Buffer>();
     let total = 0;
+    const sourceTrees = new Map<string, string>();
     const collectSource = async (
       branch: Branch,
       scope: string[],
       ids?: string[],
+      catalogOnly = false,
     ) => {
       const selected = (path: string) =>
+        (!catalogOnly ||
+          !/^docs\/project\/(changes|archive)\//.test(path) ||
+          !!changeLocation(path)) &&
         scope.some(
           (prefix) =>
             path === prefix ||
@@ -412,12 +428,16 @@ export class GitReader {
         }
         return;
       }
-      const raw = (
-        await this.run(
-          ["ls-tree", "-rz", "--full-tree", branch.commit, "--", ...scope],
-          signal,
-        )
-      ).toString("utf8");
+      const treeKey = `${branch.name}:${branch.commit}`;
+      const raw =
+        sourceTrees.get(treeKey) ??
+        (
+          await this.run(
+            ["ls-tree", "-rz", "--full-tree", branch.commit, "--", ...scope],
+            signal,
+          )
+        ).toString("utf8");
+      if (scope.includes("docs/project/")) sourceTrees.set(treeKey, raw);
       for (const row of raw.split("\0")) {
         if (!row) continue;
         const tab = row.indexOf("\t"),
@@ -592,7 +612,7 @@ export class GitReader {
       diagnostic(`协作分支 ${collaborationBranch} 不存在，请修复 Setup。`);
       return finish();
     }
-    await collectSource(collab, ["docs/project/"]);
+    await collectSource(collab, ["docs/project/"], undefined, true);
     let workflow;
     try {
       workflow = workflowCoreSchema.parse(
@@ -618,6 +638,16 @@ export class GitReader {
       collaborationBranch,
       workflow.protectedBranches,
     ) as ChangeRoute[];
+    const routingIdentity = JSON.stringify(routes);
+    const centralIds = routes
+      .filter((r) => r.branch === collaborationBranch && !r.errors.length)
+      .map((r) => r.id);
+    if (centralIds.length)
+      await collectSource(
+        collab,
+        ["docs/project/changes/", "docs/project/archive/"],
+        centralIds,
+      );
     const targets = [
       ...new Set(
         routes
@@ -684,6 +714,129 @@ export class GitReader {
         );
         if (commit) archiveRefs.push({ id, commit });
       }
+    }
+    // Recheck discovery and routing only. Continuously advancing work branches do
+    // not hold the snapshot hostage; every target was already read at one commit.
+    const finalHead = (
+      await this.run(
+        [
+          "ls-remote",
+          "--symref",
+          "origin",
+          "HEAD",
+          `refs/heads/${collaborationBranch}`,
+        ],
+        signal,
+      )
+    ).toString();
+    const finalDefault = /^ref: refs\/heads\/(.+)\tHEAD$/m.exec(finalHead)?.[1];
+    const finalDefaultCommit = /^([a-f0-9]{40,64})\tHEAD$/m.exec(
+      finalHead,
+    )?.[1];
+    const finalCollabCommit = finalHead
+      .split("\n")
+      .map((row) => row.split("\t"))
+      .find(([, ref]) => ref === `refs/heads/${collaborationBranch}`)?.[0];
+    let changed =
+      finalDefault !== defaultBranch ||
+      !finalCollabCommit ||
+      !finalDefaultCommit;
+    const catalogAt = async (commit: string, entries: boolean) => {
+      const rows = (
+        await this.run(
+          [
+            "ls-tree",
+            "-rlz",
+            "--full-tree",
+            commit,
+            "--",
+            "docs/project/workflow.json",
+            ...(entries
+              ? ["docs/project/changes/", "docs/project/archive/"]
+              : []),
+          ],
+          signal,
+        )
+      )
+        .toString()
+        .split("\0");
+      let config: unknown;
+      const records: { path: string; state: unknown; error?: string }[] = [];
+      for (const row of rows) {
+        const tab = row.indexOf("\t");
+        if (tab < 0) continue;
+        const path = row.slice(tab + 1),
+          isConfig = path === "docs/project/workflow.json";
+        if (!isConfig && !changeLocation(path)) continue;
+        const [mode, kind, blob, size] = row.slice(0, tab).trim().split(/\s+/);
+        let state: unknown = null,
+          error;
+        try {
+          if (
+            kind !== "blob" ||
+            !["100644", "100755"].includes(mode) ||
+            !Number.isSafeInteger(Number(size)) ||
+            Number(size) > limits.jsonBytes
+          )
+            throw Error();
+          const cached = blobs.get(blob);
+          state = JSON.parse(
+            new TextDecoder("utf-8", { fatal: true }).decode(
+              cached ??
+                (await this.run(
+                  ["cat-file", "blob", blob],
+                  signal,
+                  limits.jsonBytes + 1024,
+                )),
+            ),
+          );
+        } catch {
+          error = "入口 JSON 不可读。";
+        }
+        if (isConfig) config = state;
+        else records.push({ path, state, ...(error ? { error } : {}) });
+      }
+      return { config, records };
+    };
+    if (!changed && finalDefaultCommit !== baseline.commit) {
+      const commit = await fetchRef(
+        `refs/heads/${baseline.name}`,
+        `refs/remotes/origin/${baseline.name}`,
+        finalDefaultCommit!,
+      );
+      const probe = workflowCoreSchema.safeParse(
+        (await catalogAt(commit, false)).config,
+      );
+      changed =
+        !probe.success ||
+        probe.data.collaborationBranch !== collaborationBranch;
+    }
+    if (!changed && finalCollabCommit !== collab.commit) {
+      const commit = await fetchRef(
+        `refs/heads/${collab.name}`,
+        `refs/remotes/origin/${collab.name}`,
+        finalCollabCommit!,
+      );
+      const current = await catalogAt(commit, true),
+        probe = workflowCoreSchema.safeParse(current.config);
+      changed =
+        !probe.success ||
+        JSON.stringify(probe.data) !== JSON.stringify(workflow) ||
+        JSON.stringify(
+          routeCatalog(
+            current.records,
+            collaborationBranch,
+            probe.data.protectedBranches,
+          ),
+        ) !== routingIdentity;
+    }
+    if (changed) {
+      if (routingAttempt < 2)
+        return this.collect(limits, signal, cache, routingAttempt + 1);
+      throw new AppError(
+        "SOURCE_CHANGED",
+        "协作入口或配置在读取中持续变化，请重试；上次快照已保留。",
+      );
     }
     return finish();
   }

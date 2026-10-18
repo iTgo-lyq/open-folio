@@ -140,7 +140,7 @@ const discoveries = new Discovery(join(root, "discoveries"), sessions),
   publications = new PublicPreviews(join(root, "public-previews"));
 repositoryPermissions(sessions).now = () => Date.now() + permissionOffset;
 const key = repositoryKey(repository);
-const originalMain = f.git(["rev-parse", "main"]);
+const originalCollaboration = f.git(["rev-parse", "develop"]);
 await mkdir("artifacts", { recursive: true });
 await writeFile(
   "artifacts/e2e-runtime.json",
@@ -174,21 +174,21 @@ const server = createServer(async (req, res) => {
         if (input.advancePermissions)
           permissionOffset += input.advancePermissions;
         if (input.advanceMain) {
-          f.git(["checkout", "main"]);
+          f.git(["checkout", "develop"]);
           await f.put(
             "docs/project/specs/platform/spec.md",
             "# 自动更新后的能力\n\n远端新增正文。",
           );
           const path = "packages/prototype/prototype.json";
-          const manifest = JSON.parse(f.git(["show", `main:${path}`]));
+          const manifest = JSON.parse(f.git(["show", `develop:${path}`]));
           manifest.entries[0].title = "自动更新后的原型";
           await f.put(path, JSON.stringify(manifest));
           f.commit();
         }
         if (input.restoreMain) {
-          f.git(["checkout", "main"]);
-          f.git(["reset", "--hard", originalMain]);
-          f.git(["push", "--force", "origin", "main"]);
+          f.git(["checkout", "develop"]);
+          f.git(["reset", "--hard", originalCollaboration]);
+          f.git(["push", "--force", "origin", "develop"]);
         }
         if (input.expireRefresh)
           await rm(

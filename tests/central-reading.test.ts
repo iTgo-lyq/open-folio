@@ -143,3 +143,81 @@ test("invalid target identity and duplicate live/archive records remain visible 
   assert.equal(result.changes[0].primary, null);
   assert.match(result.changes[0].diagnostics[0].message, /重复/);
 });
+
+test("handed-off central prose consumes no document or body budget", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.put(
+    "docs/project/changes/example/requirement.md",
+    "# Stale\n" + "x".repeat(90000),
+  );
+  f.commit();
+  f.git(["checkout", "-b", "change/example"]);
+  await f.put(
+    "docs/project/changes/example/change.json",
+    JSON.stringify(change("example", "change/example")),
+  );
+  await f.put("docs/project/changes/example/requirement.md", "# Current");
+  f.commit();
+  await f.register({ example: "change/example" });
+  const limits = { ...DEFAULT_LIMITS, documents: 6, totalBytes: 2000 };
+  const result = await f.store.refresh(f.project, limits);
+  assert.equal(result.documents.length, 6);
+  assert(
+    !result.documents.some(
+      (d) =>
+        d.branch === "develop" && d.path.endsWith("example/requirement.md"),
+    ),
+  );
+  assert.equal(primaryRecord(result.changes[0])?.state?.stage, "execution");
+  assert.equal((await f.store.refresh(f.project, limits)).id, result.id);
+});
+
+test("entry retarget during collection retries the catalog without publishing the former owner's later state", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  f.git(["checkout", "-b", "change/old"]);
+  await f.put(
+    "docs/project/changes/example/change.json",
+    JSON.stringify(change("example", "change/old")),
+  );
+  f.commit();
+  f.git(["checkout", "-b", "change/new"]);
+  await f.put(
+    "docs/project/changes/example/change.json",
+    JSON.stringify({ ...change("example", "change/new"), title: "New owner" }),
+  );
+  f.commit();
+  await f.register({ example: "change/old" });
+  let changed = false;
+  class Reader extends GitReader {
+    override async run(args: string[], signal?: AbortSignal, limit?: number) {
+      if (
+        !changed &&
+        args[0] === "ls-remote" &&
+        args.includes("refs/heads/change/old")
+      ) {
+        changed = true;
+        await f.register({ example: "change/new" });
+        f.git(["checkout", "change/old"]);
+        await f.put(
+          "docs/project/changes/example/change.json",
+          JSON.stringify({
+            ...change("example", "change/old"),
+            title: "After losing ownership",
+          }),
+        );
+        f.commit();
+      }
+      return super.run(args, signal, limit);
+    }
+  }
+  const store = new SnapshotStore(
+    join(f.root, "retarget-cache"),
+    (dir) => new Reader(dir, f.remote, "file"),
+    f.project.id,
+  );
+  const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
+  assert.equal(snapshot.routes[0].branch, "change/new");
+  assert.equal(primaryRecord(snapshot.changes[0])?.title, "New owner");
+});

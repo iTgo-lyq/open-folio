@@ -329,3 +329,62 @@ test("prepare reports behind/diverged branches and prunable registrations withou
   assert.match(f.workspace("prepare", [], 1), /not writable/);
   assert.match(at(f.repo, "worktree", "list", "--porcelain"), /prunable/);
 });
+
+test("same Change prose edited after rejected registration requires review before retry", (t) => {
+  const f = fixture(t);
+  f.planning();
+  const allow = f.reject("develop");
+  f.handoff(1);
+  allow();
+  f.put(
+    "docs/project/changes/sample/requirement.md",
+    "# New scope without JSON changes",
+  );
+  f.commit();
+  const prepared = at(f.work, "rev-parse", "HEAD");
+  assert.match(f.handoff(1), /Planning directory changed/);
+  assert.equal(at(f.work, "rev-parse", "HEAD"), prepared);
+  assert.equal(
+    JSON.parse(
+      at(f.remote, "show", "develop:docs/project/changes/sample/change.json"),
+    ).branch,
+    "develop",
+  );
+});
+
+test("parent closure checks the live registered child ref rather than a deleted remote's tracking cache", (t) => {
+  const f = fixture(t);
+  f.planning();
+  f.handoff();
+  f.state("cancel", ["--reason", "No longer needed"], 0, "sample", f.work);
+  f.commit(f.work);
+  const parent = (command: string, opts: string[] = [], expected = 0) =>
+    f.state(command, opts, expected, "parent");
+  parent("create", [
+    "--title",
+    "Parent",
+    "--size",
+    "xlarge",
+    "--children",
+    "sample",
+  ]);
+  for (const name of ["requirement", "technical", "plan"])
+    f.put(`docs/project/changes/parent/${name}.md`, `# ${name}`);
+  for (const phase of ["requirement", "technical", "plan"])
+    parent("confirm", [
+      "--phase",
+      phase,
+      "--summary",
+      "Fixture confirmed",
+      "--source",
+      "Fixture instruction",
+    ]);
+  parent("execute");
+  f.commit();
+  at(f.repo, "push", "origin", "--delete", "change/sample");
+  assert.match(
+    parent("verify", ["--result", "passed", "--summary", "Verify children"], 1),
+    /Remote branch is missing/,
+  );
+  assert.equal(parent("show").state.stage, "execution");
+});

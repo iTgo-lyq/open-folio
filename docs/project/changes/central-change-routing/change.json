@@ -50,7 +50,9 @@
     },
     "T5": {
       "title": "统一工作台与关联材料的权威来源",
-      "status": "todo"
+      "status": "done",
+      "verification": "浏览器 38 项通过；来源/增量/原型 12 项、工作区故障与删除子项回归通过；独立评审问题已修复待复验",
+      "commitTitle": "feat: show collaboration sources and close routing race gaps"
     },
     "T6": {
       "title": "交付迁移接入与本仓库试运行",

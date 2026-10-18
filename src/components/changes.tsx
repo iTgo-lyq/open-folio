@@ -987,6 +987,9 @@ export function ChangeDrawer() {
             ))}
           </div>
           <div className="drawer-body" key={`${g?.id}.${tab}`}>
+            {g && (!c || ["overview", "evidence"].includes(tab)) && (
+              <EntrySource group={g} />
+            )}
             {!g ? (
               <Empty title="当前记录中没有这个 Change">
                 <p>它可能已移动到其他分支，或尚未推送。</p>
@@ -1264,12 +1267,46 @@ function Diagnostics({ items }: { items: Diagnostic[] }) {
     </div>
   );
 }
+function EntrySource({ group }: { group: ChangeGroup }) {
+  const { data, openDocument } = useWorkspace();
+  if (!group.source) return null;
+  const source = group.source;
+  const doc = data?.documents.find(
+    (d) =>
+      d.branch === source.entryBranch &&
+      d.path === source.entryPath &&
+      d.commit === source.entryCommit,
+  );
+  return (
+    <section aria-label="集中入口">
+      <SectionTitle>集中入口</SectionTitle>
+      {doc ? (
+        <Source document={doc} />
+      ) : (
+        <p>
+          {source.entryBranch} · {source.entryPath}
+        </p>
+      )}
+      <p className="subtle-note">
+        完整记录来源：{source.recordBranch ?? "待核对"}
+      </p>
+      {doc?.readable && (
+        <button
+          className="text-button"
+          onClick={() => openDocument(doc.id, "", true)}
+        >
+          查看入口记录
+        </button>
+      )}
+    </section>
+  );
+}
 function CandidateSources({ group: g }: { group: ChangeGroup }) {
   const { openDocument } = useWorkspace();
   return (
     <>
       <SectionTitle>已推送候选</SectionTitle>
-      <p className="subtle-note">没有唯一主来源，以下副本仅供核对。</p>
+      <p className="subtle-note">没有唯一主来源，以下记录仅供核对。</p>
       {g.candidates.map((c) => (
         <div className="candidate-card" key={c.key}>
           <strong>
@@ -1530,9 +1567,9 @@ function Evidence({ c, group: g }: { c: ChangeCandidate; group: ChangeGroup }) {
       </button>
       {g.candidates.length > 1 && (
         <>
-          <SectionTitle>其他分支副本</SectionTitle>
+          <SectionTitle>其他候选记录</SectionTitle>
           <p className="subtle-note">
-            不同分支可能保留旧副本，当前状态只取主来源。
+            当前目标存在多个候选记录，请核对目录与归档状态。
           </p>
           {g.candidates
             .filter((x) => x.key !== c.key)

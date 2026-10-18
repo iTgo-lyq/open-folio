@@ -50,7 +50,7 @@ test("visible workbench automatically updates main Specs and prototypes without 
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
   await expect(page.locator(".header-source-details")).toContainText(
-    "main · 守护分支",
+    "develop · 预发布",
   );
   try {
     await request.post("/_fixture/control", {

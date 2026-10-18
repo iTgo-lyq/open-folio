@@ -128,7 +128,7 @@ function PrototypeGallery({
           <p>从一个入口，发现项目的页面、细节与各种状态。</p>
         </div>
         <Badge tone="info">
-          {catalog.policy.branch ?? "默认分支"} · 当前状态
+          {catalog.policy.branch ?? "协作分支"} · 预发布状态
         </Badge>
       </div>
       <div className="prototype-catalog-controls">
@@ -196,7 +196,7 @@ function PrototypeGallery({
           )}
           {!items.length ? (
             <Empty title="暂无当前页面" icon={<PanelsTopLeft size={28} />}>
-              <p>项目在默认分支登记页面预览后，就会展示在这里。</p>
+              <p>项目在协作分支登记页面预览后，就会展示在这里。</p>
             </Empty>
           ) : (
             <>
@@ -494,7 +494,7 @@ function PrototypeDetails({
                 <p>
                   {error ??
                     (catalog
-                      ? "这个入口已不在默认分支的当前清单中。关闭详情后可查看其他原型。"
+                      ? "这个入口已不在协作分支的当前清单中。关闭详情后可查看其他原型。"
                       : "请稍候")}
                 </p>
               </div>
@@ -594,7 +594,7 @@ function PrototypeDetailBody({
           </dd>
         </div>
         <div>
-          <dt>默认分支清单提交</dt>
+          <dt>协作分支清单提交</dt>
           <dd>
             <code>{revision}</code>
           </dd>

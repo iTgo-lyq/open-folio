@@ -382,7 +382,9 @@ function main() {
       );
     const availability = [];
     const dependency = (target, allowCancelled = false) => {
-      const routed = modern ? routedRecord(repo, catalog, target) : null;
+      const routed = modern
+        ? routedRecord(repo, catalog, target, { refresh: !opts["dry-run"] })
+        : null;
       const candidates = routed
         ? [{ ...routed, file: join(root, routed.path) }]
         : all.filter((r) => r.state.id === target);
