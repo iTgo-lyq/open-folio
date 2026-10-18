@@ -7,6 +7,7 @@
   "stage": "close",
   "branch": "codex/independent-clarification-budgets",
   "followUpOf": "technical-clarification",
+  "followUpTitle": "完善技术方案问询机制",
   "confirmations": {},
   "tasks": {
     "T1": {
