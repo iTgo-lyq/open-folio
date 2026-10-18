@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-thumbnail-publication",
+  "title": "修复原型截图登记并补齐卡片验收",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/prototype-thumbnail-publication",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复截图发布引用并验证当前卡片展示",
+      "status": "done",
+      "verification": "16 项原型测试、截图专项浏览器检查、类型与清单校验通过；原有 iframe 点击超时在未改测试基线复现。原固定版本三端引用已补齐。",
+      "commitTitle": "prototype-thumbnail-publication T1: verify publication repair"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T05:45:06.838Z",
+      "summary": "Agent 自查：路径回归、16 项原型测试、卡片截图专项和类型校验通过；既有 iframe 点击测试基线同样失败，限制见执行记录。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T05:45:08.529Z",
+      "summary": "Agent 自验收通过：原版本三端引用补齐、入口目录识别正确、卡片展示验收已纳入发布约定和浏览器回归。",
+      "source": "用户明确要求修复三项；按 small 自验收规则，集成后继续真实工作台冒烟。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-18T05:45:10.148Z",
+      "summary": "恢复既有截图发布行为，不改变产品契约；项目发布验收约定已写入原型包 README 与 AGENTS。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T05:45:11.742Z",
+      "summary": "截图发布路径与当前引用修复完成，回归证据及发布验收约定已归档。",
+      "path": "docs/project/archive/2026-10-18-prototype-thumbnail-publication"
+    }
+  },
+  "previews": [
+    {
+      "id": "clarification-detail",
+      "title": "Change 澄清问答",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/index.html",
+        "sourceCommit": "8d1358a57f7ce35d02251361071772149afd548a",
+        "digest": "sha256:891894b23192ad1392fa016c537f9a5515cec2c95cba2d5c20b6a3b74a923f9c",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -13,7 +13,7 @@ description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜
 
 原型已启用时，按 UI 影响范围处理，不以 Change 规模代替判断：
 
-- 小型变化：先询问是否绘制原型；可先推进无关工作，较长时间未回复时说明后跳过。
+- 小型变化：先询问是否绘制原型；可先推进无关工作，较长时间未回复时说明后跳过绘制。
 - 大范围变化：实现前必须先绘制或更新原型，并提供预览。
 
 ```bash
@@ -41,6 +41,10 @@ setup 不安装框架，不覆盖已有文件；采用现有工程时提供 pack
 已有规范用 --design 引用，避免复制出第二份权威；没有时，setup 从 [模板](./assets/DESIGN.template.md) 生成包内 DESIGN.md，绘制前按项目事实补全。先读主题/token、共享组件和代表页面，必要时对照截图；写清视觉方向、色彩用途与数值、字阶、布局/断点、组件状态及无障碍约定。链接依据，区分现状与新决策；未知项标明待定，删除无关章节。后续原型沿用该规范。
 
 模板组织参考 [Google Stitch](https://github.com/google-labs-code/stitch-skills/blob/main/plugins/stitch-design/skills/extract-design-md/SKILL.md) 的源码提炼方法和 [Anthropic frontend-design](https://github.com/anthropics/claude-code/blob/main/plugins/frontend-design/skills/frontend-design/SKILL.md) 的设计方向约定；无需安装这些 skill 或接入其服务。
+
+### 原型验收
+
+只要绘制或更新了原型，无论 Change 规模，都必须提供预览并由用户明确验收通过，才能开始对应实现。
 
 ## 当前清单
 

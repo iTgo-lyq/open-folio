@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, rename, rm } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
+import { extname, join, posix, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import nextEnv from "@next/env";
@@ -159,9 +159,14 @@ export async function publishToR2(
       digest: request.digest,
       version,
       entries: request.entries.map((e) => {
+        const directory = posix.dirname(e.entryPath);
         const thumbnails = ["pc-web", "ipad", "mobile"]
-          .filter((device) => snapshot.has(`${e.id}/${device}.png`))
-          .map((device) => ({ device, url: urlFor(`${e.id}/${device}.png`) }));
+          .map((device) => ({
+            device,
+            path: posix.join(directory, `${device}.png`),
+          }))
+          .filter(({ path }) => snapshot.has(path))
+          .map(({ device, path }) => ({ device, url: urlFor(path) }));
         return {
           id: e.id,
           url: urlFor(e.entryPath) + (e.hash ?? ""),

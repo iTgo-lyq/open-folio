@@ -1,5 +1,51 @@
 import { test, expect, repositoryQuery, repoKey } from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
+test("published hosted cards load the registered screenshot for every declared device", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
+  const entry = catalog.items.find(
+    (item: { id: string }) => item.id === "hosted",
+  );
+  const widths: Record<string, number> = {
+    "pc-web": 1440,
+    ipad: 834,
+    mobile: 390,
+  };
+  await page.goto(path);
+  const tile = page.locator('[data-prototype-id="hosted"]');
+  for (const device of entry.devices) {
+    expect(
+      entry.artifact.thumbnails.some(
+        (item: { device: string }) => item.device === device,
+      ),
+    ).toBe(true);
+    await page
+      .getByRole("combobox", { name: "筛选原型适配" })
+      .selectOption(device);
+    await tile.scrollIntoViewIfNeeded();
+    const screenshot = tile.getByRole("img", { name: "托管 React的首屏截图" });
+    await expect(screenshot).toBeVisible();
+    await expect
+      .poll(() =>
+        screenshot.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth,
+        ),
+      )
+      .toBe(widths[device]);
+    await expect(tile.locator(".prototype-thumbnail.ready")).toBeVisible();
+    await expect(tile.getByText(/尚未提供截图|截图暂不可用/)).toHaveCount(0);
+  }
+  await tile
+    .getByRole("button", { name: "预览托管 React", exact: true })
+    .click();
+  await expect(
+    page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
+  ).toBeVisible();
+});
+
 test("navigation hints stay above the prototype gallery", async ({ page }) => {
   await page.goto(path);
   await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
@@ -267,6 +313,53 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
 });
 
+test("hosted controls receive real pointer clicks at fit and actual canvas scales", async ({
+  page,
+}) => {
+  await page.goto(path + "&prototype=hosted&preview=hosted");
+  const panel = page.getByRole("region", { name: "当前页面预览" });
+  const iframe = panel.locator("iframe");
+  const frame = page.frameLocator('iframe[title="原型：托管 React"]');
+  const counter = frame.getByRole("button", { name: /^已添加 \d+ 次$/ });
+  await expect(counter).toHaveText("已添加 0 次");
+  await counter.evaluate((button) => {
+    button.addEventListener("click", (event) => {
+      button.setAttribute("data-trusted-click", String(event.isTrusted));
+    });
+  });
+  for (const [index, mode] of ["适应画布", "100%"].entries()) {
+    await panel.getByRole("button", { name: mode, exact: true }).click();
+    await expect(iframe).toHaveCSS(
+      "transform",
+      index === 0 ? /matrix\(0\./ : "matrix(1, 0, 0, 1, 0, 0)",
+    );
+    await expect(counter).toBeVisible();
+    // Playwright 1.63 adds the frame offset to OOPIF quads without applying its
+    // CSS scale. Map the frame-local center to the visible canvas for real input.
+    const local = await counter.evaluate((button) => {
+      const box = button.getBoundingClientRect();
+      const x = box.x + box.width / 2,
+        y = box.y + box.height / 2;
+      return {
+        x,
+        y,
+        hitsButton: button.contains(document.elementFromPoint(x, y)),
+      };
+    });
+    expect(local.hitsButton).toBe(true);
+    const point = await iframe.evaluate((element, local) => {
+      const box = element.getBoundingClientRect();
+      const x = box.x + (local.x * box.width) / element.clientWidth;
+      const y = box.y + (local.y * box.height) / element.clientHeight;
+      return { x, y, hitsFrame: document.elementFromPoint(x, y) === element };
+    }, local);
+    expect(point.hitsFrame).toBe(true);
+    await page.mouse.click(point.x, point.y);
+    await expect(counter).toHaveText(`已添加 ${index + 1} 次`);
+    await expect(counter).toHaveAttribute("data-trusted-click", "true");
+  }
+});
+
 test("loaded hosted pages need no ready bridge and explicit errors survive page load", async ({
   page,
 }) => {
@@ -287,6 +380,13 @@ test("loaded hosted pages need no ready bridge and explicit errors survive page 
   const panel = page.getByRole("region", { name: "当前页面预览" });
   const frame = page.frameLocator('iframe[title="原型：托管 React"]');
   await expect(frame.getByRole("heading")).toBeVisible();
+  // Keep the bridge lifecycle test independent of transformed OOPIF coordinates;
+  // real pointer interaction at both canvas scales is covered above.
+  await panel.getByRole("button", { name: "100%", exact: true }).click();
+  await expect(panel.locator("iframe")).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)",
+  );
   await frame.getByRole("button", { name: "已添加 0 次" }).click();
   await expect(
     frame.getByRole("button", { name: "已添加 1 次" }),

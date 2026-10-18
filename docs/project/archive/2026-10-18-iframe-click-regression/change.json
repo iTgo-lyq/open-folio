@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "iframe-click-regression",
+  "title": "修复托管 iframe 点击回归超时",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/iframe-click-regression",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "定位并修复托管预览点击测试，保留握手与错误恢复验证",
+      "status": "done",
+      "verification": "最小实验定位缩放 iframe 坐标偏差；两项定向测试及 12 项原型浏览完整回归全部通过，类型与格式检查通过。",
+      "commitTitle": "iframe-click-regression T1: verify scaled pointer input and bridge lifecycle"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T05:56:27.299Z",
+      "summary": "Agent 自查通过：最小实验确认工具坐标偏差；真实鼠标缩放回归、握手恢复及全部 12 项原型浏览测试通过，类型和格式检查通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T05:56:28.947Z",
+      "summary": "Agent 自验收通过：原超时用例恢复，适应画布与 100% 真实鼠标交互可用，未削弱握手及错误恢复验证。",
+      "source": "用户明确要求排查并修复 iframe 点击测试超时；按 small 规则自验收。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-18T05:56:30.646Z",
+      "summary": "仅修正测试对缩放 iframe 的鼠标坐标处理，未改变产品实现或契约，Specs 无需修改。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T05:56:32.350Z",
+      "summary": "iframe 点击超时排查与测试修复完成，完整原型回归通过。",
+      "path": "docs/project/archive/2026-10-18-iframe-click-regression"
+    }
+  }
+}
