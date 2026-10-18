@@ -1368,6 +1368,10 @@ input {
   background: #f8fbfd;
   border-radius: 6px;
 }
+.change-list > .change-row:has(+ .follow-up-group),
+.change-list > .change-row:has(+ .follow-up-warning + .follow-up-group) {
+  border-bottom: 0;
+}
 .follow-up-group {
   margin: 24px 0 20px;
   padding-bottom: 4px;

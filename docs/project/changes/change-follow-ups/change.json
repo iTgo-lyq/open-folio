@@ -4,7 +4,7 @@
   "title": "连续交付通过延续关系分组展示",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/change-follow-ups",
   "confirmations": {
     "requirement": {
@@ -47,22 +47,18 @@
       "status": "done",
       "verification": "35 项相关单元与集成、14 项浏览器回归及最终 2 项复验、类型/格式/skill 校验和生产构建通过，独立复审通过。",
       "commitTitle": "change-follow-ups T4: name continuation groups and refine frame headings"
+    },
+    "T5": {
+      "title": "统一分组外侧分割线处理",
+      "status": "done",
+      "verification": "2 项浏览器回归、CSS 格式与差异检查、生产构建通过，独立静态复审通过。",
+      "commitTitle": "change-follow-ups T5: remove stray divider before grouped records"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-18T06:32:33.767Z",
-      "summary": "独立分组命名和标题嵌框经相关测试、浏览器、类型格式、生产构建及独立复审通过，历史补写仅指定组名。"
-    }
-  },
+  "closure": {},
   "rework": {
-    "at": "2026-10-18T06:25:59.297Z",
-    "reason": "用户要求补齐独立分组标题并调整标题嵌入边框的样式。",
-    "approach": "首次关联概括共同目标并保存独立组名，后续沿用；按明确指定组名迁移历史元数据，调整外框与分隔线后更新服务验收。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "独立组名与标题嵌框样式已验证，按用户要求更新服务后等待实际效果验收。"
+    "at": "2026-10-18T06:37:29.496Z",
+    "reason": "分组上方残留普通记录的分割线，导致上下边界不一致。",
+    "approach": "隐藏紧邻分组的前一条普通记录底部分割线，分组外侧上下统一留白，保留分组外框和组内分隔线。"
   }
 }
