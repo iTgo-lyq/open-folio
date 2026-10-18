@@ -21,7 +21,7 @@ const ancestor = (repo, before, after) => {
 };
 
 // Shared namespace with state/workspace commands; keep it until async scans finish.
-async function locked(repo, operation) {
+export async function withRepositoryLock(repo, operation) {
   const path = join(repo.common, 'spec-trail-state.lock');
   mkdirSync(path);
   try {
@@ -37,6 +37,11 @@ function worktrees(repo) {
     return {path:value('worktree'),branch:value('branch')?.replace(/^refs\/heads\//,''),
       locked:fields.some(field => /^locked(?: |$)/.test(field)),prunable:fields.some(field => /^prunable(?: |$)/.test(field))};
   });
+}
+
+function visibleIndex(path) {
+  const entries = at(path,['ls-files','-v','-z']).split('\0').filter(Boolean);
+  assert(!entries.some(entry => entry[0] === 'S' || /^[a-z]/.test(entry)), 'Worktree has assume-unchanged or skip-worktree index entries; clear these flags and inspect files before retrying');
 }
 
 function archived(repo, commit, id) {
@@ -55,7 +60,7 @@ function previewObjects(repo, record, commit, configuration) {
     assert(revision(repo, preview.artifact.sourceCommit), `Prototype source object is unavailable: ${preview.id}`);
     if (preview.artifact.type === 'git') {
       const path = entryPath(preview,configuration,record.directory);
-      assert(path, `Prototype path is outside the delivery: ${preview.id}`);
+      assert(path?.startsWith(record.directory + '/previews/'), `Prototype path is outside the archived snapshot: ${preview.id}`);
       const row = repo.git(['ls-tree',commit,'--',path]);
       assert(/^(100644|100755) blob [a-f0-9]+\t/.test(row), `Prototype HTML is unavailable: ${preview.id}`);
     }
@@ -80,6 +85,7 @@ function source(repo, catalog, id) {
   assert(record.state.branch === branch, 'Archive ownership does not match the registered source');
   previewObjects(repo,record,commit,catalog.config.prototype);
   for (const tree of worktrees(repo).filter(tree => tree.branch === branch)) {
+    visibleIndex(tree.path);
     assert(!tree.locked && !tree.prunable && !at(tree.path,['status','--porcelain','--untracked-files=all']), 'Source worktree is unavailable, locked or has unsaved files');
   }
   return {branch,commit,local};
@@ -96,7 +102,7 @@ export async function preflight(repo, id) {
 /** Push the fixed archived source, then a verified --no-ff merge. Never force push collaboration. */
 export async function integrate(repo, id) {
   assert(validChangeId(id), 'Invalid Change id');
-  return locked(repo, async () => {
+  return withRepositoryLock(repo, async () => {
     let state = await current(repo,id);
     if (state.integration.status === 'found') return {merged:true,remoteVerified:true,reused:true,integration:state.integration};
     const delivery = source(repo,state.catalog,id);
@@ -157,6 +163,7 @@ function treeReady(repo, branch, idleWorktree) {
   const gitdir = at(tree.path,['rev-parse','--absolute-git-dir']);
   for (const name of ['index.lock','HEAD.lock','MERGE_HEAD','CHERRY_PICK_HEAD','REVERT_HEAD','rebase-merge','rebase-apply','BISECT_START'])
     assert(!existsSync(join(gitdir,name)), `Worktree has an active Git operation: ${name}`);
+  visibleIndex(tree.path);
   assert(!at(tree.path,['status','--porcelain','--untracked-files=all','--ignored=matching']), 'Worktree contains unsaved or ignored files; preserve private data and remove only known rebuildable outputs before retrying');
   return tree;
 }
@@ -166,7 +173,7 @@ function treeReady(repo, branch, idleWorktree) {
  */
 export async function cleanup(repo, id, options = {}) {
   assert(validChangeId(id), 'Invalid Change id');
-  return locked(repo, async () => {
+  return withRepositoryLock(repo, async () => {
     const {catalog,integration} = await current(repo,id);
     assert(integration.status === 'found', 'No verified remote integration; retain all sources');
     const result = {merged:true,remoteVerified:true,integration,cleanup:{

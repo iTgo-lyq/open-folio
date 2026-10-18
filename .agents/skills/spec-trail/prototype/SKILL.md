@@ -109,10 +109,6 @@ node .agents/skills/spec-trail/prototype/scripts/publish.mjs register --git-entr
 
 ## 归档
 
-主 skill 完成验证、验收与 Specs 同步后提交归档。非空 previews 继续需要保留标签：
+主 skill 完成验证、验收与 Specs 同步后提交归档，再按[集成与清理命令](../references/integration.md)形成合并提交 M。归档命令将 Git 原型固定到本 Change 的 previews 快照目录，保留 sourceCommit；共享目录引用先复制，路径冲突则停止。已合入 Change 从 M 定位固定原型；Git HTML 读取归档快照，hosted 保留原版本、地址、摘要、截图和 sourceCommit。未合入来源仍固定到已推送 SHA。
 
-```bash
-node .agents/skills/spec-trail/prototype/scripts/archive.mjs --change change-id --push
-```
-
-分支与 `spec-trail/archive-v2/<id>` 标签均核实后才报告完成。相同提交可重试，不覆盖同名异提交标签。缺少标签或远端产物时明确说明，不回退其他版本。
+不创建保留标签，不改写已归档引用；旧归档没有有效 M 时留空，不用标签或显式 revision 回退。清理来源前验证 Git 文件、源码对象与托管产物可用性；已准备的公开版本独立保留。旧标签退出按集成命令中的切换顺序执行。

@@ -271,6 +271,33 @@ export class GitReader {
       });
       await chmod(join(this.directory, "config"), 0o600);
     }
+    // The Store holds its cache writer lock. Retired tags are no longer a
+    // source; remove only the old private namespace with expected object IDs.
+    const retired = (
+      await this.run(
+        [
+          "for-each-ref",
+          "--format=%(objectname)%09%(refname)",
+          "refs/openfolio/archive-v2/",
+        ],
+        signal,
+      )
+    )
+      .toString()
+      .trim();
+    for (const row of retired ? retired.split("\n") : []) {
+      const [oid, ref] = row.split("\t");
+      if (
+        !/^[a-f0-9]{40,64}$/.test(oid) ||
+        !ref?.startsWith("refs/openfolio/archive-v2/")
+      )
+        throw new AppError(
+          "CACHE_INVALID",
+          "旧原型缓存引用不合法，请检查缓存。",
+          503,
+        );
+      await this.run(["update-ref", "-d", ref, oid], signal);
+    }
     const previous = cache?.snapshot;
     const branches: Branch[] = [];
     const sourceDiagnostics: Diagnostic[] = [];

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { writeFile, rm } from "node:fs/promises";
+import { writeFile, readFile, rm } from "node:fs/promises";
 import { integrationFixture } from "./integration-fixture.ts";
 import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
 import {
@@ -17,6 +17,47 @@ async function setup() {
   f.git(["worktree", "add", worktree, f.branch]);
   return { ...f, worktree, repo: repository(f.author) };
 }
+
+test("cleanup preserves modifications hidden by assume-unchanged and skip-worktree", async () => {
+  for (const flag of ["assume-unchanged", "skip-worktree"]) {
+    const f = await setup();
+    try {
+      const result = await integrate(f.repo, f.id);
+      f.git(["merge", "--ff-only", "origin/develop"]);
+      f.git(["update-index", `--${flag}`, "feature.txt"], f.worktree);
+      await writeFile(join(f.worktree, "feature.txt"), "UNSAVED USER WORK");
+      assert.equal(
+        f.git(
+          [
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--ignored=matching",
+          ],
+          f.worktree,
+        ),
+        "",
+      );
+      const output = await cleanup(f.repo, f.id, {
+        verifiedCommit: result.integration.commit,
+        idleWorktree: f.worktree,
+      });
+      assert.equal(output.cleanup.remote.status, "retained");
+      assert.match(
+        output.cleanup.remote.reason,
+        /assume-unchanged or skip-worktree/,
+      );
+      assert.ok(f.git(["ls-remote", "origin", `refs/heads/${f.branch}`]));
+      assert.equal(
+        await readFile(join(f.worktree, "feature.txt"), "utf8"),
+        "UNSAVED USER WORK",
+      );
+      assert.ok(f.git(["show-ref", "--verify", `refs/heads/${f.branch}`]));
+    } finally {
+      await f.cleanup();
+    }
+  }
+});
 
 test("delivery creates a merge even when fast-forwardable; cleanup and retry need no source", async () => {
   const f = await setup();

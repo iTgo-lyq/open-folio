@@ -58,7 +58,8 @@ function validator(run) {
     const buffer = await run(['cat-file', 'blob', entry.blob]);
     try {
       const state = JSON.parse(typeof buffer === 'string' ? buffer : new TextDecoder('utf-8',{fatal:true}).decode(buffer));
-      return state.id === id && !validateChange(state).length && closedRecord(state, entry.directory);
+      return state.id === id && !validateChange(state).length && closedRecord(state, entry.directory) &&
+        (state.previews ?? []).every(preview => preview.artifact.type !== 'git' || preview.artifact.path === `${entry.directory}/previews/${preview.id}`);
     } catch { return false; }
   }
   /** @returns {Promise<IntegrationResult>} */

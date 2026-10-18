@@ -11,6 +11,36 @@ import { SnapshotStore } from "../src/server/store.ts";
 import { GitReader } from "../src/server/git.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 
+test("integrations reject Git prototypes outside the immutable archive subtree", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  await f.put(
+    `${f.archivePath}/change.json`,
+    JSON.stringify({
+      ...f.record,
+      previews: [
+        {
+          id: "page",
+          title: "Shared page",
+          kind: "page",
+          devices: ["pc-web"],
+          artifact: {
+            type: "git",
+            path: "prototype/preview/page",
+            sourceCommit: f.source,
+          },
+        },
+      ],
+    }),
+  );
+  await f.put("prototype/preview/page/index.html", "<html>shared</html>");
+  f.commit();
+  assert.equal(
+    (await inspectIntegration(f.run, f.merge(), f.id)).status,
+    "invalid",
+  );
+});
+
 test("a forced merge preserves a unique delivery after source deletion and a fresh collaboration-only read", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);

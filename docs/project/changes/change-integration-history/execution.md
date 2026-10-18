@@ -31,3 +31,28 @@
 移除快照中的 archiveRefs/archivePins 和旧标签查询/拉取逻辑，更新扫描 fingerprint。单个合入标记异常不再误使整个项目的原型策略失效。集成清理校验复用原型入口契约，验证目录内的 index.html，而不是将入口目录当成文件。
 
 验证：原型及新合入发布专项 12 个用例通过，覆盖 Git/hosted、删除来源及标签后冷缓存读取、sourceCommit 保真、旧公开版本继续访问、合入后拒绝旧源 revision、重复记录诊断、旧标签/显式 revision 均不能恢复旧关联；集中路由、增量缓存和集成清理相关回归此前 16 个用例通过。类型检查通过。真实服务和标签尚未切换。
+
+## T5 · 完成标签退出与完整交付演练
+
+主 skill、原型 skill、命令参考和 README 统一到单次合并提交交付；删除旧保留标签生成脚本。归档命令将 Git HTML 固定到本 Change 的快照目录，保持 sourceCommit；xlarge 父项先从协作分支移交独立关闭分支，再生成自己的 M，其 diff 不重复已交付子项。
+
+新增精确旧标签清单及条件删除命令，核对仓库身份、命名空间与预期对象，逐项报告并发变化或失败；缓存刷新在写锁内删除旧专用引用，新快照发布成功后淘汰旧标签快照。公开原型、当前清单和用户持久数据不参与清理。
+
+临时仓库完整演练已覆盖语义归档 → 推送来源 → 单次合并 → 核实并清理远端/工作区/本地分支 → 冷缓存重建 → 阅读整体 diff 与原型 → 退出旧标签及旧缓存；重复执行可恢复，非目标标签与引用保留。独立评审发现的共享 HTML 固定、索引隐藏修改及部分复制回滚问题均已修复，见 [Review](review.md)。
+
+验证：最终 `npm test` **246/246 通过**；`npm run typecheck`、`npm run format:check`、`npm run build` 及两个 skill 的 quick_validate 检查通过。相关五组浏览器测试共 **26 个通过**：首次 24 个通过，另两个因新增归档 fixture 数量及预览错误文案变化而调整断言，定向重跑 2/2 通过。最终协议/清理修正另经完整 Node 回归及独立复验，不重复无关浏览器测试。
+
+生产构建位于任务 worktree 的 `.next`；主工作区与长期服务未切换。真实旧标签、原始分支和本地工作区均未清理。本次切换的剩余动作按 Plan 在人工验收后执行：同步 Specs、归档推送、生成 M、安全快进主工作区、更新服务及独立登录冒烟，最后清理精确旧标签和安全可删来源。
+
+## 验收证据
+
+| 验收项 | 证据与结果 |
+| --- | --- |
+| A1、A5、A8 | integration-records / integration-delivery 真实 Git 用例：双亲及 first-parent 识别、并发重建、未知推送响应、重试与归档不变性通过。 |
+| A2、A3 | integration-diff / integration-transition 与浏览器 integration：来源删除后冷读完整差异，特殊文件和各视口显示通过。 |
+| A4、A7 | integration-previews、previews、prototype-publishing：Git/hosted 固定交付、公开版本保留、旧关联空态及异常诊断通过；共享 HTML 并发回归通过。 |
+| A6 | integration-delivery：未保存、忽略、隐藏索引修改、依赖、占用、新 tip 和部分失败均保留必要来源，继续清理通过。 |
+| A9 | integration-transition：精确标签及缓存退出、非目标对象保留、并发变化与部分失败恢复通过；真实退出待验收后的服务切换。 |
+| A10 | 授权 API / 浏览器及原型发布回归通过；临时演练保护持久数据。真实登录与服务冒烟在部署后执行。 |
+
+工作台效果：桌面、iPad、390px 和 320px 截图位于本任务 worktree 的 `artifacts/integration-{desktop,ipad,mobile,narrow}.png`；桌面和 320px 已人工查看。

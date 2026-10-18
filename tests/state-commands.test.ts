@@ -940,7 +940,7 @@ test("preview association command preserves unrelated state and enforces configu
   f.verify();
   f.accept();
   const result = f.archive();
-  assert.match(result.next, /archive.mjs/);
+  assert.match(result.next, /integration.mjs merge/);
 });
 
 test("execution requires a published archived dependency already integrated in the branch", (t) => {

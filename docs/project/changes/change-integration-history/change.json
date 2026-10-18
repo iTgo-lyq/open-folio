@@ -50,7 +50,9 @@
     },
     "T5": {
       "title": "完成标签退出与完整交付演练",
-      "status": "todo"
+      "status": "done",
+      "verification": "完整 Node 回归 246/246、相关浏览器 26 个、类型格式与生产构建通过；隔离独立评审 3 项均修复复验，完整交付及标签退出临时演练通过",
+      "commitTitle": "change-integration-history T5: retire archive tags and verify delivery lifecycle"
     }
   },
   "closure": {},

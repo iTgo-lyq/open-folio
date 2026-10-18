@@ -7,7 +7,7 @@ test("unreadable fixed versions show a failure instead of an empty inventory or 
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("原型读取失败", { exact: true })).toBeVisible();
   await expect(
-    dialog.getByText("该 Git 版本已不可用，请检查原分支或归档保留引用。", {
+    dialog.getByText("该 Git 版本已不可用，请重新获取对应交付历史。", {
       exact: true,
     }),
   ).toBeVisible();

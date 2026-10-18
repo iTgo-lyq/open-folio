@@ -133,9 +133,11 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 图表可保存为文档附近的 SVG 文件，再用 `![图表说明](./assets/architecture.svg)` 引用，也可通过普通 Markdown 链接打开图片查看器。SVG 需为 UTF-8、XML 1.0，根元素声明 `xmlns="http://www.w3.org/2000/svg"`，不含 DTD 或处理指令；建议设置 `viewBox` 并内置样式。文本、箭头、渐变和内部引用可以显示，脚本、外部字体与其他外部资源被隔离策略阻止。直接粘贴到 Markdown 的 `<svg>` 标签不会渲染。
 
+旧标签切换使用 [SpecTrail 集成与清理命令](.agents/skills/spec-trail/references/integration.md)：先更新并验证服务，再按精确清单删除 `spec-trail/archive-v2/*`。缓存刷新在写锁内删除旧私有引用并清理失效快照；不回填历史映射，不处理公开版本或用户数据。
+
 ## 原型与内置托管
 
-当前原型总览读取所选协作分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 原型绑定记录提交与入口，归档标签 `spec-trail/archive-v2/<id>` 保留 Git 记录。关闭开关只禁止后续准备，已经公开的产物仍可访问。
+当前原型总览读取所选协作分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 归档后以带 `SpecTrail-Change: <id>` 的双亲合并提交保存交付边界；“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。原始分支与工作区可在远端核实后安全清理，不再创建保留标签。旧归档缺少有效关联时，diff 和原型留空，正文仍可读。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 
 通过 [SpecTrail 原型 skill](.agents/skills/spec-trail/prototype/SKILL.md) 维护源码、mock 和构建。产物可选 OpenFolio 内置托管、外部托管或 Git 自包含 HTML；服务不安装仓库依赖、不执行仓库构建。
 

@@ -467,11 +467,12 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "<!doctype html><p>snapshot</p>",
   );
   f.commit();
-  run(".agents/skills/spec-trail/prototype/scripts/archive.mjs", [
+  run(".agents/skills/spec-trail/scripts/integration.mjs", [
+    "merge",
     "--change",
     "publish-demo",
-    "--push",
   ]);
+  assert.equal(f.git(["tag", "--list", "spec-trail/archive-v2/*"]), "");
 });
 
 test("crashed publication retains lock evidence and recovers only after verified stale-lock cleanup", async (t) => {

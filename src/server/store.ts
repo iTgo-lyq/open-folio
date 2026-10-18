@@ -318,14 +318,27 @@ export class SnapshotStore {
     const files = (await readdir(join(dir, "snapshots"))).filter(
       (f) => snapshotPattern.test(f.slice(0, -5)) && f.endsWith(".json"),
     );
-    const snapshots = await Promise.all(
-      files.map(async (f) => ({
-        file: f,
-        value: JSON.parse(
-          await readFile(join(dir, "snapshots", f), "utf8"),
-        ) as Snapshot,
-      })),
-    );
+    const snapshots: { file: string; value: Snapshot }[] = [];
+    for (const file of files) {
+      let value: Snapshot | undefined;
+      try {
+        value = JSON.parse(
+          await readFile(join(dir, "snapshots", file), "utf8"),
+        ) as Snapshot;
+      } catch {}
+      if (
+        !value ||
+        value.cacheSchemaVersion !== 6 ||
+        !value.integrations ||
+        Object.hasOwn(value, "archiveRefs") ||
+        Object.hasOwn(value, "archivePins")
+      ) {
+        if (file !== `${current}.json`)
+          await unlink(join(dir, "snapshots", file));
+        continue;
+      }
+      snapshots.push({ file, value });
+    }
     snapshots.sort(
       (a, b) =>
         Number(b.value.id === current) - Number(a.value.id === current) ||
