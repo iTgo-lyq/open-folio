@@ -14,7 +14,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 主工作区为 `/home/tiger/workspace/open-folio`，协作分支为 `develop`；长期服务在此构建，使用该目录的 `.next` 运行。
 - 本仓库 worktree 默认路径为 `/home/tiger/workspace/open-folio-worktrees/<工作区名>`。
 - 本机长期服务端口为 `11117`，tmux 会话为 `openfolio-public-preview`。服务管理命令在主工作区运行，也可使用 `npm --prefix /home/tiger/workspace/open-folio run service:status` 等形式。
-- 更新长期服务前核对主工作区仍在 `develop`、待部署提交已集成并验证，保护未提交现场。定向同步协作分支后按需安装依赖，执行 `service:update` 和冒烟检查；该命令只构建当前工作区，不自动拉取或切分支。服务进程由 tmux 托管，不依赖 Agent 会话，脚本不提供机器重启后的自启配置。
+- 更新长期服务前确认待部署提交已集成并验证，按需安装依赖，执行 `service:update` 和冒烟检查；该命令只构建当前工作区，不自动拉取或切分支。服务进程由 tmux 托管，不依赖 Agent 会话，脚本不提供机器重启后的自启配置。
 - 常规更新允许短暂停机，按停止服务、构建、启动、验证的顺序执行，不创建回滚快照或例行备份，也不累积备份历史。破坏性更新或排查 bug 确有需要时，只做最小必要备份，用后清理。
 - `/home/tiger/.local/share/open-folio` 是当前运行数据目录，包含登录状态、凭据密钥、工作台偏好及可重建缓存。一般不主动删除；仅在破坏性更新或修复 bug 确有需要时，针对必要范围处理，避免每次部署重置登录和工作台。
 - 部署后的冒烟检查由负责本次任务的 Agent 根据改动自主选择，不维护固定冒烟脚本。需要登录真实工作台时，从 Git 忽略的本地环境配置读取 Token；`.env.example` 仅保存配置项与占位值。
