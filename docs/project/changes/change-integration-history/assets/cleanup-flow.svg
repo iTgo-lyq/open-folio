@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="cleanup-flow-title cleanup-flow-desc">
+<title id="cleanup-flow-title">清理判断：保留合入事实，逐项处理来源</title>
+<desc id="cleanup-flow-desc">远端合入记录核实后检查待删除来源，满足条件才依次删除；条件不满足或部分失败时保留遗留并支持继续清理，不重建 M。</desc>
+<defs>
+<style>text {font-family:'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Droid Sans Fallback',system-ui,sans-serif;}</style>
+<marker id="cleanup-flow-arrow" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#64748b"/></marker>
+<marker id="cleanup-flow-accent" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#3b82f6"/></marker>
+</defs>
+<rect width="960" height="600" fill="#ffffff"/>
+<text x="40" y="48" font-size="20" text-anchor="start" fill="#1e293b" font-weight="600">清理判断：保留合入事实，逐项处理来源</text>
+<text x="40" y="76" font-size="13" text-anchor="start" fill="#64748b" font-weight="400">安全条件包含 tip、有效入口依赖、文件状态、工作区归属与会话占用。</text>
+<path d="M 228 165 L 228 189" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cleanup-flow-arrow)"/>
+<path d="M 353 244 L 541 244" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cleanup-flow-arrow)"/>
+<path d="M 228 293 L 228.0 316.0 Q 228 324 220.0 324.0 L 192.0 324.0 Q 184 324 184.0 332.0 L 184 437" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cleanup-flow-arrow)"/>
+<path d="M 704 281 L 704 301" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cleanup-flow-arrow)"/>
+<path d="M 579 356 L 280.0 356.0 Q 272 356 272.0 364.0 L 272 437" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cleanup-flow-arrow)"/>
+<path d="M 704 405 L 704 453" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#cleanup-flow-arrow)"/>
+<rect x="424.0" y="216" width="40" height="20" rx="2" fill="#ffffff"/>
+<text x="444" y="231" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">是</text>
+<rect x="236.0" y="300" width="40" height="20" rx="2" fill="#ffffff"/>
+<text x="256" y="315" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">否</text>
+<rect x="352.0" y="328" width="144" height="20" rx="2" fill="#ffffff"/>
+<text x="424" y="343" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">否 / 部分失败</text>
+<rect x="712.0" y="416" width="40" height="20" rx="2" fill="#ffffff"/>
+<text x="732" y="431" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">是</text>
+<rect x="100" y="104" width="256" height="56" rx="24" fill="#ffffff"/>
+<rect x="100" y="104" width="256" height="56" rx="24" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="228.0" y="138.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">远端 M 已核实</text>
+<polygon points="228,200.0 348.0,244 228,288.0 108.0,244" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"/>
+<text x="228" y="250" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">来源可安全清理？</text>
+<rect x="552" y="212" width="304" height="64" rx="6" fill="#ffffff"/>
+<rect x="552" y="212" width="304" height="64" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="704.0" y="240.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">依次删除来源</text>
+<text x="704.0" y="262.0" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">远端分支 → worktree → 本地分支</text>
+<polygon points="704,312.0 824.0,356 704,400.0 584.0,356" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="704" y="362" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">全部完成？</text>
+<rect x="100" y="448" width="256" height="72" rx="24" fill="#ffffff"/>
+<rect x="100" y="448" width="256" height="72" rx="24" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="228.0" y="480.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">保留并报告遗留</text>
+<text x="228.0" y="502.0" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">不重复创建 M / 可继续清理</text>
+<rect x="552" y="464" width="304" height="56" rx="24" fill="#ffffff"/>
+<rect x="552" y="464" width="304" height="56" rx="24" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="704.0" y="498.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">清理完成</text>
+<line x1="40" y1="540" x2="920" y2="540" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="40" y="572" font-size="12" text-anchor="start" fill="#64748b" font-weight="400">每步执行前复验；已不存在的对象按该步完成处理。清理失败不撤销已成功的合入。</text>
+</svg>

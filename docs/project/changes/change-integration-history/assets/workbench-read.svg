@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="workbench-read-title workbench-read-desc">
+<title id="workbench-read-title">工作台读取：同一快照边界连接索引与 diff</title>
+<desc id="workbench-read-desc">GitReader 从固定协作提交生成合入索引，授权后的读取请求使用快照中固定的 M 与 B 返回整体差异，不依赖原始工作分支。</desc>
+<defs>
+<style>text {font-family:'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Droid Sans Fallback',system-ui,sans-serif;}</style>
+<marker id="workbench-read-arrow" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#64748b"/></marker>
+<marker id="workbench-read-accent" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#3b82f6"/></marker>
+</defs>
+<rect width="960" height="600" fill="#ffffff"/>
+<text x="40" y="48" font-size="20" text-anchor="start" fill="#1e293b" font-weight="600">工作台读取：同一快照边界连接索引与 diff</text>
+<text x="40" y="76" font-size="13" text-anchor="start" fill="#64748b" font-weight="400">图中聚焦合入记录与差异读取；活动 Change 的已有定向读取继续保留。</text>
+<path d="M 309 168 L 349 168" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#workbench-read-arrow)"/>
+<path d="M 613 168 L 669 168" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#workbench-read-arrow)"/>
+<path d="M 788 213 L 788.0 272.0 Q 788 280 780.0 280.0 L 548.0 280.0 Q 540 280 540.0 288.0 L 540 341" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#workbench-read-arrow)"/>
+<path d="M 309 392 L 349 392" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#workbench-read-arrow)"/>
+<path d="M 613 392 L 669 392" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#workbench-read-arrow)"/>
+<rect x="564.0" y="252" width="192" height="20" rx="2" fill="#ffffff"/>
+<text x="660" y="267" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">固定 M、B 与关联状态</text>
+<rect x="64" y="128" width="240" height="80" rx="6" fill="#ffffff"/>
+<rect x="64" y="128" width="240" height="80" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<rect x="76" y="136" width="40" height="16" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="96.0" y="148" font-size="11" text-anchor="middle" fill="#1e293b" font-weight="400">GIT</text>
+<text x="184.0" y="171" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">远端协作历史</text>
+<text x="184.0" y="192" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">固定 tip 与可达对象</text>
+<rect x="360" y="128" width="248" height="80" rx="6" fill="#ffffff"/>
+<rect x="360" y="128" width="248" height="80" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<rect x="372" y="136" width="61" height="16" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="402.5" y="148" font-size="11" text-anchor="middle" fill="#1e293b" font-weight="400">INDEXER</text>
+<text x="484.0" y="171" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">GitReader + 共享校验</text>
+<text x="484.0" y="192" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">主链扫描 / 归档一致性</text>
+<rect x="680" y="128" width="216" height="80" rx="6" fill="#ffffff"/>
+<rect x="680" y="128" width="216" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"/>
+<rect x="692" y="136" width="47" height="16" rx="2" fill="#ffffff" stroke="#3b82f6" stroke-width="0.8"/>
+<text x="715.5" y="148" font-size="11" text-anchor="middle" fill="#1e293b" font-weight="400">CACHE</text>
+<text x="788.0" y="171" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">快照中的合入索引</text>
+<text x="788.0" y="192" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">Change id → M / 状态</text>
+<rect x="64" y="352" width="240" height="80" rx="6" fill="#ffffff"/>
+<rect x="64" y="352" width="240" height="80" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<rect x="76" y="360" width="61" height="16" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="106.5" y="372" font-size="11" text-anchor="middle" fill="#1e293b" font-weight="400">REQUEST</text>
+<text x="184.0" y="395" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">授权后的详情请求</text>
+<text x="184.0" y="416" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">会话 · 连接 · 仓库</text>
+<rect x="360" y="352" width="248" height="80" rx="6" fill="#ffffff"/>
+<rect x="360" y="352" width="248" height="80" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<rect x="372" y="360" width="68" height="16" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="406.0" y="372" font-size="11" text-anchor="middle" fill="#1e293b" font-weight="400">READ API</text>
+<text x="484.0" y="395" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">固定比较 M^1 → M</text>
+<text x="484.0" y="416" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">文件分页 / 按文件加载</text>
+<rect x="680" y="352" width="216" height="80" rx="6" fill="#ffffff"/>
+<rect x="680" y="352" width="216" height="80" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<rect x="692" y="360" width="40" height="16" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="712.0" y="372" font-size="11" text-anchor="middle" fill="#1e293b" font-weight="400">UI</text>
+<text x="788.0" y="395" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">合入变更页签</text>
+<text x="788.0" y="416" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">只读差异 / 空态 / 诊断</text>
+<text x="64" y="484" font-size="14" text-anchor="start" fill="#475569" font-weight="400">文档与合入索引使用同一协作 tip；缓存可重建，不回写 change.json。</text>
+<line x1="40" y1="540" x2="920" y2="540" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="40" y="572" font-size="12" text-anchor="start" fill="#64748b" font-weight="400">上行：刷新并生成派生索引　　下行：通过现有仓库授权读取固定差异</text>
+</svg>

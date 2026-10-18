@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="integration-sequence-title integration-sequence-desc">
+<title id="integration-sequence-title">合入时序：先留存源交付，再核实合并结果</title>
+<desc id="integration-sequence-desc">工作分支先推送归档提交 S，集成命令获取 B 并生成 M，普通推送成功且核实远端主链包含 M 后才移交清理。</desc>
+<defs>
+<style>text {font-family:'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Droid Sans Fallback',system-ui,sans-serif;}</style>
+<marker id="integration-sequence-arrow" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#64748b"/></marker>
+<marker id="integration-sequence-accent" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#3b82f6"/></marker>
+</defs>
+<rect width="960" height="600" fill="#ffffff"/>
+<text x="40" y="48" font-size="20" text-anchor="start" fill="#1e293b" font-weight="600">合入时序：先留存源交付，再核实合并结果</text>
+<text x="40" y="76" font-size="13" text-anchor="start" fill="#64748b" font-weight="400">成功路径；并发推进、响应丢失与冲突的处理见正文。</text>
+<line x1="160" y1="160" x2="160" y2="524" stroke="#94a3b8" stroke-dasharray="4,4"/>
+<line x1="480" y1="160" x2="480" y2="524" stroke="#94a3b8" stroke-dasharray="4,4"/>
+<line x1="800" y1="160" x2="800" y2="524" stroke="#94a3b8" stroke-dasharray="4,4"/>
+<path d="M 165 204 L 789 204" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#integration-sequence-arrow)"/>
+<path d="M 795 248 L 171 248" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#integration-sequence-arrow)"/>
+<path d="M 485 304 L 789 304" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#integration-sequence-arrow)"/>
+<path d="M 795 344 L 491 344" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#integration-sequence-arrow)"/>
+<path d="M 485 384 L 568.0 384.0 Q 576 384 576.0 392.0 L 576.0 408.0 Q 576 416 568.0 416.0 L 491 416" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#integration-sequence-arrow)"/>
+<path d="M 485 456 L 789 456" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#integration-sequence-arrow)"/>
+<path d="M 795 504 L 491 504" fill="none" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#integration-sequence-accent)"/>
+<rect x="244.0" y="176" width="152" height="20" rx="2" fill="#ffffff"/>
+<text x="320" y="191" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">推送已归档的 S</text>
+<rect x="564.0" y="220" width="152" height="20" rx="2" fill="#ffffff"/>
+<text x="640" y="235" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">核实源 tip = S</text>
+<rect x="564.0" y="276" width="152" height="20" rx="2" fill="#ffffff"/>
+<text x="640" y="291" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">读取最新协作 B</text>
+<rect x="564.0" y="316" width="152" height="20" rx="2" fill="#ffffff"/>
+<text x="640" y="331" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">返回固定的 B</text>
+<rect x="584.0" y="376" width="208" height="20" rx="2" fill="#ffffff"/>
+<text x="688" y="391" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">以 B 合并 S 并验证 M</text>
+<rect x="576.0" y="428" width="128" height="20" rx="2" fill="#ffffff"/>
+<text x="640" y="443" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">普通推送 M</text>
+<rect x="556.0" y="476" width="168" height="20" rx="2" fill="#ffffff"/>
+<text x="640" y="491" font-size="12" text-anchor="middle" fill="#475569" font-weight="400">核实主链包含 M</text>
+<rect x="60" y="104" width="200" height="56" rx="6" fill="#ffffff"/>
+<rect x="60" y="104" width="200" height="56" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="160.0" y="128.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">Change 工作分支</text>
+<text x="160.0" y="150.0" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">归档后保持只读</text>
+<rect x="380" y="104" width="200" height="56" rx="6" fill="#ffffff"/>
+<rect x="380" y="104" width="200" height="56" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="480.0" y="128.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">集成命令 / 候选</text>
+<text x="480.0" y="150.0" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">隔离工作区</text>
+<rect x="700" y="104" width="200" height="56" rx="6" fill="#ffffff"/>
+<rect x="700" y="104" width="200" height="56" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="800.0" y="128.0" font-size="16" text-anchor="middle" fill="#1e293b" font-weight="600">远端仓库</text>
+<text x="800.0" y="150.0" font-size="13" text-anchor="middle" fill="#64748b" font-weight="400">工作分支与协作分支</text>
+<line x1="40" y1="540" x2="920" y2="540" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="40" y="572" font-size="12" text-anchor="start" fill="#64748b" font-weight="400">虚线：返回结果　　蓝色：远端核实完成　　此后才更新主工作区 / 服务并移交清理模块</text>
+</svg>
