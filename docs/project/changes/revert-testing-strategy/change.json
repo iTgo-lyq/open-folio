@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "revert-testing-strategy",
+  "title": "回滚测试策略接入并保留数据兼容取舍规则",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "撤回测试策略接入并核对数据兼容规则",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "proportionate-testing",
+  "followUpTitle": "技术方案测试策略取舍"
+}
