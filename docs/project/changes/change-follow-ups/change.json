@@ -4,7 +4,7 @@
   "title": "连续交付通过延续关系分组展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-follow-ups",
   "confirmations": {
     "requirement": {
@@ -55,10 +55,20 @@
       "commitTitle": "change-follow-ups T5: remove stray divider before grouped records"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T06:39:16.179Z",
+      "summary": "外侧分割线修正经浏览器回归、格式差异检查、生产构建和独立复审通过。"
+    }
+  },
   "rework": {
     "at": "2026-10-18T06:37:29.496Z",
     "reason": "分组上方残留普通记录的分割线，导致上下边界不一致。",
     "approach": "隐藏紧邻分组的前一条普通记录底部分割线，分组外侧上下统一留白，保留分组外框和组内分隔线。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "分组外侧上下统一去掉列表线，更新服务后等待实际效果验收。"
   }
 }
