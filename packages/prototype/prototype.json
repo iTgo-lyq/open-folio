@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "change-integration",
+      "title": "Change 合入变更",
+      "description": "整体合入差异、文件选择、归档移动、展示限制与缺失及异常状态。仅使用示例数据。",
+      "sourcePath": "packages/prototype/src/pages/change-integration.html",
+      "kind": "page",
+      "devices": ["pc-web", "ipad", "mobile"]
+    },
+    {
       "id": "clarification-detail",
       "title": "Change 澄清问答",
       "description": "详情概览中的问题与最终回答，含未回答、撤回、无记录及长文本示例。",

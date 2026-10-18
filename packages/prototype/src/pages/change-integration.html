@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenFolio · Change 合入变更</title>
+<style>{{include:../shared/style.css}}
+{{include:../shared/clarification-detail.css}}
+{{include:../shared/change-integration.css}}</style>
+</head>
+<body>
+<header class="review-bar">
+  <strong>原型 · 示例数据</strong>
+  <label>场景 <select id="scenario">
+    <option value="found">已合入</option><option value="missing">暂无记录</option>
+    <option value="invalid">记录异常</option><option value="unavailable">读取失败</option>
+    <option value="loading">加载中</option>
+  </select></label>
+</header>
+<main class="review-canvas"><div>
+  <p>OpenFolio · Changes</p><h1>回看一次完整交付</h1>
+  <p>示例：阅读体验优化</p><button id="reopen">打开变更详情</button>
+</div></main>
+<section class="change-drawer" aria-label="Change 详情" data-tab="integration">
+  <div class="drawer-toolbar"><span>Change 详情 <span>／</span> 只读</span><button id="close" class="icon-button" aria-label="关闭变更详情">✕</button></div>
+  <div class="drawer-summary">
+    <code class="drawer-id">reading-experience</code><h2>阅读体验优化</h2>
+    <div class="drawer-badges"><span class="badge completed">已归档</span><span class="badge">中型</span></div>
+  </div>
+  <div class="drawer-tabs" role="tablist" aria-label="Change 详情页签">
+    <button id="tab-overview" role="tab" aria-controls="overview" aria-selected="false" tabindex="-1" data-tab="overview">概览</button>
+    <button role="tab" aria-selected="false" tabindex="-1" disabled>任务</button>
+    <button role="tab" aria-selected="false" tabindex="-1" disabled>文档</button>
+    <button id="tab-integration" role="tab" aria-controls="integration" aria-selected="true" data-tab="integration">合入变更</button>
+    <button role="tab" aria-selected="false" tabindex="-1" disabled>原型</button>
+    <button role="tab" aria-selected="false" tabindex="-1" disabled>依据</button>
+  </div>
+  <div id="overview" role="tabpanel" aria-labelledby="tab-overview" class="drawer-body" hidden>
+    <h3 class="section-title">目标与材料</h3><p>优化长文档的目录与阅读位置，改善手机上的连续阅读。</p>
+    <h3 class="section-title">交付</h3><p>需求、实现与验收材料已归档。选择“合入变更”查看这次交付的完整差异。</p>
+  </div>
+  <div id="integration" role="tabpanel" aria-labelledby="tab-integration" class="integration-body">
+    <div id="integration-result"></div>
+    <section id="found-record" aria-label="合入记录">
+      <div class="integration-meta">
+        <div><span class="record-status">已合入 develop</span><time datetime="2026-10-18T06:20:00+08:00">2026-10-18 06:20</time></div>
+        <div class="commit-line"><span>合并提交</span><button id="copy-sha" class="commit-copy" aria-label="复制完整合并提交 SHA"><code>9b72c41</code><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg></button><span class="diff-total" id="diff-total"></span></div>
+      </div>
+      <div class="diff-layout" data-view="list">
+        <aside class="file-panel" aria-label="变更文件"><div class="file-heading"><strong>变更文件</strong><span id="file-count"></span></div><div id="file-list"></div><p class="file-footnote">包含代码、文档与归档移动</p></aside>
+        <section class="diff-panel" aria-label="文件差异">
+          <div class="diff-heading"><button id="back-files" aria-label="返回文件列表">‹ 文件</button><div><code id="selected-path"></code><p id="selected-meta"></p></div><button id="copy-command" class="command-button">Git 比较命令</button></div>
+          <div id="file-diff" tabindex="0" aria-label="可滚动的文件差异"></div>
+        </section>
+      </div>
+    </section>
+  </div>
+</section>
+<dialog id="copy-dialog" aria-labelledby="copy-title"><h2 id="copy-title">选择并复制</h2><p>自动复制不可用，请复制下面的内容。</p><textarea id="copy-value" readonly aria-label="待复制内容" rows="4"></textarea><button id="close-copy">关闭</button></dialog>
+<div id="notice" role="status" aria-live="polite"></div>
+<script>{{include:../shared/change-integration.js}}</script>
+</body>
+</html>
