@@ -35,12 +35,12 @@
   },
   "closure": {},
   "rework": {
-    "at": "2026-10-17T23:55:20.146Z",
-    "reason": "用户明确入口仅复用 change.json.branch，独立引用文件会增加无意义提交",
-    "approach": "保留集中 change.json 和原正文，按 branch 读取目标最新状态，移除文件替换和目录清理步骤"
+    "at": "2026-10-18T00:17:30.494Z",
+    "reason": "用户补充 develop 预发布集成、保护分支显式发布及旧全量扫描下线",
+    "approach": "统一协作分支默认合入和工作台定向读取，补充 Setup 接入，方案评审后按授权直接实施"
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "已按用户明确要求改用 change.json.branch；完整需求、方案与计划待评审"
+    "summary": "方案独立评审进行中；用户已授权评审完成后直接实现，代码阶段不调用 iclaude"
   }
 }
