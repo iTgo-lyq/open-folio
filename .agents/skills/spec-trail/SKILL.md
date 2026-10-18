@@ -357,8 +357,6 @@ medium 及以上基于已确认需求、项目规则和 Research 编写 Technica
 如果建议改变了授权范围或削弱现有保护，必须显式标注。
 以上建议随技术方案按既有阶段规则审阅。
 
-来源：[anti-bloat-review](https://github.com/wp-a/codex-evolution/blob/main/skills/anti-bloat-review/SKILL.md)；许可：[MIT](./references/anti-bloat-review-LICENSE)。
-
 ### 技术问询
 
 技术问询同时帮助用户理解本次实现重点。每轮先用简短说明串起“如何实现目标、主要复用或新增什么机制、对使用和维护有什么影响”，只介绍理解当前取舍所需的重点；后续轮次补充新信息，不重复完整方案。使用用户能理解的结果与影响解释必要术语，不展开内部代码细节。没有需要用户决定的问题时，也给出实现重点说明，然后按原阶段规则推进；说明本身不占问题额度，也不新增确认步骤。
