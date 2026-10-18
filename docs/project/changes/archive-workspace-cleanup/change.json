@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "archive-workspace-cleanup",
+  "title": "归档集成后保留远端分支并清理本地工作区",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "完善归档后的远端留存、本地清理及失败保留规则",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
