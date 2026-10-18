@@ -129,6 +129,7 @@ export type ChangeState = {
   clarifications?: Record<`Q${number}`, Clarification>;
   dependsOn?: string[];
   followUpOf?: string;
+  followUpTitle?: string;
   parent?: string;
   children?: string[];
   confirmations: Partial<

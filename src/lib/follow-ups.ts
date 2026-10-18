@@ -73,7 +73,44 @@ export function followUpIndex(changes: ChangeGroup[]) {
       return time(a) - time(b) || a.id.localeCompare(b.id);
     });
   }
-  return { roots, groups, problems };
+  const titles = new Map<string, string>();
+  const titleProblems = new Map<string, string>();
+  for (const [root, members] of groups) {
+    const depth = (change: ChangeGroup) => {
+      let cursor = change.id,
+        count = 0;
+      while (cursor !== root) {
+        cursor = primaryRecord(byId.get(cursor)!)!.state!.followUpOf!;
+        count++;
+      }
+      return count;
+    };
+    const named = members
+      .filter(
+        (g) =>
+          primaryRecord(g)?.state?.followUpOf &&
+          primaryRecord(g)?.state?.followUpTitle,
+      )
+      .sort((a, b) => depth(a) - depth(b) || a.id.localeCompare(b.id));
+    titles.set(
+      root,
+      (named[0] && primaryRecord(named[0])?.state?.followUpTitle) ??
+        byId.get(root)!.title,
+    );
+    if (
+      new Set(named.map((g) => primaryRecord(g)!.state!.followUpTitle)).size > 1
+    )
+      titleProblems.set(root, "组内存在不同标题声明，请核对共同目标名称。");
+    else if (
+      members.some((g) =>
+        primaryRecord(g)?.diagnostics.some(
+          (d) => d.code === "FOLLOW_UP_TITLE_INVALID",
+        ),
+      )
+    )
+      titleProblems.set(root, "分组标题格式不合法，请核对 followUpTitle。");
+  }
+  return { roots, groups, problems, titles, titleProblems };
 }
 
 // Apply filters to members, not roots: an archived root must not hide an active follow-up.

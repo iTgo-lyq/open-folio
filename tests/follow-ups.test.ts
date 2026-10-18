@@ -81,6 +81,51 @@ test("follow-up fields are optional and shared validators agree without changing
     assert.equal(changeSchema.safeParse(state).success, valid);
     assert.equal(validateChange(state).length === 0, valid);
   }
+  for (const followUpTitle of [
+    undefined,
+    "完善技术方案问询机制",
+    "",
+    "  ",
+    "两行\n标题",
+    42,
+    null,
+  ]) {
+    const state = {
+      ...original,
+      followUpOf: "previous",
+      ...(followUpTitle === undefined ? {} : { followUpTitle }),
+    };
+    const valid =
+      followUpTitle === undefined || followUpTitle === "完善技术方案问询机制";
+    assert.equal(changeSchema.safeParse(state).success, valid);
+    assert.equal(validateChange(state).length === 0, valid);
+  }
+});
+
+test("group titles survive filtering and ordering, inherit across branches and fall back for old records", () => {
+  const root = group("root"),
+    next = group("next", "root"),
+    last = group("last", "next", "active"),
+    sibling = group("sibling", "root", "cancelled");
+  primaryRecord(next)!.state!.followUpTitle = "完善技术方案问询机制";
+  const changes = [last, sibling, next, root];
+  const before = structuredClone(changes);
+  for (const ordered of [changes, [...changes].reverse()]) {
+    for (const matched of [[root], [last], [sibling]]) {
+      const index = matchingFollowUps(ordered, matched);
+      assert.equal(index.titles.get("root"), "完善技术方案问询机制");
+      assert.equal(index.titleProblems.size, 0);
+    }
+  }
+  assert.deepEqual(changes, before);
+  primaryRecord(last)!.state!.followUpTitle = "冲突名称";
+  const conflicting = followUpIndex(changes);
+  assert.equal(conflicting.titles.get("root"), "完善技术方案问询机制");
+  assert(conflicting.titleProblems.has("root"));
+  assert.equal(conflicting.groups.get("root")!.length, 4);
+  delete primaryRecord(next)!.state!.followUpTitle;
+  delete primaryRecord(last)!.state!.followUpTitle;
+  assert.equal(followUpIndex(changes).titles.get("root"), root.title);
 });
 
 test("multi-hop and branching follow-ups form one group without mutating delivery records", () => {

@@ -24,8 +24,16 @@ import {
 } from "./repository.mjs";
 
 const commands = {
-  create: ["title", "size", "depends-on", "parent", "children", "follow-up-of"],
-  "follow-up": ["target"],
+  create: [
+    "title",
+    "size",
+    "depends-on",
+    "parent",
+    "children",
+    "follow-up-of",
+    "group-title",
+  ],
+  "follow-up": ["target", "group-title"],
   show: [],
   retitle: ["title"],
   "clarification-ask": ["question", "round", "text", "recommendation"],
@@ -607,6 +615,7 @@ function main() {
         checked.add(priorId);
       };
       const visited = new Set([id]);
+      const titles = new Set();
       while (target) {
         assert(
           !visited.has(target),
@@ -620,23 +629,47 @@ function main() {
           `Follow-up target ${target} must be a valid published archive`,
         );
         validateHistory(target);
+        if (prior.followUpTitle) titles.add(prior.followUpTitle);
         target = prior.followUpOf;
+      }
+      return titles;
+    };
+    const setFollowUp = (target) => {
+      const titles = checkFollowUp(target);
+      if (state.followUpOf !== target) delete state.followUpTitle;
+      state.followUpOf = target;
+      if (opts["group-title"] !== undefined) {
+        const title = need("group-title").trim();
+        assert(
+          !titles.size || (titles.size === 1 && titles.has(title)),
+          "Keep the existing follow-up group title; inspect conflicting history before renaming",
+        );
+        state.followUpTitle = title;
       }
     };
     switch (command) {
       case "create":
-        if (state.followUpOf) checkFollowUp(state.followUpOf);
+        assert(
+          opts["group-title"] === undefined || state.followUpOf,
+          "--group-title requires --follow-up-of",
+        );
+        if (state.followUpOf) setFollowUp(state.followUpOf);
         break;
       case "follow-up": {
         const target = need("target");
-        if (target === "none") delete state.followUpOf;
-        else {
+        if (target === "none") {
+          assert(
+            opts["group-title"] === undefined,
+            "Cannot name a removed follow-up group",
+          );
+          delete state.followUpOf;
+          delete state.followUpTitle;
+        } else {
           assert(
             /^[a-z0-9]+(-[a-z0-9]+)*$/.test(target),
             "Invalid follow-up target id",
           );
-          checkFollowUp(target);
-          state.followUpOf = target;
+          setFollowUp(target);
         }
         break;
       }

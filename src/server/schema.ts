@@ -25,6 +25,7 @@ export const prototypeSchema = z.custom<PrototypeConfig>(
 );
 export const identity = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 const text = z.string().refine((s) => /\S/.test(s), "不能为空白文本");
+export const followUpTitleSchema = z.string().regex(/^(?=.*\S)[^\r\n]+$/);
 export const branchName = z
   .string()
   .refine(validBranchName, "必须是有效的本地分支名称");
@@ -96,6 +97,7 @@ export const changeSchema = z
       .optional(),
     dependsOn: list.optional(),
     followUpOf: identity.optional(),
+    followUpTitle: followUpTitleSchema.optional(),
     parent: identity.optional(),
     children: list.optional(),
     confirmations: z

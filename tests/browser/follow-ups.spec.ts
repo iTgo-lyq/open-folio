@@ -30,6 +30,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     title: next.title,
     size: "medium",
     followUpOf: root.id,
+    followUpTitle: "完善技术方案问询机制",
   };
   const active = data.changes.find((g) => g.id === "document-reader")!;
   primaryRecord(active)!.state!.followUpOf = next.id;
@@ -49,9 +50,11 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     route.fulfill({ json: data }),
   );
   await page.goto(`/?${repositoryQuery}&m=changes&scope=completed`);
-  const group = page.getByRole("region", { name: "技术方案问询 的连续交付" });
+  const group = page.getByRole("region", {
+    name: "完善技术方案问询机制 的连续交付",
+  });
   await expect(page.locator(".follow-up-group")).toHaveCount(1);
-  await expect(group.getByRole("heading")).toHaveText("技术方案问询");
+  await expect(group.getByRole("heading")).toHaveText("完善技术方案问询机制");
   await expect(group.getByRole("button")).toHaveCount(2);
   await expect(
     group.getByRole("button", { name: "打开 技术方案问询", exact: true }),
@@ -67,6 +70,18 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     fullPage: true,
   });
   const frame = await group.boundingBox();
+  const heading = await group.getByRole("heading").boundingBox();
+  expect(heading!.y).toBeLessThan(frame!.y);
+  expect(heading!.y + heading!.height).toBeGreaterThan(frame!.y);
+  const separator = await group
+    .locator(".change-row")
+    .first()
+    .evaluate((el) => {
+      const style = getComputedStyle(el, "::after");
+      return { left: parseFloat(style.left), right: parseFloat(style.right) };
+    });
+  expect(separator.left).toBeGreaterThanOrEqual(12);
+  expect(separator.right).toBeGreaterThanOrEqual(12);
   const following = await page
     .getByRole("button", { name: "打开 独立交付", exact: true })
     .boundingBox();
@@ -79,6 +94,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   await page.getByRole("button", { name: "关闭变更详情" }).click();
   await page.getByRole("combobox", { name: "筛选规模" }).selectOption("medium");
   await expect(group.getByRole("button")).toHaveCount(1);
+  await expect(group.getByRole("heading")).toHaveText("完善技术方案问询机制");
   await expect(
     group.getByRole("button", { name: "打开 技术方案问询", exact: true }),
   ).toHaveCount(0);
@@ -122,6 +138,21 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   await expect(
     group.getByRole("button", { name: `打开 ${cancelled.title}`, exact: true }),
   ).toBeVisible();
+  record.state.followUpTitle =
+    "完善技术方案问询机制并保持需求与技术问询额度独立，覆盖后续持续交付";
+  await page.reload();
+  const longGroup = page.locator(".follow-up-group");
+  await expect(longGroup.getByRole("heading")).toHaveText(
+    record.state.followUpTitle,
+  );
+  const wrapped = await longGroup.getByRole("heading").boundingBox();
+  const row = await longGroup.getByRole("button").boundingBox();
+  expect(row!.y).toBeGreaterThanOrEqual(wrapped!.y + wrapped!.height);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });
 
 test("broken follow-up references show a warning without hiding delivery evidence", async ({

@@ -1369,21 +1369,35 @@ input {
   border-radius: 6px;
 }
 .follow-up-group {
-  margin: 12px 0;
+  margin: 24px 0 20px;
+  padding-bottom: 4px;
   border: 1px solid var(--of-line);
   border-radius: var(--of-radius);
-  overflow: hidden;
 }
 .follow-up-heading {
-  margin: 0;
-  padding: 14px 17px 4px;
+  position: relative;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: -12px 0 4px 10px;
+  padding: 0 8px;
+  background: #fff;
   color: var(--of-ink);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
-.follow-up-group > .change-row:last-child {
+.follow-up-group > .change-row {
+  position: relative;
   border-bottom: 0;
+}
+.follow-up-group > .change-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 17px;
+  right: 17px;
+  border-bottom: 1px solid var(--of-line);
 }
 .follow-up-warning {
   color: var(--of-orange);
@@ -2543,10 +2557,15 @@ input {
     padding: 17px 4px;
   }
   .follow-up-heading {
-    padding-inline: 12px;
+    margin-left: 4px;
+    max-width: calc(100% - 12px);
   }
   .follow-up-group > .change-row {
     padding-inline: 12px;
+  }
+  .follow-up-group > .change-row:not(:last-child)::after {
+    left: 12px;
+    right: 12px;
   }
   .change-row-title {
     width: 100%;

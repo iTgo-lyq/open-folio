@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "补齐分组命名并调整标题外框层级",
-      "status": "doing"
+      "status": "done",
+      "verification": "35 项相关单元与集成、14 项浏览器回归及最终 2 项复验、类型/格式/skill 校验和生产构建通过，独立复审通过。",
+      "commitTitle": "change-follow-ups T4: name continuation groups and refine frame headings"
     }
   },
   "closure": {},

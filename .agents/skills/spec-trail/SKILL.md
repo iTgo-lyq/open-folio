@@ -153,6 +153,7 @@ interface ChangeState {
   previews?: PreviewEntry[]; // 可省略；记录本次固定交付；项目当前清单位于原型包 prototype.json
   dependsOn?: string[]; // 前置 Change id，去重；全部满足后执行，xlarge 父 Change 不填
   followUpOf?: string; // 同仓库已归档的直接前序，仅表示延续交付，不是执行依赖
+  followUpTitle?: string; // 后继声明的独立分组标题，概括共同目标；后续成员默认继承
   parent?: string; // 所属 xlarge 父 Change 的 id
   children?: string[]; // 子 Change id，按 Plan 展示顺序排列且不重复；不表示串行依赖
   confirmations: {
@@ -230,7 +231,11 @@ small / medium / large 用 `dependsOn` 声明同仓库的前置 Change，在 Req
 
 `followUpOf` 指向同仓库已推送、完成归档的直接前序，不自指、不成环；可形成多跳或多个后继。关联与规模、`dependsOn`、父子关系正交，不增加等待或关闭约束，不合并任务、阶段、验收和归档事实。工作台按关系分组展示独立交付，仍可分别阅读；正文是否描述同一目标由 Agent 核对。
 
-active Change 可用 `follow-up --target none` 移除关联。已归档记录不自动补写；规则接入时需要关联既有交付，仅在用户明确授权的迁移 Change 中限定目标记录和字段，以独立普通提交保存迁移证据，保留原正文、任务、验收与时间。常规命令不提供归档编辑入口。
+首次建立延续组时，单独生成简洁、单行的分组标题，概括各次交付共同完善的用户目标，不直接复制某次局部修改的标题。用户指定名称时采用原名；各 Change 的 `title` 继续描述本次独立交付。通过 `create --follow-up-of <id> --group-title '<组名>'` 或 `follow-up --target <id> --group-title '<组名>'` 将 `followUpTitle` 保存在后继，不改写前序归档。
+
+后续关联前读取完整延续组及已有组名，默认沿用，包括分叉延续；通常省略 `--group-title`，由关系组继承，不为每次补充重新命名或复制声明。旧组没有独立名称时，在当前后继补充声明；旧记录读取暂用根标题兜底。整体目标发生改变时重新判断是否应独立建 Change，不靠扩大组名强行归组。筛选只影响成员，不改变组名；多个声明不一致时核对共同目标，不能通过改写历史交付标题解决。
+
+active Change 可用 `follow-up --target none` 移除关联，同时清除自身组名声明；更换前序同样清除旧声明，再按新组决定是否命名。已归档记录不自动补写；规则接入时需要关联或命名既有交付，仅在用户明确授权的迁移 Change 中限定目标记录和字段，以独立普通提交保存迁移证据，保留原正文、任务、验收与时间。常规命令不提供归档编辑入口。
 
 ### xlarge 父子 Change
 

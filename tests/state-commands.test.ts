@@ -217,7 +217,7 @@ test("follow-up registration requires a published closed predecessor and stays i
     return join(f.root, path);
   };
   closed("first");
-  closed("second", "first");
+  closed("second", "first", { followUpTitle: "完善技术方案问询机制" });
   closed("loop-a", "loop-b");
   closed("loop-b", "loop-a");
   const confirmation = { at: "2026-10-01T00:00:00.000Z", summary: "确认" };
@@ -273,10 +273,20 @@ test("follow-up registration requires a published closed predecessor and stays i
     "# 计划\n\n## T1\n完成实现。\n",
   );
   f.commit();
-  f.create("small", "sample", ["--follow-up-of", "second"]);
+  f.create("small", "sample", [
+    "--follow-up-of",
+    "second",
+    "--group-title",
+    "完善技术方案问询机制",
+  ]);
   assert.equal(f.state().followUpOf, "second");
+  assert.equal(f.state().followUpTitle, "完善技术方案问询机制");
   assert(!f.state().dependsOn);
   const before = readFileSync(f.path(), "utf8");
+  f.run("follow-up", ["--target", "second", "--group-title", "其他名称"], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  f.run("follow-up", ["--target", "first", "--group-title", "两行\n标题"], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
   f.run("follow-up", ["--target", "first", "--dry-run"]);
   assert.equal(readFileSync(f.path(), "utf8"), before);
   f.create("small", "pending", ["--parent", "unfinished-child"]);
@@ -321,12 +331,32 @@ test("follow-up registration requires a published closed predecessor and stays i
   assert.equal(readFileSync(f.path(), "utf8"), before);
   f.run("follow-up", ["--target", "first"]);
   assert.equal(f.state().followUpOf, "first");
+  assert(!f.state().followUpTitle);
+  f.run("follow-up", ["--target", "first", "--group-title", "首次分组命名"]);
+  assert.equal(f.state().followUpTitle, "首次分组命名");
   f.run("follow-up", ["--target", "valid-medium"]);
   assert.equal(f.state().followUpOf, "valid-medium");
+  assert(!f.state().followUpTitle);
   f.run("follow-up", ["--target", "valid-parent"]);
   assert.equal(f.state().followUpOf, "valid-parent");
+  f.run("follow-up", [
+    "--target",
+    "valid-parent",
+    "--group-title",
+    "父目标交付",
+  ]);
+  f.run("follow-up", ["--target", "none", "--group-title", "不应写入"], 1);
+  assert.equal(f.state().followUpTitle, "父目标交付");
   f.run("follow-up", ["--target", "none"]);
   assert(!f.state().followUpOf);
+  assert(!f.state().followUpTitle);
+  f.run(
+    "create",
+    ["--title", "没有关联", "--size", "small", "--group-title", "无效组名"],
+    1,
+    "unlinked",
+  );
+  assert(!existsSync(f.path("unlinked")));
   f.run(
     "create",
     ["--title", "bad", "--size", "small", "--follow-up-of", "absent"],

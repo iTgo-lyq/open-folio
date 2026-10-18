@@ -11,6 +11,7 @@ import type { GitReader } from "./git.ts";
 import {
   branchName,
   changeSchema,
+  followUpTitleSchema,
   identity,
   previewsSchema,
   validDate,
@@ -217,6 +218,12 @@ export async function indexChanges(
           identity,
           "FOLLOW_UP_INVALID",
           "前序关联格式不合法，请检查 followUpOf；原交付事实仍可阅读。",
+        ],
+        [
+          "followUpTitle",
+          followUpTitleSchema,
+          "FOLLOW_UP_TITLE_INVALID",
+          "分组标题格式不合法，请检查 followUpTitle；延续关系与原交付事实仍可阅读。",
         ],
       ] as const) {
         if (!Object.hasOwn(core, key) || schema.safeParse(core[key]).success)

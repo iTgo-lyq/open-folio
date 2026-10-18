@@ -294,6 +294,44 @@ test("follow-up metadata survives repository reading without becoming a completi
   assert.equal(consumer.relations.length, 1);
   assert.equal(consumer.relations[0].kind, "dependency");
   assert.equal(consumer.relations[0].process, "satisfied");
+  // A malformed title must keep a valid relationship and both archive facts.
+  const cleanPrior = completed("prior");
+  await f.put(
+    `${cleanPrior.closure.archive!.path}/change.json`,
+    JSON.stringify(cleanPrior),
+  );
+  for (const followUpTitle of ["完善技术方案问询机制", " ", 42, "两行\n标题"]) {
+    const state = {
+      ...completed("consumer"),
+      followUpOf: "prior",
+      followUpTitle,
+    };
+    await f.put(
+      `${state.closure.archive!.path}/change.json`,
+      JSON.stringify(state),
+    );
+    f.commit();
+    const reread = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    const c = primaryRecord(reread.changes.find((g) => g.id === "consumer")!)!;
+    assert(c.validCompleted);
+    const index = followUpIndex(reread.changes);
+    assert.equal(index.roots.get("consumer"), "prior");
+    if (followUpTitle === "完善技术方案问询机制")
+      assert.equal(index.titles.get("prior"), followUpTitle);
+    else {
+      assert(c.diagnostics.some((d) => d.code === "FOLLOW_UP_TITLE_INVALID"));
+      assert(index.titleProblems.has("prior"));
+    }
+  }
+  const originalConsumer = {
+    ...completed("consumer"),
+    dependsOn: ["prior"],
+    followUpOf: "prior",
+  };
+  await f.put(
+    `${originalConsumer.closure.archive!.path}/change.json`,
+    JSON.stringify(originalConsumer),
+  );
   // Broken optional reading metadata must not invalidate this delivery or its consumers.
   for (const followUpOf of ["../invalid", 42, null]) {
     const prior = {

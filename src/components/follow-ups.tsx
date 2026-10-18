@@ -7,20 +7,20 @@ import { primaryRecord, STATUS_LABELS, type ChangeGroup } from "@/lib/model";
 import { useWorkspace } from "./context";
 
 function FollowUpGroup({
-  root,
+  title,
+  problem,
   matched,
   render,
 }: {
-  root: ChangeGroup;
+  title: string;
+  problem?: string;
   matched: ChangeGroup[];
   render: (change: ChangeGroup) => ReactNode;
 }) {
   return (
-    <section
-      className="follow-up-group"
-      aria-label={`${root.title} 的连续交付`}
-    >
-      <h3 className="follow-up-heading">{root.title}</h3>
+    <section className="follow-up-group" aria-label={`${title} 的连续交付`}>
+      <h3 className="follow-up-heading">{title}</h3>
+      {problem && <p className="follow-up-warning">{problem}</p>}
       {matched.map((change) => (
         <Fragment key={change.id}>{render(change)}</Fragment>
       ))}
@@ -42,9 +42,15 @@ export function GroupedChangeRows({
   );
   return [...index.visible].map(([rootId, matched]) => {
     const members = index.groups.get(rootId)!;
-    const root = members.find((g) => g.id === rootId)!;
     if (members.length > 1)
-      return <FollowUpGroup key={rootId} {...{ root, matched, render }} />;
+      return (
+        <FollowUpGroup
+          key={rootId}
+          title={index.titles.get(rootId)!}
+          problem={index.titleProblems.get(rootId)}
+          {...{ matched, render }}
+        />
+      );
     const change = matched[0];
     return (
       <Fragment key={change.id}>
