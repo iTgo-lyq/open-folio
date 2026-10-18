@@ -44,6 +44,31 @@ npm run service:start
 
 部署后由负责本次任务的 Agent 按实际改动选择冒烟检查；`OPENFOLIO_VERIFY_BASE_URL` 配置验证地址，`OPENFOLIO_VERIFY_TOKEN` 配置登录真实工作台的 Token。真实值只放 Git 忽略的 `.env` 或 `.env.local`，不要使用 `NEXT_PUBLIC_` 前缀或打印凭据；模板不包含真实 Token。不提供固定冒烟脚本。
 
+真实登录统一由 [`withSmokeSession`](scripts/smoke-session.ts) 管理，每个调用建立独立测试会话。它在检查成功或抛错后读取最新 `browserRevision`，携带 `X-OpenFolio-Revision` 退出，检查 HTTP 结果并重新读取，确认 `connected=false` 且无记住的身份。版本冲突或短暂请求失败最多尝试三轮；仍无法清理时抛错，检查与清理同时失败时保留两项错误。不要自行发送一次 DELETE 就认定退出成功，也不要调用退出全部设备。
+
+在已配置环境的主工作区运行；回调内容按本次改动选择，下面仅展示设备读取：
+
+```bash
+node --input-type=module <<'JS'
+import assert from 'node:assert/strict';
+import nextEnv from '@next/env';
+import { withSmokeSession } from './scripts/smoke-session.ts';
+nextEnv.loadEnvConfig(process.cwd(), false);
+await withSmokeSession({
+  baseURL: process.env.OPENFOLIO_VERIFY_BASE_URL,
+  token: process.env.OPENFOLIO_VERIFY_TOKEN,
+}, async ({ request, session }) => {
+  const response = await request('/api/session/devices');
+  assert.equal(response.status, 200);
+  const { devices } = await response.json();
+  assert.ok(devices.some(device => device.id === session.deviceSessionId));
+});
+console.log('冒烟及会话清理通过');
+JS
+```
+
+浏览器冒烟可在回调中创建空白 Playwright 上下文，用 `await context.addCookies([browserCookie])` 注入回调提供的测试 Cookie，在内部 `finally` 关闭浏览器；包装器随后完成服务端退出。每个独立登录使用一次包装器，不在浏览器内另建无人管理的登录；所有异步检查都须等待完成。Token 和 Cookie 只驻留内存，不打印或写入截图元数据、存储状态文件。进程被强制终止、服务持续不可达或登录响应完全丢失时，客户端不能保证完成退出；可捕获的失败会明确报告，需核对测试设备后再继续。
+
 `artifacts/` 仅保存可删除的验证产物，`.openfolio/` 仅保存可重建的服务元数据、日志和操作锁，正式脚本放 `scripts/` 或相应包内。当前工作台数据默认在 `~/.local/share/open-folio`，通常保留；只有破坏性更新或修复 bug 确有需要时针对必要范围处理。下方备份与回退说明用于确需保留数据的部署，不要求这台开发机每次更新都备份。
 
 ## 会话、权限与分享

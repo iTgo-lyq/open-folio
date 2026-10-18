@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "change-follow-ups",
+  "title": "连续交付通过延续关系折叠展示",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "codex/change-follow-ups",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-18T05:42:34.058Z",
+      "summary": "连续交付保留独立记录，通过延续关系在工作台折叠展示。",
+      "source": "用户：那就先按“延续关系 + 工作台折叠展示”这个方案做，保留独立交付记录，把这次两个已归档的 Change 也关联起来。"
+    },
+    "technical": {
+      "at": "2026-10-18T05:42:35.640Z",
+      "summary": "后继记录前序关系，阅读分组独立于执行依赖与完成事实。",
+      "source": "用户确认采用上一轮讨论的延续关系与折叠展示方案，并授权两个历史记录的关联；选择直接实现并验证实际页面。"
+    },
+    "plan": {
+      "at": "2026-10-18T05:42:37.260Z",
+      "summary": "先交付关系登记与折叠阅读，再关联历史记录并验证。",
+      "source": "沿用用户对已讨论方案的实施授权；两步顺序为已确认范围内的实施安排。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "延续关系登记与折叠阅读",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "关联既有交付并完成验收验证",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
