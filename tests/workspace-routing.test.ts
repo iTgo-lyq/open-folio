@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
+import { completedChange } from "./integration-fixture.ts";
 const stateScript = resolve(".agents/skills/spec-trail/scripts/change.mjs");
 const workspaceScript = resolve(
   ".agents/skills/spec-trail/scripts/workspace.mjs",
@@ -387,4 +388,94 @@ test("parent closure checks the live registered child ref rather than a deleted 
     /Remote branch is missing/,
   );
   assert.equal(parent("show").state.stage, "execution");
+});
+
+test("xlarge parents move to a closing branch after child delivery and cannot archive on collaboration", (t) => {
+  const f = fixture(t),
+    child = { ...completedChange("child"), parent: "parent" };
+  f.put(`${child.closure.archive.path}/change.json`, JSON.stringify(child));
+  f.commit();
+  const parent = (
+    command: string,
+    options: string[] = [],
+    expected = 0,
+    cwd = f.repo,
+  ) => f.state(command, options, expected, "parent", cwd);
+  parent("create", [
+    "--title",
+    "Parent",
+    "--size",
+    "xlarge",
+    "--children",
+    "child",
+  ]);
+  for (const phase of ["requirement", "technical", "plan"]) {
+    f.put(`docs/project/changes/parent/${phase}.md`, "# Parent delivery");
+    parent("confirm", [
+      "--phase",
+      phase,
+      "--summary",
+      "Parent scope",
+      "--source",
+      "Fixture confirmation",
+    ]);
+  }
+  parent("execute");
+  parent("verify", ["--result", "passed", "--summary", "Children integrated"]);
+  parent("accept", [
+    "--mode",
+    "user",
+    "--summary",
+    "Accepted parent",
+    "--source",
+    "Fixture acceptance",
+  ]);
+  parent("specs", [
+    "--result",
+    "not_needed",
+    "--summary",
+    "No additional capability",
+  ]);
+  f.commit();
+  assert.match(
+    parent(
+      "archive",
+      ["--date", "2026-10-18", "--summary", "Parent delivery"],
+      1,
+    ),
+    /independent closing branch/,
+  );
+  const path = join(f.root, "parent");
+  f.workspace("handoff", ["--path", path], 0, "parent");
+  parent(
+    "archive",
+    ["--date", "2026-10-18", "--summary", "Parent delivery"],
+    0,
+    path,
+  );
+  f.commit(path);
+  const output = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [
+        resolve(".agents/skills/spec-trail/scripts/integration.mjs"),
+        "merge",
+        "--repo",
+        f.repo,
+        "--change",
+        "parent",
+      ],
+      { encoding: "utf8" },
+    ),
+  );
+  assert.equal(output.integration.status, "found");
+  assert.ok(
+    !at(
+      f.repo,
+      "diff",
+      "--name-only",
+      output.integration.base,
+      output.integration.commit,
+    ).includes(child.closure.archive.path),
+  );
 });

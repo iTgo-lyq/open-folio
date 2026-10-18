@@ -25,7 +25,7 @@ Git 保存源码和描述，普通 dist 默认忽略。删除协作分支清单�
 artifact 区分两种交付：
 
 - hosted：记录固定 version、HTTP/HTTPS url、sourceCommit、digest，以及可选设备截图引用。项目自行构建并上传到 OpenFolio 或自建静态托管，支持 React 等多文件产物。
-- git：记录 path 与 sourceCommit。显式选择兜底时，当前单 HTML 留在包内 preview/id，Change 另保存 previews/id/index.html；归档移动快照并更新路径，后续当前产物更新不覆盖旧 Change。
+- git：记录 path 与 sourceCommit。显式选择兜底时，当前单 HTML 留在包内 preview/id，Change 另保存 previews/id/index.html；归档移动快照并更新路径；仍引用共享目录的入口先复制到本 Change 的 previews/<id>，目标不同则停止。sourceCommit 保持构建来源，不替换为合并提交；后续当前产物更新不覆盖旧 Change。
 
 Change 的 previews 保留自己的入口标题、类型、适配及固定 artifact；项目当前清单与 Change 可引用同一次发布。当前清单后续更新不改变 Change 的固定交付，已归档记录只读。源码提交可用于追溯构建来源。
 
@@ -67,9 +67,11 @@ GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验�
 
 ## 固定链接与归档保留
 
-当前原型准备固定到协作分支清单提交，要求该提交属于已推送协作分支的历史；总览仍读取最新清单，不提供历史浏览入口。活动 Change 通过自身已推送主来源提交准备进行中的原型，无需先合入协作分支。
+当前原型准备固定到协作分支清单提交，要求该提交属于已推送协作分支的历史；总览仍读取最新清单，不提供历史浏览入口。活动及已归档但尚未合入的 Change 通过自身登记分支中已推送的固定提交准备原型，无需先合入协作分支。
 
-准备时固定完整 revision；Git 按该提交读取，hosted 使用记录中的固定地址。当前开关、来源可达性和入口范围每次检查，本人仓库权限沿用[个人访问](../access/spec.md)的周期复验；新增公开版本在发布前即时检查，复用已发布版本不重复远端鉴权。原型归档使用 spec-trail/archive-v2/id 标签保留记录与源码，仅查询集中入口所引用的精确标签，不扫描标签恢复未登记 Change，分支和标签推送并核实后才完成交付。标签缺失或已观察标签被改写会明确报错，不回退最新版；外部托管产物的保留仍由宿主负责。
+准备时固定完整 revision；Git 按该提交读取，hosted 使用记录中的固定地址。当前开关、来源可达性和入口范围每次检查，本人仓库权限沿用[个人访问](../access/spec.md)的周期复验；新增公开版本在发布前即时检查，复用已发布版本不重复远端鉴权。已合入 Change 从[合入变更](../change-tracking/spec.md#合入变更)的唯一有效 M 读取归档 previews，显式 revision 也必须等于 M。Git HTML 位于 M 的归档快照内；hosted 的 version、url、digest、thumbnails 与 sourceCommit 保持原值。来源分支及标签删除后仍可准备和分享，外部产物仍由宿主保留。
+
+不创建或读取原型保留标签。无可识别 M 的旧关联显示“未记录可定位的交付版本”，重复或非法记录与历史不可读分别诊断，不通过显式 revision、当前分支或 sourceCommit 恢复旧关联。旧归档正文继续可读，未关联原型仍显示原有空态。已有公开版本独立保留，不因标签退出而回收。
 
 准备成功后分享 `/preview/<publicationId>`。版本标识绑定稳定仓库身份、入口、固定提交与最终产物摘要；重复准备复用相同版本。公开页面仅返回必要的展示信息、产物和截图，不包含工程正文、连接身份、token 或上传秘密。匿名 GET/HEAD 不调用平台 API、Git 或私有授权缓存；退出、撤权和停用后续准备不删除既有公开版本。未知或未准备版本返回 404，管理员主动撤回后返回 410。
 

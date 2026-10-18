@@ -4336,3 +4336,293 @@ input {
     flex: 1;
   }
 }
+
+.change-drawer.with-integration {
+  width: min(1040px, calc(100vw - 108px));
+}
+.with-integration .drawer-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.integration-view {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.integration-meta {
+  padding: 17px 28px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.integration-meta > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.integration-meta time,
+.integration-commit > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.integration-record-status {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: #3d6f5b;
+}
+.integration-commit {
+  margin-top: 8px;
+}
+.integration-total {
+  margin-left: auto;
+}
+.diff-added {
+  color: #347250;
+}
+.diff-removed {
+  color: #a04743;
+}
+.diff-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+}
+.diff-files {
+  overflow: auto;
+  border-right: 1px solid var(--line);
+}
+.diff-file-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.diff-file-heading strong {
+  font-weight: 500;
+}
+.diff-file-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  border-left: 2px solid transparent;
+}
+.diff-file-item:hover {
+  background: #f6f9fb;
+}
+.diff-file-item[aria-current="true"] {
+  background: var(--blue-soft);
+  border-left-color: var(--blue);
+}
+.diff-file-name {
+  font-size: 12px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+  display: block;
+}
+.diff-file-directory {
+  font-size: 10px;
+  line-height: 1.65;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  display: block;
+  margin-top: 3px;
+}
+.diff-file-status {
+  margin-top: 5px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+}
+.diff-file-footnote {
+  font-size: 10px;
+  color: var(--muted);
+  padding: 16px;
+  line-height: 1.7;
+}
+.diff-more {
+  margin: 12px 16px;
+}
+.diff-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.diff-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 18px;
+  background: #fafcfd;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.diff-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+.diff-heading code {
+  display: block;
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.diff-heading p {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.diff-heading .diff-command {
+  font-size: 10px;
+  flex: none;
+}
+.diff-heading .diff-back {
+  display: none;
+}
+.diff-content {
+  min-height: 0;
+  overflow: auto;
+  flex: 1;
+}
+.diff-loading {
+  padding: 24px;
+  color: var(--muted);
+}
+.diff-table {
+  border-collapse: collapse;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.9;
+  min-width: 100%;
+}
+.diff-table td {
+  padding: 1px 8px;
+  white-space: pre;
+}
+.diff-table td.line-no {
+  color: #71828d;
+  width: 34px;
+  min-width: 34px;
+  text-align: right;
+  user-select: none;
+  border-right: 1px solid #e9edf0;
+}
+.diff-table td.sign {
+  padding-right: 0;
+  width: 18px;
+}
+.diff-table tr.add {
+  background: #edf7ef;
+  color: #285d3f;
+}
+.diff-table tr.remove {
+  background: #fcefeb;
+  color: #8f403b;
+}
+.diff-table tr.hunk,
+.diff-table tr.note {
+  background: #eef4fa;
+  color: #5c7a91;
+}
+.integration-copy-dialog {
+  position: fixed;
+  z-index: 100;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  background: white;
+}
+.integration-copy-dialog h2 {
+  font-size: 17px;
+}
+.integration-copy-dialog p {
+  font-size: 12px;
+  color: var(--muted);
+}
+.integration-copy-dialog textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  padding: 10px;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 12px;
+  margin: 12px 0;
+}
+@media (max-width: 1000px) {
+  .diff-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .diff-files {
+    flex: 1;
+    border-right: 0;
+  }
+  .diff-panel {
+    flex: 1;
+  }
+  .diff-layout[data-view="list"] .diff-panel,
+  .diff-layout[data-view="diff"] .diff-files {
+    display: none;
+  }
+  .diff-heading .diff-back {
+    display: inline-flex;
+    flex: none;
+    font-size: 12px;
+  }
+  .diff-file-item {
+    padding: 13px 24px;
+  }
+  .diff-file-name {
+    font-size: 13px;
+  }
+  .diff-file-directory {
+    font-size: 11px;
+  }
+}
+@media (max-width: 760px) {
+  .change-drawer.with-integration {
+    width: calc(100vw - 16px);
+  }
+  .integration-meta {
+    padding: 13px 18px;
+  }
+  .integration-meta > div {
+    gap: 8px;
+  }
+  .integration-total {
+    margin-left: 0;
+    width: 100%;
+  }
+  .diff-heading {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 8px;
+  }
+  .diff-heading > div {
+    flex-basis: calc(100% - 90px);
+  }
+  .diff-heading .diff-command {
+    margin-left: auto;
+  }
+  .diff-file-item {
+    padding: 11px 18px;
+  }
+}

@@ -24,7 +24,7 @@
 | `verify` | `--result passed/failed --summary`；任务完成、执行安排有效且实际验证完成后进入 close，记录整体验证。后续 accept/specs/archive 也复核安排。独立评审要求仍按主 skill。 |
 | `accept` | `--mode user/agent --summary --source`；验收方式按[主 skill](../SKILL.md#验收)，摘要与来源填写实际依据。 |
 | `specs` | `--result synced/not_needed --summary`；验收后实际同步 Specs，再记录结果。 |
-| `archive` | `--date YYYY-MM-DD --summary`；日期按用户时区提供；检查关闭前置后移动完整目录，记录 completed。携带 previews 时输出原型保留标签后续命令。 |
+| `archive` | `--date YYYY-MM-DD --summary`；日期按用户时区提供；检查关闭前置后移动完整目录，记录 completed。必须在独立分支归档，随后提交推送并执行集成命令，不创建保留标签。 |
 | `cancel` | `--reason`；保留阶段、任务、正文和代码，写取消原因并清除等待，分支冻结。 |
 | `previews-set` | `--file /临时/entries.json`；文件只含 PreviewEntry 数组，替换关联而保留其他状态。新增/更新要求 enabled，hosted 校验引用与源码提交，Git 来源要求对应输出文件存在，停用后仍允许删除旧关联。 |
 

@@ -438,14 +438,14 @@ test("invalid scopes preserve Change deep links and inactive filters normalize",
     `/?${repositoryQuery}&m=changes&scope=completed&stage=execution&wait=pause&view=board`,
   );
   await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
-  await expect(page.locator(".outcome-list .change-row")).toHaveCount(1);
+  await expect(page.locator(".outcome-list .change-row")).toHaveCount(2);
   await page.getByRole("combobox", { name: "筛选规模" }).selectOption("medium");
   await expect(
     page.getByText("没有符合条件的记录", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "清除筛选", exact: true }).click();
   await expect(page).toHaveURL(/scope=completed/);
-  await expect(page.locator(".outcome-list .change-row")).toHaveCount(1);
+  await expect(page.locator(".outcome-list .change-row")).toHaveCount(2);
   await page.getByRole("tab", { name: /进行中/ }).click();
   await expect(page.getByRole("combobox", { name: "筛选阶段" })).toBeVisible();
   await page.goBack();

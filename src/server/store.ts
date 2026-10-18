@@ -22,6 +22,7 @@ import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
+import { IntegrationReader } from "./integration.ts";
 import {
   prototypeCatalog,
   readCurrentPrototype,
@@ -128,7 +129,8 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 5 ||
+        s.cacheSchemaVersion !== 6 ||
+        !s.integrations ||
         s.collaborationBranch !== p.collaborationBranch ||
         !Array.isArray(s.routes) ||
         !Array.isArray(s.sourceDiagnostics) ||
@@ -251,7 +253,8 @@ export class SnapshotStore {
         ),
       };
       const s: Snapshot = {
-        cacheSchemaVersion: 5,
+        cacheSchemaVersion: 6,
+        integrations: data.integrations,
         collaborationBranch: data.collaborationBranch,
         routes: data.routes,
         sourceDiagnostics: data.sourceDiagnostics,
@@ -278,10 +281,6 @@ export class SnapshotStore {
                   prototypeLimits,
                   signal,
                 ),
-        archiveRefs: data.archiveRefs,
-        archivePins: {
-          ...previous?.archivePins,
-        },
         prototype: prototypePolicy(data),
         id: randomUUID(),
         projectId: p.id,
@@ -292,9 +291,6 @@ export class SnapshotStore {
         changes: await indexChanges(data, reader, signal),
         ...base,
       };
-      for (const ref of s.archiveRefs)
-        if (!Object.hasOwn(s.archivePins, `spec-trail/archive-v2/${ref.id}`))
-          s.archivePins[`spec-trail/archive-v2/${ref.id}`] = ref.commit;
       for (const [blob, body] of data.blobs) {
         signal.throwIfAborted();
         if (!persisted.has(blob)) await atomic(join(dir, "blobs", blob), body);
@@ -322,14 +318,27 @@ export class SnapshotStore {
     const files = (await readdir(join(dir, "snapshots"))).filter(
       (f) => snapshotPattern.test(f.slice(0, -5)) && f.endsWith(".json"),
     );
-    const snapshots = await Promise.all(
-      files.map(async (f) => ({
-        file: f,
-        value: JSON.parse(
-          await readFile(join(dir, "snapshots", f), "utf8"),
-        ) as Snapshot,
-      })),
-    );
+    const snapshots: { file: string; value: Snapshot }[] = [];
+    for (const file of files) {
+      let value: Snapshot | undefined;
+      try {
+        value = JSON.parse(
+          await readFile(join(dir, "snapshots", file), "utf8"),
+        ) as Snapshot;
+      } catch {}
+      if (
+        !value ||
+        value.cacheSchemaVersion !== 6 ||
+        !value.integrations ||
+        Object.hasOwn(value, "archiveRefs") ||
+        Object.hasOwn(value, "archivePins")
+      ) {
+        if (file !== `${current}.json`)
+          await unlink(join(dir, "snapshots", file));
+        continue;
+      }
+      snapshots.push({ file, value });
+    }
     snapshots.sort(
       (a, b) =>
         Number(b.value.id === current) - Number(a.value.id === current) ||
@@ -362,6 +371,13 @@ export class SnapshotStore {
     const latest = await this.snapshot(p);
     const source = snapshotId ? await this.snapshot(p, snapshotId) : latest;
     return prototypeCatalog(source, latest.prototype);
+  }
+  async integration(p: ProjectConfig, id: string, snapshotId: string) {
+    return new IntegrationReader(
+      this.readerFactory(join(this.directory(), "git"), p),
+      await this.snapshot(p, snapshotId),
+      id,
+    );
   }
   async currentPreview(
     p: ProjectConfig,

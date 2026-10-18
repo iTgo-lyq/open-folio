@@ -30,11 +30,15 @@ import {
   changeLocation,
   validBranchName,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import {
+  scanIntegrations,
+  INTEGRATION_VERSION,
+} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([4, limits]));
+  hash(JSON.stringify([6, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -65,7 +69,7 @@ type CollectedData = Pick<
   | "branches"
   | "routes"
   | "sourceDiagnostics"
-  | "archiveRefs"
+  | "integrations"
   | "documents"
 > & { blobs: Map<string, Buffer>; unchanged: boolean };
 export class GitReader {
@@ -219,6 +223,12 @@ export class GitReader {
       );
       return r.stdout;
     } catch (e) {
+      if ((e as { code?: string }).code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER")
+        throw new AppError(
+          "GIT_OUTPUT_LIMIT",
+          "Git 读取结果超过展示上限，未返回完整内容。",
+          422,
+        );
       if (args[0] === "merge-base" && (e as { code?: number }).code === 1)
         return Buffer.from("not-ancestor");
       throw new AppError(
@@ -261,10 +271,44 @@ export class GitReader {
       });
       await chmod(join(this.directory, "config"), 0o600);
     }
+    // The Store holds its cache writer lock. Retired tags are no longer a
+    // source; remove only the old private namespace with expected object IDs.
+    const retired = (
+      await this.run(
+        [
+          "for-each-ref",
+          "--format=%(objectname)%09%(refname)",
+          "refs/openfolio/archive-v2/",
+        ],
+        signal,
+      )
+    )
+      .toString()
+      .trim();
+    for (const row of retired ? retired.split("\n") : []) {
+      const [oid, ref] = row.split("\t");
+      if (
+        !/^[a-f0-9]{40,64}$/.test(oid) ||
+        !ref?.startsWith("refs/openfolio/archive-v2/")
+      )
+        throw new AppError(
+          "CACHE_INVALID",
+          "旧原型缓存引用不合法，请检查缓存。",
+          503,
+        );
+      await this.run(["update-ref", "-d", ref, oid], signal);
+    }
     const previous = cache?.snapshot;
-    const branches: Branch[] = [],
-      archiveRefs: { id: string; commit: string }[] = [];
+    const branches: Branch[] = [];
     const sourceDiagnostics: Diagnostic[] = [];
+    let integrations: Snapshot["integrations"] = {
+      version: INTEGRATION_VERSION,
+      tip: null,
+      complete: false,
+      records: {},
+      issues: [],
+      message: "协作来源尚未就绪。",
+    };
     let routes: ChangeRoute[] = [];
     const diagnostic = (message: string, code = "SETUP_REQUIRED") =>
       sourceDiagnostics.push({ code, message, severity: "warning" });
@@ -556,7 +600,8 @@ export class GitReader {
         previous &&
         previous.collaborationBranch === collaborationBranch &&
         JSON.stringify(previous.branches) === JSON.stringify(branches) &&
-        JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs) &&
+        JSON.stringify(previous.integrations) ===
+          JSON.stringify(integrations) &&
         JSON.stringify(previous.routes) === JSON.stringify(routes) &&
         JSON.stringify(previous.sourceDiagnostics) ===
           JSON.stringify(sourceDiagnostics);
@@ -565,7 +610,7 @@ export class GitReader {
         branches,
         routes,
         sourceDiagnostics,
-        archiveRefs,
+        integrations,
         documents,
         blobs,
         unchanged: !!same,
@@ -594,6 +639,40 @@ export class GitReader {
       );
       return finish();
     }
+    if (
+      previous?.integrations?.complete &&
+      previous.integrations.tip === collab.commit &&
+      previous.integrations.version === INTEGRATION_VERSION &&
+      !Object.values(previous.integrations.records).some(
+        (record) => record.status === "unavailable",
+      )
+    ) {
+      integrations = previous.integrations;
+    } else {
+      if (
+        (await this.run(["rev-parse", "--is-shallow-repository"], signal))
+          .toString()
+          .trim() === "true"
+      ) {
+        await this.run(
+          [
+            "fetch",
+            "--no-tags",
+            "--no-recurse-submodules",
+            "--unshallow",
+            "origin",
+            `refs/heads/${collaborationBranch}`,
+          ],
+          signal,
+        );
+      }
+      integrations = await scanIntegrations(
+        (args) => this.run(args, signal),
+        collab.commit,
+      );
+    }
+    for (const message of integrations.issues)
+      diagnostic(message, "INTEGRATION_INVALID");
     routes = routeCatalog(
       documents
         .filter(
@@ -647,43 +726,6 @@ export class GitReader {
         ["docs/project/changes/", "docs/project/archive/"],
         targetRoutes.map((r) => r.id),
       );
-    }
-    // Retention tags only keep explicitly referenced archived preview revisions alive.
-    const pins = routes
-      .filter(
-        (r) =>
-          !r.errors.length &&
-          documents.some((d) => {
-            if (
-              d.branch !== r.branch ||
-              changeLocation(d.path)?.id !== r.id ||
-              !changeLocation(d.path)?.archived
-            )
-              return false;
-            try {
-              const value = readJson(d.branch, d.path);
-              return Array.isArray(value.previews) && value.previews.length > 0;
-            } catch {
-              return false;
-            }
-          }),
-      )
-      .map((r) => r.id)
-      .sort();
-    const tags = await exact(
-      pins.map((id) => `refs/tags/spec-trail/archive-v2/${id}`),
-    );
-    for (const id of pins) {
-      const ref = `refs/tags/spec-trail/archive-v2/${id}`,
-        advertised = tags.get(ref);
-      if (advertised) {
-        const commit = await fetchRef(
-          ref,
-          `refs/openfolio/archive-v2/${id}`,
-          advertised,
-        );
-        if (commit) archiveRefs.push({ id, commit });
-      }
     }
     // Recheck only the selected collaboration source and its routing.
     const finalCollabCommit = (

@@ -188,7 +188,7 @@ test("default branch changes preserve the configured collaboration scope, and ol
   assert.notEqual(first.id, upgraded.id);
 });
 
-test("registered archive refs detect lightweight and annotated archive tag changes, including rewritten tags at the same commit", async (t) => {
+test("legacy archive tags never affect snapshots or trigger retention fetches", async (t) => {
   const f = await traced();
   t.after(f.cleanup);
   for (const id of ["light", "annotated"]) {
@@ -242,11 +242,8 @@ test("registered archive refs detect lightweight and annotated archive tag chang
   f.git(["push", "origin", light, annotated]);
   f.calls.length = 0;
   const tagged = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.deepEqual(tagged.archiveRefs, [
-    { id: "annotated", commit },
-    { id: "light", commit },
-  ]);
-  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 2);
+  assert.equal(Object.hasOwn(tagged, "archiveRefs"), false);
+  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 0);
   f.calls.length = 0;
   assert.equal(
     (await f.store.refresh(f.project, DEFAULT_LIMITS)).id,
@@ -260,14 +257,17 @@ test("registered archive refs detect lightweight and annotated archive tag chang
     (await f.store.refresh(f.project, DEFAULT_LIMITS)).id,
     tagged.id,
   );
-  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 1);
+  assert.equal(f.calls.filter((a) => a[0] === "fetch").length, 0);
   f.calls.length = 0;
   await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert(!f.calls.some((a) => a[0] === "fetch"));
   f.git(["push", "origin", `:${light}`, `:${annotated}`]);
-  assert.deepEqual(
-    (await f.store.refresh(f.project, DEFAULT_LIMITS)).archiveRefs,
-    [],
+  assert.equal(
+    (await f.store.refresh(f.project, DEFAULT_LIMITS)).id,
+    tagged.id,
+  );
+  assert(
+    !f.calls.some((a) => a.some((v) => v.includes("spec-trail/archive-v2/"))),
   );
 });
 

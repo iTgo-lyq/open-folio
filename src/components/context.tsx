@@ -70,6 +70,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const nav = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
       const params = new URLSearchParams(window.location.search);
+      if (Object.hasOwn(patch, "c") && patch.c !== params.get("c")) {
+        params.delete("cf");
+        params.delete("cv");
+      }
       for (const [key, value] of Object.entries(patch))
         value ? params.set(key, value) : params.delete(key);
       window.history[replace ? "replaceState" : "pushState"](

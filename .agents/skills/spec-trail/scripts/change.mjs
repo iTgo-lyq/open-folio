@@ -4,9 +4,12 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  openSync,
+  closeSync,
   readFileSync,
   readdirSync,
   renameSync,
+  rmdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -471,6 +474,7 @@ function main() {
       };
     };
     let archiveDir, indexRecovery;
+    const archiveCopies = [];
     const checkFollowUp = (target) => {
       const records = new Map(),
         checked = new Set(),
@@ -981,6 +985,7 @@ function main() {
         recordStep("specs", opts.result);
         break;
       case "archive": {
+        assert(branch !== config.collaborationBranch, "Handoff to an independent closing branch before archiving; this also applies to xlarge parents");
         requireStage("close");
         unblocked();
         completeTasks();
@@ -996,15 +1001,18 @@ function main() {
         assert(!existsSync(archiveDir), "Archive destination already exists");
         recordStep("archive", "done", { path: relative(root, archiveDir) });
         for (const entry of state.previews ?? []) {
-          if (
-            entry.artifact?.type === "git" &&
-            entry.artifact.path.startsWith(
-              relative(root, liveDir) + "/previews/",
-            )
-          )
-            entry.artifact.path =
-              relative(root, archiveDir) +
-              entry.artifact.path.slice(relative(root, liveDir).length);
+          if (entry.artifact?.type !== "git") continue;
+          const sourcePath = entryPath(entry, config.prototype, relative(root, liveDir));
+          assert(sourcePath && lstatSync(safe(sourcePath)).isFile(), "Archive requires a regular prototype index.html");
+          let path = entry.artifact.path;
+          if (!path.startsWith(relative(root, liveDir) + "/previews/")) {
+            path = `${relative(root, liveDir)}/previews/${entry.id}`;
+            const target = safe(`${path}/index.html`), content = readFileSync(safe(sourcePath));
+            if (existsSync(target))
+              assert(lstatSync(target).isFile() && readFileSync(target).equals(content), `Archive prototype destination differs: ${path}`);
+            else archiveCopies.push({target, content});
+          }
+          entry.artifact.path = relative(root, archiveDir) + path.slice(relative(root, liveDir).length);
         }
         state.status = "completed";
         break;
@@ -1089,6 +1097,13 @@ function main() {
     );
     if (original === null) mkdirSync(liveDir, { recursive: true });
     const temporary = join(dirname(file), `.change-${randomUUID()}.tmp`);
+    const copiedFiles = [], createdDirectories = [];
+    const makeSnapshotDirectory = (path) => {
+      if (existsSync(path)) return;
+      makeSnapshotDirectory(dirname(path));
+      mkdirSync(path);
+      createdDirectories.push(path);
+    };
     let updatedBlob;
     try {
       writeFileSync(temporary, json(state), {
@@ -1124,6 +1139,14 @@ function main() {
         updatedBlob = blob;
       }
       if (archiveDir) {
+        for (const {target, content} of archiveCopies) {
+          safe(target);
+          makeSnapshotDirectory(dirname(target));
+          const descriptor = openSync(target, "wx");
+          copiedFiles.push(target);
+          try { writeFileSync(descriptor, content); }
+          finally { closeSync(descriptor); }
+        }
         mkdirSync(archiveRoot, { recursive: true });
         renameSync(liveDir, archiveDir);
         try {
@@ -1137,6 +1160,8 @@ function main() {
         }
       } else renameSync(temporary, file);
     } catch (error) {
+      for (const path of copiedFiles.reverse()) rmSync(path, {force: true});
+      for (const path of createdDirectories.reverse()) rmdirSync(path);
       if (
         updatedBlob &&
         git(["rev-parse", `:${relative(root, file)}`]) === updatedBlob
@@ -1153,8 +1178,8 @@ function main() {
       rmSync(temporary, { force: true });
     }
     result.next =
-      archiveDir && state.previews?.length
-        ? "Commit archive and outputs, then run prototype/scripts/archive.mjs --change <id> --push; verify the remote branch and retained tag."
+      archiveDir
+        ? `Commit and push the archived source, then run scripts/integration.mjs merge --change ${state.id}; verify delivery before cleanup. Do not create retention tags or edit the archive.`
         : "Review the local diff, commit and push. A local command is not a published workflow fact.";
     console.log(json(result));
   } finally {

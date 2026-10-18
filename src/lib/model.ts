@@ -1,3 +1,9 @@
+export type {
+  IntegrationIndex,
+  IntegrationRecord,
+  IntegrationResult,
+} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import type { IntegrationIndex } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 export type Diagnostic = {
   code: string;
   message: string;
@@ -221,14 +227,13 @@ export type ChangeRoute = {
   errors: string[];
 };
 export type Snapshot = {
-  cacheSchemaVersion: 5;
+  cacheSchemaVersion: 6;
+  integrations: IntegrationIndex;
   collaborationBranch: string | null;
   routes: ChangeRoute[];
   sourceDiagnostics: Diagnostic[];
   scanFingerprint?: string;
   currentPrototype: CurrentPrototype;
-  archiveRefs: { id: string; commit: string }[];
-  archivePins: Record<string, string>;
   prototype: {
     status: "unconfigured" | "disabled" | "pending" | "enabled" | "invalid";
     branch: string | null;

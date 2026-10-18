@@ -5,6 +5,7 @@ import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { hash } from "../src/server/git.ts";
 import { seed } from "./seed.ts";
+import { seedIntegration } from "./seed-integration.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { hostedServer } from "./hosted-server.ts";
 import { PersonalSessions } from "../src/server/personal-sessions.ts";
@@ -41,8 +42,9 @@ import {
 } from "../src/server/credential-api.ts";
 import { preferencesResponse } from "../src/server/preferences-api.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
-const f = await seed(),
-  git = await gitHttpsFixture(f),
+const f = await seed();
+await seedIntegration(f);
+const git = await gitHttpsFixture(f),
   host = await hostedServer(join(f.root, "host-fixture"));
 const root = join(f.root, "personal-data"),
   config = join(f.root, "config.json");
