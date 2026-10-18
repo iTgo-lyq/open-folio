@@ -4,13 +4,15 @@
   "title": "冒烟验证结束后可靠退出测试会话",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/smoke-session-cleanup",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一冒烟会话清理并验证成功与失败路径",
-      "status": "todo"
+      "status": "done",
+      "verification": "36项定向测试、应用与UI类型检查、格式检查通过；真实服务成功、故意失败及浏览器失败均自动清理且保留Mac会话",
+      "commitTitle": "smoke-session-cleanup T1: guarantee smoke session teardown and verification"
     }
   },
   "closure": {}
