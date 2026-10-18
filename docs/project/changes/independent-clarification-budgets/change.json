@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "independent-clarification-budgets",
+  "title": "需求与技术问询分别计算额度",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "拆分澄清额度并明确问答分类与轮次计数",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
