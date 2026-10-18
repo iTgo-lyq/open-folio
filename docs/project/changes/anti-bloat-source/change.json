@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "anti-bloat-source",
+  "title": "恢复反膨胀指南的原文表达",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "以原文中文主体替换自行改写的指南",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "technical-anti-bloat-detail"
+}
