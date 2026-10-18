@@ -59,3 +59,11 @@ workbench-clarification-history
 - [git-diff 官方文档](https://git-scm.com/docs/git-diff)：比较两个提交表示两端树差异，本方案采用 `M^1` 与 `M`，不使用三点 merge-base 差异或默认 combined merge diff。
 
 以上 Git 基础能力足以保存交付边界与差异，PR 不是必要前提。远端托管产物的长期可用性仍属于宿主已有职责，Git 合并提交仅固定其引用及仓库内产物。
+
+## 计划与交互原型
+
+原型入口为 `packages/prototype/src/pages/change-integration.html`，复用项目样式与详情抽屉，仅使用示例提交和内存状态。桌面并排阅读文件与 diff，iPad/手机切换列表与正文；覆盖归档移动、二进制、大文件限制、缺失/异常/读取失败及加载状态。发布后的固定入口由本 Change 的 previews 保存。
+
+2026-10-18 本地检查：`npm run build --workspace prototype` 成功；截图命令生成 pc-web、ipad、mobile 三种标准图片。Playwright 在仅有 allow-scripts 权限的 iframe 中检查 1440×900、834×1194、390×844、320×720：文件选择、状态切换与重试、页签键盘、固定链接和历史返回、复制失败后的手动复制、关闭/重开均通过，无脚本错误或页面横向溢出；已目视核对桌面、iPad 和窄屏差异阅读。验证的是原型交互，真实 Git、权限和清理行为按 Plan 实现后验证。
+
+固定原型以源码提交 `bfbfae4` 构建，通过项目 R2 适配器上传并校验公开字节；result、当前清单与 Change previews 的固定版本及三种 thumbnails 一致。`validate.mjs --browser` 的 5 个已登记入口通过 Chromium 沙箱加载。引用提交首次推送失败后重试成功；首次工作台检查读到引用发布前的快照，重新刷新后，三种设备筛选下卡片图片均满足 `complete && naturalWidth > 0`，从卡片打开原型后文件选择和失败重试通过。真实登录使用 `withSmokeSession`，检查完成后退出并复查无残留授权。

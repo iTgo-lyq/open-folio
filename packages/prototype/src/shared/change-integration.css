@@ -1,0 +1,94 @@
+/* Proposed integration tab. Keep the current drawer for the other tabs. */
+[hidden] { display: none !important; }
+.review-bar { justify-content: space-between; height: 44px; }
+.review-bar strong { font-weight: 500; }
+.review-bar label { display: flex; align-items: center; gap: 8px; }
+.review-canvas { padding: 28px; place-items: start; align-items: center; }
+.review-canvas h1 { font-size: 24px; font-weight: 500; color: #496a81; }
+.change-drawer[data-tab="integration"] { width: min(1040px, calc(100vw - 108px)); }
+.drawer-summary { padding-top: 18px; }
+.drawer-summary h2 { margin: 5px 0 9px; }
+.drawer-tabs { gap: 24px; margin-top: 16px; overflow-x: auto; }
+.drawer-tabs button { flex: none; color: #667e8e; }
+.drawer-tabs button[aria-selected="true"] { color: var(--of-blue); font-weight: 600; }
+.drawer-tabs button:disabled { color: #8f9eaa; }
+.badge.completed { color: #3d6f5b; background: #edf5f0; }
+.integration-body { min-height: 0; flex: 1; overflow: auto; display: flex; flex-direction: column; }
+#found-record { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.integration-meta { padding: 17px 28px; border-bottom: 1px solid var(--of-line); flex: none; }
+.integration-meta > div { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.integration-meta time, .commit-line > span { font-size: 11px; color: #667986; }
+.record-status { font-size: 12px; font-weight: 550; color: #3d6f5b; }
+.commit-line { margin-top: 8px; }
+.commit-copy { font-size: 12px; color: var(--of-blue); padding: 3px 6px; border-radius: 4px; background: var(--of-blue-soft); }
+.diff-total { margin-left: auto; }
+.added { color: #347250; }
+.removed { color: #a04743; }
+.diff-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 256px minmax(0, 1fr); }
+.file-panel { overflow: auto; border-right: 1px solid var(--of-line); }
+.file-heading { display: flex; align-items: center; justify-content: space-between; padding: 16px; color: #667986; font-size: 11px; }
+.file-heading strong { font-weight: 500; }
+.file-item { display: block; width: 100%; padding: 12px 16px; text-align: left; border-left: 2px solid transparent; }
+.file-item:hover { background: #f6f9fb; }
+.file-item[aria-current="true"] { background: var(--of-blue-soft); border-left-color: var(--of-blue); }
+.file-name { font-size: 12px; font-weight: 550; overflow-wrap: anywhere; display: block; }
+.file-directory { font-size: 10px; line-height: 1.65; color: #667986; overflow-wrap: anywhere; display: block; margin-top: 3px; }
+.file-status { margin-top: 5px; color: #667986; display: flex; gap: 10px; font-size: 10px; }
+.file-footnote { font-size: 10px; color: #667986; padding: 16px; line-height: 1.7; }
+.diff-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.diff-heading { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; background: #fafcfd; border-bottom: 1px solid var(--of-line); flex: none; }
+.diff-heading > div { min-width: 0; flex: 1; }
+#selected-path { display: block; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+#selected-meta { font-size: 10px; color: #667986; margin: 3px 0 0; overflow-wrap: anywhere; line-height: 1.7; }
+.command-button { font-size: 10px; padding: 5px 0; color: var(--of-blue); flex: none; }
+#back-files { display: none; }
+#file-diff { min-height: 0; overflow: auto; flex: 1; }
+.diff-table { border-collapse: collapse; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 11px; line-height: 1.9; min-width: 100%; }
+.diff-table td { padding: 1px 8px; white-space: pre; }
+.diff-table td.line-no { color: #71828d; width: 34px; min-width: 34px; text-align: right; user-select: none; border-right: 1px solid #e9edf0; }
+.diff-table td.sign { padding-right: 0; color: inherit; width: 18px; }
+.diff-table tr.add { background: #edf7ef; color: #285d3f; }
+.diff-table tr.remove { background: #fcefeb; color: #8f403b; }
+.diff-table tr.hunk { background: #eef4fa; color: #5c7a91; }
+.result-state { margin: auto; text-align: center; padding: 45px 28px; max-width: 500px; line-height: 1.8; }
+.result-state h3 { margin: 0 0 8px; font-size: 15px; font-weight: 550; }
+.result-state p { color: #667986; font-size: 12px; margin-bottom: 14px; }
+.result-state button, #close-copy { padding: 8px 13px; border: 1px solid var(--of-line); border-radius: 7px; background: white; }
+.result-state code { font-size: 11px; overflow-wrap: anywhere; }
+#integration-result:not(:empty) { margin: auto; }
+.loading-line { height: 8px; border-radius: 3px; background: #e9f0f5; margin: 13px auto; width: 190px; }
+.loading-line:nth-child(2) { width: 140px; }
+#copy-dialog { width: min(520px, calc(100vw - 32px)); border: 1px solid var(--of-line); border-radius: 12px; padding: 24px; color: var(--of-ink); }
+#copy-dialog::backdrop { background: #233b5550; }
+#copy-dialog h2 { font-size: 17px; }
+#copy-dialog p { font-size: 12px; color: #667986; }
+#copy-value { width: 100%; resize: vertical; border: 1px solid #d7e1e8; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; margin: 0 0 12px; overflow-wrap: anywhere; }
+#notice { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); background: #2e3c46; color: white; border-radius: 7px; padding: 9px 16px; z-index: 60; font-size: 12px; }
+#notice:empty { display: none; }
+@media (max-width: 1000px) {
+  .diff-layout { display: flex; flex-direction: column; }
+  .file-panel { flex: 1; border-right: 0; }
+  .diff-panel { flex: 1; }
+  .diff-layout[data-view="list"] .diff-panel, .diff-layout[data-view="diff"] .file-panel { display: none; }
+  #back-files { display: inline-flex; flex: none; font-size: 12px; padding: 3px 0; color: var(--of-blue); }
+  .file-item { padding: 13px 24px; }
+  .file-name { font-size: 13px; }
+  .file-directory { font-size: 11px; }
+  .file-heading, .file-footnote { padding-left: 24px; padding-right: 24px; }
+}
+@media (max-width: 760px) {
+  .change-drawer[data-tab="integration"] { width: calc(100vw - 16px); }
+  .drawer-summary { padding: 15px 18px 0; }
+  .drawer-summary h2 { font-size: 18px; }
+  .drawer-tabs { gap: 20px; padding: 0 18px; margin-top: 12px; }
+  .drawer-tabs button { font-size: 11px; }
+  .integration-meta { padding: 13px 18px; }
+  .integration-meta > div { gap: 8px; }
+  .diff-total { margin-left: 0; width: 100%; }
+  .diff-heading { flex-wrap: wrap; padding: 12px; gap: 8px; }
+  .diff-heading > div { flex-basis: calc(100% - 60px); }
+  .command-button { margin-left: auto; padding: 0; }
+  .file-item { padding: 11px 18px; }
+  .file-heading, .file-footnote { padding-left: 18px; padding-right: 18px; }
+  .result-state { padding: 28px 20px; }
+}
