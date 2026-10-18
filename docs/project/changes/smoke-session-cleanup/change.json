@@ -5,7 +5,7 @@
   "size": "small",
   "status": "active",
   "stage": "requirement",
-  "branch": "develop",
+  "branch": "codex/smoke-session-cleanup",
   "confirmations": {},
   "tasks": {
     "T1": {
