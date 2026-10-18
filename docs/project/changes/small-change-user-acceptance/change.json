@@ -4,7 +4,7 @@
   "title": "small Change 人工验收反馈后停止自动归档",
   "size": "small",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/small-change-user-acceptance",
   "confirmations": {},
   "tasks": {
@@ -21,10 +21,20 @@
       "commitTitle": "small-change-user-acceptance T2: require user acceptance after review issues"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T07:57:29.685Z",
+      "summary": "Agent 自查通过：默认自验收与人工反馈后持续等待两条路径一致；Requirement 保留人工验收要求。skill 校验、差异检查和提交校验通过。"
+    }
+  },
   "rework": {
     "at": "2026-10-18T07:56:22.201Z",
     "reason": "用户验收反馈统一等待不便，改为人工验收提出问题后才停止自动归档，并要求措辞精简。",
     "approach": "恢复 small 默认自验收；对人工验收反馈问题的 Change 持续要求用户确认，精简主 skill 与命令参考。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "本次已收到人工验收反馈，修订已验证；等待用户确认后同步 Specs、归档并合入 develop。"
   }
 }
