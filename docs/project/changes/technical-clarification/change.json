@@ -4,13 +4,15 @@
   "title": "精简技术方案追问并说明实现重点",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/technical-clarification",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "补齐技术方案分轮澄清、额度与实现重点说明规则",
-      "status": "todo"
+      "status": "done",
+      "verification": "skill 校验、39 处 Markdown 链接与锚点检查及 git diff --check 通过；Agent 自查六类情景，规则与验收一致。",
+      "commitTitle": "technical-clarification T1: add focused technical inquiry rules"
     }
   },
   "closure": {}

@@ -9,8 +9,8 @@
 | `create` | `--title --size`；可选 `--depends-on id,id`、`--parent id`、`--children id,id`。在配置的协作分支建立 requirement 状态，不生成正文、不创建或切换 Git 分支、不覆盖已有目录。 |
 | `retitle` | `--title`；仅修改活动 Change 的展示标题，保留 id、阶段、任务与确认；需在所属分支运行。 |
 | `confirm` | `--phase requirement/technical/plan/merge --summary --source`。summary 写阶段内容，优先 20–40 字符，最多 60 个 Unicode 码点、单句且不换行；source 写实际确认依据。需求确认进入 technical，large 技术确认进入 plan；执行另用 execute。medium/xlarge 技术与计划同次获确认时连续记录两次。merge 可附 `--source-commit --target-commit --base-commit`。 |
-| `clarification-ask` | `--round --text --recommendation`；可选 `--question Qn`，默认下一个编号，只能递增。保存实际问过的问题，round 为从 1 开始的正整数，同轮问题用同一值。 |
-| `clarification-answer` | `--question Qn --answer`，可附 `--source`。保存用户最终有效回答，更正覆盖同题答案；未提供 source 时清除旧来源，实质改变需求先按返工处理。 |
+| `clarification-ask` | `--round --text --recommendation`；可选 `--question Qn`，默认下一个编号，只能递增。保存实际问过的需求或技术问题，round 为从 1 开始的正整数，同轮问题用同一值，跨阶段继续递增。 |
+| `clarification-answer` | `--question Qn --answer`，可附 `--source`。保存用户最终有效回答，更正覆盖同题答案；未提供 source 时清除旧来源，实质改变需求或关键方案先按返工处理。 |
 | `clarification-withdraw` | `--question Qn --reason`。保留原问答并记不再适用的原因，不退额度；撤回后不再回答，需要时新增问题。 |
 | `task-add` | `--title`；可选 `--task Tn --branch`，默认分配下一个编号。完成任务不可覆盖，返修追加任务并更新 Plan。 |
 | `task-start` | `--task Tn`；检查当前执行安排与整条前置链均已完成，再从 todo/blocked → doing，并移除旧阻塞原因。 |
@@ -48,7 +48,7 @@ node .agents/skills/spec-trail/scripts/change.mjs verify --change example --resu
 
 ## 时间与失败
 
-问答命令不代替用户回答、不授予确认、不推进阶段或解除等待；支持在 active Change 补录创建前及先前会话问答，返工不清空记录。预算按主 skill 在发问前控制，命令不拒绝记录已发生的超额问答。无问答时省略 clarifications；已有归档无需补写，旧确认摘要不追溯长度限制。
+问答命令不代替用户回答、不授予确认、不推进阶段或解除等待；支持在 active Change 补录创建前及先前会话问答，返工不清空记录。需求与技术共用 Q 编号、轮次和 Change 总预算；技术问询另受[技术问询](../SKILL.md#技术问询)的较小上限约束。Agent 在发问前核对两层额度，并按[问答记录](../SKILL.md#问答记录)回写结论与技术问题引用；命令不拒绝记录已发生的超额问答。无问答时省略 clarifications；已有归档无需补写，旧确认摘要不追溯长度限制。
 
 新时间统一为 UTC、三位毫秒 ISO 字符串；不接受 Agent 手填当前时间，不对读取端加时间容差。关闭步骤严格递增或相等，系统时钟早于前一步时拒绝写入，先核对时钟或实际历史记录。
 
