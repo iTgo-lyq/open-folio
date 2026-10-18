@@ -71,7 +71,8 @@ test("workflow readers agree on optional hosting choices and service presence", 
     ],
   ] as const) {
     const workflow = {
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main"],
       ...extra,
     };

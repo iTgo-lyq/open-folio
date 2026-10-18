@@ -14,4 +14,8 @@
 
 ## T1 — 定义集中入口与引用契约
 
-先统一配置与 branch 路由契约，更新 SpecTrail/Setup 规则和校验边界；保留现有 ChangeState 结构与既有工作收尾命令。实际变更与验证随任务交付补记。
+新增共享 routing 契约，校验协作/保护分支角色与 Git 分支名称，按集中 live/归档记录生成单跳来源；集中旧业务字段不参与目标路由，已集成完整归档直接阅读。Workflow v2 要求 collaborationBranch，ChangeState 保持 v1；既有状态收尾可识别旧 workflow，后台 schema 只接受新配置。
+
+更新 SpecTrail 主规则、Setup、Prototype 子 skill 的 develop 规划/集成与保护分支发布边界。Setup 检查保持只读，报告已知协作引用和未验证的权限；hook 对本次暂存 JSON 仍做完整校验，仅跳过继承副本的本地原型产物关联检查。
+
+验证：`node --test tests/routing.test.ts .agents/skills/spec-trail/setup/tests/setup.test.mjs` 16 项通过；`npx tsc --noEmit` 通过；主 skill、Setup、Prototype 的 quick_validate 均通过。覆盖分支名与真实 Git 语法、配置双角色冲突、旧配置待接入、重复入口、归档终态、只读 Setup、继承原型与部分提交。CLI 操作和后台收集接线分别在 T2/T4 完成，尚未部署本检查点。

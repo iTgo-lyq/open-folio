@@ -6,6 +6,10 @@ import type {
 } from "../lib/model.ts";
 import { validateClarifications } from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
 import {
+  validBranchName,
+  workflowRoutingIssues,
+} from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import {
   validatePreviews,
   validatePrototype,
   serviceUrl,
@@ -21,7 +25,9 @@ export const prototypeSchema = z.custom<PrototypeConfig>(
 );
 export const identity = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 const text = z.string().refine((s) => /\S/.test(s), "不能为空白文本");
-export const branchName = z.string().regex(/^[^\s~^:?*\[\\]+$/);
+export const branchName = z
+  .string()
+  .refine(validBranchName, "必须是有效的本地分支名称");
 export function validTimestamp(value: string) {
   const p =
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)(Z|([+-])(\d{2}):(\d{2}))$/.exec(
@@ -182,21 +188,12 @@ export function validDate(s: string) {
   return validTimestamp(`${s}T00:00:00Z`);
 }
 
-export const workflowCoreSchema = z
+const workflowFields = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
+    collaborationBranch: branchName,
     protectedBranches: z
-      .array(
-        z
-          .string()
-          .min(1)
-          .refine(
-            (s) =>
-              !s.startsWith("refs/") &&
-              !s.startsWith("origin/") &&
-              !/[\s~^:?*\[\\]|\.\.|@\{|\/\/|^\/|\/$|\.$|\.lock(?:\/|$)/.test(s),
-          ),
-      )
+      .array(branchName)
       .nonempty()
       .refine((a) => new Set(a).size === a.length),
     prototype: z.unknown().optional(),
@@ -205,11 +202,19 @@ export const workflowCoreSchema = z
       .optional(),
   })
   .strict();
-export const workflowSchema = workflowCoreSchema
+const routingIssues = (value: unknown, ctx: z.RefinementCtx) => {
+  for (const message of workflowRoutingIssues(value, {
+    requireCollaboration: true,
+  }))
+    ctx.addIssue({ code: "custom", message });
+};
+export const workflowCoreSchema = workflowFields.superRefine(routingIssues);
+export const workflowSchema = workflowFields
   .extend({
     prototype: prototypeSchema.optional(),
   })
   .superRefine((value, ctx) => {
+    routingIssues(value, ctx);
     for (const message of workflowHostingIssues(value))
       ctx.addIssue({ code: "custom", message });
   });

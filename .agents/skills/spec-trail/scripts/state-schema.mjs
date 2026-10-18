@@ -1,3 +1,5 @@
+import { validBranchName, workflowRoutingIssues } from "./routing.mjs";
+
 const pointer = (path, key) =>
   `${path}/${String(key).replaceAll("~", "~0").replaceAll("/", "~1")}`;
 const report = (errors, path, message) =>
@@ -17,10 +19,10 @@ const id = stringRule(
   /^[a-z0-9]+(-[a-z0-9]+)*$/,
   "must be a lowercase kebab-case id",
 );
-const branch = stringRule(
-  /^[^\s~^:?*\[\\]+$/,
-  "must be a non-empty branch name without forbidden characters",
-);
+const branch = (value, path, errors) => {
+  if (!validBranchName(value))
+    report(errors, path, "must be a valid local branch name");
+};
 const commit = stringRule(
   /^[0-9a-f]{7,64}$/,
   "must contain 7–64 lowercase hexadecimal characters",
@@ -196,16 +198,11 @@ const previewsRule = (value, path, errors) =>
   errors.push(...prototypeContract.validatePreviews(value, path));
 const workflow = object(
   {
-    schemaVersion: oneOf(1),
+    schemaVersion: oneOf(1, 2),
+    collaborationBranch: branch,
     prototype: prototypeRule,
     openfolioUrl: () => {}, // Validated together with the hosting choice below.
-    protectedBranches: list(
-      stringRule(
-        /^[^\s*?\[]+$/,
-        "must be a non-empty branch name without whitespace or wildcards",
-      ),
-      true,
-    ),
+    protectedBranches: list(branch, true),
   },
   ["schemaVersion", "protectedBranches"],
 );
@@ -303,9 +300,10 @@ export const validateChange = (value) => {
   change(value, "", errors);
   return errors;
 };
-export const validateWorkflow = (value) => {
+export const validateWorkflow = (value, options = {}) => {
   const errors = [];
   workflow(value, "", errors);
+  errors.push(...workflowRoutingIssues(value, options));
   errors.push(...prototypeContract.workflowHostingIssues(value));
   return errors;
 };

@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "定义集中入口与引用契约",
-      "status": "doing"
+      "status": "done",
+      "verification": "共享路由与 Setup 16 项测试通过；TypeScript 和三项 skill 校验通过；操作与收集接线在后续任务完成",
+      "commitTitle": "feat: define collaboration routing and setup contracts"
     },
     "T2": {
       "title": "实现集中规划与可恢复移交",
