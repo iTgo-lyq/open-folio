@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-guidance",
+  "title": "按模块评估中型及以上 Change 的配图需要",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/diagram-guidance",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补充按模块评估的配图建议",
+      "status": "done",
+      "verification": "skill 校验与差异检查通过；自查中型起适用、逐模块评估、差异模块分别说明及按需配图，未增加固定数量或审批。",
+      "commitTitle": "diagram-guidance T1: recommend diagrams per changed module"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T07:15:52.240Z",
+      "summary": "Agent 自查完整差异，skill 校验和空白检查通过；建议按变更模块分别评估，简单内容保持按需，未新增审批。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T07:15:53.920Z",
+      "summary": "Agent 自验收通过：中型起逐模块评估配图、差异模块分别说明，措辞精简且无固定图数。",
+      "source": "用户明确要求补充 skill，并强调措辞精简、按模块评估和差异模块分别说明；按 SpecTrail small 自验收规则交付。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T07:15:55.623Z",
+      "summary": "同步 change-workflow 文档配图规则：中型起按变更模块评估，差异模块分别说明。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T07:15:57.362Z",
+      "summary": "归档按模块评估的配图建议，skill 校验与自验收通过，规范已同步。",
+      "path": "docs/project/archive/2026-10-18-diagram-guidance"
+    }
+  }
+}

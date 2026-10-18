@@ -37,6 +37,10 @@ SpecTrail 通过仓库内的语义 JavaScript 命令维护 docs/project 下的 C
 
 问答通过 clarification-ask / clarification-answer / clarification-withdraw 维护，命令保存已发生事实，预算由 Agent 在发问前执行。共享校验与工作台读取使用同一问答契约，旧记录可以省略该字段。
 
+## 文档配图
+
+medium 及以上 Change 涉及数据结构、时序流程等明显变化时，建议按变更模块分别评估配图，在相关需求或技术方案中说明。差异较大的模块分别说明，不以“已有配图”代替判断；图型与数量按需，简单内容不强制配图，small 按需。图片存入文档旁的 assets 目录，以相对链接引用。
+
 ## 命令与责任
 
 主 skill 自带 scripts/change.mjs，使用 Node.js 内置模块，无第三方依赖。命令覆盖创建、修改展示标题、阶段确认、任务登记/执行/阻塞/完成、等待与恢复、返工、关闭四步、取消及原型关联。修改标题保留 Change id 与已有流程记录。具体调用参见仓库 [.agents 状态命令说明](../../../../.agents/skills/spec-trail/references/state-commands.md)。
