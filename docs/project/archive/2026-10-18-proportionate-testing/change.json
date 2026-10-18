@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "proportionate-testing",
+  "title": "技术方案测试按风险设计并内置 testing-strategy",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/proportionate-testing",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "内置 testing-strategy 并约束技术方案测试范围",
+      "status": "done",
+      "verification": "主 skill 和 testing-strategy 均通过 quick_validate；引用路径与许可证哈希核对通过，安装原文与固定上游版本一致；差异检查及低风险修改、接口改动和关键数据风险的规则自查通过。",
+      "commitTitle": "proportionate-testing T1: bundle testing strategy and prevent overdesign"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T06:52:58.774Z",
+      "summary": "Agent 自查完成：安装固定上游版本并保留来源及许可证，主入口和子 skill 均按风险选测试；两项 skill 校验、链接、许可证哈希及差异检查通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T06:53:00.378Z",
+      "summary": "Agent 自验收通过：包内安装、禁止过度测试、按风险保留必要验证及文档边界均符合验收。",
+      "source": "SpecTrail small 自验收归档规则；用户明确要求安装 testing-strategy 并禁止技术方案测试过度设计。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T06:53:15.122Z",
+      "summary": "change-workflow Spec 补充 testing-strategy 包内入口、按风险选择测试及执行边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T06:53:16.817Z",
+      "summary": "testing-strategy 已内置并适配，测试不过度设计规则经校验、自验收及 Spec 同步后归档。",
+      "path": "docs/project/archive/2026-10-18-proportionate-testing"
+    }
+  }
+}
