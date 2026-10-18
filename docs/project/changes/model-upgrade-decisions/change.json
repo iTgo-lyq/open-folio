@@ -4,13 +4,15 @@
   "title": "数据模型不兼容升级由用户决定处理方案",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/model-upgrade-decisions",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "补充不兼容升级的用户取舍与技术就绪规则",
-      "status": "todo"
+      "status": "done",
+      "verification": "skill quick_validate 与 git diff --check 通过；自查覆盖用户取舍、接受不兼容、按需兼容、沿用决定及 small 适用边界。",
+      "commitTitle": "model-upgrade-decisions T1: require user choice for incompatible upgrades"
     }
   },
   "closure": {}
