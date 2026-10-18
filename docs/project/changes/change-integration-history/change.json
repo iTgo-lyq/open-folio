@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "change-integration-history",
+  "title": "以合并提交保留 Change 交付历史并清理工作分支",
+  "size": "large",
+  "status": "active",
+  "stage": "technical",
+  "branch": "develop",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-18T06:58:31.703Z",
+      "summary": "以单次合并提交保留整体差异和原型并清理交付来源",
+      "source": "用户已讨论确认单次归档合入、合并提交关联、无保留标签、旧记录找不到就留空，并明确回复：可以，按这个方案推进。先整理成正式的需求和技术方案，确认后再实现。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "识别并校验唯一的 Change 合入记录",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "生成正式合入并安全清理交付来源",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "在工作台阅读 Change 整体合入差异",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "以合并提交定位历史原型",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "完成标签退出与完整交付演练",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "正式需求与技术方案已整理，等待用户确认技术方案；确认后形成执行计划并准备交互原型供审阅。"
+  }
+}
