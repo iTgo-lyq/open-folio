@@ -72,3 +72,7 @@
 ## 待实现验证
 
 核心风险已转化为 Plan 的验证项：跨分支发布中断、集中目录并发、来源读取竞态、错误会话绑定、旧模式迁移以及历史原型可用性。当前没有证据支持“全部自动流转已可用”或“多机同 Change 不会撞车”；需求明确了可交付边界。
+
+## 实现时的宿主能力复核
+
+2026-10-18 再次检查当前 callable 工具元数据：存在 create_worktree、attach_worktree 及创建状态查询；create_worktree 明确说明 “The chat stays in its existing checkout; use the returned workspace directory.”，attach_worktree 仅适用于符合条件的 managed worktree。当前未暴露 handoff_thread 或 create_thread 调用入口，只有 handoff 状态读取及会话列表/读取。因此工具能力比早期调查多了工作区管理，但仍不能据此证明当前会话迁移或新会话绑定。通用命令不依赖这些客户端 API，交付 locate/prepare 与人工打开并核验路径；未为演示额外创建无用途工作区或调用模拟宿主。

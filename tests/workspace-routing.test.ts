@@ -297,3 +297,35 @@ test("shared registration permits archived delivery merge without deleting other
   assert.equal(f.state("show", [], 0, "other").state.status, "active");
   assert(!existsSync(join(f.repo, "docs/project/changes/sample")));
 });
+
+test("prepare reports behind/diverged branches and prunable registrations without resetting them", (t) => {
+  const f = fixture(t);
+  f.planning();
+  f.handoff();
+  const actor = join(f.root, "actor");
+  at(f.root, "clone", "-b", "change/sample", f.remote, actor);
+  at(actor, "config", "user.name", "Actor");
+  at(actor, "config", "user.email", "actor@example.invalid");
+  f.put("remote.txt", "new", actor);
+  f.commit(actor);
+  let result = f.workspace("prepare");
+  assert.equal(result.behind, 1);
+  assert.equal(result.ahead, 0);
+  f.put("local.txt", "local", f.work);
+  at(f.work, "add", ".");
+  at(f.work, "commit", "-m", "Local work");
+  const before = at(f.work, "rev-parse", "HEAD");
+  result = f.workspace("prepare");
+  assert.equal(result.diverged, true);
+  assert.equal(result.behind, 1);
+  assert.equal(result.ahead, 1);
+  assert.equal(at(f.work, "rev-parse", "HEAD"), before);
+  const refs = at(f.repo, "show-ref");
+  f.workspace("prepare", ["--dry-run"]);
+  assert.equal(at(f.repo, "show-ref"), refs);
+  rmSync(f.work, { recursive: true, force: true });
+  result = f.workspace("locate");
+  assert.match(result.diagnostics.join(" "), /unavailable/);
+  assert.match(f.workspace("prepare", [], 1), /not writable/);
+  assert.match(at(f.repo, "worktree", "list", "--porcelain"), /prunable/);
+});

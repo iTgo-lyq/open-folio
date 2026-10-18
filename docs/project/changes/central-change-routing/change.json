@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "实现工作区定位与会话续接",
-      "status": "todo"
+      "status": "done",
+      "verification": "工作区套件 8 项通过，核对真实宿主工具契约及人工续接路径",
+      "commitTitle": "test: verify workspace continuation and local state preservation"
     },
     "T4": {
       "title": "实现后台定向收集与增量刷新",
