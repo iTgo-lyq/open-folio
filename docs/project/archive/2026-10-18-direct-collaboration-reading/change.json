@@ -3,8 +3,8 @@
   "id": "direct-collaboration-reading",
   "title": "直接读取协作分支并收敛工作流约束",
   "size": "medium",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/direct-collaboration-reading",
   "confirmations": {
     "requirement": {
@@ -37,5 +37,28 @@
       "commitTitle": "direct-collaboration-reading T2: require current collaboration workflow"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T04:03:24.019Z",
+      "summary": "独立 Codex 完整差异评审通过；206 项回归、12 项 Setup/hook、16 项浏览器用例、类型检查和构建通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T04:03:25.541Z",
+      "summary": "按用户明确要求将已验证交付合入 develop",
+      "source": "用户：这轮改完直接合入 develop 吧；此前明确授权验证后合入并更新主工作区长期服务。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T04:03:27.204Z",
+      "summary": "同步工作流、工作台、接入、配置、Spec 读取及原型预览六项能力约束"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T04:03:28.789Z",
+      "summary": "直接协作分支读取、当前工作流校验和通用 Skill 规则交付归档",
+      "path": "docs/project/archive/2026-10-18-direct-collaboration-reading"
+    }
+  }
 }
