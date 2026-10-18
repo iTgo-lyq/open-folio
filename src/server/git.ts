@@ -30,11 +30,15 @@ import {
   changeLocation,
   validBranchName,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import {
+  scanIntegrations,
+  INTEGRATION_VERSION,
+} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([4, limits]));
+  hash(JSON.stringify([5, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -66,6 +70,7 @@ type CollectedData = Pick<
   | "routes"
   | "sourceDiagnostics"
   | "archiveRefs"
+  | "integrations"
   | "documents"
 > & { blobs: Map<string, Buffer>; unchanged: boolean };
 export class GitReader {
@@ -265,6 +270,14 @@ export class GitReader {
     const branches: Branch[] = [],
       archiveRefs: { id: string; commit: string }[] = [];
     const sourceDiagnostics: Diagnostic[] = [];
+    let integrations: Snapshot["integrations"] = {
+      version: INTEGRATION_VERSION,
+      tip: null,
+      complete: false,
+      records: {},
+      issues: [],
+      message: "协作来源尚未就绪。",
+    };
     let routes: ChangeRoute[] = [];
     const diagnostic = (message: string, code = "SETUP_REQUIRED") =>
       sourceDiagnostics.push({ code, message, severity: "warning" });
@@ -557,6 +570,8 @@ export class GitReader {
         previous.collaborationBranch === collaborationBranch &&
         JSON.stringify(previous.branches) === JSON.stringify(branches) &&
         JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs) &&
+        JSON.stringify(previous.integrations) ===
+          JSON.stringify(integrations) &&
         JSON.stringify(previous.routes) === JSON.stringify(routes) &&
         JSON.stringify(previous.sourceDiagnostics) ===
           JSON.stringify(sourceDiagnostics);
@@ -566,6 +581,7 @@ export class GitReader {
         routes,
         sourceDiagnostics,
         archiveRefs,
+        integrations,
         documents,
         blobs,
         unchanged: !!same,
@@ -594,6 +610,40 @@ export class GitReader {
       );
       return finish();
     }
+    if (
+      previous?.integrations?.complete &&
+      previous.integrations.tip === collab.commit &&
+      previous.integrations.version === INTEGRATION_VERSION &&
+      !Object.values(previous.integrations.records).some(
+        (record) => record.status === "unavailable",
+      )
+    ) {
+      integrations = previous.integrations;
+    } else {
+      if (
+        (await this.run(["rev-parse", "--is-shallow-repository"], signal))
+          .toString()
+          .trim() === "true"
+      ) {
+        await this.run(
+          [
+            "fetch",
+            "--no-tags",
+            "--no-recurse-submodules",
+            "--unshallow",
+            "origin",
+            `refs/heads/${collaborationBranch}`,
+          ],
+          signal,
+        );
+      }
+      integrations = await scanIntegrations(
+        (args) => this.run(args, signal),
+        collab.commit,
+      );
+    }
+    for (const message of integrations.issues)
+      diagnostic(message, "INTEGRATION_INVALID");
     routes = routeCatalog(
       documents
         .filter(

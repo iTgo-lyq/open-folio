@@ -128,7 +128,8 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 5 ||
+        s.cacheSchemaVersion !== 6 ||
+        !s.integrations ||
         s.collaborationBranch !== p.collaborationBranch ||
         !Array.isArray(s.routes) ||
         !Array.isArray(s.sourceDiagnostics) ||
@@ -251,7 +252,8 @@ export class SnapshotStore {
         ),
       };
       const s: Snapshot = {
-        cacheSchemaVersion: 5,
+        cacheSchemaVersion: 6,
+        integrations: data.integrations,
         collaborationBranch: data.collaborationBranch,
         routes: data.routes,
         sourceDiagnostics: data.sourceDiagnostics,

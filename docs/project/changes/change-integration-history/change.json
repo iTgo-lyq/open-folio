@@ -4,7 +4,7 @@
   "title": "以合并提交保留 Change 交付历史并清理工作分支",
   "size": "large",
   "status": "active",
-  "stage": "plan",
+  "stage": "execution",
   "branch": "codex/change-integration-history",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "识别并校验唯一的 Change 合入记录",
-      "status": "todo"
+      "status": "done",
+      "verification": "真实 Git 合入记录与缓存路由回归通过，含删除来源后重建、非法记录和同 tip 读取失败恢复；类型检查通过。",
+      "commitTitle": "change-integration-history T1: index immutable integration records"
     },
     "T2": {
       "title": "生成正式合入并安全清理交付来源",
