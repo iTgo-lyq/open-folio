@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "proportionate-testing",
+  "title": "技术方案测试按风险设计并内置 testing-strategy",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "内置 testing-strategy 并约束技术方案测试范围",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
