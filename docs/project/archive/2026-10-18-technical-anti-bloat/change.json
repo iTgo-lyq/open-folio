@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "technical-anti-bloat",
+  "title": "精简整合技术方案反膨胀原则",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/technical-anti-bloat",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "将反膨胀取舍原则融入技术方案指南",
+      "status": "done",
+      "verification": "quick_validate.py 与 git diff --check 通过；自查新增单段原则涵盖复杂机制依据、冗余取舍、必要保护和不新增审核流程，原有数据兼容规则保持有效。",
+      "commitTitle": "technical-anti-bloat T1: condense anti-bloat guidance into technical design"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T07:35:56.842Z",
+      "summary": "Agent 自查全部交付差异，skill 校验与空白检查通过；技术方案仅增加一段反膨胀原则，未引入新的审核或测试流程。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T07:35:58.461Z",
+      "summary": "Agent 自验收通过：单段覆盖证据驱动的减量取舍和必要保护，满足精简整合要求。",
+      "source": "用户明确要求：直接把 anti-bloat-review 内容整合进技术方案指南，注意精简；按 SpecTrail small 自验收规则交付。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T07:36:00.117Z",
+      "summary": "同步 change-workflow 技术方案的机制依据、减量取舍与必要保护原则。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T07:36:01.783Z",
+      "summary": "归档技术方案反膨胀指南的精简整合，文档自查与 skill 校验通过，规范已同步。",
+      "path": "docs/project/archive/2026-10-18-technical-anti-bloat"
+    }
+  }
+}
