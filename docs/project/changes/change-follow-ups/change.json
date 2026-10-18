@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "关联既有交付并完成验收验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "历史迁移仅一字段且原字节保留；真实归档快照与浏览器深链接验证通过；独立复审通过，协作分支同步与针对性校验通过。",
+      "commitTitle": "change-follow-ups T2: complete independent review and acceptance evidence"
     }
   },
   "closure": {}
