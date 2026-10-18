@@ -46,6 +46,6 @@
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "实现、历史关联与独立评审已完成，等待用户验收后同步 Specs、归档、集成 develop 并更新长期服务。"
+    "summary": "已按用户要求提供开发服务预览，等待实际效果验收后同步 Specs 并归档。"
   }
 }
