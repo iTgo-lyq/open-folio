@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "anti-bloat-source",
+  "title": "恢复反膨胀指南的原文表达",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/anti-bloat-source",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "以原文中文主体替换自行改写的指南",
+      "status": "done",
+      "verification": "对照上游中文主体，仅标题层级及末句审阅方式作适配；来源与 MIT 许可已保留，quick_validate.py 和 git diff --check 通过。",
+      "commitTitle": "anti-bloat-source T1: preserve upstream Chinese guidance"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T07:49:09.207Z",
+      "summary": "Agent 对照原文自查，中文主体仅标题层级与末句作上下文适配，skill 校验及差异检查通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T07:49:10.848Z",
+      "summary": "Agent 自验收通过：移除自行改写，保留原文中文主体与许可，审阅接入既有阶段规则。",
+      "source": "用户指出没有必要自行改写太多，原文内容本来就不多；按 small 自验收规则完成原文整合修正。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T07:49:12.650Z",
+      "summary": "change-workflow 改为引用指南中的原文规则，移除第二份自行改写。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T07:49:14.376Z",
+      "summary": "归档原文整合修正；原文对照、skill 校验与自验收通过，规范引用已同步。",
+      "path": "docs/project/archive/2026-10-18-anti-bloat-source"
+    }
+  },
+  "followUpOf": "technical-anti-bloat-detail"
+}
