@@ -71,7 +71,7 @@ workspace.mjs 的 handoff 先在目标工作区提交并推送唯一的 branch �
 
 ## 接入与提交校验
 
-首次或更新接入先核实默认分支、权限和保护规则，在 workflow.json v2 配置 collaborationBranch（推荐名称 develop，可自定义）与独立的 protectedBranches。协作分支兼任集中讨论、预发布集成和默认合入目标；准备它并让干净主工作区使用实际配置的协作分支，执行使用独立工作区。SpecTrail 的 [Setup 子 skill](../../../../.agents/skills/spec-trail/setup/SKILL.md) 提供 Node.js 20+、Git、配置及校验资源的只读准备检查，并输出调用命令和 Git 入口信息。检查不创建或复制文件、不修改 core.hooksPath，也不执行业务 hook；准备就绪与 hook 接入分别判断，hook 与远端权限状态均为未验证。已知本地/跟踪引用不证明远端仍存在，需精确查询。
+首次或更新接入先核实默认分支、权限和保护规则，在 workflow.json v2 配置 collaborationBranch（推荐名称 develop，可自定义）与独立的 protectedBranches。协作分支承担集中讨论与持续交付，是已完成 Change 的默认合入目标；保护分支作为正式上线基线。准备协作分支并让干净主工作区使用实际配置，执行使用独立工作区。SpecTrail 的 [Setup 子 skill](../../../../.agents/skills/spec-trail/setup/SKILL.md) 提供 Node.js 20+、Git、配置及校验资源的只读准备检查，并输出调用命令和 Git 入口信息。检查不创建或复制文件、不修改 core.hooksPath，也不执行业务 hook；准备就绪与 hook 接入分别判断，hook 与远端权限状态均为未验证。已知本地/跟踪引用不证明远端仍存在，需精确查询。
 
 入口检查要求先配置 workflow v2，仅接受当前协议，只读取基线、已登记 worktree 与显式工作分支，输出固定提交、覆盖依据和冲突，不联网、全量枚举分支或改写现场。归属冲突、目标缺失、未归档 completed、未集成交付的归档和基线上的普通执行项均先处理。后台接入直接指定协作分支，配置与校验器只需在该协作分支就绪，不以默认或保护分支发布为前置。CLI、hook、Setup 与后台统一拒绝无协作分支的 workflow v1；Change 本身仍采用 schemaVersion 1。保护分支只保留主动发布约束，不回退全量扫描。
 
@@ -115,4 +115,6 @@ M 的标题为 `Merge Change <id> into <协作分支>`，末尾独立 trailer �
 
 旧历史不回填关联或重写提交。新读取端生效并停止旧标签写入后，按重新核对的精确清单退出 spec-trail/archive-v2/* 标签与其专用可重建缓存引用；外部产物、公开版本、当前清单及用户持久数据保留。
 
-保护分支合入或 PR 只由用户主动要求触发，普通关闭不反复询问发布方式，创建 PR 不授权合并。发布固定验证后的协作提交和保护目标，在隔离候选中过滤 changes，以保护目标为单一父提交交付完整树或创建 PR；过滤提交不整体合回协作分支，保护分支独立修改先核对保留，不自动推断部分 Change 发布组合。构建与长期服务位置沿用项目约定，SpecTrail 不要求另建服务 checkout。本仓库长期服务从主工作区的 develop 构建并使用其 `.next`，保留现有运行数据。
+保护分支合入或 PR 只由用户主动要求触发，普通关闭不反复询问发布方式，创建 PR 不授权合并。固定验证后的协作源与保护目标，在隔离候选中普通 merge，保留提交历史与 changes 规划文档；PR 合并也保留历史，不过滤规划、squash 或创建单父交付快照。规划进入保护分支不表示 Change 已完成或对应能力已上线。合并完成须核实远端保护分支包含源提交；保护分支独立修复回流时用 --no-ff 保留协作 first-parent 历史，不自动推断部分 Change 发布组合。
+
+正式上线以保护分支为基线，构建与部署沿用项目约定，SpecTrail 不要求另建服务 checkout。本仓库长期服务用于开发验证，从主工作区的 develop 构建并使用其 `.next`，保留现有运行数据。

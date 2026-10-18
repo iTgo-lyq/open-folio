@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "protected-branch-merges",
+  "title": "保护分支保留合并历史与规划文档",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/protected-branch-merges",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修正协作到保护分支的合并与上线规则",
+      "status": "done",
+      "verification": "临时 Git 演练通过旧快照恢复、规划保留、连续发布、修复回流与 first-parent 保留；两个 skill 校验和 diff 检查通过",
+      "commitTitle": "protected-branch-merges T1: preserve planning and merge history"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T12:17:16.201Z",
+      "summary": "Agent 自查通过；真实 Git 演练覆盖规划与历史保留、连续发布和修复回流，skill 与差异校验通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T12:18:18.303Z",
+      "summary": "Agent 自验收：规则符合用户明确分支职责，Git 演练与 skill 校验通过；真实合并在归档后核实",
+      "source": "Agent 对照本 Change 验收项自查；用户已明确允许讨论文档进入 main，并授权 develop 合入 main。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T12:18:19.989Z",
+      "summary": "同步 change-workflow：持续交付与上线基线、正常合并保留规划和历史、修复回流保留 first-parent"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T12:18:23.044Z",
+      "summary": "归档已验证的保护分支正常合并规则",
+      "path": "docs/project/archive/2026-10-18-protected-branch-merges"
+    }
+  },
+  "followUpOf": "central-change-routing",
+  "followUpTitle": "协作与发布分支规则"
+}
