@@ -56,7 +56,9 @@
     },
     "T6": {
       "title": "交付迁移接入与本仓库试运行",
-      "status": "todo"
+      "status": "done",
+      "verification": "迁移5项与Setup12项独立复验通过；本仓库隔离移交/集成/连续发布演练、类型检查、构建及候选冒烟通过",
+      "commitTitle": "feat: add migration preview and verify collaboration onboarding"
     }
   },
   "closure": {},
