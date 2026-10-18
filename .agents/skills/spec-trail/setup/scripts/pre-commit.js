@@ -78,7 +78,7 @@ async function main() {
     const value = readState(`:${path}`);
     // Inherited entries retain old preview metadata. Their authoritative files
     // live on another branch, so local cross-file checks cannot validate them.
-    if (workflow?.schemaVersion === 2 && branch && value?.branch !== branch)
+    if (workflow && branch && value?.branch !== branch)
       continue;
     if (!Array.isArray(value?.previews) || !value.previews.length) continue;
     const changed = paths.includes(path);

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { symlink } from "node:fs/promises";
-import { execFileSync, spawnSync } from "node:child_process";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { resolve, join } from "node:path";
 import {
   validateChange,
@@ -98,7 +98,7 @@ const state = (previews?: unknown) => ({
   size: "small",
   status: "active",
   stage: "execution",
-  branch: "main",
+  branch: "change/prototype",
   confirmations: {},
   tasks: { T1: { title: "实现", status: "doing" } },
   closure: {},
@@ -175,37 +175,94 @@ test("prototype contract and hook agree for page/component variants and reject m
 test("hook checks staged entries, rejects deletion and symlinks, and permits ordinary edits after disabling", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
+  const work = join(f.root, "prototype-work");
+  const put = async (path: string, body: string) => {
+    const target = join(work, path);
+    await mkdir(join(target, ".."), { recursive: true });
+    await writeFile(target, body);
+  };
+  const git = (args: string[]) => f.git(args, work);
+  const commit = () => {
+    git(["add", "."]);
+    git(["commit", "-m", "Prototype checkpoint"]);
+    git(["push", "origin", "HEAD"]);
+  };
   const run = () =>
     spawnSync(
       process.execPath,
       [resolve(".agents/skills/spec-trail/setup/scripts/pre-commit.js")],
-      { cwd: f.author, encoding: "utf8" },
+      { cwd: work, encoding: "utf8" },
     );
-  const stage = () => execFileSync("git", ["add", "."], { cwd: f.author });
+  const stage = () => git(["add", "."]);
   const path = "docs/project/changes/prototype/change.json";
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main"],
       prototype: enabled,
     }),
   );
-  entry.artifact.sourceCommit = f.git(["rev-parse", "HEAD"]);
-  const retained = [entry, { ...entry, id: "detail", title: "详情" }];
-  await f.put(path, JSON.stringify(state(retained)));
-  stage();
   await f.put(
+    path,
+    JSON.stringify({
+      ...state(),
+      branch: "develop",
+      stage: "requirement",
+      tasks: { T1: { title: "实现", status: "todo" } },
+    }),
+  );
+  await f.put(
+    "docs/project/changes/prototype/requirement.md",
+    "# Prototype contract\n",
+  );
+  f.commit();
+  const handoff = spawnSync(
+    process.execPath,
+    [
+      resolve(".agents/skills/spec-trail/scripts/workspace.mjs"),
+      "handoff",
+      "--repo",
+      f.author,
+      "--change",
+      "prototype",
+      "--path",
+      work,
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(handoff.status, 0, handoff.stderr);
+  for (const args of [["execute"], ["task-start", "--task", "T1"]]) {
+    const step = spawnSync(
+      process.execPath,
+      [
+        resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+        ...args,
+        "--repo",
+        work,
+        "--change",
+        "prototype",
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(step.status, 0, step.stderr);
+  }
+  entry.artifact.sourceCommit = git(["rev-parse", "HEAD"]);
+  const retained = [entry, { ...entry, id: "detail", title: "详情" }];
+  await put(path, JSON.stringify(state(retained)));
+  stage();
+  await put(
     `${entry.artifact.path}/index.html`,
     "<!doctype html><h1>not staged</h1>",
   );
   assert.equal(run().status, 1);
   stage();
   assert.equal(run().status, 0);
-  f.commit();
-  f.git(["rm", `${entry.artifact.path}/index.html`]);
+  commit();
+  git(["rm", `${entry.artifact.path}/index.html`]);
   assert.equal(run().status, 1);
-  f.git([
+  git([
     "restore",
     "--source=HEAD",
     "--staged",
@@ -213,42 +270,40 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     `${entry.artifact.path}/index.html`,
   ]);
   const { rm } = await import("node:fs/promises");
-  await rm(join(f.author, entry.artifact.path, "index.html"));
-  await symlink(
-    "/etc/passwd",
-    join(f.author, entry.artifact.path, "index.html"),
-  );
+  await rm(join(work, entry.artifact.path, "index.html"));
+  await symlink("/etc/passwd", join(work, entry.artifact.path, "index.html"));
   stage();
   assert.equal(run().status, 1);
-  f.git([
+  git([
     "restore",
     "--source=HEAD",
     "--staged",
     "--worktree",
     `${entry.artifact.path}/index.html`,
   ]);
-  await f.put(
+  await put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main"],
       prototype: { status: "disabled" },
     }),
   );
-  await f.put(
+  await put(
     path,
     JSON.stringify({ ...state(retained), title: "只修改流程正文" }),
   );
   stage();
   assert.equal(run().status, 0);
-  f.commit();
-  await f.put(path, JSON.stringify(state([entry])));
+  commit();
+  await put(path, JSON.stringify(state([entry])));
   stage();
   assert.equal(run().status, 0); // Removing only one old association remains allowed.
-  await f.put(path, JSON.stringify(state([{ ...entry, title: "新关联" }])));
+  await put(path, JSON.stringify(state([{ ...entry, title: "新关联" }])));
   stage();
   assert.equal(run().status, 1);
-  await f.put(path, JSON.stringify(state([])));
+  await put(path, JSON.stringify(state([])));
   stage();
   assert.equal(run().status, 0);
 });

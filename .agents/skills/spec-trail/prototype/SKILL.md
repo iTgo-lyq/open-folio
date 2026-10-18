@@ -9,7 +9,7 @@ description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜
 
 ## 接入与设计
 
-读取 AGENTS、设计规范、现有组件及 `workflow.json.prototype`，当前基线为已推送的协作分支（默认 develop）。后台的默认分支配置仅用于发现协作分支，原型策略与清单均读取协作分支。未选择时按需询问；disabled 不重复建议；pending 修复接入；enabled 复用已有包。
+读取 AGENTS、设计规范、现有组件及 `workflow.json.prototype`，当前基线为项目实际配置并已推送的协作分支，develop 只是推荐名称。OpenFolio 直接使用接入时指定的协作分支读取原型策略与清单，不依赖默认分支或保护分支。未选择时按需询问；disabled 不重复建议；pending 修复接入；enabled 复用已有包。
 
 原型已启用时，按 UI 影响范围处理，不以 Change 规模代替判断：
 

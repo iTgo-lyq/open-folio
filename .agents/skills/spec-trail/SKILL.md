@@ -22,14 +22,14 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 
 ### 分支与协作
 
-- 协作分支由 `workflow.json.collaborationBranch` 指定，默认 `develop`，兼任集中讨论和预发布集成分支。主工作区长期保持该开发分支签出，不随 Change 或任务切换分支；所有 Change 完成后默认合入这里。保护分支只在用户主动要求时合入或创建 PR，不在普通关闭后反复询问发布方式。
+- 协作分支由 `workflow.json.collaborationBranch` 指定，推荐名称为 `develop`，不限制项目自定义名称，兼任集中讨论和预发布集成分支。主工作区使用项目实际配置的协作分支，不随 Change 或任务切换分支；所有 Change 完成后默认合入这里。保护分支只在用户主动要求时合入或创建 PR，不在普通关闭后反复询问发布方式。
 - 新 Change 在协作分支规划，branch 指向自身。实现前从最新协作分支创建独立工作分支（默认 `change/<id>`）、worktree 和执行会话，集中 change.json.branch 登记目标；不替换文件格式、不清理规划目录或镜像执行状态。
 - 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 工作区名默认使用 id；已有登记优先复用，用户明确指定路径时沿用，不为统一命名搬动已有工作区。项目的构建和长期服务位置遵循项目约定，SpecTrail 不要求另建服务 checkout。
 - 工作分支只推进所属 Change；继承的其他记录按集中入口读取。只有所属分支更新完整状态，集中分支仅登记工作分支；任务分支仍可用 `task/<id>/T<n>`，只提交实现和证据。普通 Change 不在协作分支进入实现，多个 xlarge 规划父项可在此聚合与关闭。
 - 开始实现前定向同步协作分支与所需工作分支，核对实际 cwd、分支和仓库身份。创建 worktree 或 shell cd 不等于会话绑定；客户端不能准确自动绑定时输出路径和续接提示，由用户打开目标工作区后核验。优先继续已有执行会话；同一 worktree 的多个写入会话需协调。
 - 调查和规划可并行；实现边界独立时可使用分支或 worktree。共享行为、Spec、契约、迁移或核心文件重叠时串行协调，small 也不例外。
 
-首次接入按 [Setup 子 skill](./setup/SKILL.md) 提前登记协作/预发布分支（默认 develop）、保护分支和实际平台规则，准备分支与主工作区，再接通提交校验。后台只用默认分支配置发现协作分支，其余当前内容和原型策略读取协作分支；尚未发布入口的旧项目提示 Setup，不保留全量扫描。
+首次接入按 [Setup 子 skill](./setup/SKILL.md) 提前登记协作/预发布分支（推荐名称 develop）、保护分支和实际平台规则，准备分支与主工作区，再接通提交校验。OpenFolio 接入时直接指定协作分支，读取其项目配置、当前内容、原型策略与 Change 入口，不依赖默认分支配置或保护分支存在。仅支持 workflow v2；未配置协作来源的项目须先完成 Setup，不保留旧工作流运行兼容或全量分支扫描。保护分支只用于发布约束。
 
 ## 文档与事实来源
 
@@ -87,7 +87,7 @@ type ISODateTime = string; // 脚本写 UTC 三位毫秒 ISO 时间；读取接�
 
 interface WorkflowConfig {
   schemaVersion: 2;
-  collaborationBranch: string; // 默认 develop；集中规划、预发布集成和默认合入目标
+  collaborationBranch: string; // 推荐名称 develop，可自定义；集中规划、预发布集成和默认合入目标
   protectedBranches: string[]; // 非空、去重，与协作分支角色分离；用户主动要求才发布
   openfolioUrl?: string | null; // 缺失为未询问，null 为无自建服务
   prototype?: PrototypeConfig; // 可选原型接入；缺失表示未选择
@@ -439,7 +439,7 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 small 自验收时，Agent 对照 Requirement 逐项核对交付与证据，确认仍符合 small 范围且没有未解决的验收项，记录 `acceptance.result: accepted`。摘要明确写“Agent 自验收通过”及实际依据，`source` 记录 small 直接归档规则或用户的明确授权，不写成用户已验收。随后完成 Specs 同步和归档提交推送，一次报告结果；验收未通过时按返工规则处理。
 
-人工验收时，向用户提供实现摘要、验收对应结果、验证证据和已知限制。实际验收或用户明确要求将该交付合入守护分支后，用 `accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`；显式合入指令按已有授权执行，不再次索要同一确认。测试通过和事先“做完就行”的笼统指示不等于人工验收。
+人工验收时，向用户提供实现摘要、验收对应结果、验证证据和已知限制。实际验收或用户明确要求将该交付合入指定目标分支后，用 `accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`；显式合入指令按已有授权执行，不再次索要同一确认。测试通过和事先“做完就行”的笼统指示不等于人工验收。
 
 需要人工验收但尚未验收时保持 active / close 和等待项，不同步 Specs、不归档；需修改时按[返工规则](#确认等待与返工)处理。
 

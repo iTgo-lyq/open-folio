@@ -12,30 +12,15 @@ export const validBranchName = (value) =>
     .split("/")
     .every((part) => !part.startsWith(".") && !part.endsWith(".lock"));
 
-export function workflowRoutingIssues(
-  value,
-  { requireCollaboration = false } = {},
-) {
+export function workflowRoutingIssues(value) {
   const errors = [];
-  if (!value || typeof value !== "object" || Array.isArray(value))
-    return errors;
-  if (value.schemaVersion === 2) {
-    if (!validBranchName(value.collaborationBranch))
-      errors.push(
-        "/collaborationBranch: a valid local branch name is required",
-      );
-    if (value.protectedBranches?.includes?.(value.collaborationBranch))
-      errors.push(
-        "/collaborationBranch: collaboration and protected branch roles must be distinct",
-      );
-  } else {
-    if (Object.hasOwn(value, "collaborationBranch"))
-      errors.push("/collaborationBranch: requires workflow schemaVersion 2");
-    if (requireCollaboration)
-      errors.push(
-        "/collaborationBranch: complete SpecTrail Setup (default: develop); full branch scanning is no longer supported",
-      );
-  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return errors;
+  if (value.schemaVersion !== 2)
+    errors.push("/schemaVersion: only workflow version 2 is supported; complete SpecTrail Setup");
+  if (!validBranchName(value.collaborationBranch))
+    errors.push("/collaborationBranch: a valid local branch name is required");
+  if (value.protectedBranches?.includes?.(value.collaborationBranch))
+    errors.push("/collaborationBranch: collaboration and protected branch roles must be distinct");
   return errors;
 }
 

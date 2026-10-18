@@ -70,7 +70,7 @@ test("branch routing rejects Git option/ref ambiguity and matches real branch sy
     );
   }
 });
-test("workflow routing is shared; legacy state tools cannot re-enable workbench scans", () => {
+test("workflow version 2 routing is shared and legacy configurations are rejected", () => {
   const samples = [
     workflow,
     { ...workflow, collaborationBranch: "planning" },
@@ -84,14 +84,21 @@ test("workflow routing is shared; legacy state tools cannot re-enable workbench 
   for (const sample of samples) {
     assert.equal(
       workflowSchema.safeParse(sample).success,
-      validateWorkflow(sample, { requireCollaboration: true }).length === 0,
+      validateWorkflow(sample).length === 0,
       JSON.stringify(sample),
     );
   }
-  assert.equal(
-    validateWorkflow({ schemaVersion: 1, protectedBranches: ["main"] }).length,
-    0,
-  );
+  for (const legacy of [
+    { schemaVersion: 1, protectedBranches: ["main"] },
+    { ...workflow, schemaVersion: 1 },
+  ]) {
+    assert.match(
+      validateWorkflow(legacy).join("\n"),
+      /(?:version 2|schemaVersion)/,
+    );
+    assert(!workflowCoreSchema.safeParse(legacy).success);
+    assert(!workflowSchema.safeParse(legacy).success);
+  }
   assert(
     workflowCoreSchema.safeParse({
       ...workflow,

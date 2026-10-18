@@ -1,12 +1,12 @@
 # 工作区与会话续接
 
-需要 Node.js 20+ 和 Git，脚本仅依赖内置模块。Setup 提前准备 workflow v2、远端协作分支和主工作区；`--repo` 可从任意工作区指定仓库。默认分支只供后台发现入口，本地命令使用当前 checkout 的 workflow 并核对协作分支配置。
+需要 Node.js 20+ 和 Git，脚本仅依赖内置模块。Setup 提前准备 workflow v2、远端协作分支和主工作区；`--repo` 可从任意工作区指定仓库。后台直接使用接入时指定的协作分支，本地命令使用当前 checkout 的 workflow 并核对协作分支配置；两者只支持 workflow v2。
 
-主工作区长期签出协作开发分支（默认 develop），Change 和任务切换在各自 worktree 内进行。新工作区默认布局如下，项目名取主工作区目录名；Change 的工作区名默认使用 id：
+主工作区签出项目实际配置的协作分支（推荐名称 develop，可自定义），Change 和任务切换在各自 worktree 内进行。新工作区默认布局如下，项目名取主工作区目录名；Change 的工作区名默认使用 id：
 
 ```text
 workspace/
-├── project/                         # 主工作区，长期保持 develop
+├── project/                         # 主工作区，使用配置的协作分支
 └── project-worktrees/
     ├── change-a/                    # 独立工作分支
     └── change-b/

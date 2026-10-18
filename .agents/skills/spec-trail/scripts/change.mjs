@@ -158,16 +158,13 @@ function main() {
     });
   safe("docs/project/workflow.json");
   const repo = repository(root);
-  const modern = repo.config.schemaVersion === 2;
-  const catalog = modern
-    ? collaborationCatalog(repo, {
-        refresh: command !== "show" && !opts["dry-run"],
-        local: repo.branch === repo.config.collaborationBranch,
-      })
-    : null;
+  const catalog = collaborationCatalog(repo, {
+    refresh: command !== "show" && !opts["dry-run"],
+    local: repo.branch === repo.config.collaborationBranch,
+  });
   const route = catalog?.routes.find((entry) => entry.id === id);
   const matches = records().filter((r) => r.state.id === id);
-  if (command === "show" && modern) {
+  if (command === "show") {
     if (route?.errors.length) throw Error(route.errors.join("; "));
     const local =
       (!route || (route.kind !== "archive" && route.branch === repo.branch)) &&
@@ -198,17 +195,6 @@ function main() {
     matches.length <= 1,
     "Duplicate Change id; resolve the source records first",
   );
-  if (command === "show") {
-    assert(matches.length === 1, "Change not found");
-    console.log(
-      json({
-        path: relative(root, matches[0].file),
-        state: matches[0].state,
-        errors: validateChange(matches[0].state),
-      }),
-    );
-    return;
-  }
   const lock = resolve(
     git(["rev-parse", "--path-format=absolute", "--git-common-dir"]),
     "spec-trail-state.lock",
@@ -231,7 +217,7 @@ function main() {
       "Use the Change branch, not a protected branch",
     );
     const all = records();
-    if (modern) {
+    {
       assert(
         branch === repo.branch,
         "The checkout branch changed; retry after inspecting the workspace",
@@ -259,7 +245,7 @@ function main() {
       }
     }
     assert(
-      (modern && branch === config.collaborationBranch) ||
+      branch === config.collaborationBranch ||
         !all.some(
           (r) =>
             !r.archived &&
@@ -367,8 +353,7 @@ function main() {
     };
     const uniqueActive = () =>
       assert(
-        (modern &&
-          branch === config.collaborationBranch &&
+        (branch === config.collaborationBranch &&
           state.size === "xlarge") ||
           !all.some(
             (r) =>
@@ -382,12 +367,8 @@ function main() {
       );
     const availability = [];
     const dependency = (target, allowCancelled = false) => {
-      const routed = modern
-        ? routedRecord(repo, catalog, target, { refresh: !opts["dry-run"] })
-        : null;
-      const candidates = routed
-        ? [{ ...routed, file: join(root, routed.path) }]
-        : all.filter((r) => r.state.id === target);
+      const routed = routedRecord(repo, catalog, target, { refresh: !opts["dry-run"] });
+      const candidates = [{ ...routed, file: join(root, routed.path) }];
       assert(
         candidates.length === 1,
         `Dependency/child ${target} is missing or ambiguous`,
@@ -416,8 +397,7 @@ function main() {
             )),
         `Dependency/child ${target} is not closed`,
       );
-      const remote =
-        routed?.sourceRef ?? `refs/remotes/origin/${source.branch}`;
+      const remote = routed.sourceRef;
       const remoteState = JSON.parse(
         git(["show", `${remote}:${relative(root, record.file)}`]),
       );
@@ -858,8 +838,7 @@ function main() {
     const errors = validateChange(state);
     assert(!errors.length, errors.join("; "));
     assert(
-      !modern ||
-        branch !== config.collaborationBranch ||
+      branch !== config.collaborationBranch ||
         state.size === "xlarge" ||
         !["execution", "close"].includes(state.stage),
       "Handoff this Change to its own worktree before implementation",

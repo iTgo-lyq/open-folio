@@ -15,10 +15,8 @@ try {
   });
   const repo = repository(values.repo);
   const baseline =
-    values.baseline ??
-    repo.config.collaborationBranch ??
-    repo.config.protectedBranches[0];
-  const collaborationBranch = repo.config.collaborationBranch ?? "develop";
+    values.baseline ?? repo.config.collaborationBranch;
+  const collaborationBranch = repo.config.collaborationBranch;
   const errors = [],
     sources = [],
     proposals = [];

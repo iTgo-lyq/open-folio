@@ -78,9 +78,7 @@ try {
   try {
     const value = JSON.parse(readFileSync(join(root, workflowPath), "utf8"));
     if (schema) {
-      const errors = schema.validateWorkflow(value, {
-        requireCollaboration: true,
-      });
+      const errors = schema.validateWorkflow(value);
       issues.push(...errors.map((error) => `${workflowPath}: ${error}`));
       if (!errors.length) {
         const refs = [

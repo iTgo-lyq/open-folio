@@ -118,7 +118,7 @@ export function collaborationCatalog(
     repo.git(["show", `${commit}:docs/project/workflow.json`]),
   );
   if (
-    validateWorkflow(config, { requireCollaboration: true }).length ||
+    validateWorkflow(config).length ||
     config.collaborationBranch !== name
   )
     throw Error(

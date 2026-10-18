@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { createServer } from "node:http";
 import { uploadToOpenFolio } from "../.agents/skills/spec-trail/prototype/scripts/openfolio-client.mjs";
 import assert from "node:assert/strict";
-import { readFile, writeFile, symlink, rm } from "node:fs/promises";
+import { mkdir, readFile, writeFile, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import {
@@ -29,12 +29,49 @@ const current = {
   devices: ["pc-web"],
 };
 async function publication(t: { after: (f: () => unknown) => unknown }) {
-  const f = await fixture();
-  t.after(f.cleanup);
+  const planning = await fixture();
+  t.after(planning.cleanup);
+  let author = planning.author;
+  const git = (args: string[], cwd = author) => planning.git(args, cwd);
+  const f = {
+    ...planning,
+    get author() {
+      return author;
+    },
+    common: join(planning.author, ".git"),
+    git,
+    put: async (path: string, body: string) => {
+      const target = join(author, path);
+      await mkdir(join(target, ".."), { recursive: true });
+      await writeFile(target, body);
+    },
+    commit: () => {
+      git(["add", "."]);
+      git(["commit", "-m", "Publication checkpoint"]);
+      git(["push", "origin", "HEAD"]);
+      return git(["rev-parse", "HEAD"]);
+    },
+  };
+  const command = (script: string, args: string[]) => {
+    const result = spawnSync(
+      process.execPath,
+      [resolve(script), ...args, "--repo", author],
+      { encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+  };
+  const state = (name: string, args: string[] = []) =>
+    command(".agents/skills/spec-trail/scripts/change.mjs", [
+      name,
+      "--change",
+      "publish-demo",
+      ...args,
+    ]);
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main"],
       prototype: {
         status: "enabled",
@@ -49,22 +86,25 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   await f.put(current.sourcePath, "<!doctype html><button>ready</button>");
   await f.put(".gitignore", "packages/prototype/dist/\n");
   f.commit();
-  f.git(["checkout", "-b", "change/publish-demo"]);
+  state("create", ["--title", "发布", "--size", "small"]);
+  state("task-add", ["--title", "发布"]);
   await f.put(
-    "docs/project/changes/publish-demo/change.json",
-    JSON.stringify({
-      schemaVersion: 1,
-      id: "publish-demo",
-      title: "发布",
-      size: "small",
-      status: "active",
-      stage: "execution",
-      branch: "change/publish-demo",
-      confirmations: {},
-      tasks: { T1: { title: "发布", status: "doing" } },
-      closure: {},
-    }),
+    "docs/project/changes/publish-demo/requirement.md",
+    "# Publication fixture\n",
   );
+  f.commit();
+  const work = join(f.root, "publish-work");
+  command(".agents/skills/spec-trail/scripts/workspace.mjs", [
+    "handoff",
+    "--change",
+    "publish-demo",
+    "--path",
+    work,
+  ]);
+  assert.equal(git(["branch", "--show-current"]), "develop");
+  author = work;
+  state("execute");
+  state("task-start", ["--task", "T1"]);
   f.commit();
   await f.put(
     "packages/prototype/dist/index.html",
@@ -350,7 +390,7 @@ test("interrupted registration recovery preserves later user edits", async (t) =
     file = join(f.author, path),
     before = await readFile(file);
   const after = Buffer.from(JSON.stringify({ schemaVersion: 1, entries: [] }));
-  const journal = join(f.author, ".git/spec-trail-prototype-transaction.json");
+  const journal = join(f.common, "spec-trail-prototype-transaction.json");
   await writeFile(
     journal,
     JSON.stringify({
@@ -440,8 +480,8 @@ test("crashed publication retains lock evidence and recovers only after verified
   const file = join(f.author, path);
   const before = await readFile(file, "utf8");
   const after = before + "\n";
-  const lock = join(f.author, ".git/spec-trail-state.lock");
-  const journal = join(f.author, ".git/spec-trail-prototype-transaction.json");
+  const lock = join(f.common, "spec-trail-state.lock");
+  const journal = join(f.common, "spec-trail-prototype-transaction.json");
   const moduleUrl = new URL(
     "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
     import.meta.url,

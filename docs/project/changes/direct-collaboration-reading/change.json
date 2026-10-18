@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "移除旧版工作流兼容并统一 Skill 规则",
-      "status": "doing"
+      "status": "done",
+      "verification": "206 项回归、12 项 Setup/hook 验证、三项 Skill 校验通过；独立 Codex 评审无未解决问题",
+      "commitTitle": "direct-collaboration-reading T2: require current collaboration workflow"
     }
   },
   "closure": {}

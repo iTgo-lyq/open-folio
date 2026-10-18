@@ -14,26 +14,44 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const script = resolve(".agents/skills/spec-trail/scripts/change.mjs");
-function fixture(t: import("node:test").TestContext) {
-  const root = mkdtempSync(join(tmpdir(), "folio-state-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const git = (...args: string[]) =>
+const workspaceScript = resolve(
+  ".agents/skills/spec-trail/scripts/workspace.mjs",
+);
+function fixture(
+  t: import("node:test").TestContext,
+  collaborationBranch = "develop",
+) {
+  const directory = mkdtempSync(join(tmpdir(), "folio-state-")),
+    planning = join(directory, "repo"),
+    remote = join(directory, "remote.git");
+  let root = planning;
+  mkdirSync(planning);
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const at = (cwd: string, ...args: string[]) =>
     execFileSync("git", args, {
-      cwd: root,
+      cwd,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     }).trim();
-  git("init", "-b", "main");
+  const git = (...args: string[]) => at(root, ...args);
+  at(directory, "init", "--bare", remote);
+  git("init", "-b", collaborationBranch);
+  git("remote", "add", "origin", remote);
   git("config", "user.name", "State test");
   git("config", "user.email", "state@example.invalid");
   mkdirSync(join(root, "docs/project"), { recursive: true });
   writeFileSync(
     join(root, "docs/project/workflow.json"),
-    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    JSON.stringify({
+      schemaVersion: 2,
+      collaborationBranch,
+      protectedBranches: ["main"],
+    }),
   );
   git("add", ".");
   git("commit", "-m", "Initialize");
-  git("switch", "-c", "codex/testing");
+  git("branch", "main");
+  git("push", "-u", "origin", collaborationBranch);
   const path = (id = "sample") =>
     join(root, `docs/project/changes/${id}/change.json`);
   const state = (id = "sample") => JSON.parse(readFileSync(path(id), "utf8"));
@@ -65,6 +83,7 @@ function fixture(t: import("node:test").TestContext) {
   };
   const begin = () => {
     run("task-add", ["--title", "Implement"]);
+    handoff();
     run("execute");
     run("task-start", ["--task", "T1"]);
   };
@@ -103,12 +122,52 @@ function fixture(t: import("node:test").TestContext) {
     run("specs", ["--result", "not_needed", "--summary", "No lasting change"]);
     return run("archive", ["--date", "2026-10-04", "--summary", "Archived"]);
   };
-  const commit = () => {
+  const commit = (push = true) => {
     git("add", ".");
     git("commit", "-m", "State checkpoint");
+    if (push) git("push", "origin", "HEAD");
+  };
+  const handoff = (expected = 0, id = "sample", extras: string[] = []) => {
+    assert.equal(root, planning, "Handoff starts from the planning workspace");
+    if (git("status", "--porcelain")) commit();
+    const work = join(directory, id);
+    const result = spawnSync(
+      process.execPath,
+      [
+        workspaceScript,
+        "handoff",
+        "--repo",
+        planning,
+        "--change",
+        id,
+        "--path",
+        work,
+        ...extras,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(result.status, expected, result.stdout + result.stderr);
+    if (expected) return result.stderr;
+    assert.equal(at(planning, "branch", "--show-current"), collaborationBranch);
+    assert.equal(
+      at(remote, "rev-parse", collaborationBranch),
+      at(remote, "rev-parse", `change/${id}`),
+    );
+    root = work;
+    return JSON.parse(result.stdout);
   };
   return {
-    root,
+    get root() {
+      return root;
+    },
+    planning,
+    remote,
+    common: join(planning, ".git"),
+    at,
+    handoff,
+    usePlanning: () => {
+      root = planning;
+    },
     git,
     path,
     state,
@@ -125,8 +184,9 @@ function fixture(t: import("node:test").TestContext) {
   };
 }
 
-test("semantic small lifecycle writes ordered ISO timestamps, preserves evidence and archives the directory", (t) => {
-  const f = fixture(t);
+test("small lifecycle on a custom collaboration branch preserves evidence, ordered timestamps and archive files", (t) => {
+  const f = fixture(t, "team/integration");
+  assert.equal(f.git("ls-remote", "origin", "refs/heads/main"), "");
   f.create();
   f.begin();
   f.done();
@@ -348,6 +408,7 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
         "--source",
         "Conversation",
       ]);
+    f.handoff();
     f.run("execute");
     f.run("task-start", ["--task", "T1"]);
     f.done();
@@ -398,6 +459,7 @@ test("default scheduling enforces numeric serial order for every ordinary size",
     for (const id of ["T10", "T2", "T1"])
       f.run("task-add", ["--task", id, "--title", id]);
     if (size !== "small") f.confirm();
+    f.handoff();
     f.run("execute");
     const before = readFileSync(f.path(), "utf8"),
       index = f.git("ls-files", "--stage");
@@ -431,6 +493,7 @@ test("explicit parallel order overrides the default and completion rechecks chan
   const parallel =
     "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | 无 |\n";
   f.plan(parallel);
+  f.handoff();
   f.run("execute");
   f.run("task-start", ["--task", "T2"]);
   f.run("task-start", ["--task", "T1"]);
@@ -474,6 +537,7 @@ test("invalid explicit orders block execution and every closure step without wri
     assert.equal(readFileSync(f.path(), "utf8"), original);
   }
   f.plan(good);
+  f.handoff();
   f.run("execute");
   f.plan(invalid[0]);
   const execution = readFileSync(f.path(), "utf8");
@@ -513,6 +577,7 @@ test("serial scheduling checks earlier ancestors even when an intermediate task 
   f.create();
   for (const id of ["T1", "T2", "T3"])
     f.run("task-add", ["--task", id, "--title", id]);
+  f.handoff();
   f.run("execute");
   const state = f.state();
   state.tasks.T2.status = "done";
@@ -531,10 +596,10 @@ test("failed operations, dry runs, locks and conflicting files leave source byte
   f.run("verify", ["--result", "passed", "--summary", "Skip"], 1);
   f.run("task-add", ["--title", "Plan only", "--dry-run"]);
   assert.equal(readFileSync(f.path(), "utf8"), before);
-  mkdirSync(join(f.root, ".git/spec-trail-state.lock"));
+  mkdirSync(join(f.common, "spec-trail-state.lock"));
   f.run("task-add", ["--title", "Contended"], 1);
-  assert(existsSync(join(f.root, ".git/spec-trail-state.lock")));
-  rmSync(join(f.root, ".git/spec-trail-state.lock"), { recursive: true });
+  assert(existsSync(join(f.common, "spec-trail-state.lock")));
+  rmSync(join(f.common, "spec-trail-state.lock"), { recursive: true });
   f.git("switch", "-c", "codex/wrong");
   f.run("task-add", ["--title", "Wrong owner"], 1);
   f.git("switch", "main");
@@ -575,7 +640,7 @@ test("retry only repairs an uncommitted done task; waiting, blocking, failed ver
     f.path(),
     JSON.stringify({ ...staged, title: "Unstaged title" }),
   );
-  const hook = join(f.root, ".git/hooks/pre-commit");
+  const hook = join(f.common, "hooks/pre-commit");
   writeFileSync(hook, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
   assert.throws(() => f.git("commit", "-m", "Rejected checkpoint"));
   rmSync(hook);
@@ -668,7 +733,8 @@ test("preview association command preserves unrelated state and enforces configu
   writeFileSync(
     join(f.root, "docs/project/workflow.json"),
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
+      collaborationBranch: "develop",
       protectedBranches: ["main"],
       prototype: {
         status: "enabled",
@@ -697,52 +763,87 @@ test("preview association command preserves unrelated state and enforces configu
 
 test("execution requires a published archived dependency already integrated in the branch", (t) => {
   const f = fixture(t);
-  const remote = join(f.root, "remote.git");
-  execFileSync("git", ["init", "--bare", remote], { stdio: "ignore" });
-  f.git("remote", "add", "origin", remote);
   f.create();
   f.begin();
   f.done();
   f.verify();
   f.accept();
   f.archive();
-  // Keep the local bare remote out of the author worktree index.
-  writeFileSync(join(f.root, ".gitignore"), "remote.git/\n");
-  f.commit();
+  f.commit(false);
+  const upstream = f.root;
+  f.usePlanning();
   f.create("small", "next", ["--depends-on", "sample"]);
   f.run("task-add", ["--title", "Use prerequisite"], 0, "next");
-  f.run("execute", [], 1, "next");
-  f.git("push", "-u", "origin", "HEAD");
+  assert.match(f.run("execute", [], 1, "next"), /not closed/);
+  assert.equal(f.state("next").stage, "requirement");
+  f.at(upstream, "push", "origin", "HEAD");
+  assert.match(f.handoff(1, "next"), /has not been integrated/);
+  f.git("merge", "--no-edit", "change/sample");
+  f.git("push", "origin", "develop");
+  f.handoff(0, "next");
   f.run("execute", [], 0, "next");
   assert.equal(f.state("next").stage, "execution");
 });
 
-test("squash integration accepts explicit delivery evidence without inventing ancestry", (t) => {
+test("squashed delivery accepts explicit evidence while the archived dependency remains on its registered source", (t) => {
   const f = fixture(t);
-  const remote = join(f.root, "remote.git");
-  execFileSync("git", ["init", "--bare", remote], { stdio: "ignore" });
-  f.git("remote", "add", "origin", remote);
   f.create();
   f.begin();
   f.done();
   f.verify();
   f.accept();
   f.archive();
-  writeFileSync(join(f.root, ".gitignore"), "remote.git/\n");
   writeFileSync(join(f.root, "delivery.txt"), "upstream delivery\n");
   f.commit();
-  f.git("push", "-u", "origin", "HEAD");
   const sourceCommit = f.git("rev-parse", "HEAD");
-  f.git("switch", "main");
-  f.git("merge", "--squash", "codex/testing");
-  f.git("commit", "-m", "Squash accepted upstream");
-  f.git("switch", "-c", "codex/downstream");
+  f.usePlanning();
+  f.git("merge", "--squash", "change/sample");
+  // Import the delivered code, retaining the collaboration entry until the
+  // source archive is integrated. Its pushed record remains the dependency.
+  f.git("restore", "--source=HEAD", "--staged", "--worktree", "docs/project");
+  f.git("commit", "-m", "Squash accepted upstream delivery");
+  f.git("push", "origin", "develop");
+  assert.equal(
+    readFileSync(join(f.root, "delivery.txt"), "utf8"),
+    "upstream delivery\n",
+  );
+  assert.throws(() =>
+    f.git("merge-base", "--is-ancestor", sourceCommit, "HEAD"),
+  );
   f.create("small", "next", ["--depends-on", "sample"]);
   f.run("task-add", ["--title", "Use upstream"], 0, "next");
-  f.run("execute", [], 1, "next");
-  const note = `Verified delivery.txt and archived sample after squash ${f.git("rev-parse", "HEAD")}`;
+  const note = `Verified delivery.txt matches archived sample after squash ${f.git("rev-parse", "HEAD")}`;
+  f.handoff(0, "next", ["--availability-note", note]);
+  assert.match(
+    f.run("execute", [], 1, "next"),
+    /Cannot establish sample by ancestry/,
+  );
   const result = f.run("execute", ["--availability-note", note], 0, "next");
   assert.equal(result.state.stage, "execution");
   assert.equal(result.availability[0].sourceCommit, sourceCommit);
   assert.equal(result.availability[0].evidence, note);
+});
+
+test("state commands reject legacy workflow before writing planning or execution state", (t) => {
+  const f = fixture(t);
+  f.create();
+  const before = readFileSync(f.path(), "utf8");
+  writeFileSync(
+    join(f.root, "docs/project/workflow.json"),
+    JSON.stringify({
+      schemaVersion: 1,
+      protectedBranches: ["main"],
+    }),
+  );
+  for (const command of ["show", "execute", "retitle"])
+    assert.match(
+      f.run(command, command === "retitle" ? ["--title", "Rejected"] : [], 1),
+      /Invalid workflow.json.*(?:version 2|schemaVersion)/,
+    );
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  assert.match(
+    f.run("create", ["--title", "Rejected", "--size", "small"], 1, "other"),
+    /Invalid workflow.json/,
+  );
+  assert(!existsSync(f.path("other")));
 });

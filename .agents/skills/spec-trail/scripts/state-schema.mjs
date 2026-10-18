@@ -198,13 +198,13 @@ const previewsRule = (value, path, errors) =>
   errors.push(...prototypeContract.validatePreviews(value, path));
 const workflow = object(
   {
-    schemaVersion: oneOf(1, 2),
+    schemaVersion: oneOf(2),
     collaborationBranch: branch,
     prototype: prototypeRule,
     openfolioUrl: () => {}, // Validated together with the hosting choice below.
     protectedBranches: list(branch, true),
   },
-  ["schemaVersion", "protectedBranches"],
+  ["schemaVersion", "collaborationBranch", "protectedBranches"],
 );
 
 const changeFields = object(
@@ -300,10 +300,10 @@ export const validateChange = (value) => {
   change(value, "", errors);
   return errors;
 };
-export const validateWorkflow = (value, options = {}) => {
+export const validateWorkflow = (value) => {
   const errors = [];
   workflow(value, "", errors);
-  errors.push(...workflowRoutingIssues(value, options));
+  errors.push(...workflowRoutingIssues(value));
   errors.push(...prototypeContract.workflowHostingIssues(value));
   return errors;
 };
