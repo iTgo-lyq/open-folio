@@ -14,6 +14,8 @@ import {
   identity,
   previewsSchema,
 } from "./schema.ts";
+import { integrationFor } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import { closedRecord } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
@@ -31,7 +33,7 @@ export function prototypePolicy(data: Collected): Snapshot["prototype"] {
     if (
       !branch ||
       workflow.collaborationBranch !== branch ||
-      data.sourceDiagnostics.length
+      data.sourceDiagnostics.some((d) => d.code !== "INTEGRATION_INVALID")
     )
       throw Error();
     const status = workflow.prototype?.status ?? "unconfigured";
@@ -194,36 +196,41 @@ export async function resolvePreview(
     candidate = group && primaryRecord(group);
   let revision = requestedRevision ?? candidate?.commit;
   if (
-    !requestedRevision &&
     candidate?.archived &&
     candidate.state &&
     !candidate.state.previews?.length &&
     !candidate.diagnostics.some((d) => d.code === "PREVIEWS_INVALID")
   )
     return fail("这个 Change 还没有关联原型。", false);
-  if (!requestedRevision && candidate?.archived) {
-    const ref = latest.archiveRefs.find((r) => r.id === changeId);
-    if (!ref)
+  const route = latest.routes.find((route) => route.id === changeId);
+  if (!route || route.errors.length)
+    return fail("未找到可判定的 Change 主来源，请先核对已推送分支。");
+  const central = route.kind === "archive";
+  const integration = central
+    ? integrationFor(latest.integrations, changeId)
+    : undefined;
+  if (central) {
+    if (integration?.status !== "found")
       return fail(
-        "归档预览缺少保留标签 spec-trail/archive-v2/" + changeId + "。",
+        integration?.status === "missing"
+          ? "未记录可定位的交付版本。"
+          : (integration?.message ?? "合入记录暂不可读。"),
+        integration?.status !== "missing",
       );
-    if (latest.archivePins[`spec-trail/archive-v2/${changeId}`] !== ref.commit)
-      return fail("归档标签被改写，已停止预览；请恢复原交付引用。");
-    revision = ref.commit;
+    if (requestedRevision && requestedRevision !== integration.commit)
+      return fail(
+        "已合入 Change 的预览须使用固定合并提交，不能替换为其他版本。",
+      );
+    revision = integration.commit;
     descriptor.pinned = true;
   }
   if (!revision)
     return fail("未找到可判定的 Change 主来源，请先核对已推送分支。");
   descriptor.revision = revision;
   const signal = AbortSignal.timeout(limits.refreshMs);
-  const tips = [
-    ...latest.branches.map((b) => b.commit),
-    ...latest.archiveRefs
-      .filter(
-        (r) => latest.archivePins[`spec-trail/archive-v2/${r.id}`] === r.commit,
-      )
-      .map((r) => r.commit),
-  ];
+  const tips = latest.branches
+    .filter((branch) => branch.name === route.branch)
+    .map((branch) => branch.commit);
   try {
     if (
       (await reader.run(["cat-file", "-t", revision], signal))
@@ -239,7 +246,7 @@ export async function resolvePreview(
     )
       return fail("该版本不在当前项目允许的已推送引用中，无法回看。");
   } catch {
-    return fail("该 Git 版本已不可用，请检查原分支或归档保留引用。");
+    return fail("该 Git 版本已不可用，请重新获取对应交付历史。");
   }
   const documents = await tree(reader, revision, "docs/project/", signal);
   const stateFiles = documents.filter(
@@ -265,23 +272,14 @@ export async function resolvePreview(
     )
       return fail("这个 Change 还没有关联原型。", false);
     if (stateFiles[0].path.startsWith("docs/project/archive/")) {
-      const ref = latest.archiveRefs.find((r) => r.id === changeId);
       if (
-        !ref ||
-        ref.commit !== revision ||
-        latest.archivePins[`spec-trail/archive-v2/${changeId}`] !== revision
+        central &&
+        (integration?.status !== "found" ||
+          stateFiles[0].path !== `${integration.archivePath}/change.json`)
       )
-        return fail("该归档版本没有一致的保留标签，不能替换为其他版本。");
-      if (
-        state.status !== "completed" ||
-        state.stage !== "close" ||
-        state.closure.verification?.result !== "passed" ||
-        state.closure.acceptance?.result !== "accepted" ||
-        !["synced", "not_needed"].includes(state.closure.specs?.result ?? "") ||
-        state.closure.archive?.result !== "done" ||
-        state.closure.archive.path !== stateFiles[0].path.slice(0, -12)
-      )
-        return fail("保留标签中的归档状态或目录不一致。");
+        return fail("合并提交中的归档路径不一致。");
+      if (!closedRecord(state, stateFiles[0].path.slice(0, -12)))
+        return fail("交付归档的关闭状态或目录不一致。");
       descriptor.pinned = true;
     }
   } catch {

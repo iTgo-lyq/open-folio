@@ -72,7 +72,7 @@ test("only registered sources are fetched, stale central status is ignored, and 
   assert.equal(primaryRecord(initial.changes[0])?.title, "active");
   assert.equal(primaryRecord(initial.changes[0])?.commit, first);
   assert(!initial.documents.some((d) => d.path.includes("foreign")));
-  assert.equal(initial.archiveRefs.length, 0);
+  assert.equal(Object.hasOwn(initial, "archiveRefs"), false);
   assert(
     !calls
       .filter((a) => ["fetch", "ls-remote"].includes(a[0]))

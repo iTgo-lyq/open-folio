@@ -234,8 +234,6 @@ export type Snapshot = {
   sourceDiagnostics: Diagnostic[];
   scanFingerprint?: string;
   currentPrototype: CurrentPrototype;
-  archiveRefs: { id: string; commit: string }[];
-  archivePins: Record<string, string>;
   prototype: {
     status: "unconfigured" | "disabled" | "pending" | "enabled" | "invalid";
     branch: string | null;

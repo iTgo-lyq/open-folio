@@ -100,23 +100,33 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
   assert.equal(disabled.descriptor.policy.status, "disabled");
 });
 
-test("archive with obsolete workflow preserves HTML using current main config after branch deletion and cold rebuild; missing or rewritten tags never fall back", async (t) => {
+test("integrated archive uses its merge after source deletion and cold rebuild, preserving current prototype policy", async (t) => {
   const f = await source();
   t.after(f.cleanup);
   const directory = "docs/project/archive/2026-10-03-preview-demo",
-    at = confirmedAt,
-    step = (result: string) => ({ at, summary: "已验证", result });
+    at = confirmedAt;
+  const step = (result: string) => ({ at, summary: "已验证", result });
   await mkdir(join(f.author, "docs/project/archive"), { recursive: true });
   await rename(
     join(f.author, "docs/project/changes/preview-demo"),
     join(f.author, directory),
   );
+  const archivedEntry = {
+    ...entry,
+    artifact: {
+      ...entry.artifact,
+      path: `${directory}/previews/page`,
+      sourceCommit: f.revision,
+    },
+  };
+  await f.put(`${directory}/previews/page/index.html`, html("fixed archive"));
   await f.put(
     `${directory}/change.json`,
     JSON.stringify({
       ...state,
       status: "completed",
       stage: "close",
+      previews: [archivedEntry],
       tasks: { T1: { title: "交付", status: "done" } },
       closure: {
         verification: step("passed"),
@@ -136,25 +146,24 @@ test("archive with obsolete workflow preserves HTML using current main config af
       },
     }),
   );
-  const archived = f.commit(),
-    tag = "spec-trail/archive-v2/preview-demo";
-  f.git(["tag", tag, archived]);
-  f.git(["push", "origin", `refs/tags/${tag}`]);
+  const archived = f.commit();
   f.git(["checkout", "develop"]);
-  f.git(["rm", "-r", "docs/project/changes/preview-demo"]);
-  f.git(["checkout", archived, "--", directory]);
+  // The planning copy was registered after the source branched; remove it in
+  // the candidate before committing the merge (only the archive is immutable).
+  f.git(["merge", "--no-ff", "--no-commit", state.branch]);
+  f.git(["rm", "-r", "--ignore-unmatch", "docs/project/changes/preview-demo"]);
+  f.git(["commit", "-m", "Delivery\n\nSpecTrail-Change: preview-demo"]);
+  const merged = f.git(["rev-parse", "HEAD"]);
+  await f.put("docs/project/workflow.json", JSON.stringify(workflow));
   f.commit();
-  f.git(["checkout", state.branch]);
   f.git(["push", "origin", "--delete", state.branch]);
+  f.git(["branch", "-d", state.branch]);
   await f.store.refresh(f.project, DEFAULT_LIMITS);
-  const group = (await f.store.snapshot(f.project)).changes.find(
-    (g) => g.id === state.id,
-  )!;
-  assert(primaryRecord(group)?.archived);
-  let result = await preview(f);
+  const result = await preview(f);
   assert(result.descriptor.pinned);
-  assert.equal(result.descriptor.revision, archived);
-  assert.match(result.html!, /first/);
+  assert.equal(result.descriptor.revision, merged);
+  assert.match(result.html!, /fixed archive/);
+  assert.equal(result.descriptor.entries[0].artifact?.sourceCommit, f.revision);
   await rm(join(f.root, "cache"), { recursive: true, force: true });
   const cold = f.makeStore();
   await cold.refresh(f.project, DEFAULT_LIMITS);
@@ -163,41 +172,26 @@ test("archive with obsolete workflow preserves HTML using current main config af
       await cold.preview(
         f.project,
         state.id,
-        undefined,
+        merged,
         DEFAULT_LIMITS,
         undefined,
         entry.id,
       )
     ).html!,
-    /first/,
+    /fixed archive/,
   );
-  await f.put(`${entry.artifact.path}/index.html`, html("rewritten"));
-  const changed = f.commit(false);
-  f.git(["tag", "-f", tag, changed]);
-  f.git(["push", "--force", "origin", `refs/tags/${tag}`]);
-  await cold.refresh(f.project, DEFAULT_LIMITS);
-  result = await cold.preview(
-    f.project,
-    state.id,
-    undefined,
-    DEFAULT_LIMITS,
-    undefined,
-    entry.id,
-  );
-  assert.equal(result.html, undefined);
-  assert.match(result.descriptor.message!, /改写/);
-  f.git(["push", "origin", `:${"refs/tags/" + tag}`]);
-  await cold.refresh(f.project, DEFAULT_LIMITS);
-  result = await cold.preview(
-    f.project,
-    state.id,
-    archived,
-    DEFAULT_LIMITS,
-    undefined,
-    entry.id,
-  );
-  assert.equal(result.html, undefined);
-  assert.match(result.descriptor.message!, /引用|版本/);
+  for (const revision of [archived, f.revision]) {
+    const denied = await cold.preview(
+      f.project,
+      state.id,
+      revision,
+      DEFAULT_LIMITS,
+      undefined,
+      entry.id,
+    );
+    assert.equal(denied.html, undefined);
+    assert.match(denied.descriptor.message!, /固定合并提交/);
+  }
 });
 
 test("Change previews ignore historical workflow and fail on invalid current config, moved paths or invalid references", async (t) => {
@@ -393,7 +387,7 @@ test("two Changes can share one exported entry without a separate prototype mani
   );
 });
 
-test("per-commit preview entry limits do not cap lifetime archive tags or block document refresh", async (t) => {
+test("per-commit preview limits do not cap unmerged source archives or block document refresh", async (t) => {
   const f = await source();
   t.after(f.cleanup);
   for (const id of ["first-archive", "second-archive"]) {
@@ -427,7 +421,7 @@ test("per-commit preview entry limits do not cap lifetime archive tags or block 
   });
   const limits = { ...DEFAULT_LIMITS, previewEntries: 1 };
   const snapshot = await f.store.refresh(f.project, limits);
-  assert.equal(snapshot.archiveRefs.length, 2);
+  assert.equal(Object.hasOwn(snapshot, "archiveRefs"), false);
   assert(snapshot.specs.length);
   assert.equal(snapshot.changes.length, 3);
   for (const id of ["first-archive", "second-archive"]) {
@@ -443,7 +437,7 @@ test("per-commit preview entry limits do not cap lifetime archive tags or block 
   }
 });
 
-test("archive pins treat constructor as an ordinary valid Change id across refresh and restart", async (t) => {
+test("unmerged source archives treat constructor as an ordinary id without retention tags", async (t) => {
   const f = await source();
   t.after(f.cleanup);
   const id = "constructor",
@@ -473,8 +467,7 @@ test("archive pins treat constructor as an ordinary valid Change id across refre
   await f.register({ [id]: state.branch });
   for (const store of [f.store, f.makeStore()]) {
     const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
-    assert(Object.hasOwn(snapshot.archivePins, `spec-trail/archive-v2/${id}`));
-    assert.equal(snapshot.archivePins[`spec-trail/archive-v2/${id}`], revision);
+    assert.equal(Object.hasOwn(snapshot, "archivePins"), false);
     const result = await store.preview(
       f.project,
       id,

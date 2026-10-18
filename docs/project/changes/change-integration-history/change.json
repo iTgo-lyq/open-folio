@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "以合并提交定位历史原型",
-      "status": "todo"
+      "status": "done",
+      "verification": "原型及合入发布专项 12 个用例通过，相关路由缓存清理回归通过，类型检查通过",
+      "commitTitle": "change-integration-history T4: resolve archived previews from merge commits"
     },
     "T5": {
       "title": "完成标签退出与完整交付演练",

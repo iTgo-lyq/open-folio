@@ -38,7 +38,7 @@ const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([5, limits]));
+  hash(JSON.stringify([6, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -69,7 +69,6 @@ type CollectedData = Pick<
   | "branches"
   | "routes"
   | "sourceDiagnostics"
-  | "archiveRefs"
   | "integrations"
   | "documents"
 > & { blobs: Map<string, Buffer>; unchanged: boolean };
@@ -273,8 +272,7 @@ export class GitReader {
       await chmod(join(this.directory, "config"), 0o600);
     }
     const previous = cache?.snapshot;
-    const branches: Branch[] = [],
-      archiveRefs: { id: string; commit: string }[] = [];
+    const branches: Branch[] = [];
     const sourceDiagnostics: Diagnostic[] = [];
     let integrations: Snapshot["integrations"] = {
       version: INTEGRATION_VERSION,
@@ -575,7 +573,6 @@ export class GitReader {
         previous &&
         previous.collaborationBranch === collaborationBranch &&
         JSON.stringify(previous.branches) === JSON.stringify(branches) &&
-        JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs) &&
         JSON.stringify(previous.integrations) ===
           JSON.stringify(integrations) &&
         JSON.stringify(previous.routes) === JSON.stringify(routes) &&
@@ -586,7 +583,6 @@ export class GitReader {
         branches,
         routes,
         sourceDiagnostics,
-        archiveRefs,
         integrations,
         documents,
         blobs,
@@ -703,43 +699,6 @@ export class GitReader {
         ["docs/project/changes/", "docs/project/archive/"],
         targetRoutes.map((r) => r.id),
       );
-    }
-    // Retention tags only keep explicitly referenced archived preview revisions alive.
-    const pins = routes
-      .filter(
-        (r) =>
-          !r.errors.length &&
-          documents.some((d) => {
-            if (
-              d.branch !== r.branch ||
-              changeLocation(d.path)?.id !== r.id ||
-              !changeLocation(d.path)?.archived
-            )
-              return false;
-            try {
-              const value = readJson(d.branch, d.path);
-              return Array.isArray(value.previews) && value.previews.length > 0;
-            } catch {
-              return false;
-            }
-          }),
-      )
-      .map((r) => r.id)
-      .sort();
-    const tags = await exact(
-      pins.map((id) => `refs/tags/spec-trail/archive-v2/${id}`),
-    );
-    for (const id of pins) {
-      const ref = `refs/tags/spec-trail/archive-v2/${id}`,
-        advertised = tags.get(ref);
-      if (advertised) {
-        const commit = await fetchRef(
-          ref,
-          `refs/openfolio/archive-v2/${id}`,
-          advertised,
-        );
-        if (commit) archiveRefs.push({ id, commit });
-      }
     }
     // Recheck only the selected collaboration source and its routing.
     const finalCollabCommit = (

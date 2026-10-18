@@ -10,6 +10,7 @@ import { repository, collaborationCatalog, recordsAt, revision, remoteBranch, fe
 import { closedRecord, validBranchName } from './routing.mjs';
 import { validateChange } from './state-schema.mjs';
 import { integrationFor, inspectIntegration, scanIntegrations, validChangeId } from './integration-records.mjs';
+import { entryPath } from '../prototype/scripts/contract.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const at = (path, args) => execFileSync('git', ['-C', path, '--literal-pathspecs', ...args], {
@@ -49,11 +50,13 @@ function sourceBranch(catalog, branch) {
   assert(validBranchName(branch) && branch !== catalog.branch && !catalog.config.protectedBranches.includes(branch), 'The source cannot be a collaboration or protected branch');
 }
 
-function previewObjects(repo, record, commit) {
+function previewObjects(repo, record, commit, configuration) {
   for (const preview of record.state.previews ?? []) {
     assert(revision(repo, preview.artifact.sourceCommit), `Prototype source object is unavailable: ${preview.id}`);
     if (preview.artifact.type === 'git') {
-      const row = repo.git(['ls-tree',commit,'--',preview.artifact.path]);
+      const path = entryPath(preview,configuration,record.directory);
+      assert(path, `Prototype path is outside the delivery: ${preview.id}`);
+      const row = repo.git(['ls-tree',commit,'--',path]);
       assert(/^(100644|100755) blob [a-f0-9]+\t/.test(row), `Prototype HTML is unavailable: ${preview.id}`);
     }
   }
@@ -75,7 +78,7 @@ function source(repo, catalog, id) {
   const commit = local ?? fetchBranch(repo, branch);
   const record = archived(repo,commit,id);
   assert(record.state.branch === branch, 'Archive ownership does not match the registered source');
-  previewObjects(repo,record,commit);
+  previewObjects(repo,record,commit,catalog.config.prototype);
   for (const tree of worktrees(repo).filter(tree => tree.branch === branch)) {
     assert(!tree.locked && !tree.prunable && !at(tree.path,['status','--porcelain','--untracked-files=all']), 'Source worktree is unavailable, locked or has unsaved files');
   }
@@ -176,7 +179,7 @@ export async function cleanup(repo, id, options = {}) {
       branch = record.state.branch;
       sourceBranch(catalog,branch);
       dependencies(catalog,branch,id);
-      previewObjects(repo,record,integration.commit);
+      previewObjects(repo,record,integration.commit,catalog.config.prototype);
       tree = treeReady(repo,branch,options.idleWorktree);
       remote = remoteBranch(repo,branch);
       if (remote) { const fetched = fetchBranch(repo,branch); assert(fetched === remote && ancestor(repo,remote,integration.commit), 'Remote source has new/unmerged work'); }

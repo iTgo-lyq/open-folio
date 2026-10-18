@@ -281,10 +281,6 @@ export class SnapshotStore {
                   prototypeLimits,
                   signal,
                 ),
-        archiveRefs: data.archiveRefs,
-        archivePins: {
-          ...previous?.archivePins,
-        },
         prototype: prototypePolicy(data),
         id: randomUUID(),
         projectId: p.id,
@@ -295,9 +291,6 @@ export class SnapshotStore {
         changes: await indexChanges(data, reader, signal),
         ...base,
       };
-      for (const ref of s.archiveRefs)
-        if (!Object.hasOwn(s.archivePins, `spec-trail/archive-v2/${ref.id}`))
-          s.archivePins[`spec-trail/archive-v2/${ref.id}`] = ref.commit;
       for (const [blob, body] of data.blobs) {
         signal.throwIfAborted();
         if (!persisted.has(blob)) await atomic(join(dir, "blobs", blob), body);
