@@ -23,8 +23,7 @@ checker holds the drawing to those declarations:
    right edge); column widths equal; gutters equal.
 4. CENSUS — every stage has a customer, frontstage, and backstage cell. Empty
    is allowed only with an explicit `—` / `Not applicable` `data-name`.
-5. FOCAL — at most one `data-focal="true"` cell, and no other row mark
-   painted with the accent.
+5. FOCAL — at most one `data-focal="true"` cell; semantic colors may repeat.
 6. BUDGET — at most 6 stages; no extra `data-layer` values.
 7. PRINT — each cell's visible text contains its `data-name`.
 8. NO CSS MOTION OF MARKS — `transform` / geometry properties in attributes,
@@ -84,7 +83,6 @@ RGBA_RE = re.compile(
 )
 HEX_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 PAPER_RE = re.compile(r"--color-paper\s*:\s*(#[0-9a-fA-F]{6})")
-ACCENT_RE = re.compile(r"--color-accent\s*:\s*(#[0-9a-fA-F]{6})")
 TEXT_OPEN_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>", re.IGNORECASE)
 STYLE_PAINT_RE = re.compile(
     r"(?:^|;)\s*(?P<prop>opacity|stroke-opacity|stroke|stroke-width|display|visibility)\s*:",
@@ -831,38 +829,7 @@ def check_focal(
             f"focal: at most one cell may set data-focal; found {len(focals)}"
         )
 
-    # The accent is what the reader sees, not the attribute: any row mark
-    # painted with it must be the declared focal cell (or its underlay).
-    accents: set[str] = set()
-    accent_match = ACCENT_RE.search(source)
-    if accent_match is not None:
-        accents.add(accent_match.group(1).lower())
-    for mark in row_marks:
-        if mark.focal:
-            for paint in mark.paints:
-                base = paint_base(paint)
-                if base is not None and base[0] != "#ffffff":
-                    accents.add(base[0])
-    if not accents:
-        return
-    focal_spots = {(cell.x, cell.y) for cell in focals}
-    for mark in row_marks:
-        if mark.focal:
-            continue
-        painted = [
-            paint
-            for paint in mark.paints
-            if (base := paint_base(paint)) is not None and base[0] in accents
-        ]
-        if not painted:
-            continue
-        if mark.name is None and (mark.x, mark.y) in focal_spots:
-            continue
-        label = repr(mark.name) if mark.name is not None else f"at x={mark.x}, y={mark.y}"
-        errors.append(
-            f"focal: cell {label} is painted with the accent ({painted[0]}) but is "
-            "not the data-focal cell; one accent cell per blueprint"
-        )
+    # Semantic colors may repeat on any cell without implying focal status.
 
 
 def check_printed(source: str, cells: list[Cell], errors: list[str]) -> None:

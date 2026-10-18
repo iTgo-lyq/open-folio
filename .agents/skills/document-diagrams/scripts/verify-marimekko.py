@@ -37,7 +37,7 @@ Nine invariants, in the spirit of ADR 0005 and the treemap checker:
    itself across columns. A series that is second in one column and first in
    the next cannot be read across, and the row comparison is the point.
 
-7. ONE ACCENT - at most one segment wears the accent stroke.
+7. ONE ACCENT - at most one segment declares data-focal=true stroke.
 
 8. LABELS BOUND TO MEANING - an in-segment label is anchored inside the
    segment it binds and stays inside it; every number it prints is either
@@ -81,7 +81,7 @@ WHAT THIS DOES NOT CHECK, deliberately:
 - **The column and series budgets.** 3-8 columns and 2-5 series are editorial
   guidance in type-treemap.md, not geometry.
 - **Colour.** The accent-plus-ramp rule is `lint-skin.py`'s beat; only the
-  accent COUNT is read here, off the stroke, as verify-beeswarm.py does.
+  focal COUNT is read here from data-focal metadata.
 - **Scenery.** A <rect> that declares no data-segment is decoration by
   contract (the paper mask under each segment is one) and is not compared
   against anything.
@@ -153,13 +153,7 @@ NUMBER_RE = re.compile(
 # `<rect\b[^>]*?data-segment` pattern stops at a quoted `>` and misses the
 # live rect behind it. Detection only; parsing never uses it.
 DECLARES_SEGMENT_RE = re.compile(r"\bdata-segment\s*=", re.IGNORECASE)
-# The accent stroke on either skin, hex or rgba. The focal count keys on the
-# STROKE, as in verify-beeswarm.py: it is the mark's edge and the thing a
-# reader identifies the focal segment by.
-ACCENT_RE = re.compile(
-    r"#3b82f6\b|#f08a59\b|rgba\(\s*59\s*,\s*130\s*,\s*246\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
-    re.IGNORECASE,
-)
+# Focal identity is declared by data-focal, independently of semantic hue.
 
 # Relative tolerance on width, height and area shares. Column edges snap to
 # the 4px grid and a 24px column cannot do better than a few percent; 8% is
@@ -608,7 +602,7 @@ def parse_segments(doc: _Scanner, findings: list, name: str) -> list:
             )
             continue
         seen[key] = line
-        accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
+        accent = attrs.get("data-focal", "").lower() == "true"
         segments.append(Segment(column, series, amount, *geometry, line, accent, element))
     return segments
 
@@ -810,11 +804,11 @@ def check_series_order(columns: list, findings: list, name: str) -> None:
 
 
 def check_accent(segments: list, findings: list, name: str) -> None:
-    """At most one segment wears the accent."""
+    """At most one segment declares data-focal=true."""
     accented = [segment for segment in segments if segment.accent]
     for extra in accented[1:]:
         findings.append(
-            "%s:%d: segment %s × %s also carries the accent stroke — one focal "
+            "%s:%d: segment %s × %s also declares data-focal=true — one focal "
             "segment max (%s × %s already has it). A second accent is a second "
             "claim about what the figure is about"
             % (name, extra.line, extra.column, extra.series,
@@ -1107,7 +1101,7 @@ def main() -> int:
         print("OK marimekko: no marimekko found to check%s" % tail)
         return 0
     print("OK marimekko: %d file(s), width is category share, height is within-column "
-          "share, area is joint share, one series order, one accent, no transforms on "
+          "share, area is joint share, one series order, one focal, no transforms on "
           "verified geometry, and every label, caption and key bound to what it names%s"
           % (checked, tail))
     return 0

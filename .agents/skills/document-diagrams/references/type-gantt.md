@@ -9,7 +9,7 @@
 - **Row height:** 40px per task. Each bar occupies h=24px centered in the row (8px top padding).
 - **Time axis:** `arrow-label` role 10px week/month labels at x=200+i×pitch, y=56 (just above first task row). A hairline separator at y=64.
 - **Phase grouping:** a subtle zone rect (same pattern as architecture zone) behind each phase's rows, with an eyebrow label in the top-left margin. Use `ink @ 0.02` fill, `ink @ 0.10` stroke.
-- **Focal task bar:** 1 bar in accent fill/stroke (the key deliverable or critical path task). All others: muted fill @ 0.15, muted stroke.
+- **Task colors:** use consistent phase or status colors, named in the legend. One key deliverable or critical-path task gets a heavier outline while keeping its role hue. Dates and duration geometry remain unchanged.
 - **Today / milestone marker:** optional vertical dashed line in `muted` at the current week x-position.
 
 ### Task bar pattern
@@ -17,13 +17,13 @@
 ```svg
 <!-- Non-focal task -->
 <rect x="X_start" y="ROW_Y+8" width="DURATION_PX" height="24" rx="4"
-      fill="{muted @ 0.15}" stroke="{muted}" stroke-width="1"/>
+      fill="{role-fill}" stroke="{role-stroke}" stroke-width="1"/>
 <text x="X_start+8" y="ROW_Y+25" fill="{ink}" font-size="{secondary-size}" font-weight="600"
       font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">Task name</text>
 
 <!-- Focal task -->
 <rect x="X_start" y="ROW_Y+8" width="DURATION_PX" height="24" rx="4"
-      fill="{accent @ 0.12}" stroke="{accent}" stroke-width="1"/>
+      fill="{role-fill}" stroke="{role-stroke}" stroke-width="1.5" data-focal="true"/>
 <text x="X_start+8" y="ROW_Y+25" fill="{ink}" font-size="{secondary-size}" font-weight="600"
       font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif">Key task</text>
 ```

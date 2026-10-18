@@ -23,13 +23,13 @@ Tables in a non-default schema sit inside a containment rect (`rx=8`, `ink @ 0.0
 
 ### Focal rule
 
-The 2 accent elements are: (1) the one destructive FK (`ON DELETE CASCADE`) — the edge and its label count together, since a labelled edge is one thing; and (2) the table that FK cascades into, carrying `accent-tint` on its **header band only**, never on the whole box. Nothing else on the diagram is `accent`.
+The 2 focal elements are: (1) the one destructive FK (`ON DELETE CASCADE`) — the edge and its label count together, since a labelled edge is one thing; and (2) the table that FK cascades into, carrying `accent-tint` on its **header band only**, never on the whole box. Other tables may use semantic role colors; destructive semantics also remain explicit in the FK label and relation notation.
 
 If a schema has no destructive FK, it has no focal element. Leave it unaccented rather than promoting an arbitrary table.
 
 ## Complexity budget
 
-Max 5 tables, max 8 column rows shown per table, max 6 FK edges, max 2 accent elements. Over budget → show the subsystem, not the database, and say so in a caption.
+Max 5 tables, max 8 column rows shown per table, max 6 FK edges, max 2 focal elements. Over budget → show the subsystem, not the database, and say so in a caption.
 
 ## Anti-patterns
 

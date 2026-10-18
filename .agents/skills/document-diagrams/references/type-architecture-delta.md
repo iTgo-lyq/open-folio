@@ -23,7 +23,7 @@
 
 ## Change vocabulary and redundant encoding
 
-Color is secondary. Every change is readable from text plus a shape or line treatment; unchanged objects remain quiet context. Use the existing visual tokens and reserve the accent for the editorial focus, rather than assigning five status colors.
+Every change remains readable from its existing text code and shape/line treatment. Use semantic role/status colors consistently, including on non-focal objects; unchanged objects remain quiet context. Focal emphasis is separate from the change codes and does not alter their meaning.
 
 | State | Meaning | Non-color treatment |
 |---|---|---|

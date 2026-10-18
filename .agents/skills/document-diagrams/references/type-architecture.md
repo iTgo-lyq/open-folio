@@ -93,14 +93,14 @@ Provider-neutral metadata (no vendor prefix):
 
 **Sibling axis.** Sibling traffic scopes at one level share one axis. Directly under an administrative band the parent's aspect chooses it: wider than tall (or square) → a row sharing one `y`; taller than wide → a column sharing one `x`. Nested children take the perpendicular axis: siblings inside a traffic scope that sits in a row form a column, and their own children form a row again. Do not mix axes at one level.
 
-**Budget** (tightens Architecture's flat 3-zone cap; see `layout-budget.md`): ≤2 administrative bands, ≤4 traffic scopes, ≤8 nodes, 2 accent elements. Split per subscription when a figure exceeds that.
+**Budget** (tightens Architecture's flat 3-zone cap; see `layout-budget.md`): ≤2 administrative bands, ≤4 traffic scopes, ≤8 nodes, 2 focal elements. Split per subscription when a figure exceeds that.
 
 **Draw scopes in place.** Containment is read from each bounds rect's own `x`, `y`, `width`, and `height`. Do not position a scope or node with a `transform` attribute, a moving inline style (`transform`, `translate`, `x`, `y`, `position`, `margin`, and similar), a nested `<svg>`, a `<style>` rule, or an animation, on the element or any group around it. The checker fails each of those. It does not evaluate external stylesheets or script, so keep containment geometry out of both.
 
 `scripts/verify-architecture-containment.py` checks unique IDs, resolving innermost parents, geometric containment, `<rect>` bounds, the admin-band vs traffic-box shapes (with `stroke-dasharray` resolved as rendered, so `none` or all-zero dashes count as solid), PaaS placement, endpoint targets, sibling axes, declared peerings, and the moved-geometry rule above. Files without `data-grammar="architecture-containment"` are skipped.
 
 ## Anti-patterns
-- Every box in accent ("this is important too") — hierarchy collapses.
+- Focal weight on every box — hierarchy collapses. Repeated semantic colors are valid; use a 1.5px focal outline against the ordinary 1px outline.
 - Bidirectional arrow when one direction is obvious from context.
 - Legend floating inside the diagram area.
 - Flattening two containment levels into one zone eyebrow (`VNET · SNET-APP`) — the hierarchy is the claim.

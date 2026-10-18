@@ -30,7 +30,7 @@ Nine invariants:
    second encoding is a bubble chart wearing the wrong name, and a bigger
    focal dot would also break the packing the no-overlap rule depends on.
 
-4. ONE NON-FOCAL INK - every non-accent dot declares the same fill. Opacity
+4. ONE NON-FOCAL FILL - every non-accent dot declares the same fill. Opacity
    as a value encoding while also dodging says one thing twice in two
    different lies; the swarm's only density cue is thickness.
 
@@ -178,14 +178,7 @@ ATTR_RE = re.compile(
 # be claimed, so the breakage is a finding rather than a silent skip).
 DECLARES_VALUE_RE = re.compile(r"\bdata-value\s*=", re.IGNORECASE)
 
-# The accent stroke on either skin, hex or rgba. The focal count keys on the
-# STROKE: it is the mark's edge and the thing a reader identifies the accent
-# by, and an accent FILL on a muted-stroked dot already fails the one-ink
-# rule instead.
-ACCENT_RE = re.compile(
-    r"#3b82f6\b|#f08a59\b|rgba\(\s*59\s*,\s*130\s*,\s*246\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
-    re.IGNORECASE,
-)
+# Focal identity is declared by data-focal, independently of semantic hue.
 
 # Coordinates ship rounded to one decimal, so an honest point sits within
 # 0.05px of true; whole-pixel rounding sits within 0.5px. 1.0px clears both
@@ -437,7 +430,7 @@ def parse_dots(source: str, findings: list, name: str) -> list:
                 % (name, line_of(source, match.start()), parsed[3])
             )
             continue
-        accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
+        accent = attrs.get("data-focal", "").lower() == "true"
         dots.append(Dot(parsed[0], parsed[1], parsed[2], parsed[3],
                         attrs.get("data-name"), attrs.get("fill"),
                         accent, match.start()))
@@ -633,7 +626,7 @@ def check_ink(dots: list, findings: list, source: str, name: str) -> None:
             for dot in group:
                 findings.append(
                     "%s:%d: the dot for value %g has fill=%r while the swarm's "
-                    "shared ink is %r — one fill for every non-focal dot, "
+                    "shared fill is %r — one fill for every non-focal dot, "
                     "because tone would read as a value and the only honest "
                     "density cue is thickness"
                     % (name, line_of(source, dot.offset), dot.value, dot.fill,
@@ -642,11 +635,11 @@ def check_ink(dots: list, findings: list, source: str, name: str) -> None:
 
 
 def check_focal(dots: list, findings: list, source: str, name: str) -> None:
-    """At most one dot wears the accent."""
+    """At most one dot declares data-focal=true."""
     accented = [d for d in dots if d.accent]
     for extra in accented[1:]:
         findings.append(
-            "%s:%d: the dot for value %g also carries the accent stroke — one "
+            "%s:%d: the dot for value %g also declares data-focal=true — one "
             "accent dot max (the dot for value %g already has it). A second "
             "focal mark is a second editorial claim"
             % (name, line_of(source, extra.offset), extra.value,
@@ -936,7 +929,7 @@ def main() -> int:
         return 0
     print("OK beeswarm: %d file(s), every dot exactly at its value on one shared "
           "scale, no overprinted pair, one radius and one non-focal ink, at most "
-          "one accent dot, and every bound label and tick agreeing with the mark "
+          "one focal dot, and every bound label and tick agreeing with the mark "
           "it describes%s" % (checked, tail))
     return 0
 

@@ -43,7 +43,7 @@ Use the shared visual palette, legend strip, 4px grid and complexity budget.
 - **Axis lines**: `ink`, `stroke-width: 1.2`, `marker-start` + `marker-end` both pointing outward.
 - **Focal quadrant tint**: `accent @ 0.04` full rect behind the focal cell.
 - **Focal cell**: `accent-tint` fill, `accent` stroke at 1.2px. Corner tag in `ink`, weight 600.
-- **Non-focal cells**: `store` treatment (`ink @ 0.04` fill, `muted @ 0.28` stroke).
+- **Non-focal cells**: semantic/category surfaces appropriate to their content; preserve cell position and labels.
 - **Cell title**: `node-name` role, 12px, weight 600, `ink`.
 - **Cell description**: `node-name` role, 12px, `muted`, 1–3 lines, left-aligned inside the cell.
 - **Corner tag**: `eyebrow` role, 10px, normally spaced, `muted` (or `ink` on focal). Format: `NN · DIMENSION-A / DIMENSION-B` — the two axis-dimension words must match the axis labels exactly.

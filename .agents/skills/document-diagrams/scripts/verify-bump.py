@@ -121,23 +121,19 @@ LABEL_ROW_OFFSET = 3.5    # px, a label baseline below its vertex, per the refer
 MIN_SNAPSHOTS, MAX_SNAPSHOTS = 3, 6
 MIN_SERIES, MAX_SERIES = 4, 8
 FOCAL_WIDTH, PLAIN_WIDTH = 2.4, 1.2
-ACCENTS = {"#3b82f6"}   # focal accent token
 
 
 class Series:
-    __slots__ = ("name", "ranks", "points", "stroke", "width", "offset")
+    __slots__ = ("name", "ranks", "points", "stroke", "width", "offset", "focal")
 
-    def __init__(self, name, ranks, points, stroke, width, offset):
+    def __init__(self, name, ranks, points, stroke, width, offset, focal=False):
         self.name = name
         self.ranks = ranks
         self.points = points
         self.stroke = stroke
+        self.focal = focal
         self.width = width
         self.offset = offset
-
-    @property
-    def focal(self):
-        return self.stroke in ACCENTS
 
 
 def attrs_of(raw: str) -> dict:
@@ -294,7 +290,7 @@ def parse_series(source: str, findings: list, name: str) -> list:
         width = number(attrs.get("stroke-width"))
         series.append(Series(label, ranks, points,
                              (attrs.get("stroke") or "").strip().lower(),
-                             width, match.start()))
+                             width, match.start(), attrs.get("data-focal", "").lower() == "true"))
     return series
 
 
@@ -523,11 +519,11 @@ def check_dots(series: list, source: str, findings: list, name: str) -> None:
 
 
 def check_focus(series: list, findings: list, source: str, name: str) -> None:
-    """Exactly one focal series, and stroke weight agreeing with stroke colour."""
+    """Exactly one focal series, and stroke weight agreeing with focal metadata."""
     focal = [s for s in series if s.focal]
     if len(focal) != 1:
         findings.append(
-            "%s: %d series carry the accent stroke — the accent marks exactly one "
+            "%s: %d series declare data-focal=true — the accent marks exactly one "
             "editorially focal series, and spending it twice spends it entirely"
             % (name, len(focal))
         )
@@ -536,7 +532,7 @@ def check_focus(series: list, findings: list, source: str, name: str) -> None:
         if s.width is None or abs(s.width - want) > 1e-9:
             findings.append(
                 "%s:%d: series %r has stroke-width=%s but a %s series takes %g — "
-                "weight is the focus cue, so a mismatch between colour and weight "
+                "weight is the focus cue, so a mismatch between focal metadata and weight "
                 "sends the two cues to different series"
                 % (name, line_of(source, s.offset), s.name,
                    "%g" % s.width if s.width is not None else "?",

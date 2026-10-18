@@ -82,7 +82,7 @@ WHAT THIS DOES NOT CHECK, deliberately:
   that is the source line's job, and prose is not parsed. Every check here is
   internal consistency between the markup and the drawing.
 - **The tone ramp.** Fill and stroke opacity are `lint-skin.py`'s territory;
-  this gate only pairs the accent with its stroke weight.
+  this gate pairs focal metadata with its stroke weight.
 
 SCOPE: this contract binds `data-bins` on a `<path>`, which no other chart in
 this repo declares. `data-series` (slopegraph), `data-ranks` (bump) and
@@ -177,7 +177,6 @@ LABEL_ROW_OFFSET = 3.5       # px, a label baseline below its row, per the refer
 MIN_RIDGES, MAX_RIDGES = 3, 12
 MIN_BINS, MAX_BINS = 8, 40
 FOCAL_WIDTH, PLAIN_WIDTH = 2.4, 1.2
-ACCENTS = {"#3b82f6"}   # focal accent token
 
 GROUP_TAGS = ("g", "svg")                     # the only ancestors whose transform is inherited
 BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data is read
@@ -202,20 +201,17 @@ class Element:
 
 
 class Ridge:
-    __slots__ = ("name", "values", "points", "baseline", "stroke", "width", "line")
+    __slots__ = ("name", "values", "points", "baseline", "stroke", "width", "line", "focal")
 
-    def __init__(self, name, values, points, baseline, stroke, width, line):
+    def __init__(self, name, values, points, baseline, stroke, width, line, focal=False):
         self.name = name
         self.values = values
         self.points = points
         self.baseline = baseline
         self.stroke = stroke
+        self.focal = focal
         self.width = width
         self.line = line
-
-    @property
-    def focal(self):
-        return self.stroke in ACCENTS
 
 
 def first_wins(attrs) -> dict:
@@ -604,7 +600,7 @@ def parse_ridges(doc: _Scanner, findings: list, name: str) -> list:
         width = number(attrs.get("stroke-width"))
         ridges.append(Ridge(label, values, points, baseline,
                             (attrs.get("stroke") or "").strip().lower(),
-                            width, line))
+                            width, line, attrs.get("data-focal", "").lower() == "true"))
     return ridges
 
 
@@ -853,11 +849,11 @@ def check_overlap(ridges: list, pitch, findings: list, name: str) -> None:
 
 
 def check_focus(ridges: list, findings: list, name: str) -> None:
-    """Exactly one accent ridge, with stroke weight agreeing with stroke colour."""
+    """Exactly one focal ridge, with stroke weight agreeing with focal metadata."""
     focal = [r for r in ridges if r.focal]
     if len(focal) != 1:
         findings.append(
-            "%s: %d ridges carry the accent stroke — the accent marks exactly one "
+            "%s: %d ridges declare data-focal=true — the accent marks exactly one "
             "editorially focal distribution, and spending it twice spends it entirely"
             % (name, len(focal))
         )
@@ -867,7 +863,7 @@ def check_focus(ridges: list, findings: list, name: str) -> None:
             findings.append(
                 "%s:%d: ridge %r has stroke-width=%s but a %s ridge takes %g — weight "
                 "is the focus cue that survives greyscale, so a mismatch between "
-                "colour and weight sends the two cues to different ridges"
+                "focal metadata and weight sends the two cues to different ridges"
                 % (name, r.line, r.name,
                    "%g" % r.width if r.width is not None else "?",
                    "focal" if r.focal else "non-focal", want)

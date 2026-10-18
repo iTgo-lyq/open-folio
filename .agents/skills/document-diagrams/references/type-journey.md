@@ -31,11 +31,11 @@ The sentiment polyline is a **data curve**, not a connector between nodes — §
 
 ## Focal rule
 
-Exactly 2 accent elements: the trough dot + its incoming curve segment (counts as one), and its pain marker(s) (counts as the other). Nothing else on the map is `accent`.
+Exactly 2 focal elements: the trough dot + its incoming curve segment (counts as one), and its pain marker(s) (counts as the other). Nothing else on the map is `accent`.
 
 ## Complexity budget
 
-Max 6 stages · max 3 content rows · 5 sentiment levels (ordinal, named — never numeric) · max 2 pain markers · max 2 accent elements.
+Max 6 stages · max 3 content rows · 5 sentiment levels (ordinal, named — never numeric) · max 2 pain markers · max 2 focal elements.
 
 ## Anti-patterns
 

@@ -2,8 +2,6 @@
 name: document-diagrams
 description: Create architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as SVG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees.
 license: MIT
-metadata:
-  version: "0.1.0"
 ---
 
 # Document Diagrams
@@ -22,7 +20,7 @@ Applied to schematics:
 
 - Every node represents a distinct idea. Two nodes that always travel together are one node.
 - Every connection carries information. If the relationship is obvious from layout, remove the line.
-- accent is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal.
+- **Semantic color identifies a role; focal emphasis identifies the editorial point.** Apply role colors to all matching nodes. Keep 1–2 focal nodes, using border weight or the type's other focal cues; semantic colors do not count against that budget.
 - The schematic isn't done when everything is added. It's done when nothing can be removed.
 
 **Target density: 4/10.** Enough to be technically complete. Not so dense it needs a guide. Above 9 nodes, it's probably two diagrams.
@@ -136,7 +134,7 @@ These mark "AI slop" schematics of any type:
 | Arrow labels with no masking rect | Bleeds through the line |
 | Vertical `writing-mode` text on arrows | Unreadable |
 | 3 equal-width summary cards as default | Generic grid — vary widths |
-| accent on every "important" node | accent is 1–2 editorial accents, not a signaling system |
+| Focal emphasis on every node | Keep 1–2 focal claims; repeated semantic colors are expected |
 | Reproducing Mermaid's renderer layout | Imports automatic spacing and routing instead of making an editorial layout |
 | Any breach of the six §6 connector rules | Automatic fail: diagonal slants, labels touching their stroke, masks clipped by a later node, overlapping paths, shared attach points, transit behind a non-endpoint box |
 
@@ -156,7 +154,7 @@ Universal building blocks. Type-specialized primitives (lifeline, activation bar
 
 Exact markup (background, markers, node box, arrow label, legend) and the long form of each connector rule: [`references/primitives-core.md`](references/primitives-core.md).
 
-- **Arrows:** `muted` by default, `accent` for the headline path, `link` for HTTP/API and external calls, dashed `5,4` for optional, passive, return, or async. Draw arrows before boxes so lines sit behind nodes.
+- **Arrows:** choose gray for neutral relationships or the semantic color for input, processing, output, analysis or danger from visual-style.md. Keep dashed `5,4` for optional, passive, return or async relations, and the type's specific relation styles, dash patterns, marker kinds and focal selection. Draw arrows before boxes so lines sit behind nodes.
 - **Node box:** an opaque paper mask rect, then the styled box at `rx=6`, a rectangular type tag at `rx=2` (not a pill), the name in system sans 600, and a secondary sublabel.
 
 ### Mandatory connector rules
@@ -182,7 +180,7 @@ Structural geometry sits on a 4px grid: node origins, widths, heights, gaps, and
 |---|---|
 | Max nodes | 9 |
 | Max arrows / transitions | 12 |
-| Max accent elements | 2 |
+| Max focal elements | 2 |
 | Max annotation callouts | 2 |
 
 Per-type limits (lifelines, lanes, series, bars, stages, and the rest): [layout-budget.md § Complexity budget](references/layout-budget.md#complexity-budget-per-diagram). Check your type's row before drawing.
@@ -218,7 +216,7 @@ Run before producing any diagram.
 
 **Signal:**
 
-- [ ] accent used on ≤2 elements? If more, which actually deserve focal status?
+- [ ] Semantic roles consistently colored, including non-focal items? Focal count within the type budget, counted independently of hue?
 - [ ] Legend covers every type used — and nothing extra?
 - [ ] Within the type's complexity budget (§7)?
 

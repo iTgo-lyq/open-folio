@@ -84,7 +84,6 @@ CARRY_SPAN_TOLERANCE = 2.0
 HORIZONTAL_TOLERANCE = 1e-9
 MAX_BARS = 8
 MAX_SUBTOTALS = 1
-ACCENT_STROKES = {"#3b82f6"}
 SIGN_CHARS = {"+": 1, "-": -1, "\u2212": -1}
 
 
@@ -195,10 +194,10 @@ def check_transforms(source: str, errors: list[str]) -> None:
 
 
 class Bar:
-    __slots__ = ("role", "value", "exact_value", "name", "x", "y", "w", "h", "fill", "stroke", "index")
+    __slots__ = ("role", "value", "exact_value", "name", "x", "y", "w", "h", "fill", "stroke", "index", "focal")
 
     def __init__(self, index: int, role: str, value: Fraction, name: str,
-                 x: float, y: float, w: float, h: float, fill: str, stroke: str) -> None:
+                 x: float, y: float, w: float, h: float, fill: str, stroke: str, focal: bool = False) -> None:
         self.index = index
         self.role = role
         self.value = float(value)
@@ -207,6 +206,7 @@ class Bar:
         self.x, self.y, self.w, self.h = x, y, w, h
         self.fill = fill
         self.stroke = stroke
+        self.focal = focal
 
     @property
     def right(self) -> float:
@@ -267,7 +267,8 @@ def parse_bars(source: str, errors: list[str]) -> list[Bar]:
             continue
         bars.append(
             Bar(len(bars), role, value, name, x, y, w, h,
-                attrs.get("fill", ""), attrs.get("stroke", ""))
+                attrs.get("fill", ""), attrs.get("stroke", ""),
+                attrs.get("data-focal", "").lower() == "true")
         )
     return bars
 
@@ -455,41 +456,75 @@ def check_printed(source: str, bars: list[Bar], errors: list[str]) -> None:
             )
 
 
+def color_rgba(value: str) -> tuple | None:
+    """Resolve the palette's hex and rgb/rgba paints, plus SVG white."""
+    value = re.sub(r"\s+", "", value.lower())
+    if value == "white":
+        value = "#ffffff"
+    if re.fullmatch(r"#[0-9a-f]{3}", value):
+        value = "#" + "".join(c * 2 for c in value[1:])
+    if re.fullmatch(r"#[0-9a-f]{6}", value):
+        return (*[int(value[i:i+2], 16) for i in (1, 3, 5)], 1.0)
+    match = re.fullmatch(r"rgba?\(([^)]+)\)", value)
+    if match:
+        try:
+            parts = tuple(float(v) for v in match[1].split(","))
+        except ValueError:
+            return None
+        if len(parts) == 3:
+            parts += (1.0,)
+        if len(parts) == 4 and all(0 <= v <= 255 for v in parts[:3]) and 0 <= parts[3] <= 1:
+            return parts
+    return None
+
+
+def outline_contrast(stroke: tuple, paper: tuple) -> float:
+    """WCAG contrast of a palette outline composited over the canvas."""
+    def luminance(rgb):
+        values = [v / 255 for v in rgb[:3]]
+        linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
+        return sum(w * v for w, v in zip((0.2126, 0.7152, 0.0722), linear))
+    visible = tuple(stroke[3] * c + (1 - stroke[3]) * bg for c, bg in zip(stroke[:3], paper[:3]))
+    a, b = luminance(visible), luminance(paper)
+    return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+
 def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str) -> None:
-    focal = [bar for bar in bars if bar.stroke.lower() in ACCENT_STROKES]
+    focal = [bar for bar in bars if bar.focal]
     if len(focal) > 1:
         errors.append(
             "the accent focal treatment is editorial and marks at most one bar; found "
             + ", ".join(bar.label for bar in focal)
         )
     focal_set = set(id(bar) for bar in focal)
-    # Absolute check: the documented mapping is tint-for-increase and hollow
-    # paper-for-decrease, both over the muted stroke. Comparing the two polarity
-    # sets against each other cannot see a single-polarity walk, or one whose
-    # only bar of a polarity is focal, or a chart with the treatments swapped.
-    # Only the two shipped themes have a documented pair; an unrecognised paper
-    # falls through to the relative checks below rather than failing the file.
-    THEME_TREATMENTS = {
-        "#1e293b": ("rgba(191,192,192,0.15)", "#bfc0c0"),
-        "#ffffff": ("rgba(100,116,139,0.15)", "#64748b"),
-    }
-    if paper in THEME_TREATMENTS:
-        tint, stroke = THEME_TREATMENTS[paper]
-        for bar in bars:
-            if bar.role != "delta" or id(bar) in focal_set:
-                continue
-            expected_fill = tint if bar.value > 0 else paper
-            if re.sub(r"\s+", "", bar.fill.lower()) != expected_fill or bar.stroke.lower() != stroke:
-                errors.append(
-                    f"{bar.label}: increases require the muted tint and decreases require "
-                    f"hollow paper, both over the muted stroke"
-                )
-    rises = {bar.fill for bar in bars if bar.role == "delta" and bar.value > 0 and id(bar) not in focal_set}
-    falls = {bar.fill for bar in bars if bar.role == "delta" and bar.value < 0 and id(bar) not in focal_set}
+    # Keep tinted increases and hollow decreases independently of hue.
+    # Focal bars retain the existing exemption; signed labels and geometry
+    # still identify their direction.
+    tints = {"#dbeafe", "#fef3c7", "#d1fae5", "#f3e8ff", "#fce7f3",
+             "rgba(100,116,139,0.15)"}
+    strokes = {"#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#ec4899",
+               "#1e40af", "#b45309", "#166534", "#6b21a8", "#9d174d",
+               "#64748b", "#1e293b"}
+    tints = {color_rgba(color) for color in tints}
+    strokes = {color_rgba(color) for color in strokes}
+    background = color_rgba(paper)
+    for bar in bars:
+        stroke = color_rgba(bar.stroke)
+        if stroke is not None and background is not None and outline_contrast(stroke, background) < 3:
+            errors.append(f"{bar.label}: outline contrast must be at least 3:1; use the role's dark counterpart")
+        if bar.role != "delta" or id(bar) in focal_set:
+            continue
+        fill = color_rgba(bar.fill)
+        valid_fill = fill in tints if bar.value > 0 else fill == background
+        if not valid_fill or stroke not in strokes:
+            errors.append(f"{bar.label}: increases require a semantic tint and decreases "
+                          "require hollow paper, both with a contrasting palette stroke")
+    rises = {color_rgba(bar.fill) for bar in bars if bar.role == "delta" and bar.value > 0 and id(bar) not in focal_set}
+    falls = {color_rgba(bar.fill) for bar in bars if bar.role == "delta" and bar.value < 0 and id(bar) not in focal_set}
     if len(rises) > 1:
-        errors.append(f"increases must share one fill; found {sorted(rises)}")
+        errors.append(f"increases must share one fill; found {sorted(rises, key=repr)}")
     if len(falls) > 1:
-        errors.append(f"decreases must share one fill; found {sorted(falls)}")
+        errors.append(f"decreases must share one fill; found {sorted(falls, key=repr)}")
     if len(rises) == 1 and len(falls) == 1 and rises == falls:
         errors.append(
             "increases and decreases share the same fill; sign must survive greyscale, "
@@ -501,7 +536,7 @@ def verify_file(path: Path) -> list[str]:
     errors: list[str] = []
     source = path.read_text(encoding="utf-8")
     paper_match = re.search(r'--color-paper\s*:\s*(#[0-9a-fA-F]{6})', source)
-    paper = paper_match[1].lower() if paper_match else None
+    paper = paper_match[1].lower() if paper_match else "#ffffff"
     bars = parse_bars(source, errors)
     if not bars:
         errors.append("no bars declare data-role/data-value; the waterfall data contract is missing")

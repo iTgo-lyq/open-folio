@@ -12,7 +12,7 @@ This is neither **Kanban** nor **User journey**, and the distinction is load-bea
 
 Vertical stack, top to bottom:
 
-1. **Backbone** — up to 5 activities in left-to-right narrative order, as wide header cards (200px, `rx=6`, `ink @ 0.05` fill, `muted` stroke). Each card: the activity name in the `node-name` role, 12px, weight 600, above an `eyebrow`-role 10px eyebrow (`ACTIVITY 1` … `ACTIVITY 5`). 24px gutters between cards.
+1. **Backbone** — up to 5 activities in left-to-right narrative order, as wide header cards (200px, `rx=6`, semantic/category light fill, contrasting role stroke). Each card: the activity name in the `node-name` role, 12px, weight 600, above an `eyebrow`-role 10px eyebrow (`ACTIVITY 1` … `ACTIVITY 5`). 24px gutters between cards.
 2. **Walking skeleton row** — directly under each activity, its user *steps* as smaller cards (`rx=4`, 32px tall, white fill, `ink` stroke), `node-name` family 12px. One or two per activity; reserve room for two so every activity's row bottom aligns even when it only has one step.
 3. **Release slices** — horizontal bands below the skeleton row, each a full-width lane with an `eyebrow`-role 10px label (`MVP`, `RELEASE 2`, `LATER`) sitting in a 96px left margin. Band background alternates `ink @ 0.02` / none. Inside each band, story cards (`rx=4`, 48px tall) sit in their activity's column: story title in the `node-name` role, 12px, weight 600, plus a `sublabel`-role 10px estimate/ticket sublabel (e.g. `RPT-114 · 3pt`). Whenever any slice has a gap (an activity with no card in that row), add `rule` hairline column separators (0.8px, dashed `4,4`, 0.10 opacity) running from just under the backbone down to the bottom of the last slice, drawn before the cards — without them, a gappy grid reads as scattered rather than mapped to its activity.
 4. **The release cut line** — a full-width horizontal `accent` rule (1.5px) immediately under the MVP band, with a masked `arrow-label`-role 10px label `RELEASE CUT` at its right end. This is accent element one.
@@ -20,12 +20,12 @@ Vertical stack, top to bottom:
 
 ## Focal rule
 
-Exactly 2 accent elements: the release cut line with its `RELEASE CUT` label (counts as one), and the single riskiest story card — drawn with `accent @ 0.05` fill, `accent` dashed `4,4` stroke, and a small rectangular `RISK` tag (`rx=2`, matching the type-tag primitive) — counts as the other. Nothing else on the map is `accent`.
+Exactly 2 focal elements: the release cut line with its `RELEASE CUT` label (counts as one), and the single riskiest story card — drawn with `accent @ 0.05` fill, `accent` dashed `4,4` stroke, and a small rectangular `RISK` tag (`rx=2`, matching the type-tag primitive) — counts as the other. Other cards retain their semantic/category colors without additional focal emphasis.
 
 ## Complexity budget
 
 - Max 5 activities, max 3 release slices, max 12 story cards total, max 4 cards per slice.
-- Max 2 accent elements (the release cut counts as one; the riskiest card counts as the other).
+- Max 2 focal elements (the release cut counts as one; the riskiest card counts as the other).
 - Over budget on a single activity or slice → split into one map per activity, or collapse a slice into a count card rather than listing every item.
 
 ## Anti-patterns

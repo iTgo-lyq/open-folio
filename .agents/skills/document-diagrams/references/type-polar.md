@@ -97,7 +97,7 @@ The minimal examples use the full 1000×520 canvas. The full-editorial example p
 
 ## Visual treatment
 
-- One accent category maximum. All other value rays use the muted token.
+- One focal category maximum. Use a consistent semantic/category palette on value rays; keep the existing focal width and radius cues and `data-polar-focal` metadata.
 - Circular rings and spokes are structural grid marks, never category colors.
 - Endpoint markers are constant-size lollipop heads, not bubbles.
 - Category labels remain horizontal; tangent rotation is intentionally excluded because it lowers scanability and belongs to the rejected qualitative wheel direction.

@@ -113,7 +113,7 @@ Fills alternate between two steps of the **phase-band palette** in visual-style.
 **Color override** (per chevron, both horizontal and vertical): a chevron may declare an optional `color: "#hex"` that replaces the alternation fill for that one chevron. Use it to flag a phase that pairs with a custom-colored component (e.g., `Security` chevron in red when the Identity bar uses `color: "#ec4899"`). Rules:
 
 - Override applies to the polygon fill only. The label stays `band-label`; it never takes the visual palette's `paper`.
-- The alternation index doesn't shift; neighboring chevrons keep their natural fill, even if it produces two adjacent same-fill chevrons. Don't try to "fix" this — overrides should be rare (≤ 2 per diagram).
+- The alternation index doesn't shift; neighboring chevrons keep their natural fill, even if it produces two adjacent same-fill chevrons. Keep role colors consistent; color repetition does not add a focal claim.
 - A chevron color override is independent of any paired component's color, but pairing them (same hex on chevron + bar) is the conventional way to make the column "read" as one concern.
 
 ### 2.3 Source zone (dashed, external)
@@ -150,7 +150,7 @@ cross_w            = effective_w - 4               # spans body width, stops at 
 cross_h            = 40
 ```
 
-Stroke: `ink @ 0.20`, `stroke-width=0.8`, `rx=6`. Fill: `ink @ 0.05`. Icon at `(16, cross_y(k) + 10)`, name centered at `(effective_w / 2, cross_y(k) + 22)`, subtitle at `(effective_w / 2, cross_y(k) + 34)`.
+Stroke: `role-stroke`, `stroke-width=0.8`, `rx=6`. Fill: `role-fill`. Icon at `(16, cross_y(k) + 10)`, name centered at `(effective_w / 2, cross_y(k) + 22)`, subtitle at `(effective_w / 2, cross_y(k) + 34)`.
 
 Reserved cross-cutting *concerns* (informational; user can name the actual bar whatever they want):
 - **Identity / Security** — Keycloak, LDAP/AD, Okta, Auth0, OIDC providers
@@ -170,7 +170,7 @@ bar_w              = cluster_w - 24
 bar_h              = 44
 ```
 
-Stroke: `ink @ 0.18`, `stroke-width=0.8`, `rx=4`. Fill: `ink @ 0.05`. Tool icon at the far right (`bar_x + bar_w - 50, 58`); name centered at `(bar_x + bar_w/2, 71)`; subtitle at `(bar_x + bar_w/2, 84)`.
+Stroke: `role-stroke`, `stroke-width=0.8`, `rx=4`. Fill: `role-fill`. Tool icon at the far right (`bar_x + bar_w - 50, 58`); name centered at `(bar_x + bar_w/2, 71)`; subtitle at `(bar_x + bar_w/2, 84)`.
 
 ### 2.7 Component nodes (inside cluster)
 
@@ -189,7 +189,7 @@ gap                = 16
 row_top(k)         = first_top_y + k * (node_h + gap)   # k = 0..K-1
 ```
 
-**Focal node:** `fill="{accent @ 0.08}"`, `stroke="{accent}"`, `stroke-width=1.2`. Title text in `ink`. All other nodes: white fill, `stroke={ink @ 0.25}`, `stroke-width=1`.
+**Node surfaces:** Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots. Keep focal stroke-width 1.2 and ordinary stroke-width 1.
 
 Role badge top-left at `(node_x+8, node_y+6)`, size 12 high. Icon top-right at `(node_x+node_w-32, node_y+6)`, 24×24, monochrome via `currentColor`. Name centered at `(node_cx, node_y+44)` size 12 system-font semibold. Subtitle at `(node_cx, node_y+56)` size 12 system-font muted.
 
@@ -283,7 +283,7 @@ These are non-negotiable. Pick the style **automatically** from the topology —
 
 ## 3.4 Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 4. Block branching rules (fan-out)
 
@@ -372,8 +372,8 @@ Before emitting SVG, verify **every** item. If any fails, fix it — don't ship.
 9. All `<path>` and `<line>` connectors are emitted **before** any node `<rect>` (z-order).
 10. Each vertical chevron pairs **1:1** with exactly one `bar` or `cross-cutting` component (§5 pairing rule). `len(verticals) == len(bars) + len(crosscuts)`.
 11. `viewBox_h = max(540, strip_y_bot + 112)` — grow the canvas when multiple crosscuts are declared so the legend still fits.
-12. Custom component colors (§3.4) apply only to container + icon + name; connectors stay topology-driven. Cap at 2 custom-colored components in addition to the focal.
-13. The diagram passes SKILL.md §9 (4-px grid; ≤ 2 accent elements; system-font only for technical content; hairlines; no shadows; no `rounded-2xl`).
+12. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
+13. The diagram passes SKILL.md §9 (4-px grid; ≤ 2 focal elements; system-font only for technical content; hairlines; no shadows; no `rounded-2xl`).
 
 ---
 

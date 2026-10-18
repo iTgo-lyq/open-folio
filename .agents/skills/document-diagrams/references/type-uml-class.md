@@ -21,7 +21,7 @@
   3. **Operations** — one line each, `sublabel` role 10px, left-aligned: `+ method(arg): Return`.
   Omit a compartment entirely when a class has no members in it (an interface with no attributes skips that compartment).
 - Attribute/operation lines are a single combined string, not the two-column field/type layout ER uses — that visual distinction keeps the two types from reading the same.
-- accent (accent) is reserved for the class being implemented or extended (the focal type) — accent-tint fill, accent stroke. Its inbound inheritance/realization edges count as **one** additional accent element (treated as a group), for 2 accent elements total per diagram.
+- accent (accent) is reserved for the class being implemented or extended (the focal type) — accent-tint fill, accent stroke. Its inbound inheritance/realization edges count as **one** additional accent element (treated as a group), for 2 focal elements total per diagram.
 
 ## Relationship vocabulary
 
@@ -44,7 +44,7 @@ All six SKILL.md §6 connector rules apply in full — orthogonal rounded elbows
 
 ## Complexity budget
 
-Max 7 classes, max 8 relationships, max 5 members per compartment (overflow becomes a `sublabel`-role `…` line), max 2 accent elements. Over budget → split by package.
+Max 7 classes, max 8 relationships, max 5 members per compartment (overflow becomes a `sublabel`-role `…` line), max 2 focal elements. Over budget → split by package.
 
 Seven is the ceiling rather than the target. Three compartments per box makes a class diagram dense fast, so treat 4–5 classes as the normal size; the illustrative example uses all seven only because it doubles as the legend for the full relationship vocabulary.
 

@@ -68,8 +68,8 @@ legend:                       # auto-generated from styles used; user can overri
 - `components[i][k].name` — `node-name` role (the human-readable label).
 - `components[i][k].sub` — `sublabel` role at 10px in muted (the technical sub-label; up to 2 lines via auto-wrap when component height grows to 72).
 - `components[i][k].icon` — any id from `references/primitive-icons.md`. If missing → no icon, the name shifts left. (Catalog has 41 icons; `mail` is currently missing — use `icon: file` as fallback for email hand-offs.)
-- `components[i][k].kind` — `standard | focal | external`. `focal` triggers the accent palette (§5); `external` switches to a 4-2 dashed stroke and muted ink to signal "this is outside our scope."
-- `components[i][k].color` — optional per-component color override (§4). Ignored on `kind: focal` (accent wins).
+- `components[i][k].kind` — `standard | focal | external`. `focal` adds editorial emphasis (§5) without replacing the semantic palette; `external` switches to a 4-2 dashed stroke and muted ink to signal "this is outside our scope."
+- `components[i][k].color` — optional per-component color override (§4). Applies to focal nodes too; emphasis changes border weight.
 - `connectors[k].from` / `connectors[k].to` — refer to a component `id`. Cross-zone, cross-row, same-zone vertical, and same-zone horizontal all legal; routing chosen by §3.
 - `connectors[k].label` — short text (≤ 8 chars). `arrow-label` role at 10px, weight 600.
 - `connectors[k].icon` — optional inline icon to the left of the text. Same catalog as component icons.
@@ -293,14 +293,16 @@ All connectors (paths + lines + labels) emit BEFORE any component rect, so node 
 
 ## 4. Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 5. Focal rule
+
+Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots.
 
 - `kind: focal` components: **≤ 2 per diagram** (zero is also valid for diagrams without a single dominant pain-point).
 - Auto-styling: accent stroke 1.4, accent-tinted fill 7 %, ink-bold `node-name`, accent line-1 `sublabel`.
 - Any connector with a focal endpoint automatically renders in `style: accent`; the YAML `style:` is ignored.
-- Custom `color: "#hex"` on a focal component is silently ignored — accent always wins.
+- A focal component retains its semantic role color; focus adds outline weight.
 
 If your diagram needs more than 2 focal components, you've collapsed two narratives. Split: one "collection pain-points" diagram + one "dissemination pain-points" diagram.
 
@@ -316,7 +318,7 @@ Before emitting SVG, verify **every** item:
 4. ≤ 2 components with `kind: focal`; focal styling auto-applied (accent fill 7 %, accent stroke 1.4, line-1 sub).
 5. Every connector exits the right (or bottom) of source and enters the top (or left) of destination; rounded right-angle Q-bezier `r=8` at every bend; marker tip remains 5px clear of the destination rectangle edge.
 6. Connector labels sit at the **start** of the connector (not mid-segment) and are offset **perpendicular** to the line (5 px gap above for horizontal segments, 6 px gap to the right for vertical segments) — never overlapping the stroke. Paper-fill mask kept behind text; icon (when `icon:` is set) sits left of text inside the same mask.
-7. ≤ 3 custom-colored components; none on focal.
+7. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
 8. ≤ 3 footer bars; each spans `viewBox_w − 2*left_pad`; no connectors emerge from any footer.
 9. Legend at bottom: hairline separator + one swatch per style actually used.
 10. `arrow-label` for connector labels, `eyebrow` for the page eyebrow and zone labels, `title` for the page title, `node-name` for the subtitle and component names, and `sublabel` for technical sub-labels.
@@ -331,11 +333,11 @@ Before emitting SVG, verify **every** item:
 - **Inline `text` connector labels without a mask rect.** The connector line can bleed through the text and it becomes unreadable.
 - **Labels sitting on top of the connector line, mid-segment.** Labels belong at the *start* of the connector with a perpendicular margin (see §3.5) — burying them in the middle of the line hides the source-to-destination direction and forces the reader's eye to fight the mask.
 - **Tiny text badges as icons.** The source uses 7-px `DB` / `APP` / `EXT` badges; this type uses real 24-px catalog icons. Text badges are only acceptable as the label text, not as the component "icon."
-- **Custom color on a focal component.** Focal always wins; user-set `color` silently ignored on `kind: focal`.
+- **Replacing a focal component's semantic role with an arbitrary highlight hue.** Preserve its role color and emphasize its outline.
 - **Footer bar wired to one component.** Footer = cross-cutting layer-wide concern; a connector from a footer to a specific component is a category error (use `type-dp-integration.md`'s AUTH-line pattern only when the footer service truly authenticates *all* components, and even then the line lands at the zone bottom edge, not at a specific tool).
 - **> 16 total components or > 5 per zone.** Density cap; split into two diagrams.
 - **Mixing orientations within one diagram.** Pick one — `horizontal` or `vertical` — and apply it to every zone.
-- **Using `kind: focal` to flag every painful thing.** Focal exists for ≤ 2 narrative pain-points; for "this is bad but not headline-bad", use `color: "#ec4899"` pink instead.
+- **Using `kind: focal` for every issue.** Keep ≤2 editorial pain points; repeat the warning role on all evidenced risks without making them focal.
 
 ---
 

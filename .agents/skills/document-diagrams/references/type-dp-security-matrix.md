@@ -135,7 +135,7 @@ Solid paper fill across the full viewBox. No dot pattern.
 
 **Value cells (one per role × component):**
 - Rect: `(role_col_x(j), row_y(k), role_col_w, row_h)`, `rx=4`, stroke `ink @ 0.12` 0.6
-- Fill and text-color depend on `level` (or focal flag) — see §2.4
+- Fill and text-color depend on `level`; focus changes outline weight — see §2.4
 - Value text centered at `(role_col_cx(j), row_y(k) + 22)`: `node-name` role at 12px
 - Focal cell uses a slightly raised primary text at `y=18` and a sub-line at `y=30` (`sublabel` role at 10px)
 
@@ -143,13 +143,13 @@ Solid paper fill across the full viewBox. No dot pattern.
 
 | `level` | Fill | Stroke | Text color | Text weight |
 |---|---|---|---|---|
-| `full` | `ink @ 0.08` | `ink @ 0.12` | `ink` | 600 |
-| `rw` | `#FFFFFF` | `ink @ 0.12` | `ink` | 400 |
-| `read` | `muted @ 0.08` | `ink @ 0.12` | `muted` | 400 |
-| `none` | `paper` | `ink @ 0.12` | `soft` | 400 |
-| **focal** | `accent @ 0.07` | `accent` (1.4) | `accent` | 600 |
+| `full` | Input/primary fill | Input/primary stroke | Input/primary dark text | 600 |
+| `rw` | Processing fill | Processing stroke | Processing dark text | 400 |
+| `read` | Data/output fill | Data/output stroke | Data/output dark text | 400 |
+| `none` | `paper` | `rule` | `muted` | 400 |
+| **focal** | Retain level fill | Retain level stroke (1.4) | Dark level text | 600 |
 
-The focal cell can carry a 2nd line (`sub:`) rendered in `accent` with the `sublabel` role at 10px and 0.85 opacity.
+The focal cell can carry a 2nd line (`sub:`), rendered in dark semantic text at 10px. The level label remains explicit; color is redundant permission information.
 
 ### 2.5 Legend (`y_top = legend_y_top, h ≈ 30`)
 
@@ -171,12 +171,14 @@ Cells emit **no edges**. Don't add arrows pointing into cells or between cells �
 
 ## 4. Visual values
 
-Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic palette; they do not change node roles, relationship kinds or layout formulas.
+Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Optional color inputs select a semantic role for any component, including a focal one; they do not change node roles, relationship kinds or layout formulas.
 
 ## 5. Focal rule
 
+Use the semantic role fill/stroke/dark-text triple from visual-style.md on both ordinary and focal nodes. Keep the stated focal count and emphasize those nodes with border weight; role colors do not consume focal slots.
+
 Exactly **one** focal cell per diagram (or zero). The focal cell:
-- Uses focal styling (accent fill + accent stroke 1.4 + accent text bold)
+- Uses focal styling (role fill + heavier role stroke 1.4 + dark semantic text bold)
 - May carry a 2-line content: primary `value` at `y = row_y(k) + 18`, `sub` at `y = row_y(k) + 30`
 - Calls out the diagram's central security claim — the *one* access rule that distinguishes this platform's posture from a generic permissions table
 
@@ -193,9 +195,9 @@ Before emitting SVG, verify **every** item:
 3. Data rows start at `y=140`, stride 40, height 36. `rows_bottom = 140 + (n_components−1)·40 + 36`.
 4. Component label cell `rx=4`, name left-aligned at `x=24`, optional `hint` right-aligned at `x = comp_col_x + comp_col_w − 12`.
 5. Every value cell `rx=4`, stroke `ink @ 0.12` 0.6, fill + text matching §2.4 for its `level`.
-6. Exactly **one** focal cell (or zero). Focal cell stroke `accent` width 1.4. Primary value at `y = row_y(k) + 18`; `sub` (if present) at `y = row_y(k) + 30`.
+6. Exactly **one** focal cell (or zero). Focal cell stroke `role-stroke` width 1.4. Primary value at `y = row_y(k) + 18`; `sub` (if present) at `y = row_y(k) + 30`.
 7. Cells omitted from `cells:` render as `level: "none"` with `none_label` text (default `"No access"`).
-8. Custom-colored cells ≤ 2 (in addition to the focal cell).
+8. Apply semantic role colors consistently, including on non-focal components; role colors do not consume focal slots.
 9. No connector elements anywhere in the SVG.
 10. Legend strip at `legend_y_top`, one swatch per `level` actually used, hairline separator above.
 11. `viewBox_h` grows with `n_components`; `viewBox_w` grows with `n_roles`.

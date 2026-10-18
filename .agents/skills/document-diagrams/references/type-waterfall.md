@@ -18,9 +18,9 @@
 - **Totals anchor, bridges float.** The start total, any subtotal, and the end total are drawn from the domain floor (the x-axis baseline) up to their value. Bridge bars span exactly the running total before and after their contribution — an increase rises from the previous level, a decrease falls from it.
 - **Carry rules (the bridge grammar).** A horizontal connector line carries the running total across each gap between adjacent bars, drawn at the shared level: from the right edge of one bar to the left edge of the next, `ink @ 0.55` at 1px on light paper — the dumbbell's connector weight, because the carry is load-bearing and must clear 3:1, not the 0.25 axis hairline. Each carry declares the running total it transports in `data-carry`.
 - **Machine-readable data contract.** Every bar rect declares `data-role` (`total`, `delta`, or `subtotal`), `data-value` (totals unsigned, deltas explicitly signed `+`/`-`), and `data-name`. `scripts/verify-waterfall.py` reads these and fails the build when the drawing and the declaration disagree — see the honesty rules below.
-- **Sign is encoded by fill weight, not hue.** Increases take the bar family's default tint (`muted @ 0.15` fill, `muted` stroke). Decreases are hollow — paper fill, same `muted` stroke — so the two directions survive greyscale and colour-vision deficiency without leaning on the accent. The geometry (which end of the bar meets the carry) and the signed printed value are the second and third encodings of the same fact.
+- **Sign retains its fill-weight encoding.** Increases use one consistent semantic light fill and contrasting outline; decreases are hollow (paper fill) with a contrasting role outline. Hue may reinforce meaning but never replaces tint versus hollow, bridge geometry or signed printed values.
 - **Totals are the heaviest marks:** `ink @ 0.08` fill with a 1px `ink` stroke. The reader's eye should land on the two anchors first, then walk the bridges.
-- **Focal bridge (≤1, optional):** the one contribution the chart exists to show gets the bar family's focal treatment — `accent @ 0.12` fill, `accent` stroke, accent value label. It replaces that bar's sign fill; the signed label and geometry still carry the direction.
+- **Focal bridge (≤1, optional):** declare `data-focal="true"` on the contribution being discussed. Use its role hue and a heavier outline, with dark readable text. As before, this focal treatment may replace its sign fill; the signed label and geometry still carry direction.
 - **Value labels:** `arrow-label` role 10px. Totals and increases print above the bar top (baseline `top − 8`); decreases print below the bar bottom (baseline `bottom + 12`), because the space above a decrease is where its carry arrives. Deltas print with an explicit sign (`+64`, `−38`); totals print unsigned.
 - **Gridlines / axes:** identical to the bar chart — 4–6 faint horizontal gridlines `ink @ 0.08` 0.8px, y-axis line and x-axis baseline `ink @ 0.25` 1px, tick labels `arrow-label` role 10px `muted` right-aligned at x=72, rotated y-axis title `eyebrow` role 10px.
 - **Category labels:** centered under each bar at y=440, `node-name` role 12px 600 `ink`; the focal bar's label uses `ink`.
@@ -40,7 +40,7 @@
 
 <!-- Increase bridge: +64 rises from 240 to 304 -->
 <rect x="256" y="131" width="96" height="61" fill="{paper}"/>
-<rect x="256" y="131" width="96" height="61" fill="{muted @ 0.15}" stroke="{muted}" stroke-width="1"
+<rect x="256" y="131" width="96" height="61" fill="{role-fill}" stroke="{role-stroke}" stroke-width="1"
       data-role="delta" data-value="+64" data-name="Headcount"/>
 <text x="304" y="123" fill="{muted}" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif" text-anchor="middle">+64</text>
 ```
@@ -65,3 +65,5 @@ Endpoint positions round to the nearest integer pixel and never snap to the 4px 
 - **Every bar prints its value, deltas with an explicit sign.** An unsigned bridge asks the reader to infer direction from geometry alone; print `+`/`−`.
 - **Zero bridges are dropped, never drawn.** A zero-height bar is invisible ink that still occupies a column; state it in prose or the source line instead.
 - **A degenerate start (zero or negative total) is a named failure,** not a silently rescaled chart — the scale is derived from the start anchor.
+
+Focal metadata: declare `data-focal="true"` on the bound focal mark itself. Semantic blue on any other mark does not make it focal; apply the existing outline/weight cues independently of hue.

@@ -24,7 +24,7 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 <!-- Data cell — all three bindings required -->
 <rect data-row="auth" data-col="S1" data-value="4"
       x="160" y="64" width="116" height="56"
-      fill="{ink @ 0.29}"/>
+      fill="{series-color @ 0.29}"/>
 
 <!-- Focal cell — data-focal="true" required, uses accent fill -->
 <rect x="520" y="124" width="116" height="56" fill="{paper}"/>
@@ -35,18 +35,18 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 ## The fill ramp
 
-**One ink ramp, one accent.** Non-focal cells use a single tonal ramp: `rgba(INK, opacity)` where opacity is a non-decreasing function of the data value. The illustrative example uses `opacity = max(0.07, value / max_non_focal × 0.65)`. Any monotone formula (linear, sqrt, log) passes the verifier as long as opacity never decreases with value.
+**One shared-hue ramp, at most one focal cell.** Non-focal cells use a single tonal ramp: `rgba(ROLE_RGB, opacity)` where opacity is a non-decreasing function of the data value. The illustrative example uses `opacity = max(0.07, value / max_non_focal × 0.65)`. Any monotone formula (linear, sqrt, log) passes the verifier as long as opacity never decreases with value.
 
-**One focal cell only.** The accent marks the editorially focal cell — the one whose combination of row and column is the figure's argument. It is not the automatically highest value; choose the cell whose story the title is about. `data-focal="true"` is required; `scripts/verify-heatmap.py` counts all accent-fill and `data-focal` cells and fails if more than one is found.
+**One focal cell only.** Declare `data-focal="true"` on the editorially focal cell; keep its role hue and strengthen its outline. It may use the documented off-ramp highlight, but must retain its value label. Blue alone is not focal. The verifier counts explicit focal metadata and checks the non-focal ramp independently of hue.
 
 **Ramp bounds:** the lowest-value non-focal cell should land at ≥ 0.05 opacity (the cell must be visually distinct from the paper background) and the highest-value non-focal cell at ≤ 0.70 (the ramp must not bleed into the focal accent's territory).
 
 ## Anti-patterns
 
 - A hue per row or per column — hue is not a continuous variable; it maps "which series" (slopegraph contract), not "how much". The ramp carries quantity; the label carries category identity.
-- A multi-hue diverging ramp (e.g. blue–white–red) — these read as two variables (negative and positive deviation from center) and are only honest when the data is signed and the center is meaningful. For unsigned rates or counts, the single ink ramp is the honest encoding.
+- A multi-hue diverging ramp (e.g. blue–white–red) — these read as two variables (negative and positive deviation from center) and are only honest when the data is signed and the center is meaningful. For unsigned rates or counts, one shared-hue ramp is the honest encoding.
 - Focal accent on more than one cell — if two cells are both focal the figure needs a different title; hue-coding two things is a palette decision masquerading as an editorial one.
-- A value axis (color bar with a continuous legend) instead of a discrete ramp strip — the ink ramp is not a gradient legend; it encodes comparative reading ("S4 is much darker than S3"), not precise magnitude retrieval. If readers need the exact value, the number printed inside the cell carries it.
+- A value axis (color bar with a continuous legend) instead of a discrete ramp strip — the shared-hue ramp is not a gradient legend; it encodes comparative reading ("S4 is much darker than S3"), not precise magnitude retrieval. If readers need the exact value, the number printed inside the cell carries it.
 - Rows or columns dropped because they made the pattern less clean — omitted rows and columns are invisible to the reader and look like "the services that didn't have this problem". Name everything included and say in the footnote if anything is excluded.
 - A transform on a cell, its underlay, or an ancestor `<g>`. The verifier reads raw `x`/`y`/`width`/`height` attributes; a transform silently moves the rendered mark off the verified position.
 
@@ -56,7 +56,7 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 **The ramp scale is declared.** The legend strip shows the range the ramp covers for non-focal cells, stated as "LOW" to "HIGH" rather than a continuous scale — because the ramp's job is comparative, not absolute. If the footnote states bounds, those bounds must match the actual minimum and maximum non-focal values in the figure.
 
-**The focal cell is excluded from the ramp's scale.** Its value (often an outlier) would collapse every other cell into near-identical opacity if included. The footnote must state the focal cell's value explicitly. `scripts/verify-heatmap.py` checks that the focal cell carries `data-focal="true"` and that no non-focal cell uses accent fill.
+**The focal cell is excluded from the ramp's scale.** Its value (often an outlier) would collapse every other cell into near-identical opacity if included. The footnote must state the focal cell's value explicitly. `scripts/verify-heatmap.py` checks that the focal cell carries `data-focal="true"` and that non-focal cells share a hue and a monotone opacity ramp.
 
 ## Declaring the values
 
@@ -69,7 +69,7 @@ The verifier accepts either matching quote delimiter for SVG attributes.
 | `data-row` on the data rect | A row cannot be identified during verification; a swapped row passes silently. |
 | `data-col` on the data rect | A column cannot be identified; a shuffled column is invisible to the verifier. |
 | `data-value` on the data rect | The fill cannot be verified as monotone; any opacity passes. |
-| `data-focal="true"` on the focal rect | The focal cell is counted as a non-focal cell with an unexplained accent fill. |
+| `data-focal="true"` on the focal rect | The focal cell is counted as a non-focal cell with an unexplained off-ramp fill or emphasis. |
 
 `scripts/verify-heatmap.py` enforces the complete `rows × cols` grid, the monotone fill ramp on non-focal cells, and at most one focal cell. It does **not** verify cell geometry (position, width, height) because both axes are categorical — position encodes "which row/column", and that is carried by the label, not by a scale the checker can measure against.
 

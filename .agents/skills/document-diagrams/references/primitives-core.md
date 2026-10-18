@@ -4,7 +4,7 @@ Routed from SKILL.md §6. SKILL.md keeps the six connector rules as one line eac
 
 Type-specialized primitives (lifeline, activation bar, region) live in the relevant type reference linked in SKILL.md §3.
 
-Snippets here and in every type reference name colors and fonts by role, never by value: `{ink}`, `{muted}`, `{paper}`, `{accent}`, `{link}`, `{soft}` for colors, `{ink @ 0.10}` for a role at an opacity, and `{title}`, `{node-name}`, `{sublabel}`, `{eyebrow}`, `{arrow-label}`, `{callout}` for font families. Resolve each against the visual palette in [`visual-style.md`](visual-style.md) before emitting: `{ink @ 0.10}` becomes the `ink` color as `rgba(r,g,b,0.10)`, and `{sublabel}` becomes that role's full family stack. Uppercase names (`X`, `FILL`, `STROKE`) are geometry and per-node values you compute.
+Snippets here and in every type reference name colors and fonts by role, never by value: `{ink}`, `{muted}`, `{paper}`, `{accent}`, `{link}`, `{soft}` for colors, `{ink @ 0.10}` for a role at an opacity, and `{title}`, `{node-name}`, `{sublabel}`, `{eyebrow}`, `{arrow-label}`, `{callout}` for font families. Resolve each against the visual palette in [`visual-style.md`](visual-style.md) before emitting: `{ink @ 0.10}` becomes the `ink` color as `rgba(r,g,b,0.10)`, and `{sublabel}` becomes that role's full family stack. Uppercase geometry names such as `X` are computed per node. Resolve `FILL`, `STROKE` and `TEXT` to its semantic fill, contrast-checked outline and dark text color.
 
 ## Visual primitives
 
@@ -45,7 +45,7 @@ These six rules are **non-negotiable**. Run the pre-output checklist (SKILL.md �
 <rect x="X" y="Y" width="W" height="H" rx="6" fill="FILL" stroke="STROKE" stroke-width="1"/>
 <!-- 3. Rectangular type tag (rx=2, NOT a pill) -->
 <rect x="X+8" y="Y+6" width="28" height="12" rx="2" fill="transparent" stroke="STROKE@0.40" stroke-width="0.8"/>
-<text x="X+22" y="Y+15" fill="STROKE@0.8" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif"
+<text x="X+22" y="Y+15" fill="TEXT" font-size="{secondary-size}" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif"
       text-anchor="middle">API</text>
 <!-- 4. Node name (node-name role, sans: human-readable) -->
 <text x="CX" y="CY+2" fill="{ink}" font-size="{node-size}" font-weight="600"

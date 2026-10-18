@@ -12,7 +12,7 @@
 - **Series polygon:** stroke 1.5px at the series color, fill the same color at `0.18` opacity. Stroke 1.8px on the focal series — a subtle weight bump.
 - **Vertex dots:** **only on the focal series**, `r=4` filled with the series color. Non-focal series are stroke-and-fill only. This is the load-bearing rule that keeps the chart readable at 4–5 series.
 - **Drawing order:** dots-pattern bg → grid rings → axis spokes → axis labels → scale ticks → non-focal series (smallest area first) → focal series → focal vertex dots → legend.
-- **Legend:** horizontal strip at the bottom (per the global rule). Swatch is a 16×8 rectangle (matches the polygon stroke+fill, not a circle), then the entity name. ~140px between entries. Optional tail on the right with the rationale (`"One accent. Position is the signal — color reserved for the recommended option."`).
+- **Legend:** horizontal strip at the bottom (per the global rule). Swatch is a 16×8 rectangle (matches the polygon stroke+fill, not a circle), then the entity name. ~140px between entries. Optional tail on the right with the rationale (`"Color identifies series; weight and vertex dots identify the focal option."`).
 
 ## Math
 
@@ -51,11 +51,11 @@ Each vertex: `center + (v/10) · (outer_i − center)`, rounded to the nearest p
 
 ## Series palette
 
-The skill's "1-focal" rule still holds: `accent` is reserved for the focal series, and a small editorial palette (`series-1` through `series-5`, defined in [`visual-style.md`](visual-style.md)) covers the non-focal series. Don't reach for free-form colors.
+Keep one focal series, using the existing heavier stroke and vertex dots. Use consistent semantic or categorical series colors from visual-style.md, including on non-focal series. Keep direct labels and the legend; choose a contrasting stroke or dark counterpart when needed. Focal emphasis uses the existing weight/dot treatment and keeps the series hue.
 
 | Slot | Token | Hue |
 |---|---|---|
-| Focal | `accent` | the skin's accent |
+| Focal | Its semantic/category color | Same hue, heavier stroke and vertex dots |
 | 1 | `series-1` | green |
 | 2 | `series-2` | blue |
 | 3 | `series-3` | orange |

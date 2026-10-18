@@ -17,7 +17,7 @@ Routed from SKILL.md §7 and §8. SKILL.md keeps the grid rule in one line, the 
 
 ### Complexity budget (per diagram)
 
-These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 accent elements, 2 annotation callouts) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them.
+These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 focal elements, 2 annotation callouts) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them.
 
 | Limit | Rule |
 |---|---|

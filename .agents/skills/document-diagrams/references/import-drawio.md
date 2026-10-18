@@ -89,21 +89,21 @@ Fresh layout on the 4px grid, per the type reference and SKILL.md §6–§7. Exp
 
 | draw.io default fill | Typical meaning | Maps to |
 |---|---|---|
-| `#dae8fc` / `#6c8ebf` (blue) | generic component | Backend/API — white fill, `ink` stroke |
-| `#d5e8d4` / `#82b366` (green) | ok / primary path | `ink` treatment; accent **only** if focal |
-| `#ffe6cc` / `#d79b00` (orange) | attention / queue | `ink` treatment; accent only if focal |
-| `#f8cecc` / `#b85450` (red) | failure / risk / legacy | Optional/Async — dashed `ink @ 0.20` |
-| `#e1d5e7` / `#9673a6` (purple) | external / third-party | External/Cloud — `ink @ 0.03` fill |
-| `#ffffff` / grey | infrastructure / background | Store/State, or a zone container |
-| no fill | unstyled | Backend/API |
+| `#dae8fc` / `#6c8ebf` (blue) | generic component | Input/primary for entry points; Processing for services, according to the label |
+| `#d5e8d4` / `#82b366` (green) | ok / primary path | Data/output/success semantic surface; focal selection is independent |
+| `#ffe6cc` / `#d79b00` (orange) | attention / queue | Processing/in-progress surface; Warning if the label identifies a risk |
+| `#f8cecc` / `#b85450` (red) | failure / risk / legacy | Sensitive/warning surface for evidenced risk; retain state labels and actual relationship semantics |
+| `#e1d5e7` / `#9673a6` (purple) | analysis or external / third-party | AI/analysis when supported by content; neutral external context otherwise |
+| `#f5f5f5` / grey | infrastructure / background | Semantic role surface for a component; quiet neutral surface for a grouping container |
+| no fill | unstyled | Infer role from the content; use neutral context if unknown |
 
-  Source color is a *signal about role*, not a color to keep. Six fill colors in the source do not become six fills in the output — the palette is one accent plus the ink ramp (visual-style.md).
+  Source color is a *signal about role*, not a color to keep. Six fill colors in the source do not become six fills in the output — the palette is semantic role colors with separate focal emphasis (visual-style.md).
 
 - **Map shapes to treatments**, not to lookalikes:
 
 | Source shape | Draw as |
 |---|---|
-| `cylinder` | Store/State box (`ink @ 0.05` fill, `muted` stroke) — not a 3-D barrel |
+| `cylinder` | Store/State box with the Data/output semantic surface — not a 3-D barrel |
 | `rhombus` | Flowchart decision diamond, only in a flowchart; elsewhere a normal box |
 | `actor` | Input/User treatment, or the user icon from [primitive-icons.md](primitive-icons.md) |
 | `cloud` | External/Cloud treatment |
@@ -134,8 +134,8 @@ What the run decided, and why:
 | Postgres, Redis, Object Store scattered down the right | One `DATA` zone in a bottom row | Regrouping by role removed every connector crossing |
 | `Token valid?` decision diamond | The `VERIFY` label on Gateway → Auth | A single decision inside an architecture diagram is an edge label |
 | Sticky note "Legacy path, to be retired" | Dropped | Unconnected in the source; step 1 of the degrade ladder |
-| `#dae8fc` / `#d5e8d4` / `#e1d5e7` fills | White services, ink-tint stores, one accent | Source color signals role; roles map to the design system |
-| API Gateway (degree 4, the digest's top hub) | The one accent node | Highest-degree node was also the story's pivot |
+| `#dae8fc` / `#d5e8d4` / `#e1d5e7` fills | Role-colored services and stores with separate focal emphasis | Source color signals role; roles map to the design system |
+| API Gateway (degree 4, the digest's top hub) | The focal node, retaining its role color | Highest-degree node was also the story's pivot |
 
 12 source nodes → 8 drawn, inside the standard §7 budget even at a level that allows 12.
 
@@ -167,7 +167,7 @@ Default is page 0. When the file has several pages:
 | Anti-pattern | Why it fails |
 |---|---|
 | Reproducing source coordinates | Imports draw.io's hand-dragged layout — off-grid, uneven gaps, the exact thing this skill exists to fix |
-| Keeping the source palette | Six pastel fills read as six meanings; the design system has one accent |
+| Keeping the source palette | Six pastel fills read as six meanings; roles map to a consistent semantic palette |
 | One-to-one node mapping regardless of budget | A 30-node canvas is a wiring diagram nobody reads |
 | Keeping every edge because it was in the source | Source graphs carry edges layout already implies |
 | Copying labels verbatim | `svc-auth-prod-v2` is a hostname, not a name a reader can use |

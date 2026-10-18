@@ -8,11 +8,11 @@
 - Nodes are the standard node-box pattern (§6, [primitives-core.md](primitives-core.md#node-box--full-pattern)): `rx=6`, 160px wide, 56px tall.
 - **Fan-in badge.** Every node carries an `eyebrow`-role 10px badge in its top-right corner, inside a small `rx=2` box, showing how many nodes depend on it (`4 in`). A mask fully inside a node is a badge chip, not a label — legitimate under §6 rule 6. The node with the highest fan-in is the diagram's structural story; size nothing else to compete with it.
 - **Node treatments** ([visual-style.md § Node type → treatment](visual-style.md)):
-  - Internal package/service → white fill + `ink` stroke.
+  - Internal package/service → semantic role surface.
   - External / third-party → `ink @ 0.03` fill + `ink @ 0.30` stroke (the External/Cloud treatment).
-  - Leaf with no outgoing edges → `ink @ 0.05` fill + `muted` stroke.
-- **The cycle.** At most one back-edge points upward against rank order. It is the editorial point of the diagram: `accent` stroke, dashed `5,4`, `marker-end="url(#arrow-accent)"`, routed **around the outside** of the node stack — never straight through the middle, and never behind a node it doesn't connect to — with a masked `arrow-label`-role 10px `CYCLE` label at its visible end. The two nodes the cycle touches stay in their normal node treatment (§5) — no accent stroke or fill on the nodes themselves, or the 2-accent budget is blown on the wrong elements.
-- **Focal rule:** the 2 accent elements permitted per diagram are the back-edge and its `CYCLE` label. Nothing else in a dependency graph is accent.
+  - Leaf with no outgoing edges → retain its semantic role surface; terminal position carries its structural role.
+- **The cycle.** At most one back-edge points upward against rank order. It is the editorial point of the diagram: `accent` stroke, dashed `5,4`, `marker-end="url(#arrow-accent)"`, routed **around the outside** of the node stack — never straight through the middle, and never behind a node it doesn't connect to — with a masked `arrow-label`-role 10px `CYCLE` label at its visible end. The two nodes the cycle touches stay in their normal node treatment (§5) — semantic node colors remain valid; do not add another editorial focal treatment.
+- **Focal rule:** the 2 focal elements permitted per diagram are the back-edge and its `CYCLE` label. Other nodes and edges may use semantic colors without becoming focal.
 - All six §6 Mandatory connector rules apply in full, no exemptions: rounded right-angle elbows (`r=8`) between off-axis nodes, 6–10px label-margin, no overlapping connectors (bridge/hop at crossings), fanned attach points (≥12px apart) where multiple edges share a box edge, no connector passing behind a non-endpoint box, no label mask clipped by a later-painted node.
 
 ## Complexity budget
@@ -23,7 +23,7 @@
 | Max edges | 14 |
 | Max rank layers | 4 |
 | Max highlighted cycles | 1 |
-| Max accent elements | 2 |
+| Max focal elements | 2 |
 
 Over budget: collapse a leaf cluster into one aggregate node labelled with its count (e.g. `+6 leaves`), and say so in a caption — don't silently drop nodes.
 

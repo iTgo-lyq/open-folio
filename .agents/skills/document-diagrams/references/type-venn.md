@@ -4,12 +4,12 @@
 
 ## Layout conventions
 - **Prefer 2 or 3 circles.** Avoid 4+ (unreadable — use a matrix instead).
-- Circle stroke: 1px hairline, color per-set (ink, muted, soft).
-- Circle fill: very low-opacity tint — `ink @ 0.04` for the ink set, `muted @ 0.05` for the muted one. Tints compound naturally in overlap regions.
+- Circle stroke: 1px, one consistent semantic/category color per set, with contrast checked.
+- Circle fill: translucent semantic/category tints so overlaps remain visible. Keep set labels and name each relevant intersection; blended colors are not new quantities.
 - Radii: equal when sets are comparable in size; proportional when sets are meaningfully different. Don't fake equal sizes for aesthetics.
 - **Set labels** placed outside the circle, NEVER crossing the stroke. `node-name` role 12px 600 for the set name, optional `sublabel` role 10px.
 - **Intersection labels** placed inside the overlap region, `node-name` role 12px 600, centered. For small overlaps, use a leader line to a label in clear space.
-- **accent accent** on the ONE focal intersection — the "sweet spot". Either an `accent` label stroke OR a clipPath-bounded `accent @ 0.10` fill tint.
+- **Focal emphasis** on the ONE focal intersection — the "sweet spot". Either an `accent` label stroke OR a clipPath-bounded `accent @ 0.10` fill tint.
 - Circle centers and radii divisible by 4.
 
 ## Anti-patterns
