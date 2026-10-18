@@ -239,7 +239,7 @@ small / medium / large 用 `dependsOn` 声明同仓库的前置 Change，在 Req
 
 核对当前规模所需的上游确认仍适用于正文；缺少有效确认时停在最早需处理的阶段，旧 Technical / Plan 保留供修订。
 
-进入 execution 前先按[Change 依赖](#change-之间的依赖)检查。确认要求和 JSON 更新如下：
+进入 execution 前先按[Change 依赖](#change-之间的依赖)检查；有原型的实现还须先通过[用户原型验收](./prototype/SKILL.md#原型验收)。确认要求和 JSON 更新如下：
 
 | 当前阶段 | 完成条件与后续更新 |
 | --- | --- |
