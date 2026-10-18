@@ -22,7 +22,7 @@
 | `wait` / `resume` | wait 要求 `--kind confirmation/dependency/pause --summary`；实际等待条件解除后 resume 清除等待。resume 本身不授予确认或撤销取消。 |
 | `rework` | `--stage requirement/technical/plan/execution --reason --approach`；返回最早受影响阶段，清除该阶段及之后的确认、merge 确认、关闭结果和等待；保留已完成任务。 |
 | `verify` | `--result passed/failed --summary`；任务完成、执行安排有效且实际验证完成后进入 close，记录整体验证。后续 accept/specs/archive 也复核安排。独立评审要求仍按主 skill。 |
-| `accept` | `--mode user/agent --summary --source`；agent 仅允许 small；user 必须有用户实际验收或明确交付/合入授权。明确要求人工验收时不可用 agent 代替。 |
+| `accept` | `--mode user --summary --source`；所有规模均须有用户实际验收或针对当前交付的明确归档/合入授权；Agent 自查和测试通过不代替用户验收。 |
 | `specs` | `--result synced/not_needed --summary`；验收后实际同步 Specs，再记录结果。 |
 | `archive` | `--date YYYY-MM-DD --summary`；日期按用户时区提供；检查关闭前置后移动完整目录，记录 completed。携带 previews 时输出原型保留标签后续命令。 |
 | `cancel` | `--reason`；保留阶段、任务、正文和代码，写取消原因并清除等待，分支冻结。 |
@@ -43,9 +43,11 @@ node .agents/skills/spec-trail/scripts/change.mjs task-start --change example --
 # 完成实现与验证后，填真实结果；提交、推送与 done 一起完成。
 node .agents/skills/spec-trail/scripts/change.mjs task-complete --change example --task T1 --verification '实际验证命令与结果'
 node .agents/skills/spec-trail/scripts/change.mjs verify --change example --result passed --summary '实际整体验证与评审结论'
+# 尚未获得用户验收时保留原 Change，等待确认。
+node .agents/skills/spec-trail/scripts/change.mjs wait --change example --kind confirmation --summary '等待用户确认验收后同步 Specs 并归档'
 ```
 
-需要等待人工验收时使用 wait。用户已明确验收或授权交付/合入时，以实际原话填写 accept 的 source；small 自验收在 summary 标明“Agent 自验收”及逐项依据。完成 Specs 同步后执行 specs，再 archive；脚本不替这些实际步骤提供证据。
+所有规模（含 small）完成验证后，尚未获用户验收时使用 wait，保持 active / close。等待期间原范围内的小调整在原 Change 用 rework 返回受影响阶段，保留已完成任务、追加返修任务并重新验证。用户已明确验收或授权将当前交付归档/合入时，先用 resume 清除等待，再以实际原话填写 `accept --mode user` 的 source，无需重复确认。完成 Specs 同步后执行 specs，再 archive；脚本不替这些实际步骤提供证据。
 
 ## 时间与失败
 

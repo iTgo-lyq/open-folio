@@ -174,7 +174,7 @@ interface ChangeState {
   rework?: { at: ISODateTime; reason: string; approach: string };
   closure: {
     verification?: ClosureStep<"passed" | "failed">;
-    acceptance?: ClosureStep<"accepted"> & { source?: string }; // small 可由 Agent 自验收；摘要注明方式与依据
+    acceptance?: ClosureStep<"accepted"> & { source?: string }; // 用户验收；摘要与来源注明实际确认依据
     specs?: ClosureStep<"synced" | "not_needed">;
     archive?: ClosureStep<"done"> & { path: string }; // docs/project/archive/YYYY-MM-DD-<id>
   };
@@ -263,7 +263,7 @@ active Change 可用 `follow-up --target none` 移除关联，同时清除自身
 | technical，large | 用户确认方案与必要契约；记录 `confirmations.technical`，进入 plan |
 | plan，large | 用户确认整体计划；记录 `confirmations.plan`，进入 execution，无需逐任务审批 |
 | execution | 所有任务验证、提交并推送；xlarge 为所有子 Change 完成或取消；进入 close |
-| close | 按规模完成[关闭四步](#关闭与-specs)：small 默认自验收后直接归档，其余等待人工验收；归档后才将 status 设为 completed |
+| close | 按[关闭四步](#关闭与-specs)执行：所有规模均在用户确认验收后同步 Specs 并归档；归档后才将 status 设为 completed |
 
 ## 需求与调查
 
@@ -476,7 +476,7 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 含非空 `previews` 的 Change 在归档提交后按 [Prototype 子 skill 的归档规则](./prototype/SKILL.md#归档) 推送保留标签；分支和标签都经远端核实后才能报告归档交付完成。无关联的旧 Change 保持原流程。
 
-按 **整体验证 → 验收 → Specs 同步 → 归档提交** 顺序执行。small 默认由 Agent 自验收并直接归档，medium / large / xlarge 等待人工验收；用户明确要求人工验收的 small 也进入人工验收。`closure` 各步按实际结果填写，未完成不预填成功。
+按 **整体验证 → 用户验收 → Specs 同步 → 归档提交** 顺序执行，所有规模均适用。small 的 Agent 自查属于验证，不代替用户验收；完成验证后不自动归档。`closure` 各步按实际结果填写，未完成不预填成功。
 
 ### 整体验证
 
@@ -491,15 +491,13 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 独立评审与实现上下文隔离（如 subagent），覆盖整个差异、需求与验收对应及测试证据；在 `closure.verification.summary` 记录评审方式，需跟踪的问题写 Review。
 
-通过记 `verification.result: passed`，进入 active / close。默认 small 继续自验收、Specs 同步与归档，不设置人工验收等待、不在此处结束交付；需要人工验收时设置等待项并提交推送。失败记 `failed`，按最早受影响阶段返工。
+通过记 `verification.result: passed`，进入 active / close。尚未获得用户验收时，用 `wait --kind confirmation` 设置验收等待并提交推送，保留原 Change 供后续调整。失败记 `failed`，按最早受影响阶段返工。
 
 ### 验收
 
-small 自验收时，Agent 对照 Requirement 逐项核对交付与证据，确认仍符合 small 范围且没有未解决的验收项，记录 `acceptance.result: accepted`。摘要明确写“Agent 自验收通过”及实际依据，`source` 记录 small 直接归档规则或用户的明确授权，不写成用户已验收。随后完成 Specs 同步和归档提交推送，一次报告结果；验收未通过时按返工规则处理。
+向用户提供实现摘要、验收对应结果、验证证据和已知限制。用户实际验收或明确要求将当前交付归档、合入指定目标分支后，用 `accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`；已有明确授权直接沿用，不再次索要同一确认。Agent 自查、测试通过和事先“做完就行”的笼统指示不等于用户验收。
 
-人工验收时，向用户提供实现摘要、验收对应结果、验证证据和已知限制。实际验收或用户明确要求将该交付合入指定目标分支后，用 `accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`；显式合入指令按已有授权执行，不再次索要同一确认。测试通过和事先“做完就行”的笼统指示不等于人工验收。
-
-需要人工验收但尚未验收时保持 active / close 和等待项，不同步 Specs、不归档；需修改时按[返工规则](#确认等待与返工)处理。
+尚未验收时保持 active / close 和等待项，不同步 Specs、不归档。等待期间原范围内的小调整继续在原 Change 按[返工规则](#确认等待与返工)处理，保留已完成任务并追加返修任务，重新验证后再提交用户验收。
 
 ### Specs 同步
 
