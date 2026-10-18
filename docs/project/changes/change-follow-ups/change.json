@@ -4,7 +4,7 @@
   "title": "连续交付通过延续关系分组展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-follow-ups",
   "confirmations": {
     "requirement": {
@@ -43,10 +43,20 @@
       "commitTitle": "change-follow-ups T3: simplify delivery groups and fix spacing"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T06:15:23.955Z",
+      "summary": "呈现修正经 14 项浏览器回归、类型/格式/skill 校验、生产构建和独立复审通过；既有关系与历史迁移证据继续有效。"
+    }
+  },
   "rework": {
     "at": "2026-10-18T06:09:35.154Z",
     "reason": "用户要求分组始终展开，仅保留外框、标题和原记录，并修正底部间距。",
     "approach": "沿用已有延续关系与独立交付，按用户明确反馈简化分组呈现并更新开发服务供验收。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "按用户反馈简化为始终可见的标题外框分组，更新开发服务后等待实际效果验收。"
   }
 }
