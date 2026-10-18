@@ -420,7 +420,6 @@ export default function Changes() {
             </div>
             <GroupedChangeRows
               changes={filtered}
-              open={open}
               render={(g) => {
                 const c = primaryRecord(g),
                   s = c?.state;
@@ -526,7 +525,6 @@ function OutcomeList({
       </div>
       <GroupedChangeRows
         changes={groups}
-        open={open}
         render={(group) => {
           const c = primaryRecord(group),
             state = c?.state;

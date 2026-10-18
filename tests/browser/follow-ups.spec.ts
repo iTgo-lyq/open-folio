@@ -5,7 +5,7 @@ import {
   type Snapshot,
 } from "../../src/lib/model";
 
-test("continuations fold archived deliveries while keeping active members, filters and deep links", async ({
+test("continuations show grouped deliveries directly while keeping spacing, filters and deep links", async ({
   page,
   request,
   personal,
@@ -35,25 +35,24 @@ test("continuations fold archived deliveries while keeping active members, filte
   primaryRecord(active)!.state!.followUpOf = next.id;
   const cancelled = data.changes.find((g) => g.id === "layout-experiment")!;
   primaryRecord(cancelled)!.state!.followUpOf = root.id;
-  data.changes = [root, next, active, cancelled];
+  const standalone = structuredClone(root);
+  standalone.id =
+    standalone.primary =
+    standalone.candidates[0].key =
+      "unrelated";
+  standalone.title = standalone.candidates[0].title = "独立交付";
+  standalone.candidates[0].id = standalone.candidates[0].state!.id =
+    standalone.id;
+  standalone.candidates[0].state!.title = standalone.title;
+  data.changes = [root, next, active, cancelled, standalone];
   await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
   );
   await page.goto(`/?${repositoryQuery}&m=changes&scope=completed`);
   const group = page.getByRole("region", { name: "技术方案问询 的连续交付" });
   await expect(page.locator(".follow-up-group")).toHaveCount(1);
-  await expect(group).toContainText("4 次交付记录 · 当前匹配 2 条");
-  await expect(group).toContainText("1 项调整进行中");
-  const toggle = group.getByRole("button", {
-    name: "展开 技术方案问询 的交付记录",
-  });
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await page.screenshot({
-    path: "artifacts/follow-ups-collapsed-desktop.png",
-    fullPage: true,
-  });
-  await toggle.focus();
-  await page.keyboard.press("Enter");
+  await expect(group.getByRole("heading")).toHaveText("技术方案问询");
+  await expect(group.getByRole("button")).toHaveCount(2);
   await expect(
     group.getByRole("button", { name: "打开 技术方案问询", exact: true }),
   ).toBeVisible();
@@ -64,11 +63,22 @@ test("continuations fold archived deliveries while keeping active members, filte
     }),
   ).toBeVisible();
   await page.screenshot({
-    path: "artifacts/follow-ups-expanded-desktop.png",
+    path: "artifacts/follow-ups-grouped-desktop.png",
     fullPage: true,
   });
+  const frame = await group.boundingBox();
+  const following = await page
+    .getByRole("button", { name: "打开 独立交付", exact: true })
+    .boundingBox();
+  expect(following!.y - (frame!.y + frame!.height)).toBeGreaterThanOrEqual(12);
+  await group
+    .getByRole("button", { name: "打开 技术方案问询", exact: true })
+    .focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/c=source-connect/);
+  await page.getByRole("button", { name: "关闭变更详情" }).click();
   await page.getByRole("combobox", { name: "筛选规模" }).selectOption("medium");
-  await expect(group).toContainText("当前匹配 1 条");
+  await expect(group.getByRole("button")).toHaveCount(1);
   await expect(
     group.getByRole("button", { name: "打开 技术方案问询", exact: true }),
   ).toHaveCount(0);
@@ -85,8 +95,9 @@ test("continuations fold archived deliveries while keeping active members, filte
   await expect(page).toHaveURL(/c=source-connect/);
   await page.getByRole("button", { name: "关闭变更详情" }).click();
   await page.goto(`/?${repositoryQuery}&m=changes`);
-  await expect(group).toContainText(`进行中：${active.title}`);
-  await group.getByRole("button", { name: "查看进行中", exact: true }).click();
+  await group
+    .getByRole("button", { name: `打开 ${active.title}`, exact: true })
+    .click();
   await expect(page).toHaveURL(/c=document-reader/);
   await page.reload();
   await expect(
@@ -94,7 +105,6 @@ test("continuations fold archived deliveries while keeping active members, filte
   ).toContainText("需求与技术额度分别计算");
   await page.getByRole("button", { name: "关闭变更详情" }).click();
   await page.setViewportSize({ width: 320, height: 740 });
-  await group.getByRole("button", { name: /展开/ }).click();
   await expect(
     group.getByRole("button", { name: `打开 ${active.title}`, exact: true }),
   ).toBeVisible();
@@ -108,8 +118,7 @@ test("continuations fold archived deliveries while keeping active members, filte
     fullPage: true,
   });
   await page.getByRole("tab", { name: /已取消/ }).click();
-  await expect(group).toContainText("当前匹配 1 条");
-  await group.getByRole("button", { name: /展开/ }).click();
+  await expect(group.getByRole("button")).toHaveCount(1);
   await expect(
     group.getByRole("button", { name: `打开 ${cancelled.title}`, exact: true }),
   ).toBeVisible();

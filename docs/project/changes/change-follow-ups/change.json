@@ -4,7 +4,7 @@
   "title": "连续交付通过延续关系分组展示",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-follow-ups",
   "confirmations": {
     "requirement": {
@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "简化分组展示并修正列表间距",
-      "status": "todo"
+      "status": "done",
+      "verification": "14 项浏览器回归、类型/格式/skill 校验及生产构建通过；桌面与 320px 间距核对通过，独立复审通过。",
+      "commitTitle": "change-follow-ups T3: simplify delivery groups and fix spacing"
     }
   },
   "closure": {},
