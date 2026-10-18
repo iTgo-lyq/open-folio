@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "修复截图发布引用并验证当前卡片展示",
-      "status": "doing"
+      "status": "done",
+      "verification": "16 项原型测试、截图专项浏览器检查、类型与清单校验通过；原有 iframe 点击超时在未改测试基线复现。原固定版本三端引用已补齐。",
+      "commitTitle": "prototype-thumbnail-publication T1: verify publication repair"
     }
   },
   "closure": {},
