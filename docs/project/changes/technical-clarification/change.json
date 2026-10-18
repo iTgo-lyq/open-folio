@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "technical-clarification",
+  "title": "精简技术方案追问并说明实现重点",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补齐技术方案分轮澄清、额度与实现重点说明规则",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
