@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "small-change-user-acceptance",
-  "title": "small Change 验证后等待用户确认再归档",
+  "title": "small Change 人工验收反馈后停止自动归档",
   "size": "small",
   "status": "active",
-  "stage": "close",
+  "stage": "requirement",
   "branch": "codex/small-change-user-acceptance",
   "confirmations": {},
   "tasks": {
@@ -13,17 +13,16 @@
       "status": "done",
       "verification": "quick_validate.py 校验通过；git diff --check 通过；逐项核对主 skill 与命令参考：未验收等待、原 Change 返工、用户确认后关闭一致，已移除 small 自验收归档指导。仅文档规则调整，无服务代码变更。",
       "commitTitle": "small-change-user-acceptance T1: wait for user acceptance before archival"
+    },
+    "T2": {
+      "title": "恢复默认自验收并保留人工验收反馈后的确认要求",
+      "status": "todo"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-18T07:54:14.000Z",
-      "summary": "Agent 自查通过：主 skill 与命令参考统一为用户验收后归档；small 验证后待确认、原 Change 返工及明确授权复用三条路径一致。quick_validate.py、git diff --check 与提交状态校验通过。"
-    }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "规则修改已验证并推送，等待用户确认验收；确认后同步两处 Specs、归档并合入 develop。"
+  "closure": {},
+  "rework": {
+    "at": "2026-10-18T07:56:22.201Z",
+    "reason": "用户验收反馈统一等待不便，改为人工验收提出问题后才停止自动归档，并要求措辞精简。",
+    "approach": "恢复 small 默认自验收；对人工验收反馈问题的 Change 持续要求用户确认，精简主 skill 与命令参考。"
   }
 }
