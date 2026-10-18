@@ -1,6 +1,6 @@
 ---
 name: testing-strategy
-description: Design test strategies and test plans. Trigger with "how should we test", "test strategy for", "write tests for", "test plan", "what tests do we need", or when the user needs help with testing approaches, coverage, or test architecture.
+description: 设计测试策略与测试计划。适用于“应该怎么测试”“为这个功能制定测试策略”“编写测试”“测试计划”“需要哪些测试”，以及需要选择测试方式、评估覆盖缺口或设计测试架构的场景。
 license: Apache-2.0
 metadata:
   upstream: anthropics/knowledge-work-plugins
@@ -8,45 +8,47 @@ metadata:
   upstream-commit: 33eeda1e8fd856455b05479d13a0f85b5f803744
 ---
 
-# Testing Strategy
+# 测试策略
 
-Adapted for SpecTrail on 2026-10-18 from [Anthropic's testing-strategy](https://github.com/anthropics/knowledge-work-plugins/blob/33eeda1e8fd856455b05479d13a0f85b5f803744/engineering/skills/testing-strategy/SKILL.md). Local changes make test selection and output proportional to the change. The upstream [license](./LICENSE) is included.
+本文件于 2026-10-18 基于 [Anthropic 的 testing-strategy](https://github.com/anthropics/knowledge-work-plugins/blob/33eeda1e8fd856455b05479d13a0f85b5f803744/engineering/skills/testing-strategy/SKILL.md) 翻译并适配到 SpecTrail，**不是上游原样副本**。保留固定来源版本和上游[许可证](./LICENSE)。
 
-Design effective testing strategies balancing coverage, speed, and maintenance.
+相对上游的调整：新增“测试设计与改动相称”约束；明确测试金字塔和组件示例仅供按需选择；将“一次性脚本可以跳过测试”改为按实际影响判断；将默认输出测试计划、覆盖率目标和示例用例，改为在当前方案中记录必要验证，指标与示例按需补充。本次中文化不改变这些既有规则。
 
-## Proportionality First
+设计有效的测试策略，平衡覆盖范围、执行速度和维护成本。
 
-Do not overdesign testing. These constraints govern the examples below:
+## 测试设计与改动相称
 
-- Start with acceptance behavior, actual failure risks, and existing coverage. Reuse the project's tools and tests; add only checks that close a meaningful gap. Preserve required project checks.
-- Choose the least costly test level that can observe the relevant behavior reliably. Multiple levels are justified only when they catch different important failures; do not mirror implementation details or duplicate the same assertion across layers.
-- Low-risk documentation, styling, or reversible changes can use review, static checks, or a focused smoke check without new automated tests. Data integrity, authorization, and other consequential risks still need suitable verification.
-- Do not invent coverage percentages, test counts, or layer quotas. Introduce frameworks, elaborate mocks, new test infrastructure, load tests, or chaos tests only for a concrete unmet need. Component examples below are options, not a checklist.
-- Prefer representative cases and relevant failure boundaries over exhaustive combinations or large snapshots. Stop after the selected checks pass unless a new change, failure, or unresolved concern warrants more testing.
+**测试不得过度设计。** 下文的示例均受以下约束：
 
-## Testing Pyramid
+- 从验收行为、实际失败风险和已有覆盖出发。复用项目现有工具与测试，只增加能补齐实质缺口的检查，保留项目必需检查。
+- 选择能可靠观察相关行为、成本最低的测试层级。只有不同层级能发现不同的重要故障时，才同时采用多个层级；不照抄实现细节，也不在多层重复相同断言。
+- 低风险的文档、样式或可逆修改，可以采用审阅、静态检查或针对性冒烟，无需新增自动化测试。数据完整性、权限及其他影响重大的风险仍需适当验证。
+- 不自行设定覆盖率百分比、测试数量或层级配额。只有存在明确且尚未满足的需要时，才引入框架、复杂 mock、新测试基础设施、负载测试或混沌测试。下文的组件示例是可选方法，不是必做清单。
+- 优先选择有代表性的用例和相关失败边界，不穷举组合或堆积大型快照。选定的检查通过后即停止；只有新改动、失败或尚未解决的疑点才需要增加测试。
 
-Use this as a cost heuristic, not a required distribution or a reason to create every layer:
+## 测试金字塔
+
+仅作为判断成本的参考，不要求按固定比例分配，也不要求每一层都建立测试：
 
 ```
-        /  E2E  \         Few, slow, high confidence
-       / Integration \     Some, medium speed
-      /    Unit Tests  \   Many, fast, focused
+        /  端到端测试  \       数量少、较慢、整体信心高
+       /    集成测试    \      数量适中、速度适中
+      /      单元测试    \     数量较多、快速、聚焦
 ```
 
-## Strategy by Component Type
+## 按组件类型选择测试
 
-- **API endpoints**: Unit tests for business logic, integration tests for HTTP layer, contract tests for consumers
-- **Data pipelines**: Input validation, transformation correctness, idempotency tests
-- **Frontend**: Component tests, interaction tests, visual regression, accessibility
-- **Infrastructure**: Smoke tests, chaos engineering, load tests
+- **API 端点**：业务逻辑的单元测试、HTTP 层的集成测试、面向调用方的契约测试。
+- **数据管道**：输入校验、转换正确性、幂等性测试。
+- **前端**：组件测试、交互测试、视觉回归、无障碍检查。
+- **基础设施**：冒烟测试、混沌测试、负载测试。
 
-## What to Cover
+## 覆盖什么
 
-Focus on: business-critical paths, error handling, edge cases, security boundaries, data integrity.
+重点覆盖：业务关键路径、错误处理、相关边界情况、安全边界、数据完整性。
 
-Skip tests of trivial getters/setters, framework internals, or behavior already adequately covered. Assess one-off scripts by their effects: a harmless helper may need only a focused check, while a destructive data migration needs verification of its actual risks.
+可以跳过：简单的取值或赋值方法、框架内部行为，以及已有充分覆盖的行为。一次性脚本按其影响判断：无害的辅助脚本可能只需针对性检查，破坏性数据迁移则需要验证实际风险。
 
-## Output
+## 输出
 
-Record what to verify, the selected method, and the pass criteria in the current technical design; for a small SpecTrail Change, use the Requirement's solution notes. Mention material coverage gaps or limits when they affect confidence. Add numeric targets or example cases only when an agreed requirement or actual risk makes them useful. Do not create a separate test-plan document or new testing system by default.
+在当前技术方案中记录验证对象、所选方法和通过依据；SpecTrail 的 small Change 写入 Requirement 的方案要点。覆盖缺口或限制会影响交付信心时，再说明这些缺口或限制。仅在已确认要求或实际风险需要时，补充数值目标或示例用例。不默认另建测试计划文档或新的测试体系。
