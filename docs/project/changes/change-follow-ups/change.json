@@ -4,7 +4,7 @@
   "title": "连续交付通过延续关系分组展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-follow-ups",
   "confirmations": {
     "requirement": {
@@ -49,10 +49,20 @@
       "commitTitle": "change-follow-ups T4: name continuation groups and refine frame headings"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T06:32:33.767Z",
+      "summary": "独立分组命名和标题嵌框经相关测试、浏览器、类型格式、生产构建及独立复审通过，历史补写仅指定组名。"
+    }
+  },
   "rework": {
     "at": "2026-10-18T06:25:59.297Z",
     "reason": "用户要求补齐独立分组标题并调整标题嵌入边框的样式。",
     "approach": "首次关联概括共同目标并保存独立组名，后续沿用；按明确指定组名迁移历史元数据，调整外框与分隔线后更新服务验收。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "独立组名与标题嵌框样式已验证，按用户要求更新服务后等待实际效果验收。"
   }
 }
