@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "small-change-user-acceptance",
+  "title": "small Change 验证后等待用户确认再归档",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一 small Change 的用户验收与待验收返工规则",
+      "status": "todo"
+    }
+  },
+  "closure": {}
+}
