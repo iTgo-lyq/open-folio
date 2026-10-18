@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "technical-anti-bloat-detail",
+  "title": "补齐技术方案反膨胀指导的判断方法",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "恢复反膨胀检查范围、证据要求和取舍方法",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "technical-anti-bloat",
+  "followUpTitle": "技术方案反膨胀指导"
+}
