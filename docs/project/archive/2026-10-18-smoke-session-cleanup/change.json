@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "smoke-session-cleanup",
+  "title": "冒烟验证结束后可靠退出测试会话",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/smoke-session-cleanup",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一冒烟会话清理并验证成功与失败路径",
+      "status": "done",
+      "verification": "36项定向测试、应用与UI类型检查、格式检查通过；真实服务成功、故意失败及浏览器失败均自动清理且保留Mac会话",
+      "commitTitle": "smoke-session-cleanup T1: guarantee smoke session teardown and verification"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T05:41:06.147Z",
+      "summary": "Agent自查通过，36项定向测试及类型检查通过，三条真实冒烟路径均清除测试会话且保留用户登录"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T05:41:07.783Z",
+      "summary": "Agent自验收：成功、断言失败、浏览器异常均退出并复查，永久清理失败报错，原设备与数据保留",
+      "source": "用户要求补完整冒烟清理流程，成功或失败后退出并检查结果；依据36项测试和三条真实服务验证自验收"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T05:41:25.082Z",
+      "summary": "服务配置Spec新增真实登录冒烟的独立会话、退出复查及失败处理约定"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T05:41:26.719Z",
+      "summary": "完成冒烟会话清理工具与规范，成功和失败真实验证均无遗留设备",
+      "path": "docs/project/archive/2026-10-18-smoke-session-cleanup"
+    }
+  }
+}
