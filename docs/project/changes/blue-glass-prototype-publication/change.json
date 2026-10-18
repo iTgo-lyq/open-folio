@@ -4,13 +4,13 @@
   "title": "蓝色玻璃工作台原型发布",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/blue-glass-prototype-publication",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "发布既有原型并验证原型总览与固定预览",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {}

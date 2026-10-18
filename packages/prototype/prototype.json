@@ -2,6 +2,18 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "blue-glass-workbench",
+      "title": "蓝色玻璃工作台",
+      "description": "蓝色主题与克制的液态玻璃，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据。",
+      "sourcePath": "packages/prototype/src/pages/blue-glass-workbench.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
       "id": "change-integration",
       "title": "Change 合入变更",
       "description": "整体合入差异、文件选择、归档移动、展示限制与缺失及异常状态。仅使用示例数据。",
