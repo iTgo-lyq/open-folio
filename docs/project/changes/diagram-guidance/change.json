@@ -4,13 +4,15 @@
   "title": "按模块评估中型及以上 Change 的配图需要",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/diagram-guidance",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "补充按模块评估的配图建议",
-      "status": "todo"
+      "status": "done",
+      "verification": "skill 校验与差异检查通过；自查中型起适用、逐模块评估、差异模块分别说明及按需配图，未增加固定数量或审批。",
+      "commitTitle": "diagram-guidance T1: recommend diagrams per changed module"
     }
   },
   "closure": {}
