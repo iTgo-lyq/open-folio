@@ -4,13 +4,15 @@
   "title": "补齐技术方案反膨胀指导的判断方法",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/technical-anti-bloat-detail",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "恢复反膨胀检查范围、证据要求和取舍方法",
-      "status": "todo"
+      "status": "done",
+      "verification": "quick_validate.py 与 git diff --check 通过；对照原文自查问题边界、具体机制、风险证据、四类取舍、有效保障与审查成本均已恢复。",
+      "commitTitle": "technical-anti-bloat-detail T1: restore actionable complexity review guidance"
     }
   },
   "closure": {},
