@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "technical-anti-bloat-detail",
+  "title": "补齐技术方案反膨胀指导的判断方法",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/technical-anti-bloat-detail",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "恢复反膨胀检查范围、证据要求和取舍方法",
+      "status": "done",
+      "verification": "quick_validate.py 与 git diff --check 通过；对照原文自查问题边界、具体机制、风险证据、四类取舍、有效保障与审查成本均已恢复。",
+      "commitTitle": "technical-anti-bloat-detail T1: restore actionable complexity review guidance"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T07:44:06.787Z",
+      "summary": "Agent 自查完整差异；skill 校验与空白检查通过，短小节恢复原文的检查对象、证据和取舍方法，未增加流程门禁。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-18T07:44:08.419Z",
+      "summary": "Agent 自验收通过：指南保留可操作的判断与减量方法，并明确必要保护和审查成本边界。",
+      "source": "用户在直接整合授权后指出精简过分；本次补齐原文关键方法，按 SpecTrail small 自验收规则交付。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-18T07:44:10.116Z",
+      "summary": "同步 change-workflow 技术方案复杂度章节的检查对象、风险证据、取舍方法与保障边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-18T07:44:11.784Z",
+      "summary": "归档反膨胀指南补充，恢复原文关键判断方法，skill 校验与自验收通过。",
+      "path": "docs/project/archive/2026-10-18-technical-anti-bloat-detail"
+    }
+  },
+  "followUpOf": "technical-anti-bloat",
+  "followUpTitle": "技术方案反膨胀指导"
+}
