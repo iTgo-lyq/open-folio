@@ -4,13 +4,15 @@
   "title": "恢复反膨胀指南的原文表达",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/anti-bloat-source",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "以原文中文主体替换自行改写的指南",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照上游中文主体，仅标题层级及末句审阅方式作适配；来源与 MIT 许可已保留，quick_validate.py 和 git diff --check 通过。",
+      "commitTitle": "anti-bloat-source T1: preserve upstream Chinese guidance"
     }
   },
   "closure": {},
