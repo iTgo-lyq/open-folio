@@ -1,3 +1,7 @@
+import {
+  SUGGESTED_COLLABORATION_BRANCH,
+  validBranchName,
+} from "../lib/collaboration.ts";
 import "server-only";
 import {
   mkdir,
@@ -39,8 +43,11 @@ export interface DiscoveredRepository {
   state: RepositoryState;
   message?: string;
   specBranch?: string;
+  collaborationBranch: string;
 }
 interface Job {
+  sourceVersion: 2;
+  selections: Record<string, string>;
   revision: number;
   state: DiscoveryState;
   cursor: string | null;
@@ -62,6 +69,11 @@ const repoSchema = z.object({
   defaultBranch: z.string().nullable(),
 });
 export const discoveryJobSchema = z.object({
+  sourceVersion: z.literal(2),
+  selections: z.record(
+    z.string().regex(/^[a-f0-9]{64}$/),
+    z.string().refine(validBranchName),
+  ),
   revision: z.number().int().positive(),
   state: z.enum(["running", "complete", "partial", "interrupted"]),
   cursor: z.string().nullable(),
@@ -74,6 +86,7 @@ export const discoveryJobSchema = z.object({
       state: z.enum(["ready", "attention", "not-integrated", "unavailable"]),
       message: z.string().optional(),
       specBranch: z.string().optional(),
+      collaborationBranch: z.string().refine(validBranchName),
     }),
   ),
   message: z.string().optional(),
@@ -165,6 +178,21 @@ export class Discovery {
   private active = new Map<string, Promise<void>>();
   private starts = new Map<string, Promise<DiscoverySummary>>();
   private writes = new Map<string, Promise<unknown>>();
+  private edits = new Map<string, Promise<unknown>>();
+  private async editJob<T>(
+    path: string,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const pending = (this.edits.get(path) ?? Promise.resolve())
+      .catch(() => {})
+      .then(operation);
+    this.edits.set(path, pending);
+    try {
+      return await pending;
+    } finally {
+      if (this.edits.get(path) === pending) this.edits.delete(path);
+    }
+  }
   constructor(
     root: string,
     sessions: PersonalSessions,
@@ -179,9 +207,10 @@ export class Discovery {
   }
   private async read(lease: ConnectionLease): Promise<Job | null> {
     try {
-      return discoveryJobSchema.parse(
-        JSON.parse(await readFile(this.path(lease), "utf8")),
-      );
+      const value = JSON.parse(await readFile(this.path(lease), "utf8"));
+      // Discovery is rebuildable; old default-branch diagnoses are never current.
+      if (value.sourceVersion !== 2) return null;
+      return discoveryJobSchema.parse(value);
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
       throw new AppError(
@@ -248,20 +277,29 @@ export class Discovery {
     provider: RepositoryProvider,
     context: ProviderContext,
     repository: RepositoryIdentity,
+    collaborationBranch = SUGGESTED_COLLABORATION_BRANCH,
   ): Promise<DiscoveredRepository> {
-    const key = repositoryKey(repository);
-    const probe = await provider.probeWorkflow(context, repository);
-    if (probe.kind === "missing" || probe.kind === "empty-repository")
+    if (!validBranchName(collaborationBranch))
+      throw new AppError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
+    const source = {
+      key: repositoryKey(repository),
+      repository,
+      collaborationBranch,
+    };
+    const probe = await provider.probeWorkflow(
+      context,
+      repository,
+      collaborationBranch,
+    );
+    if (["missing", "empty-repository", "branch-missing"].includes(probe.kind))
       return {
-        key,
-        repository,
+        ...source,
         state: "not-integrated",
-        message: "默认分支尚未发现 SpecTrail 配置。",
+        message: `协作分支 ${collaborationBranch} 尚未发现 SpecTrail 配置，请指定项目实际使用的协作分支并完成 Setup。`,
       };
     if (probe.kind === "unavailable")
       return {
-        key,
-        repository,
+        ...source,
         state:
           probe.reason === "WORKFLOW_INVALID" ? "attention" : "unavailable",
         message:
@@ -269,6 +307,8 @@ export class Discovery {
             ? "工作流路径不是普通文件。"
             : "暂时无法检查工作流。",
       };
+    if (probe.kind !== "file")
+      throw new AppError("WORKFLOW_INVALID", "配置不可读。");
     let workflow: z.infer<typeof workflowCoreSchema>;
     try {
       workflow = workflowCoreSchema.parse(
@@ -276,54 +316,28 @@ export class Discovery {
       );
     } catch {
       return {
-        key,
-        repository,
+        ...source,
         state: "attention",
-        message: "请完成 SpecTrail Setup，发布有效的协作分支配置。",
+        message:
+          "请完成 SpecTrail Setup，在所选协作分支发布有效的 workflow v2 配置。",
       };
     }
-    const refs = await this.git(
-      provider,
-      context,
-      repository,
-      [
-        ...new Set([
-          repository.defaultBranch!,
-          workflow.collaborationBranch,
-          ...workflow.protectedBranches,
-        ]),
-      ].filter(Boolean),
-    );
-    if (
-      !repository.defaultBranch ||
-      refs.get(repository.defaultBranch) !== probe.commit
-    )
+    if (workflow.collaborationBranch !== collaborationBranch)
       return {
-        key,
-        repository,
+        ...source,
         state: "attention",
-        message: "默认分支已变化或无法定位，请重新检查。",
+        message: `所选协作分支 ${collaborationBranch} 与 workflow.json 不一致，请检查接入配置。`,
       };
-    if (workflow.protectedBranches.some((b) => !refs.has(b)))
+    const refs = await this.git(provider, context, repository, [
+      collaborationBranch,
+    ]);
+    if (refs.get(collaborationBranch) !== probe.commit)
       return {
-        key,
-        repository,
+        ...source,
         state: "attention",
-        message: "配置声明的守护分支不存在。",
+        message: "协作分支已变化或不存在，请重新检查。",
       };
-    if (!refs.has(workflow.collaborationBranch))
-      return {
-        key,
-        repository,
-        state: "attention",
-        message: "协作分支不存在，请完成 SpecTrail Setup。",
-      };
-    return {
-      key,
-      repository,
-      state: "ready",
-      specBranch: workflow.collaborationBranch,
-    };
+    return { ...source, state: "ready", specBranch: collaborationBranch };
   }
   async start(cookie: string, id: string, retry = false) {
     const lease = await this.sessions.lease(cookie, id);
@@ -331,7 +345,7 @@ export class Discovery {
       const path = this.path(lease);
       let pending = this.starts.get(path);
       if (!pending) {
-        pending = this.begin(cookie, id, retry);
+        pending = this.editJob(path, () => this.begin(cookie, id, retry));
         this.starts.set(path, pending);
         void pending
           .finally(() => {
@@ -391,6 +405,8 @@ export class Discovery {
               retryAfter: undefined,
             }
           : {
+              sourceVersion: 2,
+              selections: previous?.selections ?? {},
               revision: lease.connection.revision,
               state: "running",
               cursor: null,
@@ -460,6 +476,8 @@ export class Discovery {
                   provider,
                   context,
                   repository,
+                  job.selections[repositoryKey(repository)] ??
+                    SUGGESTED_COLLABORATION_BRANCH,
                 );
                 await lease.assertCurrent();
                 job.results.push(result);
@@ -487,6 +505,9 @@ export class Discovery {
                 job.results.push({
                   key: repositoryKey(repository),
                   repository,
+                  collaborationBranch:
+                    job.selections[repositoryKey(repository)] ??
+                    SUGGESTED_COLLABORATION_BRANCH,
                   state: "unavailable",
                   message: "检查未完成，请确认读取权限或重试。",
                 });
@@ -546,6 +567,7 @@ export class Discovery {
                 lease,
                 item.key,
                 item.repository,
+                { collaborationBranch: item.collaborationBranch },
               );
               return { ...item, repository };
             } catch (e) {
@@ -590,6 +612,22 @@ export class Discovery {
     cookie: string,
     id: string,
     selector: string | { fullName: string; repositoryId?: string },
+    collaborationBranch?: string,
+  ) {
+    const lease = await this.sessions.lease(cookie, id);
+    try {
+      return await this.editJob(this.path(lease), () =>
+        this.checkNow(cookie, id, selector, collaborationBranch),
+      );
+    } finally {
+      lease.release();
+    }
+  }
+  private async checkNow(
+    cookie: string,
+    id: string,
+    selector: string | { fullName: string; repositoryId?: string },
+    selectedBranch?: string,
   ) {
     const lease = await this.sessions.lease(cookie, id);
     let key: string | undefined;
@@ -599,18 +637,25 @@ export class Discovery {
           typeof selector === "string"
             ? provider.parseRepositoryUrl(selector)
             : selector;
-      key = (await this.read(lease))?.results.find((item) =>
+      const previous = await this.read(lease);
+      key = previous?.results.find((item) =>
         target.repositoryId
           ? item.repository.repositoryId === target.repositoryId
           : item.repository.fullName === target.fullName,
       )?.key;
       const repo = await provider.resolveRepository(lease.context, target);
       key = repositoryKey(repo);
+      const collaborationBranch =
+        selectedBranch ??
+        previous?.selections[key] ??
+        SUGGESTED_COLLABORATION_BRANCH;
       const result = await slots().use(lease.context.signal, () =>
-        this.diagnose(provider, lease.context, repo),
+        this.diagnose(provider, lease.context, repo, collaborationBranch),
       );
       await lease.assertCurrent();
       const job = (await this.read(lease)) ?? {
+        sourceVersion: 2 as const,
+        selections: {} as Record<string, string>,
         revision: lease.connection.revision,
         state: "partial" as const,
         cursor: null,
@@ -628,6 +673,7 @@ export class Discovery {
           "仓库发现仍在进行，请稍后重新检查地址。",
           409,
         );
+      job.selections[result.key] = collaborationBranch;
       job.results = job.results
         .filter((r) => r.key !== result.key)
         .concat(result);

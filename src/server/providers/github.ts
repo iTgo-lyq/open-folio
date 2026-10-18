@@ -1,3 +1,7 @@
+import {
+  SUGGESTED_COLLABORATION_BRANCH,
+  validBranchName,
+} from "../../lib/collaboration.ts";
 import "server-only";
 import { z } from "zod";
 import {
@@ -337,37 +341,72 @@ export class GitHubProvider implements RepositoryProvider {
       403,
     );
   }
-  async #root(ctx: ProviderContext, repo: RepositoryIdentity) {
-    if (!repo.defaultBranch) return null;
+  async #branch(
+    ctx: ProviderContext,
+    repo: RepositoryIdentity,
+    branch: string,
+  ) {
+    this.#context(ctx, repo);
+    if (!validBranchName(branch))
+      throw new ProviderError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
     try {
-      return parsed(
-        commitSchema,
+      // This Contents-authorized endpoint also returns [] for a missing branch.
+      // Match the full ref: a prefix match must never select a different source.
+      const refs = parsed(
+        z.array(
+          z.object({
+            ref: z.string(),
+            object: z.object({
+              type: z.string(),
+              sha: z.string().regex(/^[a-f0-9]{40}$/),
+            }),
+          }),
+        ),
         (
           await this.#request(
-            `/repos/${repo.fullName}/commits/${encodeURIComponent(repo.defaultBranch)}`,
+            `/repos/${repo.fullName}/git/matching-refs/heads/${encodeURIComponent(branch)}`,
             ctx.secret,
             ctx.signal,
           )
         ).value,
       );
+      const exact = refs.filter((ref) => ref.ref === `refs/heads/${branch}`);
+      if (exact.length > 1 || exact.some((ref) => ref.object.type !== "commit"))
+        throw dataError();
+      return exact[0]?.object.sha ?? null;
     } catch (e) {
       if (e instanceof ProviderError && e.code === "EMPTY_REPOSITORY")
         return null;
       throw e;
     }
   }
-  async assertRead(ctx: ProviderContext, repo: RepositoryIdentity) {
-    this.#context(ctx, repo);
-    await this.#root(ctx, repo);
+  async assertRead(
+    ctx: ProviderContext,
+    repo: RepositoryIdentity,
+    branch = SUGGESTED_COLLABORATION_BRANCH,
+  ) {
+    await this.#branch(ctx, repo, branch);
   }
   async probeWorkflow(
     ctx: ProviderContext,
     repo: RepositoryIdentity,
+    collaborationBranch: string,
   ): Promise<ProbeResult> {
     this.#context(ctx, repo);
     const current = await this.resolveRepository(ctx, repo);
-    const root = await this.#root(ctx, current);
-    if (!root) return { kind: "empty-repository" };
+    const commit = await this.#branch(ctx, current, collaborationBranch);
+    if (!commit) return { kind: "branch-missing" };
+    const root = parsed(
+      commitSchema,
+      (
+        await this.#request(
+          `/repos/${current.fullName}/commits/${commit}`,
+          ctx.secret,
+          ctx.signal,
+        )
+      ).value,
+    );
+    if (root.sha !== commit) throw dataError();
     let tree = root.commit.tree.sha;
     for (const [index, part] of [
       "docs",

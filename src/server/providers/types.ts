@@ -64,6 +64,7 @@ export type RepositorySelector = { fullName: string; repositoryId?: string };
 export type ProbeResult =
   | { kind: "file"; commit: string; bytes: Uint8Array }
   | { kind: "missing"; commit: string }
+  | { kind: "branch-missing" }
   | { kind: "empty-repository" }
   | { kind: "unavailable"; reason: string; retryAfter?: string };
 export interface RepositoryProvider {
@@ -82,10 +83,15 @@ export interface RepositoryProvider {
     context: ProviderContext,
     selector: RepositorySelector,
   ): Promise<RepositoryIdentity>;
-  assertRead(context: ProviderContext, repo: RepositoryIdentity): Promise<void>;
+  assertRead(
+    context: ProviderContext,
+    repo: RepositoryIdentity,
+    collaborationBranch?: string,
+  ): Promise<void>;
   probeWorkflow(
     context: ProviderContext,
     repo: RepositoryIdentity,
+    collaborationBranch: string,
   ): Promise<ProbeResult>;
   gitTransport(
     context: ProviderContext,

@@ -7,7 +7,11 @@ import {
   type PersonalSessions,
   type ConnectionLease,
 } from "./personal-sessions.ts";
-import { GitReader } from "./git.ts";
+import {
+  SUGGESTED_COLLABORATION_BRANCH,
+  validBranchName,
+} from "../lib/collaboration.ts";
+import { hash, GitReader } from "./git.ts";
 import { SnapshotStore } from "./store.ts";
 import { AppError } from "./errors.ts";
 import { repositoryPermissions } from "./repository-permissions.ts";
@@ -56,6 +60,7 @@ export class Repositories {
     operation: (context: ReadContext) => Promise<T>,
     selector?: RepositorySelector,
     signal?: AbortSignal,
+    selectedBranch?: string,
   ): Promise<T> {
     if (!/^[a-f0-9]{64}$/.test(key))
       throw new AppError("REPOSITORY_NOT_FOUND", "仓库不存在。", 404);
@@ -67,6 +72,12 @@ export class Repositories {
         lease.context.identity.providerId,
       );
       const found = await this.discoveries.lookup(lease, key);
+      const collaborationBranch =
+        selectedBranch ??
+        found?.collaborationBranch ??
+        SUGGESTED_COLLABORATION_BRANCH;
+      if (!validBranchName(collaborationBranch))
+        throw new AppError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
       target = found?.repository ?? selector;
       if (!target)
         throw new AppError(
@@ -74,12 +85,15 @@ export class Repositories {
           "请先发现或检查这个仓库。",
           404,
         );
-      const repository = await permissions.check(cookie, lease, key, target);
-      if (!found) {
+      const repository = await permissions.check(cookie, lease, key, target, {
+        collaborationBranch,
+      });
+      if (!found || found.collaborationBranch !== collaborationBranch) {
         const diagnosed = await this.discoveries.diagnose(
           provider,
           lease.context,
           repository,
+          collaborationBranch,
         );
         if (!["ready", "attention"].includes(diagnosed.state))
           throw new AppError(
@@ -94,6 +108,7 @@ export class Repositories {
       ) => {
         await permissions.check(cookie, owner, key, repository, {
           force,
+          collaborationBranch,
           workspaceOwned: owner !== lease,
         });
         await owner.assertCurrent();
@@ -113,7 +128,7 @@ export class Repositories {
             reader.signal = owner.context.signal;
             return reader;
           },
-          key,
+          hash(JSON.stringify([key, collaborationBranch])),
         );
       };
       const store = await makeStore(lease);
@@ -121,6 +136,7 @@ export class Repositories {
         id: key,
         name: repository.fullName,
         repositoryUrl: repository.cloneUrl,
+        collaborationBranch,
       };
       const context: ReadContext = {
         lease,

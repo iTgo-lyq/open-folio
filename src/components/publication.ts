@@ -12,7 +12,7 @@ export function usePublication(
 ) {
   const { readUrl, q, data, projectId } = useWorkspace(),
     { connection, epoch } = usePersonal();
-  const key = `${connection?.id}:${connection?.revision}:${epoch}:${projectId}:${revision}:${change}:${entry}`;
+  const key = `${connection?.id}:${connection?.revision}:${epoch}:${projectId}:${data?.collaborationBranch}:${revision}:${change}:${entry}`;
   const [result, setResult] = useState<{
       key: string;
       publication?: PublicPreview;
@@ -31,6 +31,8 @@ export function usePublication(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           connectionId: connection.id,
+          collaborationBranch:
+            data?.collaborationBranch ?? q.collaborationBranch,
           entry,
           ...(revision ? { revision } : {}),
           ...(change ? { change } : {}),

@@ -28,12 +28,13 @@ import { workflowCoreSchema } from "./schema.ts";
 import {
   routeCatalog,
   changeLocation,
+  validBranchName,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([3, limits]));
+  hash(JSON.stringify([4, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -60,7 +61,6 @@ export function imageMime(b: Buffer): string | undefined {
 }
 type CollectedData = Pick<
   Snapshot,
-  | "defaultBranch"
   | "collaborationBranch"
   | "branches"
   | "routes"
@@ -126,15 +126,7 @@ export class GitReader {
         throw e;
       },
     );
-    // Accept only our exact prior cache configuration, then remove its wildcard refspec.
-    if (
-      config ===
-      this.config() + "fetch = +refs/heads/*:refs/remotes/origin/*\n"
-    )
-      await writeFile(join(this.directory, "config"), this.config(), {
-        mode: 0o600,
-      });
-    else if (config !== null && config !== this.config())
+    if (config !== null && config !== this.config())
       throw new AppError(
         "GIT_CONFIG_UNTRUSTED",
         "仓库缓存配置不兼容，请重新建立个人缓存。",
@@ -248,10 +240,16 @@ export class GitReader {
   async collect(
     limits: Limits,
     signal: AbortSignal,
+    collaborationBranch: string,
     cache?: { snapshot: Snapshot; readBlob: (blob: string) => Promise<Buffer> },
     routingAttempt = 0,
   ): Promise<CollectedData> {
-    if (cache?.snapshot.scanFingerprint !== scanFingerprint(limits))
+    if (!validBranchName(collaborationBranch))
+      throw new AppError("INVALID_PARAMETER", "请指定有效的协作分支。", 400);
+    if (
+      cache?.snapshot.scanFingerprint !== scanFingerprint(limits) ||
+      cache?.snapshot.collaborationBranch !== collaborationBranch
+    )
       cache = undefined;
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
     try {
@@ -267,15 +265,9 @@ export class GitReader {
     const branches: Branch[] = [],
       archiveRefs: { id: string; commit: string }[] = [];
     const sourceDiagnostics: Diagnostic[] = [];
-    let collaborationBranch: string | null = null;
     let routes: ChangeRoute[] = [];
     const diagnostic = (message: string, code = "SETUP_REQUIRED") =>
       sourceDiagnostics.push({ code, message, severity: "warning" });
-    const head = (
-      await this.run(["ls-remote", "--symref", "origin", "HEAD"], signal)
-    ).toString();
-    const defaultBranch =
-      /^ref: refs\/heads\/(.+)\tHEAD$/m.exec(head)?.[1] ?? null;
     const exact = async (names: string[]) => {
       if (!names.length) return new Map<string, string>();
       const rows = (
@@ -562,7 +554,6 @@ export class GitReader {
       branches.sort((a, b) => a.name.localeCompare(b.name));
       const same =
         previous &&
-        previous.defaultBranch === defaultBranch &&
         previous.collaborationBranch === collaborationBranch &&
         JSON.stringify(previous.branches) === JSON.stringify(branches) &&
         JSON.stringify(previous.archiveRefs) === JSON.stringify(archiveRefs) &&
@@ -570,7 +561,6 @@ export class GitReader {
         JSON.stringify(previous.sourceDiagnostics) ===
           JSON.stringify(sourceDiagnostics);
       return {
-        defaultBranch,
         collaborationBranch,
         branches,
         routes,
@@ -581,27 +571,6 @@ export class GitReader {
         unchanged: !!same,
       };
     };
-    const defaultCommit = /^([a-f0-9]{40,64})\tHEAD$/m.exec(head)?.[1];
-    const baseline = defaultBranch
-      ? await source(defaultBranch, defaultCommit)
-      : null;
-    if (!baseline) {
-      diagnostic("无法定位默认分支，请完成 SpecTrail Setup。");
-      return finish();
-    }
-    await collectSource(baseline, ["docs/project/workflow.json"]);
-    let discovery;
-    try {
-      discovery = workflowCoreSchema.parse(
-        readJson(baseline.name, "docs/project/workflow.json"),
-      );
-    } catch {
-      diagnostic(
-        "默认分支尚未发布有效的协作分支配置，请完成 SpecTrail Setup。",
-      );
-      return finish();
-    }
-    collaborationBranch = discovery.collaborationBranch;
     const collab = await source(
       collaborationBranch,
       (await exact([`refs/heads/${collaborationBranch}`])).get(
@@ -620,7 +589,9 @@ export class GitReader {
       );
       if (workflow.collaborationBranch !== collaborationBranch) throw Error();
     } catch {
-      diagnostic("默认分支入口与协作分支配置不一致或配置无效，请修复 Setup。");
+      diagnostic(
+        "所选协作分支与 workflow.json 配置不一致或配置无效，请修复 Setup。",
+      );
       return finish();
     }
     routes = routeCatalog(
@@ -636,7 +607,6 @@ export class GitReader {
           }
         }),
       collaborationBranch,
-      workflow.protectedBranches,
     ) as ChangeRoute[];
     const routingIdentity = JSON.stringify(routes);
     const centralIds = routes
@@ -715,32 +685,11 @@ export class GitReader {
         if (commit) archiveRefs.push({ id, commit });
       }
     }
-    // Recheck discovery and routing only. Continuously advancing work branches do
-    // not hold the snapshot hostage; every target was already read at one commit.
-    const finalHead = (
-      await this.run(
-        [
-          "ls-remote",
-          "--symref",
-          "origin",
-          "HEAD",
-          `refs/heads/${collaborationBranch}`,
-        ],
-        signal,
-      )
-    ).toString();
-    const finalDefault = /^ref: refs\/heads\/(.+)\tHEAD$/m.exec(finalHead)?.[1];
-    const finalDefaultCommit = /^([a-f0-9]{40,64})\tHEAD$/m.exec(
-      finalHead,
-    )?.[1];
-    const finalCollabCommit = finalHead
-      .split("\n")
-      .map((row) => row.split("\t"))
-      .find(([, ref]) => ref === `refs/heads/${collaborationBranch}`)?.[0];
-    let changed =
-      finalDefault !== defaultBranch ||
-      !finalCollabCommit ||
-      !finalDefaultCommit;
+    // Recheck only the selected collaboration source and its routing.
+    const finalCollabCommit = (
+      await exact([`refs/heads/${collaborationBranch}`])
+    ).get(`refs/heads/${collaborationBranch}`);
+    let changed = !finalCollabCommit;
     const catalogAt = async (commit: string, entries: boolean) => {
       const rows = (
         await this.run(
@@ -798,19 +747,6 @@ export class GitReader {
       }
       return { config, records };
     };
-    if (!changed && finalDefaultCommit !== baseline.commit) {
-      const commit = await fetchRef(
-        `refs/heads/${baseline.name}`,
-        `refs/remotes/origin/${baseline.name}`,
-        finalDefaultCommit!,
-      );
-      const probe = workflowCoreSchema.safeParse(
-        (await catalogAt(commit, false)).config,
-      );
-      changed =
-        !probe.success ||
-        probe.data.collaborationBranch !== collaborationBranch;
-    }
     if (!changed && finalCollabCommit !== collab.commit) {
       const commit = await fetchRef(
         `refs/heads/${collab.name}`,
@@ -822,17 +758,18 @@ export class GitReader {
       changed =
         !probe.success ||
         JSON.stringify(probe.data) !== JSON.stringify(workflow) ||
-        JSON.stringify(
-          routeCatalog(
-            current.records,
-            collaborationBranch,
-            probe.data.protectedBranches,
-          ),
-        ) !== routingIdentity;
+        JSON.stringify(routeCatalog(current.records, collaborationBranch)) !==
+          routingIdentity;
     }
     if (changed) {
       if (routingAttempt < 2)
-        return this.collect(limits, signal, cache, routingAttempt + 1);
+        return this.collect(
+          limits,
+          signal,
+          collaborationBranch,
+          cache,
+          routingAttempt + 1,
+        );
       throw new AppError(
         "SOURCE_CHANGED",
         "协作入口或配置在读取中持续变化，请重试；上次快照已保留。",

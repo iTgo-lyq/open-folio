@@ -1,4 +1,5 @@
 import test from "node:test";
+import { GitReader as GitReaderForTest } from "../src/server/git.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -15,7 +16,7 @@ test("personal repository reads isolate snapshots and expire cached permissions 
     assert.equal((await t.request("refresh", "POST")).status, 200);
     const r = await t.request("workbench"),
       w = await r.json();
-    assert.equal(w.defaultBranch, "trunk");
+    assert.equal(w.collaborationBranch, "develop");
     assert.equal(w.prototype.branch, "develop");
     assert.equal(
       w.currentPrototype.revision,
@@ -374,12 +375,12 @@ for (const cached of [false, true])
       (directory) => {
         const reader = new GitReader(directory, t.g.remote, "file"),
           collect = reader.collect.bind(reader);
-        reader.collect = async (limits, signal, cache) => {
+        reader.collect = async (limits, signal, branch, cache) => {
           collects++;
           entered();
           await gate;
           signal.throwIfAborted();
-          return collect(limits, signal, cache);
+          return collect(limits, signal, branch, cache);
         };
         return reader;
       },
@@ -431,3 +432,77 @@ for (const cached of [false, true])
       await t.cleanup();
     }
   });
+
+test("switching the selected collaboration source isolates snapshots and concurrent refresh jobs", async (testContext) => {
+  const t = await setup();
+  testContext.after(t.cleanup);
+  const branch = "integration/team-a";
+  t.g.git(["checkout", "-b", branch]);
+  await t.g.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      schemaVersion: 2,
+      collaborationBranch: branch,
+      protectedBranches: ["unpublished"],
+      prototype: { status: "disabled" },
+    }),
+  );
+  await t.g.put("docs/project/specs/platform/spec.md", "# Alternate source\n");
+  t.g.commit();
+  const original = await (await t.request("refresh", "POST")).json();
+  const customRead = <T>(operation: Parameters<typeof t.service.read<T>>[3]) =>
+    t.service.read(
+      t.c.cookie,
+      t.c.connection.id,
+      t.key,
+      operation,
+      undefined,
+      undefined,
+      branch,
+    );
+  const [ordinary, custom] = await Promise.all([
+    t.service.read(t.c.cookie, t.c.connection.id, t.key, (ctx) =>
+      ctx.refresh(DEFAULT_LIMITS),
+    ),
+    customRead((ctx) => ctx.refresh(DEFAULT_LIMITS)),
+  ]);
+  assert.equal(ordinary.id, original.snapshotId);
+  assert.notEqual(custom.id, ordinary.id);
+  assert.equal(custom.specs[0].title, "Alternate source");
+  assert.equal(custom.prototype.status, "disabled");
+  assert.equal(ordinary.prototype.status, "enabled");
+  await assert.rejects(
+    customRead((ctx) => ctx.store.snapshot(ctx.project, ordinary.id)),
+    { code: "SNAPSHOT_EXPIRED" },
+  );
+  await t.service.discoveries.check(
+    t.c.cookie,
+    t.c.connection.id,
+    t.repo.webUrl,
+    branch,
+  );
+  assert.equal(
+    (
+      await t.service.read(t.c.cookie, t.c.connection.id, t.key, (ctx) =>
+        ctx.store.workbench(ctx.project),
+      )
+    ).id,
+    custom.id,
+  );
+  const restarted = new (
+    await import("../src/server/repositories.ts")
+  ).Repositories(
+    t.service.root,
+    t.f.sessions,
+    t.service.discoveries,
+    (dir) => new GitReaderForTest(dir, t.g.remote, "file"),
+  );
+  assert.equal(
+    (
+      await restarted.read(t.c.cookie, t.c.connection.id, t.key, (ctx) =>
+        ctx.store.workbench(ctx.project),
+      )
+    ).collaborationBranch,
+    branch,
+  );
+});

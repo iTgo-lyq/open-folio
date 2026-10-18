@@ -59,13 +59,17 @@ async function repo(provider: GitHubProvider) {
 }
 function fixture() {
   const bytes = JSON.stringify({
-    schemaVersion: 1,
+    schemaVersion: 2,
+    collaborationBranch: "develop",
     protectedBranches: ["trunk"],
   });
   return {
     "/user": { id: 7, login: "demo", name: null },
     "/repos/demo/work": source,
-    "/repos/demo/work/commits/trunk": {
+    "/repos/demo/work/git/matching-refs/heads/develop": [
+      { ref: "refs/heads/develop", object: { type: "commit", sha: oid("a") } },
+    ],
+    [`/repos/demo/work/commits/${oid("a")}`]: {
       sha: oid("a"),
       commit: { tree: { sha: oid("b") } },
     },
@@ -160,7 +164,7 @@ test("workflow is read at one commit, through regular Git tree entries", async (
   const { provider, requests } = mock(fixture());
   const r = await repo(provider);
   await provider.assertRead(context, r);
-  const result = await provider.probeWorkflow(context, r);
+  const result = await provider.probeWorkflow(context, r, "develop");
   assert.equal(result.kind, "file");
   if (result.kind !== "file") throw new Error();
   assert.equal(result.commit, oid("a"));
@@ -183,23 +187,32 @@ test("only tree-confirmed absence means missing; rejected contents remain unavai
   const f = fixture();
   f[`/repos/demo/work/git/trees/${oid("b")}`] = { truncated: false, tree: [] };
   const p = mock(f).provider;
-  assert.equal((await p.probeWorkflow(context, await repo(p))).kind, "missing");
+  assert.equal(
+    (await p.probeWorkflow(context, await repo(p), "develop")).kind,
+    "missing",
+  );
   for (const status of [403, 404]) {
     const f = fixture();
-    f["/repos/demo/work/commits/trunk"] = new Response(null, { status });
+    f["/repos/demo/work/git/matching-refs/heads/develop"] = new Response(null, {
+      status,
+    });
     const p = mock(f).provider;
     await assert.rejects(
       () =>
-        p.probeWorkflow(context, {
-          providerId: "github",
-          instanceId: "github.com",
-          repositoryId: "12",
-          fullName: "demo/work",
-          displayName: "work",
-          webUrl: "https://github.com/demo/work",
-          cloneUrl: "https://github.com/demo/work.git",
-          defaultBranch: "trunk",
-        }),
+        p.probeWorkflow(
+          context,
+          {
+            providerId: "github",
+            instanceId: "github.com",
+            repositoryId: "12",
+            fullName: "demo/work",
+            displayName: "work",
+            webUrl: "https://github.com/demo/work",
+            cloneUrl: "https://github.com/demo/work.git",
+            defaultBranch: "trunk",
+          },
+          "develop",
+        ),
       { code: "READ_DENIED" },
     );
   }
@@ -216,7 +229,7 @@ test("symlinks, submodules, malformed blobs, truncated trees and empty repositor
       tree: [{ path: "workflow.json", mode, type, sha: oid("e") }],
     };
     const p = mock(f).provider;
-    assert.deepEqual(await p.probeWorkflow(context, await repo(p)), {
+    assert.deepEqual(await p.probeWorkflow(context, await repo(p), "develop"), {
       kind: "unavailable",
       reason: "WORKFLOW_INVALID",
     });
@@ -234,24 +247,30 @@ test("symlinks, submodules, malformed blobs, truncated trees and empty repositor
     const p = mock(f).provider;
     await assert.rejects(
       () =>
-        p.probeWorkflow(context, {
-          providerId: "github",
-          instanceId: "github.com",
-          repositoryId: "12",
-          fullName: "demo/work",
-          displayName: "work",
-          webUrl: "https://github.com/demo/work",
-          cloneUrl: "https://github.com/demo/work.git",
-          defaultBranch: "trunk",
-        }),
+        p.probeWorkflow(
+          context,
+          {
+            providerId: "github",
+            instanceId: "github.com",
+            repositoryId: "12",
+            fullName: "demo/work",
+            displayName: "work",
+            webUrl: "https://github.com/demo/work",
+            cloneUrl: "https://github.com/demo/work.git",
+            defaultBranch: "trunk",
+          },
+          "develop",
+        ),
       { code: "PROVIDER_DATA_INVALID" },
     );
   }
   const f = fixture();
-  f["/repos/demo/work/commits/trunk"] = new Response(null, { status: 409 });
+  f["/repos/demo/work/git/matching-refs/heads/develop"] = new Response(null, {
+    status: 409,
+  });
   const p = mock(f).provider;
-  assert.deepEqual(await p.probeWorkflow(context, await repo(p)), {
-    kind: "empty-repository",
+  assert.deepEqual(await p.probeWorkflow(context, await repo(p), "develop"), {
+    kind: "branch-missing",
   });
 });
 test("expired identities cannot be hidden by a public repository; limits are recoverable", async () => {
@@ -267,7 +286,9 @@ test("expired identities cannot be hidden by a public repository; limits are rec
     await assert.rejects(() => p.listRepositories(context, null), { code });
   }
   const f = fixture();
-  f["/repos/demo/work/commits/trunk"] = new Response(null, { status: 401 });
+  f["/repos/demo/work/git/matching-refs/heads/develop"] = new Response(null, {
+    status: 401,
+  });
   const p = mock(f).provider;
   await assert.rejects(
     () =>
@@ -291,11 +312,13 @@ test("content permission checks use one authenticated contents request without i
   await provider.assertRead(context, repository);
   assert.deepEqual(
     requests.map((u) => u.pathname),
-    ["/repos/demo/work/commits/trunk"],
+    ["/repos/demo/work/git/matching-refs/heads/develop"],
   );
   for (const status of [401, 403, 404, 503]) {
     const denied = mock({
-      "/repos/demo/work/commits/trunk": new Response(null, { status }),
+      "/repos/demo/work/git/matching-refs/heads/develop": new Response(null, {
+        status,
+      }),
     }).provider;
     await assert.rejects(() => denied.assertRead(context, repository));
   }
@@ -365,7 +388,10 @@ test("a second provider supplies the same contract without GitHub data", async (
   };
   const listed = await p.listRepositories(ctx, null);
   await p.assertRead(ctx, listed.items[0]);
-  assert.equal((await p.probeWorkflow(ctx, listed.items[0])).kind, "missing");
+  assert.equal(
+    (await p.probeWorkflow(ctx, listed.items[0], "integration")).kind,
+    "missing",
+  );
   assert.equal((await p.gitTransport(ctx, item)).url, item.cloneUrl);
 });
 
@@ -384,5 +410,35 @@ test("GitHub login gets identity and Git transport username from the token", asy
       )
     ).username,
     "demo",
+  );
+});
+
+test("selected branch permission probes ignore the hosting default and require an exact ref match", async () => {
+  const f = fixture();
+  const branch = "integration/team-a";
+  f["/repos/demo/work/git/matching-refs/heads/integration%2Fteam-a"] = [
+    { ref: `refs/heads/${branch}`, object: { type: "commit", sha: oid("a") } },
+  ];
+  const { provider, requests } = mock(f);
+  const repository = { ...(await repo(provider)), defaultBranch: null };
+  await provider.assertRead(context, repository, branch);
+  assert.equal(
+    (await provider.probeWorkflow(context, repository, branch)).kind,
+    "file",
+  );
+  assert(!requests.some((u) => /trunk|heads\/develop/.test(u.pathname)));
+  const missing = mock({
+    ...f,
+    "/repos/demo/work/git/matching-refs/heads/develop": [
+      {
+        ref: "refs/heads/development",
+        object: { type: "commit", sha: oid("a") },
+      },
+    ],
+  }).provider;
+  await missing.assertRead(context, repository, "develop");
+  assert.equal(
+    (await missing.probeWorkflow(context, repository, "develop")).kind,
+    "branch-missing",
   );
 });

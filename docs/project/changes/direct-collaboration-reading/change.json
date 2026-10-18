@@ -4,7 +4,7 @@
   "title": "直接读取协作分支并收敛工作流约束",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/direct-collaboration-reading",
   "confirmations": {
     "requirement": {
@@ -26,11 +26,13 @@
   "tasks": {
     "T1": {
       "title": "接入与读取直接使用指定协作分支",
-      "status": "todo"
+      "status": "done",
+      "verification": "206 项回归、类型、构建及 16 项浏览器场景通过；独立 Codex 评审通过",
+      "commitTitle": "direct-collaboration-reading T1: read selected collaboration branch directly"
     },
     "T2": {
       "title": "移除旧版工作流兼容并统一 Skill 规则",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {}

@@ -57,7 +57,11 @@ export class RepositoryPermissions {
     lease: ConnectionLease,
     key: string,
     target: RepositorySelector,
-    options: { force?: boolean; workspaceOwned?: boolean } = {},
+    options: {
+      force?: boolean;
+      workspaceOwned?: boolean;
+      collaborationBranch?: string;
+    } = {},
   ): Promise<RepositoryIdentity> {
     await lease.assertCurrent();
     const id = this.key(lease, key);
@@ -92,7 +96,11 @@ export class RepositoryPermissions {
           );
           if (repositoryKey(repository) !== key)
             throw new AppError("REPOSITORY_MISMATCH", "仓库身份已变化。", 403);
-          await provider.assertRead(owner.context, repository);
+          await provider.assertRead(
+            owner.context,
+            repository,
+            options.collaborationBranch,
+          );
           await owner.assertCurrent();
           // A later denial on another request must win over this older check.
           if (current.version !== version) throw current.denied;

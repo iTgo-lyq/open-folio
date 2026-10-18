@@ -72,6 +72,7 @@ export async function fixture() {
   };
   const project = {
     id: "fixture",
+    collaborationBranch: "develop",
     name: "测试项目",
     repositoryUrl: "https://example.test/fixture.git",
   };

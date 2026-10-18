@@ -48,7 +48,7 @@ test("discovery distinguishes six samples, paginates, and publishes only authori
         ["content", "ready"],
         ["empty-content", "ready"],
         ["invalid", "attention"],
-        ["source", "attention"],
+        ["source", "ready"],
       ],
     );
     assert.ok(!JSON.stringify(status).includes("team/content"));
@@ -331,4 +331,109 @@ test("same-token discovery is shared across devices and survives one logout; log
   } finally {
     await f.cleanup();
   }
+});
+
+test("custom branch selections survive rediscovery, restart, rename and concurrent checks without default or protected ref probes", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const c = await f.connect();
+  const calls: string[][] = [];
+  const d = new Discovery(
+    join(f.root, "selected-discovery"),
+    f.sessions,
+    async (p, ctx, repo, branches) => {
+      calls.push(branches);
+      return f.git(p, ctx, repo, branches);
+    },
+  );
+  f.repositories[0].defaultBranch = null;
+  const results = await Promise.all([
+    d.check(
+      c.cookie,
+      c.connection.id,
+      f.repositories[0].webUrl,
+      "integration/team-a",
+    ),
+    d.check(c.cookie, c.connection.id, f.repositories[4].webUrl, "pre-release"),
+  ]);
+  assert(results.every((r) => r.state === "ready"));
+  assert.deepEqual(calls, [["integration/team-a"], ["pre-release"]]);
+  f.repositories[0].fullName = "team/renamed";
+  f.repositories[0].webUrl = "https://sample.test/team/renamed";
+  await d.start(c.cookie, c.connection.id);
+  await d.wait(c.cookie, c.connection.id);
+  const restored = new Discovery(
+    join(f.root, "selected-discovery"),
+    f.sessions,
+    f.git,
+  );
+  const otherDevice = await f.connect();
+  const listing = await restored.list(
+    otherDevice.cookie,
+    otherDevice.connection.id,
+  );
+  assert.equal(
+    listing.items.find((i) => i.repository.repositoryId === "1")
+      ?.collaborationBranch,
+    "integration/team-a",
+  );
+  assert.equal(
+    listing.items.find((i) => i.repository.repositoryId === "5")
+      ?.collaborationBranch,
+    "pre-release",
+  );
+  const otherToken = await f.connect("", "second");
+  assert.equal(
+    (
+      await restored.check(
+        otherToken.cookie,
+        otherToken.connection.id,
+        f.repositories[0].webUrl,
+      )
+    ).collaborationBranch,
+    "develop",
+  );
+  await assert.rejects(
+    restored.check(
+      c.cookie,
+      c.connection.id,
+      f.repositories[0].webUrl,
+      "../bad",
+    ),
+    { code: "INVALID_PARAMETER" },
+  );
+});
+
+test("workflow version and selected branch must match without redirecting to the declared name", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const c = await f.connect();
+  const original = f.provider.probeWorkflow;
+  f.provider.probeWorkflow = async (ctx, repo) =>
+    original(ctx, repo, "elsewhere");
+  const mismatch = await f.discovery.check(
+    c.cookie,
+    c.connection.id,
+    f.repositories[0].webUrl,
+    "integration",
+  );
+  assert.equal(mismatch.state, "attention");
+  assert.match(mismatch.message!, /不一致/);
+  f.provider.probeWorkflow = async () => ({
+    kind: "file",
+    commit: "a".repeat(40),
+    bytes: Buffer.from(
+      JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    ),
+  });
+  assert.equal(
+    (
+      await f.discovery.check(
+        c.cookie,
+        c.connection.id,
+        f.repositories[0].webUrl,
+      )
+    ).state,
+    "attention",
+  );
 });

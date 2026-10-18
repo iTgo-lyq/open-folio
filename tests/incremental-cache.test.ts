@@ -99,7 +99,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.equal(same.id, first.id);
   assert.equal(same.capturedAt, first.capturedAt);
   assert(!f.calls.some((a) => ["ls-tree", "cat-file"].includes(a[0])));
-  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 4);
+  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 3);
   assert(!f.calls.some((a) => a[0] === "fetch"));
 
   await f.put(
@@ -161,8 +161,9 @@ test("default branch changes preserve the configured collaboration scope, and ol
   f.git(["symbolic-ref", "HEAD", "refs/heads/release"], f.remote);
   f.calls.length = 0;
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(f.scans().length, 1);
-  assert(f.calls.some((a) => a[0] === "fetch"));
+  assert.equal(next.id, first.id);
+  assert.equal(f.scans().length, 0);
+  assert(!f.calls.some((a) => a[0] === "fetch"));
   assert.deepEqual(
     next.specs.map((s) => s.branch),
     ["develop"],
@@ -178,7 +179,7 @@ test("default branch changes preserve the configured collaboration scope, and ol
   f.calls.length = 0;
   const upgraded = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
   assert.notEqual(upgraded.id, next.id);
-  assert.equal(f.scans().length, 2);
+  assert.equal(f.scans().length, 1);
   await assert.rejects(
     f.store.refresh(f.project, { ...DEFAULT_LIMITS, documents: 1 }),
     { code: "SOURCE_LIMIT" },

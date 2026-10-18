@@ -203,9 +203,7 @@ const workflowFields = z
   })
   .strict();
 const routingIssues = (value: unknown, ctx: z.RefinementCtx) => {
-  for (const message of workflowRoutingIssues(value, {
-    requireCollaboration: true,
-  }))
+  for (const message of workflowRoutingIssues(value))
     ctx.addIssue({ code: "custom", message });
 };
 export const workflowCoreSchema = workflowFields.superRefine(routingIssues);

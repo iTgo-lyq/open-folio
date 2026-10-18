@@ -108,7 +108,7 @@ export async function personalFixture() {
       if (controls.deny.has(r.repositoryId))
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
     },
-    probeWorkflow: async (_ctx, r) => {
+    probeWorkflow: async (_ctx, r, collaborationBranch) => {
       if (controls.deny.has(r.repositoryId) || r.displayName === "unavailable")
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
       if (r.displayName === "missing") return { kind: "missing", commit };
@@ -120,7 +120,7 @@ export async function personalFixture() {
             ? "not-json"
             : JSON.stringify({
                 schemaVersion: 2,
-                collaborationBranch: "develop",
+                collaborationBranch,
                 protectedBranches:
                   r.displayName === "source" ? ["deleted"] : ["trunk"],
               }),
@@ -133,7 +133,7 @@ export async function personalFixture() {
       secret: ctx.secret,
     }),
   };
-  const git: GitProbe = async (_p, _ctx, r) => {
+  const git: GitProbe = async (_p, _ctx, r, branches) => {
     controls.gitCalls++;
     controls.active++;
     controls.maxActive = Math.max(controls.maxActive, controls.active);
@@ -142,10 +142,7 @@ export async function personalFixture() {
         await new Promise((resolve) => setTimeout(resolve, controls.delay));
       if (controls.deny.has(r.repositoryId))
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
-      return new Map([
-        ["trunk", commit],
-        ["develop", commit],
-      ]);
+      return new Map(branches.map((branch) => [branch, commit]));
     } finally {
       controls.active--;
     }

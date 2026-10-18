@@ -70,7 +70,7 @@ export class SnapshotStore {
     this.cacheIdentity = cacheIdentity;
   }
   fingerprint() {
-    return hash(JSON.stringify([3, this.cacheIdentity]));
+    return hash(JSON.stringify([4, this.cacheIdentity]));
   }
   directory() {
     return join(this.root, this.cacheIdentity);
@@ -128,7 +128,8 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 4 ||
+        s.cacheSchemaVersion !== 5 ||
+        s.collaborationBranch !== p.collaborationBranch ||
         !Array.isArray(s.routes) ||
         !Array.isArray(s.sourceDiagnostics) ||
         s.id !== target ||
@@ -154,7 +155,7 @@ export class SnapshotStore {
       Object.assign(summary, {
         snapshotId: s.id,
         capturedAt: s.capturedAt,
-        defaultBranch: s.defaultBranch,
+        collaborationBranch: s.collaborationBranch,
       });
     } catch {}
     try {
@@ -212,6 +213,7 @@ export class SnapshotStore {
       const data = await reader.collect(
         limits,
         signal,
+        p.collaborationBranch,
         previous
           ? {
               snapshot: previous,
@@ -249,7 +251,7 @@ export class SnapshotStore {
         ),
       };
       const s: Snapshot = {
-        cacheSchemaVersion: 4,
+        cacheSchemaVersion: 5,
         collaborationBranch: data.collaborationBranch,
         routes: data.routes,
         sourceDiagnostics: data.sourceDiagnostics,
@@ -285,7 +287,6 @@ export class SnapshotStore {
         projectId: p.id,
         fingerprint: this.fingerprint(),
         capturedAt: new Date().toISOString(),
-        defaultBranch: data.defaultBranch,
         branches: data.branches,
         documents: data.documents,
         changes: await indexChanges(data, reader, signal),

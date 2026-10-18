@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
+import { SUGGESTED_COLLABORATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
@@ -31,7 +32,11 @@ type Value = {
   notice: (message: string) => void;
   message: string;
   readUrl: (path: string) => string;
-  selectRepository: (key: string, repository?: RepositoryIdentity) => void;
+  selectRepository: (
+    key: string,
+    repository?: RepositoryIdentity,
+    collaborationBranch?: string,
+  ) => void;
 };
 const Context = createContext<Value | null>(null);
 export const useWorkspace = () => useContext(Context)!;
@@ -53,7 +58,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     active = useRef<AbortController | null>(null);
   const projectId = q.repo ?? "",
     connection = personal.connection;
-  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}`;
+  const collaborationBranch =
+    q.collaborationBranch ??
+    personal.items.find((r) => r.key === projectId)?.collaborationBranch ??
+    SUGGESTED_COLLABORATION_BRANCH;
+  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}:${collaborationBranch}`;
   const data = loaded?.key === scope ? loaded.value : null;
   const repository =
     data?.repository ??
@@ -111,6 +120,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             instance: r.instanceId,
             repositoryId: r.repositoryId,
             fullName: r.fullName,
+            collaborationBranch:
+              r.collaborationBranch ?? SUGGESTED_COLLABORATION_BRANCH,
             m: preferences.module ?? "specs",
           },
           true,
@@ -124,7 +135,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const r = data?.repository;
     if (!r || !["specs", "changes", "prototypes"].includes(q.m)) return;
-    const signature = JSON.stringify([connection?.id, r.repositoryId, q.m]);
+    const signature = JSON.stringify([
+      connection?.id,
+      r.repositoryId,
+      collaborationBranch,
+      q.m,
+    ]);
     if (savedPosition.current === signature) return;
     savedPosition.current = signature;
     void personal
@@ -134,6 +150,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           instanceId: r.instanceId,
           repositoryId: r.repositoryId,
           fullName: r.fullName,
+          collaborationBranch,
         },
         module: q.m as "specs" | "changes" | "prototypes",
       })
@@ -141,24 +158,45 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         savedPosition.current = "";
         setMessage(e.message);
       });
-  }, [data?.repository, q.m, connection?.id, personal.updatePreferences]);
+  }, [
+    data?.repository,
+    q.m,
+    connection?.id,
+    collaborationBranch,
+    personal.updatePreferences,
+  ]);
   const readUrl = useCallback(
     (path: string) => {
       const [name, query] = path.split("?");
       const params = new URLSearchParams(query);
       params.set("connectionId", connection?.id ?? "");
+      params.set("collaborationBranch", collaborationBranch);
       if (q.repositoryId && q.fullName) {
         params.set("repositoryId", q.repositoryId);
         params.set("fullName", q.fullName);
       }
       return `/api/repositories/${encodeURIComponent(projectId)}/${name}?${params}`;
     },
-    [connection?.id, projectId, q.repositoryId, q.fullName],
+    [
+      connection?.id,
+      projectId,
+      collaborationBranch,
+      q.repositoryId,
+      q.fullName,
+    ],
   );
   const selectRepository = useCallback(
-    (key: string, checkedRepository?: RepositoryIdentity) => {
+    (
+      key: string,
+      checkedRepository?: RepositoryIdentity,
+      selectedBranch?: string,
+    ) => {
       const item = checkedRepository
-        ? { repository: checkedRepository }
+        ? {
+            repository: checkedRepository,
+            collaborationBranch:
+              selectedBranch ?? SUGGESTED_COLLABORATION_BRANCH,
+          }
         : personal.items.find((r) => r.key === key);
       if (!item) return;
       const params: Record<string, string | null> = Object.fromEntries(
@@ -171,6 +209,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         instance: item.repository.instanceId,
         repositoryId: item.repository.repositoryId,
         fullName: item.repository.fullName,
+        collaborationBranch: item.collaborationBranch,
         m: ["specs", "changes", "prototypes"].includes(q.m) ? q.m : "specs",
       });
     },
@@ -213,7 +252,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             signal: c.signal,
           });
         } catch (e) {
-          if (!(e instanceof ApiError) || e.code !== "NO_SNAPSHOT") throw e;
+          if (
+            !(e instanceof ApiError) ||
+            !["NO_SNAPSHOT", "CACHE_INVALID"].includes(e.code)
+          )
+            throw e;
           setRefreshing(true);
           await api(readUrl("refresh"), { method: "POST", signal: c.signal });
           next = await api<Workbench>(readUrl("workbench"), {

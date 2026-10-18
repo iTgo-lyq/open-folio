@@ -1,3 +1,4 @@
+import { validBranchName } from "../lib/collaboration.ts";
 import "server-only";
 import { z } from "zod";
 import { discovery, type Discovery } from "./discovery.ts";
@@ -32,14 +33,28 @@ export async function discoveryResponse(
     const body = await readPersonalBody(request);
     if (kind === "check") {
       const input = z
-        .object({ url: z.string().max(2048) })
+        .object({
+          url: z.string().max(2048),
+          collaborationBranch: z.string().refine(validBranchName).optional(),
+        })
         .strict()
         .safeParse(body);
       if (!input.success)
-        throw new AppError("INVALID_PARAMETER", "请填写仓库 HTTPS 地址。", 400);
+        throw new AppError(
+          "INVALID_PARAMETER",
+          "请填写仓库 HTTPS 地址和有效的协作分支。",
+          400,
+        );
       return await renewPersonalResponse(
         request,
-        personalJson(await service.check(cookie, id, input.data.url)),
+        personalJson(
+          await service.check(
+            cookie,
+            id,
+            input.data.url,
+            input.data.collaborationBranch,
+          ),
+        ),
         service.sessions,
         selection,
       );

@@ -69,7 +69,7 @@ test("refreshes coalesce, deleted and rewritten branches disappear, retention ex
   f.commit();
   await f.register({ nested: "change/nested" });
   const second = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(second.branches.length, 3);
+  assert.equal(second.branches.length, 2);
   f.git(["reset", "--hard", "main"]);
   f.git(["push", "--force", "origin", "change/nested"]);
   const third = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -79,7 +79,7 @@ test("refreshes coalesce, deleted and rewritten branches disappear, retention ex
   );
   f.git(["push", "origin", "--delete", "change/nested"]);
   const fourth = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(fourth.branches.length, 2);
+  assert.equal(fourth.branches.length, 1);
   await assert.rejects(f.store.snapshot(f.project, first.id), {
     code: "SNAPSHOT_EXPIRED",
   });
@@ -182,6 +182,6 @@ test("unsupported snapshot schemas fail without rewriting stored bytes", async (
   });
   assert.equal(await readFile(path, "utf8"), original);
   const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(rebuilt.cacheSchemaVersion, 4);
+  assert.equal(rebuilt.cacheSchemaVersion, 5);
   assert.equal(rebuilt.specs[0].title, "平台");
 });

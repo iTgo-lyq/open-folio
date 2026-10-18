@@ -184,6 +184,8 @@ export function CopyPageLink({ document: doc }: { document?: DocumentRef }) {
         for (const key of [...url.searchParams.keys()])
           if (!allowed.has(key)) url.searchParams.delete(key);
         url.searchParams.set("repo", projectId);
+        if (data?.collaborationBranch)
+          url.searchParams.set("collaborationBranch", data.collaborationBranch);
         if (repository)
           for (const [key, value] of Object.entries({
             provider: repository.providerId,

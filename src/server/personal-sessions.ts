@@ -1,3 +1,4 @@
+import { validBranchName } from "../lib/collaboration.ts";
 import "server-only";
 import {
   createCipheriv,
@@ -41,6 +42,7 @@ export const preferencesSchema = z
         instanceId: z.string().min(1).max(255),
         repositoryId: z.string().min(1).max(100),
         fullName: z.string().min(1).max(255),
+        collaborationBranch: z.string().refine(validBranchName).optional(),
       })
       .strict()
       .nullable()

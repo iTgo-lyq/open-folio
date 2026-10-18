@@ -66,7 +66,7 @@ test("only registered sources are fetched, stale central status is ignored, and 
   });
   assert.deepEqual(
     initial.branches.map((b) => b.name),
-    ["change/active", "develop", "main"],
+    ["change/active", "develop"],
   );
   assert.equal(primaryRecord(initial.changes[0])?.state?.stage, "execution");
   assert.equal(primaryRecord(initial.changes[0])?.title, "active");
@@ -79,7 +79,11 @@ test("only registered sources are fetched, stale central status is ignored, and 
       .flat()
       .some(
         (a) =>
-          a.includes("*") || a.includes("unrelated") || a.includes("unlisted"),
+          a.includes("*") ||
+          a.includes("unrelated") ||
+          a.includes("unlisted") ||
+          a === "HEAD" ||
+          a.includes("refs/heads/main"),
       ),
   );
   const next = await store.refresh(f.project, DEFAULT_LIMITS);
@@ -90,7 +94,7 @@ test("legacy or inconsistent setup never falls back to branch scanning and stale
   const f = await fixture();
   t.after(f.cleanup);
   const initial = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  f.git(["checkout", "main"]);
+  f.git(["checkout", "develop"]);
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
@@ -112,7 +116,7 @@ test("legacy or inconsistent setup never falls back to branch scanning and stale
   f.commit();
   const missing = await f.store.refresh(f.project, DEFAULT_LIMITS);
   assert.equal(missing.specBranch, null);
-  assert.match(missing.sourceDiagnostics[0].message, /不存在/);
+  assert.match(missing.sourceDiagnostics[0].message, /不一致/);
   assert.notEqual(initial.id, missing.id);
 });
 
@@ -162,7 +166,7 @@ test("handed-off central prose consumes no document or body budget", async (t) =
   await f.register({ example: "change/example" });
   const limits = { ...DEFAULT_LIMITS, documents: 6, totalBytes: 2000 };
   const result = await f.store.refresh(f.project, limits);
-  assert.equal(result.documents.length, 6);
+  assert.equal(result.documents.length, 5);
   assert(
     !result.documents.some(
       (d) =>
@@ -220,4 +224,66 @@ test("entry retarget during collection retries the catalog without publishing th
   const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
   assert.equal(snapshot.routes[0].branch, "change/new");
   assert.equal(primaryRecord(snapshot.changes[0])?.title, "New owner");
+});
+
+test("custom collaboration source works without default or protected refs and rejects a missing or mismatched source", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const branch = "integration/team-a";
+  f.git(["checkout", "-b", branch]);
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      schemaVersion: 2,
+      collaborationBranch: branch,
+      protectedBranches: ["never-published"],
+    }),
+  );
+  await f.put("docs/project/specs/platform/spec.md", "# Custom integration\n");
+  f.commit();
+  f.git(["symbolic-ref", "HEAD", "refs/heads/absent-default"], f.remote);
+  f.git(["push", "origin", "--delete", "main"]);
+  const project = { ...f.project, collaborationBranch: branch };
+  const result = await f.store.refresh(project, DEFAULT_LIMITS);
+  assert.equal(result.specBranch, branch);
+  assert.equal(result.specs[0].title, "Custom integration");
+  assert.deepEqual(
+    result.branches.map((b) => b.name),
+    [branch],
+  );
+  assert.deepEqual(result.protectedBranches, ["never-published"]);
+  const missing = await f.store.refresh(
+    { ...project, collaborationBranch: "missing" },
+    DEFAULT_LIMITS,
+  );
+  assert.equal(missing.specBranch, null);
+  assert.equal(missing.documents.length, 0);
+  assert.match(missing.sourceDiagnostics[0].message, /不存在/);
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({
+      schemaVersion: 2,
+      collaborationBranch: "somewhere-else",
+      protectedBranches: ["never-published"],
+    }),
+  );
+  f.commit();
+  const mismatch = await f.store.refresh(project, DEFAULT_LIMITS);
+  assert.equal(mismatch.specBranch, null);
+  assert.match(mismatch.sourceDiagnostics[0].message, /不一致/);
+});
+
+test("a legacy or changing default workflow cannot change the selected collaboration snapshot", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const first = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  f.git(["checkout", "main"]);
+  await f.put(
+    "docs/project/workflow.json",
+    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+  );
+  f.commit();
+  const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.equal(next.id, first.id);
+  assert.equal(next.specBranch, "develop");
 });

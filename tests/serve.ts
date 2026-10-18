@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { createServer, request as proxyRequest } from "node:http";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { hash } from "../src/server/git.ts";
 import { seed } from "./seed.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { hostedServer } from "./hosted-server.ts";
@@ -117,13 +118,22 @@ const provider: RepositoryProvider = {
     permissionChecks++;
     await provider.authenticate(ctx.secret, ctx.signal);
   },
-  probeWorkflow: async () => ({
-    kind: "file",
-    commit: f.git(["rev-parse", "refs/heads/main"], f.remote),
-    bytes: Buffer.from(
-      f.git(["show", "refs/heads/main:docs/project/workflow.json"], f.remote),
-    ),
-  }),
+  probeWorkflow: async (_ctx, _repo, branch) => {
+    try {
+      return {
+        kind: "file",
+        commit: f.git(["rev-parse", `refs/heads/${branch}`], f.remote),
+        bytes: Buffer.from(
+          f.git(
+            ["show", `refs/heads/${branch}:docs/project/workflow.json`],
+            f.remote,
+          ),
+        ),
+      };
+    } catch {
+      return { kind: "branch-missing" };
+    }
+  },
   gitTransport: async (ctx) => ({
     url: git.url,
     username: "reader",
@@ -141,6 +151,21 @@ const discoveries = new Discovery(join(root, "discoveries"), sessions),
 repositoryPermissions(sessions).now = () => Date.now() + permissionOffset;
 const key = repositoryKey(repository);
 const originalCollaboration = f.git(["rev-parse", "develop"]);
+f.git(["checkout", "-b", "team/integration", "develop"]);
+const customWorkflow = JSON.parse(
+  f.git(["show", "develop:docs/project/workflow.json"]),
+);
+customWorkflow.collaborationBranch = "team/integration";
+customWorkflow.protectedBranches = ["unpublished-release"];
+await f.put("docs/project/workflow.json", JSON.stringify(customWorkflow));
+await f.put(
+  "docs/project/specs/platform/spec.md",
+  f
+    .git(["show", "develop:docs/project/specs/platform/spec.md"])
+    .replace("# 工程协作", "# 自定义协作能力"),
+);
+f.commit();
+f.git(["checkout", "develop"]);
 await mkdir("artifacts", { recursive: true });
 await writeFile(
   "artifacts/e2e-runtime.json",
@@ -192,7 +217,13 @@ const server = createServer(async (req, res) => {
         }
         if (input.expireRefresh)
           await rm(
-            join(root, "repos", input.expireRefresh, key, "last-checked.json"),
+            join(
+              root,
+              "repos",
+              input.expireRefresh,
+              hash(JSON.stringify([key, "develop"])),
+              "last-checked.json",
+            ),
             { force: true },
           );
       }

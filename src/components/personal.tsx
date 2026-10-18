@@ -1,4 +1,5 @@
 "use client";
+import { SUGGESTED_COLLABORATION_BRANCH } from "@/lib/collaboration";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import {
@@ -202,7 +203,7 @@ export function PersonalHome() {
                 </div>
                 {items.map((item) => (
                   <a
-                    href={`?${new URLSearchParams({ repo: item.key, m: "specs", provider: item.repository.providerId, instance: item.repository.instanceId, repositoryId: item.repository.repositoryId, fullName: item.repository.fullName })}`}
+                    href={`?${new URLSearchParams({ repo: item.key, m: "specs", provider: item.repository.providerId, instance: item.repository.instanceId, repositoryId: item.repository.repositoryId, fullName: item.repository.fullName, collaborationBranch: item.collaborationBranch })}`}
                     className="personal-repo-row"
                     key={item.key}
                     onClick={(e) => {
@@ -223,10 +224,7 @@ export function PersonalHome() {
                       </div>
                     </div>
                     <span className="personal-repo-source">
-                      <GitBranch size={13} />{" "}
-                      {item.specBranch ??
-                        item.repository.defaultBranch ??
-                        "待检查"}
+                      <GitBranch size={13} /> {item.collaborationBranch}
                     </span>
                     <Badge
                       tone={item.state === "ready" ? "success" : "warning"}
@@ -251,7 +249,7 @@ export function PersonalHome() {
               >
                 <p>
                   {p.discovery?.state === "complete"
-                    ? "确认 token 已选择目标仓库，并具有 Contents 只读权限。仓库默认分支需要有效的 SpecTrail 配置。"
+                    ? "确认 token 已选择目标仓库，并具有 Contents 只读权限。协作分支需要有效的 SpecTrail 配置；自定义名称可通过仓库地址检查指定。"
                     : "开始或继续发现，或用仓库地址检查接入情况。"}
                 </p>
               </EmptyState>
@@ -866,6 +864,9 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
   const p = usePersonal();
   const { selectRepository } = useWorkspace();
   const [url, setUrl] = useState(""),
+    [collaborationBranch, setCollaborationBranch] = useState(
+      SUGGESTED_COLLABORATION_BRANCH,
+    ),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [result, setResult] = useState<DiscoveredRepository | null>(null);
@@ -887,7 +888,7 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url }),
+                body: JSON.stringify({ url, collaborationBranch }),
               },
             );
             setResult(value);
@@ -909,9 +910,27 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
               type="url"
               required
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setResult(null);
+              }}
               placeholder="https://github.com/owner/repository"
             />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="collaboration-branch">协作分支</FieldLabel>
+            <Input
+              id="collaboration-branch"
+              required
+              value={collaborationBranch}
+              onChange={(e) => {
+                setCollaborationBranch(e.target.value);
+                setResult(null);
+              }}
+            />
+            <FieldDescription>
+              填写项目实际使用的协作分支，推荐名称为 develop。
+            </FieldDescription>
           </Field>
         </FieldGroup>
         {result && (
@@ -930,7 +949,11 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
             {["ready", "attention"].includes(result.state) && (
               <Button
                 onClick={() => {
-                  selectRepository(result.key, result.repository);
+                  selectRepository(
+                    result.key,
+                    result.repository,
+                    result.collaborationBranch,
+                  );
                   onClose();
                 }}
               >
