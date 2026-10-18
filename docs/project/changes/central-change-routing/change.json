@@ -4,13 +4,29 @@
   "title": "集中管理 Change 入口与独立工作区执行",
   "size": "large",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/central-change-routing",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-18T00:36:20.550Z",
+      "summary": "以 develop 统一讨论与预发布集成，保留 branch 入口并下线全量扫描。",
+      "source": "用户明确 develop、保护分支和扫描边界，并授权：这次你们互相 review 完之后直接开始推进实现吧。"
+    },
+    "technical": {
+      "at": "2026-10-18T00:36:20.613Z",
+      "summary": "采用单次登记提交移交和集中来源读取，简化本机机制并保留会话人工续接。",
+      "source": "用户授权方案相互评审后直接实施；独立方案评审及主 Agent 核对已完成，结论见 review.md。"
+    },
+    "plan": {
+      "at": "2026-10-18T00:36:20.674Z",
+      "summary": "按六项任务交付配置、移交、续接、定向读取、统一来源及接入验证。",
+      "source": "用户授权：这次你们互相 review 完之后直接开始推进实现吧。代码实现不要再引入 iclaude review。"
+    }
+  },
   "tasks": {
     "T1": {
       "title": "定义集中入口与引用契约",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "实现集中规划与可恢复移交",
@@ -38,9 +54,5 @@
     "at": "2026-10-18T00:17:30.494Z",
     "reason": "用户补充 develop 预发布集成、保护分支显式发布及旧全量扫描下线",
     "approach": "统一协作分支默认合入和工作台定向读取，补充 Setup 接入，方案评审后按授权直接实施"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "方案独立评审进行中；用户已授权评审完成后直接实现，代码阶段不调用 iclaude"
   }
 }
