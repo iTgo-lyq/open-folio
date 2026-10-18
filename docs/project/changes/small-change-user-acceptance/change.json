@@ -4,7 +4,7 @@
   "title": "small Change 人工验收反馈后停止自动归档",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/small-change-user-acceptance",
   "confirmations": {},
   "tasks": {
@@ -16,7 +16,9 @@
     },
     "T2": {
       "title": "恢复默认自验收并保留人工验收反馈后的确认要求",
-      "status": "todo"
+      "status": "done",
+      "verification": "quick_validate.py 与 git diff --check 通过；核对默认自验收、人工验收反馈后等待、多轮返工保留人工验收要求三种路径，规则集中于验收段，命令参考引用。",
+      "commitTitle": "small-change-user-acceptance T2: require user acceptance after review issues"
     }
   },
   "closure": {},
