@@ -4,14 +4,47 @@
   "title": "修复原型截图登记并补齐卡片验收",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/prototype-thumbnail-publication",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "修复截图发布引用并验证当前卡片展示",
-      "status": "todo"
+      "status": "doing"
     }
   },
-  "closure": {}
+  "closure": {},
+  "previews": [
+    {
+      "id": "clarification-detail",
+      "title": "Change 澄清问答",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/index.html",
+        "sourceCommit": "8d1358a57f7ce35d02251361071772149afd548a",
+        "digest": "sha256:891894b23192ad1392fa016c537f9a5515cec2c95cba2d5c20b6a3b74a923f9c",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }

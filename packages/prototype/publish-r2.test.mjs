@@ -262,6 +262,69 @@ test("registers only screenshots included in the verified artifact", async (t) =
   ]);
 });
 
+for (const directory of ["", "pages/renamed-layout"]) {
+  test(`discovers screenshots beside ${directory || "root"} entry independently of id`, async (t) => {
+    const { dir, request } = await fixture(t),
+      host = storage();
+    const prefix = directory ? `${directory}/` : "";
+    await mkdir(join(dir, directory), { recursive: true });
+    await writeFile(
+      join(dir, prefix + "index.html"),
+      "<!doctype html><title>Page</title>",
+    );
+    const devices = ["pc-web", "ipad", "mobile"];
+    for (const device of devices) {
+      await writeFile(
+        join(dir, `${prefix}${device}.png`),
+        Buffer.from([137, 80, 78, 71]),
+      );
+    }
+    // A different entry has only a desktop image; neither entry may borrow the other's images.
+    await writeFile(
+      join(dir, "shell/pc-web.png"),
+      Buffer.from([137, 80, 78, 71, 1]),
+    );
+    request.entries.push({
+      id: "another-id",
+      entryPath: prefix + "index.html",
+    });
+    request.digest = artifactDigest(dir).digest;
+    request.requestId = requestIdentity(request);
+    const result = await publishToR2(request, { env, ...host });
+    validateResult(request, result);
+    const base = `${env.R2_PUBLIC_BASE_URL}/open-folio/${request.requestId}/`;
+    assert.deepEqual(
+      result.entries.find((e) => e.id === "another-id").thumbnails,
+      devices.map((device) => ({
+        device,
+        url: `${base}${prefix}${device}.png`,
+      })),
+    );
+    assert.deepEqual(result.entries.find((e) => e.id === "shell").thumbnails, [
+      { device: "pc-web", url: `${base}shell/pc-web.png` },
+    ]);
+    assert.deepEqual(await publishToR2(request, { env, ...host }), result);
+  });
+}
+
+test("does not register a screenshot from an id directory unrelated to the entry", async (t) => {
+  const { dir, request } = await fixture(t),
+    host = storage();
+  await writeFile(
+    join(dir, "index.html"),
+    "<!doctype html><title>Root</title>",
+  );
+  await writeFile(
+    join(dir, "shell/pc-web.png"),
+    Buffer.from([137, 80, 78, 71]),
+  );
+  request.entries = [{ id: "shell", entryPath: "index.html" }];
+  request.digest = artifactDigest(dir).digest;
+  request.requestId = requestIdentity(request);
+  const result = await publishToR2(request, { env, ...host });
+  assert.equal(result.entries[0].thumbnails, undefined);
+});
+
 test("rejects missing credentials and non-public or credential-bearing URLs", async (t) => {
   const { request } = await fixture(t),
     host = storage();

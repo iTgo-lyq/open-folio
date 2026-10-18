@@ -1,5 +1,51 @@
 import { test, expect, repositoryQuery, repoKey } from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
+test("published hosted cards load the registered screenshot for every declared device", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
+  const entry = catalog.items.find(
+    (item: { id: string }) => item.id === "hosted",
+  );
+  const widths: Record<string, number> = {
+    "pc-web": 1440,
+    ipad: 834,
+    mobile: 390,
+  };
+  await page.goto(path);
+  const tile = page.locator('[data-prototype-id="hosted"]');
+  for (const device of entry.devices) {
+    expect(
+      entry.artifact.thumbnails.some(
+        (item: { device: string }) => item.device === device,
+      ),
+    ).toBe(true);
+    await page
+      .getByRole("combobox", { name: "筛选原型适配" })
+      .selectOption(device);
+    await tile.scrollIntoViewIfNeeded();
+    const screenshot = tile.getByRole("img", { name: "托管 React的首屏截图" });
+    await expect(screenshot).toBeVisible();
+    await expect
+      .poll(() =>
+        screenshot.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth,
+        ),
+      )
+      .toBe(widths[device]);
+    await expect(tile.locator(".prototype-thumbnail.ready")).toBeVisible();
+    await expect(tile.getByText(/尚未提供截图|截图暂不可用/)).toHaveCount(0);
+  }
+  await tile
+    .getByRole("button", { name: "预览托管 React", exact: true })
+    .click();
+  await expect(
+    page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
+  ).toBeVisible();
+});
+
 test("navigation hints stay above the prototype gallery", async ({ page }) => {
   await page.goto(path);
   await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
