@@ -4,7 +4,7 @@
   "title": "以合并提交保留 Change 交付历史并清理工作分支",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-integration-history",
   "confirmations": {
     "requirement": {
@@ -55,7 +55,13 @@
       "commitTitle": "change-integration-history T5: retire archive tags and verify delivery lifecycle"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-18T09:06:37.547Z",
+      "summary": "246 个 Node 用例、26 个相关浏览器用例及类型格式构建通过；隔离上下文 subagent 独立评审覆盖完整差异，R1–R3 修复并复验关闭，完整交付临时演练通过"
+    }
+  },
   "previews": [
     {
       "id": "change-integration",
@@ -88,5 +94,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待本次 large Change 的人工验收；通过后同步 Specs、归档合入 develop、更新服务并执行精确标签与来源清理"
+  }
 }
