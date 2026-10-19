@@ -13,7 +13,20 @@
       "source": "回到账号密码登录这个 Change，需求确认了，继续整理技术方案和计划。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "注册登录并绑定首个 Token 读取仓库",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "跨浏览器管理多个 Token 与账号设备",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "新模型运维与完整验收",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "clarifications": {
     "Q1": {
@@ -23,5 +36,9 @@
       "answer": "不考虑历史数据，完全不保留兼容或迁移逻辑。",
       "source": "不用考虑历史数据，完全不需要保留兼容或者迁移逻辑。"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案与串行计划已整理，等待一起确认；正式实现前完成账号流程原型验收。"
   }
 }
