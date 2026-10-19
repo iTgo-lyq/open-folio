@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "centralized-accounts",
+  "title": "账号密码登录与账号绑定 Token",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "需求：是否按自助注册、账号密码登录、账号持久绑定 Token，并在升级时重新绑定一次原 Token、保留对应工作台及偏好的方向启动独立 medium Change？",
+      "recommendation": "推荐该方向：用账号恢复跨浏览器的绑定列表，升级时重新绑定一次 Token 并保留已有工作台。",
+      "answer": "不考虑历史数据，完全不保留兼容或迁移逻辑。",
+      "source": "不用考虑历史数据，完全不需要保留兼容或者迁移逻辑。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求已按全新账号体系整理，等待确认完整目标、范围和验收后进入技术方案；不保留旧数据兼容或迁移。"
+  }
+}
