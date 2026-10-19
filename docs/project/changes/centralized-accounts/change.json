@@ -49,6 +49,39 @@
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "技术方案与计划已确认，制作账号登录和 Token 管理原型；原型验收后再进入正式实现。"
-  }
+    "summary": "账号登录与 Token 管理原型已发布，等待用户验收；正式实现尚未开始。"
+  },
+  "previews": [
+    {
+      "id": "account-login",
+      "title": "账号登录与 Token 管理",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/index.html",
+        "sourceCommit": "d59c6a3c6dbf1c95db66d92e0026d9ca8021fbb1",
+        "digest": "sha256:7dd5dda5310e26b0d89ac1fce96b0243d80f3af83285d4b014f7dcd4504e8160",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }
