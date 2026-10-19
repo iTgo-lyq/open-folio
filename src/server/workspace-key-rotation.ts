@@ -39,8 +39,13 @@ export async function rotateWorkspaceKeys(
   const secrets = state.workspaces.map((w) => {
     const secret = decryptWorkspace(w, credential);
     if (
-      credentialFingerprint(identity, w.providerId, w.instanceId, secret) !==
-      w.credentialFingerprint
+      credentialFingerprint(
+        identity,
+        w.accountId,
+        w.providerId,
+        w.instanceId,
+        secret,
+      ) !== w.credentialFingerprint
     )
       throw new Error("Workspace credential identity is inconsistent.");
     return secret;
@@ -58,6 +63,7 @@ export async function rotateWorkspaceKeys(
       ...w,
       credentialFingerprint: credentialFingerprint(
         newIdentity,
+        w.accountId,
         w.providerId,
         w.instanceId,
         secrets[i],

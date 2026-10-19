@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { withSmokeSession } from "../scripts/smoke-session.ts";
 import { personalFixture } from "./personal-fixture.ts";
 import {
-  removeIdentityResponse,
+  connectionsResponse,
   sessionResponse,
 } from "../src/server/connection-api.ts";
 
@@ -25,12 +25,8 @@ async function fixture(t: TestContext) {
       revision: request.headers.get("X-OpenFolio-Revision"),
     });
     if (path === "/api/session") return sessionResponse(request, f.sessions);
-    if (path.startsWith("/api/session/identities/"))
-      return removeIdentityResponse(
-        request,
-        path.split("/").at(-1)!,
-        f.sessions,
-      );
+    if (path === "/api/connections")
+      return connectionsResponse(request, undefined, f.sessions);
     throw new Error("Unexpected smoke request");
   };
   const state = async () =>
@@ -42,6 +38,8 @@ async function fixture(t: TestContext) {
     transport,
     options: {
       baseURL: "https://folio.test",
+      username: owner.session.account!.username,
+      password: "test-password",
       token: "first",
       providerId: "sample",
       fetch: transport,
@@ -49,9 +47,15 @@ async function fixture(t: TestContext) {
     assertClean: async () => {
       const stored = await state();
       assert.equal(stored.sessions.length, 1);
-      assert.equal(stored.browsers.length, 1);
+
       assert.equal(stored.sessions[0].id, owner.session.deviceSessionId);
-      assert.deepEqual(await f.sessions.get(owner.cookie), original);
+      const after = await f.sessions.get(owner.cookie);
+      assert.equal(after.deviceSessionId, original.deviceSessionId);
+      assert.equal(after.workspace?.id, original.workspace?.id);
+      assert.deepEqual(
+        after.workspace?.preferences,
+        original.workspace?.preferences,
+      );
     },
   };
 }
@@ -80,7 +84,7 @@ for (const fail of [false, true]) {
     if (fail) await assert.rejects(run, (error) => error === failure);
     else assert.equal(await run, "checked");
     const logout = f.calls.findIndex((c) => c.method === "DELETE");
-    assert.equal(f.calls[logout].revision, "1");
+    assert.equal(f.calls[logout].revision, "2");
     assert.equal(f.calls[logout - 1].method, "GET");
     assert.equal(f.calls[logout + 1].method, "GET");
     await f.assertClean();
@@ -116,10 +120,10 @@ test("a failed smoke request still cleans up with an independent timeout", async
   await f.assertClean();
 });
 
-test("cleanup reads the current revision and removes remembered test identities", async (t) => {
+test("cleanup reads the latest revision and preserves account bindings", async (t) => {
   const f = await fixture(t);
   await withSmokeSession(f.options, async ({ request }) => {
-    const added = await request("/api/session", {
+    const added = await request("/api/connections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ providerId: "sample", token: "third" }),
@@ -128,7 +132,7 @@ test("cleanup reads the current revision and removes remembered test identities"
   });
   assert.deepEqual(
     f.calls.filter((c) => c.method === "DELETE").map((c) => c.revision),
-    ["2", "3"],
+    ["3"],
   );
   await f.assertClean();
 });
@@ -141,12 +145,11 @@ test("cleanup retries a revision conflict with a fresh session read", async (t) 
       conflicted = true;
       const request = new Request(input, init);
       const cookie = request.headers.get("Cookie")!.split("=")[1];
-      await f.sessions.login(
+      const current = await f.sessions.get(cookie);
+      await f.sessions.renameConnection(
         cookie,
-        "sample",
-        "first",
-        undefined,
-        new AbortController().signal,
+        current.workspace!.id,
+        "renamed",
       );
     }
     return f.transport(input, init);
@@ -154,7 +157,7 @@ test("cleanup retries a revision conflict with a fresh session read", async (t) 
   await withSmokeSession({ ...f.options, fetch: transport }, async () => {});
   assert.deepEqual(
     f.calls.filter((c) => c.method === "DELETE").map((c) => c.revision),
-    ["1", "2"],
+    ["2", "3"],
   );
   await f.assertClean();
 });
@@ -227,7 +230,7 @@ test("the helper rejects cross-origin requests and never accepts a supplied user
     await assert.rejects(request("https://other.test/"), /configured origin/);
     const result = await (
       await request("/api/session", {
-        headers: { Cookie: "openfolio-session=foreign" },
+        headers: { Cookie: "openfolio-account=foreign" },
       })
     ).json();
     assert.equal(result.deviceSessionId, session.deviceSessionId);

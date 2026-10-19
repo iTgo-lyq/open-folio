@@ -4,7 +4,7 @@
   "title": "账号密码登录与账号绑定 Token",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/centralized-accounts",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "注册登录并绑定首个 Token 读取仓库",
-      "status": "todo"
+      "status": "done",
+      "verification": "34 项会话及读取测试、完整 229 项单测、5 项注册绑定浏览器场景通过。",
+      "commitTitle": "centralized-accounts: implement password accounts and account-owned tokens"
     },
     "T2": {
       "title": "跨浏览器管理多个 Token 与账号设备",

@@ -64,7 +64,7 @@ export async function repositoryFixture(https = false) {
         {
           method,
           headers: {
-            cookie: `openfolio-session=${cookie}`,
+            cookie: `openfolio-account=${cookie}`,
             origin: "https://folio.test",
           },
         },

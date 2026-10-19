@@ -27,14 +27,8 @@ test("engineering share links use each collaborator's connection and restore the
     await expect(
       other.getByRole("heading", { name: /你的工程工作台/ }),
     ).toBeVisible();
-    await other
-      .getByRole("button", { name: "登录工作台", exact: true })
-      .click();
-    await other
-      .getByLabel("用户名（可选）", { exact: true })
-      .fill("collaborator");
-    await other.getByLabel("GitHub token", { exact: true }).fill("token-b");
-    await other.getByRole("button", { name: "登录并发现仓库" }).click();
+    await connectRequest(collaborator.request, "token-b");
+    await other.reload();
     await expect(
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toBeVisible();
@@ -46,7 +40,7 @@ test("engineering share links use each collaborator's connection and restore the
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toHaveCount(0);
     await expect(
-      other.getByRole("button", { name: "当前凭据", exact: true }),
+      other.getByRole("button", { name: "Token 管理", exact: true }),
     ).toBeVisible();
   } finally {
     await collaborator.close();
@@ -71,7 +65,7 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
   expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
   const id = new URL(link).pathname.split("/").pop()!;
   await request.delete("/api/session", {
-    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "1" },
+    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "2" },
   });
   const anonymous = await browser.newContext({
     baseURL: "http://127.0.0.1:10682",

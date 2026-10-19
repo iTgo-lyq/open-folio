@@ -231,7 +231,7 @@ test("prepare HTTP requires an owned connection and same origin; published versi
         method: "POST",
         headers: {
           origin: "https://folio.test",
-          cookie: `openfolio-session=${cookie}`,
+          cookie: `openfolio-account=${cookie}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({

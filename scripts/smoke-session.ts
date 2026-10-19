@@ -3,7 +3,9 @@ import type { SessionSummary } from "../src/server/personal-sessions.ts";
 type SmokeRequest = (path: string, init?: RequestInit) => Promise<Response>;
 interface SmokeOptions {
   baseURL: string;
-  token: string;
+  username: string;
+  password: string;
+  token?: string;
   providerId?: string;
   timeoutMs?: number;
   fetch?: typeof globalThis.fetch;
@@ -23,19 +25,18 @@ function sessionSummary(value: unknown): SessionSummary {
   const session = value as SessionSummary | undefined;
   if (
     !session ||
+    typeof session.authenticated !== "boolean" ||
     typeof session.connected !== "boolean" ||
-    !Array.isArray(session.identities) ||
-    session.identities.some(
-      (identity) =>
-        !identity ||
-        typeof identity.id !== "string" ||
-        !/^[a-f0-9-]{36}$/i.test(identity.id),
-    ) ||
-    (session.connected &&
-      !session.identities.some((i) => i.id === session.deviceSessionId)) ||
-    (session.identities.length > 0 &&
-      (!Number.isSafeInteger(session.browserRevision) ||
-        session.browserRevision! < 1))
+    !Array.isArray(session.connections) ||
+    (session.authenticated &&
+      (!session.account?.id ||
+        !session.deviceSessionId ||
+        !Number.isSafeInteger(session.browserRevision) ||
+        session.browserRevision! < 1)) ||
+    (!session.authenticated &&
+      (session.connected ||
+        session.connections.length > 0 ||
+        session.account !== undefined))
   )
     throw new Error("Smoke session response is incomplete");
   return session;
@@ -45,6 +46,8 @@ function sessionSummary(value: unknown): SessionSummary {
 export async function withSmokeSession<T>(
   {
     baseURL,
+    username,
+    password,
     token,
     providerId = "github",
     timeoutMs = 30_000,
@@ -74,8 +77,15 @@ export async function withSmokeSession<T>(
       ))
   )
     throw new Error("Smoke verification requires HTTPS or a loopback URL");
-  if (!token || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1)
-    throw new Error("Smoke verification requires a token and positive timeout");
+  if (
+    !username ||
+    !password ||
+    !Number.isSafeInteger(timeoutMs) ||
+    timeoutMs < 1
+  )
+    throw new Error(
+      "Smoke verification requires account credentials and positive timeout",
+    );
 
   let cookie = "";
   let revision: number | undefined;
@@ -106,7 +116,7 @@ export async function withSmokeSession<T>(
     }
     const setCookie = response.headers
       .getSetCookie()
-      .find((value) => value.startsWith("openfolio-session="));
+      .find((value) => value.startsWith("openfolio-account="));
     // Capture before parsing: a bad login body must still reach cleanup.
     if (setCookie) cookie = setCookie.split(";")[0];
     return response;
@@ -125,23 +135,18 @@ export async function withSmokeSession<T>(
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         let session = await readSession();
-        // This Cookie jar is created here; all its remembered identities are ours.
-        for (let n = 0; n < 32 && session.identities.length; n++) {
-          const id = session.connected
-            ? session.deviceSessionId
-            : session.identities[0].id;
-          const path = session.connected
-            ? "/api/session"
-            : `/api/session/identities/${id}`;
+        if (session.authenticated) {
           await checkedJson(
-            await request(path, { method: "DELETE" }),
+            await request("/api/session", { method: "DELETE" }),
             "Logout smoke session",
           );
           session = await readSession();
-          if (session.identities.some((identity) => identity.id === id))
-            throw new Error("Smoke session is still authorized after logout");
         }
-        if (session.connected || session.identities.length)
+        if (
+          session.authenticated ||
+          session.connected ||
+          session.connections.length
+        )
           throw new Error("Smoke session is still authorized after logout");
         return;
       } catch (error) {
@@ -161,20 +166,34 @@ export async function withSmokeSession<T>(
       await request("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerId, token }),
+        body: JSON.stringify({ username, password }),
       }),
       "Login smoke session",
     );
-    const session = sessionSummary(login.session);
-    if (!cookie || !session.connected)
+    let session = sessionSummary(login.session);
+    if (!cookie || !session.authenticated)
       throw new Error("Smoke login did not establish a session");
     revision = session.browserRevision;
+    if (token) {
+      const bound = await checkedJson(
+        await request("/api/connections", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ providerId, token }),
+        }),
+        "Bind smoke Token",
+      );
+      session = sessionSummary(bound.session);
+      if (!session.authenticated || !session.connected)
+        throw new Error("Smoke Token binding did not establish a workspace");
+      revision = session.browserRevision;
+    }
     result = await check({
       request,
       session,
       browserCookie: {
-        name: "openfolio-session",
-        value: cookie.slice("openfolio-session=".length),
+        name: "openfolio-account",
+        value: cookie.slice("openfolio-account=".length),
         url: base.origin + "/",
         httpOnly: true,
         secure: base.protocol === "https:",
