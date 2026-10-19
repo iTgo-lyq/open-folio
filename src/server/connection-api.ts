@@ -50,12 +50,11 @@ async function authenticateResponse(
   const current = await store.get(result.cookie);
   if (
     !current.authenticated ||
-    current.deviceSessionId !== result.session.deviceSessionId ||
-    current.browserRevision !== result.session.browserRevision
+    current.deviceSessionId !== result.session.deviceSessionId
   )
     throw new AppError("SESSION_CHANGED", "登录状态已改变，请重试。", 409);
   return personalJson(
-    { session: result.session },
+    { session: current },
     201,
     cookieHeader(request, result.cookie, result.cookieExpiresAt),
   );

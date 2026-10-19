@@ -280,6 +280,18 @@ export function AccountLogin() {
   useEffect(() => () => controller.current?.abort(), []);
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (
+      !username.trim() ||
+      [...username.trim()].length > 64 ||
+      /\p{Cc}/u.test(username.trim())
+    ) {
+      setError("账号为 1–64 个字符，不能包含控制字符。");
+      return;
+    }
+    if ([...password].length < 8 || [...password].length > 128) {
+      setError("密码为 8–128 个字符。");
+      return;
+    }
     if (mode === "register" && password !== confirm) {
       setError("两次密码不一致。");
       return;
@@ -351,7 +363,7 @@ export function AccountLogin() {
                   autoComplete="username"
                   value={username}
                   required
-                  maxLength={64}
+                  maxLength={128}
                   disabled={busy}
                   onChange={(e) => setUsername(e.target.value)}
                 />
@@ -367,8 +379,7 @@ export function AccountLogin() {
                   }
                   value={password}
                   required
-                  minLength={8}
-                  maxLength={128}
+                  maxLength={256}
                   disabled={busy}
                   aria-invalid={!!error}
                   aria-describedby="account-password-help"
@@ -388,8 +399,7 @@ export function AccountLogin() {
                     autoComplete="new-password"
                     value={confirm}
                     required
-                    minLength={8}
-                    maxLength={128}
+                    maxLength={256}
                     disabled={busy}
                     onChange={(e) => setConfirm(e.target.value)}
                   />

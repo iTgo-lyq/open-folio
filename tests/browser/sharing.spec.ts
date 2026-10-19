@@ -40,7 +40,7 @@ test("engineering share links use each collaborator's connection and restore the
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toHaveCount(0);
     await expect(
-      other.getByRole("button", { name: "Token 管理", exact: true }),
+      other.getByRole("button", { name: "当前凭据", exact: true }),
     ).toBeVisible();
   } finally {
     await collaborator.close();

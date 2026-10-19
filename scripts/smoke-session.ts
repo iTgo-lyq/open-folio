@@ -119,6 +119,24 @@ export async function withSmokeSession<T>(
       .find((value) => value.startsWith("openfolio-account="));
     // Capture before parsing: a bad login body must still reach cleanup.
     if (setCookie) cookie = setCookie.split(";")[0];
+    if (
+      response.ok &&
+      (url.pathname === "/api/session" ||
+        url.pathname === "/api/session/switch" ||
+        /^\/api\/connections(?:\/[^/]+)?$/.test(url.pathname))
+    ) {
+      const data = await response
+        .clone()
+        .json()
+        .catch(() => undefined);
+      const next =
+        url.pathname === "/api/session" &&
+        (!init.method || ["GET", "DELETE"].includes(init.method))
+          ? data
+          : data?.session;
+      if (next && typeof next.authenticated === "boolean")
+        revision = sessionSummary(next).browserRevision;
+    }
     return response;
   };
 

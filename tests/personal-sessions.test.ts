@@ -364,3 +364,35 @@ test("cancelled registration cannot create an account or device", async (t) => {
   );
   assert.ok(account.session.authenticated);
 });
+
+test("a concurrent binding rename cannot strand an already committed password login", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const owner = await f.connect();
+  const get = f.sessions.get.bind(f.sessions);
+  let renamed = false;
+  f.sessions.get = async (cookie) => {
+    if (!renamed && cookie !== owner.cookie) {
+      renamed = true;
+      await f.sessions.renameConnection(
+        owner.cookie,
+        owner.connection.id,
+        "updated elsewhere",
+      );
+    }
+    return get(cookie);
+  };
+  const response = await sessionResponse(
+    req("POST", "", {
+      username: owner.session.account!.username,
+      password: "test-password",
+    }),
+    f.sessions,
+  );
+  assert.equal(response.status, 201);
+  assert.ok(response.headers.get("set-cookie"));
+  const { session } = await response.json();
+  assert.equal(session.connections[0].label, "updated elsewhere");
+  assert.equal(session.browserRevision, 2);
+  assert.ok(session.authenticated);
+});

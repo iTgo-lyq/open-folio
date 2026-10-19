@@ -25,8 +25,8 @@ async function fixture(t: TestContext) {
       revision: request.headers.get("X-OpenFolio-Revision"),
     });
     if (path === "/api/session") return sessionResponse(request, f.sessions);
-    if (path === "/api/connections")
-      return connectionsResponse(request, undefined, f.sessions);
+    if (path.startsWith("/api/connections"))
+      return connectionsResponse(request, path.split("/")[3], f.sessions);
     throw new Error("Unexpected smoke request");
   };
   const state = async () =>
@@ -234,6 +234,26 @@ test("the helper rejects cross-origin requests and never accepts a supplied user
       })
     ).json();
     assert.equal(result.deviceSessionId, session.deviceSessionId);
+  });
+  await f.assertClean();
+});
+
+test("smoke requests track revision changes after Token mutations", async (t) => {
+  const f = await fixture(t);
+  await withSmokeSession(f.options, async ({ request }) => {
+    const added = await request("/api/connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ providerId: "sample", token: "third" }),
+    });
+    assert.equal(added.status, 201);
+    const { session } = await added.json();
+    const renamed = await request(`/api/connections/${session.workspace.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "smoke binding" }),
+    });
+    assert.equal(renamed.status, 200);
   });
   await f.assertClean();
 });

@@ -116,3 +116,35 @@ for (const width of [834, 390, 320])
       fullPage: true,
     });
   });
+
+test("legal Unicode credentials can be entered unchanged in the password form", async ({
+  page,
+}) => {
+  const username = "🌿".repeat(40) + randomUUID().slice(0, 8),
+    password = "🔐".repeat(80) + "安全";
+  const response = await page.request.post("/api/accounts/register", {
+    headers: { origin: "http://127.0.0.1:10682" },
+    data: { username, password },
+  });
+  expect(response.status()).toBe(201);
+  const session = (await response.json()).session;
+  expect(
+    (
+      await page.request.delete("/api/session", {
+        headers: {
+          origin: "http://127.0.0.1:10682",
+          "X-OpenFolio-Revision": String(session.browserRevision),
+        },
+      })
+    ).status(),
+  ).toBe(200);
+  await page.goto("/");
+  await page.getByLabel("账号", { exact: true }).fill(username);
+  await page.getByLabel("密码", { exact: true }).fill(password);
+  await expect(page.getByLabel("账号", { exact: true })).toHaveValue(username);
+  await expect(page.getByLabel("密码", { exact: true })).toHaveValue(password);
+  await page.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Token 管理", exact: true }),
+  ).toBeVisible();
+});

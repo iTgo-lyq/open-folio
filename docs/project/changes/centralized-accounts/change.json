@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "跨浏览器管理多个 Token 与账号设备",
-      "status": "todo"
+      "status": "done",
+      "verification": "25 项隔离及并发单测、13 项定向浏览器和2项解绑及失效凭据浏览器检查通过。",
+      "commitTitle": "centralized-accounts: verify cross-browser isolation and fix review findings"
     },
     "T3": {
       "title": "新模型运维与完整验收",

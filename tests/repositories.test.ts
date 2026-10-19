@@ -3,6 +3,7 @@ import { GitReader as GitReaderForTest } from "../src/server/git.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tokenResponse } from "../src/server/credential-api.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { gitHttpsFixture } from "./git-https-fixture.ts";
 import { repositoryFixture as setup } from "./repositories-fixture.ts";
@@ -508,4 +509,91 @@ test("switching the selected collaboration source isolates snapshots and concurr
     ).collaborationBranch,
     branch,
   );
+});
+
+test("two accounts using the same Token isolate real snapshots, preferences and copy targets", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  assert.equal((await f.request("refresh", "POST")).status, 200);
+  const original = await (await f.request("workbench")).json();
+  await f.f.sessions.updatePreferences(f.c.cookie, { module: "changes" });
+  const login = await f.f.sessions.register(
+    "",
+    "independent-reader",
+    "test-password",
+    new AbortController().signal,
+  );
+  const other = await f.f.sessions.bind(
+    login.cookie,
+    "sample",
+    "first",
+    undefined,
+    new AbortController().signal,
+  );
+  assert.notEqual(other.connection.id, f.c.connection.id);
+  assert.deepEqual(other.session.workspace?.preferences, {});
+  assert.equal(
+    (await f.request("workbench", "GET", login.cookie, f.c.connection.id))
+      .status,
+    401,
+  );
+  await f.f.discovery.check(login.cookie, other.connection.id, f.repo.webUrl);
+  const cold = await f.request(
+    "workbench",
+    "GET",
+    login.cookie,
+    other.connection.id,
+  );
+  assert.equal(cold.status, 503);
+  assert.equal((await cold.json()).error.code, "NO_SNAPSHOT");
+  assert.equal(
+    (await f.request("refresh", "POST", login.cookie, other.connection.id))
+      .status,
+    200,
+  );
+  const own = await (
+    await f.request("workbench", "GET", login.cookie, other.connection.id)
+  ).json();
+  const old = await f.request(
+    `workbench?snapshot=${original.id}`,
+    "GET",
+    login.cookie,
+    other.connection.id,
+  );
+  assert.equal(old.status, 410);
+  await f.f.sessions.updatePreferences(login.cookie, { module: "specs" });
+  assert.equal(
+    (await f.f.sessions.get(f.c.cookie)).workspace?.preferences.module,
+    "changes",
+  );
+  assert.ok(own.documents.length);
+  assert.ok(original.documents.length);
+  const copy = (cookie: string, revision: number, body: unknown = {}) =>
+    tokenResponse(
+      new Request("https://folio.test/api/session/token", {
+        method: "POST",
+        headers: {
+          origin: "https://folio.test",
+          cookie: `openfolio-account=${cookie}`,
+          "X-OpenFolio-Revision": String(revision),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }),
+      f.f.sessions,
+    );
+  assert.equal(
+    (
+      await copy(login.cookie, other.session.browserRevision!, {
+        workspaceId: f.c.connection.id,
+      })
+    ).status,
+    400,
+  );
+  for (const cookie of [f.c.cookie, login.cookie]) {
+    const session = await f.f.sessions.get(cookie);
+    const result = await copy(cookie, session.browserRevision!);
+    assert.equal(result.status, 200);
+    assert.deepEqual(await result.json(), { token: "first" });
+  }
 });
