@@ -19,3 +19,22 @@
 ![iPad 原型卡片](assets/ipad-gallery.png)
 
 ![手机原型卡片](assets/mobile-gallery.png)
+
+## 六组明暗主题原型（待用户验收）
+
+用户确认需求并授权提交、推送和设计原型；需求确认提交为 `11284f8`。新设计以 `develop@fee9a9f` 已集成产品与本 Change 的需求为依据，旧蓝色玻璃稿仅保留参考。六组入口为 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`，共同支持浅色/深色和桌面、平板、手机。设计规则及 shadcnuikit 参考 id 见 [DESIGN.md](../../../../packages/prototype/DESIGN.md)。
+
+原型仅使用虚构数据和内存交互；登录接受 `demo` / `demo-other`，对应现有 Token 身份模型。工程记录只读，不增加搜索、收藏、统计、批量写入或账号密码能力。Changes 的材料均标明虚构示例，不是本 Change 的 Technical/Plan。表单采用内存事件并支持 Enter，兼容工作台仅授予 `allow-scripts` 的 iframe。正文为实底，玻璃仅用于局部功能层，并支持透明度和动态效果降级。
+
+### 本地验证（2026-10-19 UTC）
+
+`npm run build --workspace prototype` 成功；`node packages/prototype/verify-quiet-workbench.mjs` 完成 86 项断言，失败 0、浏览器错误 0。
+
+- 六入口 × 两主题 × 四档尺寸（1440×900、834×1194、390×844、320×720）共 48 项布局检查均无页面横向溢出；长文与画布局部滚动保持在阅读区内。
+- 在真实不透明 iframe 沙箱及项目 CSP 下验证键盘导航、可见焦点、Escape 与嵌套弹窗焦点恢复、手机目录、触摸入口、过滤与分页、问答、只读任务视图、合入差异和限制状态。
+- 设备画布的尺寸、旋转、适应/100% 映射准确；卡片截图与标题分别进入预览和详情，固定分享及匿名权限边界可演示。
+- Token 添加/去重、切换失败保留当前身份、不同 Token 工作台隔离、设备退出范围、复制失败回退、减少透明度与减少动态效果通过。
+- 验证加载、空态、部分失败、无匹配、离线、无权限、会话失效、来源失败、材料缺失、合入失败、未发布和公开链接撤回等场景。
+- 六入口均执行包内正式 screenshot 命令，生成桌面、iPad、手机共 18 张标准卡片图；另保留两主题共 36 张布局检查图。结果和截图位于忽略目录 `artifacts/quiet-workbench/`。
+
+仅更新原型包和本 Change 文档/语义状态；不修改产品前端代码、不编写 Technical/Plan，也不记录原型验收。发布记录与真实工作台验证随后补充。

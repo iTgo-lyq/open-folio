@@ -2,6 +2,78 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "quiet-home",
+      "title": "工作台新设计 · 仓库与导航",
+      "description": "仓库发现、状态筛选、项目切换与读取来源。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-home.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
+      "id": "quiet-specs",
+      "title": "工作台新设计 · Specs 阅读",
+      "description": "能力目录、章节定位、正文、原文与阅读链接。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-specs.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
+      "id": "quiet-changes",
+      "title": "工作台新设计 · Changes 与详情",
+      "description": "列表、只读看板、任务、问答、材料和合入差异。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-changes.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
+      "id": "quiet-prototypes",
+      "title": "工作台新设计 · 原型总览与画布",
+      "description": "设备缩略图、预览画布、固定版本准备与分享。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-prototypes.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
+      "id": "quiet-credentials",
+      "title": "工作台新设计 · Token 登录与凭据",
+      "description": "示例 Token 登录、浏览器身份切换和设备撤销。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-credentials.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
+      "id": "quiet-public",
+      "title": "工作台新设计 · 匿名公开预览",
+      "description": "仅展示已公开的固定原型，支持设备与画布操作。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-public.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
       "id": "account-login",
       "title": "账号登录与 Token 管理",
       "description": "用户自设账号密码，管理账号绑定的 Token、跨浏览器选择及账号登录设备。仅使用示例数据。",

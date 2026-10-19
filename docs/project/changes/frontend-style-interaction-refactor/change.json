@@ -75,9 +75,5 @@
       "answer": "全部按当前 Token 登录能力设计，不等待 centralized-accounts 合入。",
       "source": "本会话第 1 轮需求澄清 Q3：全部按当前 Token 登录能力设计。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "Q1–Q3 已回答并写入草稿，等待用户审阅完整需求与设计规范；未记录需求确认，本轮不绘制原型、不进入技术方案或实施，不提交推送。"
   }
 }

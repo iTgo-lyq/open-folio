@@ -1,0 +1,26 @@
+[
+  {
+    "id": "quiet-home",
+    "entryPath": "quiet-home/index.html"
+  },
+  {
+    "id": "quiet-specs",
+    "entryPath": "quiet-specs/index.html"
+  },
+  {
+    "id": "quiet-changes",
+    "entryPath": "quiet-changes/index.html"
+  },
+  {
+    "id": "quiet-prototypes",
+    "entryPath": "quiet-prototypes/index.html"
+  },
+  {
+    "id": "quiet-credentials",
+    "entryPath": "quiet-credentials/index.html"
+  },
+  {
+    "id": "quiet-public",
+    "entryPath": "quiet-public/index.html"
+  }
+]
