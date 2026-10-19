@@ -290,11 +290,12 @@ test("account writes require the browser origin and enforce bounded strict bodie
       headers: { "content-type": "application/json", ...headers },
       body: JSON.stringify(input),
     });
-  for (const headers of [
+  const deniedHeaders: Record<string, string>[] = [
     { origin: "https://foreign.test" },
     { origin: "https://folio.test", "sec-fetch-site": "cross-site" },
     { "x-forwarded-host": "folio.test", origin: "https://folio.test" },
-  ]) {
+  ];
+  for (const headers of deniedHeaders) {
     const r = await registrationResponse(
       request("http://localhost:11118/api/accounts/register", headers),
       f.sessions,

@@ -15,3 +15,19 @@
 `account-connections.test.ts` 与 `repositories.test.ts` 合计 25 项通过，包含两个账号绑定完全相同 Token 时的实际复制目标限制、偏好及私有快照隔离；在途绑定和切换遇到退出、解绑或代次变化均不能恢复授权。浏览器定向 13 项通过，覆盖账号跨浏览器恢复、独立选择、同浏览器标签页晚到响应、A → B → A、复制、设备及 R2 Unicode 修复。独立评审及修复见 [Review](review.md)。
 
 另补两项浏览器用例通过：其他浏览器解绑后晚到正文无法返回；正在使用的 Token 被平台撤销时清除正文，但账号保持登录且可选其他绑定。临时平台故障保留上下文由既有 `automatic-refresh.spec.ts` 及新的受控会话测试覆盖。
+
+## T3
+
+已接通当前格式的离线密钥轮换、账号登录版 `withSmokeSession`、环境模板和 README。包装器在账号登录后按需绑定验证 Token，并跟进修改响应的 revision；结束时读取最新摘要、退出当前设备并复查匿名且无可见绑定。账号绑定保留，清理失败不可记为成功。真实值仅保存到忽略的本地环境配置。
+
+隔离生产实例位于工作区 `.next`，端口 11118、tmux `openfolio-accounts-review`、数据目录 `/home/tiger/.local/share/open-folio-accounts-review`；未使用长期服务的数据或 Cookie。`service:update` 按停止、生产构建、启动顺序通过。类型检查发现新增测试的请求头联合类型不匹配，已明确类型后通过。
+
+真实 GitHub 验证使用独立账号，经 `withSmokeSession` 绑定 Token 并读取 `iTgo-lyq/open-folio` 的协作分支工作台；第二个浏览器仅以账号密码登录后选择已有绑定，未再次提交 Token，读到相同快照。每个浏览器均在独立包装器回调内使用提供的 Cookie，回调内关闭浏览器；所有包装器均复查退出成功，匿名无可见绑定。首次手工检查地址与后台发现重叠返回 `DISCOVERY_RUNNING`；等待已有发现结束后通过。
+
+重启恢复验证在包装器回调内完成：关闭 Chromium 进程、停止再启动隔离服务，检查相同账号设备、绑定、当前选择及 selectionRevision；再启动新 Chromium 进程，以包装器内存中的 Cookie 恢复界面。未导出 storageState、用户 Cookie 或明文凭据。桌面及手机截图位于忽略的 `artifacts/centralized-accounts/`。
+
+独立评审指出的四项证据缺口已补齐并定向复核，无剩余已知缺陷。最终单测中的发现分类断言曾依赖并发探测的完成顺序；改为按仓库名比较完整分类集合，列表复验仍保留既有顺序测试，独立评审确认该调整合理。
+
+正式交付需在人工验收后归档、集成 `develop`，再更新主工作区长期服务；停机时仅清理被替换的 `personal-v2` 及旧私有仓库／发现缓存，保留运维和公开原型，不导入旧数据。
+
+最终验证：`npm test` 238 项全通过；`npm run test:e2e -- --reporter=line` 86 项全通过；`npm run typecheck` 和隔离实例生产构建通过。浏览器 A → B → A 的受控延迟用例另补全显式切换步骤后定向复验，避免仅依赖用例标题。协作分支已定向 fetch，仍为工作分支祖先，无待整合上游差异。

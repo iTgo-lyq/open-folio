@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "新模型运维与完整验收",
-      "status": "todo"
+      "status": "done",
+      "verification": "238 项单测、86 项浏览器、类型格式与生产构建通过，真实 GitHub 及浏览器和服务重启冒烟清理通过。",
+      "commitTitle": "centralized-accounts: complete operational verification"
     }
   },
   "closure": {},
@@ -56,11 +58,7 @@
       "id": "account-login",
       "title": "账号登录与 Token 管理",
       "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
+      "devices": ["pc-web", "ipad", "mobile"],
       "artifact": {
         "type": "hosted",
         "version": "cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9",

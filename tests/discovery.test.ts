@@ -43,7 +43,9 @@ test("discovery distinguishes six samples, paginates, and publishes only authori
     assert.deepEqual(f.controls.pages, [null, "page-2"]);
     const listing = await f.discovery.list(c.cookie, c.connection.id);
     assert.deepEqual(
-      listing.items.map((r) => [r.repository.displayName, r.state]),
+      listing.items
+        .map((r) => [r.repository.displayName, r.state])
+        .sort(([a], [b]) => a.localeCompare(b)),
       [
         ["content", "ready"],
         ["empty-content", "ready"],

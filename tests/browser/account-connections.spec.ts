@@ -137,6 +137,8 @@ test("A-B-A selection discards a delayed repository response from the first A", 
   ).json();
   await page.goto("/?m=connections");
   await addOther(page);
+  await page.getByRole("button", { name: "使用reader", exact: true }).click();
+  await expect(current(page)).toContainText("@reader");
   let finish: (() => Promise<void>) | undefined,
     held = false;
   await page.route("**/workbench?*", async (route) => {
@@ -152,6 +154,8 @@ test("A-B-A selection discards a delayed repository response from the first A", 
   await page.goto(`/?${repositoryQuery}&m=specs`);
   await expect.poll(() => !!finish).toBe(true);
   await page.locator('.module-rail [aria-label="当前凭据"]').click();
+  await expect(current(page)).toContainText("@reader");
+  await page.getByRole("button", { name: "使用组织工程", exact: true }).click();
   await expect(current(page)).toContainText("@collaborator");
   await page.getByRole("button", { name: "使用reader", exact: true }).click();
   await expect(current(page)).toContainText("@reader");
