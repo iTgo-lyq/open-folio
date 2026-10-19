@@ -4,9 +4,15 @@
   "title": "账号密码登录与账号绑定 Token",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-19T09:07:09.538Z",
+      "summary": "用户自设账号密码登录，按账号持久绑定 Token 并跨浏览器恢复。",
+      "source": "回到账号密码登录这个 Change，需求确认了，继续整理技术方案和计划。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "clarifications": {
@@ -17,9 +23,5 @@
       "answer": "不考虑历史数据，完全不保留兼容或迁移逻辑。",
       "source": "不用考虑历史数据，完全不需要保留兼容或者迁移逻辑。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "需求已按全新账号体系整理，等待确认完整目标、范围和验收后进入技术方案；不保留旧数据兼容或迁移。"
   }
 }
