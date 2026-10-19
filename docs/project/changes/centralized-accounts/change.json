@@ -4,7 +4,7 @@
   "title": "账号密码登录与账号绑定 Token",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/centralized-accounts",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "centralized-accounts: complete operational verification"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-19T11:34:10.740Z",
+      "summary": "238 项单测、86 项浏览器、构建与真实冒烟通过，隔离独立评审问题已修复。"
+    }
+  },
   "clarifications": {
     "Q1": {
       "round": 1,
@@ -81,5 +87,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立评审已完成，等待用户验收；通过后归档、合入 develop 并更新长期服务。"
+  }
 }
