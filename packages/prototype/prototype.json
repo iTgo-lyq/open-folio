@@ -2,6 +2,18 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "account-login",
+      "title": "账号登录与 Token 管理",
+      "description": "用户自设账号密码，管理账号绑定的 Token、跨浏览器选择及账号登录设备。仅使用示例数据。",
+      "sourcePath": "packages/prototype/src/pages/account-login.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ]
+    },
+    {
       "id": "blue-glass-workbench",
       "title": "蓝色玻璃工作台",
       "description": "蓝色主题与克制的液态玻璃，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据。",

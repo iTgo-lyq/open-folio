@@ -1,5 +1,7 @@
 # 原型构建与 R2 发布
 
+account-login 演示账号注册／登录、Token 添加／选择／命名／解绑和账号设备退出。顶部切换浏览器 A／B 可体验跨浏览器恢复；示例账号为 `lin`、`chen`，密码均为 `demo12345`，也可自行注册示例账号。只接受 `demo`、`demo-work` 示例 Token。场景覆盖空态、凭据失效、切换失败和登录过期，状态仅存于内存。入口 hash `#login`、`#register` 可直达表单。
+
 本包维护 workspace-shell 外壳与 personal-workbench 个人工作台方案，设计依据见 [DESIGN.md](DESIGN.md)。源码入 Git，`npm run build --workspace prototype` 输出各自的自包含 `dist/<id>/index.html`。构建不会上传或改动清单，dist 不提交。
 
 blue-glass-workbench 是蓝色玻璃工作台的独立视觉方案，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据，交互在内存运行；不是正式工作台的已上线界面。源码与设备快照一并内联，不访问外部资源。发布该页时，可单独以 `dist/blue-glass-workbench` 为产物目录，入口为 `index.html`，避免重新发布其他页面。
