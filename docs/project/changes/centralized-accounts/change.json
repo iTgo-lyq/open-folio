@@ -47,10 +47,6 @@
       "source": "不用考虑历史数据，完全不需要保留兼容或者迁移逻辑。"
     }
   },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "账号登录与 Token 管理原型已发布，等待用户验收；正式实现尚未开始。"
-  },
   "previews": [
     {
       "id": "account-login",
