@@ -4,13 +4,15 @@
   "title": "合并同阶段讨论的小补充提交",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/discussion-commit-amend",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "调整讨论提交合并规则并验证并发回退",
-      "status": "todo"
+      "status": "done",
+      "verification": "skill quick_validate 与 git diff --check 通过；临时 bare 远端及双克隆验证 5 项场景，包含固定 SHA lease、后台 fetch、并发拒绝及普通提交回退，证据见 execution.md。",
+      "commitTitle": "discussion-commit-amend T1: allow leased discussion amendments with ordinary-commit fallback"
     }
   },
   "closure": {},
