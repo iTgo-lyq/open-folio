@@ -37,4 +37,21 @@
 - 验证加载、空态、部分失败、无匹配、离线、无权限、会话失效、来源失败、材料缺失、合入失败、未发布和公开链接撤回等场景。
 - 六入口均执行包内正式 screenshot 命令，生成桌面、iPad、手机共 18 张标准卡片图；另保留两主题共 36 张布局检查图。结果和截图位于忽略目录 `artifacts/quiet-workbench/`。
 
-仅更新原型包和本 Change 文档/语义状态；不修改产品前端代码、不编写 Technical/Plan，也不记录原型验收。发布记录与真实工作台验证随后补充。
+仅更新原型包和本 Change 文档/语义状态；不修改产品前端代码、不编写 Technical/Plan，也不记录原型验收。固定发布记录如下；真实工作台检查在引用推送后进行。
+
+### 固定发布
+
+R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0`，源码提交 `300bb77e2fb00c706cee6883bfefc9c175beac5f`，内容摘要 `sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb`。通过公开 GET 对所有上传字节和 MIME 校验后，使用 SpecTrail `publish register` 登记六入口；每项均包含桌面、iPad、手机缩略图，旧引用保持原值。
+
+| 入口 | 浅色 | 深色 |
+| --- | --- | --- |
+| 仓库与导航 | [打开原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/index.html) | [打开深色](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/index.html#/home?theme=dark) |
+| Specs 阅读 | [打开原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/index.html) | [打开深色](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/index.html#/specs?theme=dark) |
+| Changes 与详情 | [打开原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/index.html) | [打开深色](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/index.html#/changes?theme=dark) |
+| 原型总览与画布 | [打开原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/index.html) | [打开深色](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/index.html#/prototypes?theme=dark) |
+| Token 登录与凭据 | [打开原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/index.html) | [打开深色](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/index.html#/credentials?theme=dark) |
+| 匿名公开预览 | [打开原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/index.html) | [打开深色](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/index.html#/public?theme=dark) |
+
+顶部「设计预览」可切换六组页面与场景，页面内主题按钮切换明暗。每个入口的固定目录另含 `dark-pc-web.png`、`dark-ipad.png`、`dark-mobile.png`，用于对照深色外观；它们是检查图，当前卡片仍使用标准设备缩略图。
+
+用户尚未验收此版本，语义状态已记录等待原型确认。需求确认使流程标记进入 technical，但原型验收前不创建 Technical、Plan、实施任务或产品改动。
