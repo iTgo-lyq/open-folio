@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/centralized-accounts",
   "confirmations": {
     "requirement": {
       "at": "2026-10-19T09:07:09.538Z",
