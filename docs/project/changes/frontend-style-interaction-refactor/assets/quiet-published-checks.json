@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-19T18:43:41.044Z",
+  "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+  "checks": [
+    "Remote catalog reads all six fixed references and 18 thumbnails from develop",
+    "quiet-home/pc-web real gallery thumbnail",
+    "quiet-specs/pc-web real gallery thumbnail",
+    "quiet-changes/pc-web real gallery thumbnail",
+    "quiet-prototypes/pc-web real gallery thumbnail",
+    "quiet-credentials/pc-web real gallery thumbnail",
+    "quiet-public/pc-web real gallery thumbnail",
+    "quiet-home/ipad real gallery thumbnail",
+    "quiet-specs/ipad real gallery thumbnail",
+    "quiet-changes/ipad real gallery thumbnail",
+    "quiet-prototypes/ipad real gallery thumbnail",
+    "quiet-credentials/ipad real gallery thumbnail",
+    "quiet-public/ipad real gallery thumbnail",
+    "quiet-home/mobile real gallery thumbnail",
+    "quiet-specs/mobile real gallery thumbnail",
+    "quiet-changes/mobile real gallery thumbnail",
+    "quiet-prototypes/mobile real gallery thumbnail",
+    "quiet-credentials/mobile real gallery thumbnail",
+    "quiet-public/mobile real gallery thumbnail",
+    "quiet-home opened from real card, theme and scenario interactions in sandbox",
+    "quiet-specs opened from real card, theme and scenario interactions in sandbox",
+    "quiet-changes opened from real card, theme and scenario interactions in sandbox",
+    "quiet-prototypes opened from real card, theme and scenario interactions in sandbox",
+    "quiet-credentials opened from real card, theme and scenario interactions in sandbox",
+    "quiet-public opened from real card, theme and scenario interactions in sandbox",
+    "withSmokeSession logged out and verified no current or remembered smoke authorization"
+  ],
+  "passed": 26
+}
