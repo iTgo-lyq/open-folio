@@ -16,9 +16,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 本机长期服务端口为 `11117`，tmux 会话为 `openfolio-public-preview`。服务管理命令在主工作区运行，也可使用 `npm --prefix /home/tiger/workspace/open-folio run service:status` 等形式。
 - 更新长期服务前确认待部署提交已集成并验证，按需安装依赖，执行 `service:update` 和冒烟检查；该命令只构建当前工作区，不自动拉取或切分支。服务进程由 tmux 托管，不依赖 Agent 会话，脚本不提供机器重启后的自启配置。
 - 常规更新允许短暂停机，按停止服务、构建、启动、验证的顺序执行，不创建回滚快照或例行备份，也不累积备份历史。破坏性更新或排查 bug 确有需要时，只做最小必要备份，用后清理。
-- `/home/tiger/.local/share/open-folio` 是当前运行数据目录，包含登录状态、凭据密钥、工作台偏好及可重建缓存。一般不主动删除；仅在破坏性更新或修复 bug 确有需要时，针对必要范围处理，避免每次部署重置登录和工作台。
-- 部署后的冒烟检查由负责本次任务的 Agent 根据改动自主选择，不维护固定冒烟脚本。需要登录真实工作台时，从 Git 忽略的本地环境配置读取 Token；`.env.example` 仅保存配置项与占位值。
-- 真实登录冒烟统一使用 `scripts/smoke-session.ts` 的 `withSmokeSession`，每个测试浏览器使用独立调用，所有检查在回调内完成并等待结束；浏览器上下文通过回调提供的 `browserCookie` 登录，不复用用户 Cookie、不在回调外另建登录。包装器在成功或失败后读取最新版本号退出，并复查已无当前或记住的授权；清理失败必须报告，不得忽略非 2xx 响应或把冒烟标为成功。用法见 README；不得通过退出全部设备或直接修改数据文件收尾。
+- `/home/tiger/.local/share/open-folio-public` 是当前运行数据目录，包含登录状态、凭据密钥、工作台偏好及可重建缓存。一般不主动删除；仅在破坏性更新或修复 bug 确有需要时，针对必要范围处理，避免每次部署重置登录和工作台。
+- 部署后的冒烟检查由负责本次任务的 Agent 根据改动自主选择，不维护固定冒烟脚本。需要登录真实工作台时，从 Git 忽略的本地环境配置读取专用账号密码和 Token；`.env.example` 仅保存配置项与占位值。
+- 真实登录冒烟统一使用 `scripts/smoke-session.ts` 的 `withSmokeSession`，每个测试浏览器使用独立调用，所有检查在回调内完成并等待结束；浏览器上下文通过回调提供的 `browserCookie` 登录，不复用用户 Cookie、不在回调外另建登录。包装器在成功或失败后读取最新版本号退出，并复查匿名且无可见绑定，账号绑定保留；清理失败必须报告，不得忽略非 2xx 响应或把冒烟标为成功。用法见 README；不得通过退出全部设备或直接修改数据文件收尾。
 - 服务管理使用 `npm run service:start`、`service:stop`、`service:status`、`service:update`；配置项见 `.env.example`，真实值放 Git 忽略的 `.env`，也支持 `.env.local` 覆盖。原型截图使用 `npm run screenshot --workspace prototype -- --entry dist/<id>/index.html`，参数见包内 README。正式脚本不放在 `artifacts/` 或 `.openfolio/`。
 
 ## 构建产物

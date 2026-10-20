@@ -3,7 +3,7 @@
   "id": "centralized-accounts",
   "title": "账号密码登录与账号绑定 Token",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/centralized-accounts",
   "confirmations": {
@@ -48,6 +48,23 @@
       "result": "passed",
       "at": "2026-10-19T11:34:10.740Z",
       "summary": "238 项单测、86 项浏览器、构建与真实冒烟通过，隔离独立评审问题已修复。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-20T04:00:00.533Z",
+      "summary": "用户明确要求合入，验收账号密码登录与账号绑定 Token 的当前交付。",
+      "source": "合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-20T04:00:02.279Z",
+      "summary": "同步个人访问、项目工作台和服务配置的账号、Token、设备与存储契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-20T04:00:05.868Z",
+      "summary": "用户验收通过，账号登录与 Token 管理验证完成并同步 Specs。",
+      "path": "docs/project/archive/2026-10-20-centralized-accounts"
     }
   },
   "clarifications": {
@@ -87,9 +104,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与独立评审已完成，等待用户验收；通过后归档、合入 develop 并更新长期服务。"
-  }
+  ]
 }
