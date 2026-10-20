@@ -16,6 +16,8 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   const root = data.changes.find((g) => g.id === "source-connect")!;
   root.title = "技术方案问询";
   primaryRecord(root)!.state!.title = root.title;
+  primaryRecord(root)!.state!.types = ["流程"];
+  primaryRecord(root)!.state!.urgency = "low";
   const next: ChangeGroup = structuredClone(root);
   next.id = "technical-budget";
   next.title = "需求与技术额度分别计算";
@@ -29,11 +31,13 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     id: next.id,
     title: next.title,
     size: "medium",
+    urgency: "high",
     followUpOf: root.id,
     followUpTitle: "完善技术方案问询机制",
   };
   const active = data.changes.find((g) => g.id === "document-reader")!;
   primaryRecord(active)!.state!.followUpOf = next.id;
+  primaryRecord(active)!.state!.types = ["流程"];
   const cancelled = data.changes.find((g) => g.id === "layout-experiment")!;
   primaryRecord(cancelled)!.state!.followUpOf = root.id;
   const standalone = structuredClone(root);
@@ -92,6 +96,17 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/c=source-connect/);
   await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await page
+    .getByRole("combobox", { name: "变更排序" })
+    .selectOption("urgency");
+  await expect(group.locator(".change-row-title strong")).toHaveText([
+    "需求与技术额度分别计算",
+    "技术方案问询",
+  ]);
+  await page.getByRole("button", { name: "筛选类型" }).click();
+  await page.getByRole("checkbox", { name: "流程", exact: true }).check();
+  await page.keyboard.press("Escape");
+  await expect(group.getByRole("heading")).toHaveText("完善技术方案问询机制");
   await page.getByRole("combobox", { name: "筛选规模" }).selectOption("medium");
   await expect(group.getByRole("button")).toHaveCount(1);
   await expect(group.getByRole("heading")).toHaveText("完善技术方案问询机制");

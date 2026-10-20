@@ -32,6 +32,12 @@
     },
     "T2": {
       "title": "在工作台展示、筛选并按紧急程度浏览 Change",
+      "status": "done",
+      "verification": "24 项单元回归、18 项浏览器回归、类型/格式检查及构建通过；读屏数量修正后 4 项标签浏览器复跑通过。",
+      "commitTitle": "change-labels-urgency T2: display and filter change labels"
+    },
+    "T3": {
+      "title": "同步缓存升级的既有回归断言",
       "status": "todo"
     }
   },
@@ -56,5 +62,8 @@
     "at": "2026-10-20T09:21:49.483Z",
     "reason": "用户调整紧急程度空值语义：未填写默认普通，平台不单独展示未设置。",
     "approach": "同步需求、技术方案与计划，统一缺省和显式普通的展示筛选排序，保留可选存储与历史兼容。"
-  }
+  },
+  "types": [
+    "新功能"
+  ]
 }

@@ -15,3 +15,18 @@ skill 正文仅增加两个字段和一段标注指引；状态命令表增加�
 - `skill-creator/scripts/quick_validate.py .agents/skills/spec-trail`：通过。
 
 测试通过临时 Git 仓库完成写入、推送和读取；没有修改历史归档或运行数据。
+
+## T2
+
+列表、阶段看板及详情共用标签展示；类型自由多选与无类型条件按 OR，和紧急程度及既有条件取交集。类型候选来自项目实际记录。默认保留创建顺序，可切换紧急优先，同级稳定排序；任务、依赖与延续组沿用统一结果。普通不在行/卡片增加徽标，详情按有效等级显示。
+
+验证：
+
+- 新查询逻辑及既有读取、创建顺序、延续组测试：24 项通过。
+- Change、延续组和新增标签浏览器回归：18 项通过。首次 17 项通过，URL 独有选项取消后立即消失，Playwright `uncheck()` 等待已移除元素超时；改为点击并断言选项消失，定向复跑通过。
+- `npm run typecheck`、`npm run format:check`、`npm run build` 通过。
+- 目视检查 `artifacts/change-labels-desktop.png`、`change-labels-mobile-filter.png`、`change-labels-mobile-detail.png`：桌面、320px 长标签及浮层均无水平溢出；键盘选择、Escape 焦点恢复、URL 往返、详情返回和切仓库清理均通过浏览器检查。
+
+独立评审 R2 的读屏数量问题修正后，4 项标签浏览器用例全通过，类型/格式检查及生产构建再次通过。使用新 `labels` 命令为本 Change 标注“新功能”，保持紧急程度省略。
+
+构建在任务工作区 `.next`，浏览器用隔离的 `.next-e2e`；长期服务及其数据未受影响。

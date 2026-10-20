@@ -303,7 +303,9 @@ test("changing projects clears filters that belong to the previous project", asy
   await page.route("**/api/repositories/second/workbench*", (route) =>
     route.fulfill({ json: second }),
   );
-  await page.goto(`/?${repositoryQuery}&m=changes&spec=platform`);
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&spec=platform&noTypes=1&urgency=normal&sort=urgency`,
+  );
   await expect(
     page.getByRole("button", {
       name: "打开 让工程文档成为清晰的阅读体验",
@@ -311,7 +313,7 @@ test("changing projects clears filters that belong to the previous project", asy
     }),
   ).toBeVisible();
   await page.getByRole("combobox", { name: "当前仓库" }).selectOption("second");
-  await expect(page).not.toHaveURL(/spec=/);
+  await expect(page).not.toHaveURL(/spec=|types=|noTypes=|urgency=|sort=/);
   await expect(
     page.getByRole("button", {
       name: "打开 让工程文档成为清晰的阅读体验",

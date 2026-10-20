@@ -41,6 +41,13 @@ import { Empty, Source, CopyPageLink } from "./document";
 import { ChangePreviews } from "./previews";
 import { ChangeIntegration } from "./integration";
 import { GroupedChangeRows, FollowUpContext } from "./follow-ups";
+import { ChangeLabels, ChangeLabelFilters } from "./change-labels";
+import {
+  readLabelQuery,
+  labelQueryParams,
+  matchesLabels,
+  sortByUrgency,
+} from "@/lib/change-labels";
 const sizes = {
   small: "Small",
   medium: "Medium",
@@ -145,6 +152,18 @@ function Progress({ c }: { c: ChangeCandidate }) {
 }
 export default function Changes() {
   const { data, q, nav, projectId } = useWorkspace();
+  const labels = useMemo(
+    () => readLabelQuery(q),
+    [q.types, q.noTypes, q.urgency, q.sort],
+  );
+  useEffect(() => {
+    const patch = Object.fromEntries(
+      Object.entries(labelQueryParams(labels)).filter(
+        ([key, value]) => (q[key] ?? null) !== value,
+      ),
+    );
+    if (Object.keys(patch).length) nav(patch, true);
+  }, [labels, q, nav]);
   const scope: ChangeScope = scopes.some(([key]) => key === q.scope)
     ? (q.scope as ChangeScope)
     : "active";
@@ -176,11 +195,12 @@ export default function Changes() {
       (value === "cancelled" && c?.state?.status === "cancelled")
     );
   };
-  const filtered = groups.filter((g) => {
+  const matching = groups.filter((g) => {
     const c = primaryRecord(g),
       s = c?.state;
     return (
       inScope(g, scope) &&
+      matchesLabels(s, labels) &&
       (!activeScope || !q.stage || s?.stage === q.stage) &&
       (!q.size || s?.size === q.size) &&
       (!activeScope ||
@@ -191,10 +211,14 @@ export default function Changes() {
       (!q.spec || c?.relatedSpecs.includes(q.spec))
     );
   });
+  const filtered = labels.sortByUrgency ? sortByUrgency(matching) : matching;
   const scopeCount = groups.filter((g) => inScope(g, scope)).length;
   const hasFilters = !!(
     q.size ||
     q.spec ||
+    labels.types.length ||
+    labels.noTypes ||
+    labels.urgency ||
     (activeScope && (q.stage || q.wait)) ||
     (level === "tasks" && q.taskStatus)
   );
@@ -273,6 +297,7 @@ export default function Changes() {
       </div>
       <div className="changes-toolbar">
         <div className="filter-controls">
+          <ChangeLabelFilters groups={groups} query={labels} nav={nav} />
           {level === "tasks" && (
             <select
               aria-label="筛选任务状态"
@@ -389,6 +414,9 @@ export default function Changes() {
                     size: null,
                     wait: null,
                     spec: null,
+                    types: null,
+                    noTypes: null,
+                    urgency: null,
                     taskStatus: null,
                   })
                 }
@@ -440,6 +468,7 @@ export default function Changes() {
                       <div>
                         <strong>{g.title}</strong>
                         <code>{g.id}</code>
+                        <ChangeLabels state={s} />
                       </div>
                     </div>
                     <span>
@@ -561,6 +590,7 @@ function OutcomeList({
                 <div>
                   <strong>{group.title}</strong>
                   <code>{group.id}</code>
+                  <ChangeLabels state={state} />
                 </div>
               </div>
               <span className="size-label">
@@ -635,6 +665,7 @@ function ChangeBoard({
                     {s && <span>{sizes[s.size]}</span>}
                   </div>
                   <strong>{g.title}</strong>
+                  <ChangeLabels state={s} />
                   {s?.size === "xlarge" && <Badge>父 Change</Badge>}
                   {s?.status !== "active" && s && (
                     <Badge>{STATUS_LABELS[s.status]}</Badge>
@@ -1073,6 +1104,15 @@ export function ChangeDrawer() {
               <>
                 <Diagnostics items={quality(g)} />
                 <FollowUpContext change={g} />
+                {s && (
+                  <section
+                    className="change-label-details"
+                    aria-label="类型与紧急程度"
+                  >
+                    <SectionTitle>类型与紧急程度</SectionTitle>
+                    <ChangeLabels state={s} detail />
+                  </section>
+                )}
                 {ongoing && s?.waitingFor && (
                   <div className="waiting-card">
                     <Clock3 size={17} />
