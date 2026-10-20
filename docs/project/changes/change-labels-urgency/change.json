@@ -4,7 +4,7 @@
   "title": "Change 类型标签与紧急程度",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-labels-urgency",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "change-labels-urgency T3: align cache rebuild regression"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-20T09:43:51.575Z",
+      "summary": "独立 subagent 完整评审及两项修正复核通过；248 项单测、18 项浏览器回归、类型/格式检查与构建通过。"
+    }
+  },
   "clarifications": {
     "Q1": {
       "round": 1,
@@ -67,5 +73,9 @@
   },
   "types": [
     "新功能"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立评审通过，等待用户验收后同步 Specs、归档、合入 develop 并更新长期服务。"
+  }
 }
