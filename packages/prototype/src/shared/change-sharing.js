@@ -1,9 +1,10 @@
 // Fictional review data only: no network, persistence, account or repository writes.
 const $ = (s) => document.querySelector(s);
-const tabs = ['overview','tasks','documents','previews','integration','evidence'];
+const tabs = ['documents','overview','tasks','previews','integration','evidence'];
+const tabLabels = { documents:'文档', overview:'概览', tasks:'任务', previews:'原型', integration:'合入变更', evidence:'依据' };
 const docs = { requirement:'需求', technical:'技术方案', plan:'实施计划', execution:'执行记录', review:'评审记录' };
 let shared = true, version = 1, revision = 1, tab = 'documents', doc = 'technical', perspective = 'reader', scene = 'ready';
-let noticeTimer, lastFocus;
+let noticeTimer, lastFocus, renderedKey, currentSection;
 const link = () => `https://folio.example/share/demo-${version}?ct=${tab}${tab === 'documents' ? `&document=${doc}.md` : ''}`;
 function notify(message) { $('#notice').textContent=message; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('#notice').textContent='',3500); }
 async function copy(value=link()) {
@@ -12,6 +13,7 @@ async function copy(value=link()) {
 }
 function route(patch) {
   const q=new URLSearchParams(location.hash.slice(1));
+  if ((patch.tab && patch.tab !== tab) || (patch.doc && patch.doc !== doc)) q.delete('section');
   Object.entries(patch).forEach(([key,value])=>q.set(key,value));
   location.hash=q.toString(); readRoute();
 }
@@ -22,17 +24,61 @@ function readRoute() {
   perspective=q.get('who')==='owner'?'owner':'reader';
   scene=['new','revoked','unavailable','offline','loading'].includes(q.get('scene'))?q.get('scene'):'ready';
   $('#perspective').value=perspective; $('#scene').value=scene;
-  render();
+  const nextKey = [tab,doc,perspective,scene,revision].join(':');
+  if (nextKey !== renderedKey) { renderedKey=nextKey; render(); }
+  const section=q.get('section');
+  if(section && section!==currentSection) requestAnimationFrame(()=>goToSection(section));
+  currentSection=section;
 }
 const body = () => ({
   requirement:`<h3>目标</h3><p>客服每天需要从大量订单中找到待处理项。保留常用筛选，减少重复选择，让回到列表后的上下文保持连续。</p><h3>范围</h3><ul><li>按订单状态筛选，支持一键清除。</li><li>保留筛选条件，手机与桌面使用同一套规则。</li><li>列表为空时说明原因，并提供清除筛选入口。</li></ul><h3>验收</h3><p>切换页面后返回，仍可看到原来的筛选结果；没有结果时可以恢复完整列表。</p>`,
-  technical:`<p>在现有订单列表中保存筛选条件，使列表、结果数量和返回位置始终对应同一组选择。</p><div class="note">需求已明确：筛选条件保留到当前工作台；切换项目后重新开始。</div><h3>状态与数据流</h3><p>筛选状态由列表页面维护。筛选变化时更新地址参数，返回列表时读取参数并恢复相同结果。</p><div class="mini-flow" aria-label="选择筛选条件，然后更新地址，最后呈现匹配订单"><span>选择条件</span><b aria-hidden="true">→</b><span>更新地址</span><b aria-hidden="true">→</b><span>呈现结果</span></div><h3>交互与空态</h3><ul><li>选中条件在列表上方持续可见，支持单独移除。</li><li>没有匹配订单时说明当前条件，不显示误导性的空白列表。</li><li>手机端保留可触达的筛选和清除入口。</li></ul>${revision>1?'<div class="note" id="new-content">最新补充：返回列表时同时恢复阅读位置。</div>':''}<h3>验证方式</h3><p>覆盖首次进入、组合筛选、清除、页面返回和手机窄屏。查看 <a href="#tab=documents&doc=plan">实施计划</a>。</p><p class="muted">关联规范：<button class="inline-link" data-action="outside">订单列表规范 ↗</button></p>`,
+  technical:`<h3>方案概述</h3><p>客服查看某个订单后返回列表，应该继续看到刚才的筛选结果。我们把筛选条件放进页面地址，让列表、结果数量和返回位置始终对应同一组选择。</p><div class="note"><strong>已确认的边界</strong>筛选条件保留在当前工作台内。切换项目后重新开始，桌面与手机使用相同规则。</div><h3>状态与数据流</h3><p>页面地址是筛选状态的唯一来源。进入列表时读取地址，切换条件时更新地址，浏览器前进或后退时恢复对应结果。</p><div class="mini-flow" aria-label="选择条件，然后更新地址，最后呈现匹配订单"><span>选择条件</span><b aria-hidden="true">→</b><span>更新地址</span><b aria-hidden="true">→</b><span>呈现结果</span></div><p>例如，<code>?status=pending</code> 对应待处理订单。没有筛选参数时展示全部订单；无法识别的参数按默认值处理，不中断阅读。</p><div class="table-scroll" tabindex="0" role="region" aria-label="筛选行为对照表"><table><thead><tr><th>用户操作</th><th>页面行为</th></tr></thead><tbody><tr><td>从订单详情返回</td><td>恢复筛选条件与列表位置</td></tr><tr><td>切换订单状态</td><td>更新地址，回到结果顶部</td></tr><tr><td>清除全部条件</td><td>展示当前项目的完整列表</td></tr></tbody></table></div><h3>交互与空态</h3><p>筛选状态应该始终清楚可见。选中的条件在列表上方呈现为可移除的标签，用户不需要重新打开筛选面板，就能知道当前正在查看什么。</p><ul><li><strong>没有匹配结果：</strong>说明当前条件，并提供“清除筛选”入口。</li><li><strong>首次进入：</strong>默认展示全部订单，不产生额外的确认步骤。</li><li><strong>手机阅读：</strong>保留相同的信息顺序，筛选面板按需展开。</li></ul>${revision>1?'<div class="note" id="new-content"><strong>最新补充</strong>返回列表时同时恢复阅读位置。</div>':''}<h3>验证与交付</h3><p>按照真实阅读路径验证：从筛选后的列表打开订单，再返回列表；使用浏览器前进、后退；调整条件直到出现空结果，然后清除条件。</p><p>桌面与手机分别检查上述路径，并验证刷新后条件仍然一致。实施拆分见 <a href="#tab=documents&doc=plan">实施计划</a>。</p><p class="muted">关联规范：<button class="inline-link" data-action="outside">订单列表规范 ↗</button></p>`,
   plan:`<h3>T1 · 保留筛选条件</h3><p>从地址恢复条件，并在用户切换筛选时同步更新。验证首次访问与浏览器前进、后退。</p><h3>T2 · 完善空态与窄屏阅读</h3><p>呈现筛选摘要与清除入口，保证手机可用。</p><h3>T3 · 验证与交付</h3><p>验证不同入口的一致性，记录浏览器检查结果后提交验收。</p>`,
   execution:`<h3>本次验证</h3><p>此页为示例材料。已检查筛选、返回位置和空态行为，详细验证结果随执行更新。</p>`,
   review:`<h3>评审结论</h3><p>此页为示例材料。关注条件恢复与空态说明的一致性；修订记录随 Change 更新。</p>`
 })[doc];
 function renderDocument() {
-  return `<div class="reading-layout"><aside class="document-nav" aria-label="Change 文档"><p class="nav-caption">文档</p>${Object.entries(docs).map(([id,title])=>`<button data-doc="${id}" aria-current="${doc===id}">${title}<small>${id}.md</small></button>`).join('')}<div class="doc-source">来源<br>codex/order-filtering<br><code>${revision>1?'b52d091':'8c41a2e'}</code><br>随 Change 自动更新</div></aside><article class="document-article"><div class="doc-kicker"><span>${doc.toUpperCase()}.MD</span><span>最新已推送内容</span></div><h2>${docs[doc]}</h2>${body()}</article></div>`;
+  const order=Object.keys(docs),index=order.indexOf(doc);
+  const intro=doc==='technical'?'让筛选条件、结果列表与返回位置保持一致。':'订单筛选体验优化 · '+docs[doc];
+  const navigation=(id,label)=>id?`<button data-doc="${id}"><small>${label}</small>${label==='上一篇'?'← ':''}${docs[id]}${label==='下一篇'?' →':''}</button>`:'';
+  return `<article class="document-article"><div class="doc-kicker">${doc}.md</div><h1 tabindex="-1">${docs[doc]}</h1><p class="doc-intro">${intro}</p><div class="doc-meta"><span>订单筛选体验优化</span><span>${revision>1?'刚刚更新':'今天 10:42 更新'}</span><span>只读</span></div>${body().replaceAll('<h3>','<h2>').replaceAll('</h3>','</h2>')}<nav class="doc-navigation" aria-label="前后文档">${navigation(order[index-1],'上一篇')}${navigation(order[index+1],'下一篇')}</nav></article>`;
+}
+function goToSection(id) {
+  const heading=$('.document-article')?.querySelector(`[id="${CSS.escape(id)}"]`);
+  if(!heading)return;
+  heading.scrollIntoView({block:'start'}); heading.focus({preventScroll:true}); updateReadingState();
+}
+function updateReadingState() {
+  const article=$('.document-article'); if(!article)return;
+  const headings=[...article.querySelectorAll('h2')];
+  const active=headings.filter(h=>h.getBoundingClientRect().top<=180).at(-1)??headings[0];
+  document.querySelectorAll('[data-section]').forEach(a=>a.setAttribute('aria-current',String(a.dataset.section===active?.id)));
+  const top=article.getBoundingClientRect().top+scrollY;
+  const distance=Math.max(1,article.offsetHeight-innerHeight+130);
+  const progress=Math.min(100,Math.max(0,Math.round((scrollY-top+130)/distance*100)));
+  $('#reading-progress').value=progress; $('#reading-progress-label').textContent=`阅读进度 ${progress}%`;
+}
+function renderNavigation() {
+  const links=Object.entries(docs).map(([id,title])=>`<button data-doc="${id}" aria-current="${tab==='documents'&&doc===id}">${title}</button>`).join('');
+  $('.document-nav').innerHTML='<p class="nav-caption">CHANGE 文档</p>'+links;
+  $('#mobile-directory').innerHTML='<p class="nav-caption">订单筛选体验优化</p>'+links+'<p class="nav-caption">其他内容</p>'+tabs.filter(t=>t!=='documents').map(t=>`<button data-view="${t}" aria-current="${tab===t}">${tabLabels[t]}</button>`).join('');
+  const headings=[...document.querySelectorAll('.document-article h2')];
+  const items=headings.map((h,i)=>{
+    h.id=`section-${i+1}`; h.tabIndex=-1;
+    const q=new URLSearchParams(location.hash.slice(1));q.set('tab','documents');q.set('doc',doc);q.set('section',h.id);
+    return `<a href="#${q}" data-section="${h.id}">${h.textContent}</a>`;
+  }).join('');
+  document.querySelectorAll('.outline-links').forEach(nav=>nav.innerHTML=items);
+  $('.page-outline').hidden=tab!=='documents'; $('#open-outline').hidden=tab!=='documents';
+  $('#font-size').hidden=tab!=='documents';
+  $('#reading-breadcrumb').textContent=tab==='documents'?`文档 / ${docs[doc]}`:tabLabels[tab];
+  updateReadingState();
+}
+function chooseContent(patch) {
+  const wasOpen=$('#directory-dialog').open;
+  if(wasOpen)$('#directory-dialog').close();
+  route(patch); window.scrollTo(0,0);
+  if(wasOpen)requestAnimationFrame(()=>($('.document-article h1')??$('#detail-panel')).focus({preventScroll:true}));
 }
 function renderPanel() {
   if(tab==='documents') return renderDocument();
@@ -46,7 +92,8 @@ function render() {
   const blocked = perspective==='reader' && ['new','revoked','unavailable','loading'].includes(scene);
   $('#content').hidden=blocked; $('#unavailable').hidden=!blocked;
   $('#manage').hidden=perspective!=='owner'; $('#copy').hidden=blocked||perspective==='owner';
-  $('#view-label').textContent=perspective==='owner'?'Change 详情':'Change 分享';
+  $('#view-label').textContent=perspective==='owner'?'分享管理':'共享文档';
+  $('#focus-reading').hidden=blocked;
   $('.read-label').textContent=perspective==='owner'?'只读':'只读分享';
   $('#sync-warning').hidden=scene!=='offline';
   $('#sync-label').textContent=scene==='offline'?'未能同步 · 上次读取 10:42':`自动更新 · ${revision>1?'内容已更新':'刚刚同步'}`;
@@ -57,7 +104,7 @@ function render() {
     return;
   }
   document.querySelectorAll('[data-tab]').forEach(b=>{ const active=b.dataset.tab===tab; b.setAttribute('aria-selected',String(active)); b.tabIndex=active?0:-1; });
-  $('#detail-panel').setAttribute('aria-labelledby',`tab-${tab}`); $('#detail-panel').innerHTML=renderPanel();
+  $('#detail-panel').setAttribute('aria-labelledby',`tab-${tab}`); $('#detail-panel').innerHTML=renderPanel(); renderNavigation();
 }
 function renderShare() {
   if(scene==='new'||!shared||scene==='revoked') $('#share-controls').innerHTML=`<p class="dialog-footnote">${scene==='revoked'||!shared?'原链接已停止访问，重新分享会生成新链接。':'创建后，获得链接的人即可阅读当前 Change。'}</p><div class="dialog-actions"><span></span><button class="primary-button" data-action="create">创建分享链接</button></div>`;
@@ -73,8 +120,10 @@ $('#simulate-update').onclick=()=>{revision++;route({scene:'ready',tab:'document
 $('#refresh').onclick=$('#retry-sync').onclick=()=>{if(scene==='offline'||scene==='loading'||scene==='unavailable')route({scene:'ready'});notify('已检查最新内容');};
 document.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b)return;
-  if(b.dataset.tab)route({tab:b.dataset.tab});
-  if(b.dataset.doc)route({tab:'documents',doc:b.dataset.doc});
+  if(b.dataset.tab)chooseContent({tab:b.dataset.tab});
+  if(b.dataset.view)chooseContent({tab:b.dataset.view});
+  if(b.dataset.doc)chooseContent({tab:'documents',doc:b.dataset.doc});
+  if(b.dataset.close)document.getElementById(b.dataset.close).close();
   if(b.dataset.device){$('.order-demo').classList.toggle('mobile',b.dataset.device==='mobile');document.querySelectorAll('[data-device]').forEach(el=>el.setAttribute('aria-pressed',String(el===b)));}
   if(b.dataset.filter){document.querySelectorAll('[data-completed]').forEach(el=>el.hidden=b.dataset.filter==='pending');document.querySelectorAll('[data-filter]').forEach(el=>el.setAttribute('aria-pressed',String(el===b)));}
   if(b.dataset.file){$('.diff-grid').dataset.view='diff';document.querySelectorAll('[data-file]').forEach(el=>el.setAttribute('aria-current',String(el===b)));$('#diff-text').textContent=b.dataset.file==='style'?'@@ -0,0 +1,4 @@\n+ .filter-bar {\n+   display: flex;\n+   flex-wrap: wrap;\n+ }':'@@ -12,3 +12,5 @@\n  export function readFilters(search) {\n-   return defaultFilters;\n+   const params = new URLSearchParams(search);\n+   return parseFilters(params);\n  }';}
@@ -89,8 +138,26 @@ document.addEventListener('click',e=>{
   }
 });
 $('.detail-tabs').addEventListener('keydown',e=>{
-  if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
-  e.preventDefault(); const i=tabs.indexOf(tab),n=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+  if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;
+  e.preventDefault(); const i=tabs.indexOf(tab),n=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(['ArrowRight','ArrowDown'].includes(e.key)?1:-1)+tabs.length)%tabs.length;
   route({tab:tabs[n]}); $(`#tab-${tabs[n]}`).focus();
 });
+$('#focus-reading').onclick=()=>{
+  const on=document.body.classList.toggle('focus-reading');
+  $('#focus-reading').setAttribute('aria-pressed',String(on));$('#focus-reading').textContent=on?'退出专注':'专注阅读';
+};
+$('#font-size').onclick=()=>{
+  const on=document.body.classList.toggle('large-type');
+  $('#font-size').setAttribute('aria-pressed',String(on));$('#font-size').setAttribute('aria-label',on?'恢复正文字号':'放大正文字号');updateReadingState();
+};
+for(const [button,id] of [['open-directory','directory-dialog'],['open-outline','outline-dialog']]) {
+  $('#'+button).onclick=()=>$('#'+id).showModal();
+  $('#'+id).addEventListener('close',()=>$('#'+button).focus({preventScroll:true}));
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-section]');if(!a)return;
+  e.preventDefault();if($('#outline-dialog').open)$('#outline-dialog').close();
+  route({section:a.dataset.section});goToSection(a.dataset.section);
+});
+addEventListener('scroll',updateReadingState,{passive:true});
 addEventListener('hashchange',readRoute);readRoute();

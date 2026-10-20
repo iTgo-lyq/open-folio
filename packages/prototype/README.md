@@ -1,6 +1,6 @@
 # 原型构建与 R2 发布
 
-`change-sharing` 演示分享者创建、复制、停止和重新分享，以及接收者免登录阅读概览、任务、文档、原型、合入差异和依据。顶部评审工具切换视角及异常场景；“模拟新内容推送”展示同一链接更新文档。默认展示接收者的技术方案阅读页，hash 可直达 `#who=owner&scene=new` 或 `#tab=integration`。全部数据和链接均为虚构，不调用真实接口。仅发布本页时使用 `dist/change-sharing` 和单项入口 `index.html`，按下方流程生成三种设备截图。
+`change-sharing` 以文档阅读为主，默认进入技术方案。桌面提供材料侧栏、正文和章节导航；手机使用目录弹层。可体验专注阅读、字号切换、章节跳转和上一篇/下一篇，其他 Change 内容仍可从导航进入。顶部“原型设置”展开后切换分享者/接收者、异常场景及模拟推送；分享者可创建、复制、停止和重新分享。hash 可直达 `#who=owner&scene=new`、`#tab=integration` 或 `#tab=documents&doc=technical&section=section-2`。全部数据和链接均为虚构，不调用真实接口。构建后运行 `node packages/prototype/verify-change-sharing.mjs` 验证四档宽度阅读与分享交互。仅发布本页时使用 `dist/change-sharing` 和单项入口 `index.html`，按下方流程生成三种设备截图。
 
 account-login 演示账号注册／登录、Token 添加／选择／命名／解绑和账号设备退出。顶部切换浏览器 A／B 可体验跨浏览器恢复；示例账号为 `lin`、`chen`，密码均为 `demo12345`，也可自行注册示例账号。只接受 `demo`、`demo-work` 示例 Token。场景覆盖空态、凭据失效、切换失败和登录过期，状态仅存于内存。入口 hash `#login`、`#register` 可直达表单。
 

@@ -4,7 +4,7 @@
     {
       "id": "change-sharing",
       "title": "Change 分享 · 管理与只读阅读",
-      "description": "单 Change 实时分享、完整详情阅读、停止分享与异常状态。仅示例数据，支持分享者与接收者视角。",
+      "description": "以文档阅读为主：材料目录、章节导航、专注阅读与字号切换；保留完整 Change 内容及分享管理。仅示例数据。",
       "sourcePath": "packages/prototype/src/pages/change-sharing.html",
       "kind": "page",
       "devices": [

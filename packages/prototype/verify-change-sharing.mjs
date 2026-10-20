@@ -36,31 +36,59 @@ try {
     });
     await page.goto(origin);
     const frame = page.frameLocator("iframe");
+    const openDirectory = async () => { if(width<700) await frame.locator('#open-directory').click(); };
+    const chooseTab = async (tab, label) => {
+      if(width<700) { await openDirectory(); await frame.locator(`#mobile-directory [data-view="${tab}"]`).click(); }
+      else await frame.getByRole('tab',{name:label,exact:true}).click();
+    };
+    const chooseDoc = async id => { await openDirectory(); await frame.locator(`${width<700?'#mobile-directory':'.document-nav'} [data-doc="${id}"]`).click(); };
+    const settings = async () => { if(!await frame.locator('.review-tools').evaluate(el=>el.open)) await frame.locator('.review-tools summary').click(); };
     await frame.getByRole("heading", { name: "技术方案", exact: true }).waitFor();
     assert.equal(await frame.locator("body").evaluate(el => el.scrollWidth <= innerWidth), true);
-    await frame.getByRole("tab", { name: "概览", exact: true }).click();
+    const firstTitleTop = await frame.locator('.document-article h1').evaluate(el=>el.getBoundingClientRect().top);
+    assert(firstTitleTop<240, `Document title starts too low: ${firstTitleTop}`);
+    assert.equal(await frame.locator('.document-article').evaluate(el=>getComputedStyle(el).fontSize),'16px');
+    await frame.locator('#font-size').click();
+    assert.equal(await frame.locator('.document-article').evaluate(el=>getComputedStyle(el).fontSize),'18px');
+    await frame.locator('#font-size').click();
+    if(width<1200) await frame.locator('#open-outline').click();
+    await frame.locator(`${width<1200?'#outline-dialog':'.page-outline'} [data-section="section-3"]`).click();
+    assert.equal(await frame.locator('#section-3').evaluate(el=>el===document.activeElement),true);
+    assert(await frame.locator('#reading-progress').evaluate(el=>el.value)>0);
+    await frame.locator('#focus-reading').click();
+    assert.equal(await frame.locator('.reader-sidebar').isVisible(),false);
+    assert.equal(await frame.getByRole('heading',{name:'技术方案',exact:true}).count(),1);
+    await frame.locator('#focus-reading').click();
+    await frame.getByRole('navigation',{name:'前后文档'}).getByRole('button',{name:'下一篇 实施计划 →'}).click();
+    await frame.getByRole('heading',{name:'实施计划',exact:true}).waitFor();
+    await frame.getByRole('navigation',{name:'前后文档'}).getByRole('button',{name:'上一篇 ← 技术方案'}).click();
+    await frame.getByRole('heading',{name:'技术方案',exact:true}).waitFor();
+
+    await chooseTab("overview", "概览");
     await frame.getByText("Q1 · 筛选条件保留多久？").waitFor();
-    await frame.getByRole("tab", { name: "任务 3", exact: true }).click();
+    await chooseTab("tasks", "任务 3");
     await frame.getByRole("heading", { name: "实施任务", exact: true }).waitFor();
-    await frame.getByRole("tab", { name: "文档 5", exact: true }).click();
-    await frame.locator('[data-doc="requirement"]').click();
+    await chooseDoc("requirement");
     await frame.getByRole("heading", { name: "需求", exact: true }).waitFor();
-    await frame.locator('[data-doc="technical"]').click();
+    await chooseDoc("technical");
     await frame.getByRole("button", { name: "订单列表规范 ↗" }).click();
     await frame.getByRole("status").filter({ hasText: "此内容不在当前分享范围内" }).waitFor();
+    await settings();
     await frame.getByRole("button", { name: "模拟新内容推送" }).click();
+    await frame.locator(".review-tools summary").click();
     await frame.locator("#new-content").waitFor();
-    await frame.getByRole("tab", { name: "原型", exact: true }).click();
+    await chooseTab("previews", "原型");
     await frame.getByRole("button", { name: "待处理 1", exact: true }).click();
     assert.equal(await frame.locator("#orders p:visible").count(), 1);
     await frame.getByRole("button", { name: "手机", exact: true }).click();
     assert.equal(await frame.locator(".order-demo.mobile").count(), 1);
-    await frame.getByRole("tab", { name: "合入变更", exact: true }).click();
+    await chooseTab("integration", "合入变更");
     await frame.getByRole("button", { name: "src/orders/filter.css", exact: true }).click();
     await frame.locator("#diff-text").filter({ hasText: "flex-wrap" }).waitFor();
-    if (width < 600) await frame.getByRole("button", { name: "返回文件列表" }).click();
-    await frame.getByRole("tab", { name: "依据", exact: true }).click();
+    if (width < 700) await frame.getByRole("button", { name: "返回文件列表" }).click();
+    await chooseTab("evidence", "依据");
     await frame.getByRole("heading", { name: "确认与来源" }).waitFor();
+    await settings();
     await frame.locator("#perspective").selectOption("owner");
     await frame.locator("#scene").selectOption("new");
     await frame.getByRole("button", { name: "分享", exact: true }).click();
@@ -73,6 +101,7 @@ try {
     await frame.locator("#perspective").selectOption("reader");
     await frame.getByRole("heading", { name: "分享已停止", exact: true }).waitFor();
     assert.equal(await frame.locator("#content").isVisible(), false);
+    await settings();
     await frame.locator("#perspective").selectOption("owner");
     await frame.getByRole("button", { name: "分享", exact: true }).click();
     await frame.getByRole("button", { name: "创建分享链接", exact: true }).click();
@@ -88,13 +117,18 @@ try {
     await frame.locator("#scene").selectOption("unavailable");
     await frame.getByRole("heading", { name: "暂时无法读取内容", exact: true }).waitFor();
     await frame.getByRole("button", { name: "重新读取", exact: true }).click();
-    await frame.getByRole("tab", { name: "概览", exact: true }).focus();
-    await page.keyboard.press("End");
-    assert.equal(await frame.getByRole("tab", { name: "依据", exact: true }).getAttribute("aria-selected"), "true");
+    if(width>=700) {
+      await frame.getByRole("tab", { name: "概览", exact: true }).focus();
+      await page.keyboard.press("End");
+      assert.equal(await frame.getByRole("tab", { name: "依据", exact: true }).getAttribute("aria-selected"), "true");
+    } else {
+      await frame.locator('#open-directory').click(); await page.keyboard.press('Escape');
+      assert.equal(await frame.locator('#open-directory').evaluate(el=>el===document.activeElement),true);
+    }
     assert.equal(await frame.locator("body").evaluate(el => el.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
     assert(requests.every(url => new URL(url).origin === origin));
-    results.push({ width, passed: true, pageErrors: errors, externalRequests: 0 });
+    results.push({ width, firstTitleTop, readingFontSize:16, readingNavigation:true, passed: true, pageErrors: errors, externalRequests: 0 });
     await page.close();
   }
   await writeFile(`${output}/checks.json`, JSON.stringify(results, null, 2) + "\n");
