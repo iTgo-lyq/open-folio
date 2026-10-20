@@ -38,7 +38,7 @@ const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([6, limits]));
+  hash(JSON.stringify([7, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -818,6 +818,43 @@ export class GitReader {
       );
     }
     return finish();
+  }
+  // Inspect additions across all parents: merge resolutions can introduce records too.
+  // Group active and archived paths by stable ID so moving a Change never resets it.
+  async changeCreationTimes(commits: string[], signal?: AbortSignal) {
+    const times = new Map<string, number>();
+    if (!commits.length) return times;
+    const history = await this.run(
+      [
+        "log",
+        "--full-history",
+        "--root",
+        "-m",
+        "--no-renames",
+        "--diff-filter=A",
+        "--format=%x00%ct",
+        "--name-only",
+        ...new Set(commits),
+        "--",
+        "docs/project/changes",
+        "docs/project/archive",
+      ],
+      signal,
+    );
+    let time = NaN;
+    for (const line of history.toString().split("\n")) {
+      if (line.startsWith("\0")) {
+        time = Number(line.slice(1)) * 1000;
+        continue;
+      }
+      const match =
+        /^docs\/project\/(?:changes\/|archive\/\d{4}-\d{2}-\d{2}-)([a-z0-9]+(?:-[a-z0-9]+)*)\/change\.json$/.exec(
+          line,
+        );
+      if (match && Number.isFinite(time))
+        times.set(match[1], Math.min(times.get(match[1]) ?? Infinity, time));
+    }
+    return times;
   }
   async ancestor(base: string, tip: string, signal?: AbortSignal) {
     try {

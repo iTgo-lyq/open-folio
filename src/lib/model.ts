@@ -193,6 +193,8 @@ export type Relation = {
   diagnostics: string[];
 };
 export type ChangeGroup = {
+  /** First Git commit time, absent when history cannot establish it. */
+  createdAt?: string;
   source?: {
     entryBranch: string;
     entryPath: string;
