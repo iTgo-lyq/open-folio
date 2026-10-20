@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "同步缓存升级的既有回归断言",
-      "status": "todo"
+      "status": "done",
+      "verification": "缓存重建断言已同步；npm test 全部 248 项通过，独立评审复核通过。",
+      "commitTitle": "change-labels-urgency T3: align cache rebuild regression"
     }
   },
   "closure": {},
