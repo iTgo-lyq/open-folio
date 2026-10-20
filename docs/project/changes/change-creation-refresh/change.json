@@ -4,13 +4,15 @@
   "title": "创建 Change 前刷新协作记录",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/change-creation-refresh",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "明确创建前获取最新协作记录并检查关联 Change",
-      "status": "todo"
+      "status": "done",
+      "verification": "Agent 自查指令涵盖定向 fetch、最新远端记录与关联决策；quick_validate.py 通过，Setup 12 项测试通过，git diff --check 通过",
+      "commitTitle": "change-creation-refresh T1: fetch collaboration before creating a Change"
     }
   },
   "closure": {}
