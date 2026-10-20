@@ -3,7 +3,7 @@
   "id": "change-labels-urgency",
   "title": "Change 类型标签与紧急程度",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/change-labels-urgency",
   "confirmations": {
@@ -48,6 +48,23 @@
       "result": "passed",
       "at": "2026-10-20T09:43:51.575Z",
       "summary": "独立 subagent 完整评审及两项修正复核通过；248 项单测、18 项浏览器回归、类型/格式检查与构建通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-20T09:57:12.566Z",
+      "summary": "用户预览验收通过，授权归档、合入 develop、更新长期服务并清理临时预览。",
+      "source": "预览看过了，验收通过。归档并合入 develop，更新长期服务，临时预览服务和数据也清理掉。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-20T09:58:36.486Z",
+      "summary": "同步 Change 状态维护与 Change 追踪：可选标签契约、兼容读取、展示筛选和稳定紧急排序。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-20T09:58:38.133Z",
+      "summary": "用户预览验收通过，完整验证和独立评审通过，Specs 已同步，归档本次交付。",
+      "path": "docs/project/archive/2026-10-20-change-labels-urgency"
     }
   },
   "clarifications": {
@@ -73,9 +90,5 @@
   },
   "types": [
     "新功能"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与独立评审通过，等待用户验收后同步 Specs、归档、合入 develop 并更新长期服务。"
-  }
+  ]
 }
