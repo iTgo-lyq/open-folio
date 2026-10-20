@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "change-creation-order",
+  "title": "Change 列表按创建时间倒序",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/change-creation-order",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "提取首次提交时间并实现默认倒序与验证",
+      "status": "done",
+      "verification": "240 项测试、类型检查与生产构建通过；覆盖编辑归档合并与缓存排序"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-20T08:33:58.390Z",
+      "summary": "Agent 自查通过；240 项测试、类型检查与生产构建通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-20T08:34:25.054Z",
+      "summary": "Agent 自验收：新旧排序、并列未知兜底、编辑归档与缓存保持均通过",
+      "source": "requirement.md 验收项与 execution.md 测试证据逐项核对"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-20T08:34:26.785Z",
+      "summary": "同步 Change 追踪的创建时间排序及延续组顺序"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-20T08:34:28.464Z",
+      "summary": "创建时间倒序已验证并自验收",
+      "path": "docs/project/archive/2026-10-20-change-creation-order"
+    }
+  }
+}

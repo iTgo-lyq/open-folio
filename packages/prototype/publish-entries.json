@@ -1,5 +1,18 @@
 [
-  { "id": "token-workspaces", "entryPath": "token-workspaces/index.html" },
-  { "id": "workspace-shell", "entryPath": "workspace-shell/index.html" },
-  { "id": "personal-workbench", "entryPath": "personal-workbench/index.html" }
+  {
+    "id": "blue-glass-workbench",
+    "entryPath": "blue-glass-workbench/index.html"
+  },
+  {
+    "id": "token-workspaces",
+    "entryPath": "token-workspaces/index.html"
+  },
+  {
+    "id": "workspace-shell",
+    "entryPath": "workspace-shell/index.html"
+  },
+  {
+    "id": "personal-workbench",
+    "entryPath": "personal-workbench/index.html"
+  }
 ]

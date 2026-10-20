@@ -4,6 +4,8 @@ account-login 演示账号注册／登录、Token 添加／选择／命名／解
 
 本包维护 workspace-shell 外壳与 personal-workbench 个人工作台方案，设计依据见 [DESIGN.md](DESIGN.md)。源码入 Git，`npm run build --workspace prototype` 输出各自的自包含 `dist/<id>/index.html`。构建不会上传或改动清单，dist 不提交。
 
+blue-glass-workbench 是蓝色玻璃工作台的独立视觉方案，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据，交互在内存运行；不是正式工作台的已上线界面。源码与设备快照一并内联，不访问外部资源。发布该页时，可单独以 `dist/blue-glass-workbench` 为产物目录，入口为 `index.html`，避免重新发布其他页面。
+
 clarification-detail 聚焦 Change 详情概览中的澄清问答，沿用当前抽屉布局；顶部可切换问答、无记录和长文本示例，支持关闭与重新打开详情。
 
 change-integration 演示“合入变更”页签：切换文件阅读统一 diff，查看归档移动、二进制与大文件限制；顶部切换合入记录、正常空态、异常、读取失败和加载场景。窄屏在文件列表与正文间切换；复制只使用示例提交，失败时提供手动复制。
@@ -11,6 +13,16 @@ change-integration 演示“合入变更”页签：切换文件阅读统一 dif
 personal-workbench 顶部可切换首次连接、发现中、空结果、部分失败、连接失效、无权限和公开原型。连接表单只接受 `demo`，不验证或保留真实 token；仓库与记录均为示例。URL hash 保留当前页面，全部交互在内存运行。
 
 token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台、浏览器记住多个身份与点选切换、单独移除、复制 token 和设备退出。两个示例 token 都属于 `demo-user`，可填写显示名称；只接受 `demo` 与 `demo-other`。顶部可选择双身份、目标凭据失效及切换时网络故障；状态仅保存在内存，复制也只处理这两个示例值。顶部场景栏为评审工具，不进入产品。
+
+## 六组工作台新设计
+
+`quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public` 分别对应仓库、Specs、Changes、原型画布、Token 凭据和匿名公开预览。每个入口都可切换浅色/深色；右上角的主题按钮属于原型外观，顶部「设计预览」工具用于选择页面、异常场景、减少透明度和减少动态效果。所有仓库、身份、时间和工程材料均为虚构，只用内存状态。登录仅接受 `demo` / `demo-other`，不采用账号密码模型。
+
+新设计位于 `src/shared/quiet-workbench/`，六个 HTML 入口复用它，旧原型及固定引用保留。可用 hash 直达，例如 `#/specs?theme=dark`、`#/changes?change=source-details`。点击 Changes 行查看问答、任务与只读材料；已归档记录的「合入变更」可查看文件差异、二进制和超限状态。原型截图与卡片标题分别进入画布和详情；画布支持设备、方向、适应/100% 与模拟公开分享。表单不进行原生提交，可在只授予 allow-scripts 的 iframe 中使用按钮或 Enter 操作。
+
+验证：先 `npm run build --workspace prototype`，再 `node packages/prototype/verify-quiet-workbench.mjs`。检查使用真实沙箱 iframe、两套主题与四档宽度，覆盖键盘/焦点、身份隔离、设备退出、固定分享和错误场景；截图及结果输出到 Git 忽略的 `artifacts/quiet-workbench/`。正式卡片截图继续使用本包 screenshot 命令。
+
+只发布这六组入口时，将它们的 `dist/quiet-*/` 输出及截图复制到 `dist/quiet-release/quiet-*/`，以 `dist/quiet-release` 为产物目录、`publish-quiet-entries.json` 为入口清单。发布前提交源码；固定引用通过 SpecTrail 发布登记命令更新。本轮设计须经用户验收，不能据此开始产品实现。
 
 ## 首次配置
 
