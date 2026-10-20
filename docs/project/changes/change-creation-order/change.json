@@ -4,7 +4,7 @@
   "title": "Change 列表按创建时间倒序",
   "size": "small",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-creation-order",
   "confirmations": {},
   "tasks": {
@@ -14,5 +14,11 @@
       "verification": "240 项测试、类型检查与生产构建通过；覆盖编辑归档合并与缓存排序"
     }
   },
-  "closure": {}
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-20T08:33:58.390Z",
+      "summary": "Agent 自查通过；240 项测试、类型检查与生产构建通过"
+    }
+  }
 }
