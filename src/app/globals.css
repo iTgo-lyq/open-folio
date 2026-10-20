@@ -4626,3 +4626,39 @@ input {
     padding: 11px 18px;
   }
 }
+
+.personal-auth {
+  width: min(100%, 420px);
+  margin: 56px auto;
+  padding: 0 16px;
+}
+.personal-auth-heading {
+  margin-bottom: 24px;
+  text-align: center;
+}
+.personal-auth-heading img {
+  width: 36px;
+  height: 36px;
+}
+.personal-auth-heading h1 {
+  margin: 12px 0 8px;
+  font-size: 24px;
+}
+.personal-auth-heading p {
+  color: var(--muted);
+}
+.personal-auth form {
+  margin-top: 24px;
+}
+.personal-auth form > button {
+  margin-top: 24px;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .personal-auth {
+    margin: 24px auto;
+  }
+  .personal-identity-actions {
+    flex-wrap: wrap;
+  }
+}

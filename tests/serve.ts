@@ -23,8 +23,9 @@ import { PublicPreviews } from "../src/server/public-previews.ts";
 import {
   sessionResponse,
   logoutAllResponse,
-  switchIdentityResponse,
-  removeIdentityResponse,
+  switchConnectionResponse,
+  registrationResponse,
+  connectionsResponse,
 } from "../src/server/connection-api.ts";
 import {
   discoveryResponse,
@@ -237,9 +238,13 @@ const server = createServer(async (req, res) => {
       });
     } else if (
       s[0] === "api" &&
-      ["session", "connections", "repositories", "public-previews"].includes(
-        s[1],
-      )
+      [
+        "accounts",
+        "session",
+        "connections",
+        "repositories",
+        "public-previews",
+      ].includes(s[1])
     ) {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
@@ -251,21 +256,21 @@ const server = createServer(async (req, res) => {
       });
       if (s[1] === "session")
         response =
-          s[2] === "identities" && s[3] && request.method === "DELETE"
-            ? await removeIdentityResponse(request, s[3], sessions)
-            : s[2] === "switch"
-              ? await switchIdentityResponse(request, sessions)
-              : s[2] === "preferences"
-                ? await preferencesResponse(request, sessions)
-                : s[2] === "token"
-                  ? await tokenResponse(request, sessions)
-                  : s[2] === "devices"
-                    ? await devicesResponse(request, s[3], sessions)
-                    : s[2] === "logout-all"
-                      ? await logoutAllResponse(request, sessions)
-                      : s.length === 2
-                        ? await sessionResponse(request, sessions, discoveries)
-                        : new Response(null, { status: 404 });
+          s[2] === "switch"
+            ? await switchConnectionResponse(request, sessions)
+            : s[2] === "preferences"
+              ? await preferencesResponse(request, sessions)
+              : s[2] === "token"
+                ? await tokenResponse(request, sessions)
+                : s[2] === "devices"
+                  ? await devicesResponse(request, s[3], sessions)
+                  : s[2] === "logout-all"
+                    ? await logoutAllResponse(request, sessions)
+                    : s.length === 2
+                      ? await sessionResponse(request, sessions)
+                      : new Response(null, { status: 404 });
+      else if (s[1] === "accounts" && s[2] === "register")
+        response = await registrationResponse(request, sessions);
       else if (s[1] === "connections")
         response =
           s[3] === "discovery" || s[3] === "repository-checks"
@@ -275,7 +280,7 @@ const server = createServer(async (req, res) => {
                 s[3] === "discovery" ? "discovery" : "check",
                 discoveries,
               )
-            : new Response(null, { status: 404 });
+            : await connectionsResponse(request, s[2], sessions, discoveries);
       else if (s[1] === "repositories")
         response =
           s.length === 2

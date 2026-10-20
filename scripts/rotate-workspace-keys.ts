@@ -2,7 +2,7 @@ import { rotateWorkspaceKeys } from "../src/server/workspace-key-rotation.ts";
 const [source, prepared, credential] = process.argv.slice(2);
 if (!source || !prepared || process.argv.length > 5) {
   process.stderr.write(
-    "Usage: node --conditions=react-server scripts/rotate-workspace-keys.ts <personal-v2> <prepared-directory> [old-credential-key-file]\n",
+    "Usage: node --conditions=react-server scripts/rotate-workspace-keys.ts <personal> <prepared-directory> [old-credential-key-file]\n",
   );
   process.exitCode = 1;
 } else {

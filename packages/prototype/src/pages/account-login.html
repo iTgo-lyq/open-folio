@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenFolio · 账号与 Token</title>
+    <style>
+      {{include:../shared/personal-workbench.css}}
+      {{include:../shared/account-login.css}}
+    </style>
+  </head>
+  <body>
+    {{include:../shared/icons.html}}
+    <div class="review-bar account-review">
+      <span
+        ><i></i>交互原型<span class="review-note"
+          >· 仅示例，请勿填写真实凭据</span
+        ></span
+      >
+      <div class="review-controls">
+        <div class="browser-switch" role="group" aria-label="模拟浏览器">
+          <button data-browser="A" aria-pressed="true">浏览器 A</button>
+          <button data-browser="B" aria-pressed="false">浏览器 B</button>
+        </div>
+        <label
+          ><span class="review-scenario-label">场景</span
+          ><select id="scenario" aria-label="切换原型场景">
+            <option value="tokens">Token 管理</option>
+            <option value="login">账号登录</option>
+            <option value="register">注册账号</option>
+            <option value="empty">尚未绑定</option>
+            <option value="devices">登录设备</option>
+            <option value="invalid">Token 失效</option>
+            <option value="network">切换失败</option>
+            <option value="other">另一账号</option>
+            <option value="expired">登录过期</option>
+          </select></label
+        >
+      </div>
+    </div>
+    <div id="app"></div>
+    <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script>
+      {{include:../shared/account-login.js}}
+    </script>
+  </body>
+</html>

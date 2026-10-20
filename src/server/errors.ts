@@ -1,6 +1,7 @@
 export class AppError extends Error {
   code: string;
   status: number;
+  retryAfter?: string;
   constructor(code: string, message: string, status = 503) {
     super(message);
     this.code = code;

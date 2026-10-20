@@ -112,7 +112,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
   );
   useEffect(() => {
     if (typeof BroadcastChannel !== "undefined") {
-      const c = new BroadcastChannel("openfolio-identities");
+      const c = new BroadcastChannel("openfolio-account");
       channel.current = c;
       c.onmessage = (event) => {
         if (event.data?.type === "selection") void recover(true);

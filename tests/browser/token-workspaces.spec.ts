@@ -1,4 +1,11 @@
-import { test, expect, repositoryQuery, repoKey } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  repoKey,
+  connectRequest,
+  revisionHeaders,
+} from "./connected";
 test("another device restores the same snapshot, reading module and sidebar; different token has no snapshot", async ({
   page,
   browser,
@@ -25,12 +32,15 @@ test("another device restores the same snapshot, reading module and sidebar; dif
   ).json();
   const second = await browser.newContext();
   try {
-    const login = await second.request.post("/api/session", {
-      headers: { origin: "http://127.0.0.1:10682" },
-      data: { username: "reader", token: "token-a" },
-    });
-    expect(login.status()).toBe(201);
-    const a = await login.json();
+    const restored = await connectRequest(
+      second.request,
+      "token-a",
+      personal.username,
+    );
+    const a = {
+      connection: { id: restored.id },
+      session: await (await second.request.get("/api/session")).json(),
+    };
     expect(a.connection.id).toBe(personal.id);
     const b = await second.newPage();
     await b.goto("/");
@@ -44,13 +54,11 @@ test("another device restores the same snapshot, reading module and sidebar; dif
       )
     ).json();
     expect(resumed.id).toBe(original.id);
-    const switched = await second.request.post("/api/session", {
-      headers: {
-        origin: "http://127.0.0.1:10682",
-        "X-OpenFolio-Revision": String(a.session.browserRevision),
-      },
-      data: { username: "collaborator", token: "token-b" },
+    const switched = await second.request.post("/api/connections", {
+      headers: await revisionHeaders(second.request),
+      data: { providerId: "github", token: "token-b" },
     });
+    expect(switched.status()).toBe(201);
     const other = await switched.json();
     expect(other.connection.id).not.toBe(personal.id);
     const uncached = await second.request.get(
@@ -84,7 +92,7 @@ test("a revoked device clears its page and a delayed old response cannot restore
   await page.goto(`/?${repositoryQuery}&m=specs`);
   await expect.poll(() => !!deliver).toBe(true);
   await page.request.delete("/api/session", {
-    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "1" },
+    headers: { origin: "http://127.0.0.1:10682", "X-OpenFolio-Revision": "2" },
   });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
@@ -112,8 +120,10 @@ for (const width of [1440, 834, 390, 320])
       }),
     );
     await page.goto("/?m=connections");
-    await page.getByRole("button", { name: "复制 token", exact: true }).click();
-    await expect(page.getByLabel("当前 token", { exact: true })).toHaveValue(
+    await page
+      .getByRole("button", { name: "复制当前 Token", exact: true })
+      .click();
+    await expect(page.getByLabel("当前 Token", { exact: true })).toHaveValue(
       "token-a",
     );
     expect(
@@ -123,25 +133,24 @@ for (const width of [1440, 834, 390, 320])
     ).toBe(true);
     await page.keyboard.press("Escape");
     await expect(
-      page.getByRole("button", { name: "复制 token", exact: true }),
+      page.getByRole("button", { name: "复制当前 Token", exact: true }),
     ).toBeFocused();
-    await page.getByRole("button", { name: "添加身份", exact: true }).click();
-    await page
-      .getByLabel("用户名（可选）", { exact: true })
-      .fill("collaborator");
+    await page.getByRole("button", { name: "绑定 Token", exact: true }).click();
+    await page.getByLabel("名称（可选）", { exact: true }).fill("collaborator");
     await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
-    await page.getByRole("button", { name: "添加并使用", exact: true }).click();
-    await expect(page.locator(".personal-connection-card")).toContainText(
+    await page.getByRole("button", { name: "绑定并使用", exact: true }).click();
+    await expect(page.locator(".personal-connections")).toContainText(
       "@collaborator",
     );
     await page.screenshot({
       path: `artifacts/token-credentials-${width}.png`,
       fullPage: true,
     });
+    await page.getByRole("tab", { name: "登录设备", exact: true }).click();
     await page
       .getByRole("button", { name: "退出当前设备", exact: true })
       .click();
-    await expect(page.getByRole("heading", { name: "选择身份" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "登录账号" })).toBeVisible();
   });
 
 for (const action of ["switch", "logout"])
@@ -149,7 +158,7 @@ for (const action of ["switch", "logout"])
     page,
   }) => {
     await page.goto("/?m=connections");
-    await expect(page.locator(".personal-connection-card")).toContainText(
+    await expect(page.locator(".personal-connections")).toContainText(
       "@reader",
     );
     let finishPreferences: (() => Promise<void>) | undefined,
@@ -176,29 +185,33 @@ for (const action of ["switch", "logout"])
       });
     });
     if (action === "switch") {
-      await page.getByRole("button", { name: "添加身份", exact: true }).click();
       await page
-        .getByLabel("用户名（可选）", { exact: true })
+        .getByRole("button", { name: "绑定 Token", exact: true })
+        .click();
+      await page
+        .getByLabel("名称（可选）", { exact: true })
         .fill("collaborator");
       await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
       await page
-        .getByRole("button", { name: "添加并使用", exact: true })
+        .getByRole("button", { name: "绑定并使用", exact: true })
         .click();
-    } else
+    } else {
+      await page.getByRole("tab", { name: "登录设备", exact: true }).click();
       await page
         .getByRole("button", { name: "退出当前设备", exact: true })
         .click();
+    }
     await expect.poll(() => !!finishSession).toBe(true);
-    await expect(page.locator(".personal-connection-card")).toHaveCount(0);
+    await expect(page.locator(".personal-connections")).toHaveCount(0);
     await finishPreferences!();
-    await expect(page.locator(".personal-connection-card")).toHaveCount(0);
+    await expect(page.locator(".personal-connections")).toHaveCount(0);
     await finishSession!();
     if (action === "switch")
-      await expect(page.locator(".personal-connection-card")).toContainText(
+      await expect(page.locator(".personal-connections")).toContainText(
         "@collaborator",
       );
     else
       await expect(
-        page.getByRole("heading", { name: "登录自己的工作台" }),
+        page.getByRole("heading", { name: "登录账号" }),
       ).toBeVisible();
   });

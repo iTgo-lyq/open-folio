@@ -154,14 +154,44 @@ export async function personalFixture() {
       join(root, "key"),
     ),
     discovery = new Discovery(join(root, "discovery"), sessions, git);
-  const connect = (cookie = "", secret = "first") =>
-    sessions.login(
-      cookie,
-      "sample",
-      secret,
-      undefined,
-      new AbortController().signal,
-    );
+  let accountNumber = 0;
+  const accounts = new Map<string, string>();
+  const connect = async (cookie = "", secret = "first") => {
+    let current = cookie;
+    if (!current || !(await sessions.get(current)).authenticated) {
+      let username = accounts.get(secret);
+      if (!username) {
+        username = `reader-${++accountNumber}`;
+        accounts.set(secret, username);
+        current = (
+          await sessions.register(
+            "",
+            username,
+            "test-password",
+            new AbortController().signal,
+          )
+        ).cookie;
+      } else
+        current = (
+          await sessions.login(
+            "",
+            username,
+            "test-password",
+            new AbortController().signal,
+          )
+        ).cookie;
+    }
+    return {
+      cookie: current,
+      ...(await sessions.bind(
+        current,
+        "sample",
+        secret,
+        undefined,
+        new AbortController().signal,
+      )),
+    };
+  };
   return {
     root,
     repositories,

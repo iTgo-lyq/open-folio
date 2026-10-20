@@ -270,13 +270,10 @@ function Shell() {
             <PersonalHome />
           ) : module === "connections" ? (
             <Connections />
-          ) : !personal.session?.connected ? (
+          ) : !personal.session?.authenticated ? (
             <PersonalHome />
           ) : !personal.connection ? (
-            <Empty title="用自己的连接打开仓库">
-              <p>请选择具有该仓库读取权限的连接。</p>
-              <ConnectionPicker />
-            </Empty>
+            <Connections />
           ) : !projectId ? (
             <Empty title="先选择一个仓库">
               <Button onClick={() => go("home")}>查看我的仓库</Button>
