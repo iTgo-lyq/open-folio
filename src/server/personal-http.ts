@@ -1,12 +1,11 @@
 import "server-only";
 import { AppError, publicError } from "./errors.ts";
-import { ProviderError } from "./providers/types.ts";
 import {
   personalSessions,
   type PersonalSessions,
   type SessionSummary,
 } from "./personal-sessions.ts";
-export const sessionCookieName = "openfolio-session";
+export const sessionCookieName = "openfolio-account";
 export const privateHeaders = {
   "Cache-Control": "private, no-store",
   "X-Content-Type-Options": "nosniff",
@@ -71,18 +70,18 @@ export const personalJson = (body: unknown, status = 200, cookie?: string) =>
   });
 export function personalError(error: unknown) {
   const e = publicError(error);
-  return personalJson(
+  const response = personalJson(
     {
       error: {
         code: e.code,
         message: e.message,
-        ...(e instanceof ProviderError && e.retryAfter
-          ? { retryAfter: e.retryAfter }
-          : {}),
+        ...(e.retryAfter ? { retryAfter: e.retryAfter } : {}),
       },
     },
     e.status,
   );
+  if (e.retryAfter) response.headers.set("Retry-After", e.retryAfter);
+  return response;
 }
 export async function renewPersonalResponse(
   request: Request,
@@ -92,7 +91,7 @@ export async function renewPersonalResponse(
 ) {
   const cookie = sessionCookie(request);
   const current = await store.get(cookie);
-  if (response.ok && !current.connected)
+  if (response.ok && !current.authenticated)
     throw new AppError("SESSION_REQUIRED", "设备会话已失效，请重新登录。", 401);
   if (
     response.ok &&

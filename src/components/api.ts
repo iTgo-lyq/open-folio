@@ -12,7 +12,9 @@ export function setPersonalRevision(revision?: number) {
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (
-    path.startsWith("/api/session") &&
+    (path.startsWith("/api/session") ||
+      path.startsWith("/api/connections") ||
+      path.startsWith("/api/accounts")) &&
     personalRevision !== undefined &&
     !headers.has("X-OpenFolio-Revision")
   )

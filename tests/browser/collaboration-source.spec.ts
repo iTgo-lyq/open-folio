@@ -1,4 +1,4 @@
-import { test, expect, repositoryQuery } from "./connected";
+import { test, expect, repositoryQuery, connectRequest } from "./connected";
 
 test("custom collaboration selection persists through rediscovery, sharing, preferences and prototype preparation", async ({
   page,
@@ -42,11 +42,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
     .toBe("team/integration");
   const other = await browser.newContext({ baseURL: "http://127.0.0.1:10682" });
   try {
-    const login = await other.request.post("/api/session", {
-      headers: { origin: "http://127.0.0.1:10682" },
-      data: { token: "token-a" },
-    });
-    expect(login.status()).toBe(201);
+    await connectRequest(other.request, "token-a", personal.username);
     const view = await other.newPage();
     await view.goto("/");
     await expect
@@ -65,14 +61,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
     baseURL: "http://127.0.0.1:10682",
   });
   try {
-    expect(
-      (
-        await collaborator.request.post("/api/session", {
-          headers: { origin: "http://127.0.0.1:10682" },
-          data: { token: "token-b" },
-        })
-      ).status(),
-    ).toBe(201);
+    await connectRequest(collaborator.request, "token-b");
     const view = await collaborator.newPage();
     await view.goto(link);
     await expect(

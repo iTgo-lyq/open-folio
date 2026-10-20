@@ -9,7 +9,7 @@ import {
   PERMISSION_CHECK_MS,
 } from "../src/server/repository-permissions.ts";
 import { repositoryKey } from "../src/server/providers/types.ts";
-import { sessionResponse } from "../src/server/connection-api.ts";
+import { connectionsResponse } from "../src/server/connection-api.ts";
 import {
   discoveryResponse,
   repositoryListResponse,
@@ -24,7 +24,7 @@ const req = (
     method,
     headers: {
       origin: "https://folio.test",
-      cookie: `openfolio-session=${cookie}`,
+      cookie: `openfolio-account=${cookie}`,
       "content-type": "application/json",
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -43,7 +43,9 @@ test("discovery distinguishes six samples, paginates, and publishes only authori
     assert.deepEqual(f.controls.pages, [null, "page-2"]);
     const listing = await f.discovery.list(c.cookie, c.connection.id);
     assert.deepEqual(
-      listing.items.map((r) => [r.repository.displayName, r.state]),
+      listing.items
+        .map((r) => [r.repository.displayName, r.state])
+        .sort(([a], [b]) => a.localeCompare(b)),
       [
         ["content", "ready"],
         ["empty-content", "ready"],
@@ -159,18 +161,28 @@ test("restart records interruption and duplicate start requests share one job", 
 test("HTTP connection success starts discovery and manual checks stay owned by the connection", async () => {
   const f = await personalFixture();
   try {
-    const response = await sessionResponse(
-      req("POST", "", {
-        providerId: "sample",
-        username: "reader",
-        token: "first",
-      }),
+    const auth = await f.sessions.register(
+      "",
+      "discovery-reader",
+      "test-password",
+      new AbortController().signal,
+    );
+    const request = req(
+      "POST",
+      auth.cookie,
+      { providerId: "sample", token: "first" },
+      "/api/connections",
+    );
+    request.headers.set("X-OpenFolio-Revision", "1");
+    const response = await connectionsResponse(
+      request,
+      undefined,
       f.sessions,
       f.discovery,
     );
     assert.equal(response.status, 201);
     const body = await response.json(),
-      cookie = response.headers.get("set-cookie")!.split(";")[0].split("=")[1],
+      cookie = auth.cookie,
       id = body.connection.id;
     await f.discovery.wait(cookie, id);
     const state = await discoveryResponse(

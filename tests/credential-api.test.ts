@@ -20,9 +20,9 @@ function request(
   return new Request(origin + path, {
     method,
     headers: {
-      cookie: `openfolio-session=${cookie}`,
+      cookie: `openfolio-account=${cookie}`,
       origin: foreign ? "https://foreign.test" : origin,
-      "X-OpenFolio-Revision": "1",
+      "X-OpenFolio-Revision": "2",
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -39,7 +39,6 @@ test("token copy is explicit, current-only, private, and absent from summaries",
   const summary = await sessionResponse(
     request(a.cookie, "/api/session", "GET"),
     f.sessions,
-    f.discovery,
   );
   const text = await summary.text();
   assert.ok(!text.includes('"token"'));

@@ -18,16 +18,18 @@ test("copy is click-only and its clipboard fallback disappears on close", async 
   );
   await page.goto("/?m=connections");
   await expect(
-    page.getByRole("heading", { name: "当前凭据", exact: true }),
+    page.getByRole("heading", { name: "Token 管理", exact: true }),
   ).toBeVisible();
   expect(copies).toBe(0);
-  await page.getByRole("button", { name: "复制 token", exact: true }).click();
-  await expect(page.getByLabel("当前 token", { exact: true })).toHaveValue(
+  await page
+    .getByRole("button", { name: "复制当前 Token", exact: true })
+    .click();
+  await expect(page.getByLabel("当前 Token", { exact: true })).toHaveValue(
     "token-a",
   );
   expect(copies).toBe(1);
   await page.getByRole("button", { name: "完成", exact: true }).click();
-  await expect(page.getByLabel("当前 token", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("当前 Token", { exact: true })).toHaveCount(0);
   expect(
     await page.evaluate(
       () => JSON.stringify(localStorage) + JSON.stringify(sessionStorage),
@@ -41,17 +43,22 @@ test("same-token devices appear together and one can revoke another", async ({
 }) => {
   const second = await browser.newContext();
   try {
-    const b = await connectRequest(second.request);
+    const b = await connectRequest(
+      second.request,
+      "token-a",
+      personal.username,
+    );
     expect(b.id).toBe(personal.id);
     await page.goto("/?m=connections");
+    await page.getByRole("tab", { name: "登录设备", exact: true }).click();
     const devices = await (
       await page.request.get("/api/session/devices", {
-        headers: { "X-OpenFolio-Revision": "1" },
+        headers: { "X-OpenFolio-Revision": "2" },
       })
     ).json();
     const secondDevices = await (
       await second.request.get("/api/session/devices", {
-        headers: { "X-OpenFolio-Revision": "1" },
+        headers: { "X-OpenFolio-Revision": "2" },
       })
     ).json();
     const own = secondDevices.devices.find((d: any) => d.current);
@@ -73,9 +80,7 @@ test("same-token devices appear together and one can revoke another", async ({
     await page
       .getByRole("button", { name: "退出全部设备", exact: true })
       .click();
-    await expect(
-      page.getByRole("heading", { name: "登录自己的工作台" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "登录账号" })).toBeVisible();
   } finally {
     await second.close();
   }
@@ -87,8 +92,10 @@ test("successful explicit copy writes the current token to the clipboard", async
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/?m=connections");
-  await page.getByRole("button", { name: "复制 token", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("token 已复制");
+  await page
+    .getByRole("button", { name: "复制当前 Token", exact: true })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Token 已复制");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     "token-a",
   );

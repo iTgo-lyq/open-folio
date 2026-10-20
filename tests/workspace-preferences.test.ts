@@ -47,10 +47,10 @@ test("devices atomically merge changed preference fields and isolate other crede
       method: "PATCH",
       headers: {
         origin,
-        cookie: `openfolio-session=${a.cookie}`,
+        cookie: `openfolio-account=${a.cookie}`,
         "Content-Type": "application/json",
         "X-OpenFolio-Workspace": id,
-        "X-OpenFolio-Revision": "1",
+        "X-OpenFolio-Revision": "2",
       },
       body: JSON.stringify(body),
     });
@@ -102,8 +102,14 @@ test("offline key rotation preserves UUIDs, devices and source bytes with new ma
   const rotated = new PersonalSessions(target, f.registry);
   assert.equal((await rotated.get(a.cookie)).workspace?.id, a.connection.id);
   assert.equal((await rotated.get(b.cookie)).workspace?.id, b.connection.id);
-  const next = await rotated.login(
+  const logged = await rotated.login(
     "",
+    a.session.account!.username,
+    "test-password",
+    new AbortController().signal,
+  );
+  const next = await rotated.bind(
+    logged.cookie,
     "sample",
     "first",
     undefined,

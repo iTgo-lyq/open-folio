@@ -23,7 +23,7 @@ test("administrator sessions cannot grant repository reads", async ({
   ).toBe(401);
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "登录工作台", exact: true }),
+    page.getByRole("button", { name: "登录", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "保存配置" })).toHaveCount(0);
 });

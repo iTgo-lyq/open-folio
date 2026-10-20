@@ -3,8 +3,8 @@
   "id": "centralized-accounts",
   "title": "账号密码登录与账号绑定 Token",
   "size": "medium",
-  "status": "active",
-  "stage": "technical",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/centralized-accounts",
   "confirmations": {
     "requirement": {
@@ -26,18 +26,47 @@
   "tasks": {
     "T1": {
       "title": "注册登录并绑定首个 Token 读取仓库",
-      "status": "todo"
+      "status": "done",
+      "verification": "34 项会话及读取测试、完整 229 项单测、5 项注册绑定浏览器场景通过。",
+      "commitTitle": "centralized-accounts: implement password accounts and account-owned tokens"
     },
     "T2": {
       "title": "跨浏览器管理多个 Token 与账号设备",
-      "status": "todo"
+      "status": "done",
+      "verification": "25 项隔离及并发单测、13 项定向浏览器和2项解绑及失效凭据浏览器检查通过。",
+      "commitTitle": "centralized-accounts: verify cross-browser isolation and fix review findings"
     },
     "T3": {
       "title": "新模型运维与完整验收",
-      "status": "todo"
+      "status": "done",
+      "verification": "238 项单测、86 项浏览器、类型格式与生产构建通过，真实 GitHub 及浏览器和服务重启冒烟清理通过。",
+      "commitTitle": "centralized-accounts: complete operational verification"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-19T11:34:10.740Z",
+      "summary": "238 项单测、86 项浏览器、构建与真实冒烟通过，隔离独立评审问题已修复。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-20T04:00:00.533Z",
+      "summary": "用户明确要求合入，验收账号密码登录与账号绑定 Token 的当前交付。",
+      "source": "合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-20T04:00:02.279Z",
+      "summary": "同步个人访问、项目工作台和服务配置的账号、Token、设备与存储契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-20T04:00:05.868Z",
+      "summary": "用户验收通过，账号登录与 Token 管理验证完成并同步 Specs。",
+      "path": "docs/project/archive/2026-10-20-centralized-accounts"
+    }
+  },
   "clarifications": {
     "Q1": {
       "round": 1,
@@ -52,11 +81,7 @@
       "id": "account-login",
       "title": "账号登录与 Token 管理",
       "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
+      "devices": ["pc-web", "ipad", "mobile"],
       "artifact": {
         "type": "hosted",
         "version": "cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9",
