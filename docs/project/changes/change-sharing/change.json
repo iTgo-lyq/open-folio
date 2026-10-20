@@ -13,7 +13,20 @@
       "source": "需求确认，继续整理技术方案和实施计划，skill 的改动保持精简。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "建立可撤销的实时 Change 分享读取",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "完成分享管理与完整详情阅读",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "让 Agent 在文档和原型就绪后给出分享链接",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "clarifications": {
     "Q1": {
@@ -40,6 +53,6 @@
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "已明确自动跟随最新内容与完整详情，补充服务地址及 Skill 主动贴链接能力；等待完整需求确认。"
+    "summary": "技术方案、实施计划与分享模式原型已准备；发布固定原型后等待用户验收原型并确认方案计划。"
   }
 }

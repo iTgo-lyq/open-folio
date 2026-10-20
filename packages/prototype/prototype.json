@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "change-sharing",
+      "title": "Change 分享 · 管理与只读阅读",
+      "description": "单 Change 实时分享、完整详情阅读、停止分享与异常状态。仅示例数据，支持分享者与接收者视角。",
+      "sourcePath": "packages/prototype/src/pages/change-sharing.html",
+      "kind": "page",
+      "devices": ["pc-web", "ipad", "mobile"]
+    },
+    {
       "id": "quiet-home",
       "title": "工作台新设计 · 仓库与导航",
       "description": "仓库发现、状态筛选、项目切换与读取来源。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
