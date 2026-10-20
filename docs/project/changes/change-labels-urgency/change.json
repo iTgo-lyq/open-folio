@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "change-labels-urgency",
+  "title": "Change 类型标签与紧急程度",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "第一版先加类型标签，还是把紧急程度也一起纳入？",
+      "recommendation": "一起考虑，类型帮助识别工作内容，紧急程度帮助判断处理先后。",
+      "answer": "同时增加类型与紧急程度。类型可多选、自由命名，不限候选池；提供简短且覆盖日常场景的推荐词，尽量复用已有同义词。数据保持兼容，历史 Change 可以没有标签，紧急程度允许为空。",
+      "source": "用户：那就加上类型和紧急程度两个标签吧。类型可以多选（以及你建议的6类会不会太少了，我不需要一定从某个池子里选，只要能反应这个change干什么的就好了）。数据保持兼容，历史change 可能没标签。 紧急程度可以为空。后续补充：当然类型的候选词你还是可以提供，而且尽量简短覆盖日常场景，避免太多同义词的情况。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求草稿已整理，待确认推荐类型用词、可空紧急程度及展示筛选排序范围后进入技术方案。"
+  }
+}
