@@ -138,7 +138,7 @@ function semantics(c: ChangeCandidate, data: Collected) {
 }
 export async function indexChanges(
   data: Collected,
-  reader: Pick<GitReader, "ancestor">,
+  reader: Pick<GitReader, "ancestor" | "changeCreationTimes">,
   signal?: AbortSignal,
 ): Promise<ChangeGroup[]> {
   const groups = new Map<string, ChangeGroup>(
@@ -503,5 +503,21 @@ export async function indexChanges(
         r.ancestry = "found";
     }
   }
-  return [...groups.values()].sort((a, b) => a.id.localeCompare(b.id));
+  const creationTimes = await reader.changeCreationTimes(
+    data.branches.map((branch) => branch.commit),
+    signal,
+  );
+  for (const group of groups.values()) {
+    const time = creationTimes.get(group.id);
+    if (time !== undefined) group.createdAt = new Date(time).toISOString();
+  }
+  return [...groups.values()].sort(compareChangeCreation);
+}
+
+export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {
+  const aTime = Date.parse(a.createdAt ?? "");
+  const bTime = Date.parse(b.createdAt ?? "");
+  if (Number.isFinite(aTime) !== Number.isFinite(bTime))
+    return Number.isFinite(aTime) ? -1 : 1;
+  return bTime - aTime || a.id.localeCompare(b.id);
 }

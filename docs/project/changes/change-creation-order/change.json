@@ -4,13 +4,14 @@
   "title": "Change 列表按创建时间倒序",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/change-creation-order",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "提取首次提交时间并实现默认倒序与验证",
-      "status": "todo"
+      "status": "done",
+      "verification": "240 项测试、类型检查与生产构建通过；覆盖编辑归档合并与缓存排序"
     }
   },
   "closure": {}
