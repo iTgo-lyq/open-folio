@@ -53,6 +53,39 @@
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "技术方案、实施计划与分享模式原型已准备；发布固定原型后等待用户验收原型并确认方案计划。"
-  }
+    "summary": "技术方案、实施计划和固定分享模式原型已准备，等待用户验收原型并确认方案计划。"
+  },
+  "previews": [
+    {
+      "id": "change-sharing",
+      "title": "Change 分享 · 管理与只读阅读",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b/index.html",
+        "sourceCommit": "9f905813eed082d20e8a5d2cb9f73499b6b36869",
+        "digest": "sha256:4c30c92cb3e4a251bed2fab69ed84e7ca10245a1ab69409fecaea8b339d50bfa",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }

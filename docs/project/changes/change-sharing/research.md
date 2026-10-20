@@ -6,6 +6,8 @@
 
 本轮协作分支已集成 `change-labels-urgency`，方案采用标签、紧急程度与 schema 7 的现状，不沿用此前 schema 6 的调查快照。生产账号数据不迁移。
 
+方案复核补齐两个现有契约：CLI 写请求须带 Origin 与当前 revision，并在解析正文前保存响应 Cookie；返回材料须按来源提交或原型固定引用核对本次交付。成功链接只在独立设备会话清理完成后输出，相关失败场景已列入 T3 验证。
+
 ## 分享模式原型
 
 按技术澄清 Q3 制作 `packages/prototype/src/pages/change-sharing.html`，默认进入接收者的技术方案阅读页。顶部评审工具切换接收者/分享者、正常/尚未分享/已停止/来源不可用/同步失败/读取中，并可模拟新内容推送。hash 支持定位页签、文档、视角和场景。所有项目、材料、提交和分享链接均为示例；不调用业务接口、不保存浏览器持久状态。
@@ -25,3 +27,9 @@ node packages/prototype/verify-change-sharing.mjs
 交互覆盖：六页签、材料切换、范围外链接提示、模拟文档更新、原型筛选与设备切换、代码文件选择和手机返回、创建/停止/重新分享、失效后隐藏正文、复制受限时手动兜底、同步失败重试、来源不可用重试及键盘页签导航。停止后重新创建得到不同示例 id。验证结果和分享弹窗截图位于 Git 忽略的 `artifacts/change-sharing-prototype/`；可用上述脚本重现。
 
 该证据证明原型交互与显示，不证明尚未实现的服务端权限、实时 Git 读取或真实分享链接可用性。
+
+## 固定原型发布
+
+本次源码提交为 `9f905813eed082d20e8a5d2cb9f73499b6b36869`。R2 适配器完成公开字节校验，固定版本 `f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b` 已登记到当前清单及本 Change previews，包含 pc-web、ipad、mobile 三种截图。
+
+[打开分享模式原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b/index.html)。该链接为本次设计的固定原型预览。
