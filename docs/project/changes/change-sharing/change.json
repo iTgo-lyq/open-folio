@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/change-sharing",
   "confirmations": {
     "requirement": {
       "at": "2026-10-20T10:00:18.910Z",
