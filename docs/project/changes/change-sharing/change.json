@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "change-sharing",
+  "title": "单个 Change 的公开只读分享",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "分享链接打开后，应该显示固定分享时的版本并支持主动更新，还是自动跟随 Change 最新内容？",
+      "recommendation": "固定分享时的版本，支持主动更新，便于评审同一份内容。",
+      "answer": "自动跟随 Change 最新内容。",
+      "source": "用户回复 Q1：自动跟随 Change 最新内容。"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "分享详情是否包含代码合入差异？",
+      "recommendation": "分享概览、任务、需求、技术方案、计划、执行/评审记录、澄清问答和原型；代码合入差异仍在原工作台查看。",
+      "answer": "包含该 Change 的全部详情，包括代码合入差异；同时完善 Skill，在技术文档推送或原型发布后主动提供分享链接，并复用合适的服务地址配置。",
+      "source": "用户回复 Q2：包含所有内容即可。包括 skill 也可以改下，后续编写完技术文档或者制作完原型，最好主动贴一下分享链接，方便我去查看。但是这个可能要求配置好服务地址，目前有配置的地方吗。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "已明确自动跟随最新内容与完整详情，补充服务地址及 Skill 主动贴链接能力；等待完整需求确认。"
+  }
+}
