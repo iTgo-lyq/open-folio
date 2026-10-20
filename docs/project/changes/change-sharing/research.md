@@ -55,3 +55,7 @@ Technical、Plan 和包内设计规范已同步此阅读方向；方案仍待确
 本地构建及 `verify-change-sharing.mjs` 在 1440、834、390、320px 四档宽度全部通过：正文标题分别距页面顶部约 214、214、187、187px，默认正文 16px；验证字号切换为 18px、章节定位与进度、专注模式、上一篇/下一篇、手机目录 Escape/焦点恢复，以及原有完整分享交互。无页面异常、外部请求或整页横向溢出。标准三设备截图已重新生成，并检查桌面和手机排版。
 
 [打开文档阅读版原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/fcd2b7e3c8a5682e3d78bea075c3d0baf381d8ce3a78cecc1760b414918adbcd/index.html)。固定源码为 `7fb7554597056c32d1f487577d0a951cb8b2e9cd`，R2 上传及公开字节校验通过；版本 `fcd2b7e3c8a5682e3d78bea075c3d0baf381d8ce3a78cecc1760b414918adbcd` 已登记，包含三种设备截图。
+
+新版引用推送后，真实工作台刷新返回的固定版本与发布结果、清单及 Change 引用一致。桌面、iPad、手机卡片图片均完整加载，naturalWidth 分别为 1440、834、390；从卡片打开原型，以 100% 画布完成字号切换、章节跳转、手机目录选文、前后文档、专注模式、模拟更新、创建和停止分享检查。无页面异常，`withSmokeSession` 退出与匿名复查通过；证据为 `artifacts/change-sharing-reader/published-checks.json` 及三种卡片截图。本次仍无正式服务代码变更，无需重建服务。
+
+登记后的 `validate.mjs --browser` 再次通过全部 14 个入口的 Chromium 沙箱校验。
