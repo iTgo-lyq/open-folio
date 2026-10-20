@@ -2,6 +2,204 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "id": "quiet-home",
+      "title": "工作台新设计 · 仓库与导航",
+      "description": "仓库发现、状态筛选、项目切换与读取来源。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-home.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/index.html",
+        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
+        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-specs",
+      "title": "工作台新设计 · Specs 阅读",
+      "description": "能力目录、章节定位、正文、原文与阅读链接。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-specs.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/index.html",
+        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
+        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-changes",
+      "title": "工作台新设计 · Changes 与详情",
+      "description": "列表、只读看板、任务、问答、材料和合入差异。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-changes.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/index.html",
+        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
+        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-prototypes",
+      "title": "工作台新设计 · 原型总览与画布",
+      "description": "设备缩略图、预览画布、固定版本准备与分享。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-prototypes.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/index.html",
+        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
+        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-credentials",
+      "title": "工作台新设计 · Token 登录与凭据",
+      "description": "示例 Token 登录、浏览器身份切换和设备撤销。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-credentials.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/index.html",
+        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
+        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-public",
+      "title": "工作台新设计 · 匿名公开预览",
+      "description": "仅展示已公开的固定原型，支持设备与画布操作。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "sourcePath": "packages/prototype/src/pages/quiet-public.html",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/index.html",
+        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
+        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/mobile.png"
+          }
+        ]
+      }
+    },
+    {
       "id": "account-login",
       "title": "账号登录与 Token 管理",
       "description": "用户自设账号密码，管理账号绑定的 Token、跨浏览器选择及账号登录设备。仅使用示例数据。",
