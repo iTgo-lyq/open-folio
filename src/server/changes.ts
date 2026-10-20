@@ -14,6 +14,8 @@ import {
   followUpTitleSchema,
   identity,
   previewsSchema,
+  typesSchema,
+  urgencySchema,
   validDate,
 } from "./schema.ts";
 import { cyclicNodes, parsePlan } from "./plan.ts";
@@ -207,6 +209,18 @@ export async function indexChanges(
       const core = { ...object };
       const warnings: Diagnostic[] = [];
       for (const [key, schema, code, message] of [
+        [
+          "types",
+          typesSchema,
+          "TYPES_INVALID",
+          "类型标签格式不合法，请检查 types；其余流程仍可阅读。",
+        ],
+        [
+          "urgency",
+          urgencySchema,
+          "URGENCY_INVALID",
+          "紧急程度格式不合法，请检查 urgency；其余流程仍可阅读。",
+        ],
         [
           "previews",
           previewsSchema,

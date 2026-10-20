@@ -4,7 +4,7 @@
   "title": "Change 类型标签与紧急程度",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-labels-urgency",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "支持类型标签与紧急程度的兼容读写",
-      "status": "todo"
+      "status": "done",
+      "verification": "39 项命令/读取/缓存测试、应用与 UI 类型检查、skill 校验通过。",
+      "commitTitle": "change-labels-urgency T1: support optional labels and urgency"
     },
     "T2": {
       "title": "在工作台展示、筛选并按紧急程度浏览 Change",
