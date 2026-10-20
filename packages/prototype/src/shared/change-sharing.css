@@ -24,7 +24,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .primary-button { background:var(--of-blue); border-color:var(--of-blue); color:white; }
 .quiet-button { color:var(--reader-muted); padding:5px 8px; font-size:13px; }
 .quiet-button:hover { color:var(--of-blue); background:#edf4fa; border-radius:5px; }
-.reader-layout { display:grid; grid-template-columns:244px minmax(0,1fr) 200px; max-width:1500px; margin:auto; align-items:start; }
+.reader-layout { display:grid; grid-template-columns:244px minmax(0,1fr) 200px; width:100%; align-items:start; }
 .reader-sidebar { position:sticky; top:64px; height:calc(100dvh - 64px); overflow:auto; background:var(--reader-surface); border-right:1px solid var(--reader-line); padding:28px 20px 20px; display:flex; flex-direction:column; }
 .change-heading { order:0; padding:0 8px 24px; }
 .eyebrow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:11px; color:var(--reader-muted); }
@@ -53,7 +53,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 #font-size { font-family:Georgia,serif; font-size:18px; }
 #font-size[aria-pressed=true] { color:var(--of-blue); background:#edf4fa; border-radius:5px; }
 #open-directory,#open-outline { display:none; }
-.document-article { max-width:720px; margin:0 auto; padding:35px 0 44px; font-size:16px; line-height:1.95; color:var(--reader-ink); overflow-wrap:anywhere; }
+.document-article { width:100%; margin:0; padding:35px 0 44px; font-size:16px; line-height:1.95; color:var(--reader-ink); overflow-wrap:anywhere; }
 .doc-kicker { color:var(--of-blue); font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.04em; }
 .document-article h1 { margin:8px 0 12px; color:#1f3043; font-size:34px; line-height:1.4; font-weight:650; letter-spacing:-.04em; }
 .doc-intro { font-size:17px; line-height:1.8; color:#536476; margin:0 0 16px !important; }
@@ -91,7 +91,7 @@ progress::-webkit-progress-bar { background:#e8edf2; }
 progress::-webkit-progress-value { background:#7197b1; }
 body.focus-reading .reader-layout { display:block; }
 body.focus-reading .reader-sidebar,body.focus-reading .page-outline { display:none; }
-body.focus-reading .reading-main { max-width:816px; margin:auto; }
+body.focus-reading .reading-main { width:100%; }
 body.focus-reading #open-directory,body.focus-reading #open-outline { display:block; }
 body.large-type .document-article { font-size:18px; }
 .navigation-dialog { max-height:85dvh; overflow:auto; }
