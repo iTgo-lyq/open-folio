@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "change-sharing",
+  "title": "单个 Change 的公开只读分享",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "分享链接打开后，应该显示固定分享时的版本并支持主动更新，还是自动跟随 Change 最新内容？",
+      "recommendation": "固定分享时的版本，支持主动更新，便于评审同一份内容。"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "分享详情是否包含代码合入差异？",
+      "recommendation": "分享概览、任务、需求、技术方案、计划、执行/评审记录、澄清问答和原型；代码合入差异仍在原工作台查看。"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待分享更新方式与内容范围的回答，随后确认完整需求。"
+  }
+}
