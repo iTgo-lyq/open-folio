@@ -146,6 +146,8 @@ interface ChangeState {
   id: string; // 仓库内唯一的小写 kebab-case，与目录名一致
   title: string;
   size: "small" | "medium" | "large" | "xlarge";
+  types?: string[]; // 自由多选类型；非空单行、无首尾空白、去重，省略或 [] 为无标签
+  urgency?: "urgent" | "high" | "normal" | "low"; // 紧急/高/普通/低；省略等同普通
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string; // 规划时为协作分支；移交后指向实际工作分支，默认 change/<id>
@@ -218,6 +220,8 @@ interface ChangeState {
 2. 核对已配置的协作分支与主工作区，先在此规划；不在创建时切换主工作区。
 3. 在协作分支运行 `create` 建立目录与初始 JSON，branch 指向协作分支；脚本生成 `active` / `requirement` 和空流程记录。实现前再移交到独立工作分支。
 4. 将已有目标、范围、方向、未决问题及外部材料写入 `requirement.md`，继续需求整理。
+
+类型用简短词概括实际工作，可多选，优先复用项目已有同义词；推荐「新功能、修复、体验、性能、重构、安全、适配、文档、测试、工程、流程、数据」，不限于这些词，用户指定名称沿用。紧急程度按用户安排填写，无特别安排时省略；不从类型或规模推断，不回填历史。创建时可填，活动 Change 用 `labels` 更新，参数见[状态命令](./references/state-commands.md)。
 
 ### Change 之间的依赖
 

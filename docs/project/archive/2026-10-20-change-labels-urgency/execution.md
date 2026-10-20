@@ -1,0 +1,46 @@
+# 实施与验证
+
+执行工作区为 Codex 创建并附加到本聊天的 `/home/tiger/.codex/worktrees/change-labels-urgency/open-folio`，分支为 `codex/change-labels-urgency`。已核对 cwd、分支及共享 Git 目录，使用该明确路径执行；主工作区保持 develop。采用客户端托管路径以保留聊天与工作树关联。
+
+## T1
+
+增加可选 `types` 与 `urgency`，创建命令和 `labels` 支持独立更新、类型规范化及恢复默认普通。共享校验供命令、hook 和工作台读取复用；错误可选字段单独警告，不撤销合法完成事实。缓存版本递增，旧解析快照按现有机制重建。
+
+skill 正文仅增加两个字段和一段标注指引；状态命令表增加参数与 labels 一行，不增加流程或配套文档。
+
+验证：
+
+- `node --conditions=react-server --test tests/state-commands.test.ts tests/changes.test.ts tests/incremental-cache.test.ts`：39 项通过，覆盖命令、兼容读取、错误隔离、完成依赖与缓存重建。
+- `npm run typecheck`：应用及 UI 包通过。
+- `skill-creator/scripts/quick_validate.py .agents/skills/spec-trail`：通过。
+
+测试通过临时 Git 仓库完成写入、推送和读取；没有修改历史归档或运行数据。
+
+## T2
+
+列表、阶段看板及详情共用标签展示；类型自由多选与无类型条件按 OR，和紧急程度及既有条件取交集。类型候选来自项目实际记录。默认保留创建顺序，可切换紧急优先，同级稳定排序；任务、依赖与延续组沿用统一结果。普通不在行/卡片增加徽标，详情按有效等级显示。
+
+验证：
+
+- 新查询逻辑及既有读取、创建顺序、延续组测试：24 项通过。
+- Change、延续组和新增标签浏览器回归：18 项通过。首次 17 项通过，URL 独有选项取消后立即消失，Playwright `uncheck()` 等待已移除元素超时；改为点击并断言选项消失，定向复跑通过。
+- `npm run typecheck`、`npm run format:check`、`npm run build` 通过。
+- 目视检查 `artifacts/change-labels-desktop.png`、`change-labels-mobile-filter.png`、`change-labels-mobile-detail.png`：桌面、320px 长标签及浮层均无水平溢出；键盘选择、Escape 焦点恢复、URL 往返、详情返回和切仓库清理均通过浏览器检查。
+
+独立评审 R2 的读屏数量问题修正后，4 项标签浏览器用例全通过，类型/格式检查及生产构建再次通过。使用新 `labels` 命令为本 Change 标注“新功能”，保持紧急程度省略。
+
+构建在任务工作区 `.next`，浏览器用隔离的 `.next-e2e`；长期服务及其数据未受影响。
+
+## T3
+
+同步既有 Store 重建测试的缓存版本预期为 7，旧版输入、拒绝读取及原始缓存字节不被改写的断言保持有效。`npm test` 完整回归 248 项通过，无跳过或失败。
+
+独立评审覆盖完整差异，R1、R2 修正后均复核通过，无遗留问题。需求验收 1–3、7 由命令/共享校验/读取/缓存测试覆盖，4–6 由查询单测、18 项浏览器回归及桌面/320px 截图覆盖。
+
+## 验收预览
+
+按用户要求，在任务工作区构建并启动提交 `3e530fd`，端口 `11532`，tmux 会话 `openfolio-change-labels`，提供 Merlin 私有入口。同一数据目录仅允许单实例，短暂停止主开发服务后将账号状态、配套密钥及配置复制到 `/home/tiger/.local/share/open-folio-previews/change-labels-urgency`，随后恢复主服务；预览使用独立副本，保留原账号密码、Token 绑定和偏好，仓库内容仍从中心 Git 读取。
+
+IPv4/IPv6 入口均返回 200。通过 `withSmokeSession` 使用专用已有账号登录，确认仓库实际读到本 Change 的“新功能”标签、缺省普通、列表不显示普通徽标及详情正常；浏览器检查后测试会话退出，并复查匿名且无可见绑定。主服务 `11117` 继续运行原提交。截图为 `artifacts/change-labels-live-list.png` 和 `change-labels-live-detail.png`。验收完成清理任务服务时一并清理该预览副本。
+
+归档前已同步协作提交 `223cc24`，增量仅为其他 Change 的规划文档，无实现或契约变化，既有测试与用户预览证据继续适用。Specs 同步至 Change 状态维护与 Change 追踪两处，记录字段契约、兼容读取、展示筛选和稳定排序。

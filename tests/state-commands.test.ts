@@ -184,6 +184,63 @@ function fixture(
   };
 }
 
+test("labels support free names, partial updates and restoring normal without changing workflow", (t) => {
+  const f = fixture(t);
+  f.create("small", "sample", [
+    "--types",
+    '[" 修复 ","安全","修复","数据,迁移","none"]',
+    "--urgency",
+    "high",
+  ]);
+  assert.deepEqual(f.state().types, ["修复", "安全", "数据,迁移", "none"]);
+  assert.equal(f.state().urgency, "high");
+  const { types: _types, urgency: _urgency, ...workflow } = f.state();
+  f.run("labels", ["--types", '["自定义"]']);
+  assert.equal(f.state().urgency, "high");
+  f.run("labels", ["--urgency", "normal"]);
+  assert(!Object.hasOwn(f.state(), "urgency"));
+  assert.deepEqual(f.state().types, ["自定义"]);
+  const before = readFileSync(f.path(), "utf8");
+  f.run("labels", ["--types", "[]", "--dry-run"]);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  for (const options of [
+    [],
+    ["--types", "{broken"],
+    ["--types", "null"],
+    ["--types", "[1]"],
+    ["--types", '[" "]'],
+    ["--types", '["修复\\n"]'],
+    ["--types", '["新类型"]', "--urgency", "none"],
+  ]) {
+    f.run("labels", options, 1);
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+  }
+  f.run("labels", ["--types", "[]"]);
+  assert.deepEqual(f.state(), workflow);
+  f.begin();
+  f.run("labels", ["--urgency", "urgent"]);
+  assert.equal(f.state().tasks.T1.status, "doing");
+  f.done();
+  f.commit();
+  f.verify();
+  f.accept();
+  const archived = f.archive().path;
+  const frozen = readFileSync(join(f.root, archived), "utf8");
+  f.run("labels", ["--urgency", "normal"], 1);
+  assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
+});
+
+test("normal creates no stored urgency and cancelled labels remain read-only", (t) => {
+  const f = fixture(t);
+  f.create("small", "sample", ["--urgency", "normal", "--types", "[]"]);
+  assert(!Object.hasOwn(f.state(), "urgency"));
+  assert(!Object.hasOwn(f.state(), "types"));
+  f.run("cancel", ["--reason", "取消"]);
+  const before = readFileSync(f.path(), "utf8");
+  f.run("labels", ["--types", '["修复"]'], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+});
+
 test("follow-up registration requires a published closed predecessor and stays independent of dependencies", (t) => {
   const f = fixture(t);
   const closed = (

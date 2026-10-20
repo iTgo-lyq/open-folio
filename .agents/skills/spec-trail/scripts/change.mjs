@@ -16,7 +16,12 @@ import {
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual, parseArgs } from "node:util";
-import { validateChange, validateWorkflow } from "./state-schema.mjs";
+import {
+  validateChange,
+  validateWorkflow,
+  validateTypes,
+  validateUrgency,
+} from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
 import { closedRecord } from "./routing.mjs";
@@ -35,7 +40,10 @@ const commands = {
     "children",
     "follow-up-of",
     "group-title",
+    "types",
+    "urgency",
   ],
+  labels: ["types", "urgency"],
   "follow-up": ["target", "group-title"],
   show: [],
   retitle: ["title"],
@@ -651,6 +659,32 @@ function main() {
         state.followUpTitle = title;
       }
     };
+    const setLabels = () => {
+      if (opts.types !== undefined) {
+        const input = JSON.parse(opts.types);
+        assert(
+          Array.isArray(input) && input.every((item) => typeof item === "string"),
+          "--types must be a JSON array of strings",
+        );
+        // Check line breaks before trimming, so an invalid label is not repaired.
+        assert(
+          input.every((item) => !/[\r\n\u2028\u2029]/.test(item)),
+          "--types labels must be single-line",
+        );
+        const types = [...new Set(input.map((item) => item.trim()))];
+        assert(!validateTypes(types).length, validateTypes(types).join("; "));
+        if (types.length) state.types = types;
+        else delete state.types;
+      }
+      if (opts.urgency !== undefined) {
+        assert(
+          !validateUrgency(opts.urgency).length,
+          validateUrgency(opts.urgency).join("; "),
+        );
+        if (opts.urgency === "normal") delete state.urgency;
+        else state.urgency = opts.urgency;
+      }
+    };
     switch (command) {
       case "create":
         assert(
@@ -658,6 +692,14 @@ function main() {
           "--group-title requires --follow-up-of",
         );
         if (state.followUpOf) setFollowUp(state.followUpOf);
+        setLabels();
+        break;
+      case "labels":
+        assert(
+          opts.types !== undefined || opts.urgency !== undefined,
+          "labels requires --types or --urgency",
+        );
+        setLabels();
         break;
       case "follow-up": {
         const target = need("target");

@@ -128,6 +128,8 @@ export type ChangeState = {
   id: string;
   title: string;
   size: "small" | "medium" | "large" | "xlarge";
+  types?: string[];
+  urgency?: "urgent" | "high" | "normal" | "low";
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string;
@@ -229,7 +231,7 @@ export type ChangeRoute = {
   errors: string[];
 };
 export type Snapshot = {
-  cacheSchemaVersion: 6;
+  cacheSchemaVersion: 7;
   integrations: IntegrationIndex;
   collaborationBranch: string | null;
   routes: ChangeRoute[];

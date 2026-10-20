@@ -155,6 +155,77 @@ test("workbench and shared validators preserve clarification records and histori
   }
 });
 
+test("optional labels share strict validation while old records remain unchanged", () => {
+  for (const patch of [
+    {},
+    { types: [] },
+    { types: ["修复", '数据,"迁移"', "none"] },
+    { urgency: "normal" },
+    { types: ["安全"], urgency: "urgent" },
+  ]) {
+    const sample = { ...state("labels"), ...patch };
+    assert.deepEqual(validateChange(sample), []);
+    assert.deepEqual(changeSchema.parse(sample), sample);
+  }
+  for (const patch of [
+    { types: null },
+    { types: "修复" },
+    { types: [""] },
+    { types: [" 修复"] },
+    { types: ["两行\n标签"] },
+    { types: ["两行\u2028标签"] },
+    { types: ["修复", "修复"] },
+    { urgency: null },
+    { urgency: "" },
+    { urgency: "none" },
+  ]) {
+    const sample = { ...state("labels"), ...patch };
+    assert(validateChange(sample).length);
+    assert(!changeSchema.safeParse(sample).success);
+  }
+});
+
+test("invalid label fields are isolated without revoking completion or dependencies", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  for (const [id, patch] of [
+    ["prior", { types: ["修复", "自定义"], urgency: "invalid" }],
+    ["consumer", { dependsOn: ["prior"], types: [" "], urgency: "high" }],
+    ["legacy", {}],
+  ] as const) {
+    const s = { ...completed(id), ...patch };
+    await f.put(`${s.closure.archive!.path}/change.json`, JSON.stringify(s));
+    await f.put(`${s.closure.archive!.path}/requirement.md`, "# 已交付\n");
+  }
+  f.commit();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const prior = primaryRecord(snapshot.changes.find((g) => g.id === "prior")!)!;
+  const group = snapshot.changes.find((g) => g.id === "consumer")!;
+  const consumer = primaryRecord(group)!;
+  assert(prior.validCompleted && consumer.validCompleted);
+  assert.deepEqual(prior.state!.types, ["修复", "自定义"]);
+  assert.equal(prior.state!.urgency, undefined);
+  assert.equal(consumer.state!.types, undefined);
+  assert.equal(consumer.state!.urgency, "high");
+  assert.equal(group.relations[0].process, "satisfied");
+  assert(
+    prior.diagnostics.some(
+      (d) => d.code === "URGENCY_INVALID" && d.severity === "warning",
+    ),
+  );
+  assert(
+    consumer.diagnostics.some(
+      (d) => d.code === "TYPES_INVALID" && d.severity === "warning",
+    ),
+  );
+  const legacy = primaryRecord(
+    snapshot.changes.find((g) => g.id === "legacy")!,
+  )!;
+  assert(legacy.validCompleted);
+  assert.equal(legacy.diagnostics.length, 0);
+  assert(!Object.hasOwn(legacy.state!, "urgency"));
+});
+
 test("explicit task order overrides defaults and rejects ambiguous or invalid declarations", () => {
   const s = state("plan", {
     size: "large",

@@ -1,10 +1,15 @@
 import { z } from "zod";
 import type {
   Clarification,
+  ChangeState,
   PreviewEntry,
   PrototypeConfig,
 } from "../lib/model.ts";
-import { validateClarifications } from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
+import {
+  validateClarifications,
+  validateTypes,
+  validateUrgency,
+} from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
 import {
   validBranchName,
   workflowRoutingIssues,
@@ -26,6 +31,14 @@ export const prototypeSchema = z.custom<PrototypeConfig>(
 export const identity = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 const text = z.string().refine((s) => /\S/.test(s), "不能为空白文本");
 export const followUpTitleSchema = z.string().regex(/^(?=.*\S)[^\r\n]+$/);
+export const typesSchema = z.custom<string[]>(
+  (value) => !validateTypes(value).length,
+  "类型标签必须是去重、无首尾空白的非空单行文字数组",
+);
+export const urgencySchema = z.custom<NonNullable<ChangeState["urgency"]>>(
+  (value) => !validateUrgency(value).length,
+  "紧急程度必须为 urgent、high、normal 或 low",
+);
 export const branchName = z
   .string()
   .refine(validBranchName, "必须是有效的本地分支名称");
@@ -86,6 +99,8 @@ export const changeSchema = z
     id: identity,
     title: text,
     size: z.enum(["small", "medium", "large", "xlarge"]),
+    types: typesSchema.optional(),
+    urgency: urgencySchema.optional(),
     status: z.enum(["active", "completed", "cancelled"]),
     stage: z.enum(["requirement", "technical", "plan", "execution", "close"]),
     branch: branchName,
