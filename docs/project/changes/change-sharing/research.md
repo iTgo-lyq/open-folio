@@ -33,3 +33,15 @@ node packages/prototype/verify-change-sharing.mjs
 本次源码提交为 `9f905813eed082d20e8a5d2cb9f73499b6b36869`。R2 适配器完成公开字节校验，固定版本 `f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b` 已登记到当前清单及本 Change previews，包含 pc-web、ipad、mobile 三种截图。
 
 [打开分享模式原型](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f3792d7b8d7d8f9966074aed3f2e7b0f165e97a94bbaeaa3c631abcb28694b2b/index.html)。该链接为本次设计的固定原型预览。
+
+引用推送至 develop 后完成发布验收：
+
+- `validate.mjs --browser` 在 Chromium 沙箱校验 14 个已登记入口通过。
+- 发布 result、当前清单、本 Change previews 及刷新后真实工作台返回的三种 thumbnails 一致。
+- 真实工作台逐设备卡片检查 `img.complete` 和 `naturalWidth`，桌面、iPad、手机分别为 1440、834、390，均无缺图或失败占位。卡片截图和断言结果保存于 `artifacts/change-sharing-prototype/published-card-*.png`、`published-checks.json`。
+- 从卡片进入原型，在 100% 画布内验证模拟更新、分享者切换、创建和停止；另在适应画布下验证键盘交互。同一公开 URL 独立打开后的模拟更新也通过。
+- 每次真实浏览器检查均由独立 `withSmokeSession` 管理，包括失败排查；会话退出及匿名、无可见绑定复查均通过，账号绑定保留。
+
+检查工具限制：85% 画布下，Playwright 返回的按钮坐标未按 iframe 缩放修正（按钮局部 x=296、宽=82，外层仍直接加 296 而非乘缩放比例），第一次自动鼠标点击未到达 iframe，不能据此认定页面交互失败。100% 鼠标交互与缩放下键盘交互均通过，无页面脚本异常；保留排查截图与 `published-fit-checks.json`，不改动正式画布实现来绕过检查。
+
+本轮仅修改方案文档、原型源与固定引用，没有改变服务实现；真实工作台通过项目刷新读取新引用，无需重建长期服务。
