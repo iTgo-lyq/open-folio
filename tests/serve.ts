@@ -31,6 +31,11 @@ import {
   discoveryResponse,
   repositoryListResponse,
 } from "../src/server/discovery-api.ts";
+import {
+  manageShareResponse,
+  revokeShareResponse,
+  sharedResponse,
+} from "../src/server/share-api.ts";
 import { repositoryResponse } from "../src/server/repository-api.ts";
 import {
   preparePreviewResponse,
@@ -213,7 +218,62 @@ const server = createServer(async (req, res) => {
           await f.put(path, JSON.stringify(manifest));
           f.commit();
         }
-        if (input.restoreMain) {
+        if (input.shareMove && input.shareMove !== "restore") {
+          const directory = "docs/project/changes/document-reader";
+          const target = "change/shared-reader-next";
+          if (input.shareMove === "branch") {
+            f.git(["checkout", "-B", target, "change/document-reader"]);
+            const record = JSON.parse(
+              f.git(["show", `HEAD:${directory}/change.json`]),
+            );
+            record.branch = target;
+            await f.put(`${directory}/change.json`, JSON.stringify(record));
+            f.commit();
+            f.git(["checkout", "develop"]);
+            const entry = JSON.parse(
+              f.git(["show", `HEAD:${directory}/change.json`]),
+            );
+            entry.branch = target;
+            await f.put(`${directory}/change.json`, JSON.stringify(entry));
+            f.commit();
+          } else {
+            f.git(["checkout", "develop"]);
+            f.git(["checkout", target, "--", directory]);
+            const record = JSON.parse(
+              f.git(["show", `${target}:${directory}/change.json`]),
+            );
+            const archive = "docs/project/archive/2026-10-20-document-reader";
+            await mkdir(join(f.author, "docs/project/archive"), {
+              recursive: true,
+            });
+            f.git(["mv", directory, archive]);
+            record.status = "completed";
+            record.stage = "close";
+            for (const task of Object.values(record.tasks) as {
+              status: string;
+              verification?: string;
+            }[]) {
+              task.status = "done";
+              task.verification = "fixture verified";
+            }
+            const at = new Date().toISOString();
+            record.closure = {
+              verification: { result: "passed", at, summary: "verified" },
+              acceptance: { result: "accepted", at, summary: "accepted" },
+              specs: { result: "synced", at, summary: "synced" },
+              archive: {
+                result: "done",
+                at,
+                summary: "archived",
+                path: archive,
+              },
+            };
+            delete record.waitingFor;
+            await f.put(`${archive}/change.json`, JSON.stringify(record));
+            f.commit();
+          }
+        }
+        if (input.restoreMain || input.shareMove === "restore") {
           f.git(["checkout", "develop"]);
           f.git(["reset", "--hard", originalCollaboration]);
           f.git(["push", "--force", "origin", "develop"]);
@@ -244,6 +304,7 @@ const server = createServer(async (req, res) => {
         "connections",
         "repositories",
         "public-previews",
+        "shares",
       ].includes(s[1])
     ) {
       const chunks = [];
@@ -285,21 +346,28 @@ const server = createServer(async (req, res) => {
         response =
           s.length === 2
             ? await repositoryListResponse(request, discoveries)
-            : s[3] === "previews" && s[4] === "prepare"
-              ? await preparePreviewResponse(
-                  request,
-                  s[2],
-                  repos,
-                  publications,
-                  DEFAULT_LIMITS,
-                )
-              : await repositoryResponse(
-                  request,
-                  s[2],
-                  s.slice(3),
-                  repos,
-                  DEFAULT_LIMITS,
-                );
+            : s[3] === "changes" && s[5] === "share"
+              ? await manageShareResponse(request, s[2], s[4], repos)
+              : s[3] === "previews" && s[4] === "prepare"
+                ? await preparePreviewResponse(
+                    request,
+                    s[2],
+                    repos,
+                    publications,
+                    DEFAULT_LIMITS,
+                  )
+                : await repositoryResponse(
+                    request,
+                    s[2],
+                    s.slice(3),
+                    repos,
+                    DEFAULT_LIMITS,
+                  );
+      else if (s[1] === "shares")
+        response =
+          req.method === "DELETE" && s.length === 3
+            ? await revokeShareResponse(request, s[2], repos)
+            : await sharedResponse(request, s[2], s.slice(3), repos);
       else if (req.method === "DELETE" && s.length === 3)
         response = await withdrawPreviewResponse(request, s[2], publications);
       else

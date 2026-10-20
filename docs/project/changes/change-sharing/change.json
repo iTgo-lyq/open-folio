@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "完成分享管理与完整详情阅读",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型与生产构建通过；25 项浏览器回归及原型桥接后 3 项分享检查通过，含匿名隔离、深链移交/归档和全宽窄屏。",
+      "commitTitle": "change-sharing T2: add full-width shared Change reader"
     },
     "T3": {
       "title": "让 Agent 在文档和原型就绪后给出分享链接",

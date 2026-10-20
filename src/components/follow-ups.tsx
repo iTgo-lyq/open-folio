@@ -66,11 +66,18 @@ export function GroupedChangeRows({
 }
 
 export function FollowUpContext({ change }: { change: ChangeGroup }) {
-  const { data, nav } = useWorkspace();
+  const { data, nav, sharing } = useWorkspace();
   const index = useMemo(() => followUpIndex(data!.changes), [data]);
   const prior = primaryRecord(change)?.state?.followUpOf;
   const members = index.groups.get(index.roots.get(change.id)!);
   const problem = index.problems.get(change.id);
+  if (sharing)
+    return prior ? (
+      <section className="follow-up-context">
+        <h3>连续交付</h3>
+        <p>延续自 {prior} · 未分享</p>
+      </section>
+    ) : null;
   if (!problem && !prior && (!members || members.length < 2)) return null;
   return (
     <section className="follow-up-context" aria-label="连续交付">

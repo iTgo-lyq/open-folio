@@ -14,14 +14,36 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   if (
     (path.startsWith("/api/session") ||
       path.startsWith("/api/connections") ||
-      path.startsWith("/api/accounts")) &&
+      path.startsWith("/api/accounts") ||
+      (init?.method &&
+        !["GET", "HEAD"].includes(init.method) &&
+        (path.startsWith("/api/repositories/") ||
+          path.startsWith("/api/shares/")))) &&
     personalRevision !== undefined &&
     !headers.has("X-OpenFolio-Revision")
   )
     headers.set("X-OpenFolio-Revision", String(personalRevision));
-  const response = await fetch(path, { ...init, headers, cache: "no-store" });
+  const sharedRead =
+    path.startsWith("/api/shares/") &&
+    (!init?.method || ["GET", "HEAD"].includes(init.method));
+  const response = await fetch(path, {
+    ...init,
+    ...(sharedRead ? { credentials: "omit" as const } : {}),
+    headers,
+    cache: "no-store",
+  });
   const data = await response.json();
   if (!response.ok) {
+    if (typeof window !== "undefined" && sharedRead)
+      window.dispatchEvent(
+        new CustomEvent("openfolio-share-error", {
+          detail: {
+            path,
+            code: data.error?.code,
+            message: data.error?.message,
+          },
+        }),
+      );
     if (
       typeof window !== "undefined" &&
       path.startsWith("/api/repositories/") &&

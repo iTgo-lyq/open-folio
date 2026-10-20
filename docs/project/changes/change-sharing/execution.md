@@ -11,3 +11,9 @@
 验证：`npx tsc --noEmit` 通过；`node --conditions=react-server --test tests/shares.test.ts tests/repository-permissions.test.ts tests/repositories.test.ts tests/personal-sessions.test.ts` 首轮 29 项通过；追加的刷新合并、在途版本变化及解绑检查后，`tests/shares.test.ts` 7 项全部通过（原有回归 25 项）。覆盖持久化与文件权限、幂等并发创建、账号隔离、非法版本/路径、GET/HEAD、撤回后缓存不可访问、设备退出、更新、解绑、固定权限复验、失权创建回收、损坏数据不覆盖，以及公开与私有读取共享刷新时单链接撤回不取消其他读者。
 
 浏览器集成、完整 diff 阅读及真实服务检查随后续页面和整体交付验证执行；当前证据只证明服务端接口结果。
+
+## T2 · 分享管理与阅读页
+
+私有 Change 抽屉新增创建、复制、停止和重新分享；共用详情内容提取后，公开页使用独立阅读上下文，不加载个人 Provider。全宽材料/正文/章节布局沿用已验收原型，支持专注、大字号、相邻文档、章节进度、手机目录与相对路径深链。关联目标不在分享范围时显示“未分享”；原型使用受控资源并保留沙箱及运行错误报告。
+
+验证：类型检查及独立工作区生产构建通过。`npx playwright test tests/browser/change-sharing.spec.ts tests/browser/changes.spec.ts tests/browser/previews.spec.ts tests/browser/integration.spec.ts tests/browser/follow-ups.spec.ts` 25 项全部通过；随后完善 Git 原型错误桥接后，分享 3 项再次通过。覆盖匿名无私有 API 请求、六类内容、固定代码差异、分享撤回和重建、退出设备后继续读取、文档路径跨分支移交和归档、窄屏与旧工作台回归。1440/834/390/320 截图已检查；1920 宽度下正文超过 1300 px，专注超过 1800 px，无全页横向溢出。截图位于工作区 `artifacts/change-sharing-*.png`（不提交）。

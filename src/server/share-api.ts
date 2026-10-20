@@ -20,6 +20,7 @@ import {
   personalError,
   renewPersonalResponse,
 } from "./personal-http.ts";
+import { diagnosticHtml } from "./public-previews.ts";
 import { ThumbnailCache } from "./thumbnail-cache.ts";
 import { previewViewport } from "../lib/preview-viewport.ts";
 import type { Device, Limits, PreviewDescriptor } from "../lib/model.ts";
@@ -30,6 +31,7 @@ const headers = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
   "X-Robots-Tag": "noindex, nofollow",
+  "X-Frame-Options": "SAMEORIGIN",
 };
 const state = globalThis as typeof globalThis & {
   folioShareThumbnails?: ThumbnailCache;
@@ -306,7 +308,7 @@ export async function sharedResponse(
               );
             const asset = segments[2];
             if (asset === "index.html")
-              value = new Response(html, {
+              value = new Response(diagnosticHtml(html), {
                 headers: {
                   "Content-Type": "text/html; charset=utf-8",
                   "Content-Security-Policy": sandboxCsp,

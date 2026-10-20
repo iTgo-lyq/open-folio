@@ -61,7 +61,7 @@ export type PrepareInput = {
 };
 const digest = (data: string | Buffer) =>
   createHash("sha256").update(data).digest("hex");
-function diagnosticHtml(html: string) {
+export function diagnosticHtml(html: string) {
   // Published bytes contain the bridge too, so hashing and anonymous delivery stay immutable.
   const reporter = `<script>(()=>{const load=new URL(location.href).searchParams.get('load')||'';if(!/^[a-zA-Z0-9-]{1,64}$/.test(load))return;const report=code=>parent.postMessage({type:'openfolio-preview-error',load,code},'*');addEventListener('securitypolicyviolation',()=>report('network-blocked'));addEventListener('error',()=>report('runtime-error'));})();</script>`;
   const insertion = /<head(?:\s[^>]*)?>/i.test(html)
