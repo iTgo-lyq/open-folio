@@ -4,7 +4,7 @@
   "title": "单个 Change 的公开只读分享",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-sharing",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "建立可撤销的实时 Change 分享读取",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型检查通过；分享 7 项与账号/仓库/权限 25 项回归通过，覆盖范围隔离、撤回、解绑及并发交付。",
+      "commitTitle": "change-sharing T1: add revocable live Change share APIs"
     },
     "T2": {
       "title": "完成分享管理与完整详情阅读",
