@@ -22,5 +22,9 @@
   {
     "id": "quiet-public",
     "entryPath": "quiet-public/index.html"
+  },
+  {
+    "id": "quiet-share",
+    "entryPath": "quiet-share/index.html"
   }
 ]

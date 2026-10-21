@@ -16,15 +16,15 @@ personal-workbench 顶部可切换首次连接、发现中、空结果、部分�
 
 token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台、浏览器记住多个身份与点选切换、单独移除、复制 token 和设备退出。两个示例 token 都属于 `demo-user`，可填写显示名称；只接受 `demo` 与 `demo-other`。顶部可选择双身份、目标凭据失效及切换时网络故障；状态仅保存在内存，复制也只处理这两个示例值。顶部场景栏为评审工具，不进入产品。
 
-## 六组工作台新设计
+## 工作台新设计（七组入口）
 
-`quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public` 分别对应仓库、Specs、Changes、原型画布、Token 凭据和匿名公开预览。每个入口都可切换浅色/深色；右上角的主题按钮属于原型外观，顶部「设计预览」工具用于选择页面、异常场景、减少透明度和减少动态效果。所有仓库、身份、时间和工程材料均为虚构，只用内存状态。登录仅接受 `demo` / `demo-other`，不采用账号密码模型。
+`quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 分别对应我的仓库与侧栏、Specs 阅读、Changes 列表与详情、原型总览与画布、账号与 Token、匿名公开原型、Change 分享阅读。源码位于 `src/shared/quiet-workbench/`，按模块拆为多个脚本，由各入口 HTML 内联；旧原型与固定引用保留。
 
-新设计位于 `src/shared/quiet-workbench/`，六个 HTML 入口复用它，旧原型及固定引用保留。可用 hash 直达，例如 `#/specs?theme=dark`、`#/changes?change=source-details`。点击 Changes 行查看问答、任务与只读材料；已归档记录的「合入变更」可查看文件差异、二进制和超限状态。原型截图与卡片标题分别进入画布和详情；画布支持设备、方向、适应/100% 与模拟公开分享。表单不进行原生提交，可在只授予 allow-scripts 的 iframe 中使用按钮或 Enter 操作。
+所有仓库、人员、时间和工程材料均为虚构，状态只在内存中。顶部评审细条可切换页面、场景（加载、失败、离线、无权限、登录过期及各页面特有状态）、主题与降级，不属于产品。示例账号 `lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`。hash 可直达，例如 `#/changes/offline-map-regions/technical?theme=dark`、`#/changes?side=collapsed`、`#/share/offline-map-regions?scene=sync-failed`。点击 Logo 或按 ⌘\ / Ctrl+\ 收起侧栏为悬浮胶囊。
 
-验证：先 `npm run build --workspace prototype`，再 `node packages/prototype/verify-quiet-workbench.mjs`。检查使用真实沙箱 iframe、两套主题与四档宽度，覆盖键盘/焦点、身份隔离、设备退出、固定分享和错误场景；截图及结果输出到 Git 忽略的 `artifacts/quiet-workbench/`。正式卡片截图继续使用本包 screenshot 命令。
+验证：先 `npm run build --workspace prototype`，再 `node packages/prototype/verify-quiet-workbench.mjs`。检查使用仅授予 `allow-scripts` 的 iframe 与项目 CSP，覆盖七个入口 × 两套主题 × 四档宽度及主要交互；结果和截图输出到 Git 忽略的 `artifacts/quiet-workbench/`。正式卡片截图继续使用本包 screenshot 命令。
 
-只发布这六组入口时，将它们的 `dist/quiet-*/` 输出及截图复制到 `dist/quiet-release/quiet-*/`，以 `dist/quiet-release` 为产物目录、`publish-quiet-entries.json` 为入口清单。发布前提交源码；固定引用通过 SpecTrail 发布登记命令更新。本轮设计须经用户验收，不能据此开始产品实现。
+只发布这七组入口时，将 `dist/quiet-*/` 及其截图复制到 `dist/quiet-release/quiet-*/`，以 `dist/quiet-release` 为产物目录、`publish-quiet-entries.json` 为入口清单。发布前提交源码；固定引用通过 SpecTrail 发布登记命令更新。本轮设计须经用户验收，不能据此开始产品实现。
 
 ## 首次配置
 
