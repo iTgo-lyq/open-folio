@@ -4,7 +4,7 @@
   "title": "单个 Change 的公开只读分享",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-sharing",
   "confirmations": {
     "requirement": {
@@ -49,7 +49,13 @@
       "commitTitle": "change-sharing T4: read shared Changes directly by repository"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-21T18:37:25.354Z",
+      "summary": "同步develop后48项接口/CLI与29项浏览器回归通过；类型、格式、构建及真实外部分享验证通过；独立上下文评审问题全部关闭。"
+    }
+  },
   "clarifications": {
     "Q1": {
       "round": 1,
@@ -117,5 +123,9 @@
     "at": "2026-10-20T12:38:17.771Z",
     "reason": "分享不应绑定创建账号；任何人应能分享实际存在的 Change。",
     "approach": "保留已验证的阅读与资源隔离能力，重整仓库范围、分享生命周期和无账号 Skill 链接流程。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现已推送并在独立11356服务验证，等待用户验收分享阅读；通过后归档并经PR集成develop、更新11117长期服务。"
   }
 }
