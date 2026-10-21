@@ -56,7 +56,9 @@
     },
     "T6": {
       "title": "未归档合入约束与 CI 接入",
-      "status": "doing"
+      "status": "done",
+      "verification": "归档CI专项9项、Setup12项、相关命令30项及类型/格式通过；独立复评通过。真实PR提交与正文更新触发预期未归档失败；两个分支必需检查已启用并回读核实。",
+      "commitTitle": "pr-release-delivery T6: require archived changes in PR checks"
     }
   },
   "closure": {},

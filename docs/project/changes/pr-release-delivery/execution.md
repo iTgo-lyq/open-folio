@@ -37,3 +37,15 @@ Provider 增加 PR 列表、详情和按提交回查；发布分支只定向获�
 以本 Change 的 [Draft PR](https://github.com/iTgo-lyq/open-folio/pull/1) 进行真实 Provider 读取，发现 REST `2026-03-10` 已移除 `merge_commit_sha`，导致原 fixture 通过而真实响应校验失败。仅将 PR 列表、详情和提交回查固定到仍受支持的 `2022-11-28`；其他请求不变，依据及支持期限见 [Technical](technical.md#平台读取刷新与降级)。测试固定该请求版本并覆盖提交回查的实际合并字段。
 
 修正后，真实列表、详情和按源提交回查均返回同一 Draft PR，目标 develop、来源 codex/pr-release-delivery 和 Change 标记一致；未合入的临时合并 SHA 不被当作合入结果。Provider/delivery 的 17 项回归、类型检查、格式检查和生产构建通过。此验证只读取现有 PR，正式发布与合并事实的完整路径仍由 Git/Provider fixture 覆盖。
+
+## T6 · 未归档合入约束与 CI
+
+按用户补充要求，Agent 合入规则明确未归档不得合入，预检与已接入的归档 CI 均需通过。新增只读 `check-pr.mjs` 和随 skill 分发的 GitHub workflow 模板，本仓库已接入；Setup 推荐首次配置 CI 与必需状态检查，区分平台强制与规划直推例外。
+
+9 项专项测试覆盖未归档/返修失败、恢复归档后通过、缺验收/Specs/未完成任务、重复记录、错误标记/归属/目标/提交/仓库、额外归档、发布清单、准备分支、自定义分支、CLI 退出与只读行为。Setup 12 项、合入/返修/标记/状态命令 30 项回归通过，类型与格式检查通过。独立评审发现发布准备分支的有效 M 可位于候选第二父系；现从集成分支扫描 M，再核对候选祖先和归档子树，9 项复测及复评通过。
+
+真实 [CI 运行](https://github.com/iTgo-lyq/open-folio/actions/runs/39646263161) 在 checkout 和 Node 初始化成功后，因本 Change 尚未归档以退出码 1 拒绝；这是检查有效的预期证据，不表示当前 PR 已满足合入条件。归档后通过的路径在隔离 Git fixture 验证，当前 Change 继续等待人工验收。
+
+修正后提交重跑及仅修改 PR 正文的[再次运行](https://github.com/iTgo-lyq/open-folio/actions/runs/39646775385)均保持相同的未归档拒绝，确认 synchronize 与 edited 都会更新检查；平台回读当前 PR 为 BLOCKED。
+
+平台已启用仅包含必需检查的两个 ruleset，绑定 GitHub Actions 的 `SpecTrail archive`：[develop](https://github.com/iTgo-lyq/open-folio/rules/25570232) 保留 Repository admin 的 always bypass 以支持规划直推，[main](https://github.com/iTgo-lyq/open-folio/rules/25570271) 无绕过例外。已回读分支实际规则核实生效；管理员仍可能绕过 develop 的平台检查，Agent 规则禁止以此合入未归档交付。未增加审批数量或其他保护规则。
