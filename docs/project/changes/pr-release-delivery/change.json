@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "pr-release-delivery",
+  "title": "通过 PR 管理 Change 集成与正式版本发布",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": ["流程", "工程", "体验"],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "Change 与 PR 的关联，我建议在 PR 正文写入稳定的 Change 标识，由工作台按仓库、标识和目标分支自动匹配，change.json 不手工保存 URL；重开或重建 PR 时保留历史，匹配有歧义就明确提示。你更倾向哪种方式？",
+      "recommendation": "自动匹配，不写入 change.json；以稳定 Change 标识结合仓库和目标分支查找，避免人工维护易变化的 URL。",
+      "answer": "自动匹配，不写入 change.json；以 PR 中的稳定 Change 标识结合仓库与目标分支识别，保留重建或重开的历史。",
+      "source": "自动匹配，不写入 change.json（推荐）"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "本次会把旧的 collaborationBranch / protectedBranches 配置改为必填的 integrationBranch / releaseBranch。现有项目如何升级？",
+      "recommendation": "一次性迁移，旧配置提示升级；保留项目资料，不长期维护两套字段语义。",
+      "answer": "现有项目升级由用户自行指导；本次不做旧配置迁移、兼容或升级提示词，只定义新的必填配置契约。",
+      "source": "不用管，也不用写任何提示词。目前只有我自己的项目接入了本skill。我会指导升级。"
+    },
+    "Q3": {
+      "round": 1,
+      "question": "集成分支还承担 Change 规划与分支登记。为了让两个长期分支都默认通过 PR 写入，我建议规划文档也走轻量 PR，并按已有授权合并，不增加逐次人工审批。是否采用？",
+      "recommendation": "规划和交付都通过 PR；规划 PR 仅保存文档与登记，不标记为 Change 已集成交付。",
+      "answer": "Change 规划和分支登记继续直接提交集成分支，保持集中入口，不为发现 Change 扫描所有分支或打开的 PR。Change 交付集成与正式发布仍默认通过 PR。",
+      "source": "应当继续走直接提交，不然又要扫所有分支或者打开的pr来确认 change"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "已整理两类 PR 交付与工作台标签需求，等待完整需求确认后进入技术方案。"
+  }
+}
