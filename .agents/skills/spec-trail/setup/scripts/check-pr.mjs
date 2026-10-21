@@ -54,11 +54,14 @@ export async function checkPullRequest(git, event) {
   }
   assert(pr.base.ref === config.releaseBranch, 'PR target does not match a configured delivery branch');
   assert(marker.kind === 'release', 'Release PR requires trailing SpecTrail-Version and SpecTrail-Includes markers');
-  const index = await scanIntegrations(async args => git(args), pr.head.sha);
+  const integrationTip = git(['rev-parse', '--verify', `refs/remotes/origin/${config.integrationBranch}^{commit}`]);
+  const index = await scanIntegrations(async args => git(args), integrationTip);
   for (const id of marker.includes) {
     const record = archive(records, id);
     const integration = integrationFor(index, id);
     assert(integration.status === 'found', `Change ${id}: release requires verified integration history`);
+    assert(git(['merge-base', integration.commit, pr.head.sha]) === integration.commit,
+      `Change ${id}: integrated delivery is not in the release candidate`);
     assert(record.directory === integration.archivePath &&
       git(['rev-parse', `${pr.head.sha}:${record.directory}`]) ===
       git(['rev-parse', `${integration.commit}:${record.directory}`]),

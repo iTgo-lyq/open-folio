@@ -234,6 +234,28 @@ test("release checks only included Changes, requiring valid integration and unch
   }
 });
 
+test("release preparation can contain M through its second parent, but copying an archive is insufficient", async () => {
+  const f = await integrationFixture();
+  try {
+    const merged = f.merge();
+    f.git(["checkout", "-b", "release/frozen", "main"]);
+    f.git(["merge", "--no-ff", "develop", "-m", "Freeze candidate"]);
+    assert.equal(
+      (await checkPullRequest(f.git, event(f, "main", releaseBody))).kind,
+      "release",
+    );
+    f.git(["checkout", "-b", "release/copied", "main"]);
+    f.git(["checkout", merged, "--", f.archivePath]);
+    f.commit(false);
+    await assert.rejects(
+      checkPullRequest(f.git, event(f, "main", releaseBody)),
+      /not in the release candidate/,
+    );
+  } finally {
+    await f.cleanup();
+  }
+});
+
 test("custom delivery branch names work", async () => {
   const f = await integrationFixture();
   try {
