@@ -63,8 +63,13 @@
       "source": "复用现有界面，不单独绘原型（推荐）"
     }
   },
+  "rework": {
+    "at": "2026-10-21T16:23:56.589Z",
+    "reason": "用户指出未要求实现 changelog；此前方案错误扩展了发布 PR 内容整理的范围。",
+    "approach": "保留已确认的双分支与 PR 交付目标，版本说明仅保存在发布 PR；删除 CHANGELOG.md、tag、GitHub Release 管理及相关校验和额外阶段。"
+  },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "技术方案与四项实施计划已就绪，等待一并确认。"
+    "summary": "已收回发布管理扩展，技术方案与实施计划尚待确认。"
   }
 }
