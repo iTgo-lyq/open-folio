@@ -29,3 +29,13 @@
 真实仓库验证时发现 develop 已升级 workflow v3；旧分支因此不能解析真实仓库配置。用户随后明确“同步 dev 分支即可，刚刚合入了”。以 `269a34c47be0bd2d6dfc3df02e3e14360cef25ce` 同步 origin/develop，保留新的 integrationBranch/releaseBranch、PR 交付读取与页面；分享参数同步为 integrationBranch，只投影目标 Change 的交付数据。冲突按这两组已确认行为兼容合并，没有新增流程或权限决策。
 
 合并后类型检查通过，分享、CLI、账号/仓库权限及交付回归共 48 项通过。CLI 新增首次 404 后同步、原型非 HTML/空体/已知平台认证页、Git HTML blob 与未提交修改、子目录调用等边界；修复测试定时器早于首个请求触发造成的非确定性，改用服务端首次响应控制同步。
+
+## T3 · 链接工具、配置与实际验证
+
+新增零依赖 `share.mjs`，从 Git origin 和 workflow v3 读取目标，检查当前提交的文档 blob 或原型 artifact/HTML blob，再匿名读取内容。没有创建/登录/绑定接口调用，不携带 Cookie 或 Authorization；受限响应、超时和同步等待均有明确失败结果。主 Skill 只增加一个触发段落，原型 Skill 增加一句并引用同一简短参考。
+
+11117 的现有 Merlin 入口已配置为匿名可达，根页面及匿名 session 返回 200 且无登录跳转；`openfolioUrl` 指向此长期入口。集成前使用独立验收服务 11356、tmux `change-sharing-acceptance`、工作区 `.openfolio/share-acceptance-data`，不修改主工作区长期服务数据。平台拒绝未分配的 11118 后改用已分配且空闲的 11356。
+
+实际外部检查使用专用验证账号及 `withSmokeSession`，私有浏览器仅使用回调提供的 Cookie，匿名浏览器独立创建。已验证工作台复制、匿名技术文档、1920 全宽及 390px 无横向溢出、无私有 API 请求和页面异常；包装器退出并复查匿名及无可见绑定，退出后同一分享链接仍返回内容。已推送技术文档和 hosted 原型均经 CLI 在临时隔离 checkout 指向验收入口后匿名验证成功；临时 checkout 已清理。
+
+合并后 29 项浏览器回归、48 项接口/CLI/权限/交付回归、类型检查、格式检查、生产构建和 Skill quick_validate 通过。独立评审修复见 Review。真实桌面/手机截图位于 `artifacts/change-sharing-live-{desktop,mobile}.png`（不提交）。长期服务仍待人工验收、归档和 PR 集成后部署，验收实例由 tmux 保持运行。

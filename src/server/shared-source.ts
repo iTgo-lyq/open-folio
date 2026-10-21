@@ -10,7 +10,7 @@ const unavailable = () =>
 const invalid = () =>
   new AppError(
     "INVALID_PARAMETER",
-    "请提供有效的仓库、Change 和协作分支。",
+    "请提供有效的仓库、Change 和集成分支。",
     400,
   );
 const lostSource = new Set([

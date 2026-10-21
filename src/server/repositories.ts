@@ -121,7 +121,7 @@ export class Repositories {
     const permissions = repositoryPermissions(this.sessions);
     try {
       if (!validBranchName(integrationBranch))
-        throw new AppError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
+        throw new AppError("INVALID_PARAMETER", "集成分支名称不合法。", 400);
       const provider = this.sessions.registry.get(
         lease.context.identity.providerId,
       );

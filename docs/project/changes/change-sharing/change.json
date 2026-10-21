@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "让 Agent 在文档和原型就绪后给出分享链接",
-      "status": "doing"
+      "status": "done",
+      "verification": "48项接口/CLI/权限/交付与29项浏览器通过；构建、类型、格式、Skill校验通过；真实匿名文档/原型及安全退出验证成功。",
+      "commitTitle": "change-sharing T3: verify and surface anonymous material links"
     },
     "T4": {
       "title": "改为按仓库与 Change 直接读取分享内容",
