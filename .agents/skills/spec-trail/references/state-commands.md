@@ -21,11 +21,11 @@
 | `task-retry` | `--task Tn`；只恢复尚未提交的 done 为 doing，移除验证/提交线索，用于提交失败；若同一任务已暂存为 done，同时只修正该任务的暂存内容，保留其余部分暂存差异。HEAD 中已 done 的任务不可回退；推送失败保留提交并重试推送。 |
 | `execute` | 检查正文、任务执行安排、规模确认、前置归档与推送、单分支执行冲突，再进入 execution。 |
 | `wait` / `resume` | wait 要求 `--kind confirmation/dependency/pause --summary`；实际等待条件解除后 resume 清除等待。resume 本身不授予确认或撤销取消。 |
-| `rework` | `--stage requirement/technical/plan/execution --reason --approach`；返回最早受影响阶段，清除该阶段及之后的确认、merge 确认、关闭结果和等待；保留已完成任务。 |
+| `rework` | 未集成归档可恢复活动目录及 Git 原型路径，保留已完成任务；已集成或无法核实则拒绝。 `--stage requirement/technical/plan/execution --reason --approach`；返回最早受影响阶段，清除该阶段及之后的确认、merge 确认、关闭结果和等待；保留已完成任务。 |
 | `verify` | `--result passed/failed --summary`；任务完成、执行安排有效且实际验证完成后进入 close，记录整体验证。后续 accept/specs/archive 也复核安排。独立评审要求仍按主 skill。 |
 | `accept` | `--mode user/agent --summary --source`；验收方式按[主 skill](../SKILL.md#验收)，摘要与来源填写实际依据。 |
 | `specs` | `--result synced/not_needed --summary`；验收后实际同步 Specs，再记录结果。 |
-| `archive` | `--date YYYY-MM-DD --summary`；日期按用户时区提供；检查关闭前置后移动完整目录，记录 completed。必须在独立分支归档，随后提交推送并执行集成命令，不创建保留标签。 |
+| `archive` | `--date YYYY-MM-DD --summary`；日期按用户时区提供；检查关闭前置后移动完整目录，记录 completed。必须在独立分支归档，随后提交推送并按 PR 集成流程交付，不创建保留标签。 |
 | `cancel` | `--reason`；保留阶段、任务、正文和代码，写取消原因并清除等待，分支冻结。 |
 | `previews-set` | `--file /临时/entries.json`；文件只含 PreviewEntry 数组，替换关联而保留其他状态。新增/更新要求 enabled，hosted 校验引用与源码提交，Git 来源要求对应输出文件存在，停用后仍允许删除旧关联。 |
 
@@ -56,4 +56,4 @@ node .agents/skills/spec-trail/scripts/change.mjs verify --change example --resu
 
 每次操作持有 Git common-dir 内的仓库锁，JSON 通过同目录临时文件与 rename 写入，并检查写入前原文未被其他编辑器修改。重复创建/覆盖确认/重复完成/覆盖归档均拒绝；失败先查明原因，不通过手改 JSON 绕过前置校验。进程异常退出可能留下锁；确认持锁进程已结束、核对工作区后才能清理。归档涉及目录与 JSON 两次 rename，普通失败会回退；断电/强制杀进程时先结合 Git diff 检查文件与目录再恢复，不宣称具备跨文件事务保证。
 
-正常操作不修改已归档或取消记录；历史勘误按[主 skill](../SKILL.md#文档与事实来源)处理。脚本尚未覆盖的语义先补充命令与验证，不使用通用任意字段 patch。
+未集成归档仅可通过 rework 恢复，已集成归档和取消记录保持只读；历史勘误按[主 skill](../SKILL.md#文档与事实来源)处理。脚本尚未覆盖的语义先补充命令与验证，不使用通用任意字段 patch。

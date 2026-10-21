@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "通过 PR 交付 Change 与正式版本",
-      "status": "todo"
+      "status": "done",
+      "verification": "状态命令20项、交付专项20项、类型与格式检查通过；发布说明覆盖候选变化和失败处理",
+      "commitTitle": "pr-release-delivery T2: deliver changes and versions through pull requests"
     },
     "T3": {
       "title": "自动关联 PR 并派生版本交付状态",

@@ -1,25 +1,30 @@
-# 归档集成与来源清理
+# Change PR 集成与清理
 
-归档前在所属 worktree 同步集成分支、解决冲突并验证；已提交归档不可修改。仅规划的 xlarge 父项先用 `workspace.mjs handoff` 建立独立关闭分支。下列命令使用 workflow v3 和 origin，共用仓库状态锁，不写回归档。
-
-## 集成
+归档前同步集成分支、解决冲突并验证；xlarge 父项先移交独立关闭分支。提交并推送归档后执行：
 
 ```bash
 node .agents/skills/spec-trail/scripts/integration.mjs preflight --change example
-node .agents/skills/spec-trail/scripts/integration.mjs merge --change example
 ```
 
-preflight 定向获取协作/来源引用并检查，不推送或删除。merge 推送固定的已归档来源 S，从最新远端协作提交 B 创建隔离候选 M，并以普通推送发布：
+预检只定向获取引用并检查，输出源 SHA、目标和合并消息。通过现有平台工具创建或复用同仓库 PR，目标为 integrationBranch，说明交付内容与验证；正文末尾独立段落写：
 
 ```text
-Merge Change example into develop
-
 SpecTrail-Change: example
 ```
 
-M 必须位于协作 first-parent 链，恰有 B/S 两个父提交；标记唯一，首次只引入 example 的完整有效归档，归档子树与 S 一致。标题中的目标取实际配置。重复或非法标记、历史不可读均停止；不通过分支名或提交标题猜测。
+Draft 可提前创建，交付时更新同一 PR。按已有授权合并，使用普通 merge 并传入预期源 SHA；合并消息末尾保留同一标记。源或目标推进后重查差异及受影响验证。只允许 squash/rebase 或无法保留消息时报告受阻，不回退直推。
 
-推送响应未知先查远端。协作并发推进时从新 B 重建未发布候选，最多三次，不强推；已存在合法 M 时复用。冲突或远端核实失败保留候选路径与来源，核对现场后重试。已通过其他方式提前合入但没有合法 M 的交付不自动补造历史。
+M 必须在集成分支 first-parent 链上，恰有两个父提交；标记唯一，首次只引入本 Change 的有效归档，归档子树与第二父提交一致。合入响应未知、排队或受理均先查平台与远端，不能据此宣称成功：
+
+```bash
+node .agents/skills/spec-trail/scripts/integration.mjs verify --change example
+```
+
+## 返修
+
+归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `change.mjs rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。命令刷新集中入口及合入索引，移回文档并恢复原型路径；已完成任务保留，关闭记录清除。重新交付前复查远端与源 SHA。
+
+已集成、路由冲突、无标记合入或历史不可读均不自动恢复；本地锁不能阻止远端并发合并。已集成后的修正建立新 Change。
 
 ## 清理
 
@@ -34,16 +39,3 @@ node .agents/skills/spec-trail/scripts/integration.mjs cleanup --repo /path/to/p
 任何未提交、未跟踪或忽略文件都会阻止工作区删除；assume-unchanged / skip-worktree 标记须先解除并检查文件。先按项目规则处理可重建依赖与构建产物；独有环境配置、用户资料和持久数据须保留，不能用强制删除绕过。主工作区、协作/发布分支及其他 active/cancelled 入口依赖不能删除。
 
 顺序为远端源分支 → worktree → 本地源分支。远端按预期 tip 条件删除，本地使用已合并检查和非强制 worktree 删除。结果逐对象标为 cleaned/retained/failed；退出码 2 表示清理遗留，合入事实仍成立。相同命令可继续清理，不重复生成 M，已不存在对象视作完成。
-
-## 旧标签退出
-
-新读取端生效、冷缓存与公开版本验证通过，并确认没有会话继续运行旧归档脚本后，列出精确清单：
-
-```bash
-node .agents/skills/spec-trail/scripts/retire-archive-tags.mjs list --manifest /tmp/archive-tags.json
-node .agents/skills/spec-trail/scripts/retire-archive-tags.mjs delete --manifest /tmp/archive-tags.json --service-ready
-```
-
-list 只读，清单文件必须不存在。核对清单后按现有授权执行 delete；只删除 `refs/tags/spec-trail/archive-v2/*` 中列明且对象未变的引用。远端核实不存在后才按预期对象删除本地标签；并发变化或删除权限不足单独报告。重试可复用清单，新出现的标签另列清单核实，不扩大删除范围。
-
-OpenFolio 缓存刷新持有写锁，删除 `refs/openfolio/archive-v2/*` 并在成功发布新快照后清理失效标签快照；未访问缓存随下次刷新重建。不回填关联，不保留双读；外部产物、既有公开版本、当前清单、登录和偏好不在清理范围，无需 Git GC。
