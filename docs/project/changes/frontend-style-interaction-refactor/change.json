@@ -4,9 +4,15 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-21T18:21:48.311Z",
+      "summary": "七组入口按 Craft 重做，收起侧栏用胶囊，产品视角精简控件并外露创建者",
+      "source": "用户回答 Q4–Q6 后指示：你先做你的原型即可……之前无脑加列表筛选不是真实诉求，你可以自己发挥看 UI 控件留不留；是谁创建的 change 可以披露；你要假定你是产品经理从用户角度对当前设计进行调整。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "previews": [
@@ -259,21 +265,27 @@
     "Q4": {
       "round": 2,
       "question": "需求：pr-release-delivery 已实现待验收，会在 Changes 列表、卡片和详情增加交付标签（待集成/待发布/已合入发布分支）、PR 链接与便捷筛选。是否一并纳入本次 Changes 原型？",
-      "recommendation": "纳入。它和分享同样落在 Changes 列表与详情，现在一起设计可避免改版后再补；按其需求表达，不扩展发布管理。"
+      "recommendation": "纳入。它和分享同样落在 Changes 列表与详情，现在一起设计可避免改版后再补；按其需求表达，不扩展发布管理。",
+      "answer": "纳入：pr-release-delivery 即将合码，交付标签与 PR 链接进入 Changes 原型。",
+      "source": "用户回复：Q4 马上已经完成合码。"
     },
     "Q5": {
       "round": 2,
       "question": "需求：允许后端配合后，是否在当前仓库内加入 Cmd/Ctrl+K 快速跳转，按标题或 ID 定位 Specs、Changes 和原型？",
-      "recommendation": "纳入仓库内标题/ID 快速跳转，解决长列表与多入口间切换的摩擦；不做全文搜索、跨仓库搜索与收藏，控制后端成本。"
+      "recommendation": "纳入仓库内标题/ID 快速跳转，解决长列表与多入口间切换的摩擦；不做全文搜索、跨仓库搜索与收藏，控制后端成本。",
+      "answer": "不加入搜索或快速跳转；搜索是旧版的冗余功能。",
+      "source": "用户回复：Q5 我觉得搜索功能没什么用，是旧版的冗余功能。"
     },
     "Q6": {
       "round": 2,
       "question": "需求：change-sharing 正在实现。本 Change 重做分享入口与分享阅读页原型；交付上，change-sharing 继续按现有样式完成合入、由本 Change 实施时统一改造，还是暂停等新设计？",
-      "recommendation": "继续按现有样式完成并合入，本 Change 实施时统一改造并登记依赖；功能不被视觉改版阻塞，代价是分享页样式会再改一次。"
+      "recommendation": "继续按现有样式完成并合入，本 Change 实施时统一改造并登记依赖；功能不被视觉改版阻塞，代价是分享页样式会再改一次。",
+      "answer": "change-sharing 照常推进；本 Change 先做原型，正式实施前它会合入。",
+      "source": "用户回复：Q6 它先正常推进，你先做你的原型即可，等你正式实施之前它会合入的。"
     }
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "等待第 2 轮澄清 Q4–Q6 回答及返工后的完整需求确认；确认前不重做原型。"
+    "summary": "重做七组浅色/深色原型并发布固定版本后，等待用户明确验收；验收前不写 Technical/Plan 或改产品代码。"
   }
 }
