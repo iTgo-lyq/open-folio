@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { primaryRecord, type DocumentRef, type Workbench } from "@/lib/model";
+import { shareParams, sharedReadUrl, type ShareTarget } from "@/lib/share-link";
 import type { SharedChange } from "@/lib/shared-change";
 import { ReadingProvider, type Query } from "./context";
 import { api } from "./api";
@@ -58,17 +59,18 @@ const allowed = new Set([
 ]);
 const unavailable = new Set([
   "SHARE_UNAVAILABLE",
-  "SHARE_REVOKED",
-  "SHARE_NOT_FOUND",
+  "INVALID_PARAMETER",
+  "SHARE_BRANCH_REQUIRED",
   "SHARE_SOURCE_UNAVAILABLE",
 ]);
 export function SharedProvider({
-  id,
+  target,
   children,
 }: {
-  id: string;
+  target: ShareTarget;
   children: React.ReactNode;
 }) {
+  const id = shareParams(target).toString();
   const [q, setQ] = useState<Query>({});
   const [data, setData] = useState<Workbench | null>(null);
   const [loading, setLoading] = useState(true),
@@ -87,6 +89,7 @@ export function SharedProvider({
           value ? params.set(key, value) : params.delete(key);
       for (const key of [...params.keys()])
         if (!allowed.has(key)) params.delete(key);
+      for (const [key, value] of shareParams(target)) params.set(key, value);
       window.history[replace ? "replaceState" : "pushState"](
         {},
         "",
@@ -94,7 +97,7 @@ export function SharedProvider({
       );
       setQ(Object.fromEntries(params));
     },
-    [],
+    [target],
   );
   const refresh = useCallback(() => {
     if (pending.current) return pending.current;
@@ -104,7 +107,7 @@ export function SharedProvider({
     setRefreshing(true);
     const operation = (async () => {
       try {
-        const value = await api<SharedChange>(`/api/shares/${id}/change`, {
+        const value = await api<SharedChange>(sharedReadUrl(target, "change"), {
           signal: c.signal,
         });
         if (version !== generation.current || c.signal.aborted) return;
@@ -113,13 +116,13 @@ export function SharedProvider({
         );
         setError("");
       } catch (e) {
-        if (!c.signal.aborted) {
+        if (!c.signal.aborted && version === generation.current) {
           const code = (e as { code?: string }).code;
           if (unavailable.has(code ?? "")) setData(null);
           setError((e as Error).message);
         }
       } finally {
-        if (!c.signal.aborted) {
+        if (!c.signal.aborted && version === generation.current) {
           setLoading(false);
           setRefreshing(false);
         }
@@ -129,7 +132,7 @@ export function SharedProvider({
     });
     pending.current = operation;
     return operation;
-  }, [id]);
+  }, [target]);
   useEffect(() => {
     const read = () =>
       setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
@@ -144,10 +147,19 @@ export function SharedProvider({
     document.addEventListener("visibilitychange", check);
     const failed = (event: Event) => {
       const detail = (event as CustomEvent).detail;
-      if (!detail.path.startsWith(`/api/shares/${id}/`)) return;
+      const url = new URL(detail.path, window.location.origin);
+      if (
+        !url.pathname.startsWith("/api/shared-changes/") ||
+        ["repository", "change", "collaborationBranch"].some(
+          (key) => url.searchParams.get(key) !== shareParams(target).get(key),
+        )
+      )
+        return;
       if (unavailable.has(detail.code)) {
         generation.current++;
         setData(null);
+        setLoading(false);
+        setRefreshing(false);
         setError(detail.message ?? "分享已不可用。");
       } else if (detail.code === "SHARE_VERSION_CHANGED") void refresh();
     };
@@ -162,7 +174,7 @@ export function SharedProvider({
       document.removeEventListener("visibilitychange", check);
       window.removeEventListener("openfolio-share-error", failed);
     };
-  }, [id, refresh]);
+  }, [target, refresh]);
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => notice(""), 6000);
@@ -174,9 +186,9 @@ export function SharedProvider({
       const scoped = name
         .replace(/^changes\/[^/]+\/integration/, "integration")
         .replace(/^previews\/[^/]+$/, "previews");
-      return `/api/shares/${id}/${scoped}${query ? `?${query}` : ""}`;
+      return sharedReadUrl(target, `${scoped}${query ? `?${query}` : ""}`);
     },
-    [id],
+    [target],
   );
   const openDocument = useCallback(
     (id: string, anchor = "", raw = false) => {

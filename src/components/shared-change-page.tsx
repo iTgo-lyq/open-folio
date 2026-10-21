@@ -21,6 +21,7 @@ import {
   Markdown,
   Source,
 } from "./document";
+import { shareParams, type ShareTarget } from "@/lib/share-link";
 import "./shared-change.css";
 
 const labels: Record<string, string> = {
@@ -39,9 +40,32 @@ const tabs = [
   ["integration", "合入变更"],
   ["evidence", "依据"],
 ];
-export default function SharedChangePage({ id }: { id: string }) {
+export default function SharedChangePage() {
+  const [target, setTarget] = useState<ShareTarget | null>(null);
+  useEffect(() => {
+    const read = () => {
+      const q = new URLSearchParams(window.location.search);
+      const value = {
+        repository: q.get("repository") ?? "",
+        change: q.get("change") ?? "",
+        ...(q.has("collaborationBranch")
+          ? { collaborationBranch: q.get("collaborationBranch")! }
+          : {}),
+      };
+      setTarget((previous) =>
+        previous &&
+        shareParams(previous).toString() === shareParams(value).toString()
+          ? previous
+          : value,
+      );
+    };
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, []);
+  if (!target) return <main className="shared-empty">正在读取分享…</main>;
   return (
-    <SharedProvider id={id}>
+    <SharedProvider key={shareParams(target).toString()} target={target}>
       <Reader />
     </SharedProvider>
   );

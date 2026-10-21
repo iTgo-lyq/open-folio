@@ -18,6 +18,7 @@ import {
 import { remarkHeadings, resolveDocumentLink } from "@/lib/markdown";
 import type { DocumentRef } from "@/lib/model";
 import { useDocument, useSavedScroll, useWorkspace } from "./context";
+import { reportSharedResourceFailure } from "./api";
 export function Empty({
   title,
   children,
@@ -81,7 +82,9 @@ export function Markdown({
     );
     if (!target) {
       notice(
-        sharing ? `未分享：${link.path}` : `当前提交中找不到 ${link.path}`,
+        sharing
+          ? `不在本页范围内：${link.path}`
+          : `当前提交中找不到 ${link.path}`,
       );
       return;
     }
@@ -142,6 +145,11 @@ export function Markdown({
                 alt={alt ?? ""}
                 loading="lazy"
                 src={readUrl(`assets/${ref.id}?snapshot=${data!.id}`)}
+                onError={() =>
+                  void reportSharedResourceFailure(
+                    readUrl(`assets/${ref.id}?snapshot=${data!.id}`),
+                  )
+                }
               />
             ) : (
               <span className="image-unavailable">
@@ -435,6 +443,11 @@ function ImageDocument({ doc }: { doc: DocumentRef }) {
       <img
         alt={doc.title}
         src={readUrl(`assets/${doc.id}?snapshot=${data?.id}`)}
+        onError={() =>
+          void reportSharedResourceFailure(
+            readUrl(`assets/${doc.id}?snapshot=${data?.id}`),
+          )
+        }
       />
       <Source document={doc} />
     </div>

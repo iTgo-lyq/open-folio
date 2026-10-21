@@ -43,7 +43,9 @@
     },
     "T4": {
       "title": "改为按仓库与 Change 直接读取分享内容",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型检查、10 项分享接口与25项权限回归通过；25项浏览器回归及评审修复后5项分享浏览器验证通过。",
+      "commitTitle": "change-sharing T4: read shared Changes directly by repository"
     }
   },
   "closure": {},

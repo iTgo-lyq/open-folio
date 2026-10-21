@@ -122,7 +122,7 @@ function Progress({ c }: { c: ChangeCandidate }) {
   if (s.size === "xlarge" && sharing)
     return (
       <span className="task-progress">
-        {s.children?.length ?? 0} 个子项 · 未分享
+        {s.children?.length ?? 0} 个子项 · 不在本页范围内
       </span>
     );
   if (s.size === "xlarge") {
@@ -854,7 +854,7 @@ function RelationRow({ relation: r }: { relation: Relation }) {
       >
         {target?.title ?? r.target}
         <code>{r.target}</code>
-        {sharing && !target && <small>未分享</small>}
+        {sharing && !target && <small>不在本页范围内</small>}
       </button>
       <div className="relation-evidence">
         {r.kind !== "parent" && (
@@ -985,14 +985,7 @@ export function ChangeDrawer() {
               Change 详情
             </span>
             <div className="row">
-              {g && c && (
-                <ShareManager
-                  changeId={g.id}
-                  externalPreviews={
-                    !!s?.previews?.some((p) => p.artifact?.type === "hosted")
-                  }
-                />
-              )}
+              {g && c && <ShareManager changeId={g.id} />}
               <CopyPageLink />
               <Dialog.Close className="icon-button" aria-label="关闭变更详情">
                 <X size={19} />

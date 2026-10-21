@@ -926,6 +926,18 @@ export class PersonalSessions {
   workspaceLease(cookie: string, id: string) {
     return this.lease(cookie, id, undefined, true);
   }
+  // Server-only source identities; no credentials or device sessions leave here.
+  async repositoryBindings() {
+    const state = await this.load();
+    return state.workspaces.map(
+      ({ id, accountId, providerId, instanceId }) => ({
+        workspaceId: id,
+        accountId,
+        providerId,
+        instanceId,
+      }),
+    );
+  }
   // Internal credential ownership, used only after server-side scope authorization.
   async credentialLease(
     accountId: string,

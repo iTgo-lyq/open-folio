@@ -75,7 +75,7 @@ export function FollowUpContext({ change }: { change: ChangeGroup }) {
     return prior ? (
       <section className="follow-up-context">
         <h3>连续交付</h3>
-        <p>延续自 {prior} · 未分享</p>
+        <p>延续自 {prior} · 不在本页范围内</p>
       </section>
     ) : null;
   if (!problem && !prior && (!members || members.length < 2)) return null;

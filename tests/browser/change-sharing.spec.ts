@@ -6,7 +6,11 @@ import {
   origin,
 } from "./connected";
 
-test("owner creates and revokes a live share; anonymous full-width reader needs no private APIs", async ({
+function directLink(change: string) {
+  return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, collaborationBranch: "develop" })}`;
+}
+
+test("copying a direct link opens the anonymous full-width reader without private APIs", async ({
   page,
   context,
   browser,
@@ -16,11 +20,17 @@ test("owner creates and revokes a live share; anonymous full-width reader needs 
   await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader`);
   await page.getByRole("button", { name: "分享", exact: true }).click();
   const manager = page.getByRole("dialog", { name: "分享这个 Change" });
-  await manager.getByRole("button", { name: "开启分享", exact: true }).click();
   const link = await manager
     .getByLabel("分享链接", { exact: true })
     .inputValue();
-  expect(link).toMatch(/\/share\/[A-Za-z0-9_-]{43}$/);
+  expect(new URL(link).pathname).toBe("/share");
+  expect(new URL(link).searchParams.get("repository")).toBe(
+    "https://github.com/acme/fixture",
+  );
+  expect(new URL(link).searchParams.get("change")).toBe("document-reader");
+  await expect(
+    manager.getByRole("button", { name: /开启分享|停止分享/ }),
+  ).toHaveCount(0);
   await manager.getByRole("button", { name: "复制分享链接" }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
   const anonymous = await browser.newContext({
@@ -73,7 +83,7 @@ test("owner creates and revokes a live share; anonymous full-width reader needs 
       "requirement.md",
     );
     await viewer.getByRole("link", { name: "工程协作", exact: true }).click();
-    await expect(viewer.getByRole("status")).toContainText("未分享");
+    await expect(viewer.getByRole("status")).toContainText("不在本页范围内");
     for (const tab of ["概览", "任务", "依据", "合入变更"]) {
       await viewer
         .locator(".shared-tabs")
@@ -134,25 +144,24 @@ test("owner creates and revokes a live share; anonymous full-width reader needs 
         fullPage: true,
       });
     }
-    const id = new URL(link).pathname.split("/").at(-1)!;
-    await manager
-      .getByRole("button", { name: "停止分享", exact: true })
-      .click();
-    await expect(manager.getByRole("status")).toContainText("旧链接已失效");
-    await viewer.reload();
-    await expect(
-      viewer.getByRole("heading", { name: /分享已停止/ }),
-    ).toBeVisible();
+    const copied = new URL(viewer.url());
+    expect(copied.searchParams.get("repository")).toBe(
+      "https://github.com/acme/fixture",
+    );
+    expect(copied.searchParams.get("change")).toBe("document-reader");
+    // A target change within the same mounted page cannot retain old contents.
+    await viewer.evaluate(() => {
+      const url = new URL(location.href);
+      url.searchParams.set("change", "not-a-change");
+      history.pushState({}, "", url);
+      dispatchEvent(new PopStateEvent("popstate"));
+    });
     await expect(viewer.locator(".shared-article")).toHaveCount(0);
-    expect(
-      (await anonymous.request.get(`/api/shares/${id}/change`)).status(),
-    ).toBe(410);
-    await manager
-      .getByRole("button", { name: "开启分享", exact: true })
-      .click();
-    await expect(
-      manager.getByLabel("分享链接", { exact: true }),
-    ).not.toHaveValue(link);
+    await expect(viewer.locator(".shared-empty")).toContainText(
+      /不存在|不可用/,
+    );
+    await viewer.goBack();
+    await expect(viewer.locator(".shared-article .prose h1")).toBeVisible();
   } finally {
     await anonymous.close();
   }
@@ -163,19 +172,14 @@ test("anonymous shared integration displays fixed file diff and survives owner l
   request,
   browser,
 }) => {
-  const response = await request.post(
-    personal.url("changes/integration-demo/share"),
-    { headers: await revisionHeaders(request) },
-  );
-  expect(response.status()).toBe(200);
-  const share = (await response.json()).share;
+  const share = directLink("integration-demo");
   await request.delete("/api/session", {
     headers: await revisionHeaders(request),
   });
   const anonymous = await browser.newContext({ baseURL: origin });
   try {
     const page = await anonymous.newPage();
-    await page.goto(`${share.path}?ct=integration`);
+    await page.goto(`${share}&ct=integration`);
     await expect(
       page.getByText("已合入 develop", { exact: true }),
     ).toBeVisible();
@@ -197,16 +201,11 @@ test("a relative document deep link follows branch handoff and archive", async (
   request,
   browser,
 }) => {
-  const response = await request.post(
-    personal.url("changes/document-reader/share"),
-    { headers: await revisionHeaders(request) },
-  );
-  expect(response.status()).toBe(200);
-  const share = (await response.json()).share;
+  const share = directLink("document-reader");
   const anonymous = await browser.newContext({ baseURL: origin });
   try {
     const page = await anonymous.newPage();
-    const link = `${share.path}?ct=documents&document=requirement.md&anchor=${encodeURIComponent("验收标准")}`;
+    const link = `${share}&ct=documents&document=requirement.md&anchor=${encodeURIComponent("验收标准")}`;
     await page.goto(link);
     await expect(page.locator(".shared-article .prose h1")).toContainText(
       "让工程文档",
@@ -234,5 +233,106 @@ test("a relative document deep link follows branch handoff and archive", async (
     await request.post("/_fixture/control", {
       data: { shareMove: "restore", expireRefresh: personal.id },
     });
+  }
+});
+
+test("shared image version errors refresh details and lost sources clear the reader", async ({
+  browser,
+  request,
+  personal,
+}) => {
+  const anonymous = await browser.newContext({ baseURL: origin });
+  try {
+    const page = await anonymous.newPage();
+    let moved = false,
+      denied = false,
+      details = 0;
+    page.on("request", (r) => {
+      if (new URL(r.url()).pathname === "/api/shared-changes/change") details++;
+    });
+    await page.route("**/api/shared-changes/assets/**", async (route) => {
+      if (denied) {
+        await route.fulfill({
+          status: 404,
+          contentType: "application/json",
+          body: JSON.stringify({
+            error: {
+              code: "SHARE_UNAVAILABLE",
+              message: "内容不存在或暂不可读。",
+            },
+          }),
+        });
+        return;
+      }
+      if (!moved) {
+        moved = true;
+        const control = await request.post("/_fixture/control", {
+          data: { shareMove: "branch", expireSharedRefresh: true },
+        });
+        expect(control.ok(), await control.text()).toBe(true);
+        const fresh = await anonymous.request.get(
+          directLink("document-reader").replace(
+            "/share?",
+            "/api/shared-changes/change?",
+          ),
+        );
+        expect(fresh.ok()).toBe(true);
+      }
+      await route.continue();
+    });
+    await page.goto(directLink("document-reader"));
+    const img = page.getByRole("img", { name: "范围示意" });
+    await expect
+      .poll(() =>
+        img.evaluate((e: HTMLImageElement) => e.complete && e.naturalWidth > 0),
+      )
+      .toBe(true);
+    expect(details).toBeGreaterThan(1);
+    await expect(page.locator(".shared-document-meta")).toContainText(
+      "change/shared-reader-next",
+    );
+    denied = true;
+    await img.evaluate((e: HTMLImageElement) => (e.src += "&load=loss"));
+    await expect(page.locator(".shared-article")).toHaveCount(0);
+    await expect(page.locator(".shared-empty")).toContainText(
+      "内容不存在或暂不可读",
+    );
+  } finally {
+    await anonymous.close();
+    await request.post("/_fixture/control", {
+      data: { shareMove: "restore", expireRefresh: personal.id },
+    });
+  }
+});
+
+test("a late explicit-branch error cannot clear a target with an inferred branch", async ({
+  browser,
+}) => {
+  const anonymous = await browser.newContext({ baseURL: origin });
+  try {
+    const page = await anonymous.newPage();
+    const link = new URL(directLink("document-reader"), origin);
+    link.searchParams.delete("collaborationBranch");
+    await page.goto(link.toString());
+    await expect(page.locator(".shared-article .prose h1")).toHaveText(
+      "技术方案",
+    );
+    await page.evaluate(() => {
+      const q = new URLSearchParams(location.search);
+      q.set("collaborationBranch", "develop");
+      dispatchEvent(
+        new CustomEvent("openfolio-share-error", {
+          detail: {
+            path: `/api/shared-changes/change?${q}`,
+            code: "SHARE_UNAVAILABLE",
+          },
+        }),
+      );
+    });
+    await expect(page.locator(".shared-article .prose h1")).toHaveText(
+      "技术方案",
+    );
+  } finally {
+    await anonymous.close();
   }
 });

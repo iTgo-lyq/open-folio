@@ -133,19 +133,23 @@ export function ChangePreviews({
       return;
     }
     const controller = new AbortController();
-    fetch(url, { method: "HEAD", cache: "no-store", signal: controller.signal })
+    fetch(url, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: controller.signal,
+      ...(sharing ? { credentials: "omit" as const } : {}),
+    })
       .then((r) => {
-        if (sharing && !r.ok && [403, 409, 410].includes(r.status))
+        if (controller.signal.aborted) return;
+        if (sharing && !r.ok && [403, 404, 409].includes(r.status))
           window.dispatchEvent(
             new CustomEvent("openfolio-share-error", {
               detail: {
                 path: url,
                 code:
-                  r.status === 410
-                    ? "SHARE_REVOKED"
-                    : r.status === 409
-                      ? "SHARE_VERSION_CHANGED"
-                      : "SHARE_UNAVAILABLE",
+                  r.status === 409
+                    ? "SHARE_VERSION_CHANGED"
+                    : "SHARE_UNAVAILABLE",
               },
             }),
           );

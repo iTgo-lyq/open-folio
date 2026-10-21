@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  return <SharedChangePage id={(await params).id} />;
+export default function Page() {
+  return <SharedChangePage />;
 }
