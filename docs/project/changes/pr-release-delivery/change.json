@@ -4,7 +4,7 @@
   "title": "通过 PR 管理 Change 集成与正式版本发布",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/pr-release-delivery",
   "confirmations": {
     "requirement": {
@@ -61,7 +61,13 @@
       "commitTitle": "pr-release-delivery T6: require archived changes in PR checks"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-21T17:47:48.489Z",
+      "summary": "需求1–12实现及验证完成。保留前轮257项全量、浏览器和真实PR读取证据；新增归档CI9项、Setup12项、相关命令30项、类型/格式及独立复评通过。真实CI按预期拒绝未归档PR，正文更新可重跑，两个分支必需检查已核实。当前尚未验收归档，不具备合入条件。"
+    }
+  },
   "types": [
     "流程",
     "工程",
@@ -101,5 +107,9 @@
     "at": "2026-10-21T17:37:59.775Z",
     "reason": "用户要求补充未归档禁止合入的 Agent 规则与 CI，并在 Setup 推荐首次配置",
     "approach": "复用归档校验增加只读 PR 检查，保留规划直推并补齐接入说明"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "新增归档CI与Setup说明已验证，等待用户验收完整交付后归档并合入。"
   }
 }
