@@ -85,11 +85,11 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 
 ## 推荐接入 PR CI
 
-首次接入推荐同时配置归档 CI。GitHub 项目将 [workflow 模板](assets/github-pr-archive.yml) 复制到 `.github/workflows/spec-trail-pr.yml`，按 workflow.json 修改两个目标分支筛选；已有等效检查则复用。检查器只读 PR 事件与固定 Git 提交，复用归档契约，无需安装项目依赖。Change PR 检查所属归档，发布 PR 检查清单内已集成归档；其他活动规划不受影响。Draft 未归档时失败是预期结果，不能以跳过检查放行。
+首次接入推荐配置归档 CI：
 
-在平台为两个目标分支推荐配置必需状态检查 `SpecTrail archive`，保留原有规则和规划登记直推的明确授权例外。仅存在 workflow 或本地 hook 不等于平台已强制；有绕过权限的身份仍须遵守合入前预检。不得为启用 CI 擅自关闭规划直推、撤销保护或扩大绕过权限。
-
-用未归档失败、归档推送后通过、正文修改重跑核实实际运行，分别报告 CI 和必需检查配置结果。其他 CI 平台可传入相同 PR 事件结构调用 `node <setup-dir>/scripts/check-pr.mjs --repo <checkout> --event <event.json>`；接入细节按其现有机制处理。
+1. 接入模板：将 [GitHub workflow](assets/github-pr-archive.yml) 复制到 `.github/workflows/spec-trail-pr.yml`，按 workflow.json 设置两个目标分支；已有等效检查则复用。
+2. 配置必需检查：在两个目标分支要求 `SpecTrail archive` 通过，保留原有保护和规划登记直推的授权例外。
+3. 验证生效：核对未归档失败、归档推送后通过、正文修改重跑，分别报告 CI 运行和平台规则配置结果。
 
 ## 校验范围
 
