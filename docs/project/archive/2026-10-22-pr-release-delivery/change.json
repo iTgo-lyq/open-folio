@@ -3,7 +3,7 @@
   "id": "pr-release-delivery",
   "title": "通过 PR 管理 Change 集成与正式版本发布",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/pr-release-delivery",
   "confirmations": {
@@ -66,6 +66,23 @@
       "result": "passed",
       "at": "2026-10-21T17:47:48.489Z",
       "summary": "需求1–12实现及验证完成。保留前轮257项全量、浏览器和真实PR读取证据；新增归档CI9项、Setup12项、相关命令30项、类型/格式及独立复评通过。真实CI按预期拒绝未归档PR，正文更新可重跑，两个分支必需检查已核实。当前尚未验收归档，不具备合入条件。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-21T18:15:56.477Z",
+      "summary": "用户验收通过，授权归档后等待CI通过再合入develop并更新开发服务",
+      "source": "可以，验收通过。归档后等 CI 通过，再把 PR 合入 develop 并更新开发服务。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-21T18:18:00.442Z",
+      "summary": "同步 Change 工作流、双分支配置、PR 关联与交付进度、缓存和读取权限，并统一相关能力文档的分支角色名称"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-21T18:18:02.260Z",
+      "summary": "用户验收通过，Specs 已同步，归档后等待CI通过再通过PR合入develop并更新开发服务",
+      "path": "docs/project/archive/2026-10-22-pr-release-delivery"
     }
   },
   "types": [
@@ -107,9 +124,5 @@
     "at": "2026-10-21T17:37:59.775Z",
     "reason": "用户要求补充未归档禁止合入的 Agent 规则与 CI，并在 Setup 推荐首次配置",
     "approach": "复用归档校验增加只读 PR 检查，保留规划直推并补齐接入说明"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "新增归档CI与Setup说明已验证，等待用户验收完整交付后归档并合入。"
   }
 }
