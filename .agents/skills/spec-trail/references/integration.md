@@ -1,6 +1,6 @@
 # 归档集成与来源清理
 
-归档前在所属 worktree 同步协作分支、解决冲突并验证；已提交归档不可修改。仅规划的 xlarge 父项先用 `workspace.mjs handoff` 建立独立关闭分支。下列命令使用 workflow v2 和 origin，共用仓库状态锁，不写回归档。
+归档前在所属 worktree 同步集成分支、解决冲突并验证；已提交归档不可修改。仅规划的 xlarge 父项先用 `workspace.mjs handoff` 建立独立关闭分支。下列命令使用 workflow v3 和 origin，共用仓库状态锁，不写回归档。
 
 ## 集成
 
@@ -23,7 +23,7 @@ M 必须位于协作 first-parent 链，恰有 B/S 两个父提交；标记唯�
 
 ## 清理
 
-核实 M 后，在干净的主工作区安全快进协作分支，按项目约定更新服务并验证原型/产物。移出待删 worktree，确认其客户端会话、后台任务和服务不再写入，再执行：
+核实 M 后，在干净的主工作区安全快进集成分支，按项目约定更新服务并验证原型/产物。移出待删 worktree，确认其客户端会话、后台任务和服务不再写入，再执行：
 
 ```bash
 node .agents/skills/spec-trail/scripts/integration.mjs cleanup --repo /path/to/primary --change example --verified-commit <M> --idle-worktree /path/to/source
@@ -31,7 +31,7 @@ node .agents/skills/spec-trail/scripts/integration.mjs cleanup --repo /path/to/p
 
 `--verified-commit` 记录 Agent 已完成的交付/服务与托管产物验证，`--idle-worktree` 记录实际占用核对，不是新增用户审批。无 source worktree 时可省略后者。脚本复验远端 M、归属、依赖、源码/HTML 对象、待删 tip、Git 锁与文件状态；未知或不满足条件即保留。
 
-任何未提交、未跟踪或忽略文件都会阻止工作区删除；assume-unchanged / skip-worktree 标记须先解除并检查文件。先按项目规则处理可重建依赖与构建产物；独有环境配置、用户资料和持久数据须保留，不能用强制删除绕过。主工作区、协作/保护分支及其他 active/cancelled 入口依赖不能删除。
+任何未提交、未跟踪或忽略文件都会阻止工作区删除；assume-unchanged / skip-worktree 标记须先解除并检查文件。先按项目规则处理可重建依赖与构建产物；独有环境配置、用户资料和持久数据须保留，不能用强制删除绕过。主工作区、协作/发布分支及其他 active/cancelled 入口依赖不能删除。
 
 顺序为远端源分支 → worktree → 本地源分支。远端按预期 tip 条件删除，本地使用已合并检查和非强制 worktree 删除。结果逐对象标为 cleaned/retained/failed；退出码 2 表示清理遗留，合入事实仍成立。相同命令可继续清理，不重复生成 M，已不存在对象视作完成。
 

@@ -1,5 +1,5 @@
 import {
-  SUGGESTED_COLLABORATION_BRANCH,
+  SUGGESTED_INTEGRATION_BRANCH,
   validBranchName,
 } from "../../lib/collaboration.ts";
 import "server-only";
@@ -348,7 +348,7 @@ export class GitHubProvider implements RepositoryProvider {
   ) {
     this.#context(ctx, repo);
     if (!validBranchName(branch))
-      throw new ProviderError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
+      throw new ProviderError("INVALID_PARAMETER", "集成分支名称不合法。", 400);
     try {
       // This Contents-authorized endpoint also returns [] for a missing branch.
       // Match the full ref: a prefix match must never select a different source.
@@ -383,18 +383,18 @@ export class GitHubProvider implements RepositoryProvider {
   async assertRead(
     ctx: ProviderContext,
     repo: RepositoryIdentity,
-    branch = SUGGESTED_COLLABORATION_BRANCH,
+    branch = SUGGESTED_INTEGRATION_BRANCH,
   ) {
     await this.#branch(ctx, repo, branch);
   }
   async probeWorkflow(
     ctx: ProviderContext,
     repo: RepositoryIdentity,
-    collaborationBranch: string,
+    integrationBranch: string,
   ): Promise<ProbeResult> {
     this.#context(ctx, repo);
     const current = await this.resolveRepository(ctx, repo);
-    const commit = await this.#branch(ctx, current, collaborationBranch);
+    const commit = await this.#branch(ctx, current, integrationBranch);
     if (!commit) return { kind: "branch-missing" };
     const root = parsed(
       commitSchema,

@@ -201,8 +201,8 @@ function Shell() {
                     <GitBranch size={14} />
                     <span className="header-source-label">
                       {module === "changes"
-                        ? `${data?.collaborationBranch ?? "待接入"} 入口`
-                        : (data?.selectedBranch ?? "协作分支")}
+                        ? `${data?.integrationBranch ?? "待接入"} 入口`
+                        : (data?.selectedBranch ?? "集成分支")}
                     </span>
                     <span className="snapshot-time">
                       {refreshing
@@ -219,10 +219,10 @@ function Shell() {
                     <strong>读取来源</strong>
                     <span>
                       {module === "specs"
-                        ? `${data?.selectedBranch ?? "协作分支"} · 预发布`
+                        ? `${data?.selectedBranch ?? "集成分支"} · 预发布`
                         : module === "prototypes"
-                          ? `${data?.collaborationBranch ?? "协作分支"} · 预发布 / 当前页面`
-                          : `${data?.collaborationBranch ?? "协作分支"} 入口 / 登记的 Change 来源`}
+                          ? `${data?.integrationBranch ?? "集成分支"} · 预发布 / 当前页面`
+                          : `${data?.integrationBranch ?? "集成分支"} 入口 / 登记的 Change 来源`}
                     </span>
                     <span>{personal.connection?.label}</span>
                     <span>

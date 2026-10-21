@@ -181,7 +181,7 @@ function main() {
   const repo = repository(root);
   const catalog = collaborationCatalog(repo, {
     refresh: command !== "show" && !opts["dry-run"],
-    local: repo.branch === repo.config.collaborationBranch,
+    local: repo.branch === repo.config.integrationBranch,
   });
   const route = catalog?.routes.find((entry) => entry.id === id);
   const matches = records().filter((r) => r.state.id === id);
@@ -193,7 +193,7 @@ function main() {
     if (
       local &&
       local.length === 1 &&
-      (route || repo.branch === repo.config.collaborationBranch)
+      (route || repo.branch === repo.config.integrationBranch)
     ) {
       console.log(
         json({
@@ -234,7 +234,7 @@ function main() {
     const config = read(safe("docs/project/workflow.json"));
     assert(!validateWorkflow(config).length, "Invalid workflow.json");
     assert(
-      !config.protectedBranches.includes(branch),
+      config.releaseBranch !== branch,
       "Use the Change branch, not a protected branch",
     );
     const all = records();
@@ -251,12 +251,12 @@ function main() {
         );
       } else
         assert(
-          branch === config.collaborationBranch,
+          branch === config.integrationBranch,
           "Register this Change on the collaboration branch before writing it",
         );
       if (command === "create") {
         assert(
-          branch === config.collaborationBranch,
+          branch === config.integrationBranch,
           "Create planning Changes on the collaboration branch",
         );
         assert(
@@ -266,7 +266,7 @@ function main() {
       }
     }
     assert(
-      branch === config.collaborationBranch ||
+      branch === config.integrationBranch ||
         !all.some(
           (r) =>
             !r.archived &&
@@ -377,7 +377,7 @@ function main() {
     };
     const uniqueActive = () =>
       assert(
-        (branch === config.collaborationBranch && state.size === "xlarge") ||
+        (branch === config.integrationBranch && state.size === "xlarge") ||
           !all.some(
             (r) =>
               !r.archived &&
@@ -1027,7 +1027,7 @@ function main() {
         recordStep("specs", opts.result);
         break;
       case "archive": {
-        assert(branch !== config.collaborationBranch, "Handoff to an independent closing branch before archiving; this also applies to xlarge parents");
+        assert(branch !== config.integrationBranch, "Handoff to an independent closing branch before archiving; this also applies to xlarge parents");
         requireStage("close");
         unblocked();
         completeTasks();
@@ -1101,7 +1101,7 @@ function main() {
     const errors = validateChange(state);
     assert(!errors.length, errors.join("; "));
     assert(
-      branch !== config.collaborationBranch ||
+      branch !== config.integrationBranch ||
         state.size === "xlarge" ||
         !["execution", "close"].includes(state.stage),
       "Handoff this Change to its own worktree before implementation",

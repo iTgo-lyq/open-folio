@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
-import { SUGGESTED_COLLABORATION_BRANCH } from "@/lib/collaboration";
+import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
@@ -35,7 +35,7 @@ type Value = {
   selectRepository: (
     key: string,
     repository?: RepositoryIdentity,
-    collaborationBranch?: string,
+    integrationBranch?: string,
   ) => void;
 };
 const Context = createContext<Value | null>(null);
@@ -58,11 +58,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     active = useRef<AbortController | null>(null);
   const projectId = q.repo ?? "",
     connection = personal.connection;
-  const collaborationBranch =
-    q.collaborationBranch ??
-    personal.items.find((r) => r.key === projectId)?.collaborationBranch ??
-    SUGGESTED_COLLABORATION_BRANCH;
-  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}:${collaborationBranch}`;
+  const integrationBranch =
+    q.integrationBranch ??
+    personal.items.find((r) => r.key === projectId)?.integrationBranch ??
+    SUGGESTED_INTEGRATION_BRANCH;
+  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}:${integrationBranch}`;
   const data = loaded?.key === scope ? loaded.value : null;
   const repository =
     data?.repository ??
@@ -124,8 +124,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             instance: r.instanceId,
             repositoryId: r.repositoryId,
             fullName: r.fullName,
-            collaborationBranch:
-              r.collaborationBranch ?? SUGGESTED_COLLABORATION_BRANCH,
+            integrationBranch:
+              r.integrationBranch ?? SUGGESTED_INTEGRATION_BRANCH,
             m: preferences.module ?? "specs",
           },
           true,
@@ -142,7 +142,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const signature = JSON.stringify([
       connection?.id,
       r.repositoryId,
-      collaborationBranch,
+      integrationBranch,
       q.m,
     ]);
     if (savedPosition.current === signature) return;
@@ -154,7 +154,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           instanceId: r.instanceId,
           repositoryId: r.repositoryId,
           fullName: r.fullName,
-          collaborationBranch,
+          integrationBranch,
         },
         module: q.m as "specs" | "changes" | "prototypes",
       })
@@ -166,7 +166,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     data?.repository,
     q.m,
     connection?.id,
-    collaborationBranch,
+    integrationBranch,
     personal.updatePreferences,
   ]);
   const readUrl = useCallback(
@@ -174,20 +174,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const [name, query] = path.split("?");
       const params = new URLSearchParams(query);
       params.set("connectionId", connection?.id ?? "");
-      params.set("collaborationBranch", collaborationBranch);
+      params.set("integrationBranch", integrationBranch);
       if (q.repositoryId && q.fullName) {
         params.set("repositoryId", q.repositoryId);
         params.set("fullName", q.fullName);
       }
       return `/api/repositories/${encodeURIComponent(projectId)}/${name}?${params}`;
     },
-    [
-      connection?.id,
-      projectId,
-      collaborationBranch,
-      q.repositoryId,
-      q.fullName,
-    ],
+    [connection?.id, projectId, integrationBranch, q.repositoryId, q.fullName],
   );
   const selectRepository = useCallback(
     (
@@ -198,8 +192,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const item = checkedRepository
         ? {
             repository: checkedRepository,
-            collaborationBranch:
-              selectedBranch ?? SUGGESTED_COLLABORATION_BRANCH,
+            integrationBranch: selectedBranch ?? SUGGESTED_INTEGRATION_BRANCH,
           }
         : personal.items.find((r) => r.key === key);
       if (!item) return;
@@ -213,7 +206,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         instance: item.repository.instanceId,
         repositoryId: item.repository.repositoryId,
         fullName: item.repository.fullName,
-        collaborationBranch: item.collaborationBranch,
+        integrationBranch: item.integrationBranch,
         m: ["specs", "changes", "prototypes"].includes(q.m) ? q.m : "specs",
       });
     },

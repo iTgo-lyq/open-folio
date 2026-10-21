@@ -59,9 +59,9 @@ async function repo(provider: GitHubProvider) {
 }
 function fixture() {
   const bytes = JSON.stringify({
-    schemaVersion: 2,
-    collaborationBranch: "develop",
-    protectedBranches: ["trunk"],
+    schemaVersion: 3,
+    integrationBranch: "develop",
+    releaseBranch: "trunk",
   });
   return {
     "/user": { id: 7, login: "demo", name: null },
@@ -169,7 +169,7 @@ test("workflow is read at one commit, through regular Git tree entries", async (
   if (result.kind !== "file") throw new Error();
   assert.equal(result.commit, oid("a"));
   assert.equal(
-    JSON.parse(Buffer.from(result.bytes).toString()).protectedBranches[0],
+    JSON.parse(Buffer.from(result.bytes).toString()).releaseBranch,
     "trunk",
   );
   assert.ok(!requests.some((u) => u.pathname.includes("/contents/")));

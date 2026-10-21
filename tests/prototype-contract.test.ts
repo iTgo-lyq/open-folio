@@ -71,9 +71,9 @@ test("workflow readers agree on optional hosting choices and service presence", 
     ],
   ] as const) {
     const workflow = {
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       ...extra,
     };
     assert.equal(validateWorkflow(workflow).length === 0, valid);
@@ -198,9 +198,9 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: enabled,
     }),
   );
@@ -284,9 +284,9 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   await put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: { status: "disabled" },
     }),
   );

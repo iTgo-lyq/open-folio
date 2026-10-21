@@ -386,12 +386,12 @@ test("custom branch selections survive rediscovery, restart, rename and concurre
   );
   assert.equal(
     listing.items.find((i) => i.repository.repositoryId === "1")
-      ?.collaborationBranch,
+      ?.integrationBranch,
     "integration/team-a",
   );
   assert.equal(
     listing.items.find((i) => i.repository.repositoryId === "5")
-      ?.collaborationBranch,
+      ?.integrationBranch,
     "pre-release",
   );
   const otherToken = await f.connect("", "second");
@@ -402,7 +402,7 @@ test("custom branch selections survive rediscovery, restart, rename and concurre
         otherToken.connection.id,
         f.repositories[0].webUrl,
       )
-    ).collaborationBranch,
+    ).integrationBranch,
     "develop",
   );
   await assert.rejects(
@@ -435,7 +435,7 @@ test("workflow version and selected branch must match without redirecting to the
     kind: "file",
     commit: "a".repeat(40),
     bytes: Buffer.from(
-      JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+      JSON.stringify({ schemaVersion: 1, releaseBranch: "main" }),
     ),
   });
   assert.equal(

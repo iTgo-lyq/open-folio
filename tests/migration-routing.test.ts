@@ -57,11 +57,11 @@ const archive = (id: string) => ({
 });
 function fixture(
   t: import("node:test").TestContext,
-  collaborationBranch = "develop",
+  integrationBranch = "develop",
 ) {
   const root = mkdtempSync(join(tmpdir(), "folio-migration-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  at(root, "init", "-b", collaborationBranch);
+  at(root, "init", "-b", integrationBranch);
   at(root, "config", "user.name", "Migration test");
   at(root, "config", "user.email", "migration@example.invalid");
   const put = (path: string, value: unknown) => {
@@ -81,9 +81,9 @@ function fixture(
     at(root, "commit", "-m", "Fixture");
   };
   put("docs/project/workflow.json", {
-    schemaVersion: 2,
-    collaborationBranch,
-    protectedBranches: ["main"],
+    schemaVersion: 3,
+    integrationBranch,
+    releaseBranch: "main",
   });
   commit();
   const preview = (branches: string[] = [], expected = 0) => {
@@ -253,7 +253,7 @@ test("routing preview rejects legacy workflow without modifying refs, index or s
   const f = fixture(t);
   f.put("docs/project/workflow.json", {
     schemaVersion: 1,
-    protectedBranches: ["main"],
+    releaseBranch: "main",
   });
   const config = readFileSync(join(f.root, "docs/project/workflow.json")),
     refs = at(f.root, "show-ref"),
@@ -282,7 +282,7 @@ test("routing preview defaults to the configured custom collaboration branch", (
   f.commit();
   const result = f.preview();
   assert.equal(result.baseline, branch);
-  assert.equal(result.collaborationBranch, branch);
+  assert.equal(result.integrationBranch, branch);
   assert.deepEqual(
     result.sources.map((source: { branch: string }) => source.branch),
     [branch],

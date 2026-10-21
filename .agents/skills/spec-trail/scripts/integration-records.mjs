@@ -121,13 +121,13 @@ export async function scanIntegrations(run, tip) {
     }
     for (const [id, list] of groups) {
       const result = list.length > 1
-        ? {status: /** @type {const} */('invalid'), message:'协作分支主链中存在重复的 Change 合入标记。', candidates:list.map(meta => meta.commit)}
+        ? {status: /** @type {const} */('invalid'), message:'集成分支主链中存在重复的 Change 合入标记。', candidates:list.map(meta => meta.commit)}
         : await validate(list[0], id);
       // IDs may be valid object prototype names (e.g. constructor).
       Object.defineProperty(index.records,id,{value:result,enumerable:true,writable:true,configurable:true});
     }
     index.complete = true;
-  } catch { index.message = '协作分支历史读取未完成，请获取完整历史后重试。'; }
+  } catch { index.message = '集成分支历史读取未完成，请获取完整历史后重试。'; }
   return index;
 }
 

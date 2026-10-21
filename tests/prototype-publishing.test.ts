@@ -70,9 +70,9 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",

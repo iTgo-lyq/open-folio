@@ -52,7 +52,7 @@ function archived(repo, commit, id) {
 }
 
 function sourceBranch(catalog, branch) {
-  assert(validBranchName(branch) && branch !== catalog.branch && !catalog.config.protectedBranches.includes(branch), 'The source cannot be a collaboration or protected branch');
+  assert(validBranchName(branch) && branch !== catalog.branch && catalog.config.releaseBranch !== branch, 'The source cannot be a collaboration or protected branch');
 }
 
 function previewObjects(repo, record, commit, configuration) {

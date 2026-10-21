@@ -86,12 +86,12 @@ export interface RepositoryProvider {
   assertRead(
     context: ProviderContext,
     repo: RepositoryIdentity,
-    collaborationBranch?: string,
+    integrationBranch?: string,
   ): Promise<void>;
   probeWorkflow(
     context: ProviderContext,
     repo: RepositoryIdentity,
-    collaborationBranch: string,
+    integrationBranch: string,
   ): Promise<ProbeResult>;
   gitTransport(
     context: ProviderContext,

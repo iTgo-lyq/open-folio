@@ -9,9 +9,9 @@ import { validateWorkflow } from "../.agents/skills/spec-trail/scripts/state-sch
 import { workflowCoreSchema, workflowSchema } from "../src/server/schema.ts";
 
 const workflow = {
-  schemaVersion: 2,
-  collaborationBranch: "develop",
-  protectedBranches: ["main"],
+  schemaVersion: 3,
+  integrationBranch: "develop",
+  releaseBranch: "main",
 };
 const at = "2026-10-18T00:00:00.000Z";
 const archived = (id: string) => ({
@@ -70,15 +70,17 @@ test("branch routing rejects Git option/ref ambiguity and matches real branch sy
     );
   }
 });
-test("workflow version 2 routing is shared and legacy configurations are rejected", () => {
+test("workflow version 3 routing is shared and legacy configurations are rejected", () => {
   const samples = [
     workflow,
-    { ...workflow, collaborationBranch: "planning" },
-    { ...workflow, collaborationBranch: "main" },
-    { ...workflow, collaborationBranch: "../x" },
-    { ...workflow, protectedBranches: [] },
+    { ...workflow, integrationBranch: "planning" },
+    { ...workflow, integrationBranch: "main" },
+    { ...workflow, integrationBranch: "../x" },
+    { ...workflow, releaseBranch: [] },
+    { ...workflow, releaseBranch: "../invalid" },
+    { ...workflow, releaseBranch: "develop" },
     { ...workflow, schemaVersion: 1 },
-    { schemaVersion: 1, protectedBranches: ["main"] },
+    { schemaVersion: 1, releaseBranch: "main" },
     { ...workflow, extra: true },
   ];
   for (const sample of samples) {
@@ -89,12 +91,17 @@ test("workflow version 2 routing is shared and legacy configurations are rejecte
     );
   }
   for (const legacy of [
-    { schemaVersion: 1, protectedBranches: ["main"] },
+    {
+      schemaVersion: 2,
+      collaborationBranch: "develop",
+      protectedBranches: ["main"],
+    },
+    { schemaVersion: 1, releaseBranch: "main" },
     { ...workflow, schemaVersion: 1 },
   ]) {
     assert.match(
       validateWorkflow(legacy).join("\n"),
-      /(?:version 2|schemaVersion)/,
+      /(?:version 3|schemaVersion)/,
     );
     assert(!workflowCoreSchema.safeParse(legacy).success);
     assert(!workflowSchema.safeParse(legacy).success);
@@ -132,7 +139,7 @@ test("catalog routes by branch without trusting stale progress, and integrated a
       },
     ],
     "develop",
-    ["main"],
+    "main",
   );
   assert.deepEqual(
     routes.map(({ id, kind, branch }) => ({ id, kind, branch })),
@@ -176,7 +183,7 @@ test("catalog duplicates, malformed ownership and incomplete archives stay expli
       },
     ],
     "develop",
-    ["main"],
+    "main",
   );
   assert.equal(routes.length, 5);
   for (const route of routes) {

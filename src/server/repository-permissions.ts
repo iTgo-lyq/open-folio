@@ -60,7 +60,7 @@ export class RepositoryPermissions {
     options: {
       force?: boolean;
       workspaceOwned?: boolean;
-      collaborationBranch?: string;
+      integrationBranch?: string;
     } = {},
   ): Promise<RepositoryIdentity> {
     await lease.assertCurrent();
@@ -99,7 +99,7 @@ export class RepositoryPermissions {
           await provider.assertRead(
             owner.context,
             repository,
-            options.collaborationBranch,
+            options.integrationBranch,
           );
           await owner.assertCurrent();
           // A later denial on another request must win over this older check.

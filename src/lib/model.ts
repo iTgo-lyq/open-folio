@@ -31,7 +31,7 @@ export type ProjectConfig = {
   id: string;
   name: string;
   repositoryUrl: string;
-  collaborationBranch: string;
+  integrationBranch: string;
 };
 export type Limits = {
   refreshMs: number;
@@ -231,9 +231,9 @@ export type ChangeRoute = {
   errors: string[];
 };
 export type Snapshot = {
-  cacheSchemaVersion: 7;
+  cacheSchemaVersion: 8;
   integrations: IntegrationIndex;
-  collaborationBranch: string | null;
+  integrationBranch: string | null;
   routes: ChangeRoute[];
   sourceDiagnostics: Diagnostic[];
   scanFingerprint?: string;
@@ -249,7 +249,7 @@ export type Snapshot = {
   fingerprint: string;
   capturedAt: string;
   specBranch: string | null;
-  protectedBranches: string[];
+  releaseBranch: string | null;
   branches: Branch[];
   documents: DocumentRef[];
   specs: SpecRef[];
@@ -262,7 +262,7 @@ export type ProjectSummary = {
   name: string;
   snapshotId?: string;
   capturedAt?: string;
-  collaborationBranch?: string | null;
+  integrationBranch?: string | null;
   lastError?: string;
 };
 export type Workbench = Snapshot & {

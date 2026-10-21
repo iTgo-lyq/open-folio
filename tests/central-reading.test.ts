@@ -97,7 +97,7 @@ test("legacy or inconsistent setup never falls back to branch scanning and stale
   f.git(["checkout", "develop"]);
   await f.put(
     "docs/project/workflow.json",
-    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    JSON.stringify({ schemaVersion: 1, releaseBranch: "main" }),
   );
   f.commit();
   const legacy = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -108,9 +108,9 @@ test("legacy or inconsistent setup never falls back to branch scanning and stale
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "elsewhere",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "elsewhere",
+      releaseBranch: "main",
     }),
   );
   f.commit();
@@ -234,16 +234,16 @@ test("custom collaboration source works without default or protected refs and re
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: branch,
-      protectedBranches: ["never-published"],
+      schemaVersion: 3,
+      integrationBranch: branch,
+      releaseBranch: "never-published",
     }),
   );
   await f.put("docs/project/specs/platform/spec.md", "# Custom integration\n");
   f.commit();
   f.git(["symbolic-ref", "HEAD", "refs/heads/absent-default"], f.remote);
   f.git(["push", "origin", "--delete", "main"]);
-  const project = { ...f.project, collaborationBranch: branch };
+  const project = { ...f.project, integrationBranch: branch };
   const result = await f.store.refresh(project, DEFAULT_LIMITS);
   assert.equal(result.specBranch, branch);
   assert.equal(result.specs[0].title, "Custom integration");
@@ -251,9 +251,9 @@ test("custom collaboration source works without default or protected refs and re
     result.branches.map((b) => b.name),
     [branch],
   );
-  assert.deepEqual(result.protectedBranches, ["never-published"]);
+  assert.deepEqual(result.releaseBranch, "never-published");
   const missing = await f.store.refresh(
-    { ...project, collaborationBranch: "missing" },
+    { ...project, integrationBranch: "missing" },
     DEFAULT_LIMITS,
   );
   assert.equal(missing.specBranch, null);
@@ -262,9 +262,9 @@ test("custom collaboration source works without default or protected refs and re
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "somewhere-else",
-      protectedBranches: ["never-published"],
+      schemaVersion: 3,
+      integrationBranch: "somewhere-else",
+      releaseBranch: "never-published",
     }),
   );
   f.commit();
@@ -280,7 +280,7 @@ test("a legacy or changing default workflow cannot change the selected collabora
   f.git(["checkout", "main"]);
   await f.put(
     "docs/project/workflow.json",
-    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    JSON.stringify({ schemaVersion: 1, releaseBranch: "main" }),
   );
   f.commit();
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);

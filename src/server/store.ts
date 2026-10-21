@@ -129,9 +129,9 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 7 ||
+        s.cacheSchemaVersion !== 8 ||
         !s.integrations ||
-        s.collaborationBranch !== p.collaborationBranch ||
+        s.integrationBranch !== p.integrationBranch ||
         !Array.isArray(s.routes) ||
         !Array.isArray(s.sourceDiagnostics) ||
         s.id !== target ||
@@ -157,7 +157,7 @@ export class SnapshotStore {
       Object.assign(summary, {
         snapshotId: s.id,
         capturedAt: s.capturedAt,
-        collaborationBranch: s.collaborationBranch,
+        integrationBranch: s.integrationBranch,
       });
     } catch {}
     try {
@@ -215,7 +215,7 @@ export class SnapshotStore {
       const data = await reader.collect(
         limits,
         signal,
-        p.collaborationBranch,
+        p.integrationBranch,
         previous
           ? {
               snapshot: previous,
@@ -242,7 +242,7 @@ export class SnapshotStore {
       }
       const base = indexBase(data, p);
       const main = data.branches.find(
-        (b) => b.name === data.collaborationBranch,
+        (b) => b.name === data.integrationBranch,
       )?.commit;
       const prototypeLimits = {
         ...limits,
@@ -253,15 +253,15 @@ export class SnapshotStore {
         ),
       };
       const s: Snapshot = {
-        cacheSchemaVersion: 7,
+        cacheSchemaVersion: 8,
         integrations: data.integrations,
-        collaborationBranch: data.collaborationBranch,
+        integrationBranch: data.integrationBranch,
         routes: data.routes,
         sourceDiagnostics: data.sourceDiagnostics,
         scanFingerprint: scanFingerprint(limits),
         currentPrototype:
           previous?.scanFingerprint === scanFingerprint(limits) &&
-          previous.collaborationBranch === data.collaborationBranch &&
+          previous.integrationBranch === data.integrationBranch &&
           previous.currentPrototype.revision === main &&
           !previous.currentPrototype.message &&
           (previous.currentPrototype.manifestBytes ?? 0) <=
@@ -273,7 +273,7 @@ export class SnapshotStore {
                   entries: [],
                   issues: [],
                   message:
-                    "协作分支来源尚未就绪，请完成 Setup 后读取当前页面。",
+                    "集成分支来源尚未就绪，请完成 Setup 后读取当前页面。",
                 }
               : await readCurrentPrototype(
                   reader,
@@ -328,7 +328,7 @@ export class SnapshotStore {
       } catch {}
       if (
         !value ||
-        value.cacheSchemaVersion !== 7 ||
+        value.cacheSchemaVersion !== 8 ||
         !value.integrations ||
         Object.hasOwn(value, "archiveRefs") ||
         Object.hasOwn(value, "archivePins")

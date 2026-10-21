@@ -41,9 +41,9 @@ function fixture(t: import("node:test").TestContext) {
   put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
     }),
   );
   const commit = (cwd = repo) => {

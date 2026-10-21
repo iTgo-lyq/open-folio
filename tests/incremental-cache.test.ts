@@ -25,9 +25,9 @@ async function traced() {
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main", "release"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "release",
       prototype: { status: "enabled", packagePath: "packages/prototype" },
     }),
   );
