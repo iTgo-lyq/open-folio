@@ -153,3 +153,30 @@ R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c
 - **Change 创建者**：Git 读取层在追溯首次提交时间时一并返回首次提交作者；平台账号可识别时显示头像或登录名，否则显示 Git 作者名。
 
 其余调整只使用已有数据，或只删减、合并界面。
+
+### 第二轮原型验证与固定发布（2026-10-22）
+
+源码提交 `597c114`。七组入口 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 共用 `packages/prototype/src/shared/quiet-workbench/` 的模块，均支持浅色 / 深色及桌面、平板、手机；设计规则见 [DESIGN.md](../../../../packages/prototype/DESIGN.md#frontend-style-interaction-refactor-需求设计草案)。
+
+本地验证：`npm run build --workspace prototype` 成功；`npm test --workspace prototype` 16 项通过；`node packages/prototype/verify-quiet-workbench.mjs` 121 项通过、失败 0、浏览器错误 0。检查在仅授予 `allow-scripts` 的 iframe 与项目 CSP 下运行：
+
+- 布局：七个入口及 Change 详情、合入差异、原型画布、登录页，在浅色、深色与 1440×900、834×1194、390×844、320×720 四档宽度下，页面、正文、顶栏与工具栏均无横向溢出。
+- 侧栏：点击 Logo 收起为四个图标的悬浮胶囊并可再次展开，Enter 与 Ctrl+\ 可切换，焦点留在 Logo；平板默认收起，手机为底部胶囊导航。
+- Changes：默认按“等待确认 / 受阻 / 推进中”分组并显示创建者；按创建者筛选、标签移除、看板五列、不分组时按紧急程度排序；已完成按“待发布 / 已发布”分组；来源异常从提示条进入；返回列表后焦点回到原行。
+- 详情与分享：材料目录、未产生与缺失材料、随滚动高亮的本页目录、任务以图标和文字表达（无复选框）；分享弹层的链接、沙箱内复制失败的手动兜底及焦点恢复；分享页无工作台导航与账号，内嵌原型画布，不存在与同步失败状态。
+- Specs、原型、账号：相关 Change 与原文、手机目录面板；按设备切换缩略图、详情面板、设备 / 旋转 / 100% 与公开链接；公开页的不存在与已撤回；Token 验证失败不保存、示例 Token 添加并选用、非当前 Token 不可复制、解绑与设备退出需确认、切换失败保留原 Token；登录错误、注册重名、注册后引导绑定首个 Token。
+- 状态与降级：离线保留内容，无权限清除私有内容，登录过期回到登录页；减少透明度后胶囊无 `backdrop-filter`，减少动态效果后过渡为 0；跳过链接聚焦主内容且不改变路由。
+
+结果与截图位于忽略目录 `artifacts/quiet-workbench/`（`verification.json` 及浅色 / 深色的桌面、平板、手机截图）。
+
+固定发布：R2 version `676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24`，sourceCommit `597c11495ffa13a0392a6bd48b5528372f26c79b`，digest `sha256:a98fa67d195d9955e48f0a13f6b958301dd4e846bcb324f7e383d6e89d385ec5`。适配器逐个公开读取并校验字节后返回成功；`publish register` 更新当前清单与本 Change 的七个入口，每项含桌面、iPad、手机缩略图；`validate.mjs --browser` 对 15 个已登记入口的 Chromium 沙箱加载检查通过。上一版 `dc671716…` 的固定链接保持可访问。
+
+| 入口 | 浅色 | 深色 |
+| --- | --- | --- |
+| 我的仓库与侧栏 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-home/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-home/index.html#/home?theme=dark) |
+| Specs 阅读 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-specs/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-specs/index.html#/specs/maps/offline?theme=dark) |
+| Changes 与详情 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-changes/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-changes/index.html#/changes?theme=dark) |
+| 原型总览与画布 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-prototypes/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-prototypes/index.html#/prototypes?theme=dark) |
+| 账号与 Token | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-credentials/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-credentials/index.html#/account?theme=dark) |
+| 匿名公开原型 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-public/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-public/index.html#/public/offline-maps?theme=dark) |
+| Change 分享阅读 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-share/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-share/index.html#/share/offline-map-regions?theme=dark) |

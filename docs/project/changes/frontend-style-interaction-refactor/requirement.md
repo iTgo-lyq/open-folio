@@ -44,7 +44,7 @@ OpenFolio 的主要使用场景是找到可访问的项目，持续阅读 Specs�
 
 当前产品使用 Next.js 16.3.7 App Router、React 19.3、TypeScript、Tailwind CSS 4.3 和 `@open-folio/ui`；原型包使用自包含 HTML/CSS/JavaScript。
 
-既有原型材料均保留在本 Change 的 `previews`，只作对照：蓝色玻璃稿 `blue-glass-workbench`（源码 `3e404d9`），以及上一版六组 `quiet-*`（version `dc671716…`，源码 `300bb77`），发布证据见 [Research](research.md)。`change-sharing` 自己登记的分享原型（version `346cf668…`）属于该 Change，本次不改写其记录。
+既有原型材料只作对照：蓝色玻璃稿 `blue-glass-workbench`（源码 `3e404d9`）仍在本 Change 的 `previews`；上一版六组 `quiet-*`（version `dc671716…`，源码 `300bb77`）的固定版本仍可访问，`previews` 中同名入口已更新为第二轮版本，旧版链接与发布证据见 [Research](research.md)。`change-sharing` 自己登记的分享原型（version `346cf668…`）属于该 Change，本次不改写其记录。
 
 ## 体验审查与改造原则
 
