@@ -180,3 +180,13 @@ R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c
 | 账号与 Token | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-credentials/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-credentials/index.html#/account?theme=dark) |
 | 匿名公开原型 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-public/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-public/index.html#/public/offline-maps?theme=dark) |
 | Change 分享阅读 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-share/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/676ba2c92391152ca28baafc70a626fcd53737b4f2a8ad1a1d80dc1929513f24/quiet-share/index.html#/share/offline-map-regions?theme=dark) |
+
+### 第二轮真实工作台发布核验（2026-10-22）
+
+引用推送至 `develop@875fb8a` 后，用 `withSmokeSession` 建立独立测试登录，通过长期服务 11117 端口已有的外部访问入口进入 open-folio 仓库的原型总览（本会话的执行环境处于独立网络命名空间，不能直接访问本机 localhost；服务本身正常监听）。25 项检查通过，包装器在结束后读取最新会话版本并完成退出与匿名复核。
+
+- 工作台读到新清单，七个入口在 PC Web、iPad、移动设备筛选下的 21 张卡片图片均满足 `img.complete && naturalWidth > 0`，地址属于固定版本 `676ba2c9…`。
+- 从真实卡片进入 `quiet-changes` 与 `quiet-share` 预览，iframe 仍只授予 `allow-scripts`；按画布缩放换算真实鼠标坐标点击 Logo 后侧栏收起为四个图标的胶囊，分享页正文正常呈现；无浏览器运行错误。
+- 自动化直接用 Playwright 点击缩放后的 iframe 元素时坐标会落到相邻元素上，这是宿主 CSS 缩放带来的测试坐标问题，与上一轮记录一致；改为按缩放比例换算坐标后通过，未修改原型或产品。
+
+本地交互及布局断言见 [121 项本地检查](assets/redesign-local-checks.json)，真实卡片与预览断言见 [25 项发布检查](assets/redesign-published-checks.json)。真实总览三设备截图与两个预览截图保留于忽略目录 `artifacts/quiet-workbench/real-*.png`；不包含真实凭据或会话数据。产品代码没有变更，不需要重建长期服务。
