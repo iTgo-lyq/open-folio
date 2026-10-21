@@ -4,9 +4,15 @@
   "title": "通过 PR 管理 Change 集成与正式版本发布",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-21T15:57:53.454Z",
+      "summary": "明确双分支与 PR 交付、发布整理及工作台交付标签，保持 Skill 精炼。",
+      "source": "skill 修改要注意保持措辞精炼。其他没问题继续推荐吧"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": ["流程", "工程", "体验"],
@@ -31,10 +37,13 @@
       "recommendation": "规划和交付都通过 PR；规划 PR 仅保存文档与登记，不标记为 Change 已集成交付。",
       "answer": "Change 规划和分支登记继续直接提交集成分支，保持集中入口，不为发现 Change 扫描所有分支或打开的 PR。Change 交付集成与正式发布仍默认通过 PR。",
       "source": "应当继续走直接提交，不然又要扫所有分支或者打开的pr来确认 change"
+    },
+    "Q4": {
+      "round": 2,
+      "question": "本次 UI 主要增加交付标签、筛选入口和 PR 链接，是否需要单独制作原型？",
+      "recommendation": "复用现有界面，不单独绘原型；实现时验证桌面和手机效果。",
+      "answer": "复用现有界面，不单独绘制原型。",
+      "source": "复用现有界面，不单独绘原型（推荐）"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "已整理两类 PR 交付与工作台标签需求，等待完整需求确认后进入技术方案。"
   }
 }
