@@ -13,7 +13,24 @@
       "source": "skill 修改要注意保持措辞精炼。其他没问题继续推荐吧"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "统一集成与发布分支契约",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "通过 PR 交付 Change 与正式版本",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "自动关联 PR 并派生版本交付状态",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "在工作台呈现可追溯的交付进度",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": ["流程", "工程", "体验"],
   "clarifications": {
@@ -45,5 +62,9 @@
       "answer": "复用现有界面，不单独绘制原型。",
       "source": "复用现有界面，不单独绘原型（推荐）"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案与四项实施计划已就绪，等待一并确认。"
   }
 }
