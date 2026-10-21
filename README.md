@@ -91,6 +91,10 @@ Token 管理页的「复制当前 Token」仅在主动点击时读取当前 Toke
 
 「复制阅读链接」只包含稳定仓库身份和阅读位置。接收者登录账号并选用自己的 Token 后验证并恢复原位置，链接不携带授权。仓库改名后按稳定 id 重新解析，不把新路径下不同 id 的仓库当作原仓库。
 
+Change 的「分享」直接复制 `/share?repository=...&change=...&collaborationBranch=...`，任何人可打开，接收者无需账号或 Token。页面只读展示该 Change 的全部最新详情；服务使用现有可读仓库来源（包括私有仓库），来源全部失效后停止提供内容。链接不绑定分享者，无需创建或开启；文档、图片、原型及合入差异保持同一 Change 与版本范围。
+
+Agent 主动提供分享链接使用 `docs/project/workflow.json` 的 `openfolioUrl`，配置为可匿名访问的服务根地址。材料提交推送后执行 `node .agents/skills/spec-trail/scripts/share.mjs --change <id> --document technical.md`，原型使用 `--preview <id>`；工具匿名验证来源与内容后才返回地址。无需分享账号配置，详见[Skill 分享说明](.agents/skills/spec-trail/references/sharing.md)。
+
 原型链接全部公开。已授权用户先准备不可变版本，再分享 `/preview/<publicationId>`；匿名 HTML、截图和元数据只读已发布文件，绝不触发远端 Git 或 API。退出、token 撤销或后续停用仓库原型不删除已经公开的版本。未知版本返回未就绪，部署者主动撤回后为 410。公开原型不包含工程正文、连接或上传秘密；外部托管服务负责自己固定 URL 的持续可用性。
 
 ## 运维配置与备份

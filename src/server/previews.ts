@@ -421,6 +421,7 @@ export async function resolveEntries(
       }
       info.available = true;
       info.bytes = file!.bytes;
+      info.blob = file!.blob;
       if (entry.id === selectedId) selectedHtml = html;
     } catch (e) {
       info.message =

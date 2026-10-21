@@ -84,6 +84,8 @@ node .agents/skills/spec-trail/prototype/scripts/publish.mjs register --request 
 
 OpenFolio 上传失败可原请求重试；上传成功但本地登记失败时，使用保存的 request/result 重试 register。成功后提交引用；临时协议文件放仓库外，普通 dist 不提交。
 
+引用提交推送后，按[分享链接](../references/sharing.md)匿名验证并主动提供定位此原型的 Change 阅读链接。
+
 ## 嵌入与验证
 
 原型使用 HTTP/HTTPS，无来源白名单或不同源要求。iframe 保留 `sandbox="allow-scripts"`，不授予 allow-same-origin。ESM、动态模块和字体等静态资源需允许无 Cookie 的 CORS（如 Access-Control-Allow-Origin:*），资源用相对路径，路由用 hash/memory。宿主允许嵌入并配置 CSP；OpenFolio 不代理第三方登录、下载或转发凭据。

@@ -38,8 +38,7 @@
     },
     "T3": {
       "title": "让 Agent 在文档和原型就绪后给出分享链接",
-      "status": "blocked",
-      "reason": "用户取消分享账号前提；待明确可分享仓库范围后，改为仓库与 Change 的分享入口。"
+      "status": "doing"
     },
     "T4": {
       "title": "改为按仓库与 Change 直接读取分享内容",
