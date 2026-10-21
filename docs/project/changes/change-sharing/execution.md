@@ -23,3 +23,9 @@
 私有 Change 抽屉新增创建、复制、停止和重新分享；共用详情内容提取后，公开页使用独立阅读上下文，不加载个人 Provider。全宽材料/正文/章节布局沿用已验收原型，支持专注、大字号、相邻文档、章节进度、手机目录与相对路径深链。关联目标不在分享范围时显示“未分享”；原型使用受控资源并保留沙箱及运行错误报告。
 
 验证：类型检查及独立工作区生产构建通过。`npx playwright test tests/browser/change-sharing.spec.ts tests/browser/changes.spec.ts tests/browser/previews.spec.ts tests/browser/integration.spec.ts tests/browser/follow-ups.spec.ts` 25 项全部通过；随后完善 Git 原型错误桥接后，分享 3 项再次通过。覆盖匿名无私有 API 请求、六类内容、固定代码差异、分享撤回和重建、退出设备后继续读取、文档路径跨分支移交和归档、窄屏与旧工作台回归。1440/834/390/320 截图已检查；1920 宽度下正文超过 1300 px，专注超过 1800 px，无全页横向溢出。截图位于工作区 `artifacts/change-sharing-*.png`（不提交）。
+
+## 同步已合入的工作流升级
+
+真实仓库验证时发现 develop 已升级 workflow v3；旧分支因此不能解析真实仓库配置。用户随后明确“同步 dev 分支即可，刚刚合入了”。以 `269a34c47be0bd2d6dfc3df02e3e14360cef25ce` 同步 origin/develop，保留新的 integrationBranch/releaseBranch、PR 交付读取与页面；分享参数同步为 integrationBranch，只投影目标 Change 的交付数据。冲突按这两组已确认行为兼容合并，没有新增流程或权限决策。
+
+合并后类型检查通过，分享、CLI、账号/仓库权限及交付回归共 48 项通过。CLI 新增首次 404 后同步、原型非 HTML/空体/已知平台认证页、Git HTML blob 与未提交修改、子目录调用等边界；修复测试定时器早于首个请求触发造成的非确定性，改用服务端首次响应控制同步。

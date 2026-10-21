@@ -92,9 +92,20 @@ async function fixture(t: TestContext) {
     }
     if (path.endsWith("/change")) {
       if (mode === "new-change") {
+        mode = "ok";
         res
           .writeHead(404)
           .end(JSON.stringify({ error: { code: "SHARE_SOURCE_UNAVAILABLE" } }));
+        return;
+      }
+      if (mode === "stale-once") {
+        mode = "ok";
+        res.end(
+          JSON.stringify({
+            ...value,
+            documents: documents.map((d) => ({ ...d, blob: "0".repeat(40) })),
+          }),
+        );
         return;
       }
       res.end(
@@ -137,9 +148,9 @@ async function fixture(t: TestContext) {
     writeFile(
       join(root, "docs/project/workflow.json"),
       JSON.stringify({
-        schemaVersion: 2,
-        collaborationBranch: "develop",
-        protectedBranches: ["main"],
+        schemaVersion: 3,
+        integrationBranch: "develop",
+        releaseBranch: "main",
         ...(url ? { openfolioUrl: url } : {}),
       }),
     );
@@ -217,7 +228,7 @@ test("CLI verifies stable document, overview and prototype links without credent
     "https://github.com/acme/fixture",
   );
   assert.equal(url.searchParams.get("document"), "technical.md");
-  assert.equal(url.searchParams.get("collaborationBranch"), "develop");
+  assert.equal(url.searchParams.get("integrationBranch"), "develop");
   assert.equal(
     new URL((await f.run({ preview: "screen" })).url).searchParams.get("ct"),
     "previews",
@@ -271,12 +282,8 @@ test("CLI reports anonymous redirects, missing targets, timeouts and response li
 });
 
 test("CLI retries only unsynced material within the configured waiting window", async (t) => {
-  const f = await fixture(t),
-    original = f.documents[0].blob;
-  f.documents[0].blob = "0".repeat(40);
-  setTimeout(() => {
-    f.documents[0].blob = original;
-  }, 60);
+  const f = await fixture(t);
+  f.setMode("stale-once");
   const result = await f.run({ document: "technical.md", waitSeconds: 0.15 });
   assert.ok(result.url);
   assert.equal(
@@ -289,7 +296,6 @@ test("CLI retries only unsynced material within the configured waiting window", 
 test("CLI waits for a newly pushed Change to enter the shared snapshot", async (t) => {
   const f = await fixture(t);
   f.setMode("new-change");
-  setTimeout(() => f.setMode("ok"), 80);
   assert.ok((await f.run({ waitSeconds: 0.2 })).url);
   assert.equal(
     f.requests.filter((r) => r.path.startsWith("/api/shared-changes/change?"))

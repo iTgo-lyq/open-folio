@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 2,
-  "collaborationBranch": "develop",
-  "protectedBranches": ["main"],
+  "schemaVersion": 3,
+  "integrationBranch": "develop",
+  "releaseBranch": "main",
   "openfolioUrl": "https://drwulzcazu.merlin-devbox.bytedance.net",
   "prototype": {
     "status": "enabled",

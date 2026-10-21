@@ -179,7 +179,7 @@ export async function repositoryResponse(
       },
       selector,
       request.signal,
-      q.get("collaborationBranch") ?? undefined,
+      q.get("integrationBranch") ?? undefined,
     );
     await renewPersonalResponse(request, response, service.sessions, selection);
     return request.method === "HEAD"

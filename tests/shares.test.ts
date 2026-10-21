@@ -71,7 +71,7 @@ async function setup() {
   ) =>
     sharedResponse(
       new Request(
-        `https://folio.test${sharedReadUrl({ repository, change, collaborationBranch: "develop" }, path)}`,
+        `https://folio.test${sharedReadUrl({ repository, change, integrationBranch: "develop" }, path)}`,
         { method },
       ),
       path.split("?")[0].split("/"),
@@ -103,6 +103,7 @@ test("a direct anonymous target exposes only one Change and scopes every resourc
   assert.deepEqual(Object.keys(data).sort(), [
     "capturedAt",
     "change",
+    "delivery",
     "documents",
     "projectName",
     "snapshotId",

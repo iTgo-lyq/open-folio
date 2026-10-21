@@ -20,7 +20,9 @@
 
 ![手机原型卡片](assets/mobile-gallery.png)
 
-## 六组明暗主题原型（待用户验收）
+## 六组明暗主题原型（已被第二轮返工取代）
+
+2026-10-22 用户审阅后要求返工（见 [Requirement](requirement.md#第二轮返工2026-10-22)），本版不再请求验收，以下记录仅作对照。
 
 用户确认需求并授权提交、推送和设计原型；需求确认提交为 `11284f8`。新设计以 `develop@fee9a9f` 已集成产品与本 Change 的需求为依据，旧蓝色玻璃稿仅保留参考。六组入口为 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`，共同支持浅色/深色和桌面、平板、手机。设计规则及 shadcnuikit 参考 id 见 [DESIGN.md](../../../../packages/prototype/DESIGN.md)。
 
@@ -54,7 +56,7 @@ R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c
 
 顶部「设计预览」可切换六组页面与场景，页面内主题按钮切换明暗。每个入口的固定目录另含 `dark-pc-web.png`、`dark-ipad.png`、`dark-mobile.png`，用于对照深色外观；它们是检查图，当前卡片仍使用标准设备缩略图。
 
-用户尚未验收此版本，语义状态已记录等待原型确认。需求确认使流程标记进入 technical，但原型验收前不创建 Technical、Plan、实施任务或产品改动。
+该版本未经用户验收即进入第二轮返工。
 
 ### 真实工作台发布核验（2026-10-19 UTC）
 

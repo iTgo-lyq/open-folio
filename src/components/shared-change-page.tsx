@@ -48,8 +48,8 @@ export default function SharedChangePage() {
       const value = {
         repository: q.get("repository") ?? "",
         change: q.get("change") ?? "",
-        ...(q.has("collaborationBranch")
-          ? { collaborationBranch: q.get("collaborationBranch")! }
+        ...(q.has("integrationBranch")
+          ? { integrationBranch: q.get("integrationBranch")! }
           : {}),
       };
       setTarget((previous) =>

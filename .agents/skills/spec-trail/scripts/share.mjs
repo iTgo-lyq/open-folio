@@ -205,7 +205,7 @@ export async function getShareLink({
   const scope = new URLSearchParams({
     repository: remote,
     change,
-    collaborationBranch: repo.config.collaborationBranch,
+    integrationBranch: repo.config.integrationBranch,
   });
   const endpoint = (path, snapshot) => {
     const url = new URL(`/api/shared-changes/${path}`, base);

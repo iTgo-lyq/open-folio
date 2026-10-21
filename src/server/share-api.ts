@@ -75,7 +75,7 @@ export async function sharedResponse(
           ![
             "repository",
             "change",
-            "collaborationBranch",
+            "integrationBranch",
             "snapshot",
             "cursor",
             "load",
@@ -86,8 +86,8 @@ export async function sharedResponse(
     const target: ShareTarget = {
       repository: q.get("repository") ?? "",
       change: q.get("change") ?? "",
-      ...(q.has("collaborationBranch")
-        ? { collaborationBranch: q.get("collaborationBranch")! }
+      ...(q.has("integrationBranch")
+        ? { integrationBranch: q.get("integrationBranch")! }
         : {}),
     };
     response = await readSharedTarget(

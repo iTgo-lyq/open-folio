@@ -35,14 +35,14 @@ export async function discoveryResponse(
       const input = z
         .object({
           url: z.string().max(2048),
-          collaborationBranch: z.string().refine(validBranchName).optional(),
+          integrationBranch: z.string().refine(validBranchName).optional(),
         })
         .strict()
         .safeParse(body);
       if (!input.success)
         throw new AppError(
           "INVALID_PARAMETER",
-          "请填写仓库 HTTPS 地址和有效的协作分支。",
+          "请填写仓库 HTTPS 地址和有效的集成分支。",
           400,
         );
       return await renewPersonalResponse(
@@ -52,7 +52,7 @@ export async function discoveryResponse(
             cookie,
             id,
             input.data.url,
-            input.data.collaborationBranch,
+            input.data.integrationBranch,
           ),
         ),
         service.sessions,

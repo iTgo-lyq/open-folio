@@ -7,7 +7,7 @@ import {
 } from "./connected";
 
 function directLink(change: string) {
-  return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, collaborationBranch: "develop" })}`;
+  return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, integrationBranch: "develop" })}`;
 }
 
 test("copying a direct link opens the anonymous full-width reader without private APIs", async ({
@@ -312,14 +312,14 @@ test("a late explicit-branch error cannot clear a target with an inferred branch
   try {
     const page = await anonymous.newPage();
     const link = new URL(directLink("document-reader"), origin);
-    link.searchParams.delete("collaborationBranch");
+    link.searchParams.delete("integrationBranch");
     await page.goto(link.toString());
     await expect(page.locator(".shared-article .prose h1")).toHaveText(
       "技术方案",
     );
     await page.evaluate(() => {
       const q = new URLSearchParams(location.search);
-      q.set("collaborationBranch", "develop");
+      q.set("integrationBranch", "develop");
       dispatchEvent(
         new CustomEvent("openfolio-share-error", {
           detail: {

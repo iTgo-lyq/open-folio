@@ -465,7 +465,7 @@ test("card captions open details and full-size images while covers enter the can
   await expect(
     details
       .locator(".prototype-detail-source > div")
-      .filter({ hasText: "协作分支清单提交" })
+      .filter({ hasText: "集成分支清单提交" })
       .locator("dd"),
   ).toHaveText(catalog.revision);
   await page.screenshot({ path: "artifacts/prototype-details-desktop.png" });

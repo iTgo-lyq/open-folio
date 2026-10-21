@@ -1,11 +1,55 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { personalFixture } from "./personal-fixture.ts";
 import { preferencesResponse } from "../src/server/preferences-api.ts";
 import { rotateWorkspaceKeys } from "../src/server/workspace-key-rotation.ts";
 import { PersonalSessions } from "../src/server/personal-sessions.ts";
+test("existing branch preferences and credentials survive the runtime field rename", async (t) => {
+  const f = await personalFixture();
+  t.after(f.cleanup);
+  const a = await f.connect();
+  const path = join(f.root, "sessions", "state.json");
+  const disk = JSON.parse(await readFile(path, "utf8"));
+  const workspace = disk.workspaces.find(
+    (w: { id: string }) => w.id === a.connection.id,
+  );
+  const repository = {
+    providerId: f.repositories[0].providerId,
+    instanceId: f.repositories[0].instanceId,
+    repositoryId: f.repositories[0].repositoryId,
+    fullName: f.repositories[0].fullName,
+  };
+  workspace.preferences.repository = {
+    ...repository,
+    collaborationBranch: "staging",
+  };
+  await writeFile(path, JSON.stringify(disk));
+  const sessions = new PersonalSessions(
+    join(f.root, "sessions"),
+    f.registry,
+    join(f.root, "key"),
+  );
+  const current = await sessions.get(a.cookie);
+  assert.equal(current.workspace?.id, a.connection.id);
+  assert.deepEqual(current.workspace?.preferences.repository, {
+    ...repository,
+    integrationBranch: "staging",
+  });
+  await sessions.updatePreferences(a.cookie, {
+    repository: { ...repository, integrationBranch: "next" },
+  });
+  const saved = JSON.parse(await readFile(path, "utf8")).workspaces.find(
+    (w: { id: string }) => w.id === a.connection.id,
+  );
+  assert.deepEqual(saved.preferences.repository, {
+    ...repository,
+    collaborationBranch: "next",
+  });
+  assert.equal(saved.ciphertext, workspace.ciphertext);
+  assert.equal(saved.nonce, workspace.nonce);
+});
 test("devices atomically merge changed preference fields and isolate other credentials", async (t) => {
   const f = await personalFixture();
   t.after(f.cleanup);

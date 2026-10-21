@@ -13,31 +13,31 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
   await page
     .getByLabel("GitHub HTTPS 仓库地址")
     .fill("https://github.com/acme/fixture");
-  await expect(page.getByLabel("协作分支", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("集成分支", { exact: true })).toHaveValue(
     "develop",
   );
-  await page.getByLabel("协作分支", { exact: true }).fill("team/integration");
+  await page.getByLabel("集成分支", { exact: true }).fill("team/integration");
   await page.getByRole("button", { name: "检查仓库", exact: true }).click();
   await expect(
     page.getByText("已接入，可以阅读", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "打开仓库", exact: true }).click();
   await page.goto(
-    `/?${repositoryQuery}&collaborationBranch=team%2Fintegration&m=specs&s=platform`,
+    `/?${repositoryQuery}&integrationBranch=team%2Fintegration&m=specs&s=platform`,
   );
   await expect(
     page.getByRole("heading", { name: "自定义协作能力", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "复制页面链接" }).last().click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
-  expect(new URL(link).searchParams.get("collaborationBranch")).toBe(
+  expect(new URL(link).searchParams.get("integrationBranch")).toBe(
     "team/integration",
   );
   await expect
     .poll(
       async () =>
         (await (await request.get("/api/session")).json()).workspace.preferences
-          .repository?.collaborationBranch,
+          .repository?.integrationBranch,
     )
     .toBe("team/integration");
   const other = await browser.newContext({ baseURL: "http://127.0.0.1:10682" });
@@ -46,7 +46,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
     const view = await other.newPage();
     await view.goto("/");
     await expect
-      .poll(() => new URL(view.url()).searchParams.get("collaborationBranch"))
+      .poll(() => new URL(view.url()).searchParams.get("integrationBranch"))
       .toBe("team/integration");
     await view
       .getByRole("button", { name: "自定义协作能力", exact: true })
@@ -68,7 +68,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
       view.getByRole("heading", { name: "自定义协作能力", exact: true }),
     ).toBeVisible();
     await view.goto(
-      `/?${repositoryQuery}&collaborationBranch=team%2Fintegration&m=prototypes&prototype=orders&preview=orders&device=mobile`,
+      `/?${repositoryQuery}&integrationBranch=team%2Fintegration&m=prototypes&prototype=orders&preview=orders&device=mobile`,
     );
     await expect(
       view
@@ -111,7 +111,7 @@ test("changing the same repository source discards a delayed response from its p
   let deliver: (() => Promise<void>) | undefined;
   await page.route("**/workbench?*", async (route) => {
     if (
-      new URL(route.request().url()).searchParams.get("collaborationBranch") !==
+      new URL(route.request().url()).searchParams.get("integrationBranch") !==
       "develop"
     )
       return route.continue();
@@ -123,14 +123,14 @@ test("changing the same repository source discards a delayed response from its p
     });
   });
   await page.goto(
-    `/?${repositoryQuery}&collaborationBranch=develop&m=specs&s=platform`,
+    `/?${repositoryQuery}&integrationBranch=develop&m=specs&s=platform`,
   );
   await expect.poll(() => !!deliver).toBe(true);
   await page.evaluate((query) => {
     window.history.pushState(
       {},
       "",
-      `/?${query}&collaborationBranch=team%2Fintegration&m=specs&s=platform`,
+      `/?${query}&integrationBranch=team%2Fintegration&m=specs&s=platform`,
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
   }, repositoryQuery);

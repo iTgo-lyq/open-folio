@@ -1,7 +1,7 @@
 export type ShareTarget = {
   repository: string;
   change: string;
-  collaborationBranch?: string;
+  integrationBranch?: string;
 };
 
 export function shareParams(target: ShareTarget) {
@@ -9,8 +9,8 @@ export function shareParams(target: ShareTarget) {
     repository: target.repository,
     change: target.change,
   });
-  if (target.collaborationBranch)
-    params.set("collaborationBranch", target.collaborationBranch);
+  if (target.integrationBranch)
+    params.set("integrationBranch", target.integrationBranch);
   return params;
 }
 

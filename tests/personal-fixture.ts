@@ -108,7 +108,7 @@ export async function personalFixture() {
       if (controls.deny.has(r.repositoryId))
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
     },
-    probeWorkflow: async (_ctx, r, collaborationBranch) => {
+    probeWorkflow: async (_ctx, r, integrationBranch) => {
       if (controls.deny.has(r.repositoryId) || r.displayName === "unavailable")
         throw new ProviderError("READ_DENIED", "Unreadable fixture", 403);
       if (r.displayName === "missing") return { kind: "missing", commit };
@@ -119,10 +119,9 @@ export async function personalFixture() {
           r.displayName === "invalid"
             ? "not-json"
             : JSON.stringify({
-                schemaVersion: 2,
-                collaborationBranch,
-                protectedBranches:
-                  r.displayName === "source" ? ["deleted"] : ["trunk"],
+                schemaVersion: 3,
+                integrationBranch,
+                releaseBranch: r.displayName === "source" ? "deleted" : "trunk",
               }),
         ),
       };

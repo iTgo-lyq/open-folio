@@ -25,9 +25,9 @@ async function traced() {
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main", "release"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "release",
       prototype: { status: "enabled", packagePath: "packages/prototype" },
     }),
   );
@@ -99,7 +99,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.equal(same.id, first.id);
   assert.equal(same.capturedAt, first.capturedAt);
   assert(!f.calls.some((a) => ["ls-tree", "cat-file"].includes(a[0])));
-  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 3);
+  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 4);
   assert(!f.calls.some((a) => a[0] === "fetch"));
 
   await f.put(

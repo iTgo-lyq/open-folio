@@ -16,16 +16,19 @@ export function documentLocation(data: Workbench, document: DocumentRef) {
 }
 export function sharedWorkbench(value: SharedChange): Workbench {
   return {
-    cacheSchemaVersion: 7,
+    cacheSchemaVersion: 8,
     id: value.snapshotId,
     capturedAt: value.capturedAt,
     projectName: value.projectName,
     projectId: "",
     fingerprint: "",
     specBranch: null,
-    collaborationBranch: null,
+    integrationBranch: null,
     selectedBranch: null,
-    protectedBranches: [],
+    releaseBranch: null,
+    ...(value.delivery
+      ? { deliveryByChange: { [value.change.id]: value.delivery } }
+      : {}),
     branches: [],
     routes: [],
     sourceDiagnostics: [],
@@ -150,7 +153,7 @@ export function SharedProvider({
       const url = new URL(detail.path, window.location.origin);
       if (
         !url.pathname.startsWith("/api/shared-changes/") ||
-        ["repository", "change", "collaborationBranch"].some(
+        ["repository", "change", "integrationBranch"].some(
           (key) => url.searchParams.get(key) !== shareParams(target).get(key),
         )
       )

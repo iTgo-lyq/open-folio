@@ -1,4 +1,4 @@
-import type { ChangeGroup, DocumentRef } from "./model.ts";
+import type { ChangeGroup, DocumentRef, Delivery } from "./model.ts";
 
 export type SharedChange = {
   snapshotId: string;
@@ -6,4 +6,5 @@ export type SharedChange = {
   projectName: string;
   change: ChangeGroup;
   documents: DocumentRef[];
+  delivery?: Delivery;
 };

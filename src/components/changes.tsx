@@ -39,6 +39,7 @@ import { useSavedScroll, useWorkspace } from "./context";
 import { documentExpectation } from "@/lib/workflow";
 import { Empty, Source, CopyPageLink } from "./document";
 import { ChangePreviews } from "./previews";
+import { ChangeDelivery, DeliveryBadge } from "./delivery";
 import { ChangeIntegration } from "./integration";
 import { GroupedChangeRows, FollowUpContext } from "./follow-ups";
 import { ChangeLabels, ChangeLabelFilters } from "./change-labels";
@@ -57,6 +58,8 @@ const sizes = {
 };
 const scopes = [
   ["active", "进行中"],
+  ["pendingIntegration", "待集成"],
+  ["pendingRelease", "待发布"],
   ["cancelled", "已取消"],
   ["completed", "已归档"],
   ["issues", "来源异常"],
@@ -196,6 +199,8 @@ export default function Changes() {
   const inScope = (g: ChangeGroup, value: string) => {
     const c = primaryRecord(g);
     return (
+      ((value === "pendingIntegration" || value === "pendingRelease") &&
+        data!.deliveryByChange?.[g.id]?.stage === value) ||
       (value === "issues" && quality(g).length > 0) ||
       (value === "completed" && c?.validCompleted) ||
       (value === "active" && c?.state?.status === "active") ||
@@ -232,6 +237,8 @@ export default function Changes() {
   const emptyScope = {
     active: "暂无进行中的 Change",
     completed: "暂无已归档的 Change",
+    pendingIntegration: "暂无待集成的 Change",
+    pendingRelease: "暂无待发布的 Change",
     cancelled: "暂无已取消的 Change",
     issues: "目前没有来源异常",
   }[scope];
@@ -476,6 +483,7 @@ export default function Changes() {
                         <strong>{g.title}</strong>
                         <code>{g.id}</code>
                         <ChangeLabels state={s} />
+                        <DeliveryBadge id={g.id} />
                       </div>
                     </div>
                     <span>
@@ -539,21 +547,25 @@ function OutcomeList({
   scope: Exclude<ChangeScope, "active">;
   open: (id: string) => void;
 }) {
+  const deliveryScope =
+    scope === "pendingIntegration" || scope === "pendingRelease";
   return (
     <div className={`change-list outcome-list ${scope}`}>
       <div className="change-list-head">
         <span>变更</span>
         <span>规模</span>
         <span>
-          {scope === "completed"
+          {scope === "completed" || deliveryScope
             ? "归档时间"
             : scope === "cancelled"
               ? "取消时间"
               : "主来源"}
         </span>
         <span>
-          {scope === "completed"
-            ? "完成结果"
+          {scope === "completed" || deliveryScope
+            ? deliveryScope
+              ? "交付说明"
+              : "完成结果"
             : scope === "cancelled"
               ? "取消原因"
               : "来源问题"}
@@ -566,12 +578,15 @@ function OutcomeList({
           const c = primaryRecord(group),
             state = c?.state;
           const at =
-            scope === "completed"
+            scope === "completed" || deliveryScope
               ? state?.closure.archive?.at
               : state?.cancellation?.at;
           const messages = quality(group);
-          const summary =
-            scope === "completed"
+          const summary = deliveryScope
+            ? scope === "pendingIntegration"
+              ? "等待 Change PR 合入"
+              : "已集成，等待发布 PR 合入"
+            : scope === "completed" || deliveryScope
               ? (state?.closure.acceptance?.summary ??
                 state?.closure.verification?.summary)
               : scope === "cancelled"
@@ -598,6 +613,7 @@ function OutcomeList({
                   <strong>{group.title}</strong>
                   <code>{group.id}</code>
                   <ChangeLabels state={state} />
+                  <DeliveryBadge id={group.id} />
                 </div>
               </div>
               <span className="size-label">
@@ -673,6 +689,7 @@ function ChangeBoard({
                   </div>
                   <strong>{g.title}</strong>
                   <ChangeLabels state={s} />
+                  <DeliveryBadge id={g.id} />
                   {s?.size === "xlarge" && <Badge>父 Change</Badge>}
                   {s?.status !== "active" && s && (
                     <Badge>{STATUS_LABELS[s.status]}</Badge>
@@ -1131,6 +1148,7 @@ export function ChangeDetails({
         <>
           <Diagnostics items={quality(g)} />
           <FollowUpContext change={g} />
+          <ChangeDelivery id={g.id} />
           {s && (
             <section
               className="change-label-details"

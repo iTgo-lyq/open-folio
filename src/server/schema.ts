@@ -208,12 +208,9 @@ export function validDate(s: string) {
 
 const workflowFields = z
   .object({
-    schemaVersion: z.literal(2),
-    collaborationBranch: branchName,
-    protectedBranches: z
-      .array(branchName)
-      .nonempty()
-      .refine((a) => new Set(a).size === a.length),
+    schemaVersion: z.literal(3),
+    integrationBranch: branchName,
+    releaseBranch: branchName,
     prototype: z.unknown().optional(),
     openfolioUrl: z
       .custom<string | null>((v) => v === null || serviceUrl(v))

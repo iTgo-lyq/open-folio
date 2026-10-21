@@ -205,7 +205,7 @@ export function ChangeIntegration({ id }: { id: string }) {
         <div>
           <span className="integration-record-status">
             <GitMerge size={14} />
-            已合入 {summary.collaborationBranch}
+            已合入 {summary.integrationBranch}
           </span>
           <time dateTime={record.committedAt}>
             {new Date(record.committedAt).toLocaleString()}

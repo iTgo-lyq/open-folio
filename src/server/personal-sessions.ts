@@ -40,14 +40,17 @@ export const identitySchema = z
     displayName: z.string().max(500),
   })
   .strict();
-export const preferencesSchema = z
+const repositoryPreference = z.object({
+  providerId: z.string().min(1).max(80),
+  instanceId: z.string().min(1).max(255),
+  repositoryId: z.string().min(1).max(100),
+  fullName: z.string().min(1).max(255),
+});
+// Keep the persisted preference shape alongside existing encrypted credentials.
+const storedPreferencesSchema = z
   .object({
-    repository: z
-      .object({
-        providerId: z.string().min(1).max(80),
-        instanceId: z.string().min(1).max(255),
-        repositoryId: z.string().min(1).max(100),
-        fullName: z.string().min(1).max(255),
+    repository: repositoryPreference
+      .extend({
         collaborationBranch: z.string().refine(validBranchName).optional(),
       })
       .strict()
@@ -57,6 +60,30 @@ export const preferencesSchema = z
     railCollapsed: z.boolean().optional(),
   })
   .strict();
+export const preferencesSchema = storedPreferencesSchema.extend({
+  repository: repositoryPreference
+    .extend({
+      integrationBranch: z.string().refine(validBranchName).optional(),
+    })
+    .strict()
+    .nullable()
+    .optional(),
+});
+function publicPreferences(
+  p: z.infer<typeof storedPreferencesSchema>,
+): WorkspacePreferences {
+  if (!p.repository) return p as WorkspacePreferences;
+  const { collaborationBranch, ...repository } = p.repository;
+  return {
+    ...p,
+    repository: {
+      ...repository,
+      ...(collaborationBranch
+        ? { integrationBranch: collaborationBranch }
+        : {}),
+    },
+  };
+}
 export const workspaceSchema = z
   .object({
     id: z.string().uuid(),
@@ -74,7 +101,7 @@ export const workspaceSchema = z
     nonce: z.string(),
     ciphertext: z.string().max(8192),
     tag: z.string(),
-    preferences: preferencesSchema,
+    preferences: storedPreferencesSchema,
     createdAt: z.number().int().positive(),
   })
   .strict();
@@ -118,8 +145,8 @@ export type WorkspaceState = z.infer<typeof workspaceStateSchema>;
 export type WorkspacePreferences = z.infer<typeof preferencesSchema>;
 export type WorkspaceSummary = Pick<
   Workspace,
-  "id" | "identity" | "label" | "gitUsername" | "preferences"
->;
+  "id" | "identity" | "label" | "gitUsername"
+> & { preferences: WorkspacePreferences };
 export type ConnectionSummary = Pick<
   WorkspaceSummary,
   "id" | "identity" | "label"
@@ -160,7 +187,7 @@ const workspaceSummary = (w: Workspace): WorkspaceSummary => ({
   identity: w.identity,
   label: w.label,
   gitUsername: w.gitUsername,
-  preferences: w.preferences,
+  preferences: publicPreferences(w.preferences),
 });
 export const connectionSummary = (w: Workspace): ConnectionSummary => ({
   id: w.id,
@@ -1036,9 +1063,21 @@ export class PersonalSessions {
           "最近仓库必须属于当前平台。",
           400,
         );
-      w.preferences = { ...w.preferences, ...parsed.data };
+      const { repository, ...rest } = parsed.data;
+      w.preferences = { ...w.preferences, ...rest };
+      if (repository) {
+        const { integrationBranch, ...identity } = repository;
+        w.preferences.repository = {
+          ...identity,
+          ...(integrationBranch
+            ? { collaborationBranch: integrationBranch }
+            : {}),
+        };
+      } else if (Object.hasOwn(parsed.data, "repository")) {
+        w.preferences.repository = repository;
+      }
       await this.save(state);
-      return w.preferences;
+      return publicPreferences(w.preferences);
     });
   }
   async devices(cookie: string, expectedRevision?: number) {

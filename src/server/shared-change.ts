@@ -67,5 +67,8 @@ export function projectChange(
     projectName,
     change,
     documents,
+    ...(snapshot.deliveryByChange?.[changeId]
+      ? { delivery: snapshot.deliveryByChange[changeId] }
+      : {}),
   };
 }

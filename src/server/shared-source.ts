@@ -31,8 +31,8 @@ export async function readSharedTarget<T>(
   if (
     !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(target.change) ||
     target.change.length > 200 ||
-    (target.collaborationBranch !== undefined &&
-      !validBranchName(target.collaborationBranch))
+    (target.integrationBranch !== undefined &&
+      !validBranchName(target.integrationBranch))
   )
     throw invalid();
   let url: URL;
@@ -94,16 +94,16 @@ export async function readSharedTarget<T>(
         r.instanceId === binding.instanceId &&
         r.fullName.toLowerCase() === source.fullName &&
         repositoryKey(r) === found.key &&
-        (!target.collaborationBranch ||
-          found.collaborationBranch === target.collaborationBranch)
+        (!target.integrationBranch ||
+          found.integrationBranch === target.integrationBranch)
       )
         candidates.push({ binding, found, fullName: source.fullName });
     }
   }
-  if (new Set(candidates.map((c) => c.found.collaborationBranch)).size > 1)
+  if (new Set(candidates.map((c) => c.found.integrationBranch)).size > 1)
     throw new AppError(
       "SHARE_BRANCH_REQUIRED",
-      "此仓库有多个协作来源，请在链接中指定 collaborationBranch。",
+      "此仓库有多个协作来源，请在链接中指定 integrationBranch。",
       400,
     );
   for (const { binding, found, fullName } of candidates) {
@@ -114,7 +114,7 @@ export async function readSharedTarget<T>(
         binding.workspaceId,
         found.key,
         found.repository,
-        found.collaborationBranch,
+        found.integrationBranch,
         async (ctx) => {
           if (ctx.repository.fullName.toLowerCase() !== fullName)
             throw new AppError("REPOSITORY_MISMATCH", "仓库地址已变化。", 403);

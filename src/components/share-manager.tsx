@@ -14,7 +14,7 @@ export function ShareManager({ changeId }: { changeId: string }) {
   const path = sharePath({
     repository: repository?.webUrl ?? "",
     change: changeId,
-    collaborationBranch: data?.collaborationBranch ?? undefined,
+    integrationBranch: data?.integrationBranch ?? undefined,
   });
   return (
     <Dialog.Root

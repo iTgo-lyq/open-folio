@@ -1,5 +1,5 @@
 "use client";
-import { SUGGESTED_COLLABORATION_BRANCH } from "@/lib/collaboration";
+import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import {
@@ -169,7 +169,7 @@ export function PersonalHome() {
               </div>
               {items.map((item) => (
                 <a
-                  href={`?${new URLSearchParams({ repo: item.key, m: "specs", provider: item.repository.providerId, instance: item.repository.instanceId, repositoryId: item.repository.repositoryId, fullName: item.repository.fullName, collaborationBranch: item.collaborationBranch })}`}
+                  href={`?${new URLSearchParams({ repo: item.key, m: "specs", provider: item.repository.providerId, instance: item.repository.instanceId, repositoryId: item.repository.repositoryId, fullName: item.repository.fullName, integrationBranch: item.integrationBranch })}`}
                   className="personal-repo-row"
                   key={item.key}
                   onClick={(e) => {
@@ -190,7 +190,7 @@ export function PersonalHome() {
                     </div>
                   </div>
                   <span className="personal-repo-source">
-                    <GitBranch size={13} /> {item.collaborationBranch}
+                    <GitBranch size={13} /> {item.integrationBranch}
                   </span>
                   <Badge tone={item.state === "ready" ? "success" : "warning"}>
                     {item.state === "ready" ? "可阅读" : "需要关注"}
@@ -213,7 +213,7 @@ export function PersonalHome() {
             >
               <p>
                 {p.discovery?.state === "complete"
-                  ? "确认 token 已选择目标仓库，并具有 Contents 只读权限。协作分支需要有效的 SpecTrail 配置；自定义名称可通过仓库地址检查指定。"
+                  ? "确认 token 已选择目标仓库，并具有 Contents 只读权限。集成分支需要有效的 SpecTrail 配置；自定义名称可通过仓库地址检查指定。"
                   : "开始或继续发现，或用仓库地址检查接入情况。"}
               </p>
             </EmptyState>
@@ -971,8 +971,8 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
   const p = usePersonal();
   const { selectRepository } = useWorkspace();
   const [url, setUrl] = useState(""),
-    [collaborationBranch, setCollaborationBranch] = useState(
-      SUGGESTED_COLLABORATION_BRANCH,
+    [integrationBranch, setCollaborationBranch] = useState(
+      SUGGESTED_INTEGRATION_BRANCH,
     ),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -995,7 +995,7 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url, collaborationBranch }),
+                body: JSON.stringify({ url, integrationBranch }),
               },
             );
             setResult(value);
@@ -1025,18 +1025,18 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="collaboration-branch">协作分支</FieldLabel>
+            <FieldLabel htmlFor="collaboration-branch">集成分支</FieldLabel>
             <Input
               id="collaboration-branch"
               required
-              value={collaborationBranch}
+              value={integrationBranch}
               onChange={(e) => {
                 setCollaborationBranch(e.target.value);
                 setResult(null);
               }}
             />
             <FieldDescription>
-              填写项目实际使用的协作分支，推荐名称为 develop。
+              填写项目实际使用的集成分支，推荐名称为 develop。
             </FieldDescription>
           </Field>
         </FieldGroup>
@@ -1059,7 +1059,7 @@ function RepositoryCheck({ onClose }: { onClose: () => void }) {
                   selectRepository(
                     result.key,
                     result.repository,
-                    result.collaborationBranch,
+                    result.integrationBranch,
                   );
                   onClose();
                 }}

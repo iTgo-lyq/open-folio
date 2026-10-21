@@ -20,7 +20,7 @@ import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/con
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
-  const branch = data.collaborationBranch;
+  const branch = data.integrationBranch;
   const doc = data.documents.find(
     (d) => d.branch === branch && d.path === "docs/project/workflow.json",
   );
@@ -32,7 +32,7 @@ export function prototypePolicy(data: Collected): Snapshot["prototype"] {
     );
     if (
       !branch ||
-      workflow.collaborationBranch !== branch ||
+      workflow.integrationBranch !== branch ||
       data.sourceDiagnostics.some((d) => d.code !== "INTEGRATION_INVALID")
     )
       throw Error();
@@ -296,8 +296,7 @@ export async function resolvePreview(
   try {
     configuration = await readPrototypeConfiguration(
       reader,
-      latest.branches.find((b) => b.name === latest.collaborationBranch)
-        ?.commit,
+      latest.branches.find((b) => b.name === latest.integrationBranch)?.commit,
       limits,
       signal,
     );

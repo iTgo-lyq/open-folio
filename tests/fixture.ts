@@ -34,9 +34,9 @@ export async function fixture() {
   await put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
     }),
   );
   await put(
@@ -72,7 +72,7 @@ export async function fixture() {
   };
   const project = {
     id: "fixture",
-    collaborationBranch: "develop",
+    integrationBranch: "develop",
     name: "测试项目",
     repositoryUrl: "https://example.test/fixture.git",
   };

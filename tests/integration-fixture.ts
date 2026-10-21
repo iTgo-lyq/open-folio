@@ -1,4 +1,4 @@
-import { rename } from "node:fs/promises";
+import { rename, rmdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 
@@ -42,6 +42,7 @@ export async function integrationFixture(id = "example") {
     join(f.author, `docs/project/changes/${id}/change.json`),
     join(f.author, `${archivePath}/change.json`),
   );
+  await rmdir(join(f.author, `docs/project/changes/${id}`));
   await f.put(`${archivePath}/change.json`, JSON.stringify(record));
   await f.put("feature.txt", "delivered\n");
   const source = f.commit();

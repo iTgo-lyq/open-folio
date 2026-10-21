@@ -82,8 +82,7 @@ test("only registered sources are fetched, stale central status is ignored, and 
           a.includes("*") ||
           a.includes("unrelated") ||
           a.includes("unlisted") ||
-          a === "HEAD" ||
-          a.includes("refs/heads/main"),
+          a === "HEAD",
       ),
   );
   const next = await store.refresh(f.project, DEFAULT_LIMITS);
@@ -97,7 +96,7 @@ test("legacy or inconsistent setup never falls back to branch scanning and stale
   f.git(["checkout", "develop"]);
   await f.put(
     "docs/project/workflow.json",
-    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    JSON.stringify({ schemaVersion: 1, releaseBranch: "main" }),
   );
   f.commit();
   const legacy = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -108,9 +107,9 @@ test("legacy or inconsistent setup never falls back to branch scanning and stale
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "elsewhere",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "elsewhere",
+      releaseBranch: "main",
     }),
   );
   f.commit();
@@ -234,16 +233,16 @@ test("custom collaboration source works without default or protected refs and re
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: branch,
-      protectedBranches: ["never-published"],
+      schemaVersion: 3,
+      integrationBranch: branch,
+      releaseBranch: "never-published",
     }),
   );
   await f.put("docs/project/specs/platform/spec.md", "# Custom integration\n");
   f.commit();
   f.git(["symbolic-ref", "HEAD", "refs/heads/absent-default"], f.remote);
   f.git(["push", "origin", "--delete", "main"]);
-  const project = { ...f.project, collaborationBranch: branch };
+  const project = { ...f.project, integrationBranch: branch };
   const result = await f.store.refresh(project, DEFAULT_LIMITS);
   assert.equal(result.specBranch, branch);
   assert.equal(result.specs[0].title, "Custom integration");
@@ -251,9 +250,9 @@ test("custom collaboration source works without default or protected refs and re
     result.branches.map((b) => b.name),
     [branch],
   );
-  assert.deepEqual(result.protectedBranches, ["never-published"]);
+  assert.deepEqual(result.releaseBranch, "never-published");
   const missing = await f.store.refresh(
-    { ...project, collaborationBranch: "missing" },
+    { ...project, integrationBranch: "missing" },
     DEFAULT_LIMITS,
   );
   assert.equal(missing.specBranch, null);
@@ -262,9 +261,9 @@ test("custom collaboration source works without default or protected refs and re
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "somewhere-else",
-      protectedBranches: ["never-published"],
+      schemaVersion: 3,
+      integrationBranch: "somewhere-else",
+      releaseBranch: "never-published",
     }),
   );
   f.commit();
@@ -273,17 +272,19 @@ test("custom collaboration source works without default or protected refs and re
   assert.match(mismatch.sourceDiagnostics[0].message, /不一致/);
 });
 
-test("a legacy or changing default workflow cannot change the selected collaboration snapshot", async (t) => {
+test("release tip changes refresh metadata without reading release workflow as the central source", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   const first = await f.store.refresh(f.project, DEFAULT_LIMITS);
   f.git(["checkout", "main"]);
   await f.put(
     "docs/project/workflow.json",
-    JSON.stringify({ schemaVersion: 1, protectedBranches: ["main"] }),
+    JSON.stringify({ schemaVersion: 1, releaseBranch: "main" }),
   );
   f.commit();
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(next.id, first.id);
+  assert.notEqual(next.id, first.id);
+  assert.deepEqual(next.documents, first.documents);
+  assert.notEqual(next.releaseSource?.commit, first.releaseSource?.commit);
   assert.equal(next.specBranch, "develop");
 });

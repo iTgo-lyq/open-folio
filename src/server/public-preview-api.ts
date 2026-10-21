@@ -23,7 +23,7 @@ import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/ht
 const inputSchema = z
   .object({
     connectionId: z.string().uuid(),
-    collaborationBranch: z.string().refine(validBranchName).optional(),
+    integrationBranch: z.string().refine(validBranchName).optional(),
     entry: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
     change: z
       .string()
@@ -62,7 +62,7 @@ export async function preparePreviewResponse(
         ? { repositoryId: input.repositoryId, fullName: input.fullName }
         : undefined,
       request.signal,
-      input.collaborationBranch,
+      input.integrationBranch,
     );
     return await renewPersonalResponse(
       request,

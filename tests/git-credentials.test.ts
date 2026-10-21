@@ -60,7 +60,7 @@ test("HTTPS Git isolates host credentials, authenticates refs/fetch, and rejects
     const good = reader("token-a");
     assert.match(await good.remoteRefs(signal()), /refs\/heads\/main/);
     const data = await good.collect(DEFAULT_LIMITS, signal(), "develop");
-    assert.equal(data.collaborationBranch, "develop");
+    assert.equal(data.integrationBranch, "develop");
     assert.ok(data.documents.some((d) => d.path.endsWith("spec.md")));
     assert.ok(f.attempts.filter((a) => a === "reader:token-a").length >= 3);
     const config = await readFile(join(good.directory, "config"), "utf8");
