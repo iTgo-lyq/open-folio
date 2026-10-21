@@ -4,13 +4,23 @@
   "title": "单个 Change 的公开只读分享",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-sharing",
   "confirmations": {
     "requirement": {
       "at": "2026-10-20T12:47:13.410Z",
       "summary": "按仓库与 Change 直接分享全部最新详情且无需分享账号",
       "source": "结合此前已确认的全部详情、实时更新和全文阅读要求；用户明确改为：分享链接设计上不该和账号挂钩，任何人都可以分享，只要那个 change 实际存在；链接上指定 change 和仓库，被分享者拿到链接后，只要目标访问内容真的存在就分享给他。"
+    },
+    "technical": {
+      "at": "2026-10-21T18:03:39.512Z",
+      "summary": "按仓库与 Change 直接定位可读来源并复用完整阅读能力",
+      "source": "确认，按新版方案继续实现，skill 的改动保持精简。"
+    },
+    "plan": {
+      "at": "2026-10-21T18:03:41.269Z",
+      "summary": "先替换账号分享机制，再交付无凭据链接工具与精简 Skill",
+      "source": "确认，按新版方案继续实现，skill 的改动保持精简。"
     }
   },
   "tasks": {
@@ -33,7 +43,7 @@
     },
     "T4": {
       "title": "改为按仓库与 Change 直接读取分享内容",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
@@ -104,9 +114,5 @@
     "at": "2026-10-20T12:38:17.771Z",
     "reason": "分享不应绑定创建账号；任何人应能分享实际存在的 Change。",
     "approach": "保留已验证的阅读与资源隔离能力，重整仓库范围、分享生命周期和无账号 Skill 链接流程。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "按 Q4 需求修订的直接链接方案与计划已整理；等待技术及计划确认后执行 T4，再继续无账号 T3。"
   }
 }
