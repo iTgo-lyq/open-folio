@@ -8,7 +8,7 @@ import {
   type ConnectionLease,
 } from "./personal-sessions.ts";
 import {
-  SUGGESTED_COLLABORATION_BRANCH,
+  SUGGESTED_INTEGRATION_BRANCH,
   validBranchName,
 } from "../lib/collaboration.ts";
 import { hash, GitReader } from "./git.ts";
@@ -72,12 +72,12 @@ export class Repositories {
         lease.context.identity.providerId,
       );
       const found = await this.discoveries.lookup(lease, key);
-      const collaborationBranch =
+      const integrationBranch =
         selectedBranch ??
-        found?.collaborationBranch ??
-        SUGGESTED_COLLABORATION_BRANCH;
-      if (!validBranchName(collaborationBranch))
-        throw new AppError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
+        found?.integrationBranch ??
+        SUGGESTED_INTEGRATION_BRANCH;
+      if (!validBranchName(integrationBranch))
+        throw new AppError("INVALID_PARAMETER", "集成分支名称不合法。", 400);
       target = found?.repository ?? selector;
       if (!target)
         throw new AppError(
@@ -86,14 +86,14 @@ export class Repositories {
           404,
         );
       const repository = await permissions.check(cookie, lease, key, target, {
-        collaborationBranch,
+        integrationBranch,
       });
-      if (!found || found.collaborationBranch !== collaborationBranch) {
+      if (!found || found.integrationBranch !== integrationBranch) {
         const diagnosed = await this.discoveries.diagnose(
           provider,
           lease.context,
           repository,
-          collaborationBranch,
+          integrationBranch,
         );
         if (!["ready", "attention"].includes(diagnosed.state))
           throw new AppError(
@@ -108,7 +108,7 @@ export class Repositories {
       ) => {
         await permissions.check(cookie, owner, key, repository, {
           force,
-          collaborationBranch,
+          integrationBranch,
           workspaceOwned: owner !== lease,
         });
         await owner.assertCurrent();
@@ -128,7 +128,7 @@ export class Repositories {
             reader.signal = owner.context.signal;
             return reader;
           },
-          hash(JSON.stringify([key, collaborationBranch])),
+          hash(JSON.stringify([key, integrationBranch])),
         );
       };
       const store = await makeStore(lease);
@@ -136,7 +136,7 @@ export class Repositories {
         id: key,
         name: repository.fullName,
         repositoryUrl: repository.cloneUrl,
-        collaborationBranch,
+        integrationBranch,
       };
       const context: ReadContext = {
         lease,
@@ -163,6 +163,37 @@ export class Repositories {
                   automatic,
                   signal: owner.context.signal,
                   beforePublish: () => assertPermission(owner),
+                  delivery:
+                    provider.listPullRequests && provider.getPullRequest
+                      ? {
+                          repositoryId: repository.repositoryId,
+                          list: (query, cursor, signal) =>
+                            provider.listPullRequests!(
+                              {
+                                ...owner.context,
+                                signal: AbortSignal.any([
+                                  owner.context.signal,
+                                  signal,
+                                ]),
+                              },
+                              repository,
+                              query,
+                              cursor,
+                            ),
+                          get: (number, signal) =>
+                            provider.getPullRequest!(
+                              {
+                                ...owner.context,
+                                signal: AbortSignal.any([
+                                  owner.context.signal,
+                                  signal,
+                                ]),
+                              },
+                              repository,
+                              number,
+                            ),
+                        }
+                      : undefined,
                 });
                 await owner.assertCurrent();
                 permissions.assertAllowed(owner, key);

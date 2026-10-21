@@ -8,7 +8,7 @@ import { fixture } from "./fixture.ts";
 import { completedChange } from "./integration-fixture.ts";
 import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
 import {
-  integrate,
+  verify,
   cleanup,
 } from "../.agents/skills/spec-trail/scripts/integration.mjs";
 import {
@@ -26,9 +26,9 @@ test("archiving fixes a shared Git prototype before concurrent collaboration cha
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: {
         status: "enabled",
         packagePath: "prototype",
@@ -154,7 +154,15 @@ syncBuiltinESMExports();
     "<html>CONCURRENT OTHER DELIVERY</html>",
   );
   f.commit();
-  const result = await integrate(repository(f.author), id);
+  f.git([
+    "merge",
+    "--no-ff",
+    branch,
+    "-m",
+    `Change PR\n\nSpecTrail-Change: ${id}`,
+  ]);
+  f.git(["push", "origin", "develop"]);
+  const result = await verify(repository(f.author), id);
   assert.equal(result.integration.status, "found");
   assert.match(
     f.git([
@@ -184,9 +192,9 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: {
         status: "enabled",
         packagePath: "prototype",
@@ -242,13 +250,21 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
       { encoding: "utf8" },
     ),
   );
-  assert.match(result.next, /integration.mjs merge/);
+  assert.match(result.next, /integration.mjs preflight/);
   f.commit();
   f.git(["checkout", "develop"]);
   const worktree = join(f.root, "source");
   f.git(["worktree", "add", worktree, branch]);
+  f.git([
+    "merge",
+    "--no-ff",
+    branch,
+    "-m",
+    `Change PR\n\nSpecTrail-Change: ${id}`,
+  ]);
+  f.git(["push", "origin", "develop"]);
   const repo = repository(f.author),
-    delivery = await integrate(repo, id),
+    delivery = await verify(repo, id),
     merge = delivery.integration.commit;
   f.git(["merge", "--ff-only", "origin/develop"]);
   const cleaned = await cleanup(repo, id, {

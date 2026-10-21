@@ -5,7 +5,7 @@ import { writeFile, readFile, rm } from "node:fs/promises";
 import { integrationFixture } from "./integration-fixture.ts";
 import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
 import {
-  integrate,
+  verify,
   cleanup,
   preflight,
 } from "../.agents/skills/spec-trail/scripts/integration.mjs";
@@ -22,7 +22,8 @@ test("cleanup preserves modifications hidden by assume-unchanged and skip-worktr
   for (const flag of ["assume-unchanged", "skip-worktree"]) {
     const f = await setup();
     try {
-      const result = await integrate(f.repo, f.id);
+      f.merge();
+      const result = await verify(f.repo, f.id);
       f.git(["merge", "--ff-only", "origin/develop"]);
       f.git(["update-index", `--${flag}`, "feature.txt"], f.worktree);
       await writeFile(join(f.worktree, "feature.txt"), "UNSAVED USER WORK");
@@ -63,7 +64,8 @@ test("delivery creates a merge even when fast-forwardable; cleanup and retry nee
   const f = await setup();
   try {
     assert.equal((await preflight(f.repo, f.id)).integration.status, "missing");
-    const result = await integrate(f.repo, f.id);
+    f.merge();
+    const result = await verify(f.repo, f.id);
     assert.equal(result.integration.status, "found");
     assert.equal(result.integration.base, f.base);
     assert.equal(result.integration.source, f.source);
@@ -84,7 +86,7 @@ test("delivery creates a merge even when fast-forwardable; cleanup and retry nee
       ["cleaned", "cleaned", "cleaned"],
     );
     assert.equal(
-      (await integrate(f.repo, f.id)).integration.commit,
+      (await verify(f.repo, f.id)).integration.commit,
       result.integration.commit,
     );
     assert.deepEqual(
@@ -98,72 +100,39 @@ test("delivery creates a merge even when fast-forwardable; cleanup and retry nee
   }
 });
 
-test("an advancing collaboration tip rebuilds the unpublished candidate on the new first parent", async () => {
+test("PR preflight and verification never push, and verify follows the actual platform merge", async () => {
   const f = await setup();
   try {
     const git = f.repo.git;
-    let advanced = "",
-      attempts = 0;
     f.repo.git = (args) => {
-      if (args[0] === "push" && args.at(-1)?.endsWith(":refs/heads/develop")) {
-        attempts++;
-        if (attempts === 1) {
-          advanced = f.git([
-            "commit-tree",
-            `${f.base}^{tree}`,
-            "-p",
-            f.base,
-            "-m",
-            "Concurrent delivery",
-          ]);
-          f.git(["push", "origin", `${advanced}:refs/heads/develop`]);
-        }
-      }
+      assert.notEqual(args[0], "push");
       return git(args);
     };
-    const result = await integrate(f.repo, f.id);
-    assert.equal(attempts, 2);
+    const ready = await preflight(f.repo, f.id);
+    assert.ok("source" in ready);
+    assert.equal(ready.source.commit, f.source);
+    assert.match(ready.mergeMessage, /SpecTrail-Change: example/);
+    await assert.rejects(
+      verify(f.repo, f.id),
+      /No verified remote integration/,
+    );
+    await f.put("concurrent.txt", "Concurrent delivery");
+    const advanced = f.commit();
+    const merged = f.merge();
+    const result = await verify(f.repo, f.id);
     assert.equal(result.integration.base, advanced);
-    assert.equal(result.integration.source, f.source);
-    assert.match(
-      f.git([
-        "log",
-        "--first-parent",
-        "--format=%s",
-        result.integration.commit,
-      ]),
-      /Concurrent delivery/,
-    );
-    assert.equal(
-      f.git(["worktree", "list", "--porcelain"]).includes(".integration-"),
-      false,
-    );
+    assert.equal(result.integration.commit, merged);
+    assert.equal((await verify(f.repo, f.id)).integration.commit, merged);
   } finally {
     await f.cleanup();
   }
 });
 
-test("a lost successful push response is resolved from remote history without a duplicate merge", async () => {
+test("preflight requires the current archived source to be pushed", async () => {
   const f = await setup();
   try {
-    const git = f.repo.git;
-    let attempts = 0;
-    f.repo.git = (args) => {
-      const output = git(args);
-      if (args[0] === "push" && args.at(-1)?.endsWith(":refs/heads/develop")) {
-        attempts++;
-        throw Error("Response lost");
-      }
-      return output;
-    };
-    const result = await integrate(f.repo, f.id);
-    assert.equal(result.remoteVerified, true);
-    assert.equal(attempts, 1);
-    assert.equal(
-      (await integrate(f.repo, f.id)).integration.commit,
-      result.integration.commit,
-    );
-    assert.equal(attempts, 1);
+    f.git(["commit", "--allow-empty", "-m", "Not pushed"], f.worktree);
+    await assert.rejects(preflight(f.repo, f.id), /Push the archived source/);
   } finally {
     await f.cleanup();
   }
@@ -172,7 +141,8 @@ test("a lost successful push response is resolved from remote history without a 
 test("cleanup retains unknown ignored files, unsaved work, active dependencies and unconfirmed occupancy", async () => {
   const f = await setup();
   try {
-    const result = await integrate(f.repo, f.id);
+    f.merge();
+    const result = await verify(f.repo, f.id);
     f.git(["merge", "--ff-only", "origin/develop"]);
     const options = {
       verifiedCommit: result.integration.commit,
@@ -206,7 +176,8 @@ test("cleanup retains unknown ignored files, unsaved work, active dependencies a
 test("cleanup protects new source commits and conditional remote deletion catches tip races", async () => {
   const f = await setup();
   try {
-    const result = await integrate(f.repo, f.id);
+    f.merge();
+    const result = await verify(f.repo, f.id);
     f.git(["merge", "--ff-only", "origin/develop"]);
     const options = {
       verifiedCommit: result.integration.commit,
@@ -246,7 +217,8 @@ test("cleanup protects new source commits and conditional remote deletion catche
 test("partial cleanup can resume after remote deletion without regenerating the integration", async () => {
   const f = await setup();
   try {
-    const result = await integrate(f.repo, f.id);
+    f.merge();
+    const result = await verify(f.repo, f.id);
     f.git(["merge", "--ff-only", "origin/develop"]);
     const options = {
       verifiedCommit: result.integration.commit,

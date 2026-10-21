@@ -65,13 +65,17 @@ export function imageMime(b: Buffer): string | undefined {
 }
 type CollectedData = Pick<
   Snapshot,
-  | "collaborationBranch"
+  | "integrationBranch"
   | "branches"
   | "routes"
   | "sourceDiagnostics"
   | "integrations"
   | "documents"
-> & { blobs: Map<string, Buffer>; unchanged: boolean };
+> & {
+  blobs: Map<string, Buffer>;
+  unchanged: boolean;
+  releaseSource: import("../lib/model.ts").ReleaseSource;
+};
 export class GitReader {
   directory: string;
   url: string;
@@ -250,15 +254,15 @@ export class GitReader {
   async collect(
     limits: Limits,
     signal: AbortSignal,
-    collaborationBranch: string,
+    integrationBranch: string,
     cache?: { snapshot: Snapshot; readBlob: (blob: string) => Promise<Buffer> },
     routingAttempt = 0,
   ): Promise<CollectedData> {
-    if (!validBranchName(collaborationBranch))
-      throw new AppError("INVALID_PARAMETER", "请指定有效的协作分支。", 400);
+    if (!validBranchName(integrationBranch))
+      throw new AppError("INVALID_PARAMETER", "请指定有效的集成分支。", 400);
     if (
       cache?.snapshot.scanFingerprint !== scanFingerprint(limits) ||
-      cache?.snapshot.collaborationBranch !== collaborationBranch
+      cache?.snapshot.integrationBranch !== integrationBranch
     )
       cache = undefined;
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
@@ -310,6 +314,10 @@ export class GitReader {
       message: "协作来源尚未就绪。",
     };
     let routes: ChangeRoute[] = [];
+    let releaseSource: import("../lib/model.ts").ReleaseSource = {
+      branch: null,
+      commit: null,
+    };
     const diagnostic = (message: string, code = "SETUP_REQUIRED") =>
       sourceDiagnostics.push({ code, message, severity: "warning" });
     const exact = async (names: string[]) => {
@@ -420,8 +428,8 @@ export class GitReader {
       if (
         cache &&
         prior?.commit === branch.commit &&
-        (branch.name === collaborationBranch) ===
-          (branch.name === previous!.collaborationBranch) &&
+        (branch.name === integrationBranch) ===
+          (branch.name === previous!.integrationBranch) &&
         (!ids || JSON.stringify(ids.toSorted()) === JSON.stringify(priorIds))
       ) {
         for (const doc of previous!.documents.filter(
@@ -598,15 +606,18 @@ export class GitReader {
       branches.sort((a, b) => a.name.localeCompare(b.name));
       const same =
         previous &&
-        previous.collaborationBranch === collaborationBranch &&
+        previous.integrationBranch === integrationBranch &&
         JSON.stringify(previous.branches) === JSON.stringify(branches) &&
         JSON.stringify(previous.integrations) ===
           JSON.stringify(integrations) &&
         JSON.stringify(previous.routes) === JSON.stringify(routes) &&
+        JSON.stringify(previous.releaseSource) ===
+          JSON.stringify(releaseSource) &&
         JSON.stringify(previous.sourceDiagnostics) ===
           JSON.stringify(sourceDiagnostics);
       return {
-        collaborationBranch,
+        integrationBranch,
+        releaseSource,
         branches,
         routes,
         sourceDiagnostics,
@@ -617,13 +628,13 @@ export class GitReader {
       };
     };
     const collab = await source(
-      collaborationBranch,
-      (await exact([`refs/heads/${collaborationBranch}`])).get(
-        `refs/heads/${collaborationBranch}`,
+      integrationBranch,
+      (await exact([`refs/heads/${integrationBranch}`])).get(
+        `refs/heads/${integrationBranch}`,
       ),
     );
     if (!collab) {
-      diagnostic(`协作分支 ${collaborationBranch} 不存在，请修复 Setup。`);
+      diagnostic(`集成分支 ${integrationBranch} 不存在，请修复 Setup。`);
       return finish();
     }
     await collectSource(collab, ["docs/project/"], undefined, true);
@@ -632,12 +643,27 @@ export class GitReader {
       workflow = workflowCoreSchema.parse(
         readJson(collab.name, "docs/project/workflow.json"),
       );
-      if (workflow.collaborationBranch !== collaborationBranch) throw Error();
+      if (workflow.integrationBranch !== integrationBranch) throw Error();
     } catch {
       diagnostic(
-        "所选协作分支与 workflow.json 配置不一致或配置无效，请修复 Setup。",
+        "所选集成分支与 workflow.json 配置不一致或配置无效，请修复 Setup。",
       );
       return finish();
+    }
+    releaseSource = { branch: workflow.releaseBranch, commit: null };
+    try {
+      const ref = `refs/heads/${workflow.releaseBranch}`;
+      const advertised = (await exact([ref])).get(ref);
+      if (advertised)
+        releaseSource.commit = await fetchRef(
+          ref,
+          `refs/remotes/origin/${workflow.releaseBranch}`,
+          advertised,
+        );
+      else releaseSource.message = "发布分支尚不存在，发布结果待核实。";
+    } catch {
+      signal.throwIfAborted();
+      releaseSource.message = "发布分支暂不可读取，发布结果待核实。";
     }
     if (
       previous?.integrations?.complete &&
@@ -661,7 +687,7 @@ export class GitReader {
             "--no-recurse-submodules",
             "--unshallow",
             "origin",
-            `refs/heads/${collaborationBranch}`,
+            `refs/heads/${integrationBranch}`,
           ],
           signal,
         );
@@ -675,9 +701,7 @@ export class GitReader {
       diagnostic(message, "INTEGRATION_INVALID");
     routes = routeCatalog(
       documents
-        .filter(
-          (d) => d.branch === collaborationBranch && changeLocation(d.path),
-        )
+        .filter((d) => d.branch === integrationBranch && changeLocation(d.path))
         .map((d) => {
           try {
             return { path: d.path, state: readJson(d.branch, d.path) };
@@ -685,11 +709,12 @@ export class GitReader {
             return { path: d.path, state: null, error: "入口 JSON 不可读。" };
           }
         }),
-      collaborationBranch,
+      integrationBranch,
+      workflow.releaseBranch,
     ) as ChangeRoute[];
     const routingIdentity = JSON.stringify(routes);
     const centralIds = routes
-      .filter((r) => r.branch === collaborationBranch && !r.errors.length)
+      .filter((r) => r.branch === integrationBranch && !r.errors.length)
       .map((r) => r.id);
     if (centralIds.length)
       await collectSource(
@@ -729,8 +754,8 @@ export class GitReader {
     }
     // Recheck only the selected collaboration source and its routing.
     const finalCollabCommit = (
-      await exact([`refs/heads/${collaborationBranch}`])
-    ).get(`refs/heads/${collaborationBranch}`);
+      await exact([`refs/heads/${integrationBranch}`])
+    ).get(`refs/heads/${integrationBranch}`);
     let changed = !finalCollabCommit;
     const catalogAt = async (commit: string, entries: boolean) => {
       const rows = (
@@ -800,15 +825,20 @@ export class GitReader {
       changed =
         !probe.success ||
         JSON.stringify(probe.data) !== JSON.stringify(workflow) ||
-        JSON.stringify(routeCatalog(current.records, collaborationBranch)) !==
-          routingIdentity;
+        JSON.stringify(
+          routeCatalog(
+            current.records,
+            integrationBranch,
+            workflow.releaseBranch,
+          ),
+        ) !== routingIdentity;
     }
     if (changed) {
       if (routingAttempt < 2)
         return this.collect(
           limits,
           signal,
-          collaborationBranch,
+          integrationBranch,
           cache,
           routingAttempt + 1,
         );

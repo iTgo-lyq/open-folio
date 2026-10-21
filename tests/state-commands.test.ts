@@ -19,7 +19,7 @@ const workspaceScript = resolve(
 );
 function fixture(
   t: import("node:test").TestContext,
-  collaborationBranch = "develop",
+  integrationBranch = "develop",
 ) {
   const directory = mkdtempSync(join(tmpdir(), "folio-state-")),
     planning = join(directory, "repo"),
@@ -35,7 +35,7 @@ function fixture(
     }).trim();
   const git = (...args: string[]) => at(root, ...args);
   at(directory, "init", "--bare", remote);
-  git("init", "-b", collaborationBranch);
+  git("init", "-b", integrationBranch);
   git("remote", "add", "origin", remote);
   git("config", "user.name", "State test");
   git("config", "user.email", "state@example.invalid");
@@ -43,15 +43,15 @@ function fixture(
   writeFileSync(
     join(root, "docs/project/workflow.json"),
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch,
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch,
+      releaseBranch: "main",
     }),
   );
   git("add", ".");
   git("commit", "-m", "Initialize");
   git("branch", "main");
-  git("push", "-u", "origin", collaborationBranch);
+  git("push", "-u", "origin", integrationBranch);
   const path = (id = "sample") =>
     join(root, `docs/project/changes/${id}/change.json`);
   const state = (id = "sample") => JSON.parse(readFileSync(path(id), "utf8"));
@@ -148,9 +148,9 @@ function fixture(
     );
     assert.equal(result.status, expected, result.stdout + result.stderr);
     if (expected) return result.stderr;
-    assert.equal(at(planning, "branch", "--show-current"), collaborationBranch);
+    assert.equal(at(planning, "branch", "--show-current"), integrationBranch);
     assert.equal(
-      at(remote, "rev-parse", collaborationBranch),
+      at(remote, "rev-parse", integrationBranch),
       at(remote, "rev-parse", `change/${id}`),
     );
     root = work;
@@ -972,9 +972,9 @@ test("preview association command preserves unrelated state and enforces configu
   writeFileSync(
     join(f.root, "docs/project/workflow.json"),
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",
@@ -997,7 +997,7 @@ test("preview association command preserves unrelated state and enforces configu
   f.verify();
   f.accept();
   const result = f.archive();
-  assert.match(result.next, /integration.mjs merge/);
+  assert.match(result.next, /integration.mjs preflight/);
 });
 
 test("execution requires a published archived dependency already integrated in the branch", (t) => {
@@ -1071,7 +1071,7 @@ test("state commands reject legacy workflow before writing planning or execution
     join(f.root, "docs/project/workflow.json"),
     JSON.stringify({
       schemaVersion: 1,
-      protectedBranches: ["main"],
+      releaseBranch: "main",
     }),
   );
   for (const command of ["show", "execute", "retitle"])

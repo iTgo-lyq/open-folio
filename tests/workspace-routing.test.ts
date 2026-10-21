@@ -41,9 +41,9 @@ function fixture(t: import("node:test").TestContext) {
   put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
     }),
   );
   const commit = (cwd = repo) => {
@@ -454,12 +454,21 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
     path,
   );
   f.commit(path);
+  at(
+    f.repo,
+    "merge",
+    "--no-ff",
+    at(path, "rev-parse", "HEAD"),
+    "-m",
+    "Change PR\n\nSpecTrail-Change: parent",
+  );
+  at(f.repo, "push", "origin", "develop");
   const output = JSON.parse(
     execFileSync(
       process.execPath,
       [
         resolve(".agents/skills/spec-trail/scripts/integration.mjs"),
-        "merge",
+        "verify",
         "--repo",
         f.repo,
         "--change",

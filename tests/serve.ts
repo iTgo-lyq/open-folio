@@ -158,8 +158,8 @@ f.git(["checkout", "-b", "team/integration", "develop"]);
 const customWorkflow = JSON.parse(
   f.git(["show", "develop:docs/project/workflow.json"]),
 );
-customWorkflow.collaborationBranch = "team/integration";
-customWorkflow.protectedBranches = ["unpublished-release"];
+customWorkflow.integrationBranch = "team/integration";
+customWorkflow.releaseBranch = "unpublished-release";
 await f.put("docs/project/workflow.json", JSON.stringify(customWorkflow));
 await f.put(
   "docs/project/specs/platform/spec.md",

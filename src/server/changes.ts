@@ -153,10 +153,10 @@ export async function indexChanges(
         candidates: [],
         relations: [],
         source: {
-          entryBranch: data.collaborationBranch!,
+          entryBranch: data.integrationBranch!,
           entryPath: route.entryPath,
           entryCommit: data.branches.find(
-            (b) => b.name === data.collaborationBranch,
+            (b) => b.name === data.integrationBranch,
           )!.commit,
           recordBranch: route.branch,
         },
@@ -317,8 +317,7 @@ export async function indexChanges(
       for (const { path, line } of paths)
         if (
           data.documents.some(
-            (ref) =>
-              ref.branch === data.collaborationBranch && ref.path === path,
+            (ref) => ref.branch === data.integrationBranch && ref.path === path,
           ) &&
           /^docs\/project\/specs\/.+\/spec.md$/.test(path)
         ) {

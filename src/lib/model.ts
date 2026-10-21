@@ -31,7 +31,7 @@ export type ProjectConfig = {
   id: string;
   name: string;
   repositoryUrl: string;
-  collaborationBranch: string;
+  integrationBranch: string;
 };
 export type Limits = {
   refreshMs: number;
@@ -230,10 +230,38 @@ export type ChangeRoute = {
   kind: "planning" | "target" | "archive" | "invalid";
   errors: string[];
 };
+export type PullRequest = {
+  number: number;
+  title: string;
+  url: string;
+  state: "open" | "closed" | "merged";
+  draft: boolean;
+  base: { repositoryId: string; branch: string; commit: string };
+  head: { repositoryId: string | null; branch: string; commit: string };
+  mergeCommit: string | null;
+  updatedAt: string;
+  version?: string;
+};
+export type Delivery = {
+  stage?: "pendingIntegration" | "pendingRelease" | "releaseMerged" | "unknown";
+  changePrs: PullRequest[];
+  releasePrs: PullRequest[];
+  diagnostics: string[];
+  stale: boolean;
+  changePrsStale?: boolean;
+  releasePrsStale?: boolean;
+};
+export type ReleaseSource = {
+  branch: string | null;
+  commit: string | null;
+  message?: string;
+};
 export type Snapshot = {
-  cacheSchemaVersion: 7;
+  cacheSchemaVersion: 8;
+  releaseSource?: ReleaseSource;
+  deliveryByChange?: Record<string, Delivery>;
   integrations: IntegrationIndex;
-  collaborationBranch: string | null;
+  integrationBranch: string | null;
   routes: ChangeRoute[];
   sourceDiagnostics: Diagnostic[];
   scanFingerprint?: string;
@@ -249,7 +277,7 @@ export type Snapshot = {
   fingerprint: string;
   capturedAt: string;
   specBranch: string | null;
-  protectedBranches: string[];
+  releaseBranch: string | null;
   branches: Branch[];
   documents: DocumentRef[];
   specs: SpecRef[];
@@ -262,10 +290,11 @@ export type ProjectSummary = {
   name: string;
   snapshotId?: string;
   capturedAt?: string;
-  collaborationBranch?: string | null;
+  integrationBranch?: string | null;
   lastError?: string;
 };
 export type Workbench = Snapshot & {
+  deliveryLastSuccess?: string;
   selectedBranch: string | null;
   projectName: string;
 };

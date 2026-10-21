@@ -1,6 +1,6 @@
 # PR 集成、正式发布与交付状态
 
-依据[需求](requirement.md)。保留 Git 集中入口、现有合入记录与工作台快照；平台提供两类 PR 的事实，Agent 在发布 PR 中整理版本与变更说明，工作台展示派生的交付进度。本方案尚未实施。
+依据[需求](requirement.md)。保留 Git 集中入口、现有合入记录与工作台快照；平台提供两类 PR 的事实，Agent 在发布 PR 中整理版本与变更说明，工作台展示派生的交付进度。实施与验证见 [execution.md](execution.md)。
 
 ## 调查结论与实现边界
 
@@ -75,6 +75,8 @@ Version 是 PR 声明的版本号，沿用项目约定，不要求对应 Git tag
 
 在现有 Provider 增加只读分页方法，覆盖 PR 列表/详情与提交关联 PR；沿用绑定的 credential lease、请求取消及限流错误，不新增独立身份或写权限。
 
+这三类 PR 请求使用 GitHub REST `2022-11-28`：`2026-03-10` 已移除用于核实合入的 `merge_commit_sha`，真实仓库冒烟确认了该差异。其余请求沿用现有版本；所选版本受支持至 2028-03-10，后续升级时需替换合并提交的读取方式。[接口变更](https://docs.github.com/en/rest/about-the-rest-api/breaking-changes)、[版本支持](https://docs.github.com/en/rest/about-the-rest-api/api-versions)。
+
 1. 先由 Git 得到已知 Change、登记源分支和有效 M，再按 head/base/state 查询其 PR。已知 M 可以定向反查 PR，用于来源分支删除后的恢复；返回结果仍核对完整关联条件，不直接相信接口命中。[提交关联 PR](https://docs.github.com/en/rest/commits/commits#list-pull-requests-associated-with-a-commit)
 2. 发布 PR 仅按配置的发布目标查询，以其正文清单关联已知 Change。GitReader 定向获取发布分支，其 tip 变化也参与刷新判断；不查询 Release 或 tag。PR 查询始终不参与发现 Change。
 3. 匹配后的仓库身份和 PR 编号保存在可重建缓存，后续定向刷新；未匹配或需要发现新候选时才重新查询。关闭、重开和重建按稳定 PR 身份合并历史；多个当前候选显示冲突，不按更新时间任选。源分支删除后的冷缓存路径必须有测试，不能仅靠旧缓存保住链接。
@@ -84,6 +86,14 @@ Snapshot 增加 `deliveryByChange`，包含交付阶段、Change PR 历史与当
 保留正常读取的刷新节流、仓库锁和请求合并。Git 未变时复用文档与 blob，继续刷新 PR 信息；只有有效内容或可见诊断变化才发布新快照，不因检查时间变化不断制造快照。扩展现有刷新检查记录，保存 PR 最近成功时间并随响应提供；时间更新不改变不可变快照，失败检查不能延长成功有效期。新的元数据快照仍执行既有发布前权限复核。
 
 PR 的 403、404、限流和网络错误只影响对应信息；权限提示说明需要 `Pull requests: read`。401 或确证仓库内容失权仍走现有授权失效路径。局部失败保留文档、有效 M 和标明过期的最近成功结果；冷缓存没有结果时显示待核实。请求受既有总超时与有界分页控制，不引入 webhook、后台扫描或独立缓存服务。
+
+## PR 归档 CI
+
+新增无第三方依赖的 `setup/scripts/check-pr.mjs`，读取 PR 事件与 Git 固定源/目标 SHA，复用 `prMarker`、`recordsAt`、`validateChange` 和 `closedRecord`。同仓库 Change PR 校验唯一有效归档、源分支归属、中央登记及仅新增本 Change 归档；发布 PR 从已获取的集成分支历史核实 M，再核对其是固定候选的祖先，归档未被改写。候选可以来自发布准备分支，不要求 M 位于候选的 first-parent 链。继承的其他活动规划不影响检查。
+
+GitHub Actions 模板只在配置的两个目标分支 PR 上运行，覆盖 opened/synchronize/reopened/edited/ready_for_review；固定检查名称 `SpecTrail archive`。检出事件中的源 SHA，完整历史供读取目标与 M，不运行项目安装、构建或 hook，不注入业务 secrets，权限仅 contents: read。正文从事件 JSON 读取，不插入 shell。Draft 也输出真实失败，不以跳过替代未归档结果。目标筛选由 Setup 按项目分支配置调整；检查器遇到目标不匹配报错，不静默绕过。
+
+Setup 提供随 skill 分发的 workflow 模板，并推荐在两个目标分支将该检查设为 required。规划直推需要保留明确的授权例外；有绕过权限的身份仍须遵守 Agent 合入预检，不宣称平台绝对阻止。CI 文件、运行证据和平台强制规则分别核实。首次引入 workflow 的当前 PR 未归档时应失败，验收归档后才应通过。
 
 ## 工作台呈现
 

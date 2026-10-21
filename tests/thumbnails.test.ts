@@ -186,9 +186,9 @@ test("thumbnail responses reuse content across Git commits and recheck policy be
   const f = await fixture();
   t.after(f.cleanup);
   const workflow = {
-    schemaVersion: 2,
-    collaborationBranch: "develop",
-    protectedBranches: ["main"],
+    schemaVersion: 3,
+    integrationBranch: "develop",
+    releaseBranch: "main",
     prototype: {
       status: "enabled",
       packagePath: "packages/prototype",

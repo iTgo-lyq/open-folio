@@ -219,13 +219,13 @@ const previewsRule = (value, path, errors) =>
   errors.push(...prototypeContract.validatePreviews(value, path));
 const workflow = object(
   {
-    schemaVersion: oneOf(2),
-    collaborationBranch: branch,
+    schemaVersion: oneOf(3),
+    integrationBranch: branch,
     prototype: prototypeRule,
     openfolioUrl: () => {}, // Validated together with the hosting choice below.
-    protectedBranches: list(branch, true),
+    releaseBranch: branch,
   },
-  ["schemaVersion", "collaborationBranch", "protectedBranches"],
+  ["schemaVersion", "integrationBranch", "releaseBranch"],
 );
 
 const changeFields = object(
