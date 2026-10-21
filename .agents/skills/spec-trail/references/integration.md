@@ -12,7 +12,7 @@ node .agents/skills/spec-trail/scripts/integration.mjs preflight --change exampl
 SpecTrail-Change: example
 ```
 
-Draft 可提前创建，交付时更新同一 PR。按已有授权合并，使用普通 merge 并传入预期源 SHA；合并消息末尾保留同一标记。源或目标推进后重查差异及受影响验证。只允许 squash/rebase 或无法保留消息时报告受阻，不回退直推。
+Draft 可提前创建，交付时更新同一 PR。未归档不得合入；归档推送后，预检及已接入的归档 CI 均须通过，不能绕过失败检查。按已有授权合并，使用普通 merge 并传入预期源 SHA；合并消息末尾保留同一标记。源或目标推进后重新预检并核对 CI 与受影响验证。只允许 squash/rebase 或无法保留消息时报告受阻，不回退直推。
 
 M 必须在集成分支 first-parent 链上，恰有两个父提交；标记唯一，首次只引入本 Change 的有效归档，归档子树与第二父提交一致。合入响应未知、排队或受理均先查平台与远端，不能据此宣称成功：
 

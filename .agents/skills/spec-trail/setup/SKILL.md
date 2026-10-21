@@ -83,6 +83,14 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 
 将接入文件和配置提交，并按已有授权与 remote 配置推送。报告持久化位置、业务启用方式、准备检查、实际 hook 验证及提交推送状态；未验证时明确说明。项目 README 只保留项目目标，SpecTrail 的接入规则维护在本 skill。
 
+## 推荐接入 PR CI
+
+首次接入推荐同时配置归档 CI。GitHub 项目将 [workflow 模板](assets/github-pr-archive.yml) 复制到 `.github/workflows/spec-trail-pr.yml`，按 workflow.json 修改两个目标分支筛选；已有等效检查则复用。检查器只读 PR 事件与固定 Git 提交，复用归档契约，无需安装项目依赖。Change PR 检查所属归档，发布 PR 检查清单内已集成归档；其他活动规划不受影响。Draft 未归档时失败是预期结果，不能以跳过检查放行。
+
+在平台为两个目标分支推荐配置必需状态检查 `SpecTrail archive`，保留原有规则和规划登记直推的明确授权例外。仅存在 workflow 或本地 hook 不等于平台已强制；有绕过权限的身份仍须遵守合入前预检。不得为启用 CI 擅自关闭规划直推、撤销保护或扩大绕过权限。
+
+用未归档失败、归档推送后通过、正文修改重跑核实实际运行，分别报告 CI 和必需检查配置结果。其他 CI 平台可传入相同 PR 事件结构调用 `node <setup-dir>/scripts/check-pr.mjs --repo <checkout> --event <event.json>`；接入细节按其现有机制处理。
+
 ## 校验范围
 
 - 只检查暂存区中本次新增、修改的 `docs/project/workflow.json`、`docs/project/changes/<id>/change.json` 和 `docs/project/archive/<date>-<id>/change.json`。重命名按目标文件检查，删除和未改动的历史文件不检查。

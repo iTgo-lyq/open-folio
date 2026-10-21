@@ -87,6 +87,14 @@ Snapshot 增加 `deliveryByChange`，包含交付阶段、Change PR 历史与当
 
 PR 的 403、404、限流和网络错误只影响对应信息；权限提示说明需要 `Pull requests: read`。401 或确证仓库内容失权仍走现有授权失效路径。局部失败保留文档、有效 M 和标明过期的最近成功结果；冷缓存没有结果时显示待核实。请求受既有总超时与有界分页控制，不引入 webhook、后台扫描或独立缓存服务。
 
+## PR 归档 CI
+
+新增无第三方依赖的 `setup/scripts/check-pr.mjs`，读取 PR 事件与 Git 固定源/目标 SHA，复用 `prMarker`、`recordsAt`、`validateChange` 和 `closedRecord`。同仓库 Change PR 校验唯一有效归档、源分支归属、中央登记及仅新增本 Change 归档；发布 PR 校验清单内每项有效归档及有效 M 属于候选历史。继承的其他活动规划不影响检查。
+
+GitHub Actions 模板只在配置的两个目标分支 PR 上运行，覆盖 opened/synchronize/reopened/edited/ready_for_review；固定检查名称 `SpecTrail archive`。检出事件中的源 SHA，完整历史供读取目标与 M，不运行项目安装、构建或 hook，不注入业务 secrets，权限仅 contents: read。正文从事件 JSON 读取，不插入 shell。Draft 也输出真实失败，不以跳过替代未归档结果。目标筛选由 Setup 按项目分支配置调整；检查器遇到目标不匹配报错，不静默绕过。
+
+Setup 提供随 skill 分发的 workflow 模板，并推荐在两个目标分支将该检查设为 required。规划直推需要保留明确的授权例外；有绕过权限的身份仍须遵守 Agent 合入预检，不宣称平台绝对阻止。CI 文件、运行证据和平台强制规则分别核实。首次引入 workflow 的当前 PR 未归档时应失败，验收归档后才应通过。
+
 ## 工作台呈现
 
 **Q4（技术，round 2）：用户选择复用现有界面，不单独绘制原型。** 实现复用 `@open-folio/ui` 的 Badge、现有列表、筛选与详情组件，验证桌面及窄屏。
