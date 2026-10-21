@@ -442,3 +442,84 @@ test("selected branch permission probes ignore the hosting default and require a
     "branch-missing",
   );
 });
+
+test("PR reads normalize trusted links, merged facts, pagination and local permission failures", async () => {
+  const pull = {
+    number: 3,
+    title: "Feature",
+    body: "Feature\n\nSpecTrail-Change: example",
+    html_url: "https://github.com/demo/work/pull/3",
+    state: "open",
+    draft: true,
+    base: { ref: "develop", sha: oid("a"), repo: { id: 12 } },
+    head: { ref: "change/example", sha: oid("b"), repo: { id: 12 } },
+    merged_at: null,
+    merge_commit_sha: oid("c"),
+    updated_at: "2026-10-21T00:00:00Z",
+  };
+  const responses = {
+    ...fixture(),
+    "/repos/demo/work/pulls": Response.json([pull], {
+      headers: { link: '<https://else.test/secret>; rel="next"' },
+    }),
+    "/repos/demo/work/pulls/3": pull,
+  };
+  const { provider, requests } = mock(responses);
+  const repository = await repo(provider);
+  const page = await provider.listPullRequests(
+    context,
+    repository,
+    { head: "change/example", base: "develop" },
+    null,
+  );
+  assert.equal(page.nextCursor, "2");
+  assert.equal(page.items[0].mergeCommit, null);
+  assert.equal(
+    requests.at(-1)?.searchParams.get("head"),
+    "demo:change/example",
+  );
+  assert.equal(
+    (await provider.getPullRequest(context, repository, 3)).draft,
+    true,
+  );
+  for (const status of [403, 404, 401, 429]) {
+    const denied = mock({
+      ...fixture(),
+      "/repos/demo/work/pulls/3": new Response(null, { status }),
+    });
+    await assert.rejects(
+      denied.provider.getPullRequest(context, repository, 3),
+      {
+        code:
+          status === 401
+            ? "TOKEN_INVALID"
+            : status === 429
+              ? "RATE_LIMITED"
+              : "PR_READ_DENIED",
+      },
+    );
+  }
+  const foreign = mock({
+    ...fixture(),
+    "/repos/demo/work/pulls/3": {
+      ...pull,
+      html_url: "https://evil.test/pull/3",
+    },
+  });
+  await assert.rejects(
+    foreign.provider.getPullRequest(context, repository, 3),
+    { code: "PROVIDER_DATA_INVALID" },
+  );
+  const merged = mock({
+    ...fixture(),
+    "/repos/demo/work/pulls/3": {
+      ...pull,
+      state: "closed",
+      merged_at: "2026-10-21T00:00:00Z",
+    },
+  });
+  assert.equal(
+    (await merged.provider.getPullRequest(context, repository, 3)).mergeCommit,
+    oid("c"),
+  );
+});

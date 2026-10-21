@@ -163,6 +163,37 @@ export class Repositories {
                   automatic,
                   signal: owner.context.signal,
                   beforePublish: () => assertPermission(owner),
+                  delivery:
+                    provider.listPullRequests && provider.getPullRequest
+                      ? {
+                          repositoryId: repository.repositoryId,
+                          list: (query, cursor, signal) =>
+                            provider.listPullRequests!(
+                              {
+                                ...owner.context,
+                                signal: AbortSignal.any([
+                                  owner.context.signal,
+                                  signal,
+                                ]),
+                              },
+                              repository,
+                              query,
+                              cursor,
+                            ),
+                          get: (number, signal) =>
+                            provider.getPullRequest!(
+                              {
+                                ...owner.context,
+                                signal: AbortSignal.any([
+                                  owner.context.signal,
+                                  signal,
+                                ]),
+                              },
+                              repository,
+                              number,
+                            ),
+                        }
+                      : undefined,
                 });
                 await owner.assertCurrent();
                 permissions.assertAllowed(owner, key);

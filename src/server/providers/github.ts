@@ -14,6 +14,8 @@ import {
   type RepositoryProvider,
   type ProbeResult,
   type ProviderIdentity,
+  type ProviderPullRequest,
+  type PullRequestQuery,
 } from "./types.ts";
 
 const api = "https://api.github.com";
@@ -151,8 +153,8 @@ export class GitHubProvider implements RepositoryProvider {
       name: "GitHub",
       instance: "github.com",
       tokenUrl:
-        "https://github.com/settings/personal-access-tokens/new?name=OpenFolio&contents=read",
-      permissions: ["Metadata: Read", "Contents: Read"],
+        "https://github.com/settings/personal-access-tokens/new?name=OpenFolio&contents=read&pull_requests=read",
+      permissions: ["Metadata: Read", "Contents: Read", "Pull requests: Read"],
     };
   }
   async #request(
@@ -207,10 +209,16 @@ export class GitHubProvider implements RepositoryProvider {
         );
       if ([403, 404].includes(response.status))
         throw new ProviderError(
-          purpose === "list" ? "DISCOVERY_DENIED" : "READ_DENIED",
-          purpose === "list"
-            ? "无法发现仓库，请检查 token 范围和组织授权。"
-            : "当前连接无法读取此仓库，请检查仓库与 Contents 读取权限。",
+          purpose === "pulls"
+            ? "PR_READ_DENIED"
+            : purpose === "list"
+              ? "DISCOVERY_DENIED"
+              : "READ_DENIED",
+          purpose === "pulls"
+            ? "PR 信息不可读，请检查 Pull requests: read 权限。"
+            : purpose === "list"
+              ? "无法发现仓库，请检查 token 范围和组织授权。"
+              : "当前连接无法读取此仓库，请检查仓库与 Contents 读取权限。",
           403,
         );
       if (response.status === 409)
@@ -251,6 +259,101 @@ export class GitHubProvider implements RepositoryProvider {
         !fullName.safeParse(repo.fullName).success)
     )
       throw dataError();
+  }
+  #pull(value: unknown, repo: RepositoryIdentity): ProviderPullRequest {
+    const ref = z.object({
+      ref: z.string().min(1).max(255),
+      sha,
+      repo: z.object({ id }).nullable(),
+    });
+    const p = parsed(
+      z.object({
+        number: z.number().int().positive().safe(),
+        title: z.string().max(1000),
+        body: z.string().max(262144).nullable(),
+        html_url: z.string(),
+        state: z.enum(["open", "closed"]),
+        draft: z.boolean(),
+        base: ref,
+        head: ref,
+        merged_at: z.string().datetime({ offset: true }).nullable(),
+        merge_commit_sha: sha.nullable(),
+        updated_at: z.string().datetime({ offset: true }),
+      }),
+      value,
+    );
+    const expected = `https://github.com/${repo.fullName}/pull/${p.number}`;
+    if (p.html_url !== expected || p.base.repo?.id !== repo.repositoryId)
+      throw dataError();
+    return {
+      number: p.number,
+      title: p.title,
+      body: p.body ?? "",
+      url: expected,
+      state: p.merged_at ? "merged" : p.state,
+      draft: p.draft,
+      base: {
+        repositoryId: p.base.repo.id,
+        branch: p.base.ref,
+        commit: p.base.sha,
+      },
+      head: {
+        repositoryId: p.head.repo?.id ?? null,
+        branch: p.head.ref,
+        commit: p.head.sha,
+      },
+      mergeCommit: p.merged_at ? p.merge_commit_sha : null,
+      updatedAt: p.updated_at,
+    };
+  }
+  async listPullRequests(
+    ctx: ProviderContext,
+    repo: RepositoryIdentity,
+    query: PullRequestQuery,
+    cursor: string | null,
+  ) {
+    this.#context(ctx, repo);
+    if (cursor && !/^[1-9]\d{0,5}$/.test(cursor)) throw dataError();
+    const page = Number(cursor ?? 1);
+    if (query.commit && !sha.safeParse(query.commit).success) throw dataError();
+    const path = `/repos/${repo.fullName}/${query.commit ? `commits/${query.commit}/pulls` : "pulls"}`;
+    const params = new URLSearchParams({ per_page: "100", page: String(page) });
+    if (!query.commit) {
+      params.set("state", "all");
+      params.set("sort", "updated");
+      params.set("direction", "desc");
+      if (query.base) params.set("base", query.base);
+      if (query.head)
+        params.set("head", `${repo.fullName.split("/")[0]}:${query.head}`);
+    }
+    const { value, headers } = await this.#request(
+      `${path}?${params}`,
+      ctx.secret,
+      ctx.signal,
+      "pulls",
+    );
+    if (!Array.isArray(value)) throw dataError();
+    // Never follow a server-supplied URL with credentials. Only increment this query's page.
+    const more = /rel="next"/.test(headers.get("link") ?? "");
+    return {
+      items: value.map((item) => this.#pull(item, repo)),
+      nextCursor: more ? String(page + 1) : null,
+    };
+  }
+  async getPullRequest(
+    ctx: ProviderContext,
+    repo: RepositoryIdentity,
+    number: number,
+  ) {
+    this.#context(ctx, repo);
+    if (!Number.isSafeInteger(number) || number <= 0) throw dataError();
+    const { value } = await this.#request(
+      `/repos/${repo.fullName}/pulls/${number}`,
+      ctx.secret,
+      ctx.signal,
+      "pulls",
+    );
+    return this.#pull(value, repo);
   }
   async authenticate(
     secret: SecretHandle,

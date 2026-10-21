@@ -1,4 +1,5 @@
 import "server-only";
+import type { PullRequest } from "../../lib/model.ts";
 import { createHash } from "node:crypto";
 import { inspect } from "node:util";
 import { AppError } from "../errors.ts";
@@ -67,7 +68,24 @@ export type ProbeResult =
   | { kind: "branch-missing" }
   | { kind: "empty-repository" }
   | { kind: "unavailable"; reason: string; retryAfter?: string };
+export type ProviderPullRequest = PullRequest & { body: string };
+export type PullRequestQuery = {
+  base?: string;
+  head?: string;
+  commit?: string;
+};
 export interface RepositoryProvider {
+  listPullRequests?(
+    context: ProviderContext,
+    repo: RepositoryIdentity,
+    query: PullRequestQuery,
+    cursor: string | null,
+  ): Promise<Page<ProviderPullRequest>>;
+  getPullRequest?(
+    context: ProviderContext,
+    repo: RepositoryIdentity,
+    number: number,
+  ): Promise<ProviderPullRequest>;
   id: string;
   describeConnection(): ConnectionDescriptor;
   parseRepositoryUrl(input: string): RepositorySelector;

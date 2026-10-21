@@ -82,8 +82,7 @@ test("only registered sources are fetched, stale central status is ignored, and 
           a.includes("*") ||
           a.includes("unrelated") ||
           a.includes("unlisted") ||
-          a === "HEAD" ||
-          a.includes("refs/heads/main"),
+          a === "HEAD",
       ),
   );
   const next = await store.refresh(f.project, DEFAULT_LIMITS);
@@ -273,7 +272,7 @@ test("custom collaboration source works without default or protected refs and re
   assert.match(mismatch.sourceDiagnostics[0].message, /不一致/);
 });
 
-test("a legacy or changing default workflow cannot change the selected collaboration snapshot", async (t) => {
+test("release tip changes refresh metadata without reading release workflow as the central source", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   const first = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -284,6 +283,8 @@ test("a legacy or changing default workflow cannot change the selected collabora
   );
   f.commit();
   const next = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(next.id, first.id);
+  assert.notEqual(next.id, first.id);
+  assert.deepEqual(next.documents, first.documents);
+  assert.notEqual(next.releaseSource?.commit, first.releaseSource?.commit);
   assert.equal(next.specBranch, "develop");
 });

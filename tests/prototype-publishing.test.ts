@@ -467,8 +467,20 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "<!doctype html><p>snapshot</p>",
   );
   f.commit();
+  const source = f.git(["rev-parse", "HEAD"]);
+  f.git(
+    [
+      "merge",
+      "--no-ff",
+      source,
+      "-m",
+      "Change PR\n\nSpecTrail-Change: publish-demo",
+    ],
+    join(f.common, ".."),
+  );
+  f.git(["push", "origin", "develop"], join(f.common, ".."));
   run(".agents/skills/spec-trail/scripts/integration.mjs", [
-    "merge",
+    "verify",
     "--change",
     "publish-demo",
   ]);

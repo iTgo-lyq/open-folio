@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "自动关联 PR 并派生版本交付状态",
-      "status": "todo"
+      "status": "done",
+      "verification": "Provider/store/权限37项、delivery专项4项通过；全量发现的5个旧断言修正后对应回归通过，类型与格式通过",
+      "commitTitle": "pr-release-delivery T3: derive delivery status from matched pull requests"
     },
     "T4": {
       "title": "在工作台呈现可追溯的交付进度",

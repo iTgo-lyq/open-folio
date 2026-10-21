@@ -22,6 +22,7 @@ import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
+import { collectDelivery, type DeliveryReader } from "./delivery.ts";
 import { IntegrationReader } from "./integration.ts";
 import {
   prototypeCatalog,
@@ -34,6 +35,7 @@ type RefreshContext = {
   signal: AbortSignal;
   beforePublish: () => Promise<void>;
   automatic?: boolean;
+  delivery?: DeliveryReader;
 };
 const alive = (pid: number) => {
   try {
@@ -193,7 +195,14 @@ export class SnapshotStore {
       await this.acquire();
       const previous = await this.snapshot(p).catch(() => undefined);
       const checked = await readFile(join(dir, "last-checked.json"), "utf8")
-        .then((body) => JSON.parse(body) as { snapshotId: string; at: number })
+        .then(
+          (body) =>
+            JSON.parse(body) as {
+              snapshotId: string;
+              at: number;
+              deliveryLastSuccess?: string;
+            },
+        )
         .catch(() => undefined);
       if (
         context?.automatic &&
@@ -227,20 +236,44 @@ export class SnapshotStore {
             }
           : undefined,
       );
+      const base = indexBase(data, p);
+      const changes =
+        data.unchanged && previous
+          ? previous.changes
+          : await indexChanges(data, reader, signal);
+      const delivery = await collectDelivery({
+        changes,
+        integrations: data.integrations,
+        integrationBranch: data.integrationBranch,
+        releaseSource: data.releaseSource,
+        previous: previous?.deliveryByChange,
+        reader: context?.delivery,
+        signal,
+        ancestor: (before, after) => reader.ancestor(before, after, signal),
+      });
+      const deliveryLastSuccess = delivery.complete
+        ? new Date().toISOString()
+        : checked?.deliveryLastSuccess;
       const markChecked = (id: string) =>
         atomic(
           join(dir, "last-checked.json"),
-          JSON.stringify({ snapshotId: id, at: Date.now() }),
+          JSON.stringify({
+            snapshotId: id,
+            at: Date.now(),
+            deliveryLastSuccess,
+          }),
         );
-      if (data.unchanged && previous) {
-        // The live Git check reused an already authorized snapshot. Only a new
-        // snapshot needs the extra remote permission check before publication.
+      if (
+        data.unchanged &&
+        previous &&
+        JSON.stringify(delivery.deliveryByChange) ===
+          JSON.stringify(previous.deliveryByChange)
+      ) {
         signal.throwIfAborted();
         await markChecked(previous.id);
         await unlink(join(dir, "last-error.json")).catch(() => {});
         return previous;
       }
-      const base = indexBase(data, p);
       const main = data.branches.find(
         (b) => b.name === data.integrationBranch,
       )?.commit;
@@ -255,6 +288,8 @@ export class SnapshotStore {
       const s: Snapshot = {
         cacheSchemaVersion: 8,
         integrations: data.integrations,
+        releaseSource: data.releaseSource,
+        deliveryByChange: delivery.deliveryByChange,
         integrationBranch: data.integrationBranch,
         routes: data.routes,
         sourceDiagnostics: data.sourceDiagnostics,
@@ -288,7 +323,7 @@ export class SnapshotStore {
         capturedAt: new Date().toISOString(),
         branches: data.branches,
         documents: data.documents,
-        changes: await indexChanges(data, reader, signal),
+        changes,
         ...base,
       };
       for (const [blob, body] of data.blobs) {
@@ -360,8 +395,22 @@ export class SnapshotStore {
   async workbench(p: ProjectConfig, id?: string): Promise<Workbench> {
     const s = await this.snapshot(p, id),
       selectedBranch = s.specBranch;
+    const checked = await readFile(
+      join(this.directory(), "last-checked.json"),
+      "utf8",
+    )
+      .then(
+        (body) =>
+          JSON.parse(body) as {
+            snapshotId: string;
+            deliveryLastSuccess?: string;
+          },
+      )
+      .catch(() => undefined);
     return {
       ...s,
+      deliveryLastSuccess:
+        checked?.snapshotId === s.id ? checked.deliveryLastSuccess : undefined,
       specs: s.specs.filter((v) => v.branch === selectedBranch),
       selectedBranch,
       projectName: p.name,

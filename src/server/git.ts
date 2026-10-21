@@ -71,7 +71,11 @@ type CollectedData = Pick<
   | "sourceDiagnostics"
   | "integrations"
   | "documents"
-> & { blobs: Map<string, Buffer>; unchanged: boolean };
+> & {
+  blobs: Map<string, Buffer>;
+  unchanged: boolean;
+  releaseSource: import("../lib/model.ts").ReleaseSource;
+};
 export class GitReader {
   directory: string;
   url: string;
@@ -310,6 +314,10 @@ export class GitReader {
       message: "协作来源尚未就绪。",
     };
     let routes: ChangeRoute[] = [];
+    let releaseSource: import("../lib/model.ts").ReleaseSource = {
+      branch: null,
+      commit: null,
+    };
     const diagnostic = (message: string, code = "SETUP_REQUIRED") =>
       sourceDiagnostics.push({ code, message, severity: "warning" });
     const exact = async (names: string[]) => {
@@ -603,10 +611,13 @@ export class GitReader {
         JSON.stringify(previous.integrations) ===
           JSON.stringify(integrations) &&
         JSON.stringify(previous.routes) === JSON.stringify(routes) &&
+        JSON.stringify(previous.releaseSource) ===
+          JSON.stringify(releaseSource) &&
         JSON.stringify(previous.sourceDiagnostics) ===
           JSON.stringify(sourceDiagnostics);
       return {
         integrationBranch,
+        releaseSource,
         branches,
         routes,
         sourceDiagnostics,
@@ -638,6 +649,21 @@ export class GitReader {
         "所选集成分支与 workflow.json 配置不一致或配置无效，请修复 Setup。",
       );
       return finish();
+    }
+    releaseSource = { branch: workflow.releaseBranch, commit: null };
+    try {
+      const ref = `refs/heads/${workflow.releaseBranch}`;
+      const advertised = (await exact([ref])).get(ref);
+      if (advertised)
+        releaseSource.commit = await fetchRef(
+          ref,
+          `refs/remotes/origin/${workflow.releaseBranch}`,
+          advertised,
+        );
+      else releaseSource.message = "发布分支尚不存在，发布结果待核实。";
+    } catch {
+      signal.throwIfAborted();
+      releaseSource.message = "发布分支暂不可读取，发布结果待核实。";
     }
     if (
       previous?.integrations?.complete &&
