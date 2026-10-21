@@ -20,6 +20,8 @@ import {
 
 const api = "https://api.github.com";
 export const githubApiVersion = "2026-03-10";
+// PR reads need merge_commit_sha, removed in 2026-03-10. This version is supported through 2028-03-10.
+const githubPullApiVersion = "2022-11-28";
 const affiliation = "owner,collaborator,organization_member";
 const firstPage = `${api}/user/repos?affiliation=${affiliation}&per_page=100&page=1`;
 const name = z
@@ -176,7 +178,8 @@ export class GitHubProvider implements RepositoryProvider {
           headers: {
             Accept: "application/vnd.github+json",
             Authorization: `Bearer ${token}`,
-            "X-GitHub-Api-Version": githubApiVersion,
+            "X-GitHub-Api-Version":
+              purpose === "pulls" ? githubPullApiVersion : githubApiVersion,
             "User-Agent": "OpenFolio",
           },
         }),

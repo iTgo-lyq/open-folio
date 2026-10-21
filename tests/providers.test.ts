@@ -47,7 +47,10 @@ function mock(responses: Record<string, unknown | Response>) {
     assert.equal(init?.cache, "no-store");
     const h = new Headers(init?.headers);
     assert.equal(h.get("authorization"), "Bearer test-user-token");
-    assert.equal(h.get("X-GitHub-Api-Version"), githubApiVersion);
+    assert.equal(
+      h.get("X-GitHub-Api-Version"),
+      /\/pulls(?:\/|$)/.test(u.pathname) ? "2022-11-28" : githubApiVersion,
+    );
     const value = responses[u.pathname + u.search] ?? responses[u.pathname];
     assert.notEqual(value, undefined, `Unexpected request ${u.pathname}`);
     return value instanceof Response ? value : Response.json(value);
@@ -463,6 +466,9 @@ test("PR reads normalize trusted links, merged facts, pagination and local permi
       headers: { link: '<https://else.test/secret>; rel="next"' },
     }),
     "/repos/demo/work/pulls/3": pull,
+    [`/repos/demo/work/commits/${oid("c")}/pulls`]: [
+      { ...pull, state: "closed", merged_at: "2026-10-21T00:00:00Z" },
+    ],
   };
   const { provider, requests } = mock(responses);
   const repository = await repo(provider);
@@ -482,6 +488,15 @@ test("PR reads normalize trusted links, merged facts, pagination and local permi
     (await provider.getPullRequest(context, repository, 3)).draft,
     true,
   );
+  const byCommit = await provider.listPullRequests(
+    context,
+    repository,
+    { commit: oid("c") },
+    null,
+  );
+  assert.equal(byCommit.items[0].number, 3);
+  assert.equal(byCommit.items[0].mergeCommit, oid("c"));
+  assert.equal(byCommit.nextCursor, null);
   for (const status of [403, 404, 401, 429]) {
     const denied = mock({
       ...fixture(),

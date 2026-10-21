@@ -31,3 +31,9 @@ Provider 增加 PR 列表、详情和按提交回查；发布分支只定向获�
 当前集中入口仍为待本 Change 集成的 workflow v2；新工作台在该真实仓库的完整读取、长期服务更新与登录冒烟将在验收归档、PR 合入后执行。此次先验证隔离 fixture 的完整界面和真实 GitHub PR 读取，不改中央配置或现有运行数据来绕过交付步骤。
 
 评审修正后的两项交付浏览器回归与生产构建再次通过，格式检查和 diff 空白检查通过。
+
+## T5 · 真实 PR 读取复验
+
+以本 Change 的 [Draft PR](https://github.com/iTgo-lyq/open-folio/pull/1) 进行真实 Provider 读取，发现 REST `2026-03-10` 已移除 `merge_commit_sha`，导致原 fixture 通过而真实响应校验失败。仅将 PR 列表、详情和提交回查固定到仍受支持的 `2022-11-28`；其他请求不变，依据及支持期限见 [Technical](technical.md#平台读取刷新与降级)。测试固定该请求版本并覆盖提交回查的实际合并字段。
+
+修正后，真实列表、详情和按源提交回查均返回同一 Draft PR，目标 develop、来源 codex/pr-release-delivery 和 Change 标记一致；未合入的临时合并 SHA 不被当作合入结果。Provider/delivery 的 17 项回归、类型检查、格式检查和生产构建通过。此验证只读取现有 PR，正式发布与合并事实的完整路径仍由 Git/Provider fixture 覆盖。

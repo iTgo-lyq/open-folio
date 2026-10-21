@@ -75,6 +75,8 @@ Version 是 PR 声明的版本号，沿用项目约定，不要求对应 Git tag
 
 在现有 Provider 增加只读分页方法，覆盖 PR 列表/详情与提交关联 PR；沿用绑定的 credential lease、请求取消及限流错误，不新增独立身份或写权限。
 
+这三类 PR 请求使用 GitHub REST `2022-11-28`：`2026-03-10` 已移除用于核实合入的 `merge_commit_sha`，真实仓库冒烟确认了该差异。其余请求沿用现有版本；所选版本受支持至 2028-03-10，后续升级时需替换合并提交的读取方式。[接口变更](https://docs.github.com/en/rest/about-the-rest-api/breaking-changes)、[版本支持](https://docs.github.com/en/rest/about-the-rest-api/api-versions)。
+
 1. 先由 Git 得到已知 Change、登记源分支和有效 M，再按 head/base/state 查询其 PR。已知 M 可以定向反查 PR，用于来源分支删除后的恢复；返回结果仍核对完整关联条件，不直接相信接口命中。[提交关联 PR](https://docs.github.com/en/rest/commits/commits#list-pull-requests-associated-with-a-commit)
 2. 发布 PR 仅按配置的发布目标查询，以其正文清单关联已知 Change。GitReader 定向获取发布分支，其 tip 变化也参与刷新判断；不查询 Release 或 tag。PR 查询始终不参与发现 Change。
 3. 匹配后的仓库身份和 PR 编号保存在可重建缓存，后续定向刷新；未匹配或需要发现新候选时才重新查询。关闭、重开和重建按稳定 PR 身份合并历史；多个当前候选显示冲突，不按更新时间任选。源分支删除后的冷缓存路径必须有测试，不能仅靠旧缓存保住链接。

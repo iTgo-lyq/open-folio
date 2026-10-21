@@ -47,6 +47,12 @@
       "status": "done",
       "verification": "交付UI及既有浏览器20项通过（1项更新入口数量断言后复测）；Node全量257项、生产构建、类型与格式通过",
       "commitTitle": "pr-release-delivery T4: show delivery stages and pull request links"
+    },
+    "T5": {
+      "title": "修正真实 PR 响应的合并提交读取并复验",
+      "status": "done",
+      "verification": "真实 GitHub PR 列表、详情及提交回查通过；Provider/delivery 17项、类型、格式、生产构建通过；独立复评及Provider12项通过",
+      "commitTitle": "pr-release-delivery T5: preserve merge evidence in GitHub PR reads"
     }
   },
   "closure": {},
@@ -86,8 +92,8 @@
     }
   },
   "rework": {
-    "at": "2026-10-21T16:23:56.589Z",
-    "reason": "用户指出未要求实现 changelog；此前方案错误扩展了发布 PR 内容整理的范围。",
-    "approach": "保留已确认的双分支与 PR 交付目标，版本说明仅保存在发布 PR；删除 CHANGELOG.md、tag、GitHub Release 管理及相关校验和额外阶段。"
+    "at": "2026-10-21T16:58:05.406Z",
+    "reason": "真实 GitHub PR 响应未通过 Provider 校验",
+    "approach": "核对实际字段并补回归，修正读取后重新验证"
   }
 }
