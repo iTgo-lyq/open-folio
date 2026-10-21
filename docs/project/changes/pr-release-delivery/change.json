@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/pr-release-delivery",
   "confirmations": {
     "requirement": {
       "at": "2026-10-21T15:57:53.454Z",
