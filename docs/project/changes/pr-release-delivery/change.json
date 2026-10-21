@@ -4,7 +4,7 @@
   "title": "通过 PR 管理 Change 集成与正式版本发布",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/pr-release-delivery",
   "confirmations": {
     "requirement": {
@@ -55,7 +55,13 @@
       "commitTitle": "pr-release-delivery T5: preserve merge evidence in GitHub PR reads"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-21T17:03:32.652Z",
+      "summary": "需求1–11对应实现完成；Node全量257项及后续专项回归、Playwright20项及交付复测、类型、格式、生产构建通过；真实GitHub PR列表/详情/提交回查通过。隔离上下文独立评审及最终修正复评通过。真实工作台完整读取与长期服务验证待验收集成后执行。"
+    }
+  },
   "types": [
     "流程",
     "工程",
@@ -95,5 +101,9 @@
     "at": "2026-10-21T16:58:05.406Z",
     "reason": "真实 GitHub PR 响应未通过 Provider 校验",
     "approach": "核对实际字段并补回归，修正读取后重新验证"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现、验证及独立评审完成，等待用户验收当前交付。"
   }
 }
