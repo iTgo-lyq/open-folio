@@ -248,6 +248,8 @@ export type Delivery = {
   releasePrs: PullRequest[];
   diagnostics: string[];
   stale: boolean;
+  changePrsStale?: boolean;
+  releasePrsStale?: boolean;
 };
 export type ReleaseSource = {
   branch: string | null;

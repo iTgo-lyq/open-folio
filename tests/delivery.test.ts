@@ -266,3 +266,54 @@ test("a new metadata snapshot cannot publish after a final permission denial", a
   );
   assert.equal((await f.store.snapshot(f.project)).id, first.id);
 });
+
+test("unrelated PR read failures do not erase verified delivery phases", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const initial = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const r = remote();
+  const input = {
+    changes: initial.changes,
+    integrations: initial.integrations,
+    integrationBranch: "develop",
+    releaseSource: initial.releaseSource!,
+    signal: new AbortController().signal,
+    ancestor: async () => true,
+  };
+  const denied = () => {
+    throw new ProviderError("PR_READ_DENIED", "PR permission missing", 403);
+  };
+  const waiting = await collectDelivery({
+    ...input,
+    reader: {
+      ...r.reader,
+      list: (q, c, s) =>
+        q.base === "main" ? denied() : r.reader.list(q, c, s),
+    },
+  });
+  assert.equal(waiting.deliveryByChange.example.stage, "pendingIntegration");
+  assert.equal(waiting.deliveryByChange.example.changePrsStale, false);
+  assert.equal(waiting.deliveryByChange.example.releasePrsStale, true);
+  const m = f.merge();
+  const integrated = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  r.set([{ ...pr(2, true), state: "merged", mergeCommit: m }]);
+  const released = await collectDelivery({
+    ...input,
+    changes: integrated.changes,
+    integrations: integrated.integrations,
+    reader: {
+      ...r.reader,
+      list: (q, c, s) =>
+        q.base !== "main" ? denied() : r.reader.list(q, c, s),
+    },
+  });
+  assert.equal(released.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(released.deliveryByChange.example.changePrsStale, true);
+  assert.equal(released.deliveryByChange.example.releasePrsStale, false);
+  assert.equal(released.deliveryByChange.example.releasePrs[0].state, "merged");
+  assert.ok(
+    !released.deliveryByChange.example.diagnostics.some((d) =>
+      d.includes("尚无"),
+    ),
+  );
+});

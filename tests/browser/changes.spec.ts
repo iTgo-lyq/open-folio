@@ -358,7 +358,7 @@ test("only active Changes use stage filters and the stage board", async ({
     name: "Change 状态",
     exact: true,
   });
-  await expect(scopes.getByRole("tab")).toHaveCount(4);
+  await expect(scopes.getByRole("tab")).toHaveCount(6);
   await expect(scopes.getByRole("tab", { name: /全部/ })).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveValue(
     "execution",

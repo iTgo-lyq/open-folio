@@ -319,7 +319,7 @@ export class Discovery {
         ...source,
         state: "attention",
         message:
-          "请完成 SpecTrail Setup，在所选集成分支发布有效的 workflow v2 配置。",
+          "请完成 SpecTrail Setup，在所选集成分支发布有效的 workflow v3 配置。",
       };
     }
     if (workflow.integrationBranch !== integrationBranch)

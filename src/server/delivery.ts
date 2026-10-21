@@ -106,7 +106,8 @@ export async function collectDelivery(input: Input) {
       const integration = integrationFor(input.integrations, group.id);
       const branch = candidate?.state?.branch;
       const diagnostics: string[] = [];
-      let stale = false;
+      let changePrsStale = false;
+      const releasePrsStale = !!releaseError;
       const prs = new Map<number, ProviderPullRequest>();
       const match = (p: ProviderPullRequest) => {
         const marker = prMarker(p.body);
@@ -155,18 +156,17 @@ export async function collectDelivery(input: Input) {
         } catch (error) {
           signal.throwIfAborted();
           diagnostics.push(message(error));
-          stale = true;
+          changePrsStale = true;
           changePrs = prior?.changePrs ?? [];
         }
       } else {
         diagnostics.push("Change 来源或 PR 读取能力尚未就绪。");
-        stale = true;
+        changePrsStale = true;
       }
       let releasePrs: PullRequest[];
       if (releaseError) {
         diagnostics.push(releaseError);
         releasePrs = prior?.releasePrs ?? [];
-        stale = true;
       } else
         releasePrs = releases
           .filter((p) => {
@@ -176,10 +176,11 @@ export async function collectDelivery(input: Input) {
             );
           })
           .map(summary);
-      const conflict =
-        changePrs.filter((p) => p.state === "open").length > 1 ||
+      const changeConflict =
+        changePrs.filter((p) => p.state === "open").length > 1;
+      const releaseConflict =
         releasePrs.filter((p) => p.state === "open").length > 1;
-      if (conflict)
+      if (changeConflict || releaseConflict)
         diagnostics.push(
           "存在多个待合入 PR，无法确定当前交付，请核对关联标记。",
         );
@@ -220,10 +221,16 @@ export async function collectDelivery(input: Input) {
         if (changePrs.some((p) => p.state === "merged")) {
           stage = "unknown";
           diagnostics.push("PR 已合入，但尚未找到有效集成记录。");
-        } else if (!changePrs.some((p) => p.state === "open"))
+        } else if (
+          !changePrsStale &&
+          !changePrs.some((p) => p.state === "open")
+        )
           diagnostics.push("尚无待合入的关联 Change PR。");
       }
-      if ((stale || conflict) && stage) stage = "unknown";
+      if (stage === "pendingIntegration" && (changePrsStale || changeConflict))
+        stage = "unknown";
+      if (stage === "pendingRelease" && releaseConflict) stage = "unknown";
+      const stale = changePrsStale || releasePrsStale;
       if (stale) complete = false;
       deliveryByChange[group.id] = {
         ...(stage ? { stage } : {}),
@@ -231,6 +238,8 @@ export async function collectDelivery(input: Input) {
         releasePrs: releasePrs.sort((a, b) => b.number - a.number),
         diagnostics: [...new Set(diagnostics)],
         stale,
+        changePrsStale,
+        releasePrsStale,
       };
     }
   };

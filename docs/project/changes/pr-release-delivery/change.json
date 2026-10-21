@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "在工作台呈现可追溯的交付进度",
-      "status": "todo"
+      "status": "done",
+      "verification": "交付UI及既有浏览器20项通过（1项更新入口数量断言后复测）；Node全量257项、生产构建、类型与格式通过",
+      "commitTitle": "pr-release-delivery T4: show delivery stages and pull request links"
     }
   },
   "closure": {},
