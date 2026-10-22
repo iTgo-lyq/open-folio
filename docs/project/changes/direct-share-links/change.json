@@ -4,13 +4,13 @@
   "title": "材料推送后直接提供分享链接",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/direct-share-links",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "简化分享指引与链接生成脚本",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
