@@ -23,6 +23,9 @@
   -webkit-backdrop-filter: var(--of-blur);
   backdrop-filter: var(--of-blur);
 }
+.header:has(> .slot > [data-crumb]) {
+  gap: 8px;
+}
 .brand {
   width: 24px;
   height: 24px;
