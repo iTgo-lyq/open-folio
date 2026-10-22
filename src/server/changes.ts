@@ -1,5 +1,6 @@
 import type {
   ChangeCandidate,
+  ChangeCreator,
   ChangeGroup,
   ChangeState,
   Diagnostic,
@@ -141,7 +142,7 @@ function semantics(c: ChangeCandidate, data: Collected) {
 }
 export async function indexChanges(
   data: Collected,
-  reader: Pick<GitReader, "ancestor" | "changeCreationTimes">,
+  reader: Pick<GitReader, "ancestor" | "changeCreations">,
   signal?: AbortSignal,
 ): Promise<ChangeGroup[]> {
   const groups = new Map<string, ChangeGroup>(
@@ -523,15 +524,31 @@ export async function indexChanges(
         r.ancestry = "found";
     }
   }
-  const creationTimes = await reader.changeCreationTimes(
+  const creations = await reader.changeCreations(
     data.branches.map((branch) => branch.commit),
     signal,
   );
   for (const group of groups.values()) {
-    const time = creationTimes.get(group.id);
-    if (time !== undefined) group.createdAt = new Date(time).toISOString();
+    const created = creations.get(group.id);
+    if (!created) continue;
+    group.createdAt = new Date(created.time).toISOString();
+    const creator = changeCreator(created.author.name, created.author.email);
+    if (creator) group.creator = creator;
   }
   return [...groups.values()].sort(compareChangeCreation);
+}
+
+// GitHub 隐私邮箱可识别登录名：<id>+<login>@ 或 <login>@users.noreply.github.com。
+const GITHUB_NOREPLY =
+  /^(?:\d+\+)?([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)@users\.noreply\.github\.com$/i;
+export function changeCreator(
+  name: string,
+  email: string,
+): ChangeCreator | undefined {
+  const login = GITHUB_NOREPLY.exec(email.trim())?.[1];
+  const display = name.trim() || login;
+  if (!display) return undefined;
+  return login ? { name: display, login } : { name: display };
 }
 
 export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {

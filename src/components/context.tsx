@@ -10,6 +10,8 @@ import {
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
 import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
+import { NETWORK_ERROR } from "@/lib/sync-status";
+import { documentReadingTarget } from "@/lib/change-reading";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
@@ -28,6 +30,8 @@ export type ReadingContext = {
   loading: boolean;
   refreshing: boolean;
   error: string;
+  /** 最近一次错误的分类码：接口错误码、网络失败为 NETWORK，否则省略。 */
+  errorCode?: string;
   refresh: () => Promise<void>;
   locked: boolean;
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
@@ -43,6 +47,10 @@ export type ReadingContext = {
 export const ReadingProvider = createContext<ReadingContext | null>(null);
 const Context = ReadingProvider;
 export const useWorkspace = () => useContext(Context)!;
+function errorCodeOf(cause: unknown) {
+  if (cause instanceof ApiError) return cause.code;
+  return cause instanceof TypeError ? NETWORK_ERROR : "FAILED";
+}
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const personal = usePersonal();
   const [q, setQ] = useState<Query>({}),
@@ -54,13 +62,28 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     } | null>(null),
     [loading, setLoading] = useState(false),
     [refreshing, setRefreshing] = useState(false),
-    [error, setError] = useState(""),
+    [failure, setFailure] = useState({ message: "", code: "", identity: "" }),
     [message, setMessage] = useState(""),
     [retry, setRetry] = useState(0);
+  const setError = (message: string, cause?: unknown, confirmedRead = false) =>
+    setFailure((previous) => {
+      const code = message ? errorCodeOf(cause) : "";
+      if (
+        previous.identity === connectionKey &&
+        ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(previous.code) &&
+        !confirmedRead &&
+        !["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(code)
+      )
+        return previous;
+      return { message, code, identity: connectionKey };
+    });
   const generation = useRef(0),
     active = useRef<AbortController | null>(null);
   const projectId = q.repo ?? "",
     connection = personal.connection;
+  const connectionKey = `${personal.session?.deviceSessionId ?? ""}:${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}`;
+  const visibleFailure =
+    failure.identity === connectionKey ? failure : { message: "", code: "" };
   const integrationBranch =
     q.integrationBranch ??
     personal.items.find((r) => r.key === projectId)?.integrationBranch ??
@@ -216,20 +239,42 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [personal.items, q, nav],
   );
   useEffect(() => {
-    const clear = () => {
+    const clear = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{ path?: string; code?: string; message?: string }>
+      ).detail;
+      if (detail?.path) {
+        const url = new URL(detail.path, window.location.origin);
+        if (
+          url.searchParams.get("connectionId") !== connection?.id ||
+          (!["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(detail.code ?? "") &&
+            !url.pathname.startsWith(
+              `/api/repositories/${encodeURIComponent(projectId)}/`,
+            ))
+        )
+          return;
+      }
       active.current?.abort();
       generation.current++;
       setLoaded(null);
       setLoading(false);
       setRefreshing(false);
-      setError("读取权限暂时无法确认，请重试或切换凭据。");
+      setError(
+        detail?.message || "读取权限暂时无法确认，请重试或切换凭据。",
+        new ApiError(detail?.code ?? "READ_DENIED", detail?.message ?? ""),
+      );
     };
     window.addEventListener("openfolio-read-denied", clear);
     return () => window.removeEventListener("openfolio-read-denied", clear);
-  }, []);
+  }, [connectionKey, connection?.id, projectId]);
   useEffect(() => {
-    setLoaded(null);
-    setError("");
+    setLoaded((previous) => (previous?.key === scope ? previous : null));
+    setFailure((previous) =>
+      previous.identity === connectionKey &&
+      ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(previous.code)
+        ? previous
+        : { message: "", code: "", identity: connectionKey },
+    );
     setRefreshing(false);
     if (
       !ready ||
@@ -263,11 +308,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             signal: c.signal,
           });
         }
-        if (!c.signal.aborted && version === generation.current)
+        if (!c.signal.aborted && version === generation.current) {
           setLoaded({ key: scope, value: next });
+          setError("", undefined, true);
+        }
       } catch (e) {
         if (!c.signal.aborted && version === generation.current) {
-          setError((e as Error).message);
+          setError((e as Error).message, e);
         }
       } finally {
         if (!c.signal.aborted && version === generation.current) {
@@ -312,10 +359,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             setLoaded({ key: scope, value: next });
           }
         }
-        if (!c.signal.aborted && version === generation.current) setError("");
+        if (!c.signal.aborted && version === generation.current)
+          setError("", undefined, true);
       } catch (e) {
         if (!c.signal.aborted && version === generation.current)
-          setError(`自动更新失败：${(e as Error).message}`);
+          setError(`自动更新失败：${(e as Error).message}`, e);
       } finally {
         running = false;
         if (!c.signal.aborted)
@@ -346,7 +394,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setRetry((v) => v + 1);
     } catch (e) {
       if (!c.signal.aborted && version === generation.current) {
-        setError((e as Error).message);
+        setError((e as Error).message, e);
       }
     } finally {
       if (version === generation.current) setRefreshing(false);
@@ -358,9 +406,19 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [message]);
   const openDocument = useCallback(
-    (id: string, anchor = "", raw = false) =>
-      nav({ doc: id, da: anchor || null, raw: raw ? "1" : null }),
-    [nav],
+    (id: string, anchor = "", raw = false) => {
+      const target = data && documentReadingTarget(data, id);
+      if (target)
+        nav({
+          ...target,
+          doc: null,
+          da: null,
+          anchor: anchor || null,
+          raw: raw ? "1" : null,
+        });
+      else nav({ doc: id, da: anchor || null, raw: raw ? "1" : null });
+    },
+    [nav, data],
   );
   return (
     <Context.Provider
@@ -378,7 +436,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         repository,
         loading,
         refreshing,
-        error,
+        error: visibleFailure.message,
+        errorCode: visibleFailure.code || undefined,
         refresh,
         locked: !connection,
         openDocument,
@@ -452,7 +511,9 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
           .querySelector(`#${CSS.escape(anchor)}`)
           ?.scrollIntoView({ block: "start" }),
       );
-    } else if (!sharing) {
+    } else if (sharing) {
+      element.scrollTop = 0;
+    } else {
       try {
         element.scrollTop = Number(
           sessionStorage.getItem(`openfolio.scroll.${key}`) ?? 0,

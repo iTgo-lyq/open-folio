@@ -1,4 +1,11 @@
-import { test, expect, repositoryQuery, connectRequest } from "./connected";
+import {
+  copyPublicPreviewLink,
+  test,
+  expect,
+  repositoryQuery,
+  connectRequest,
+  readingLink,
+} from "./connected";
 test("engineering share links use each collaborator's connection and restore the original reading position", async ({
   page,
   context,
@@ -10,8 +17,7 @@ test("engineering share links use each collaborator's connection and restore the
   await expect(
     page.getByRole("heading", { name: "访问与来源", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "复制页面链接" }).last().click();
-  const link = await page.evaluate(() => navigator.clipboard.readText());
+  const link = await readingLink(page);
   const params = new URL(link).searchParams;
   expect(params.get("repositoryId")).toBe("1");
   expect(params.get("provider")).toBe("github");
@@ -25,7 +31,7 @@ test("engineering share links use each collaborator's connection and restore the
     const other = await collaborator.newPage();
     await other.goto(link);
     await expect(
-      other.getByRole("heading", { name: /你的工程工作台/ }),
+      other.getByRole("heading", { name: /登录 OpenFolio/ }),
     ).toBeVisible();
     await connectRequest(collaborator.request, "token-b");
     await other.reload();
@@ -39,9 +45,8 @@ test("engineering share links use each collaborator's connection and restore the
     await expect(
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toHaveCount(0);
-    await expect(
-      other.getByRole("button", { name: "当前凭据", exact: true }),
-    ).toBeVisible();
+    // 私有内容清除后，凭据管理仍可从账号菜单进入。
+    await expect(other.getByRole("button", { name: /^账号：/ })).toBeVisible();
   } finally {
     await collaborator.close();
   }
@@ -60,7 +65,7 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
   await expect(
     page.frameLocator("iframe").getByRole("heading", { name: "订单列表原型" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "复制预览链接" }).click();
+  await copyPublicPreviewLink(page);
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
   const id = new URL(link).pathname.split("/").pop()!;
@@ -104,9 +109,9 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
     expect(image.ok()).toBe(true);
     expect(image.headers()["content-type"]).toBe("image/jpeg");
     await viewer.setViewportSize({ width: 320, height: 740 });
-    expect(
-      await viewer.evaluate(() => document.documentElement.scrollWidth),
-    ).toBeLessThanOrEqual(320);
+    await expect
+      .poll(() => viewer.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(320);
     await viewer.screenshot({ path: "artifacts/public-preview-mobile.png" });
   } finally {
     await anonymous.close();

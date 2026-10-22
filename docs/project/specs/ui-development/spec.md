@@ -6,9 +6,13 @@ OpenFolio 在 workspace 包 `@open-folio/ui` 维护基础 React 组件、公共�
 
 包导出 Button、IconButton、Badge、EmptyState、Card、Tabs 和 TabbedCard 及其组合部件。Button 支持样式变体和 loading；Badge 接收展示色调，业务状态映射留在应用；Card 提供内容结构，Tabs 和 TabbedCard 支持受控或内部选项状态、禁用项及键盘操作。
 
+公共集合还包含 BrandMark、Avatar、Input、Textarea、Field、Menu、Popover、Dialog、Sheet、Tooltip、SegmentedControl、Switch 和 Skeleton。菜单、弹层与对话框提供键盘、焦点进入/返回和 Escape 关闭；Sheet 贴边呈现单层玻璃表面，遮罩模糊背景，阅读专用宽度由调用方组合。基础组件不持有工作台业务数据。
+
 主应用通过包入口消费按钮、图标按钮、标签和空态；示例不属于公共入口。包导出 TypeScript 源码，由消费方编译，React 使用 peer dependency。
 
-公共样式通过 `@open-folio/ui/styles.css` 在消费方入口导入一次，使用 `of-ui-` 类名前缀与 `--of-*` CSS 变量维护共享颜色、间距、圆角及字体；主应用的主题变量引用公共 token。当前提供默认浅色主题，调用方可覆盖变量；不提供完整主题切换功能。
+公共样式通过 `@open-folio/ui/styles.css` 在消费方入口导入一次，使用 `of-ui-` 类名前缀与 `--of-*` CSS 变量维护共享颜色、间距、圆角、字体与玻璃材质。提供浅色和深色主题 token，以中性色为基础、陶土为强调色；标志是随主题反白的墨色平面矢量，浏览器与应用图标使用同一形状。调用方通过主题属性选择样式；主应用在首帧前确定系统或已保存主题，未手动选择时跟随系统，账号菜单提供浅色和深色选择并保存在本机。
+
+基础组件和公共主题放在此包；阅读布局、导航胶囊、Change 行与业务状态等组合放在主应用组件中，以局部 CSS Modules 表达业务样式，通过包入口复用基础组件。
 
 ## 独立预览
 

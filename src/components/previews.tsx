@@ -14,7 +14,28 @@ import {
   ExternalLink,
   List,
   X,
+  Info,
 } from "lucide-react";
+import {
+  Button,
+  SegmentedControl,
+  IconButton,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from "@open-folio/ui";
+import { ToolbarSlot } from "./toolbar-slot";
+import { PublicLinkPopover } from "./public-link-popover";
+import { useMediaQuery } from "./use-media";
+import styles from "./previews.module.css";
+const previewClass = (names: string) =>
+  names
+    .split(/\s+/)
+    .map((name) => styles[name])
+    .filter(Boolean)
+    .join(" ");
 import type { ChangeCandidate, Device, PreviewDescriptor } from "@/lib/model";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
 import { api, useWorkspace } from "./context";
@@ -32,6 +53,7 @@ export function ChangePreviews({
   current?: boolean;
 }) {
   const { projectId, data, q, nav, notice, readUrl, sharing } = useWorkspace();
+  const mobile = useMediaQuery("(max-width: 760px)");
   const requestKey = `${projectId}:${change?.id ?? ""}:${data?.id}:${q.revision ?? ""}`;
   const [response, setResponse] = useState<{
     key: string;
@@ -45,6 +67,8 @@ export function ChangePreviews({
     [runtimeError, setRuntimeError] = useState("");
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const directoryTrigger = useRef<HTMLButtonElement>(null),
+    directoryNavigated = useRef(false);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 440 });
   const canvas = useRef<HTMLDivElement>(null),
     frame = useRef<HTMLIFrameElement>(null);
@@ -238,18 +262,6 @@ export function ChangePreviews({
         );
   async function copy() {
     if (!result?.revision || !entry) return;
-    if (sharing) {
-      const link = new URL(window.location.href);
-      link.searchParams.set("ct", "previews");
-      link.searchParams.set("preview", entry.id);
-      try {
-        await navigator.clipboard.writeText(link.href);
-        notice("已复制原型分享链接");
-      } catch {
-        notice("未能复制，请从浏览器地址栏复制链接。");
-      }
-      return;
-    }
     if (!publication.url) {
       notice(publication.error ?? "公开版本正在准备，请稍后重试。");
       return;
@@ -264,15 +276,6 @@ export function ChangePreviews({
       notice("未能复制链接，请检查浏览器剪贴板权限。");
     }
   }
-  if (publication.error)
-    return (
-      <Empty title="公开原型准备失败">
-        <p>{publication.error}</p>
-        <button className="button" onClick={publication.retry}>
-          重新准备
-        </button>
-      </Empty>
-    );
   if (response.key === requestKey && response.error)
     return (
       <Empty title="原型读取失败">
@@ -281,7 +284,7 @@ export function ChangePreviews({
     );
   if (!result)
     return (
-      <div className="preview-loading" role="status">
+      <div className={previewClass("preview-loading")} role="status">
         正在读取原型入口…
       </div>
     );
@@ -298,18 +301,25 @@ export function ChangePreviews({
       >
         <p>{result.message ?? result.policy.message}</p>
         {!current && result.policy.branch && (
-          <p className="subtle-note">配置来源：{result.policy.branch}</p>
+          <p className={previewClass("subtle-note")}>
+            配置来源：{result.policy.branch}
+          </p>
         )}
       </Empty>
     );
   const entries = (
-    <div className="preview-entries" role="group" aria-label="原型入口">
+    <div
+      className={previewClass("preview-entries")}
+      role="group"
+      aria-label="原型入口"
+    >
       {result.entries.map((item) => (
         <button
           type="button"
           key={item.id}
           aria-pressed={entry?.id === item.id}
-          className="preview-entry"
+          className={previewClass("preview-entry")}
+          data-preview-entry
           onClick={() => {
             nav({
               preview: item.id,
@@ -317,6 +327,7 @@ export function ChangePreviews({
               device: null,
               orientation: null,
             });
+            directoryNavigated.current = true;
             setDirectoryOpen(false);
           }}
         >
@@ -336,155 +347,178 @@ export function ChangePreviews({
       ))}
     </div>
   );
+  const controls = (
+    <div
+      className={previewClass(
+        `preview-controls ${current ? "current-controls" : ""}`,
+      )}
+    >
+      {entry?.devices && (
+        <SegmentedControl
+          label="预览设备"
+          className={styles.devices}
+          value={chosenDevice ?? entry.devices[0]}
+          onValueChange={(device) => nav({ device, orientation: null })}
+          items={entry.devices.map((value) => {
+            const Icon = devices[value].icon;
+            return {
+              value,
+              ariaLabel: devices[value].label,
+              label: (
+                <>
+                  <Icon />
+                  <span>{devices[value].label}</span>
+                </>
+              ),
+            };
+          })}
+        />
+      )}
+      {entry?.viewport && (
+        <span className={styles.custom}>
+          <Square />
+          自定义组件
+        </span>
+      )}
+      {!entry?.viewport && (!current || chosenDevice !== "pc-web") && (
+        <IconButton
+          aria-label="切换横竖方向"
+          tooltip
+          onClick={() =>
+            nav({
+              orientation:
+                orientation === "landscape" ? "portrait" : "landscape",
+            })
+          }
+        >
+          <RotateCw />
+        </IconButton>
+      )}
+      {!(current && mobile) && (
+        <SegmentedControl
+          label="缩放"
+          size="sm"
+          value={q.zoom === "actual" ? "actual" : "fit"}
+          onValueChange={(zoom) => nav({ zoom: zoom === "fit" ? null : zoom })}
+          items={[
+            { value: "fit", label: "适应", ariaLabel: "适应画布" },
+            { value: "actual", label: "100%" },
+          ]}
+        />
+      )}
+      <IconButton
+        aria-label="重新加载原型"
+        tooltip
+        onClick={() => setAttempt((value) => value + 1)}
+      >
+        <RefreshCw />
+      </IconButton>
+    </div>
+  );
   return (
     <section
-      className={`prototype-panel ${current ? "prototype-viewer" : ""}`}
+      className={previewClass(
+        `prototype-panel ${current ? "prototype-viewer" : ""}`,
+      )}
       data-directory-open={directoryOpen}
       aria-label={current ? "当前页面预览" : "Change 原型预览"}
     >
       {current ? (
-        <aside className="preview-directory" aria-label="原型目录">
-          <div className="preview-directory-heading">
-            <span>项目页面</span>
-            <span>{result.entries.length}</span>
-            <button
-              type="button"
-              className="preview-directory-close icon-button"
-              aria-label="关闭原型目录"
-              onClick={() => setDirectoryOpen(false)}
+        <>
+          <ToolbarSlot side="left">
+            <h1 className={styles.title} ref={heading} tabIndex={-1}>
+              {entry?.title}
+            </h1>
+          </ToolbarSlot>
+          <ToolbarSlot side="right">
+            <IconButton
+              ref={directoryTrigger}
+              aria-label="切换原型目录"
+              tooltip
+              aria-expanded={directoryOpen}
+              onClick={() => {
+                directoryNavigated.current = false;
+                setDirectoryOpen((value) => !value);
+              }}
             >
-              <X size={16} />
-            </button>
-          </div>
-          {entries}
-        </aside>
+              <List />
+            </IconButton>
+            {controls}
+            <PublicLinkPopover
+              url={publication.url}
+              error={publication.error}
+              retry={publication.retry}
+              device={chosenDevice}
+              orientation={orientation}
+              disabled={!entry?.available}
+            />
+            <IconButton
+              aria-label="原型详情"
+              tooltip
+              onClick={() => nav({ pdetail: entry?.id ?? null })}
+            >
+              <Info />
+            </IconButton>
+          </ToolbarSlot>
+          <Sheet open={directoryOpen} onOpenChange={setDirectoryOpen}>
+            <SheetContent
+              side="left"
+              aria-describedby={undefined}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                (directoryNavigated.current
+                  ? mobile
+                    ? canvas.current
+                    : heading.current
+                  : directoryTrigger.current
+                )?.focus({ preventScroll: true });
+                directoryNavigated.current = false;
+              }}
+            >
+              <SheetHeader>
+                <SheetTitle>原型目录</SheetTitle>
+                <IconButton
+                  aria-label="关闭原型目录"
+                  onClick={() => setDirectoryOpen(false)}
+                >
+                  <X />
+                </IconButton>
+              </SheetHeader>
+              <SheetBody>
+                <nav aria-label="原型目录">{entries}</nav>
+              </SheetBody>
+            </SheetContent>
+          </Sheet>
+        </>
       ) : (
         <>
-          <div className="preview-heading">
-            <div>
-              <span className="preview-eyebrow">PROTOTYPE</span>
-              <h3>查看设计效果</h3>
-            </div>
-            <span className="subtle-note">{result.entries.length} 个入口</span>
+          <div className={previewClass("preview-heading")}>
+            <h2>原型入口</h2>
+            <span>{result.entries.length} 个入口</span>
           </div>
           {entries}
         </>
       )}
       <div
-        className="preview-stage"
+        className={previewClass("preview-stage")}
         aria-label={current ? "原型画布" : undefined}
       >
-        {current && (
-          <div className="preview-stage-heading">
-            <h1 ref={heading} tabIndex={-1}>
-              {entry?.title}
-            </h1>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="复制预览链接"
-              title="复制预览链接"
-              onClick={copy}
-            >
-              <Link2 size={16} />
-            </button>
-          </div>
-        )}
         {(q.preview || (current && q.prototype)) &&
           !result.entries.some((e) => e.id === (q.preview || q.prototype)) && (
-            <p className="warning-text">
+            <p className={previewClass("warning-text")}>
               链接中的入口不存在，已显示首个可用入口。
             </p>
           )}
         {q.device &&
           entry?.devices &&
           !entry.devices.includes(q.device as Device) && (
-            <p className="warning-text">
+            <p className={previewClass("warning-text")}>
               该入口未声明链接中的设备，已选择其支持的尺寸。
             </p>
           )}
-        <div className="preview-controls">
-          {current && (
-            <button
-              type="button"
-              className="preview-directory-toggle"
-              aria-label="切换原型目录"
-              aria-expanded={directoryOpen}
-              onClick={() => setDirectoryOpen((value) => !value)}
-            >
-              <List size={16} />
-              <span>目录</span>
-            </button>
-          )}
-          <div className="preview-devices" role="group" aria-label="预览设备">
-            {entry?.devices?.map((device) => {
-              const d = devices[device],
-                Icon = d.icon;
-              return (
-                <button
-                  type="button"
-                  key={device}
-                  aria-pressed={chosenDevice === device}
-                  onClick={() => nav({ device, orientation: null })}
-                >
-                  <Icon size={15} />
-                  {d.label}
-                </button>
-              );
-            })}
-            {entry?.viewport && (
-              <span className="preview-custom">
-                <Square size={14} />
-                自定义组件
-              </span>
-            )}
-          </div>
-          <div className="preview-tools">
-            {!entry?.viewport && (
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="切换横竖方向"
-                title="切换横竖方向"
-                onClick={() =>
-                  nav({
-                    orientation:
-                      orientation === "landscape" ? "portrait" : "landscape",
-                  })
-                }
-              >
-                <RotateCw size={15} />
-              </button>
-            )}
-            <button
-              type="button"
-              className="preview-zoom"
-              aria-pressed={q.zoom !== "actual"}
-              onClick={() => nav({ zoom: null })}
-            >
-              适应画布
-            </button>
-            <button
-              type="button"
-              className="preview-zoom"
-              aria-pressed={q.zoom === "actual"}
-              onClick={() => nav({ zoom: "actual" })}
-            >
-              100%
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="重新加载原型"
-              title="重新加载原型"
-              onClick={() => setAttempt((v) => v + 1)}
-            >
-              <RefreshCw size={14} />
-            </button>
-          </div>
-        </div>
+        {!current && controls}
         {!current && (
-          <div className="preview-dimensions">
+          <div className={previewClass("preview-dimensions")}>
             <span>
               {size.width} × {size.height} CSS px
             </span>
@@ -492,7 +526,7 @@ export function ChangePreviews({
           </div>
         )}
         {runtimeError && (
-          <div className="preview-runtime-error" role="alert">
+          <div className={previewClass("preview-runtime-error")} role="alert">
             {runtimeError}
           </div>
         )}
@@ -503,7 +537,8 @@ export function ChangePreviews({
             hostStatus === "error" ||
             (loaded !== load && hostStatus !== "ready")) && (
             <div
-              className="preview-host-status"
+              className={previewClass("preview-host-status")}
+              data-preview-host-status
               role={hostStatus === "error" ? "alert" : "status"}
             >
               <span>
@@ -528,26 +563,33 @@ export function ChangePreviews({
             </div>
           )}
         <div
-          className="preview-canvas"
+          className={previewClass("preview-canvas")}
           ref={canvas}
           data-testid="preview-canvas"
+          tabIndex={0}
+          aria-label="原型画布"
         >
           {!entry?.available ? (
             <Empty title="暂时无法预览">
               <p>{entry?.message}</p>
+            </Empty>
+          ) : publication.error ? (
+            <Empty title="公开原型准备失败">
+              <p>{publication.error}</p>
+              <Button onClick={publication.retry}>重新准备</Button>
             </Empty>
           ) : loadError ? (
             <Empty title="预览无法加载">
               <p>{loadError}</p>
             </Empty>
           ) : ready !== load ? (
-            <div className="preview-loading" role="status">
+            <div className={previewClass("preview-loading")} role="status">
               正在加载预览…
             </div>
           ) : (
-            <div className="preview-canvas-inner">
+            <div className={previewClass("preview-canvas-inner")}>
               <div
-                className="preview-frame-space"
+                className={previewClass("preview-frame-space")}
                 style={{
                   width: size.width * scale,
                   height: size.height * scale,
@@ -575,7 +617,7 @@ export function ChangePreviews({
           )}
         </div>
         {current && (
-          <div className="preview-canvas-status">
+          <div className={previewClass("preview-canvas-status")}>
             <span>
               {size.width} × {size.height}
             </span>
@@ -585,27 +627,36 @@ export function ChangePreviews({
       </div>
       {!current && (
         <>
-          <div className="preview-provenance">
+          <div
+            className={previewClass("preview-provenance")}
+            data-preview-provenance
+          >
             <span>
               <GitCommitHorizontal size={14} />
               <code>{result.revision?.slice(0, 12)}</code>
               {result.pinned ? "归档版本" : "已推送版本"}
             </span>
-            <button type="button" className="text-button" onClick={copy}>
-              <Link2 size={13} />
-              {sharing ? "复制原型分享链接" : "复制固定版本链接"}
-            </button>
+            {!sharing && (
+              <button
+                type="button"
+                className={previewClass("text-button")}
+                onClick={copy}
+              >
+                <Link2 size={13} />
+                复制固定版本链接
+              </button>
+            )}
           </div>
           {q.revision && (
             <button
               type="button"
-              className="text-button"
+              className={previewClass("text-button")}
               onClick={() => nav({ revision: null })}
             >
               返回当前 Change 版本
             </button>
           )}
-          <p className="preview-footnote">
+          <p className={previewClass("preview-footnote")} data-preview-footnote>
             {hosted
               ? `产物 ${hosted.version} · 源码 ${hosted.sourceCommit.slice(0, 12)}${entry?.sourceAvailable === false ? "（源码提交已不可用）" : ""}`
               : entry?.artifact?.type === "git"

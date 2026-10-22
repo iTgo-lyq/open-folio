@@ -1,0 +1,117 @@
+.backButton {
+  line-height: 1.5;
+}
+.materials {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.materialGroup {
+  margin: 18px 10px 7px;
+  color: var(--of-text-3);
+  font-size: 11px;
+}
+.materialLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: var(--of-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  text-decoration: none;
+}
+.materialLink > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.materialLink > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--of-text-3);
+}
+.materialLink > small {
+  color: var(--of-text-2);
+  font-size: 10.5px;
+}
+.materialLink:hover {
+  background: var(--of-fill-hover);
+}
+.materialLink[aria-current] {
+  background: var(--of-fill-selected);
+  color: var(--of-text);
+  font-weight: 550;
+}
+.materialLink[aria-current] svg {
+  color: var(--of-accent);
+}
+.materialLink[data-absent] {
+  color: var(--of-text-2);
+}
+.materialLink small.missing {
+  color: var(--of-warning);
+}
+.header > code {
+  font: 11.5px var(--of-font-mono);
+  color: var(--of-text-3);
+}
+.header h1,
+.title {
+  color: var(--of-text);
+  font-size: 30px;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 10px 0 12px;
+  overflow-wrap: anywhere;
+}
+.facts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  color: var(--of-text-3);
+  font-size: 12px;
+}
+.facts > span[role="region"] {
+  min-width: 0;
+  max-width: 100%;
+}
+.absent {
+  border-radius: 12px;
+  background: var(--of-bg-subtle);
+  padding: 18px;
+  color: var(--of-text-2);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 24px;
+  overflow-wrap: anywhere;
+}
+.absent[role="alert"] {
+  color: var(--of-warning);
+  background: var(--of-warning-soft);
+}
+.absent h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.absent p {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .header h1,
+  .title {
+    font-size: 25px;
+  }
+  .facts {
+    font-size: 11.5px;
+  }
+  /* 手机顶栏把宽度留给当前材料，返回按钮只保留箭头。 */
+  .backLabel {
+    display: none;
+  }
+}

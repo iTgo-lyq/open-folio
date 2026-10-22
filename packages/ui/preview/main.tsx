@@ -23,6 +23,38 @@ import {
   Field,
   FieldLabel,
   FieldDescription,
+  Menu,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+  MenuCheckboxItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuLabel,
+  MenuSeparator,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverClose,
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+  SheetClose,
+  SegmentedControl,
+  Switch,
+  Avatar,
+  Skeleton,
   type BadgeTone,
 } from "@open-folio/ui";
 import "@open-folio/ui/styles.css";
@@ -71,6 +103,36 @@ const sections = [
     code: "Tabs · TabbedCard",
     description: "在同一位置切换内容，支持方向键和焦点导航。",
   },
+  {
+    id: "menu",
+    title: "菜单",
+    code: "Menu",
+    description: "玻璃浮层中的普通、单选与多选项，方向键移动，Escape 关闭。",
+  },
+  {
+    id: "popover",
+    title: "弹层",
+    code: "Popover",
+    description: "锚定在触发控件旁的说明与操作，关闭后焦点回到触发控件。",
+  },
+  {
+    id: "overlay",
+    title: "对话框与抽屉",
+    code: "Dialog · Sheet",
+    description: "确认用实底对话框；抽屉外层为玻璃，阅读区为实底卡片。",
+  },
+  {
+    id: "segmented",
+    title: "分段与开关",
+    code: "SegmentedControl · Switch",
+    description: "少量互斥选项与即时生效的设置。",
+  },
+  {
+    id: "avatar",
+    title: "头像与占位",
+    code: "Avatar · Skeleton",
+    description: "按名称取色的人员头像、仓库字标与读取中占位。",
+  },
 ];
 const tones: BadgeTone[] = [
   "neutral",
@@ -117,7 +179,18 @@ function App() {
     [saved, setSaved] = useState(false),
     [count, setCount] = useState(0),
     [tone, setTone] = useState<BadgeTone>("success"),
-    [empty, setEmpty] = useState(true);
+    [empty, setEmpty] = useState(true),
+    [theme, setTheme] = useState<"light" | "dark">("light"),
+    [view, setView] = useState("list"),
+    [types, setTypes] = useState<string[]>(["新功能"]),
+    [menuAction, setMenuAction] = useState("尚未选择操作"),
+    [device, setDevice] = useState("pc-web"),
+    [motion, setMotion] = useState(false),
+    [unbound, setUnbound] = useState(false);
+  const switchTheme = (next: "light" | "dark") => {
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+  };
   const visible = sections.filter((section) =>
     `${section.title} ${section.code} ${section.description}`
       .toLowerCase()
@@ -206,6 +279,7 @@ function App() {
         <div className="demo-row">
           <IconButton
             aria-label="增加计数"
+            tooltip
             onClick={() => setCount((c) => c + 1)}
           >
             <svg
@@ -350,6 +424,184 @@ function App() {
         <p className="source-note">本页的预览 / 代码容器使用 TabbedCard。</p>
       </Example>
     ),
+    menu: (
+      <Example
+        title="菜单"
+        code={
+          '<Menu>\n  <MenuTrigger asChild><Button>显示</Button></MenuTrigger>\n  <MenuContent>\n    <MenuRadioGroup value={view} onValueChange={setView}>\n      <MenuRadioItem value="list">列表</MenuRadioItem>\n    </MenuRadioGroup>\n  </MenuContent>\n</Menu>'
+        }
+      >
+        <div className="demo-row">
+          <Menu>
+            <MenuTrigger asChild>
+              <Button>显示与筛选</Button>
+            </MenuTrigger>
+            <MenuContent aria-label="显示与筛选">
+              <MenuLabel>视图</MenuLabel>
+              <MenuRadioGroup value={view} onValueChange={setView}>
+                <MenuRadioItem value="list">列表</MenuRadioItem>
+                <MenuRadioItem value="board">看板</MenuRadioItem>
+              </MenuRadioGroup>
+              <MenuSeparator />
+              <MenuLabel>类型</MenuLabel>
+              {["新功能", "修复", "体验"].map((t) => (
+                <MenuCheckboxItem
+                  key={t}
+                  checked={types.includes(t)}
+                  onSelect={(e) => e.preventDefault()}
+                  onCheckedChange={(on) =>
+                    setTypes((all) =>
+                      on ? [...all, t] : all.filter((x) => x !== t),
+                    )
+                  }
+                >
+                  {t}
+                </MenuCheckboxItem>
+              ))}
+              <MenuSeparator />
+              <MenuItem onSelect={() => setMenuAction("已复制链接")}>
+                复制链接
+              </MenuItem>
+              <MenuItem tone="danger" onSelect={() => setMenuAction("已解绑")}>
+                解绑
+              </MenuItem>
+            </MenuContent>
+          </Menu>
+          <span role="status">
+            {view === "list" ? "列表" : "看板"} ·{" "}
+            {types.join("、") || "全部类型"} · {menuAction}
+          </span>
+        </div>
+      </Example>
+    ),
+    popover: (
+      <Example
+        title="弹层"
+        code={
+          "<Popover>\n  <PopoverTrigger asChild><Button>同步状态</Button></PopoverTrigger>\n  <PopoverContent>…</PopoverContent>\n</Popover>"
+        }
+      >
+        <div className="demo-row">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost">已同步</Button>
+            </PopoverTrigger>
+            <PopoverContent aria-label="同步状态">
+              <strong>读取来源</strong>
+              <p className="popover-text">develop · 4a3b015 · 10:24 读取</p>
+              <PopoverClose asChild>
+                <Button size="sm">关闭弹层</Button>
+              </PopoverClose>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </Example>
+    ),
+    overlay: (
+      <Example
+        title="对话框与抽屉"
+        code={
+          '<Dialog>\n  <DialogTrigger asChild><Button>解绑</Button></DialogTrigger>\n  <DialogContent>…</DialogContent>\n</Dialog>\n<Sheet>\n  <SheetContent side="right">…</SheetContent>\n</Sheet>'
+        }
+      >
+        <div className="demo-row">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="danger">解绑 Token</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogTitle>解绑“日常阅读”？</DialogTitle>
+              <DialogDescription>
+                解绑后这个 Token 不再用于读取仓库，可以随时重新添加。
+              </DialogDescription>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button>取消</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant="primary" onClick={() => setUnbound(true)}>
+                    确认解绑
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button>查看详情</Button>
+            </SheetTrigger>
+            <SheetContent side="right" aria-describedby={undefined}>
+              <SheetHeader>
+                <div>
+                  <SheetTitle>离线地图下载管理</SheetTitle>
+                  <SheetDescription>页面 · 桌面、平板、手机</SheetDescription>
+                </div>
+                <SheetClose asChild>
+                  <IconButton aria-label="关闭详情">×</IconButton>
+                </SheetClose>
+              </SheetHeader>
+              <SheetBody>
+                <p>区域列表、框选下载与空间提示。</p>
+              </SheetBody>
+            </SheetContent>
+          </Sheet>
+          <span role="status">{unbound ? "已解绑" : "Token 仍在使用"}</span>
+        </div>
+      </Example>
+    ),
+    segmented: (
+      <Example
+        title="分段与开关"
+        code={
+          '<SegmentedControl label="预览设备" value={device} onValueChange={setDevice} items={[…]} />\n<Switch checked={on} onCheckedChange={setOn} aria-label="减少动态效果" />'
+        }
+      >
+        <div className="demo-row">
+          <SegmentedControl
+            label="预览设备"
+            value={device}
+            onValueChange={setDevice}
+            items={[
+              { value: "pc-web", label: "桌面" },
+              { value: "ipad", label: "平板" },
+              { value: "mobile", label: "手机" },
+            ]}
+          />
+          <label className="demo-row">
+            <Switch
+              checked={motion}
+              onCheckedChange={setMotion}
+              aria-label="减少动态效果"
+            />
+            减少动态效果
+          </label>
+          <span role="status">
+            {device} · {motion ? "已减少" : "正常"}
+          </span>
+        </div>
+      </Example>
+    ),
+    avatar: (
+      <Example
+        title="头像与占位"
+        code={
+          '<Avatar name="林知远" size="md" />\n<Avatar name="Atlas" shape="square" />\n<Skeleton style={{ width: 160 }} />'
+        }
+      >
+        <div className="demo-row">
+          {["林知远", "陈一", "周屿", "许宁"].map((n) => (
+            <Avatar key={n} name={n} size="md" />
+          ))}
+          {["Atlas", "Folio", "Field Notes"].map((n) => (
+            <Avatar key={n} name={n} shape="square" />
+          ))}
+        </div>
+        <div className="skeleton-demo">
+          <Skeleton style={{ width: "60%" }} />
+          <Skeleton style={{ width: "40%" }} />
+        </div>
+      </Example>
+    ),
   };
   return (
     <div className="catalog">
@@ -363,12 +615,14 @@ function App() {
           </span>
         </a>
         <p className="nav-label">
-          组件目录 <span>06</span>
+          组件目录 <span>{String(sections.length).padStart(2, "0")}</span>
         </p>
         <nav aria-label="组件导航">
           {sections.map(({ id, title, code }, index) => (
             <a key={id} href={`#${id}`} onClick={() => setQuery("")}>
-              <span className="nav-index">0{index + 1}</span>
+              <span className="nav-index">
+                {String(index + 1).padStart(2, "0")}
+              </span>
               <span>
                 {title}
                 <code>{code}</code>
@@ -391,7 +645,16 @@ function App() {
       <main id="top">
         <div className="topline">
           <span>设计与开发 / 组件参考</span>
-          <Badge>v0.1</Badge>
+          <SegmentedControl
+            size="sm"
+            label="外观"
+            value={theme}
+            onValueChange={switchTheme}
+            items={[
+              { value: "light", label: "浅色" },
+              { value: "dark", label: "深色" },
+            ]}
+          />
         </div>
         <header className="hero">
           <p className="eyebrow">OPENFOLIO DESIGN SYSTEM</p>
@@ -409,20 +672,22 @@ function App() {
             <a className="browse-link" href="#component-list">
               浏览组件 <span aria-hidden="true">↓</span>
             </a>
-            <span>7 个公共组件 · 6 组交互示例</span>
+            <span>{sections.length} 组交互示例</span>
           </div>
           <div className="token-sheet">
             <p>
               FOUNDATIONS <span>01</span>
             </p>
             <div className="swatch-strip" aria-label="主题颜色">
-              {["ink", "blue", "green", "orange", "muted"].map((name) => (
-                <span
-                  key={name}
-                  title={name}
-                  style={{ background: `var(--of-${name})` }}
-                />
-              ))}
+              {["text", "accent", "success", "warning", "danger"].map(
+                (name) => (
+                  <span
+                    key={name}
+                    title={name}
+                    style={{ background: `var(--of-${name})` }}
+                  />
+                ),
+              )}
             </div>
             <div className="type-sample">
               Aa{" "}

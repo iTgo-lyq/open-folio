@@ -182,6 +182,6 @@ test("unsupported snapshot schemas fail without rewriting stored bytes", async (
   });
   assert.equal(await readFile(path, "utf8"), original);
   const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(rebuilt.cacheSchemaVersion, 8);
+  assert.equal(rebuilt.cacheSchemaVersion, 9);
   assert.equal(rebuilt.specs[0].title, "平台");
 });

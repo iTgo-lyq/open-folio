@@ -58,7 +58,65 @@ try {
     .fill("no matching component");
   await page.getByRole("heading", { name: "没有找到组件" }).waitFor();
   await page.getByRole("button", { name: "清除搜索" }).click();
-  await expect(page.locator(".component-section")).toHaveCount(7);
+  await expect(page.locator(".component-section")).toHaveCount(12);
+  // 菜单：方向键移动、单选与多选、Escape 关闭后焦点回到触发控件。
+  const menuTrigger = page.getByRole("button", { name: "显示与筛选" });
+  await menuTrigger.click();
+  const menu = page.getByRole("menu", { name: "显示与筛选" });
+  await menu.getByRole("menuitemradio", { name: "看板" }).click();
+  await page.getByText(/^看板 · 新功能/).waitFor();
+  await menuTrigger.click();
+  await menu.getByRole("menuitemcheckbox", { name: "修复" }).click();
+  await expect(menu).toBeVisible();
+  await expect(
+    menu.getByRole("menuitemcheckbox", { name: "修复" }),
+  ).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(menuTrigger).toBeFocused();
+  await page.getByText(/新功能、修复/).waitFor();
+  // 弹层与对话框：Escape 或关闭后焦点回到触发控件。
+  const popoverTrigger = page.getByRole("button", { name: "已同步" });
+  await popoverTrigger.click();
+  await page.getByRole("dialog", { name: "同步状态" }).waitFor();
+  await page.keyboard.press("Escape");
+  await expect(popoverTrigger).toBeFocused();
+  const unbind = page.getByRole("button", { name: "解绑 Token" });
+  await unbind.click();
+  const confirm = page.getByRole("dialog", { name: "解绑“日常阅读”？" });
+  await expect(confirm.getByRole("button", { name: "取消" })).toBeFocused();
+  await confirm.getByRole("button", { name: "确认解绑" }).click();
+  await page.getByText("已解绑", { exact: true }).waitFor();
+  await expect(unbind).toBeFocused();
+  await page.getByRole("button", { name: "查看详情" }).click();
+  const sheet = page.getByRole("dialog", { name: "离线地图下载管理" });
+  await expect(sheet).toBeVisible();
+  assert.notEqual(
+    await sheet.evaluate((el) => getComputedStyle(el).backdropFilter),
+    "none",
+  );
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  // 分段控件用方向键切换；开关即时生效；图标按钮聚焦时显示名称。
+  await page.getByRole("radio", { name: "桌面" }).focus();
+  // Radix 在下一轮事件中移动焦点，并以“方向键仍按下”判断是否同时选中；模拟真实按键时长。
+  await page.keyboard.down("ArrowRight");
+  await page.waitForTimeout(50);
+  await page.keyboard.up("ArrowRight");
+  await expect(page.getByRole("radio", { name: "平板" })).toBeChecked();
+  await page.getByRole("switch", { name: "减少动态效果" }).click();
+  await expect(
+    page.getByRole("switch", { name: "减少动态效果" }),
+  ).toBeChecked();
+  await page.getByRole("button", { name: "增加计数", exact: true }).focus();
+  await expect(page.getByRole("tooltip", { name: "增加计数" })).toBeVisible();
+  await page.getByRole("radio", { name: "深色" }).click();
+  await page.waitForTimeout(300); // 等待控件颜色过渡结束再截图
+  assert.equal(
+    await page.evaluate(() => document.documentElement.dataset.theme),
+    "dark",
+  );
   await mkdir("artifacts", { recursive: true });
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.screenshot({ path: "artifacts/ui-desktop.png", fullPage: true });
@@ -72,7 +130,7 @@ try {
   await page.screenshot({ path: "artifacts/ui-mobile.png", fullPage: true });
   assert.deepEqual(errors, []);
   console.log(
-    "UI production preview: loading, keyboard tabs, disabled tab skipping, search, empty-state, 320px and console checks passed",
+    "UI production preview: loading, keyboard tabs, disabled tab skipping, search, empty-state, menu, popover, dialog, sheet, segmented, switch, tooltip, dark theme, 320px and console checks passed",
   );
 } finally {
   await browser?.close();

@@ -1,6 +1,123 @@
-import { test, expect, repositoryQuery } from "./connected";
+import { test, expect, repositoryQuery, openSyncStatus } from "./connected";
+import { primaryRecord, type Snapshot } from "../../src/lib/model";
 
-test("workspace uses one header with accessible source and actions on desktop and mobile", async ({
+test("collapsed Changes badge counts active records, hides zero and caps only the visible number", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const original = data.changes.find(
+    (group) => group.id === "document-reader",
+  )!;
+  const inactive = data.changes.filter(
+    (group) => primaryRecord(group)?.state?.status !== "active",
+  );
+  const setCount = (count: number) => {
+    data.changes = [
+      ...Array.from({ length: count }, (_, i) => {
+        const group = structuredClone(original);
+        group.id = group.primary = `badge-${i}`;
+        const record = primaryRecord(original)!;
+        group.candidates = [
+          {
+            ...structuredClone(record),
+            key: group.primary,
+            id: group.id,
+            state: { ...record.state!, id: group.id },
+          },
+        ];
+        return group;
+      }),
+      ...inactive,
+    ];
+  };
+  setCount(3);
+  await page.route("**/api/repositories/*/workbench*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({ json: data });
+  });
+  await page.goto(`/?${repositoryQuery}&m=specs`);
+  const nav = page.getByRole("navigation", { name: "模块导航" });
+  const changes = nav.getByRole("link", { name: "Changes", exact: true });
+  const badge = changes.locator('span[aria-hidden="true"]');
+  await expect(badge).toHaveText("3");
+  await expect(changes).toHaveAccessibleName("Changes");
+  await expect(changes).toHaveAccessibleDescription("3 个进行中的 Change");
+  await page.evaluate(() => {
+    new MutationObserver(() => {
+      if (
+        !document.querySelector(
+          'a[aria-label="Changes"] span[aria-hidden="true"]',
+        )
+      )
+        document.documentElement.dataset.badgeDisappeared = "true";
+    }).observe(document.querySelector('aside[aria-label="工作台导航"]')!, {
+      childList: true,
+      subtree: true,
+    });
+  });
+  for (const [module, title] of [
+    ["prototypes", "原型"],
+    ["home", "我的仓库"],
+    ["specs", "Specs"],
+  ]) {
+    await nav.getByRole("link", { name: title, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`m=${module}`));
+    await expect(badge).toHaveText("3");
+  }
+  await expect(page.locator("html")).not.toHaveAttribute(
+    "data-badge-disappeared",
+    "true",
+  );
+  const badgeBox = (await badge.boundingBox())!;
+  await page.mouse.click(
+    badgeBox.x + badgeBox.width / 2,
+    badgeBox.y + badgeBox.height / 2,
+  );
+  await expect(page).toHaveURL(/m=changes/);
+  await expect(
+    page.getByRole("tab", { name: "进行中3", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: /^已完成/ }).click();
+  await expect(badge).toHaveText("3");
+  await page.getByRole("button", { name: "展开侧栏" }).click();
+  await expect(nav.getByRole("link", { name: /^Changes\s*3$/ })).toHaveText(
+    "Changes3",
+  );
+  await page.getByRole("button", { name: "收起侧栏" }).click();
+  await page.setViewportSize({ width: 834, height: 1100 });
+  await expect(badge).toHaveText("3");
+  for (const count of [0, 104]) {
+    setCount(count);
+    await page.reload();
+    if (count === 0) {
+      await expect(badge).toHaveCount(0);
+      await expect(changes).not.toHaveAttribute("aria-describedby");
+    } else {
+      await expect(badge).toHaveText("99+");
+      await expect(changes).toHaveAccessibleDescription(
+        "104 个进行中的 Change",
+      );
+      expect(
+        await badge.evaluate((el) => {
+          const b = el.getBoundingClientRect(),
+            p = el.parentElement!.getBoundingClientRect();
+          return (
+            b.left >= p.left &&
+            b.right <= p.right &&
+            b.top >= p.top &&
+            b.bottom <= p.bottom
+          );
+        }),
+      ).toBe(true);
+    }
+  }
+});
+
+test("workspace uses one floating toolbar with sync status on desktop and mobile", async ({
   page,
 }) => {
   for (const width of [1440, 320]) {
@@ -8,61 +125,94 @@ test("workspace uses one header with accessible source and actions on desktop an
     for (const module of ["specs", "changes", "prototypes"]) {
       await page.goto(`/?${repositoryQuery}&m=${module}`);
       await expect(
-        page.getByRole("button", { name: "刷新中心仓库" }),
-      ).toBeEnabled();
-      await expect(page.locator(".workspace-source")).toHaveCount(0);
-      await expect(page.locator(".workspace-header")).toHaveCount(1);
-      const layout = await page.evaluate(() => {
-        const header = document
-          .querySelector(".workspace-header")!
-          .getBoundingClientRect();
-        const body = document
-          .querySelector(".workspace-body")!
-          .getBoundingClientRect();
-        const context = document
-          .querySelector(".header-context")!
-          .getBoundingClientRect();
-        const actions = document
-          .querySelector(".header-actions")!
-          .getBoundingClientRect();
+        page.getByRole("button", { name: "同步状态：已同步" }),
+      ).toBeVisible();
+      const toolbar = page.locator("main > header");
+      await expect(toolbar).toHaveCount(1);
+      const layout = await toolbar.evaluate((el) => {
+        const bar = el.getBoundingClientRect(),
+          main = el.parentElement!.getBoundingClientRect();
         return {
-          headerBottom: header.bottom,
-          bodyTop: body.top,
-          actionsLeft: actions.left,
-          contextRight: context.right,
+          top: bar.top - main.top,
+          blur: getComputedStyle(el).backdropFilter,
           overflow: document.documentElement.scrollWidth > innerWidth,
         };
       });
-      expect(layout.bodyTop).toBeCloseTo(layout.headerBottom, 0);
+      expect(layout.top).toBe(0);
+      expect(layout.blur).not.toBe("none");
       expect(layout.overflow).toBe(false);
-      expect(layout.actionsLeft).toBeGreaterThanOrEqual(layout.contextRight);
-      expect(
-        await page
-          .locator(".header-module")
-          .evaluate((el) => el.getBoundingClientRect().height),
-      ).toBeLessThan(30);
-      await page.locator(".header-source summary").click();
-      const source = page.locator(".header-source-details");
-      await expect(source).toBeVisible();
-      await expect(source).toContainText(
-        module === "changes" ? "develop 入口" : "develop",
-      );
-      await expect(source).toContainText("读取于");
+      const source = await openSyncStatus(page);
+      await expect(source).toContainText("develop");
+      await expect(source).toContainText("快照");
       expect(
         await source.evaluate((el) => {
           const box = el.getBoundingClientRect();
           return box.left >= 0 && box.right <= innerWidth;
         }),
       ).toBe(true);
-      await page.locator(".header-source summary").click();
-      if (module !== "specs")
+      await page.keyboard.press("Escape");
+      await expect(source).toHaveCount(0);
+      if (module === "prototypes")
         await expect(
-          page
-            .locator(".header-actions")
-            .getByRole("button", { name: "复制页面链接" }),
-        ).toBeVisible();
+          toolbar.getByRole("button", { name: "复制页面链接" }),
+        ).toHaveCount(0);
     }
   }
+});
+
+test("logo and Ctrl+\\ collapse the sidebar into a capsule, tablet starts collapsed and phones use the bottom bar", async ({
+  page,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=changes`);
+  const nav = page.getByRole("navigation", { name: "模块导航" });
+  await expect(nav.getByRole("link", { name: "Changes" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
+  await page.getByRole("button", { name: "展开侧栏" }).click();
+  await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
+  await page.getByRole("button", { name: "收起侧栏" }).click();
+  const logo = page.getByRole("button", { name: "展开侧栏" });
+  await expect(logo).toBeFocused();
+  await expect(nav.getByRole("link")).toHaveCount(4);
+  await expect(
+    page.locator("main > header").getByRole("button", { name: /^当前仓库：/ }),
+  ).toBeVisible();
+  await page.keyboard.press("Control+Backslash");
+  await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
+  await page.setViewportSize({ width: 834, height: 1100 });
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("aside")).toBeHidden();
+  await nav.getByRole("link", { name: "Specs" }).click();
+  await expect(page).toHaveURL(/m=specs/);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("account menu switches theme and opens account settings", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto(`/?${repositoryQuery}&m=specs`);
+  await page.getByRole("button", { name: /^账号：/ }).click();
+  const menu = page.getByRole("menu", { name: "账号" });
+  await expect(
+    menu.getByRole("menuitemradio", { name: /reader/ }),
+  ).toHaveAttribute("aria-checked", "true");
+  await menu.getByRole("menuitemradio", { name: "深色" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: /^账号：/ }).click();
+  await page.getByRole("menuitem", { name: "账号与 Token" }).click();
+  await expect(page).toHaveURL(/m=connections/);
 });
 
 test("workbench has no search entry or shortcut requests", async ({ page }) => {
@@ -73,7 +223,7 @@ test("workbench has no search entry or shortcut requests", async ({ page }) => {
   });
   for (const module of ["home", "specs", "changes", "prototypes"]) {
     await page.goto(`/?${repositoryQuery}&m=${module}`);
-    await expect(page.locator(".workspace-body")).toBeVisible();
+    await expect(page.locator("main")).toBeVisible();
     await expect(
       page.getByRole("textbox", {
         name: /搜索|筛选能力|筛选原型|筛选变更|筛选预览目录/,

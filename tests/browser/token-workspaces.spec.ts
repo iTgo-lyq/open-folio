@@ -5,6 +5,8 @@ import {
   repoKey,
   connectRequest,
   revisionHeaders,
+  copyCurrentToken,
+  logoutCurrent,
 } from "./connected";
 test("another device restores the same snapshot, reading module and sidebar; different token has no snapshot", async ({
   page,
@@ -15,6 +17,7 @@ test("another device restores the same snapshot, reading module and sidebar; dif
   await expect(
     page.getByRole("heading", { name: /^Changes/, exact: false }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "展开侧栏" }).click();
   await page.getByRole("button", { name: "收起侧栏" }).click();
   await expect
     .poll(
@@ -96,12 +99,14 @@ test("a revoked device clears its page and a delayed old response cannot restore
   });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
-    page.getByRole("heading", { name: /你的工程工作台/ }),
+    page.getByRole("heading", { name: /登录 OpenFolio/ }),
   ).toBeVisible();
   await deliver!();
-  await expect(page.locator(".specs-tree")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "能力目录" })).toHaveCount(
+    0,
+  );
   await expect(
-    page.getByRole("heading", { name: /你的工程工作台/ }),
+    page.getByRole("heading", { name: /登录 OpenFolio/ }),
   ).toBeVisible();
 });
 for (const width of [1440, 834, 390, 320])
@@ -120,9 +125,7 @@ for (const width of [1440, 834, 390, 320])
       }),
     );
     await page.goto("/?m=connections");
-    await page
-      .getByRole("button", { name: "复制当前 Token", exact: true })
-      .click();
+    await copyCurrentToken(page);
     await expect(page.getByLabel("当前 Token", { exact: true })).toHaveValue(
       "token-a",
     );
@@ -133,24 +136,23 @@ for (const width of [1440, 834, 390, 320])
     ).toBe(true);
     await page.keyboard.press("Escape");
     await expect(
-      page.getByRole("button", { name: "复制当前 Token", exact: true }),
+      page.getByRole("button", { name: "reader 的更多操作", exact: true }),
     ).toBeFocused();
-    await page.getByRole("button", { name: "绑定 Token", exact: true }).click();
+    await page.getByRole("button", { name: "添加 Token", exact: true }).click();
     await page.getByLabel("名称（可选）", { exact: true }).fill("collaborator");
-    await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
-    await page.getByRole("button", { name: "绑定并使用", exact: true }).click();
-    await expect(page.locator(".personal-connections")).toContainText(
-      "@collaborator",
-    );
+    await page.getByLabel("GitHub Token", { exact: true }).fill("token-b");
+    await page.getByRole("button", { name: "验证并添加", exact: true }).click();
+    await expect(
+      page.getByRole("region", { name: "Token", exact: true }),
+    ).toContainText("@collaborator");
     await page.screenshot({
       path: `artifacts/token-credentials-${width}.png`,
       fullPage: true,
     });
-    await page.getByRole("tab", { name: "登录设备", exact: true }).click();
-    await page
-      .getByRole("button", { name: "退出当前设备", exact: true })
-      .click();
-    await expect(page.getByRole("heading", { name: "登录账号" })).toBeVisible();
+    await logoutCurrent(page);
+    await expect(
+      page.getByRole("heading", { name: "登录 OpenFolio" }),
+    ).toBeVisible();
   });
 
 for (const action of ["switch", "logout"])
@@ -158,9 +160,9 @@ for (const action of ["switch", "logout"])
     page,
   }) => {
     await page.goto("/?m=connections");
-    await expect(page.locator(".personal-connections")).toContainText(
-      "@reader",
-    );
+    await expect(
+      page.getByRole("region", { name: "Token", exact: true }),
+    ).toContainText("@reader");
     let finishPreferences: (() => Promise<void>) | undefined,
       finishSession: (() => Promise<void>) | undefined;
     await page.route("**/api/session/preferences", async (route) => {
@@ -172,7 +174,7 @@ for (const action of ["switch", "logout"])
         };
       });
     });
-    await page.getByRole("button", { name: "收起侧栏" }).click();
+    await page.getByRole("button", { name: "展开侧栏" }).click();
     await expect.poll(() => !!finishPreferences).toBe(true);
     await page.route("**/api/session", async (route) => {
       if (route.request().method() !== "GET") return route.continue();
@@ -186,32 +188,33 @@ for (const action of ["switch", "logout"])
     });
     if (action === "switch") {
       await page
-        .getByRole("button", { name: "绑定 Token", exact: true })
+        .getByRole("button", { name: "添加 Token", exact: true })
         .click();
       await page
         .getByLabel("名称（可选）", { exact: true })
         .fill("collaborator");
-      await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
+      await page.getByLabel("GitHub Token", { exact: true }).fill("token-b");
       await page
-        .getByRole("button", { name: "绑定并使用", exact: true })
+        .getByRole("button", { name: "验证并添加", exact: true })
         .click();
     } else {
-      await page.getByRole("tab", { name: "登录设备", exact: true }).click();
-      await page
-        .getByRole("button", { name: "退出当前设备", exact: true })
-        .click();
+      await logoutCurrent(page);
     }
     await expect.poll(() => !!finishSession).toBe(true);
-    await expect(page.locator(".personal-connections")).toHaveCount(0);
+    await expect(
+      page.getByRole("region", { name: "Token", exact: true }),
+    ).toHaveCount(0);
     await finishPreferences!();
-    await expect(page.locator(".personal-connections")).toHaveCount(0);
+    await expect(
+      page.getByRole("region", { name: "Token", exact: true }),
+    ).toHaveCount(0);
     await finishSession!();
     if (action === "switch")
-      await expect(page.locator(".personal-connections")).toContainText(
-        "@collaborator",
-      );
+      await expect(
+        page.getByRole("region", { name: "Token", exact: true }),
+      ).toContainText("@collaborator");
     else
       await expect(
-        page.getByRole("heading", { name: "登录账号" }),
+        page.getByRole("heading", { name: "登录 OpenFolio" }),
       ).toBeVisible();
   });

@@ -25,6 +25,7 @@ export function projectChange(
     title: source.title,
     primary: source.primary,
     createdAt: source.createdAt,
+    creator: source.creator,
     source: source.source,
     diagnostics: source.diagnostics,
     relations: source.relations,

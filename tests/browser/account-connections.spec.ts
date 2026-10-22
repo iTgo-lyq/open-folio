@@ -5,15 +5,18 @@ import {
   loginAccount,
   revisionHeaders,
   repositoryQuery,
+  openAccountSettings,
+  refreshCentral,
+  tokenRows,
+  openTokenMenu,
 } from "./connected";
 import type { Page } from "@playwright/test";
-const current = (page: Page) =>
-  page.locator(".personal-identity-row").filter({ hasText: "当前使用" });
+const current = (page: Page) => tokenRows(page).filter({ hasText: "当前使用" });
 async function addOther(page: Page) {
-  await page.getByRole("button", { name: "绑定 Token", exact: true }).click();
+  await page.getByRole("button", { name: "添加 Token", exact: true }).click();
   await page.getByLabel("名称（可选）", { exact: true }).fill("组织工程");
-  await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
-  await page.getByRole("button", { name: "绑定并使用", exact: true }).click();
+  await page.getByLabel("GitHub Token", { exact: true }).fill("token-b");
+  await page.getByRole("button", { name: "验证并添加", exact: true }).click();
   await expect(current(page)).toContainText("@collaborator");
 }
 test("another browser logs in without Token, sees account bindings, and selects independently", async ({
@@ -33,21 +36,18 @@ test("another browser logs in without Token, sees account bindings, and selects 
     await b.getByRole("button", { name: "使用reader", exact: true }).click();
     await expect(current(b)).toContainText("@reader");
     await expect(current(page)).toContainText("@collaborator");
-    await page
-      .getByRole("button", { name: "命名组织工程", exact: true })
-      .click();
+    await openTokenMenu(page, "组织工程");
+    await page.getByRole("menuitem", { name: "重命名", exact: true }).click();
     await page.getByLabel("名称", { exact: true }).fill("工作项目");
-    await page.getByRole("button", { name: "保存名称" }).click();
+    await page.getByRole("button", { name: "保存", exact: true }).click();
     await b.evaluate(() => window.dispatchEvent(new Event("focus")));
-    await expect(b.locator(".personal-identity-row")).toContainText([
-      "reader",
-      "工作项目",
-    ]);
-    await page.getByRole("button", { name: "解绑reader", exact: true }).click();
+    await expect(tokenRows(b)).toContainText(["reader", "工作项目"]);
+    await openTokenMenu(page, "reader");
+    await page.getByRole("menuitem", { name: "解绑", exact: true }).click();
     await page.getByRole("button", { name: "确认解绑" }).click();
     await b.evaluate(() => window.dispatchEvent(new Event("focus")));
     await expect(current(b)).toHaveCount(0);
-    await expect(b.locator(".personal-identity-row")).toHaveCount(1);
+    await expect(tokenRows(b)).toHaveCount(1);
     expect(
       (await (await second.request.get("/api/session")).json()).authenticated,
     ).toBe(true);
@@ -153,14 +153,16 @@ test("A-B-A selection discards a delayed repository response from the first A", 
   });
   await page.goto(`/?${repositoryQuery}&m=specs`);
   await expect.poll(() => !!finish).toBe(true);
-  await page.locator('.module-rail [aria-label="当前凭据"]').click();
+  await openAccountSettings(page);
   await expect(current(page)).toContainText("@reader");
   await page.getByRole("button", { name: "使用组织工程", exact: true }).click();
   await expect(current(page)).toContainText("@collaborator");
   await page.getByRole("button", { name: "使用reader", exact: true }).click();
   await expect(current(page)).toContainText("@reader");
   await finish!();
-  await expect(page.locator(".specs-tree")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "能力目录" })).toHaveCount(
+    0,
+  );
   await expect(current(page)).toContainText("@reader");
 });
 
@@ -188,14 +190,17 @@ test("unbinding in another browser prevents a delayed old private response from 
     });
     await view.goto(`/?${repositoryQuery}&m=specs`);
     await expect.poll(() => !!finish).toBe(true);
-    await page.getByRole("button", { name: "解绑reader", exact: true }).click();
+    await openTokenMenu(page, "reader");
+    await page.getByRole("menuitem", { name: "解绑", exact: true }).click();
     await page.getByRole("button", { name: "确认解绑" }).click();
     await view.evaluate(() => window.dispatchEvent(new Event("focus")));
     await expect(
-      view.getByRole("heading", { name: "Token 管理", exact: true }),
+      view.getByRole("heading", { name: "绑定一个 GitHub Token", exact: true }),
     ).toBeVisible();
     await finish!();
-    await expect(view.locator(".specs-tree")).toHaveCount(0);
+    await expect(
+      view.getByRole("navigation", { name: "能力目录" }),
+    ).toHaveCount(0);
     expect(
       (await (await second.request.get("/api/session")).json()).authenticated,
     ).toBe(true);
@@ -218,7 +223,7 @@ test("revoked active Token clears private content while the account can select a
   await request.post("/_fixture/control", {
     data: { revoke: "token-a", advancePermissions: 300000 },
   });
-  await page.getByRole("button", { name: "刷新中心仓库", exact: true }).click();
+  await refreshCentral(page);
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toHaveCount(0);
@@ -226,7 +231,43 @@ test("revoked active Token clears private content while the account can select a
     true,
   );
   await page.goto("/?m=connections");
-  await expect(page.locator(".personal-identity-row")).toHaveCount(2);
+  await expect(tokenRows(page)).toHaveCount(2);
   await page.getByRole("button", { name: "使用组织工程", exact: true }).click();
   await expect(current(page)).toContainText("@collaborator");
+});
+
+test("failed Token switching keeps the current selection and exposes a recoverable error", async ({
+  page,
+}) => {
+  await page.goto("/?m=connections");
+  await addOther(page);
+  const original = (await (await page.request.get("/api/session")).json())
+    .workspace.id;
+  await page.route("**/api/session/switch", (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        error: {
+          code: "PROVIDER_UNAVAILABLE",
+          message: "GitHub 暂时无法响应，请稍后重试。",
+        },
+      },
+    }),
+  );
+  await page.getByRole("button", { name: "使用reader", exact: true }).click();
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "GitHub 暂时无法响应",
+  );
+  await expect(current(page)).toContainText("@collaborator");
+  expect(
+    (await (await page.request.get("/api/session")).json()).workspace.id,
+  ).toBe(original);
+  await openTokenMenu(page, "reader");
+  await expect(
+    page.getByRole("menuitem", { name: /复制 Token/ }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "reader 的更多操作" }),
+  ).toBeFocused();
 });

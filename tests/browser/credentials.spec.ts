@@ -1,4 +1,4 @@
-import { test, expect, connectRequest } from "./connected";
+import { test, expect, connectRequest, copyCurrentToken } from "./connected";
 test("copy is click-only and its clipboard fallback disappears on close", async ({
   page,
 }) => {
@@ -18,12 +18,10 @@ test("copy is click-only and its clipboard fallback disappears on close", async 
   );
   await page.goto("/?m=connections");
   await expect(
-    page.getByRole("heading", { name: "Token 管理", exact: true }),
+    page.getByRole("heading", { name: "账号与 Token", exact: true }),
   ).toBeVisible();
   expect(copies).toBe(0);
-  await page
-    .getByRole("button", { name: "复制当前 Token", exact: true })
-    .click();
+  await copyCurrentToken(page);
   await expect(page.getByLabel("当前 Token", { exact: true })).toHaveValue(
     "token-a",
   );
@@ -50,7 +48,6 @@ test("same-token devices appear together and one can revoke another", async ({
     );
     expect(b.id).toBe(personal.id);
     await page.goto("/?m=connections");
-    await page.getByRole("tab", { name: "登录设备", exact: true }).click();
     const devices = await (
       await page.request.get("/api/session/devices", {
         headers: { "X-OpenFolio-Revision": "2" },
@@ -68,6 +65,10 @@ test("same-token devices appear together and one can revoke another", async ({
         exact: true,
       })
       .click();
+    await page
+      .getByRole("dialog", { name: "退出设备？" })
+      .getByRole("button", { name: "退出", exact: true })
+      .click();
     await expect
       .poll(
         async () =>
@@ -80,7 +81,13 @@ test("same-token devices appear together and one can revoke another", async ({
     await page
       .getByRole("button", { name: "退出全部设备", exact: true })
       .click();
-    await expect(page.getByRole("heading", { name: "登录账号" })).toBeVisible();
+    await page
+      .getByRole("dialog", { name: "退出全部设备？" })
+      .getByRole("button", { name: "全部退出", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "登录 OpenFolio" }),
+    ).toBeVisible();
   } finally {
     await second.close();
   }
@@ -92,9 +99,7 @@ test("successful explicit copy writes the current token to the clipboard", async
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/?m=connections");
-  await page
-    .getByRole("button", { name: "复制当前 Token", exact: true })
-    .click();
+  await copyCurrentToken(page);
   await expect(page.getByRole("status")).toContainText("Token 已复制");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     "token-a",
