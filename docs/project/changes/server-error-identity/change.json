@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "稳定共享服务错误类并验证生产认证与分享",
-      "status": "doing"
+      "status": "done",
+      "verification": "314项单测、类型与格式、生产构建及三项匿名401通过；真实账号四档阅读、原型和匿名分享冒烟通过，测试会话清理确认",
+      "commitTitle": "server-error-identity T1: share error constructors across server bundles"
     }
   },
   "closure": {},
