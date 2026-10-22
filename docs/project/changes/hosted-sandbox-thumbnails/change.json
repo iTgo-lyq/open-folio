@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "hosted-sandbox-thumbnails",
+  "title": "兼容带沙箱限制的托管原型截图",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复沙箱源的截图并回归服务隔离与真实页面",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "hosted-auto-thumbnails",
+  "followUpTitle": "托管原型自动截图",
+  "types": [
+    "修复"
+  ]
+}
