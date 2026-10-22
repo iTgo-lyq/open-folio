@@ -4,7 +4,7 @@
 
 ## 启动与个人连接
 
-需要 Node.js 24、Git、持久磁盘；Git 原型截图需要 Playwright Chromium 和可用的 OS 沙箱。
+需要 Node.js 24、Git、持久磁盘；原型自动截图需要 Playwright Chromium 和可用的 OS 沙箱。
 
 ```bash
 npm ci
@@ -161,7 +161,7 @@ node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting
 
 所有 iframe 仅授予 `allow-scripts`，保持不透明来源、no-referrer，不开放宿主 DOM、存储、弹窗或顶层跳转。托管服务须允许嵌入并为 ESM／字体提供适配不透明来源的 CORS。工作台不代理第三方登录，外部缩略图由浏览器直接读取。
 
-Git 公开版本准备时从固定提交取自包含 HTML，用离线 Chromium 生成每个声明视口的 JPEG。截图队列最多 2 个浏览器、24 项等待，排队 30 秒／生成 12 秒超时，可重试。临时截图缓存在 `public-previews/screenshots`，100 MiB、闲置 7 天按需清理；已发布截图独立存入版本目录。截图不写 Git，不带用户凭据；禁用网络、文件导航和持久存储。Chromium 或 OS 沙箱不可用时明确失败，禁止 `--no-sandbox`。
+原型按声明视口自动生成 JPEG，项目提供的图片优先覆盖对应视口。Git 使用离线 Chromium；本服务及外部托管使用空白浏览器读取固定 URL 和页面资源，沿用部署的 HTTP(S) 代理，不携带工作台会话或仓库凭据，不代办登录。截图失败可重试，托管原型仍可直接预览。截图队列最多 2 个浏览器、24 项等待，排队 30 秒／生成 12 秒超时。临时截图缓存在 `public-previews/screenshots`，100 MiB、闲置 7 天按需清理；准备完成的截图随公开版本保存，匿名读取不重新截图。Chromium 或 OS 沙箱不可用时明确失败，禁止 `--no-sandbox`。
 
 ## UI、流程与验证
 

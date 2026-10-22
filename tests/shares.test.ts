@@ -197,6 +197,62 @@ test("a direct anonymous target exposes only one Change and scopes every resourc
     assert.equal((await f.read("shared", "change", "GET", url)).status, 400);
 });
 
+test("hosted Change sharing generates missing screenshots and preserves supplied images", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const state = JSON.parse(
+    f.g.git(["show", "HEAD:docs/project/changes/shared/change.json"]),
+  );
+  state.previews = [
+    {
+      id: "screen",
+      title: "Hosted",
+      kind: "page",
+      devices: ["pc-web", "mobile"],
+      artifact: {
+        type: "hosted",
+        version: "v1",
+        url: "https://static.example.test/screen.html",
+        digest: "sha256:" + "a".repeat(64),
+        sourceCommit: f.g.git(["rev-parse", "HEAD"]),
+        thumbnails: [
+          { device: "mobile", url: "https://static.example.test/cover.png" },
+        ],
+      },
+    },
+  ];
+  await f.g.put(
+    "docs/project/changes/shared/change.json",
+    JSON.stringify(state),
+  );
+  f.g.commit();
+  await f.readPrivate((ctx) => ctx.refresh(DEFAULT_LIMITS));
+  const detail = await (await f.read()).json();
+  const suffix = `?snapshot=${detail.snapshotId}`;
+  const previews = await (await f.read("shared", "previews" + suffix)).json();
+  const entry = previews.entries[0];
+  assert.equal(entry.url, state.previews[0].artifact.url);
+  assert.match(entry.thumbnails[0].url, /pc-web\.jpg/);
+  assert.equal(
+    entry.thumbnails[1].url,
+    state.previews[0].artifact.thumbnails[0].url,
+  );
+  const generated = await f.read(
+    "shared",
+    "previews/screen/pc-web.jpg" + suffix,
+  );
+  assert.equal(generated.status, 200);
+  assert.equal(generated.headers.get("content-type"), "image/jpeg");
+  assert.equal(
+    (await f.read("shared", "previews/screen/mobile.jpg" + suffix)).status,
+    302,
+  );
+  assert.equal(
+    (await f.read("shared", "previews/screen/ipad.jpg" + suffix)).status,
+    404,
+  );
+});
+
 test("device logout, live updates and rebinding preserve the target URL", async (t) => {
   const f = await setup();
   t.after(f.cleanup);

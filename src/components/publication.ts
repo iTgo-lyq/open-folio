@@ -65,7 +65,8 @@ export function publicationThumbnail(
   device?: string,
 ) {
   if (!meta) return "";
-  return meta.type === "hosted"
-    ? (meta.thumbnails?.find((t) => t.device === device)?.url ?? "")
-    : `/api/public-previews/${meta.id}/${device ?? "component"}.jpg`;
+  return (
+    meta.thumbnails?.find((t) => t.device === device)?.url ??
+    `/api/public-previews/${meta.id}/${device ?? "component"}.jpg`
+  );
 }

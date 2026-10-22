@@ -296,10 +296,7 @@ function PrototypeCard({
       revision,
       device: device ?? null,
     });
-  const hasThumbnail =
-    item.artifact?.type === "git" ||
-    (item.artifact?.type === "hosted" &&
-      item.artifact.thumbnails?.some((t) => t.device === device));
+  const hasThumbnail = !!item.artifact;
   return (
     <li
       className={prototypeClass("prototype-tile")}
@@ -580,10 +577,7 @@ function PrototypeDetailBody({
     !!item.artifact,
   );
   const imageUrl = publicationThumbnail(publication.publication, device);
-  const hasThumbnail =
-    item.artifact?.type === "git" ||
-    (item.artifact?.type === "hosted" &&
-      item.artifact.thumbnails?.some((t) => t.device === device));
+  const hasThumbnail = !!item.artifact;
   return (
     <>
       <div className={prototypeClass("prototype-detail-heading")}>
