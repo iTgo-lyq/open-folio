@@ -1,6 +1,6 @@
 "use client";
 // 工作台壳层：展开侧栏 / 点击标志收起为悬浮胶囊、浮在内容面上的玻璃顶栏、同步状态、账号菜单与手机底部导航。
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
 import {
   BookOpen,
   ChevronDown,
@@ -36,7 +36,7 @@ import {
   PopoverTrigger,
   Tooltip,
 } from "@open-folio/ui";
-import { primaryRecord } from "@/lib/model";
+import { matchesDirectoryScope } from "@/lib/change-directory";
 import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
 import { syncStatus } from "@/lib/sync-status";
 import { useWorkspace } from "./context";
@@ -117,15 +117,15 @@ export function Shell({
       ...CLEAR_PROTOTYPE_VIEW,
     });
   const signedIn = !!personal.session?.authenticated;
+  const activeChangeDescriptionId = useId();
+  const activeChangeCount =
+    data?.changes.filter((group) => matchesDirectoryScope(group, "active"))
+      .length ?? 0;
   const usable = (id: string) =>
     id === "home" || (!!projectId && !!personal.connection);
   const count = (id: string) => {
     if (!data || id === "home" || id === "specs") return undefined;
-    if (id === "changes")
-      return (
-        data.changes.filter((g) => primaryRecord(g)?.state?.status === "active")
-          .length || undefined
-      );
+    if (id === "changes") return activeChangeCount || undefined;
     return data.currentPrototype.entries.length || undefined;
   };
   const navLink = (
@@ -134,12 +134,18 @@ export function Shell({
   ) => {
     const current = module === item.id;
     const disabled = !usable(item.id);
+    const showBadge =
+      variant === "rail" &&
+      item.id === "changes" &&
+      !disabled &&
+      activeChangeCount > 0;
     const link = (
       <a
         key={item.id}
         href={`?${new URLSearchParams({ ...q, m: item.id })}`}
         className={styles[`${variant}Item`]}
         aria-label={variant === "rail" ? item.title : undefined}
+        aria-describedby={showBadge ? activeChangeDescriptionId : undefined}
         aria-current={current ? "page" : undefined}
         aria-disabled={disabled || undefined}
         onClick={(e) => {
@@ -148,6 +154,16 @@ export function Shell({
         }}
       >
         <item.icon size={variant === "full" ? 16 : 18} aria-hidden="true" />
+        {showBadge && (
+          <>
+            <span className={styles.railBadge} aria-hidden="true">
+              {activeChangeCount > 99 ? "99+" : activeChangeCount}
+            </span>
+            <span className={styles.srOnly} id={activeChangeDescriptionId}>
+              {activeChangeCount} 个进行中的 Change
+            </span>
+          </>
+        )}
         {variant === "full" && (
           <>
             <span className={styles.grow}>{item.title}</span>

@@ -1,4 +1,94 @@
 import { test, expect, repositoryQuery, openSyncStatus } from "./connected";
+import { primaryRecord, type Snapshot } from "../../src/lib/model";
+
+test("collapsed Changes badge counts active records, hides zero and caps only the visible number", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const original = data.changes.find(
+    (group) => group.id === "document-reader",
+  )!;
+  const inactive = data.changes.filter(
+    (group) => primaryRecord(group)?.state?.status !== "active",
+  );
+  const setCount = (count: number) => {
+    data.changes = [
+      ...Array.from({ length: count }, (_, i) => {
+        const group = structuredClone(original);
+        group.id = group.primary = `badge-${i}`;
+        const record = primaryRecord(original)!;
+        group.candidates = [
+          {
+            ...structuredClone(record),
+            key: group.primary,
+            id: group.id,
+            state: { ...record.state!, id: group.id },
+          },
+        ];
+        return group;
+      }),
+      ...inactive,
+    ];
+  };
+  setCount(3);
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=specs`);
+  const nav = page.getByRole("navigation", { name: "模块导航" });
+  const changes = nav.getByRole("link", { name: "Changes", exact: true });
+  const badge = changes.locator('span[aria-hidden="true"]');
+  await expect(badge).toHaveText("3");
+  await expect(changes).toHaveAccessibleName("Changes");
+  await expect(changes).toHaveAccessibleDescription("3 个进行中的 Change");
+  const badgeBox = (await badge.boundingBox())!;
+  await page.mouse.click(
+    badgeBox.x + badgeBox.width / 2,
+    badgeBox.y + badgeBox.height / 2,
+  );
+  await expect(page).toHaveURL(/m=changes/);
+  await expect(
+    page.getByRole("tab", { name: "进行中3", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: /^已完成/ }).click();
+  await expect(badge).toHaveText("3");
+  await page.getByRole("button", { name: "展开侧栏" }).click();
+  await expect(nav.getByRole("link", { name: /^Changes\s*3$/ })).toHaveText(
+    "Changes3",
+  );
+  await page.getByRole("button", { name: "收起侧栏" }).click();
+  await page.setViewportSize({ width: 834, height: 1100 });
+  await expect(badge).toHaveText("3");
+  for (const count of [0, 104]) {
+    setCount(count);
+    await page.reload();
+    if (count === 0) {
+      await expect(badge).toHaveCount(0);
+      await expect(changes).not.toHaveAttribute("aria-describedby");
+    } else {
+      await expect(badge).toHaveText("99+");
+      await expect(changes).toHaveAccessibleDescription(
+        "104 个进行中的 Change",
+      );
+      expect(
+        await badge.evaluate((el) => {
+          const b = el.getBoundingClientRect(),
+            p = el.parentElement!.getBoundingClientRect();
+          return (
+            b.left >= p.left &&
+            b.right <= p.right &&
+            b.top >= p.top &&
+            b.bottom <= p.bottom
+          );
+        }),
+      ).toBe(true);
+    }
+  }
+});
 
 test("workspace uses one floating toolbar with sync status on desktop and mobile", async ({
   page,
