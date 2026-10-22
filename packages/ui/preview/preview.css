@@ -490,3 +490,12 @@ footer {
     scroll-behavior: auto;
   }
 }
+.popover-text {
+  margin: 4px 0 12px;
+  color: var(--of-text-2);
+}
+.skeleton-demo {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}

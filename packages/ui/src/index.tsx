@@ -1,11 +1,15 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import { Tooltip } from "./components/tooltip";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "default" | "primary" | "text";
+  /** text 为 ghost 的旧名称，保留给尚未迁移的调用方。 */
+  variant?: "default" | "primary" | "ghost" | "danger" | "text";
+  size?: "sm" | "md" | "lg";
   loading?: boolean;
 };
 export function Button({
   variant = "default",
+  size = "md",
   loading = false,
   disabled,
   className = "",
@@ -19,23 +23,45 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`of-ui-button of-ui-button--${variant} ${className}`}
+      data-size={size}
+      className={`of-ui-button of-ui-button--${variant === "text" ? "ghost" : variant} ${className}`}
     >
       {loading && <span className="of-ui-spinner" aria-hidden="true" />}
       {children}
     </button>
   );
 }
-export type IconButtonProps = Omit<ButtonProps, "variant"> & {
+export type IconButtonProps = Omit<ButtonProps, "variant" | "size"> & {
   "aria-label": string;
+  size?: "sm" | "md";
+  /** 悬停与键盘聚焦时显示名称；true 使用 aria-label，触摸时不依赖提示。 */
+  tooltip?: boolean | ReactNode;
+  tooltipSide?: "top" | "right" | "bottom" | "left";
 };
-export function IconButton({ className = "", ...props }: IconButtonProps) {
-  return (
+export function IconButton({
+  className = "",
+  tooltip,
+  tooltipSide,
+  size = "md",
+  ...props
+}: IconButtonProps) {
+  const button = (
     <Button
       {...props}
-      variant="text"
+      variant="ghost"
       className={`of-ui-icon-button ${className}`}
+      data-icon-size={size}
     />
+  );
+  return tooltip ? (
+    <Tooltip
+      content={tooltip === true ? props["aria-label"] : tooltip}
+      side={tooltipSide}
+    >
+      {button}
+    </Tooltip>
+  ) : (
+    button
   );
 }
 export type BadgeTone =
@@ -108,3 +134,44 @@ export {
   FieldDescription,
 } from "./components/field";
 export { BrandMark, type BrandMarkProps } from "./components/brand-mark";
+export {
+  Menu,
+  MenuTrigger,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuCheckboxItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuLabel,
+  MenuSeparator,
+} from "./components/menu";
+export {
+  Popover,
+  PopoverTrigger,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverClose,
+} from "./components/popover";
+export {
+  Dialog,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+} from "./components/dialog";
+export { Tooltip } from "./components/tooltip";
+export { SegmentedControl, type SegmentedItem } from "./components/segmented";
+export { Switch } from "./components/switch";
+export { Avatar, hueOf } from "./components/avatar";
+export { Skeleton } from "./components/skeleton";

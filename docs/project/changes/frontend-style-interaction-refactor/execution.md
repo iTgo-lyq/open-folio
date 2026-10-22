@@ -16,3 +16,15 @@
 验证：
 - `npm run typecheck`、`npm run format:check`、`npm run ui:build`、`npm run ui:test` 通过；`npm run build` 成功。
 - 新增 `tests/browser/theme.spec.ts`（3 项）：阻断应用脚本后首帧主题仍跟随系统 / 本机选择；未选择时 `/`、`/share`、`/preview/<id>` 随系统实时切换；矢量标志可朗读、无位图标志，`icon.svg` / `apple-icon.png` 链接存在，`/favicon.ico` 为 `image/x-icon`。与 `workspace`、`personal`、`sharing` 用例共 13 项通过。
+
+## T2 · 共享基础组件
+
+范围：
+- `@open-folio/ui` 新增 Menu（普通 / 单选 / 多选、标签、分隔，玻璃浮层）、Popover、Dialog 与 Sheet（右 / 左 / 底部；外层与标题区为玻璃，`SheetBody` 为实底卡片；≤760px 左右抽屉改为底部抽屉）、Tooltip（悬停与键盘聚焦显示）、SegmentedControl（radio 语义）、Switch、Avatar（按名称稳定取色，圆形头像与方形字标）、Skeleton，均基于 `radix-ui` 原语，结构参照 `npx shadcn@latest view`（radix-nova）后改为 `of-ui-` 普通 CSS。
+- Button 增加 `ghost` / `danger` 与 `size`，旧 `text` 映射为 `ghost`；IconButton 可选 `tooltip`；Badge、EmptyState、Card、Tabs、Field / Input / Textarea 按新 token 重做视觉，接口不变。浮层与抽屉声明 `color-scheme: var(--of-color-scheme)`。
+- 组件预览新增菜单、弹层、对话框与抽屉、分段与开关、头像与占位五组示例和“外观”切换；`tests/ui-preview.mjs` 补充对应键盘、焦点回到触发控件、玻璃材质、深色与 320px 断言。
+
+验证：
+- `npm run typecheck`、`npm run format:check`、`npm run ui:build`、`npm run ui:test` 通过。
+- 测试注意：Radix 分段控件在下一轮事件中移动焦点，并以“方向键仍按下”决定是否同时选中，自动化需 `keyboard.down` 后稍候再 `up`；切换主题后控件有 0.12s 颜色过渡，截图前需等待。
+- 完整浏览器测试：`develop` 现状下 `npx playwright test` 因 `tests/browser/hosting.spec.ts` 经 `tests/fixture.ts` 导入 `server-only` 模块而整体加载失败（与本 Change 无关）；以 `NODE_OPTIONS=--conditions=react-server npx playwright test` 运行时可加载。本次按用户要求优先推进代码，运行到第 58 / 100 项（无失败）后中止，完整套件留到 T12。

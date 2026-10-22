@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "共享基础组件",
-      "status": "todo"
+      "status": "done",
+      "verification": "typecheck、format、ui:build、ui:test（新增组件键盘/焦点/深色/320px）通过；完整浏览器套件前 58 项无失败，余下留到 T12",
+      "commitTitle": "frontend-style-interaction-refactor T2: shared UI primitives"
     },
     "T3": {
       "title": "Change 创建者读取",
