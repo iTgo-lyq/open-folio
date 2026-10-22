@@ -11,6 +11,7 @@ import { ThumbnailCache } from "./thumbnail-cache.ts";
 import { previewViewport } from "../lib/preview-viewport.ts";
 import type { Device, Limits, PreviewDescriptor } from "../lib/model.ts";
 import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
+import { noteRepositoryActivity } from "./background-refresh.ts";
 
 const headers = {
   "Cache-Control": "no-store",
@@ -97,6 +98,13 @@ export async function sharedResponse(
       async (ctx) => {
         const effectiveLimits = limits ?? limitsFor(await readConfig());
         const isDetail = segments.length === 1 && segments[0] === "change";
+        if (isDetail)
+          noteRepositoryActivity(
+            repos.root,
+            ctx.lease.workspaceId,
+            ctx.project.id,
+            ctx.project.integrationBranch,
+          );
         const snapshot = isDetail
           ? await ctx.refresh(effectiveLimits, true)
           : await ctx.store.snapshot(ctx.project).catch(async (error) => {

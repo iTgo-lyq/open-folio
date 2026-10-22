@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "background-repository-refresh",
+  "title": "后台常驻刷新工程记录",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/background-repository-refresh",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实现后台常驻扫描与活跃间隔调整",
+      "status": "done",
+      "verification": "全量295项及新增6项测试、类型检查、生产构建、8项浏览器回归通过；独立生产启动确认首次HTTP请求前即扫描，后台在退出设备后更新Git记录并支持恢复与解绑",
+      "commitTitle": "background-repository-refresh T1: scan connected repositories without open pages"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T12:10:40.794Z",
+      "summary": "small采用Agent自查，全部差异及验收对应核对通过；全量回归、6项后台测试、8项浏览器测试、类型检查、生产构建和独立启动验证通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T12:10:42.533Z",
+      "summary": "Agent自验收通过：无人访问持续更新、活跃与空闲间隔、并发隔离、失败保留和重试、重启恢复及解绑均有验证证据",
+      "source": "SpecTrail small默认Agent自验收；按Requirement逐项核对T1执行证据，未解决验收项为零"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T12:11:30.436Z",
+      "summary": "同步项目知识快照与个人访问Specs：常驻扫描、活跃与空闲间隔、已接入目标、权限复验和退出解绑边界"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T12:11:32.219Z",
+      "summary": "后台常驻刷新已实现并验证，Agent自验收通过，Specs同步完成，待PR合入develop",
+      "path": "docs/project/archive/2026-10-22-background-repository-refresh"
+    }
+  },
+  "types": [
+    "性能",
+    "体验"
+  ]
+}
