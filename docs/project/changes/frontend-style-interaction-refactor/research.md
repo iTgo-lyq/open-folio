@@ -232,3 +232,12 @@ R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c
 | 账号与 Token | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-credentials/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-credentials/index.html#/account?theme=dark) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-credentials/index.html#/account?accent=clay) |
 | 匿名公开原型 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-public/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-public/index.html#/public/offline-maps?theme=dark) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-public/index.html#/public/offline-maps?accent=clay) |
 | Change 分享阅读 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-share/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-share/index.html#/share/offline-map-regions?theme=dark) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/46c2404c8aee9a92bfc8b7429f310c8c8969b37dff394c6b3d0edb9f0fe7f246/quiet-share/index.html#/share/offline-map-regions?accent=clay) |
+
+### 第三轮真实工作台发布核验（2026-10-22）
+
+引用推送至 `develop@a62413e` 后，沿用第二轮的方式：用 `withSmokeSession` 建立独立测试登录，经长期服务 11117 端口已有的 HTTPS 外部入口进入 open-folio 仓库的原型总览。25 项检查通过，包装器结束后完成退出与匿名复核；第一次调用误取了该入口的内部 http 目标地址，在建立会话前即被包装器拒绝，没有产生登录。
+
+- 工作台读到新清单，七个入口在 PC Web、iPad、移动设备筛选下的 21 张卡片图片均已加载，地址属于固定版本 `46c2404c…`。
+- 从真实卡片进入 `quiet-changes` 与 `quiet-share` 预览，iframe 只授予 `allow-scripts`；点击 Logo 后侧栏收起为四个图标的胶囊，侧栏标志为矢量图且强调色为墨色；分享页正文正常呈现；无浏览器运行错误。
+
+断言清单见 [25 项发布检查](assets/ink-published-checks.json)，截图保留于忽略目录 `artifacts/quiet-workbench/real-*.png`，不含凭据或会话数据。产品代码没有变更，不需要重建长期服务。
