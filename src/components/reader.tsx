@@ -192,6 +192,10 @@ export function Reader({
   );
   const hidePane = hidden || preferences.focus;
   const collapsed = !desktop || hidePane;
+  // 位置按钮随宽度或展开卸载时，弹层状态一并复位，避免再次出现时自动打开。
+  useEffect(() => {
+    if (!collapsed) setSwitcherOpen(false);
+  }, [collapsed]);
   const collapse = () => {
     setHidden(true);
     requestAnimationFrame(() =>
@@ -205,6 +209,8 @@ export function Reader({
     if (preferences.focus) update({ focus: false });
   };
   const closePaneForLink = (event: React.MouseEvent) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
     if ((event.target as Element).closest("a")) {
       paneNavigated.current = true;
       setSwitcherOpen(false);
@@ -246,6 +252,9 @@ export function Reader({
                   if (!item) return;
                   event.preventDefault();
                   item.focus({ preventScroll: true });
+                  requestAnimationFrame(() =>
+                    item.scrollIntoView({ block: "nearest" }),
+                  );
                 }}
                 onCloseAutoFocus={(event) => {
                   if (paneExpanded.current) {
@@ -254,6 +263,12 @@ export function Reader({
                   } else if (paneNavigated.current) {
                     event.preventDefault();
                     article.current?.focus({ preventScroll: true });
+                  } else if (
+                    !switcher.current &&
+                    collapseButton.current?.getClientRects().length
+                  ) {
+                    event.preventDefault();
+                    collapseButton.current.focus({ preventScroll: true });
                   }
                   paneExpanded.current = false;
                   paneNavigated.current = false;

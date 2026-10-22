@@ -41,6 +41,14 @@ test("reading directories collapse from the pane into a header location switcher
     ).toHaveCount(0);
     await page.keyboard.press("Escape");
     await expect(switcher).toBeFocused();
+    await page.setViewportSize({ width: 834, height: 1000 });
+    await switcher.click();
+    await expect(panel).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(hide).toBeFocused();
+    await page.setViewportSize({ width: 834, height: 1000 });
+    await expect(switcher).toBeVisible();
+    await expect(panel).toBeHidden();
   }
 });
 

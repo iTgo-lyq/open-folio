@@ -220,7 +220,7 @@ export function ChangeReading({
               onClick={back}
             >
               <ArrowLeft />
-              Changes
+              <span className={styles.backLabel}>Changes</span>
             </Button>
           </ToolbarSlot>
           <ToolbarSlot side="right">

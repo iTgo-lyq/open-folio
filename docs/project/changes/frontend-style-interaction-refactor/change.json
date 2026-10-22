@@ -131,6 +131,16 @@
       "status": "done",
       "verification": "格式、ui:build/ui:test、生产构建通过；抽屉相关浏览器34/34通过；双主题三档宽度截图复核贴边单层玻璃与模糊遮罩",
       "commitTitle": "frontend-style-interaction-refactor T18: flush glass drawers over a blurred scrim"
+    },
+    "T19": {
+      "title": "位置按钮与抽屉评审修正",
+      "status": "done",
+      "verification": "类型、格式、22项阅读分享回归及新增断点焦点定向1项通过；独立评审扩宽卸载焦点问题已修复并复核",
+      "commitTitle": "frontend-style-interaction-refactor T19: finish reading interaction review fixes"
+    },
+    "T20": {
+      "title": "统一顶栏位置按钮与路径间距",
+      "status": "todo"
     }
   },
   "closure": {},

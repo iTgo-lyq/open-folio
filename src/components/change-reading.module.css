@@ -105,4 +105,8 @@
   .facts {
     font-size: 11.5px;
   }
+  /* 手机顶栏把宽度留给当前材料，返回按钮只保留箭头。 */
+  .backLabel {
+    display: none;
+  }
 }
