@@ -158,7 +158,9 @@
     },
     "T23": {
       "title": "修复导航切换时Changes角标闪烁",
-      "status": "doing"
+      "status": "done",
+      "verification": "修复前复现，修复后13项壳层/凭据回归、类型/格式、独立评审和生产构建通过；真实导航与延迟响应时角标不消失，退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T23: verify stable navigation badge"
     },
     "T24": {
       "title": "修复顶栏位置文字下沿裁切",
