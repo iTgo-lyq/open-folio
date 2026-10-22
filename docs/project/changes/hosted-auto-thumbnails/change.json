@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "hosted-auto-thumbnails",
+  "title": "托管原型自动生成截图并支持项目图片覆盖",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一托管原型截图生成、项目覆盖及各入口验证",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "新功能"
+  ]
+}
