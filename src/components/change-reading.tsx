@@ -216,6 +216,7 @@ export function ChangeReading({
             <Button
               variant="ghost"
               size="sm"
+              className={styles.backButton}
               aria-label="返回 Changes 列表"
               onClick={back}
             >

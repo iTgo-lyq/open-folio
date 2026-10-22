@@ -383,7 +383,7 @@
   border-radius: var(--of-radius-md);
   background: none;
   color: var(--of-text);
-  font: 500 13px/1 var(--of-font-ui);
+  font: 500 13px/1.5 var(--of-font-ui);
   cursor: pointer;
 }
 .tbRepo:hover,
