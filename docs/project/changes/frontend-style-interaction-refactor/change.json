@@ -74,7 +74,9 @@
     },
     "T9": {
       "title": "Change 详情阅读页",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、build、材料映射单测3项及详情/差异/原型/标签/交付/来源/壳层浏览器分批验证通过；四档双主题已查",
+      "commitTitle": "frontend-style-interaction-refactor T9: Change material reading pages"
     },
     "T10": {
       "title": "Change 分享页",

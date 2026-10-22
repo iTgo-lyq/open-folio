@@ -65,6 +65,15 @@ export function Reader({
     `${pageKey}.${ready ? "loaded" : "pending"}`,
     anchor,
   );
+  const previousPage = useRef(pageKey);
+  useEffect(() => {
+    if (previousPage.current === pageKey) return;
+    previousPage.current = pageKey;
+    const frame = requestAnimationFrame(() =>
+      article.current?.focus({ preventScroll: true }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [pageKey]);
   useEffect(() => {
     try {
       const value = JSON.parse(localStorage.getItem(preferenceKey) ?? "null");

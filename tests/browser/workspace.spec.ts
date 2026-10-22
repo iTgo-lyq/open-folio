@@ -35,7 +35,7 @@ test("workspace uses one floating toolbar with sync status on desktop and mobile
       ).toBe(true);
       await page.keyboard.press("Escape");
       await expect(source).toHaveCount(0);
-      if (module !== "specs")
+      if (module === "prototypes")
         await expect(
           toolbar.getByRole("button", { name: "复制页面链接" }),
         ).toBeVisible();

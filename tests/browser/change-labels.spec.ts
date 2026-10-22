@@ -6,6 +6,8 @@ import {
   changeRow,
   openChangeFilters,
   changeDisplay,
+  openMaterial,
+  backToChanges,
 } from "./connected";
 import {
   primaryRecord,
@@ -86,9 +88,9 @@ test("labels filter with OR and AND, preserve URL navigation and default to norm
   await expect.poll(() => titles(page)).toEqual(["历史记录", "体验调整"]);
   await changeLinks(page).first().click();
   await expect(page.getByRole("region", { name: "类型与紧急程度" })).toHaveText(
-    "类型与紧急程度无类型标签普通",
+    "无类型标签普通",
   );
-  await page.keyboard.press("Escape");
+  await backToChanges(page);
   await expect(changeLinks(page).first()).toBeFocused();
   menu = await openChangeFilters(page);
   await menu
@@ -167,12 +169,13 @@ test("list and board share stable urgency order and task detail keeps its origin
     )
     .toEqual(["打开 紧急修复", "打开 修复问题"]);
   await board.getByRole("link", { name: "打开 紧急修复", exact: true }).click();
-  await page.getByRole("tab", { name: "任务", exact: true }).click();
-  await expect(page.locator(".task-detail-heading strong")).toContainText([
-    "紧急修复任务一",
-    "紧急修复任务二",
-  ]);
-  await page.keyboard.press("Escape");
+  await openMaterial(page, "任务");
+  await expect(
+    page
+      .getByRole("list", { name: "实现任务", exact: true })
+      .getByRole("heading"),
+  ).toContainText(["紧急修复任务一", "紧急修复任务二"]);
+  await backToChanges(page);
   await changeDisplay(page, "列表");
   await expect.poll(() => titles(page)).toEqual(["紧急修复", "修复问题"]);
   await expect(page.getByRole("button", { name: "依赖视图" })).toHaveCount(0);
@@ -228,7 +231,7 @@ test("free labels render as text and fit desktop and narrow layouts including th
   ).toBeVisible();
   expect(
     await page
-      .locator(".drawer-body")
+      .getByRole("region", { name: "阅读正文", exact: true })
       .evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true);
 });
@@ -250,7 +253,7 @@ test("invalid filters preserve deep links and absent selected names remain remov
   await expect(page).toHaveURL(/c=labeled-0/);
   await expect(
     page
-      .getByRole("dialog")
+      .getByRole("main")
       .getByRole("heading", { name: "历史记录", exact: true }),
   ).toBeVisible();
   await page.goto(

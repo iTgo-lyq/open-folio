@@ -1,4 +1,4 @@
-import { test, expect, repositoryQuery } from "./connected";
+import { test, expect, repositoryQuery, openMaterial } from "./connected";
 
 const route = `/?${repositoryQuery}&m=changes&c=integration-demo&ct=integration`;
 test("integrated diff survives source deletion and supports file links, history, keyboard and narrow viewports", async ({
@@ -14,19 +14,21 @@ test("integrated diff survives source deletion and supports file links, history,
   ).json();
   expect(summary.record.status).toBe("found");
   await page.goto(route);
-  const drawer = page.getByRole("dialog");
+  const drawer = page.getByRole("main");
   await expect(
     drawer.getByText("已合入 develop", { exact: true }),
   ).toBeVisible();
   await drawer.getByRole("button", { name: /integration-example.ts/ }).click();
-  await expect(drawer.locator(".diff-table")).toContainText(
+  await expect(drawer.getByRole("table")).toContainText(
     "export const delivered = true;",
   );
-  await expect(drawer.locator(".diff-table .line-no").last()).toHaveText("2");
+  await expect(
+    drawer.getByRole("cell", { name: "新行号", exact: true }).last(),
+  ).toHaveText("2");
   await page.screenshot({ path: "artifacts/integration-desktop.png" });
   const linked = page.url();
   await page.reload();
-  await expect(drawer.locator(".diff-table")).toContainText(
+  await expect(drawer.getByRole("table")).toContainText(
     "export const delivered = true;",
   );
   await drawer.getByRole("button", { name: /integration-example.bin/ }).click();
@@ -34,7 +36,7 @@ test("integrated diff survives source deletion and supports file links, history,
     drawer.getByText("二进制文件，无法展示文本差异。", { exact: true }),
   ).toBeVisible();
   await page.goBack();
-  await expect(drawer.locator(".diff-table")).toContainText(
+  await expect(drawer.getByRole("table")).toContainText(
     "export const delivered = true;",
   );
   await page.goForward();
@@ -58,15 +60,10 @@ test("integrated diff survives source deletion and supports file links, history,
     `git diff --no-ext-diff --no-textconv ${summary.record.commit}^1 ${summary.record.commit}`,
   );
   await page.getByRole("button", { name: "关闭复制窗口" }).click();
-  await drawer.getByRole("tab", { name: "合入变更", exact: true }).focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(
-    drawer.getByRole("tab", { name: "依据", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("ArrowLeft");
-  await expect(
-    drawer.getByRole("tab", { name: "合入变更", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+  await openMaterial(page, "依据");
+  await expect(page).toHaveURL(/ct=evidence/);
+  await openMaterial(page, "合入变更");
+  await expect(page).toHaveURL(/ct=integration/);
   for (const [name, width, height] of [
     ["ipad", 834, 1112],
     ["mobile", 390, 844],
@@ -80,7 +77,7 @@ test("integrated diff survives source deletion and supports file links, history,
     await drawer
       .getByRole("button", { name: /integration-example.ts/ })
       .click();
-    await expect(drawer.locator(".diff-table")).toContainText(
+    await expect(drawer.getByRole("table")).toContainText(
       "export const delivered = true;",
     );
     await expect(
@@ -96,7 +93,7 @@ test("integrated diff survives source deletion and supports file links, history,
     ).toBeFocused();
   }
   await page.goto(linked);
-  await expect(drawer.locator(".diff-table")).toContainText(
+  await expect(drawer.getByRole("table")).toContainText(
     "export const delivered = true;",
   );
 });
@@ -139,5 +136,5 @@ test("integration failures retry; old archives remain empty and stale responses 
     page.getByText("暂无合入记录", { exact: true }).first(),
   ).toBeVisible();
   release();
-  await expect(page.locator(".diff-table")).toHaveCount(0);
+  await expect(page.getByRole("table")).toHaveCount(0);
 });

@@ -39,6 +39,9 @@
 .paneHeading strong {
   font-weight: 600;
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .scroll {
   grid-column: 2;
@@ -307,4 +310,10 @@
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+.image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 20px;
 }

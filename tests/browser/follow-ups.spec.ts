@@ -3,6 +3,7 @@ import {
   expect,
   repositoryQuery,
   changeDisplay,
+  backToChanges,
   openChangeFilters,
 } from "./connected";
 import {
@@ -90,7 +91,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     .focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/c=source-connect/);
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await changeDisplay(page, "紧急程度优先");
   await expect
     .poll(() =>
@@ -125,7 +126,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     .first()
     .click();
   await expect(page).toHaveURL(/c=source-connect/);
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await page.goto(`/?${repositoryQuery}&m=changes`);
   await group
     .getByRole("link", { name: `打开 ${active.title}`, exact: true })
@@ -135,7 +136,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   await expect(
     page.getByRole("region", { name: "连续交付", exact: true }),
   ).toContainText("需求与技术额度分别计算");
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await page.setViewportSize({ width: 320, height: 740 });
   await expect(
     group.getByRole("link", { name: `打开 ${active.title}`, exact: true }),

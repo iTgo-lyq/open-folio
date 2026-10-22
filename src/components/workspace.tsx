@@ -1,4 +1,6 @@
 "use client";
+import { useEffect } from "react";
+import { documentReadingTarget } from "@/lib/change-reading";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "@open-folio/ui";
 import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
@@ -7,9 +9,10 @@ import { PersonalProvider, usePersonal } from "./personal-context";
 import { PersonalHome } from "./personal-home";
 import { AccountSettings } from "./account-settings";
 import { AccountLogin } from "./account-login";
-import { DocumentModal, Empty, CopyPageLink } from "./document";
+import { Empty, CopyPageLink } from "./document";
 import { Shell } from "./shell";
 import { ToolbarSlot } from "./toolbar-slot";
+import { DocumentSheet } from "./reading-document";
 import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
@@ -21,6 +24,13 @@ function Body() {
   const { q, nav, projectId, data, loading, refreshing, error, refresh } =
     useWorkspace();
   const personal = usePersonal();
+  const inlineTarget =
+    q.doc && data ? documentReadingTarget(data, q.doc) : null;
+  useEffect(() => {
+    if (inlineTarget)
+      nav({ ...inlineTarget, doc: null, da: null, anchor: q.da ?? null }, true);
+  }, [q.doc, data?.id]);
+
   if (!personal.session)
     return (
       <main className={personalStyles.auth}>
@@ -78,7 +88,7 @@ function Body() {
   );
   return (
     <Shell module={module} focusedPreview={focusedPreview} banners={banners}>
-      {reading && data && module !== "specs" && (
+      {reading && data && module === "prototypes" && (
         <ToolbarSlot side="right">
           <CopyPageLink />
         </ToolbarSlot>
@@ -117,12 +127,7 @@ function Body() {
           ),
         )
       )}
-      {reading &&
-        data &&
-        !(
-          module === "specs" &&
-          data.specs.some((spec) => spec.documentId === q.doc)
-        ) && <DocumentModal />}
+      {reading && data && !inlineTarget && <DocumentSheet />}
     </Shell>
   );
 }

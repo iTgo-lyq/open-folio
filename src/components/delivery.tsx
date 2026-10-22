@@ -1,4 +1,5 @@
 "use client";
+import { materialClass } from "./material-styles";
 import { Badge, type BadgeTone } from "@open-folio/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { Delivery, PullRequest } from "@/lib/model";
@@ -22,12 +23,12 @@ export function DeliveryBadge({ id }: { id: string }) {
 }
 function PrItem({ pr }: { pr: PullRequest }) {
   return (
-    <li className="delivery-pr">
+    <li className={materialClass("delivery-pr")}>
       <a href={pr.url} target="_blank" rel="noopener noreferrer">
         #{pr.number} {pr.title}
         <ArrowUpRight size={13} aria-hidden="true" />
       </a>
-      <div className="delivery-pr-meta">
+      <div className={materialClass("delivery-pr-meta")}>
         <Badge
           tone={
             pr.state === "merged"
@@ -66,10 +67,12 @@ function PrList({
   const current = open.length ? open : prs.slice(0, 1);
   const history = prs.filter((p) => !current.includes(p));
   return (
-    <div className="delivery-pr-group">
+    <div className={materialClass("delivery-pr-group")}>
       <h4>{title}</h4>
       {stale && !!prs.length && (
-        <p className="subtle-note">以下为上次读取结果，当前状态待核实。</p>
+        <p className={materialClass("subtle-note")}>
+          以下为上次读取结果，当前状态待核实。
+        </p>
       )}
       {current.length ? (
         <ul>
@@ -78,7 +81,9 @@ function PrList({
           ))}
         </ul>
       ) : (
-        <p className="muted">{stale ? "PR 信息待核实" : "暂无关联 PR"}</p>
+        <p className={materialClass("muted")}>
+          {stale ? "PR 信息待核实" : "暂无关联 PR"}
+        </p>
       )}
       {!!history.length && (
         <details>
@@ -98,9 +103,9 @@ export function ChangeDelivery({ id }: { id: string }) {
   const delivery: Delivery | undefined = data?.deliveryByChange?.[id];
   if (!delivery) return null;
   return (
-    <section className="change-delivery" aria-label="交付进度">
-      <div className="delivery-heading">
-        <h3>交付进度</h3>
+    <section className={materialClass("change-delivery")} aria-label="交付进度">
+      <div className={materialClass("delivery-heading")}>
+        <h2 id="delivery">交付进度</h2>
         <DeliveryBadge id={id} />
       </div>
       <PrList
@@ -114,14 +119,14 @@ export function ChangeDelivery({ id }: { id: string }) {
         stale={delivery.releasePrsStale ?? delivery.stale}
       />
       {!!delivery.diagnostics.length && (
-        <ul className="delivery-diagnostics">
+        <ul className={materialClass("delivery-diagnostics")}>
           {delivery.diagnostics.map((text) => (
             <li key={text}>{text}</li>
           ))}
         </ul>
       )}
       {delivery.stale && (
-        <p className="subtle-note">
+        <p className={materialClass("subtle-note")}>
           PR 信息待更新
           {data?.deliveryLastSuccess
             ? `；最近成功读取：${new Date(data.deliveryLastSuccess).toLocaleString()}`

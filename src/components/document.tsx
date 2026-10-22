@@ -19,6 +19,7 @@ import { remarkHeadings, resolveDocumentLink } from "@/lib/markdown";
 import type { DocumentRef } from "@/lib/model";
 import { useDocument, useSavedScroll, useWorkspace } from "./context";
 import { reportSharedResourceFailure } from "./api";
+import styles from "./document.module.css";
 export function Empty({
   title,
   children,
@@ -36,7 +37,7 @@ export function Empty({
 }
 export function ErrorNotice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="error-notice" role="alert">
+    <div className={styles.error} role="alert">
       <AlertCircle size={16} />
       <span>{children}</span>
     </div>
@@ -44,7 +45,7 @@ export function ErrorNotice({ children }: { children: React.ReactNode }) {
 }
 export function Source({ document }: { document: DocumentRef }) {
   return (
-    <div className="source-block">
+    <div className={styles.source}>
       <span>
         <GitBranch size={13} />
         {document.branch}
@@ -53,7 +54,7 @@ export function Source({ document }: { document: DocumentRef }) {
         <Hash size={13} />
         <code title={document.commit}>{document.commit.slice(0, 10)}</code>
       </span>
-      <code className="source-path">{document.path}</code>
+      <code className={styles.path}>{document.path}</code>
     </div>
   );
 }

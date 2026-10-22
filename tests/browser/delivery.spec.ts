@@ -3,6 +3,8 @@ import {
   expect,
   repositoryQuery,
   changeRow,
+  openMaterial,
+  backToChanges,
   openChangeFilters,
 } from "./connected";
 import {
@@ -86,7 +88,7 @@ test("delivery groups include archived Changes, combine labels and expose PRs wi
   await page.reload();
   await expect(details.getByText("PR 已关闭", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("dialog").getByText("交付已归档", { exact: true }),
+    page.getByRole("main").getByText("交付已归档", { exact: true }),
   ).toBeVisible();
   delivery.stage = "pendingRelease";
   delivery.changePrs[0].state = "merged";
@@ -112,7 +114,7 @@ test("delivery groups include archived Changes, combine labels and expose PRs wi
   await expect(
     details.getByText("已合入发布分支", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await expect(row).toBeVisible();
   await expect(page.getByRole("heading", { name: /^已发布/ })).toBeVisible();
 });
@@ -171,14 +173,12 @@ test("delivery history, stale diagnostics and draft links stay readable on deskt
     await details.scrollIntoViewIfNeeded();
     expect(
       await page
-        .locator(".drawer-body")
+        .getByRole("region", { name: "阅读正文", exact: true })
         .evaluate((el) => el.scrollWidth <= el.clientWidth),
     ).toBe(true);
     await page.screenshot({ path: `artifacts/delivery-${width}.png` });
-    await page.getByRole("tab", { name: "文档", exact: true }).click();
-    await expect(page.getByRole("dialog").locator(".delivery-pr")).toHaveCount(
-      0,
-    );
-    await page.getByRole("tab", { name: "概览", exact: true }).click();
+    await openMaterial(page, "需求");
+    await expect(page.getByRole("region", { name: "交付进度" })).toHaveCount(0);
+    await openMaterial(page, "概览");
   }
 });

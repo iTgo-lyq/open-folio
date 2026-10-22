@@ -12,7 +12,7 @@ import {
 import { primaryRecord, STAGE_LABELS, STATUS_LABELS } from "@/lib/model";
 import { useDocument, useWorkspace } from "./context";
 import { SharedProvider, documentLocation } from "./shared-context";
-import { ChangeDetails } from "./changes";
+import { ChangeDetails } from "./change-materials";
 import { ChangeLabels } from "./change-labels";
 import {
   CopyPageLink,

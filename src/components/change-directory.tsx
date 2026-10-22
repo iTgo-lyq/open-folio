@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   Flag,
   GitPullRequest,
@@ -36,7 +36,6 @@ import { URGENCY_LABELS } from "@/lib/change-labels";
 import {
   changeDiagnostics,
   creatorName,
-  directoryQueryParams,
   filterDirectoryChanges,
   groupDirectoryChanges,
   matchesDirectoryScope,
@@ -44,7 +43,6 @@ import {
   sortDirectoryChanges,
   type DirectoryScope,
 } from "@/lib/change-directory";
-import { legacyChangesPatch } from "@/lib/legacy-query";
 import { useSavedScroll, useWorkspace } from "./context";
 import { useMediaQuery } from "./use-media";
 import { Empty } from "./document";
@@ -149,29 +147,11 @@ function Series({
     ),
   );
 }
-export function ChangeDirectory() {
+export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   const { data, q, nav, projectId } = useWorkspace();
   const all = data!.changes;
   const query = useMemo(() => readDirectoryQuery(q), [q]);
   const mobile = useMediaQuery("(max-width: 760px)");
-  useEffect(() => {
-    const patch: Record<string, string | null> = {
-      ...directoryQueryParams(query),
-      ...(legacyChangesPatch(q) ?? {}),
-    };
-    if (
-      q.scope &&
-      !SCOPES.some(([scope]) => scope === q.scope) &&
-      !["issues", "pendingIntegration", "pendingRelease"].includes(q.scope)
-    )
-      patch.scope = null;
-    if (q.group && !["status", "stage", "none"].includes(q.group))
-      patch.group = null;
-    if (query.scope !== "active" && q.view === "board") patch.view = null;
-    for (const key of Object.keys(patch))
-      if ((q[key] ?? null) === patch[key]) delete patch[key];
-    if (Object.keys(patch).length) nav(patch, true);
-  }, [q, query, nav]);
   const visible = sortDirectoryChanges(
     filterDirectoryChanges(all, query),
     query.labels.sortByUrgency,
@@ -245,6 +225,7 @@ export function ChangeDirectory() {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
       return;
     event.preventDefault();
+    onOpen?.(id);
     nav({
       c: id,
       ct: "overview",
@@ -351,6 +332,7 @@ export function ChangeDirectory() {
             className={styles.titleLink}
             href={href(change.id)}
             onClick={(event) => open(event, change.id)}
+            data-change-id={change.id}
             aria-label={`打开 ${change.title}`}
           >
             <span className={styles.title}>
@@ -681,6 +663,7 @@ export function ChangeDirectory() {
                           className={styles.card}
                           href={href(change.id)}
                           onClick={(event) => open(event, change.id)}
+                          data-change-id={change.id}
                           aria-label={`打开 ${change.title}`}
                         >
                           <span className={styles.title}>

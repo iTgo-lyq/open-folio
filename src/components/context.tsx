@@ -11,6 +11,7 @@ import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
 import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
 import { NETWORK_ERROR } from "@/lib/sync-status";
+import { documentReadingTarget } from "@/lib/change-reading";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
@@ -371,23 +372,18 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [message]);
   const openDocument = useCallback(
     (id: string, anchor = "", raw = false) => {
-      const spec = data?.specs.find((spec) => spec.documentId === id);
-      if (spec) {
+      const target = data && documentReadingTarget(data, id);
+      if (target)
         nav({
-          m: "specs",
-          s: spec.id,
-          c: null,
-          ct: null,
+          ...target,
           doc: null,
           da: null,
           anchor: anchor || null,
           raw: raw ? "1" : null,
         });
-      } else {
-        nav({ doc: id, da: anchor || null, raw: raw ? "1" : null });
-      }
+      else nav({ doc: id, da: anchor || null, raw: raw ? "1" : null });
     },
-    [nav, data?.specs],
+    [nav, data],
   );
   return (
     <Context.Provider

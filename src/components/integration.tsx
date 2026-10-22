@@ -1,4 +1,5 @@
 "use client";
+import { materialClass } from "./material-styles";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import { ArrowLeft, Copy, GitMerge, X } from "lucide-react";
@@ -200,10 +201,10 @@ export function ChangeIntegration({ id }: { id: string }) {
   const file =
     fileDiff?.file ?? page?.files.find((file) => file.id === selected);
   return (
-    <div className="integration-view">
-      <div className="integration-meta">
+    <div className={materialClass("integration-view")}>
+      <div className={materialClass("integration-meta")}>
         <div>
-          <span className="integration-record-status">
+          <span className={materialClass("integration-record-status")}>
             <GitMerge size={14} />
             已合入 {summary.integrationBranch}
           </span>
@@ -211,7 +212,7 @@ export function ChangeIntegration({ id }: { id: string }) {
             {new Date(record.committedAt).toLocaleString()}
           </time>
         </div>
-        <div className="integration-commit">
+        <div className={materialClass("integration-commit")}>
           <Button
             variant="text"
             title={record.commit}
@@ -222,10 +223,15 @@ export function ChangeIntegration({ id }: { id: string }) {
           </Button>
           <span>只读 · 固定合入版本</span>
           {summary.stats && (
-            <span className="integration-total">
+            <span className={materialClass("integration-total")}>
               {summary.stats.total} 个文件 · 文本{" "}
-              <span className="diff-added">+{summary.stats.added}</span> /{" "}
-              <span className="diff-removed">−{summary.stats.removed}</span>
+              <span className={materialClass("diff-added")}>
+                +{summary.stats.added}
+              </span>{" "}
+              /{" "}
+              <span className={materialClass("diff-removed")}>
+                −{summary.stats.removed}
+              </span>
               {summary.stats.unstatable > 0 &&
                 ` · ${summary.stats.unstatable} 个文件不计行数`}
             </span>
@@ -233,11 +239,15 @@ export function ChangeIntegration({ id }: { id: string }) {
         </div>
       </div>
       <div
-        className="diff-layout"
+        className={materialClass("diff-layout")}
         data-view={q.cv === "diff" ? "diff" : "list"}
       >
-        <nav className="diff-files" aria-label="合入文件" ref={list}>
-          <div className="diff-file-heading">
+        <nav
+          className={materialClass("diff-files")}
+          aria-label="合入文件"
+          ref={list}
+        >
+          <div className={materialClass("diff-file-heading")}>
             <strong>全部文件</strong>
             <span>{page?.total ?? 0}</span>
           </div>
@@ -245,27 +255,31 @@ export function ChangeIntegration({ id }: { id: string }) {
             <button
               key={file.id}
               data-file={file.id}
-              className="diff-file-item"
+              className={materialClass("diff-file-item")}
               aria-current={file.id === selected}
               onClick={() => choose(file.id)}
             >
-              <span className="diff-file-name">
+              <span className={materialClass("diff-file-name")}>
                 {file.path.split("/").at(-1)}
               </span>
-              <span className="diff-file-directory">
+              <span className={materialClass("diff-file-directory")}>
                 {file.path.includes("/")
                   ? file.path.slice(0, file.path.lastIndexOf("/") + 1)
                   : "/"}
               </span>
-              <span className="diff-file-status">
+              <span className={materialClass("diff-file-status")}>
                 <span>
                   {statuses[file.status] ?? file.status}
                   {kinds[file.kind] && ` · ${kinds[file.kind]}`}
                 </span>
                 {file.added !== null && (
                   <>
-                    <span className="diff-added">+{file.added}</span>
-                    <span className="diff-removed">−{file.removed}</span>
+                    <span className={materialClass("diff-added")}>
+                      +{file.added}
+                    </span>
+                    <span className={materialClass("diff-removed")}>
+                      −{file.removed}
+                    </span>
                   </>
                 )}
               </span>
@@ -276,22 +290,22 @@ export function ChangeIntegration({ id }: { id: string }) {
           )}
           {page?.next && (
             <Button
-              className="diff-more"
+              className={materialClass("diff-more")}
               loading={more.key === key && more.loading}
               onClick={() => void loadMore()}
             >
               加载更多文件
             </Button>
           )}
-          <p className="diff-file-footnote">
+          <p className={materialClass("diff-file-footnote")}>
             包含代码、文档与归档移动。差异以本次合入前后为边界。
           </p>
         </nav>
-        <section className="diff-panel" aria-label="文件差异">
-          <div className="diff-heading">
+        <section className={materialClass("diff-panel")} aria-label="文件差异">
+          <div className={materialClass("diff-heading")}>
             <Button
               variant="text"
-              className="diff-back"
+              className={materialClass("diff-back")}
               onClick={() => {
                 nav({ cv: "list" });
                 requestAnimationFrame(() =>
@@ -323,14 +337,15 @@ export function ChangeIntegration({ id }: { id: string }) {
             </div>
             <Button
               variant="text"
-              className="diff-command"
+              className={materialClass("diff-command")}
               onClick={() => void copy(summary.command!)}
             >
               复制 Git 比较命令
             </Button>
           </div>
           <div
-            className="diff-content"
+            className={materialClass("diff-content")}
+            role="region"
             ref={diffPanel}
             tabIndex={0}
             aria-label="统一差异"
@@ -349,23 +364,33 @@ export function ChangeIntegration({ id }: { id: string }) {
                 </Empty>
               ) : (
                 <table
-                  className="diff-table"
+                  className={materialClass("diff-table")}
                   aria-label={`${fileDiff.file.path} 的统一差异`}
                 >
                   <tbody>
                     {fileDiff.lines.map((line, index) => (
-                      <tr key={index} className={line.kind}>
+                      <tr
+                        key={index}
+                        data-kind={line.kind}
+                        className={materialClass(line.kind)}
+                      >
                         {["hunk", "note"].includes(line.kind) ? (
                           <td colSpan={4}>{line.text}</td>
                         ) : (
                           <>
-                            <td className="line-no" aria-label="旧行号">
+                            <td
+                              className={materialClass("line-no")}
+                              aria-label="旧行号"
+                            >
                               {line.old}
                             </td>
-                            <td className="line-no" aria-label="新行号">
+                            <td
+                              className={materialClass("line-no")}
+                              aria-label="新行号"
+                            >
                               {line.new}
                             </td>
-                            <td className="sign">
+                            <td className={materialClass("sign")}>
                               {line.kind === "add"
                                 ? "+"
                                 : line.kind === "remove"
@@ -381,7 +406,7 @@ export function ChangeIntegration({ id }: { id: string }) {
                 </table>
               )
             ) : selected ? (
-              <p className="diff-loading" role="status">
+              <p className={materialClass("diff-loading")} role="status">
                 正在读取文件差异…
               </p>
             ) : null}
@@ -395,9 +420,9 @@ export function ChangeIntegration({ id }: { id: string }) {
         }}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="drawer-overlay" />
+          <Dialog.Overlay className={materialClass("drawer-overlay")} />
           <Dialog.Content
-            className="integration-copy-dialog"
+            className={materialClass("integration-copy-dialog")}
             onOpenAutoFocus={(event) => {
               event.preventDefault();
               copyInput.current?.focus();

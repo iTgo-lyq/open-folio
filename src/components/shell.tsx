@@ -88,6 +88,7 @@ export function Shell({
     [],
   );
   const reading = ["specs", "changes", "prototypes"].includes(module);
+  const changeReading = module === "changes" && !!q.c;
   const toggle = () => {
     if (mobile) return;
     if (tablet) return setTabletExpanded((v) => !v);
@@ -107,7 +108,14 @@ export function Shell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-  const go = (m: string) => nav({ m, doc: null, ...CLEAR_PROTOTYPE_VIEW });
+  const go = (m: string) =>
+    nav({
+      m,
+      doc: null,
+      anchor: null,
+      raw: null,
+      ...CLEAR_PROTOTYPE_VIEW,
+    });
   const signedIn = !!personal.session?.authenticated;
   const usable = (id: string) =>
     id === "home" || (!!projectId && !!personal.connection);
@@ -170,6 +178,7 @@ export function Shell({
       <div
         className={styles.app}
         data-collapsed={collapsed || undefined}
+        data-change-reading={changeReading || undefined}
         style={{ colorScheme: "var(--of-color-scheme)" }}
       >
         <aside className={styles.side} aria-label="工作台导航">
@@ -233,7 +242,7 @@ export function Shell({
                   <ChevronLeft size={16} aria-hidden="true" />
                   原型
                 </button>
-              ) : reading && personal.connection ? (
+              ) : changeReading ? null : reading && personal.connection ? (
                 <RepoMenu variant="toolbar" />
               ) : (
                 <span className={styles.tbBrand}>
@@ -245,7 +254,7 @@ export function Shell({
             <div className={styles.tbRight}>
               <div className={styles.slot} ref={rightSlot} />
               {reading && personal.connection && <SyncStatus module={module} />}
-              {signedIn && (
+              {signedIn && !changeReading && (
                 <span className={styles.tbAccount}>
                   <AccountMenu compact active={module === "connections"} />
                 </span>

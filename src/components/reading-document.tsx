@@ -15,9 +15,10 @@ import {
   SheetTitle,
 } from "@open-folio/ui";
 import type { DocumentRef } from "@/lib/model";
-import { Empty, Markdown, useCopyPageLink } from "./document";
-import { useWorkspace } from "./context";
+import { Empty, Markdown, Source, useCopyPageLink } from "./document";
+import { useWorkspace, useDocument } from "./context";
 import styles from "./reader.module.css";
+import { reportSharedResourceFailure } from "./api";
 
 export function ReadingDocument({
   value,
@@ -118,5 +119,81 @@ export function ReadingDocument({
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+export function DocumentSheet() {
+  const { q, nav, data, readUrl } = useWorkspace();
+  const doc = data?.documents.find((document) => document.id === q.doc);
+  const { value, error, loading } = useDocument(
+    doc?.kind === "image" ? undefined : q.doc,
+  );
+  const focus = useRef<HTMLElement | null>(null);
+  return (
+    <Sheet
+      open={!!q.doc}
+      onOpenChange={(open) => {
+        if (!open) nav({ doc: null, da: null, raw: null, asset: null });
+      }}
+    >
+      <SheetContent
+        aria-describedby={undefined}
+        onOpenAutoFocus={() => {
+          focus.current = window.document.activeElement as HTMLElement;
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (focus.current?.isConnected) focus.current.focus();
+        }}
+      >
+        <SheetHeader>
+          <SheetTitle>{doc?.title ?? "文档"}</SheetTitle>
+          <IconButton
+            aria-label="关闭文档"
+            onClick={() => nav({ doc: null, da: null, raw: null, asset: null })}
+          >
+            <X />
+          </IconButton>
+        </SheetHeader>
+        <SheetBody>
+          {doc?.kind === "image" ? (
+            <>
+              <img
+                className={styles.image}
+                src={readUrl(`assets/${doc.id}?snapshot=${data!.id}`)}
+                alt={doc.title}
+                onError={() =>
+                  void reportSharedResourceFailure(
+                    readUrl(`assets/${doc.id}?snapshot=${data!.id}`),
+                  )
+                }
+              />
+              <Source document={doc} />
+            </>
+          ) : error ? (
+            <Empty title="暂时无法读取文档">
+              <p>{error}</p>
+            </Empty>
+          ) : !value ? (
+            <Empty title={loading ? "正在读取文档…" : "选择一份文档"} />
+          ) : (
+            <>
+              <Source document={value.document} />
+              {q.raw || value.document.kind === "json" ? (
+                <pre className={styles.raw} tabIndex={0}>
+                  {value.body}
+                </pre>
+              ) : (
+                <Markdown
+                  body={value.body}
+                  document={value.document}
+                  className={styles.prose}
+                />
+              )}
+            </>
+          )}
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

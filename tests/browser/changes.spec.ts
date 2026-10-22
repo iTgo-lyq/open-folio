@@ -5,6 +5,8 @@ import {
   changeDisplay,
   changeLinks,
   changeRow,
+  openMaterial,
+  backToChanges,
 } from "./connected";
 import { primaryRecord, type Snapshot } from "../../src/lib/model";
 
@@ -44,17 +46,13 @@ test("clarifications show final answers in numeric order across updates and narr
   );
   await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader`);
   const section = page.getByRole("region", { name: "澄清问答" });
-  await expect(section.locator(".clarification-id")).toHaveText([
-    "Q1",
-    "Q2",
-    "Q10",
-  ]);
+  await expect(section.locator("dt code")).toHaveText(["Q1", "Q2", "Q10"]);
   await expect(section.getByText("最初回答", { exact: true })).toBeVisible();
 
   const finalAnswer = `默认收起。\n完整链接：https://example.test/${"reference".repeat(30)}\n<img src=x onerror=alert(1)>`;
   state.clarifications.Q1.answer = finalAnswer;
   await page.reload();
-  const items = section.locator(".clarification-item");
+  const items = section.locator("dl > div");
   await expect(items.nth(0).locator("dd")).toHaveText(finalAnswer);
   await expect(section).not.toContainText("最初回答");
   await expect(items.nth(1).locator("dd")).toHaveText("未回答");
@@ -67,7 +65,7 @@ test("clarifications show final answers in numeric order across updates and narr
   await section.scrollIntoViewIfNeeded();
   expect(
     await page
-      .locator(".drawer-body")
+      .getByRole("region", { name: "阅读正文", exact: true })
       .evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true);
   await expect(items.nth(0).locator("dd")).toHaveCSS("white-space", "pre-wrap");
@@ -89,12 +87,12 @@ test("clarifications are hidden for old and empty records and available in archi
     route.fulfill({ json: data }),
   );
   await page.goto(`/?${repositoryQuery}&m=changes&c=source-connect`);
-  await expect(page.getByRole("dialog").getByText("交付已归档")).toBeVisible();
+  await expect(page.getByRole("main").getByText("交付已归档")).toBeVisible();
   const section = page.getByRole("region", { name: "澄清问答" });
   await expect(section).toHaveCount(0);
   archived.clarifications = {};
   await page.reload();
-  await expect(page.getByRole("dialog").getByText("交付已归档")).toBeVisible();
+  await expect(page.getByRole("main").getByText("交付已归档")).toBeVisible();
   await expect(section).toHaveCount(0);
   archived.clarifications.Q1 = {
     round: 1,
@@ -115,32 +113,38 @@ test("a narrative Plan uses default serial order without a source warning", asyn
   await page.goto(
     `/?${repositoryQuery}&m=changes&c=default-serial&ct=overview`,
   );
-  const drawer = page.getByRole("dialog");
+  const drawer = page.getByRole("main");
   await expect(
     drawer.getByRole("heading", { name: "默认串行的任务安排", exact: true }),
   ).toBeVisible();
-  await expect(drawer.locator(".drawer-badges")).not.toContainText("来源提示");
+  await expect(
+    drawer.getByRole("region", { name: "类型与紧急程度", exact: true }),
+  ).not.toContainText("来源提示");
   await expect(drawer.getByText("等待默认串行验收")).toBeVisible();
-  await drawer.getByRole("tab", { name: "任务", exact: true }).click();
+  await openMaterial(page, "任务");
   await expect(
     drawer.getByText("默认按任务编号串行执行。", { exact: true }),
   ).toBeVisible();
-  await expect(drawer.locator(".task-edge")).toContainText("无前置");
-  await expect(drawer.locator(".task-edge")).toContainText("T1");
+  await expect(
+    drawer.getByRole("region", { name: "执行顺序", exact: true }),
+  ).toContainText("无前置");
+  await expect(
+    drawer.getByRole("region", { name: "执行顺序", exact: true }),
+  ).toContainText("T1");
   await page.screenshot({
     path: "artifacts/default-serial-change.png",
     fullPage: true,
   });
-  await drawer.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader&ct=tasks`);
   await expect(
     page
-      .getByRole("dialog")
+      .getByRole("main")
       .getByText("按 Plan 中的显式执行顺序执行。", { exact: true }),
   ).toBeVisible();
 });
 
-test("list filters, drawer, tasks and stacked document focus preserve context", async ({
+test("list filters, inline materials and task order preserve context", async ({
   page,
 }) => {
   await page.goto(`/?${repositoryQuery}&m=changes`);
@@ -150,7 +154,7 @@ test("list filters, drawer, tasks and stacked document focus preserve context", 
   });
   await expect(row).toBeVisible();
   await row.click();
-  const drawer = page.getByRole("dialog");
+  const drawer = page.getByRole("main");
   await expect(
     drawer.getByRole("heading", {
       name: "让工程文档成为清晰的阅读体验",
@@ -158,21 +162,21 @@ test("list filters, drawer, tasks and stacked document focus preserve context", 
     }),
   ).toBeVisible();
   await expect(drawer.getByText("等待阅读样式验收")).toBeVisible();
-  await drawer.getByRole("tab", { name: "任务", exact: true }).click();
+  await openMaterial(page, "任务");
   await expect(
     drawer
-      .locator(".task-detail")
+      .getByRole("list", { name: "实现任务", exact: true })
       .getByText("读取与校验项目来源", { exact: true }),
   ).toBeVisible();
   await drawer.getByRole("button", { name: "查看 Plan 原文依据" }).click();
-  await expect(page.locator("[role=dialog]")).toHaveCount(2);
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(page).toHaveURL(/ct=plan/);
   await expect(
-    page.getByRole("button", { name: "查看 Plan 原文依据" }),
-  ).toBeFocused();
-  await page.keyboard.press("Escape");
+    page.getByRole("heading", { name: "实施计划", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/ct=tasks/);
+  await backToChanges(page);
   await expect(row).toBeFocused();
   await changeDisplay(page, "看板");
   await expect(
@@ -200,49 +204,47 @@ test("dependencies, parent children, cancellation, archived evidence and invalid
   );
   await expect(page).not.toHaveURL(/view=dependencies/);
   await expect(page.getByText("流程已满足").first()).toBeVisible();
-  await page.keyboard.press("Escape");
+  await backToChanges(page);
   await page
     .getByRole("link", { name: "打开 工程工作台整体交付", exact: true })
     .click();
-  await page.getByRole("tab", { name: "子项", exact: true }).click();
+  await openMaterial(page, "子项");
   await expect(
-    page
-      .getByRole("dialog")
-      .getByRole("button", { name: /支持手机端连续阅读/ }),
+    page.getByRole("main").getByRole("button", { name: /支持手机端连续阅读/ }),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await backToChanges(page);
   await page.getByRole("tab", { name: /已取消/ }).click();
   await page
     .getByRole("link", { name: "打开 导航布局实验", exact: true })
     .click();
   await expect(
-    page.getByRole("dialog").getByText("收敛为统一工作台"),
+    page.getByRole("main").getByText("收敛为统一工作台"),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await backToChanges(page);
   await page.getByRole("tab", { name: /已完成/ }).click();
   await page
     .getByRole("link", { name: "打开 接入中心仓库与来源追踪", exact: true })
     .click();
-  await page.getByRole("tab", { name: "依据", exact: true }).click();
+  await openMaterial(page, "依据");
   await expect(page.getByText("人工验收通过", { exact: true })).toBeVisible();
   await expect(page.getByText("归档目录完整", { exact: true })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await backToChanges(page);
   await page.getByRole("button", { name: "查看", exact: true }).click();
   await page
     .getByRole("link", { name: "打开 需要核对的来源记录", exact: true })
     .click();
   await expect(
     page
-      .getByRole("dialog")
+      .getByRole("main")
       .getByText("schemaVersion：Invalid literal value, expected 1"),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "文档", exact: true }).click();
+  await openMaterial(page, "依据");
   await page.getByRole("button", { name: /流程状态原文/ }).click();
   await expect(page.getByRole("dialog").last().locator("pre")).toContainText(
     '"schemaVersion": 2',
   );
 });
-test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
+test("mobile Change reading, URL restore and 320px fit", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(
     `/?${repositoryQuery}&m=changes&c=document-reader&ct=overview`,
@@ -257,7 +259,7 @@ test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
     path: "artifacts/change-detail-mobile.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page
     .getByRole("link", {
@@ -265,11 +267,12 @@ test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
       exact: true,
     })
     .click();
-  await page.getByRole("tab", { name: "任务", exact: true }).click();
+  await openMaterial(page, "任务");
   await page.reload();
+  await expect(page).toHaveURL(/ct=tasks/);
   await expect(
-    page.getByRole("tab", { name: "任务", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+    page.getByRole("list", { name: "实现任务", exact: true }),
+  ).toBeVisible();
   await page.setViewportSize({ width: 320, height: 740 });
   expect(
     await page.evaluate(
@@ -337,30 +340,31 @@ test("changing projects clears filters that belong to the previous project", asy
   ).toBeVisible();
 });
 
-test("document list distinguishes missing, unreadable and not required material", async ({
+test("material navigation distinguishes missing, unreadable and not-yet-required files", async ({
   page,
 }) => {
   await page.goto(
-    `/?${repositoryQuery}&m=changes&c=document-reader&ct=documents`,
+    `/?${repositoryQuery}&m=changes&c=document-reader&ct=execution`,
   );
   await expect(
-    page.locator(".document-missing").filter({ hasText: "execution.md" }),
+    page
+      .getByRole("navigation", { name: "Change 材料" })
+      .getByRole("link", { name: /^执行记录/ }),
   ).toContainText("缺失");
   await expect(
-    page.getByRole("button", { name: /独立评审.*review.md/ }),
+    page.getByRole("alert").filter({ hasText: "文件缺失" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Change 材料" })
+      .getByRole("link", { name: /^评审记录/ }),
   ).toContainText("不可读");
+  await page.goto(`/?${repositoryQuery}&m=changes&c=mobile-reading&ct=plan`);
+  await expect(page.getByText(/plan.md.*当前规模不要求/)).toBeVisible();
   await page.goto(
-    `/?${repositoryQuery}&m=changes&c=mobile-reading&ct=documents`,
+    `/?${repositoryQuery}&m=changes&c=delivery-review&ct=technical`,
   );
-  await expect(
-    page.locator(".document-missing").filter({ hasText: "plan.md" }),
-  ).toContainText("当前规模不要求");
-  await page.goto(
-    `/?${repositoryQuery}&m=changes&c=delivery-review&ct=documents`,
-  );
-  await expect(
-    page.locator(".document-missing").filter({ hasText: "technical.md" }),
-  ).toContainText("当前阶段尚未要求");
+  await expect(page.getByText(/technical.md.*当前阶段尚未要求/)).toBeVisible();
 });
 
 test("only active Changes use the board and completed rows retain archive evidence", async ({
@@ -381,8 +385,10 @@ test("only active Changes use the board and completed rows retain archive eviden
       exact: true,
     })
     .click();
-  await expect(page.locator(".stage-flow")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("list", { name: "阶段", exact: true }),
+  ).toBeVisible();
+  await backToChanges(page);
   await scopes.getByRole("tab", { name: /已完成/ }).click();
   await expect(page).toHaveURL(/scope=completed/);
   await expect(page).not.toHaveURL(/view=board/);
@@ -394,15 +400,17 @@ test("only active Changes use the board and completed rows retain archive eviden
   await page
     .getByRole("link", { name: "打开 接入中心仓库与来源追踪", exact: true })
     .click();
-  const drawer = page.getByRole("dialog");
-  await expect(drawer.locator(".stage-flow,.overview-progress")).toHaveCount(0);
-  await expect(drawer.locator(".archive-outcome")).toContainText(
-    "人工验收通过",
-  );
+  const drawer = page.getByRole("main");
+  await expect(drawer.getByRole("progressbar")).toHaveCount(0);
+  await expect(
+    drawer.getByText("交付已归档", { exact: true }).locator(".."),
+  ).toContainText("人工验收通过");
   await drawer.getByRole("button", { name: "查看验收依据" }).click();
   await expect(drawer.getByText("归档目录完整", { exact: true })).toBeVisible();
-  await drawer.getByRole("tab", { name: "任务", exact: true }).click();
-  await expect(drawer.locator(".task-detail")).toContainText("已完成");
+  await openMaterial(page, "任务");
+  await expect(
+    drawer.getByRole("list", { name: "实现任务", exact: true }),
+  ).toContainText("已完成");
 });
 
 test("invalid and retired filters preserve deep links and scope navigation", async ({
@@ -415,7 +423,7 @@ test("invalid and retired filters preserve deep links and scope navigation", asy
   await expect(page).toHaveURL(/c=source-connect/);
   await expect(
     page
-      .getByRole("dialog")
+      .getByRole("main")
       .getByRole("heading", { name: "接入中心仓库与来源追踪", exact: true }),
   ).toBeVisible();
   await page.goto(
@@ -463,13 +471,15 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
     ),
   ).toBe(true);
   await cancelled.click();
-  await expect(page.locator(".stage-flow, .overview-progress")).toHaveCount(0);
-  await expect(page.locator(".drawer-badges")).toHaveText("已取消Large");
-  await page.getByRole("tab", { name: "依据", exact: true }).click();
+  await expect(page.getByRole("progressbar")).toHaveCount(0);
+  await expect(
+    page.getByRole("main").getByText("已取消", { exact: true }),
+  ).toBeVisible();
+  await openMaterial(page, "依据");
   await expect(
     page.getByText("取消时阶段：执行", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
+  await backToChanges(page);
   await page.getByRole("button", { name: "查看", exact: true }).click();
   const invalid = page.getByRole("link", {
     name: "打开 需要核对的来源记录",
@@ -485,8 +495,10 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
     ),
   ).toBe(true);
   await invalid.click();
-  await expect(page.locator(".stage-flow, .overview-progress")).toHaveCount(0);
-  await expect(page.locator(".drawer-badges")).toContainText("来源待核对");
+  await expect(page.getByRole("progressbar")).toHaveCount(0);
+  await expect(
+    page.getByRole("main").getByText("来源待核对", { exact: true }),
+  ).toBeVisible();
 });
 
 test("empty status scopes describe the scope without offering to reset it", async ({

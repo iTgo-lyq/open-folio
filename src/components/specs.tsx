@@ -62,16 +62,6 @@ export default function Specs() {
       return next;
     });
   }, [selected?.id, storageKey, revealVersion]);
-  // 旧 Specs 文档弹窗链接改为所属能力的内联正文，保留原文与章节定位。
-  useEffect(() => {
-    if (!q.doc) return;
-    const spec = specs.find((spec) => spec.documentId === q.doc);
-    if (spec)
-      nav(
-        { m: "specs", s: spec.id, anchor: q.da ?? null, doc: null, da: null },
-        true,
-      );
-  }, [q.doc, data?.id]);
   const toggle = (path: string) =>
     setClosed((prev) => {
       const next = prev.includes(path)
