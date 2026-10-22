@@ -88,6 +88,8 @@ function Body() {
         <PersonalHome />
       ) : module === "connections" ? (
         <AccountSettings />
+      ) : module === "specs" && data ? (
+        <Specs />
       ) : (
         legacy(
           !projectId ? (
@@ -106,8 +108,6 @@ function Body() {
                 读取中心仓库
               </Button>
             </Empty>
-          ) : module === "specs" ? (
-            <Specs />
           ) : module === "prototypes" ? (
             <Prototypes />
           ) : (
@@ -115,7 +115,12 @@ function Body() {
           ),
         )
       )}
-      {reading && data && <DocumentModal />}
+      {reading &&
+        data &&
+        !(
+          module === "specs" &&
+          data.specs.some((spec) => spec.documentId === q.doc)
+        ) && <DocumentModal />}
     </Shell>
   );
 }

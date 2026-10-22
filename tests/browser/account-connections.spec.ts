@@ -160,7 +160,9 @@ test("A-B-A selection discards a delayed repository response from the first A", 
   await page.getByRole("button", { name: "使用reader", exact: true }).click();
   await expect(current(page)).toContainText("@reader");
   await finish!();
-  await expect(page.locator(".specs-tree")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "能力目录" })).toHaveCount(
+    0,
+  );
   await expect(current(page)).toContainText("@reader");
 });
 
@@ -196,7 +198,9 @@ test("unbinding in another browser prevents a delayed old private response from 
       view.getByRole("heading", { name: "绑定一个 GitHub Token", exact: true }),
     ).toBeVisible();
     await finish!();
-    await expect(view.locator(".specs-tree")).toHaveCount(0);
+    await expect(
+      view.getByRole("navigation", { name: "能力目录" }),
+    ).toHaveCount(0);
     expect(
       (await (await second.request.get("/api/session")).json()).authenticated,
     ).toBe(true);

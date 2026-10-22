@@ -1,0 +1,122 @@
+.tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.treeRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 1px 0;
+  border-radius: 7px;
+}
+.treeRow[data-selected] {
+  background: var(--of-fill-selected);
+}
+.toggle,
+.item {
+  border: 0;
+  background: none;
+  color: var(--of-text-2);
+  cursor: pointer;
+}
+.toggle {
+  flex: none;
+  width: 22px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 5px;
+}
+.toggle:hover,
+.item:hover {
+  background: var(--of-fill-hover);
+}
+.spacer {
+  width: 22px;
+  flex: none;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  min-height: 29px;
+  padding: 4px 6px 4px 0;
+  text-align: left;
+  line-height: 1.5;
+  text-decoration: none;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+}
+.item svg {
+  width: 14px;
+  height: 14px;
+  color: var(--of-text-3);
+  flex: none;
+}
+.item[aria-current] {
+  color: var(--of-text);
+  font-weight: 600;
+}
+.item[aria-current] svg {
+  color: var(--of-accent);
+}
+.toggle svg {
+  width: 13px;
+  height: 13px;
+}
+.item:focus-visible,
+.toggle:focus-visible {
+  outline: 2px solid var(--of-accent);
+  outline-offset: 1px;
+}
+.related {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 0.5px solid var(--of-border);
+}
+.related h2 {
+  color: var(--of-text);
+  font-size: 19.5px;
+  font-weight: 650;
+  margin: 0 0 12px;
+}
+.related ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.related a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin: 0 -10px;
+  border-radius: 9px;
+  color: var(--of-text);
+  text-decoration: none;
+}
+.related a:hover {
+  background: var(--of-fill-hover);
+}
+.related a > span:first-child {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.related small {
+  color: var(--of-text-3);
+  font-size: 12px;
+}

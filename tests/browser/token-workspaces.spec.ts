@@ -101,7 +101,9 @@ test("a revoked device clears its page and a delayed old response cannot restore
     page.getByRole("heading", { name: /登录 OpenFolio/ }),
   ).toBeVisible();
   await deliver!();
-  await expect(page.locator(".specs-tree")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "能力目录" })).toHaveCount(
+    0,
+  );
   await expect(
     page.getByRole("heading", { name: /登录 OpenFolio/ }),
   ).toBeVisible();

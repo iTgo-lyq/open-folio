@@ -370,9 +370,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [message]);
   const openDocument = useCallback(
-    (id: string, anchor = "", raw = false) =>
-      nav({ doc: id, da: anchor || null, raw: raw ? "1" : null }),
-    [nav],
+    (id: string, anchor = "", raw = false) => {
+      const spec = data?.specs.find((spec) => spec.documentId === id);
+      if (spec) {
+        nav({
+          m: "specs",
+          s: spec.id,
+          c: null,
+          ct: null,
+          doc: null,
+          da: null,
+          anchor: anchor || null,
+          raw: raw ? "1" : null,
+        });
+      } else {
+        nav({ doc: id, da: anchor || null, raw: raw ? "1" : null });
+      }
+    },
+    [nav, data?.specs],
   );
   return (
     <Context.Provider

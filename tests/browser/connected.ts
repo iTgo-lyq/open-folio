@@ -121,3 +121,9 @@ export async function logoutCurrent(page: Page) {
     .getByRole("button", { name: "退出登录", exact: true })
     .click();
 }
+export async function copyReadingLink(page: Page) {
+  await page.getByRole("button", { name: "更多操作", exact: true }).click();
+  await page
+    .getByRole("menuitem", { name: "复制阅读链接", exact: true })
+    .click();
+}

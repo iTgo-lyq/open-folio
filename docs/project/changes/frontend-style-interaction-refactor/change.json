@@ -62,7 +62,9 @@
     },
     "T7": {
       "title": "阅读布局与 Specs",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、生产构建及阅读/SVG/分享/来源/刷新14个不同浏览器用例通过；三档窄屏与锚点焦点已查",
+      "commitTitle": "frontend-style-interaction-refactor T7: reading layout and Specs"
     },
     "T8": {
       "title": "Changes 列表",

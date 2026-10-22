@@ -1,4 +1,4 @@
-import { test, expect, repositoryQuery } from "./connected";
+import { test, expect, repositoryQuery, copyReadingLink } from "./connected";
 test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -9,16 +9,17 @@ test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
   await expect(
     page
       .getByRole("navigation", { name: "能力目录" })
-      .getByRole("button", { name: "访问与来源" }),
+      .getByRole("link", { name: "访问与来源" }),
   ).toBeVisible();
   await page
-    .getByRole("navigation", { name: "文档章节" })
+    .getByRole("navigation", { name: "本页目录" })
     .getByRole("link", { name: "重复标题", exact: true })
     .nth(1)
     .click();
   await expect(page).toHaveURL(/anchor=/);
   await expect(page.locator("h2#重复标题-1")).toBeVisible();
-  await page.getByRole("button", { name: "查看原文" }).click();
+  await page.getByRole("button", { name: "更多操作" }).click();
+  await page.getByRole("menuitem", { name: "查看原文" }).click();
   await expect(page.getByRole("dialog").locator("pre")).toContainText(
     "<script>",
   );
@@ -28,14 +29,12 @@ test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
   await expect(page.getByRole("status")).toContainText("找不到");
   await page.getByRole("link", { name: "阅读权限能力" }).click();
   await expect(
-    page
-      .getByRole("dialog")
-      .getByRole("heading", { name: "访问与来源", exact: true }),
+    page.getByRole("heading", { name: "访问与来源", exact: true }),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await page.goBack();
   await page
     .getByRole("navigation", { name: "能力目录" })
-    .getByRole("button", { name: "访问与来源", exact: true })
+    .getByRole("link", { name: "访问与来源", exact: true })
     .click();
   await expect(page).toHaveURL(/s=platform%2Faccess/);
   await expect(
@@ -67,7 +66,7 @@ test("deep namespace, invalid selection and mobile navigation remain usable", as
   await page.getByRole("button", { name: "打开能力目录" }).click();
   await page
     .getByRole("navigation", { name: "能力目录" })
-    .getByRole("button", { name: "交付记录" })
+    .getByRole("link", { name: "交付记录" })
     .click();
   await expect(
     page.getByRole("heading", { name: "交付记录", exact: true }),
@@ -95,7 +94,7 @@ test("deep links reveal selected capability ancestors", async ({ page }) => {
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
   const selected = page
     .getByRole("navigation", { name: "能力目录" })
-    .getByRole("button", { name: "访问与来源", exact: true });
+    .getByRole("link", { name: "访问与来源", exact: true });
   await expect(selected).toBeVisible();
   await page
     .getByRole("button", { name: "收起 platform", exact: true })
@@ -110,8 +109,73 @@ test("copying a document link includes its actual capability and branch", async 
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
-  await page.getByRole("button", { name: "复制页面链接" }).click();
+  await copyReadingLink(page);
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(copied).searchParams.get("s")).toBe("platform/access");
   expect(new URL(copied).searchParams.get("branch")).toBe("develop");
+});
+
+test("reading settings persist and the floating header leaves anchors and mobile navigation readable", async ({
+  page,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+  await expect(
+    page.getByRole("heading", { name: "工程协作", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  const preferences = page.getByRole("dialog", { name: "阅读设置" });
+  await preferences.getByRole("radio", { name: "较大", exact: true }).click();
+  await preferences.getByRole("switch", { name: "专注阅读" }).click();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "阅读设置", exact: true }),
+  ).toBeFocused();
+  await expect(page.getByRole("navigation", { name: "能力目录" })).toBeHidden();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "工程协作", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page
+      .getByRole("heading", { name: "工程协作", exact: true })
+      .evaluate((el) => getComputedStyle(el.parentElement!).fontSize),
+  ).toBe("17.5px");
+  await page.getByRole("button", { name: "打开能力目录" }).click();
+  await expect(
+    page.getByRole("navigation", { name: "能力目录" }),
+  ).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "本页目录" })
+    .getByRole("link", { name: "重复标题", exact: true })
+    .nth(1)
+    .click();
+  const target = page.locator("h2#重复标题-1");
+  await expect(target).toBeFocused();
+  expect(
+    await target.evaluate(
+      (el) =>
+        el.getBoundingClientRect().top >=
+        document.querySelector("main > header")!.getBoundingClientRect()
+          .bottom -
+          1,
+    ),
+  ).toBe(true);
+  for (const width of [834, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.getByRole("button", { name: "打开能力目录" }).click();
+    await page
+      .getByRole("navigation", { name: "能力目录" })
+      .getByRole("link", { name: "访问与来源", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "访问与来源", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({ path: `/tmp/of-refactor-specs-${width}.png` });
+  }
 });

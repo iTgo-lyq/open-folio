@@ -1,4 +1,10 @@
-import { test, expect, repositoryQuery, connectRequest } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  connectRequest,
+  copyReadingLink,
+} from "./connected";
 test("engineering share links use each collaborator's connection and restore the original reading position", async ({
   page,
   context,
@@ -10,7 +16,7 @@ test("engineering share links use each collaborator's connection and restore the
   await expect(
     page.getByRole("heading", { name: "访问与来源", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "复制页面链接" }).last().click();
+  await copyReadingLink(page);
   const link = await page.evaluate(() => navigator.clipboard.readText());
   const params = new URL(link).searchParams;
   expect(params.get("repositoryId")).toBe("1");
@@ -25,7 +31,7 @@ test("engineering share links use each collaborator's connection and restore the
     const other = await collaborator.newPage();
     await other.goto(link);
     await expect(
-      other.getByRole("heading", { name: /你的工程工作台/ }),
+      other.getByRole("heading", { name: /登录 OpenFolio/ }),
     ).toBeVisible();
     await connectRequest(collaborator.request, "token-b");
     await other.reload();

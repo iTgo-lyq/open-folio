@@ -1,4 +1,10 @@
-import { test, expect, repositoryQuery, connectRequest } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  connectRequest,
+  copyReadingLink,
+} from "./connected";
 
 test("custom collaboration selection persists through rediscovery, sharing, preferences and prototype preparation", async ({
   page,
@@ -28,7 +34,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
   await expect(
     page.getByRole("heading", { name: "自定义协作能力", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "复制页面链接" }).last().click();
+  await copyReadingLink(page);
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(link).searchParams.get("integrationBranch")).toBe(
     "team/integration",
@@ -49,7 +55,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
       .poll(() => new URL(view.url()).searchParams.get("integrationBranch"))
       .toBe("team/integration");
     await view
-      .getByRole("button", { name: "自定义协作能力", exact: true })
+      .getByRole("link", { name: "自定义协作能力", exact: true })
       .click();
     await expect(
       view.getByRole("heading", { name: "自定义协作能力", exact: true }),
