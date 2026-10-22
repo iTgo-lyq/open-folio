@@ -19,10 +19,21 @@ test("prototype gallery, canvas and public page fit both themes at four widths",
     for (const theme of ["light", "dark"])
       for (const width of [1440, 834, 390, 320]) {
         await target.setViewportSize({ width, height: 900 });
-        await target.evaluate(
-          (theme) => (document.documentElement.dataset.theme = theme),
-          theme,
-        );
+        await target.evaluate(async (theme) => {
+          document.documentElement.dataset.theme = theme;
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          );
+          await Promise.allSettled(
+            document
+              .getAnimations()
+              .filter(
+                (animation) =>
+                  animation.effect?.getTiming().iterations !== Infinity,
+              )
+              .map((animation) => animation.finished),
+          );
+        }, theme);
         expect(
           await target.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth,

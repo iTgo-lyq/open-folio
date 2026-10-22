@@ -111,7 +111,7 @@ function Body() {
           ) : loading && !data ? (
             <Empty
               title={refreshing ? "正在读取中心仓库…" : "正在打开工作台…"}
-              icon={<LoaderCircle className="spin" />}
+              icon={<LoaderCircle className={styles.spin} />}
             />
           ) : !data ? (
             <Empty title="暂时没有可读取的版本">

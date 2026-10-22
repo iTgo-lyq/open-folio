@@ -1,10 +1,8 @@
 "use client";
 import { Badge as UiBadge, type BadgeTone } from "@open-folio/ui";
-import { useEffect, useMemo, useRef } from "react";
 import {
   AlertCircle,
   ArrowRight,
-  ArrowUpRight,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -12,10 +10,6 @@ import {
   Clock3,
   FileText,
   GitBranch,
-  GitPullRequest,
-  LayoutGrid,
-  List,
-  ListChecks,
   Network,
   ShieldCheck,
   X,
@@ -24,7 +18,6 @@ import {
   primaryRecord,
   STAGES,
   STAGE_LABELS,
-  STATUS_LABELS,
   TASK_LABELS,
   WAIT_LABELS,
   type ChangeCandidate,
@@ -32,23 +25,15 @@ import {
   type ChangeState,
   type Diagnostic,
   type Relation,
-  type Task,
 } from "@/lib/model";
 import { useWorkspace } from "./context";
 import { documentExpectation } from "@/lib/workflow";
-import { Empty, Source, CopyPageLink } from "./document";
+import { Empty, Source } from "./document";
 import { ChangePreviews } from "./previews";
-import { ChangeDelivery, DeliveryBadge } from "./delivery";
+import { ChangeDelivery } from "./delivery";
 import { ChangeIntegration } from "./integration";
 import { FollowUpContext } from "./follow-ups";
-import { ChangeLabels } from "./change-labels";
 import { materialClass, sectionId } from "./material-styles";
-import {
-  readLabelQuery,
-  labelQueryParams,
-  matchesLabels,
-  sortByUrgency,
-} from "@/lib/change-labels";
 export function quality(g: ChangeGroup) {
   const c = primaryRecord(g);
   return [
@@ -281,10 +266,9 @@ export function ChangeDetails({
   group?: ChangeGroup;
   tab: string;
 }) {
-  const { data, nav, openDocument } = useWorkspace();
+  const { data } = useWorkspace();
   const c = g ? primaryRecord(g) : null,
     s = c?.state;
-  const ongoing = !!g && activeFlow(g);
   return (
     <>
       {g && (!c || tab === "evidence") && <EntrySource group={g} />}
@@ -354,11 +338,24 @@ function Clarifications({ items }: { items: ChangeState["clarifications"] }) {
           <div className={materialClass("clarification-item")} key={id}>
             <dt>
               <code className={materialClass("clarification-id")}>{id}</code>
-              <span className={materialClass("clarification-question")}>
-                {item.question}
+              <span className={materialClass("clarification-content")}>
+                <span className={materialClass("clarification-question")}>
+                  {item.question}
+                  <small className={materialClass("clarification-round")}>
+                    第 {item.round} 轮
+                  </small>
+                  {item.withdrawn && (
+                    <span className={materialClass("clarification-status")}>
+                      已撤回
+                    </span>
+                  )}
+                </span>
+                <span className={materialClass("clarification-recommendation")}>
+                  推荐：{item.recommendation}
+                </span>
                 {item.withdrawn && (
-                  <span className={materialClass("clarification-status")}>
-                    已撤回
+                  <span className={materialClass("clarification-withdrawn")}>
+                    已撤回：{item.withdrawn}
                   </span>
                 )}
               </span>

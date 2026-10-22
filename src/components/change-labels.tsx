@@ -1,11 +1,9 @@
 "use client";
 import { materialClass } from "./material-styles";
 
-import { Badge, Button, type BadgeTone } from "@open-folio/ui";
-import { Popover } from "radix-ui";
-import { Tags } from "lucide-react";
-import { primaryRecord, type ChangeGroup, type ChangeState } from "@/lib/model";
-import { URGENCY_LABELS, type LabelQuery } from "@/lib/change-labels";
+import { Badge, type BadgeTone } from "@open-folio/ui";
+import { type ChangeState } from "@/lib/model";
+import { URGENCY_LABELS } from "@/lib/change-labels";
 
 const tones: Record<keyof typeof URGENCY_LABELS, BadgeTone> = {
   urgent: "danger",

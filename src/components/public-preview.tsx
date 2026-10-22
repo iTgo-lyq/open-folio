@@ -8,7 +8,7 @@ import {
   RefreshCw,
   Link2,
 } from "lucide-react";
-import { Button, IconButton, SegmentedControl } from "@open-folio/ui";
+import { IconButton, SegmentedControl } from "@open-folio/ui";
 import type { PublicPreview } from "@/server/public-previews";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
 import { PublicShell } from "./public-shell";

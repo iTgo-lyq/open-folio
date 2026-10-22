@@ -281,8 +281,6 @@ function PrototypeCard({
 }) {
   const { nav, q, data } = useWorkspace();
   const { device, viewport } = previewViewport(item, q.pdevice);
-  const params = new URLSearchParams({ revision });
-  if (device) params.set("device", device);
   const publication = usePublication(
     item.id,
     revision,
@@ -572,11 +570,9 @@ function PrototypeDetailBody({
   item: PrototypeItem;
   revision: string;
 }) {
-  const { q, nav, data, notice } = useWorkspace();
+  const { q, nav, data } = useWorkspace();
   const [selectedDevice, setSelectedDevice] = useState(q.pdevice);
   const { device, viewport } = previewViewport(item, selectedDevice);
-  const params = new URLSearchParams({ revision });
-  if (device) params.set("device", device);
   const publication = usePublication(
     item.id,
     revision,

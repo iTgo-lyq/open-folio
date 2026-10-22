@@ -129,10 +129,21 @@ test("copying a direct link opens the anonymous reader without private APIs", as
     await openMaterial(viewer, "技术方案");
     for (const theme of ["light", "dark"])
       for (const width of [1440, 834, 390, 320]) {
-        await viewer.evaluate(
-          (theme) => (document.documentElement.dataset.theme = theme),
-          theme,
-        );
+        await viewer.evaluate(async (theme) => {
+          document.documentElement.dataset.theme = theme;
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          );
+          await Promise.allSettled(
+            document
+              .getAnimations()
+              .filter(
+                (animation) =>
+                  animation.effect?.getTiming().iterations !== Infinity,
+              )
+              .map((animation) => animation.finished),
+          );
+        }, theme);
         await viewer.setViewportSize({ width, height: 900 });
         expect(
           await viewer.evaluate(() => document.documentElement.scrollWidth),

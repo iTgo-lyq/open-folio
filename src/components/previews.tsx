@@ -67,6 +67,8 @@ export function ChangePreviews({
     [runtimeError, setRuntimeError] = useState("");
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const directoryTrigger = useRef<HTMLButtonElement>(null),
+    directoryNavigated = useRef(false);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 440 });
   const canvas = useRef<HTMLDivElement>(null),
     frame = useRef<HTMLIFrameElement>(null);
@@ -337,6 +339,7 @@ export function ChangePreviews({
               device: null,
               orientation: null,
             });
+            directoryNavigated.current = true;
             setDirectoryOpen(false);
           }}
         >
@@ -441,10 +444,14 @@ export function ChangePreviews({
           </ToolbarSlot>
           <ToolbarSlot side="right">
             <IconButton
+              ref={directoryTrigger}
               aria-label="切换原型目录"
               tooltip
               aria-expanded={directoryOpen}
-              onClick={() => setDirectoryOpen((value) => !value)}
+              onClick={() => {
+                directoryNavigated.current = false;
+                setDirectoryOpen((value) => !value);
+              }}
             >
               <List />
             </IconButton>
@@ -466,7 +473,20 @@ export function ChangePreviews({
             </IconButton>
           </ToolbarSlot>
           <Sheet open={directoryOpen} onOpenChange={setDirectoryOpen}>
-            <SheetContent side="left" aria-describedby={undefined}>
+            <SheetContent
+              side="left"
+              aria-describedby={undefined}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                (directoryNavigated.current
+                  ? mobile
+                    ? canvas.current
+                    : heading.current
+                  : directoryTrigger.current
+                )?.focus({ preventScroll: true });
+                directoryNavigated.current = false;
+              }}
+            >
               <SheetHeader>
                 <SheetTitle>原型目录</SheetTitle>
                 <IconButton
@@ -558,6 +578,8 @@ export function ChangePreviews({
           className={previewClass("preview-canvas")}
           ref={canvas}
           data-testid="preview-canvas"
+          tabIndex={0}
+          aria-label="原型画布"
         >
           {!entry?.available ? (
             <Empty title="暂时无法预览">

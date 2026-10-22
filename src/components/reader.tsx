@@ -57,6 +57,8 @@ export function Reader({
     [paneOpen, setPaneOpen] = useState(false),
     [tocOpen, setTocOpen] = useState(false);
   const [active, setActive] = useState("");
+  const paneTrigger = useRef<HTMLButtonElement>(null),
+    tocTrigger = useRef<HTMLButtonElement>(null);
   const article = useRef<HTMLElement>(null),
     paneNavigated = useRef(false),
     tocNavigated = useRef(false),
@@ -147,7 +149,10 @@ export function Reader({
     });
   };
   const selectHeading = (id: string) => {
-    if (tocOpen) tocNavigated.current = true;
+    if (tocOpen || paneOpen) tocNavigated.current = true;
+    scroll.current
+      ?.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
+      ?.scrollIntoView({ block: "start" });
     headingFocus.current = id;
     onAnchor(id);
     setTocOpen(false);
@@ -184,6 +189,7 @@ export function Reader({
       <ToolbarSlot side="right">
         {(!desktop || hidePane) && (
           <IconButton
+            ref={paneTrigger}
             aria-label={`打开${paneLabel}`}
             tooltip
             onClick={() => {
@@ -198,6 +204,7 @@ export function Reader({
         )}
         {headings.length > 0 && (!fullToc || preferences.focus || wide) && (
           <IconButton
+            ref={tocTrigger}
             aria-label="本页目录"
             tooltip
             onClick={() => setTocOpen(true)}
@@ -292,11 +299,18 @@ export function Reader({
           side="left"
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
-            if (paneNavigated.current) {
-              event.preventDefault();
-              paneNavigated.current = false;
-              article.current?.focus({ preventScroll: true });
+            event.preventDefault();
+            if (tocNavigated.current) {
+              tocNavigated.current = false;
+              headingFocus.current = anchor ?? "";
+              focusHeading();
+            } else {
+              (paneNavigated.current
+                ? article.current
+                : paneTrigger.current
+              )?.focus({ preventScroll: true });
             }
+            paneNavigated.current = false;
           }}
         >
           <SheetHeader>
@@ -323,12 +337,12 @@ export function Reader({
         <SheetContent
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
+            event.preventDefault();
             if (tocNavigated.current) {
-              event.preventDefault();
               tocNavigated.current = false;
               headingFocus.current = anchor ?? "";
               focusHeading();
-            }
+            } else tocTrigger.current?.focus({ preventScroll: true });
           }}
         >
           <SheetHeader>

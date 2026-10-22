@@ -41,7 +41,6 @@ import {
   matchesDirectoryScope,
   readDirectoryQuery,
   sortDirectoryChanges,
-  type DirectoryScope,
 } from "@/lib/change-directory";
 import { useSavedScroll, useWorkspace } from "./context";
 import { useMediaQuery } from "./use-media";

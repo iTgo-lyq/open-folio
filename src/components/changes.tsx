@@ -8,7 +8,6 @@ import {
   directoryQueryParams,
 } from "@/lib/change-directory";
 import { legacyChangesPatch } from "@/lib/legacy-query";
-export { ChangeDetails } from "./change-materials";
 export default function Changes() {
   const { q, nav } = useWorkspace();
   const query = useMemo(() => readDirectoryQuery(q), [q]);

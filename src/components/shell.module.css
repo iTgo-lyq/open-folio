@@ -433,7 +433,7 @@
   border: 0;
   border-radius: 8px;
   background: none;
-  color: var(--of-text-3);
+  color: var(--of-text-2);
   font-size: 12.5px;
   white-space: nowrap;
   cursor: pointer;
@@ -668,5 +668,19 @@
   .app[data-focused-preview] .sync,
   .app[data-focused-preview] .back > span {
     display: none;
+  }
+}
+
+.spin {
+  animation: shell-spin 1s linear infinite;
+}
+@keyframes shell-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
   }
 }

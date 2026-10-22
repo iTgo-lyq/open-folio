@@ -24,19 +24,19 @@ test("clarifications show final answers in numeric order across updates and narr
     Q10: {
       round: 2,
       question: "是否保留翻页入口？",
-      recommendation: "不要展示推荐",
+      recommendation: "保留推荐依据",
       answer: "保留在正文底部。",
-      withdrawn: "不要把撤回原因当成回答",
+      withdrawn: "已由统一目录方案替代",
     },
     Q2: {
       round: 1,
       question: "是否记住阅读位置？",
-      recommendation: "不要展示推荐",
+      recommendation: "保留推荐依据",
     },
     Q1: {
       round: 1,
       question: "目录如何显示？",
-      recommendation: "不要展示推荐",
+      recommendation: "保留推荐依据",
       answer: "最初回答",
       source: "不要展示来源",
     },
@@ -58,7 +58,12 @@ test("clarifications show final answers in numeric order across updates and narr
   await expect(items.nth(1).locator("dd")).toHaveText("未回答");
   await expect(items.nth(2)).toContainText("已撤回");
   await expect(items.nth(2).locator("dd")).toHaveText("保留在正文底部。");
-  await expect(section).not.toContainText("不要");
+  await expect(section).not.toContainText("不要展示来源");
+  await expect(
+    section.getByText("推荐：保留推荐依据", { exact: true }),
+  ).toHaveCount(3);
+  await expect(items.nth(2)).toContainText("第 2 轮");
+  await expect(items.nth(2)).toContainText("已撤回：已由统一目录方案替代");
   await expect(section.locator("img")).toHaveCount(0);
   await page.screenshot({ path: "artifacts/clarifications-desktop.png" });
   await page.setViewportSize({ width: 320, height: 740 });

@@ -565,7 +565,7 @@
   font: 12px var(--of-font-ui);
   cursor: pointer;
 }
-.diff-file-item[aria-current] {
+.diff-file-item[aria-current="true"] {
   color: var(--of-accent-text);
   background: var(--of-fill-selected);
 }
@@ -758,4 +758,37 @@
 .stage-flow {
   list-style: none;
   padding: 0;
+}
+
+.clarification-round {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--of-text-3);
+  font-size: 11px;
+  font-weight: 400;
+}
+.clarification-recommendation,
+.clarification-withdrawn {
+  display: block;
+  color: var(--of-text-3);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.clarification-withdrawn {
+  color: var(--of-warning);
+}
+
+.clarification-content {
+  flex: 1;
+  min-width: 0;
+}
+.clarification-question {
+  display: block;
+}
+.clarification-recommendation,
+.clarification-withdrawn {
+  font-weight: 400;
 }

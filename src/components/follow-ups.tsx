@@ -2,8 +2,8 @@
 import { materialClass } from "./material-styles";
 
 import { Button } from "@open-folio/ui";
-import { Fragment, useMemo, type ReactNode } from "react";
-import { followUpIndex, matchingFollowUps } from "@/lib/follow-ups";
+import { useMemo } from "react";
+import { followUpIndex } from "@/lib/follow-ups";
 import { primaryRecord, STATUS_LABELS, type ChangeGroup } from "@/lib/model";
 import { useWorkspace } from "./context";
 

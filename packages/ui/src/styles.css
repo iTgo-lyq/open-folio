@@ -1,23 +1,4 @@
-:root {
-  --of-ink: #2e3c46;
-  --of-muted: #7a8995;
-  --of-line: #e9edf0;
-  --of-blue: #285d80;
-  --of-blue-soft: #edf5fb;
-  --of-green: #548673;
-  --of-orange: #b48b49;
-  --of-red: #ae655e;
-  --of-surface: #f8fbfd;
-  --of-focus: #749ebb;
-  --of-radius: 7px;
-  --of-space: 4px;
-  --of-font:
-    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Microsoft YaHei", sans-serif;
-}
-/* 新设计 token（frontend-style-interaction-refactor）。浅色为默认，深色由 <html data-theme="dark"> 启用；
-   旧的 --of-ink / --of-blue 等仍服务未迁移的页面，迁移完成后删除。
-   原生控件配色通过 --of-color-scheme 由已迁移的容器声明，避免未迁移的浅色页面出现深色控件。 */
+/* 浅色为默认，深色由 html[data-theme="dark"] 启用，原生控件同步主题。 */
 :root {
   --of-color-scheme: light;
   --of-font-ui:
@@ -604,7 +585,7 @@
 .of-ui-floating {
   color-scheme: var(--of-color-scheme);
   box-sizing: border-box;
-  z-index: 70;
+  z-index: 90;
   min-width: 220px;
   max-width: min(340px, calc(100vw - 16px));
   max-height: var(--radix-popper-available-height, calc(100dvh - 24px));

@@ -30,7 +30,7 @@
   color: var(--of-text-3);
 }
 .materialLink > small {
-  color: var(--of-text-3);
+  color: var(--of-text-2);
   font-size: 10.5px;
 }
 .materialLink:hover {
@@ -45,7 +45,7 @@
   color: var(--of-accent);
 }
 .materialLink[data-absent] {
-  color: var(--of-text-3);
+  color: var(--of-text-2);
 }
 .materialLink small.missing {
   color: var(--of-warning);
