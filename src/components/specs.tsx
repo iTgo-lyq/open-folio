@@ -94,7 +94,11 @@ export default function Specs() {
               aria-expanded={!closed.includes(node.path)}
               onClick={() => toggle(node.path)}
             >
-              {closed.includes(node.path) ? <ChevronRight /> : <ChevronDown />}
+              {closed.includes(node.path) ? (
+                <ChevronRight strokeWidth={1.5} />
+              ) : (
+                <ChevronDown strokeWidth={1.5} />
+              )}
             </button>
           ) : (
             <span className={styles.spacer} />

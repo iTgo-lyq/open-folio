@@ -241,6 +241,7 @@ export function Reader({
                   <span>{location}</span>
                   <ChevronDown
                     size={14}
+                    strokeWidth={1.5}
                     className={styles.chevron}
                     aria-hidden="true"
                   />
@@ -290,7 +291,7 @@ export function Reader({
                       tooltip
                       onClick={expand}
                     >
-                      <PanelLeftOpen />
+                      <PanelLeftOpen strokeWidth={1.5} />
                     </IconButton>
                   )}
                 </div>
@@ -373,7 +374,7 @@ export function Reader({
               tooltip
               onClick={collapse}
             >
-              <PanelLeftClose />
+              <PanelLeftClose strokeWidth={1.5} />
             </IconButton>
           </div>
           {pane}

@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -143,15 +143,13 @@
       "status": "done",
       "verification": "类型、格式、生产构建、7项定向回归及匿名复验通过；独立评审通过；真实Specs/Change四档按钮高度/字体/内边距相同、分隔两侧8px，匿名两档8px，登录清理确认",
       "commitTitle": "frontend-style-interaction-refactor T20: verify matching reading path controls"
+    },
+    "T21": {
+      "title": "统一阅读目录密度与轻量图标",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-22T11:35:17.042Z",
-      "summary": "T17-T20均已验证推送；既有回归与本轮类型、格式、生产构建和独立Agent评审通过；真实两页四档按钮字体/高度一致、分隔两侧8px及匿名几何通过，清理确认"
-    }
-  },
+  "closure": {},
   "previews": [
     {
       "id": "quiet-changes",
@@ -372,9 +370,9 @@
     }
   ],
   "rework": {
-    "at": "2026-10-22T11:08:07.945Z",
-    "reason": "用户验收反馈：目录收起应为顶栏仓库式位置按钮且收起不在顶栏；抽屉边距多层边框、遮罩不够模糊、抽屉需玻璃",
-    "approach": "收起移入目录面板标题行，收起后在顶栏仓库后显示当前位置按钮弹出目录；遮罩加模糊，抽屉贴边单层玻璃"
+    "at": "2026-10-22T11:40:38.513Z",
+    "reason": "用户反馈Specs目录拥挤，需对齐Change材料列表节奏，并细化展开收起图标线条",
+    "approach": "统一目录字号行高与条目垂直留白，沿用Lucide并局部使用1.5线宽，核对真实目录后更新验收服务"
   },
   "clarifications": {
     "Q1": {
@@ -434,9 +432,5 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收当前11356新版，含Specs与Change位置按钮对齐；通过后同步Specs、归档、合入develop并切回11117常驻服务"
   }
 }
