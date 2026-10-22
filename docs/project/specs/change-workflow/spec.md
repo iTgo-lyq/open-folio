@@ -63,13 +63,13 @@ confirmations 下所有 summary 均为阶段内容简述：requirement 写目标
 
 创建 Change 前先定向 fetch 集成分支，按最新远端记录检查关联 Change，再决定复用、延续或独立新建。
 
-新 Change 在配置的集成分支规划，推荐名称 develop，主工作区使用项目实际配置的集成分支，不随任务切换。新 worktree 默认位于主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 默认用 id；已有登记优先复用，显式路径按用户约定。实现前移交到独立工作分支和 worktree，协作目录保留原 change.json 与正文，仅用 branch 登记目标；后续完整状态由目标分支维护。普通 Change 不在集成分支执行，xlarge 父项可以在此聚合；归档前也须移交独立关闭分支。继承副本只读，不代替目标最新状态。
+新 Change 在配置的集成分支整理需求与技术方案，推荐名称 develop，主工作区使用项目实际配置的集成分支，不随任务切换。新 worktree 默认位于主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 默认用 id；已有登记优先复用，显式路径按用户约定。编写 Plan 前移交到独立工作分支和 worktree，small 无 Plan，在实施前移交。协作目录保留原 change.json 与正文，仅用 branch 登记目标；后续 Plan 和完整状态由目标分支维护。普通 Change 不在集成分支执行，xlarge 父项在工作分支聚合与关闭。继承副本只读，不代替目标最新状态。
 
 工作分支只推进所属 Change，同一分支只有一个普通执行/关闭中的 Change；取消冻结所属工作分支，集成分支上的规划取消只冻结该记录。未集成归档可经 rework 恢复原 Change 返修，清除失效关闭记录并保留已完成任务；已集成归档只读，branch 保留历史归属。用户明确要求历史勘误时最小修正并保留普通提交，不改写已推送历史。
 
 历史发布补记是归档只读的限定例外：核实确已合入发布分支后，仅在集成分支有效归档的 change.json 增删可选 `deliveryOverride: "releaseMerged"`，以普通提交留痕，不改写其他关闭记录。字段只覆盖交付展示，不替代 Git/PR 证据或 CI；缺省恢复自动判定。版本升级步骤见[升级说明](../../../../.agents/skills/spec-trail/references/upgrade.md)。
 
-workspace.mjs 的 handoff 先在目标工作区提交并推送唯一的 branch 登记提交，再快进集成分支；两端共用祖先。失败重试检查完整所属目录和真实引用，保留无关脏文件与暂存现场，不制造指针文件、规划清理或执行状态镜像提交。locate 只读报告来源、新鲜度和本地 worktree 状态；prepare 定向刷新并复用或准备工作区，不重置、rebase 或 prune。创建 worktree 不证明会话已绑定，客户端无法自动绑定时使用人工打开与续接提示，再核对 cwd、命名分支及仓库身份。
+workspace.mjs 的 handoff 在需求已确认、Technical 已推送后支持 Plan 前移交，large 还需技术确认；无需先有 Plan、任务或已交付依赖，xlarge 不等待子项关闭，执行与关闭仍检查原有前置条件。命令先在目标工作区提交并推送唯一的 branch 登记提交，再快进集成分支；两端共用祖先。失败重试检查完整所属目录和真实引用，保留无关脏文件与暂存现场，不制造指针文件、规划清理或执行状态镜像提交。locate 只读报告来源、新鲜度和本地 worktree 状态；prepare 定向刷新并复用或准备工作区，不重置、rebase 或 prune。创建 worktree 不证明会话已绑定，客户端无法自动绑定时使用人工打开与续接提示，再核对 cwd、命名分支及仓库身份。
 
 ## 讨论提交整理
 
@@ -131,7 +131,7 @@ archive 移动完整文档目录并标记 completed，不重建原型工程。Gi
 
 ## 归档后的去向
 
-归档前在独立 Change 工作区同步最新集成提交并验证。归档只表示开发关闭材料齐备；归档推送后通过 preflight，创建或更新 Change PR，按实际授权以普通 merge 合入集成分支，保留双亲提交和历史。正文末尾独立段落保留唯一 `SpecTrail-Change: <id>`，合并消息保留同一标记，并核对预期源 SHA；失败不自动回退直推。verify 从远端核实有效 M，主工作区只在干净时安全快进。命令与清理见 [PR 集成流程](../../../../.agents/skills/spec-trail/references/integration.md)。
+Plan 在工作分支写完并推送后创建或复用 Draft PR，不等待计划确认；small 在移交后推送真实执行状态、实施前创建。后续推送同一源分支自动更新 diff。归档前在独立 Change 工作区同步最新集成提交并验证；归档推送后通过 preflight，更新同一 PR 的交付说明与验证并转为可审阅，按实际授权普通 merge 合入集成分支，保留双亲提交和历史。正文末尾独立段落保留唯一 `SpecTrail-Change: <id>`，合并消息保留同一标记，并核对预期源 SHA；失败不自动回退直推。verify 从远端核实有效 M，主工作区只在干净时安全快进。命令与清理见 [PR 集成流程](../../../../.agents/skills/spec-trail/references/integration.md)。
 
 M 的标题为 `Merge Change <id> into <集成分支>`，末尾独立 trailer 为 `SpecTrail-Change: <id>`。记录必须在已推送集成分支 first-parent 主链中唯一，恰有目标 B / 来源 S 两个父提交，首次只引入目标的有效归档，且无同 id 活动入口；M 与 S 的完整归档子树一致，Git 原型位于该归档快照内。不在 change.json 保存 M，也不回写已归档状态或正文。一次合入交付一个 Change，不支持同一 Change 提前分批合入；xlarge 父项在子项交付后独立关闭，其 M 只表达父项本次差异。
 

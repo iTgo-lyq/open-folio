@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "early-draft-pr",
+  "title": "Plan 编写前移交分支，完成后创建 PR",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/early-draft-pr",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "前置 Draft PR 创建并统一流程说明",
+      "status": "done",
+      "verification": "移交、PR 归档门禁与 Draft 关联共 30 项测试通过；TypeScript、脚本语法、skill 校验及差异检查通过",
+      "commitTitle": "early-draft-pr T1: hand off before Plan and open Draft after push"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T12:23:49.831Z",
+      "summary": "Agent 自查通过；移交、Draft 关联及归档门禁 30 项测试通过，类型与 skill 校验通过；同步最新 develop 后类型复查通过，真实 PR #6 源 SHA 已随推送更新"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T12:23:51.548Z",
+      "summary": "Agent 自验收：Plan 前移交、推送后建 Draft、small 无 Plan 路径及原有执行和归档门禁均已核对",
+      "source": "用户明确要求 Plan 编写前创建分支，Plan 完成后创建 PR，并要求 skill 措辞精炼；small 按默认自验收"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T12:24:24.398Z",
+      "summary": "同步 change-workflow 的 Plan 前移交、Plan 推送后 Draft PR 与归档沿用同一 PR 规则"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T12:24:26.194Z",
+      "summary": "small 自验收通过；30 项回归、类型和 skill 校验通过，PR 源提交随推送更新已核实",
+      "path": "docs/project/archive/2026-10-22-early-draft-pr"
+    }
+  },
+  "followUpOf": "pr-release-delivery",
+  "followUpTitle": "PR 交付流程",
+  "types": [
+    "流程"
+  ],
+  "rework": {
+    "at": "2026-10-22T12:18:22.968Z",
+    "reason": "用户将分支移交前置到开始编写 Plan，Plan 完成后创建 PR，并要求 skill 措辞精炼",
+    "approach": "修改移交前置校验并用现有测试覆盖；主 skill 只保留时机，引用文档说明操作"
+  }
+}
