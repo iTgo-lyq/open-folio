@@ -76,6 +76,25 @@ test("prototype gallery, canvas and public page fit both themes at four widths",
     const viewer = await anonymous.newPage();
     await viewer.goto(link);
     await expect(viewer.locator("iframe")).toBeVisible();
+    await viewer.getByRole("radio", { name: "移动设备", exact: true }).click();
+    await viewer.getByRole("button", { name: "旋转视口", exact: true }).click();
+    await viewer.getByRole("radio", { name: "100%", exact: true }).click();
+    const readingUrl = viewer.url();
+    expect(new URL(readingUrl).searchParams.get("device")).toBe("mobile");
+    expect(new URL(readingUrl).searchParams.get("orientation")).toBe(
+      "landscape",
+    );
+    expect(new URL(readingUrl).searchParams.get("zoom")).toBe("actual");
+    await viewer.goto(readingUrl);
+    await expect(viewer.locator("iframe")).toHaveAttribute("width", "844");
+    await expect(viewer.locator("iframe")).toHaveAttribute("height", "390");
+    await expect(
+      viewer.getByRole("radio", { name: "100%", exact: true }),
+    ).toBeChecked();
+    await expect(
+      viewer.getByRole("button", { name: "复制链接", exact: true }),
+    ).toHaveCount(0);
+    await viewer.getByRole("radio", { name: "适应画布", exact: true }).click();
     await check(viewer, "public-prototype");
     await viewer.goto("/preview/" + "0".repeat(64));
     await expect(

@@ -6,7 +6,7 @@
 
 分组标题、单条标题和连续交付组分别表达层次；行布局共享同一左右内边距，不用嵌套 padding 改变列起点。删除当前页面地址复制入口，保留有独立目标的匿名分享与固定产物链接。旧原型仅退出当前清单与源码入口，既有归档和已发布不可变版本不变。
 
-依据[需求](requirement.md)与用户已验收的原型 `06e078ce`（源码 `9351a48`，设计规则见[原型包 DESIGN](../../../../packages/prototype/DESIGN.md#frontend-style-interaction-refactor-需求设计草案)，逐页取舍见 [Research](research.md)）。本次重做工作台、公开原型页和 Change 分享页的表现层，沿用现有服务端接口、会话、仓库发现、快照与原型托管；后端只新增“Change 创建者”。
+依据[需求](requirement.md)与用户已验收的原型 `06e078ce`（源码 `9351a48`，设计规则见[原型包 DESIGN](../../../../packages/prototype/DESIGN.md#覆盖与能力依据)，逐页取舍见 [Research](research.md)）。本次重做工作台、公开原型页和 Change 分享页的表现层，沿用现有服务端接口、会话、仓库发现、快照与原型托管；后端只新增“Change 创建者”。
 
 ## 调查结论与实现边界
 

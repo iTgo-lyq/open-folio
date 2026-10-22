@@ -156,7 +156,7 @@ R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c
 
 ### 第二轮原型验证与固定发布（2026-10-22）
 
-源码提交 `597c114`。七组入口 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 共用 `packages/prototype/src/shared/quiet-workbench/` 的模块，均支持浅色 / 深色及桌面、平板、手机；设计规则见 [DESIGN.md](../../../../packages/prototype/DESIGN.md#frontend-style-interaction-refactor-需求设计草案)。
+源码提交 `597c114`。七组入口 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 共用 `packages/prototype/src/shared/quiet-workbench/` 的模块，均支持浅色 / 深色及桌面、平板、手机；设计规则见 [DESIGN.md](../../../../packages/prototype/DESIGN.md#覆盖与能力依据)。
 
 本地验证：`npm run build --workspace prototype` 成功；`npm test --workspace prototype` 16 项通过；`node packages/prototype/verify-quiet-workbench.mjs` 121 项通过、失败 0、浏览器错误 0。检查在仅授予 `allow-scripts` 的 iframe 与项目 CSP 下运行：
 

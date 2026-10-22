@@ -104,13 +104,19 @@ test("deep links reveal selected capability ancestors", async ({ page }) => {
 
 test("reading URL includes its actual capability and branch without a copy entry", async ({
   page,
-  context,
 }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
   const copied = await readingLink(page);
   expect(new URL(copied).searchParams.get("s")).toBe("platform/access");
   expect(new URL(copied).searchParams.get("branch")).toBe("develop");
+  await page.goto(`/?${repositoryQuery}&m=specs&branch=outdated`);
+  await expect(page).toHaveURL(/s=delivery%2Fhistory%2Frecord(?:&|$)/);
+  const defaultLink = await readingLink(page);
+  expect(new URL(defaultLink).searchParams.get("branch")).toBe("develop");
+  await page.goto(defaultLink);
+  await expect(
+    page.getByRole("heading", { name: "交付记录", exact: true }),
+  ).toBeVisible();
 });
 
 test("reading settings persist and the floating header leaves anchors and mobile navigation readable", async ({

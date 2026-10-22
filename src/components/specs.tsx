@@ -42,9 +42,9 @@ export default function Specs() {
   const specs = data?.specs ?? [];
   const selected = q.s ? specs.find((spec) => spec.id === q.s) : specs[0];
   useEffect(() => {
-    if (selected && data?.selectedBranch && !q.branch)
-      nav({ branch: data.selectedBranch }, true);
-  }, [selected?.id, data?.selectedBranch, q.branch, nav]);
+    if (selected && (q.s !== selected.id || q.branch !== selected.branch))
+      nav({ s: selected.id, branch: selected.branch }, true);
+  }, [selected?.id, selected?.branch, q.s, q.branch, nav]);
   const { value, error, loading } = useDocument(selected?.documentId);
   const storageKey = `openfolio.tree.${personal.connection?.id ?? ""}.${projectId}.${data?.selectedBranch}`;
   useEffect(() => {

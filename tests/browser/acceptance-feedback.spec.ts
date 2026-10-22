@@ -64,6 +64,17 @@ test("raw reading uses a wide sheet and one source line on desktop and phone", a
   const box = (await sheet.boundingBox())!;
   expect(box.width).toBeGreaterThanOrEqual(288);
   expect(box.x + box.width).toBeLessThanOrEqual(320);
+  await sheet.evaluate(async () => {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    await Promise.allSettled(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+        .map((a) => a.finished),
+    );
+  });
   await page.screenshot({ path: "/tmp/of-refactor-feedback-raw-mobile.png" });
   await page.keyboard.press("Escape");
   await expect(

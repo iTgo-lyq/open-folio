@@ -78,6 +78,33 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
           Math.max(1, available.width - 32) / size.width,
           Math.max(1, available.height - 32) / size.height,
         );
+  const changeView = (next: {
+    device?: typeof device;
+    rotated?: boolean;
+    zoom?: string;
+  }) => {
+    const nextDevice = next.device ?? device,
+      nextRotated = next.rotated ?? rotated,
+      nextZoom = next.zoom ?? zoom,
+      base = meta.viewport ?? DEVICE_VIEWPORTS[nextDevice ?? "pc-web"],
+      size = nextRotated ? { width: base.height, height: base.width } : base,
+      url = new URL(window.location.href);
+    setDevice(nextDevice);
+    setRotated(nextRotated);
+    setZoom(nextZoom);
+    if (meta.viewport) {
+      url.searchParams.delete("device");
+      url.searchParams.delete("orientation");
+    } else {
+      url.searchParams.set("device", nextDevice ?? "pc-web");
+      url.searchParams.set(
+        "orientation",
+        size.width >= size.height ? "landscape" : "portrait",
+      );
+    }
+    url.searchParams.set("zoom", nextZoom);
+    window.history.replaceState(window.history.state, "", url);
+  };
   const controls = (
     <div className={styles.controls}>
       {meta.devices && (
@@ -86,8 +113,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
           className={styles.devices}
           value={device ?? meta.devices[0]}
           onValueChange={(value) => {
-            setDevice(value);
-            setRotated(false);
+            changeView({ device: value, rotated: false });
           }}
           items={meta.devices.map((value) => {
             const Icon = devices[value].icon;
@@ -99,7 +125,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
         <IconButton
           aria-label="旋转视口"
           tooltip
-          onClick={() => setRotated((value) => !value)}
+          onClick={() => changeView({ rotated: !rotated })}
         >
           <RotateCw />
         </IconButton>
@@ -108,7 +134,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
         <SegmentedControl
           label="缩放"
           value={zoom}
-          onValueChange={setZoom}
+          onValueChange={(zoom) => changeView({ zoom })}
           size="sm"
           items={[
             { value: "fit", label: "适应", ariaLabel: "适应画布" },

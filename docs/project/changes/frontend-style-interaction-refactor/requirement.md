@@ -203,7 +203,7 @@ OpenFolio 的主要使用场景是找到可访问的项目，持续阅读 Specs�
 
 内部布局优先从 shadcnuikit 查找可借鉴的页面和区块（`list_dashboards`、`get_dashboard`、`search_catalog`、`plan_page`），按页面记录条目 id、借鉴范围与排除项。Kit 为 React/Next.js/Tailwind 源码，原型仍为静态 HTML/CSS/JavaScript，只借鉴布局、信息层级和组件状态；正式组件复用留到技术方案。通用统计卡、图表、创建/编辑等与本产品不符的默认区块不采纳。
 
-[原型包 DESIGN](../../../../packages/prototype/DESIGN.md#frontend-style-interaction-refactor-需求设计草案) 中本 Change 的章节记录上一版的取值与参考，将在重做原型时按本文更新；旧蓝色玻璃稿、账号稿和分享稿保持参考身份。
+[原型包 DESIGN](../../../../packages/prototype/DESIGN.md#覆盖与能力依据) 记录七组现行设计的规则；过时蓝色玻璃稿、账号稿和分享稿从当前入口与源码清理，历史版本仍可通过 Git 和所属 Change 的固定引用读取。
 
 ## 原型验收标准
 

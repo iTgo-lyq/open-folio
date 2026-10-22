@@ -6,6 +6,7 @@ import {
   origin,
   openMaterial,
 } from "./connected";
+import type { SharedChange } from "../../src/lib/shared-change";
 
 function directLink(change: string) {
   return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, integrationBranch: "develop" })}`;
@@ -241,12 +242,26 @@ test("a relative document deep link follows branch handoff and archive", async (
           .getByRole("region", { name: "阅读正文", exact: true })
           .getByRole("heading", { level: 1 }),
       ).toContainText("让工程文档");
-      await expect(
-        page.getByRole("group", { name: "文档来源", exact: true }),
-      ).toContainText(
+      const fresh = await anonymous.request.get(
+        share.replace("/share?", "/api/shared-changes/change?"),
+      );
+      expect(fresh.ok()).toBe(true);
+      const detail: SharedChange = await fresh.json();
+      const document = detail.documents.find((d) =>
+        d.path.endsWith("/requirement.md"),
+      )!;
+      expect(document.branch).toBe(
+        move === "branch" ? "change/shared-reader-next" : "develop",
+      );
+      const source = page.getByRole("group", { name: "文档来源", exact: true });
+      await expect(source).toContainText(
         move === "branch"
-          ? "change/shared-reader-next"
+          ? "docs/project/changes/document-reader/requirement.md"
           : "docs/project/archive/2026-10-20-document-reader/requirement.md",
+      );
+      await expect(source.locator("code").last()).toHaveAttribute(
+        "title",
+        document.commit,
       );
       expect(new URL(page.url()).searchParams.get("document")).toBe(
         "requirement.md",
@@ -317,9 +332,24 @@ test("shared image version errors refresh details and lost sources clear the rea
       )
       .toBe(true);
     expect(details).toBeGreaterThan(1);
+    const fresh = await anonymous.request.get(
+      directLink("document-reader").replace(
+        "/share?",
+        "/api/shared-changes/change?",
+      ),
+    );
+    expect(fresh.ok()).toBe(true);
+    const detail: SharedChange = await fresh.json();
+    const document = detail.documents.find((d) =>
+      d.path.endsWith("/technical.md"),
+    )!;
+    expect(document.branch).toBe("change/shared-reader-next");
     await expect(
-      page.getByRole("group", { name: "文档来源", exact: true }),
-    ).toContainText("change/shared-reader-next");
+      page
+        .getByRole("group", { name: "文档来源", exact: true })
+        .locator("code")
+        .last(),
+    ).toHaveAttribute("title", document.commit);
     denied = true;
     await img.evaluate((e: HTMLImageElement) => (e.src += "&load=loss"));
     await expect(
