@@ -5,7 +5,7 @@
   "size": "large",
   "status": "active",
   "stage": "plan",
-  "branch": "develop",
+  "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
       "at": "2026-10-22T04:16:05.253Z",
