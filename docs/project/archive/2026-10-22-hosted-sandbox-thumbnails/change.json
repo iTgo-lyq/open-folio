@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "hosted-sandbox-thumbnails",
+  "title": "兼容带沙箱限制的托管原型截图",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/hosted-sandbox-thumbnails",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复沙箱源的截图并回归服务隔离与真实页面",
+      "status": "done",
+      "verification": "沙箱跨域与注册拦截回归、5 项既有截图测试、真实六页截图、类型与生产构建通过。",
+      "commitTitle": "Fix Service Worker interception for opaque hosted origins"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T18:06:15.346Z",
+      "summary": "Agent 自查，6 项截图回归、真实六页截图、类型检查与生产构建通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T18:06:17.144Z",
+      "summary": "Agent 自验收：沙箱源截图正常且 Service Worker 拦截有效。",
+      "source": "Requirement 验收项及实际图片、失败路径回归均已核验。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-22T18:06:18.897Z",
+      "summary": "恢复既定托管截图行为，无新增产品契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T18:06:20.665Z",
+      "summary": "沙箱源兼容修复及注册拦截回归已验证。",
+      "path": "docs/project/archive/2026-10-22-hosted-sandbox-thumbnails"
+    }
+  },
+  "followUpOf": "hosted-auto-thumbnails",
+  "followUpTitle": "托管原型自动截图",
+  "types": [
+    "修复"
+  ]
+}
