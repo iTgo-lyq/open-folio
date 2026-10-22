@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "前置 Draft PR 创建并统一流程说明",
-      "status": "doing"
+      "status": "done",
+      "verification": "移交、PR 归档门禁与 Draft 关联共 30 项测试通过；TypeScript、脚本语法、skill 校验及差异检查通过",
+      "commitTitle": "early-draft-pr T1: hand off before Plan and open Draft after push"
     }
   },
   "closure": {},
