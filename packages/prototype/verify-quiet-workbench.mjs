@@ -1,4 +1,4 @@
-// 工作台新设计的浏览器验证：七个入口 × 两套主题 × 四档尺寸的布局，以及主要交互与状态。
+// 工作台新设计的浏览器验证：七个入口 × 两套主题 × 四档尺寸的布局，以及主要交互、材质与状态。
 // 在仅授予 allow-scripts 的 iframe 与项目 CSP 下运行，结果与截图输出到 Git 忽略的 artifacts/quiet-workbench/。
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
@@ -402,44 +402,81 @@ await check("离线保留内容，无权限清除私有内容，过期回到登�
   assert.equal(await count(".auth-card"), 1);
   assert.match(await text(".auth-card"), /私有内容已清除/);
 });
-await check("减少透明度与减少动态效果", async () => {
+await check("胶囊与弹层为玻璃材质，减少动态效果后无过渡", async () => {
   await open("changes", "/changes?side=collapsed");
-  const glass = () => frame.evaluate(() => getComputedStyle(document.querySelector(".capsule")).backdropFilter);
-  assert.notEqual(await glass(), "none");
+  assert.notEqual(await frame.evaluate(() => getComputedStyle(document.querySelector(".capsule")).backdropFilter), "none");
   await $('[data-key="review-settings"]').click();
-  await $('[data-key="toggle-transparency:"]').click();
+  assert.notEqual(await frame.evaluate(() => getComputedStyle(document.querySelector(".pop")).backdropFilter), "none");
+  assert.equal(await count('[data-key="toggle-transparency:"]'), 0);
   await $('[data-key="toggle-motion:"]').click();
   await page.keyboard.press("Escape");
-  assert.equal(await glass(), "none");
   assert.equal(await frame.evaluate(() => getComputedStyle(document.querySelector(".app")).transitionDuration), "0s");
 });
-await check("墨色框架与平面单色标志", async () => {
+await check("顶栏为玻璃层，正文与列表从其下方滚过", async () => {
+  for (const [entry, hash, bar, scroller] of [["specs", "/specs/maps/offline", ".toolbar", ".doc-scroll"], ["changes", "/changes", ".toolbar", ".page"], ["share", "/share/offline-map-regions", ".pub-bar", ".doc-scroll"]]) {
+    await open(entry, hash);
+    const r = await frame.evaluate(([bar, scroller]) => {
+      const b = document.querySelector(bar),
+        el = document.querySelector(scroller),
+        before = el.firstElementChild.getBoundingClientRect().top;
+      el.scrollTo({ top: 240, behavior: "instant" });
+      el.dispatchEvent(new Event("scroll"));
+      const bb = b.getBoundingClientRect(),
+        under = [...el.querySelectorAll("*")].filter((n) => !n.children.length && n.textContent.trim()).some((n) => {
+          const rr = n.getBoundingClientRect();
+          return rr.top < bb.bottom && rr.bottom > bb.top + 4;
+        });
+      return { blur: getComputedStyle(b).backdropFilter, bg: getComputedStyle(b).backgroundColor, starts: el.getBoundingClientRect().top <= bb.top + 1, clear: before >= bb.bottom - 1, under };
+    }, [bar, scroller]);
+    assert.notEqual(r.blur, "none", `${entry} blur`);
+    assert.match(r.bg, /rgba\(.+, 0\.7\)/, `${entry} translucent`);
+    assert.ok(r.starts && r.clear && r.under, `${entry} ${JSON.stringify(r)}`);
+  }
+});
+await check("抽屉外层为玻璃、阅读区为实底", async () => {
+  await open("prototypes", "/prototypes");
+  await $('[data-action="proto-details"]').click();
+  await wait();
+  const [outer, inner] = await frame.evaluate(() => [getComputedStyle(document.querySelector(".dlg.sheet")).backdropFilter, getComputedStyle(document.querySelector(".dlg.sheet > .sheet-body")).backgroundColor]);
+  assert.notEqual(outer, "none");
+  assert.doesNotMatch(inner, /rgba/);
+});
+await check("陶土强调色与墨色平面标志", async () => {
   for (const theme of ["light", "dark"]) {
     await open("changes", `/changes${theme === "dark" ? "?theme=dark" : ""}`);
-    assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "ink");
+    assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "clay");
     assert.equal(await count(".logo svg.mark"), 1);
     assert.equal(await count("img.mark"), 0);
-    const [accent, ink, icon] = await frame.evaluate(() => [getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(), getComputedStyle(document.body).color, getComputedStyle(document.querySelector(".nav-item[aria-current] .i")).color]);
-    assert.equal(accent, theme === "dark" ? "#ececea" : "#1d1d1b");
-    assert.equal(icon, ink);
+    const [accent, ink, mark, icon, primary] = await frame.evaluate(() => {
+      const probe = document.body.appendChild(document.createElement("i"));
+      probe.style.color = "var(--accent)";
+      const out = [getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(), getComputedStyle(document.body).color, getComputedStyle(document.querySelector(".logo .mark")).color, getComputedStyle(document.querySelector(".nav-item[aria-current] .i")).color, getComputedStyle(probe).color];
+      probe.remove();
+      return out;
+    });
+    assert.equal(accent, theme === "dark" ? "#e8926b" : "#a8502c");
+    assert.equal(mark, ink);
+    assert.equal(icon, primary);
   }
 });
 await check("评审栏切换强调色并保留在链接中", async () => {
   await open("changes", "/changes");
   await $('[data-key="review-settings"]').click();
   assert.equal(await count(".icon-preview img"), 3);
-  await $('[data-key="accent:clay"]').click();
-  assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "clay");
-  assert.match(await frame.evaluate(() => location.hash), /accent=clay/);
+  await $('[data-key="accent:ink"]').click();
+  assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "ink");
+  assert.match(await frame.evaluate(() => location.hash), /accent=ink/);
   await $('[data-key="accent:blue"]').click();
   assert.equal(await count(".logo img.mark"), 1);
+  await $('[data-key="accent:clay"]').click();
+  assert.doesNotMatch(await frame.evaluate(() => location.hash), /accent=/);
   await page.keyboard.press("Escape");
-  await open("changes", "/changes?accent=clay&theme=dark");
-  assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "clay");
+  await open("changes", "/changes?accent=ink&theme=dark");
+  assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "ink");
 });
 await check("强调色与状态色对比度（三种强调色 × 两套主题）", async () => {
   const low = [];
-  for (const accent of ["ink", "clay", "blue"])
+  for (const accent of ["clay", "ink", "blue"])
     for (const theme of ["light", "dark"]) {
       await open("changes", `/changes?theme=${theme}&accent=${accent}`);
       const pairs = await frame.evaluate(() => {

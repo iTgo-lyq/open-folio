@@ -1,4 +1,4 @@
-/* OpenFolio 工作台新设计：Craft 式墨色框架，彩色只表达状态，材质只用于浮层。 */
+/* OpenFolio 工作台新设计：Craft 式墨色框架、陶土强调，彩色只表达状态，玻璃材质只用于浮层。 */
 :root {
   color-scheme: light;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Helvetica Neue", Roboto, sans-serif;
@@ -20,11 +20,11 @@
   --ink-2: #55554f;
   --ink-3: #85857e;
   --ink-4: #b4b4ad;
-  --accent: #1d1d1b;
-  --accent-ink: #1d1d1b;
-  --accent-hover: #3a3a36;
-  --accent-soft: rgba(30, 30, 24, 0.07);
-  --accent-line: rgba(30, 30, 24, 0.24);
+  --accent: #a8502c;
+  --accent-ink: #94451f;
+  --accent-hover: #94451f;
+  --accent-soft: rgba(168, 80, 44, 0.1);
+  --accent-line: rgba(168, 80, 44, 0.34);
   --on-accent: #ffffff;
   --green: #1c6f4a;
   --green-soft: rgba(28, 111, 74, 0.1);
@@ -32,11 +32,13 @@
   --amber-soft: rgba(204, 133, 18, 0.13);
   --red: #c4372c;
   --red-soft: rgba(196, 55, 44, 0.09);
-  --glass: rgba(252, 252, 250, 0.72);
-  --glass-solid: #fbfbf9;
-  --glass-edge: rgba(255, 255, 255, 0.85);
-  --glass-line: rgba(30, 30, 24, 0.08);
-  --blur: blur(22px) saturate(1.7);
+  --glass: rgba(250, 250, 248, 0.6);
+  --glass-hi: rgba(255, 255, 255, 0.92);
+  --glass-edge: rgba(255, 255, 255, 0.9);
+  --glass-line: rgba(30, 30, 24, 0.09);
+  --bar-glass: rgba(255, 255, 255, 0.7);
+  --capsule-shadow: inset 0 0 0 0.5px var(--glass-line), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 rgba(30, 30, 24, 0.04), 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 18px -8px rgba(0, 0, 0, 0.12), 0 22px 44px -18px rgba(0, 0, 0, 0.22);
+  --blur: blur(24px) saturate(1.8);
   --shadow-xs: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-surface: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03), 0 12px 32px -20px rgba(0, 0, 0, 0.16);
   --shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 6px 14px -4px rgba(0, 0, 0, 0.08), 0 22px 48px -16px rgba(0, 0, 0, 0.22);
@@ -66,22 +68,24 @@
   --ink-2: #ababa5;
   --ink-3: #8a8a84;
   --ink-4: #5c5c58;
-  --accent: #ececea;
-  --accent-ink: #f5f5f3;
-  --accent-hover: #ffffff;
-  --accent-soft: rgba(255, 255, 255, 0.09);
-  --accent-line: rgba(255, 255, 255, 0.3);
-  --on-accent: #161616;
+  --accent: #e8926b;
+  --accent-ink: #f1a886;
+  --accent-hover: #f1a886;
+  --accent-soft: rgba(232, 146, 107, 0.15);
+  --accent-line: rgba(241, 168, 134, 0.4);
+  --on-accent: #23130b;
   --green: #5ccb94;
   --green-soft: rgba(92, 203, 148, 0.13);
   --amber: #e7ad4c;
   --amber-soft: rgba(231, 173, 76, 0.14);
   --red: #ff7b6e;
   --red-soft: rgba(255, 123, 110, 0.13);
-  --glass: rgba(40, 40, 43, 0.7);
-  --glass-solid: #262629;
-  --glass-edge: rgba(255, 255, 255, 0.09);
-  --glass-line: rgba(255, 255, 255, 0.08);
+  --glass: rgba(42, 42, 46, 0.62);
+  --glass-hi: rgba(72, 72, 78, 0.74);
+  --glass-edge: rgba(255, 255, 255, 0.1);
+  --glass-line: rgba(255, 255, 255, 0.09);
+  --bar-glass: rgba(28, 28, 30, 0.7);
+  --capsule-shadow: inset 0 0 0 0.5px var(--glass-line), inset 0 1px 0 var(--glass-edge), 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px -8px rgba(0, 0, 0, 0.5), 0 24px 52px -18px rgba(0, 0, 0, 0.7);
   --shadow-xs: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-surface: 0 0 0 0.5px rgba(255, 255, 255, 0.06), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
   --shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 8px 18px -6px rgba(0, 0, 0, 0.5), 0 24px 56px -16px rgba(0, 0, 0, 0.7);
@@ -94,22 +98,22 @@
   --fig-b-line: rgba(231, 173, 76, 0.6);
   --fig-ab: rgba(204, 184, 112, 0.16);
 }
-/* 评审对照：陶土备选与上一版蓝色，只在原型评审栏切换，不进入产品设置。 */
-:root[data-accent="clay"]:not([data-theme="dark"]) {
-  --accent: #a8502c;
-  --accent-ink: #94451f;
-  --accent-hover: #94451f;
-  --accent-soft: rgba(168, 80, 44, 0.1);
-  --accent-line: rgba(168, 80, 44, 0.34);
+/* 评审对照：墨色与上一版蓝色，只在原型评审栏切换，不进入产品设置。 */
+:root[data-accent="ink"]:not([data-theme="dark"]) {
+  --accent: #1d1d1b;
+  --accent-ink: #1d1d1b;
+  --accent-hover: #3a3a36;
+  --accent-soft: rgba(30, 30, 24, 0.07);
+  --accent-line: rgba(30, 30, 24, 0.24);
   --on-accent: #ffffff;
 }
-:root[data-theme="dark"][data-accent="clay"] {
-  --accent: #e8926b;
-  --accent-ink: #f1a886;
-  --accent-hover: #f1a886;
-  --accent-soft: rgba(232, 146, 107, 0.15);
-  --accent-line: rgba(241, 168, 134, 0.4);
-  --on-accent: #23130b;
+:root[data-theme="dark"][data-accent="ink"] {
+  --accent: #ececea;
+  --accent-ink: #f5f5f3;
+  --accent-hover: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.09);
+  --accent-line: rgba(255, 255, 255, 0.3);
+  --on-accent: #161616;
 }
 :root[data-accent="blue"]:not([data-theme="dark"]) {
   --accent: #2c6ce0;
@@ -134,21 +138,7 @@
     --surface-2: #0e0e0f;
     --surface-3: #1f1f21;
     --raised: #1c1c1e;
-  }
-}
-:root[data-transparency="reduce"] {
-  --glass: var(--glass-solid);
-  --blur: none;
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :root {
-    --glass: var(--glass-solid);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  :root {
-    --glass: var(--glass-solid);
-    --blur: none;
+    --bar-glass: rgba(0, 0, 0, 0.7);
   }
 }
 
@@ -516,10 +506,10 @@ img.mark {
   gap: 4px;
   padding: 5px;
   border-radius: 26px;
-  background: var(--glass);
+  background: linear-gradient(180deg, var(--glass-hi), var(--glass) 70%);
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
-  box-shadow: inset 0 0 0 0.5px var(--glass-line), inset 0 1px 0 var(--glass-edge), 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px -12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--capsule-shadow);
 }
 .cap-item {
   width: 42px;
@@ -587,6 +577,8 @@ img.mark {
 
 /* 内容面 */
 .surface {
+  --bar-h: 52px;
+  position: relative;
   margin: 8px 8px 8px 0;
   background: var(--surface);
   border-radius: 14px;
@@ -603,8 +595,19 @@ img.mark {
   display: flex;
   flex-direction: column;
 }
+.toolbar,
+.pub-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  background: var(--bar-glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
 .toolbar {
-  height: 52px;
+  height: var(--bar-h);
   flex: none;
   display: flex;
   align-items: center;
@@ -613,8 +616,20 @@ img.mark {
   border-bottom: 0.5px solid transparent;
   transition: border-color 0.15s;
 }
-.scrolled .toolbar {
+.scrolled .toolbar,
+.scrolled .pub-bar {
   border-color: var(--line);
+}
+/* 顶栏浮在内容面上：各滚动区从顶栏下方开始，内容滚动时从其下方经过。 */
+.page,
+.doc-scroll,
+.viewer {
+  padding-top: var(--bar-h);
+  scroll-padding-top: calc(var(--bar-h) + 16px);
+}
+.surface-body > .empty,
+.pub-main > .empty {
+  margin-top: var(--bar-h);
 }
 .tb-left,
 .tb-right {
@@ -1091,12 +1106,6 @@ img.mark {
   animation: pop-in 0.14s var(--ease);
   transform-origin: top;
 }
-:root[data-theme="dark"] .pop {
-  background: rgba(44, 44, 47, 0.82);
-}
-:root[data-theme="dark"][data-transparency="reduce"] .pop {
-  background: var(--glass-solid);
-}
 .pop.wide {
   min-width: 260px;
 }
@@ -1404,6 +1413,23 @@ img.mark {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+}
+.dlg.sheet,
+:root[data-theme="dark"] .dlg.sheet {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  box-shadow: inset 0 0 0 0.5px var(--glass-line), inset 0 1px 0 var(--glass-edge), var(--shadow-pop);
+}
+.dlg.sheet > .sheet-body,
+.dlg.sheet > .raw {
+  margin: 0 8px 8px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 0.5px var(--line);
+}
+.dlg.sheet > .sheet-head {
+  border-bottom: 0;
 }
 .dlg.sheet {
   margin: 0 0 0 auto;
@@ -1811,7 +1837,7 @@ a.repo-row:hover {
 }
 .pane {
   overflow: auto;
-  padding: 4px 10px 24px 12px;
+  padding: calc(var(--bar-h) + 4px) 10px 24px 12px;
   border-right: 0.5px solid var(--line);
   min-width: 0;
 }
@@ -1935,7 +1961,7 @@ a.repo-row:hover {
   max-width: 1040px;
 }
 .toc {
-  padding: 34px 16px 24px 4px;
+  padding: calc(var(--bar-h) + 34px) 16px 24px 4px;
   overflow: auto;
   min-width: 0;
 }
@@ -2989,7 +3015,7 @@ a.rel-chip:hover {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 12px 10px;
+  padding: var(--bar-h) 12px 10px;
 }
 .viewer .banner {
   margin: 0 0 10px;
@@ -3545,19 +3571,21 @@ img.auth-mark {
 
 /* 匿名页面：公开原型与 Change 分享 */
 .public-shell {
+  --bar-h: 54px;
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--surface);
 }
 .pub-bar {
-  height: 54px;
-  flex: none;
+  height: var(--bar-h);
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 12px 0 14px;
-  border-bottom: 0.5px solid var(--line);
+  border-bottom: 0.5px solid transparent;
+  transition: border-color 0.15s;
 }
 .pub-title {
   font-weight: 600;
@@ -3587,7 +3615,7 @@ img.auth-mark {
   outline: none;
 }
 .pub-main.viewer {
-  padding: 12px;
+  padding: calc(var(--bar-h) + 12px) 12px 12px;
 }
 .pub-tools {
   display: flex;
@@ -3607,16 +3635,10 @@ img.auth-mark {
   gap: 2px;
   padding: 5px;
   border-radius: 999px;
-  background: var(--glass);
+  background: linear-gradient(180deg, var(--glass-hi), var(--glass) 70%);
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
-  box-shadow: inset 0 0 0 0.5px var(--glass-line), inset 0 1px 0 var(--glass-edge), 0 12px 32px -10px rgba(0, 0, 0, 0.3);
-}
-:root[data-theme="dark"] .mnav {
-  background: rgba(36, 36, 38, 0.78);
-}
-:root[data-theme="dark"][data-transparency="reduce"] .mnav {
-  background: var(--glass-solid);
+  box-shadow: var(--capsule-shadow);
 }
 .mnav-item {
   width: 70px;
@@ -3701,8 +3723,10 @@ img.auth-mark {
     border-radius: 0;
     box-shadow: none;
   }
+  .surface {
+    --bar-h: 50px;
+  }
   .toolbar {
-    height: 50px;
     padding: 0 8px 0 10px;
   }
   .page-inner,
@@ -3786,7 +3810,7 @@ img.auth-mark {
     flex-wrap: wrap;
   }
   .viewer {
-    padding: 0 8px 92px;
+    padding: var(--bar-h) 8px 92px;
   }
   .pub-bar {
     padding: 0 6px 0 10px;

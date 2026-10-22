@@ -16,10 +16,11 @@ const readerTools = (toc, paneLabel) => {
 function updateToc() {
   const scroller = $(".doc-scroll");
   if (!scroller) return;
+  // 顶栏浮在滚动区上方，以顶栏下沿（滚动区的上内边距）为阅读起点。
   const heads = $$(".doc h2[id]", scroller),
-    top = scroller.getBoundingClientRect().top;
+    top = scroller.getBoundingClientRect().top + parseFloat(getComputedStyle(scroller).paddingTop);
   let active = heads[0]?.id;
-  for (const h of heads) if (h.getBoundingClientRect().top - top <= 96) active = h.id;
+  for (const h of heads) if (h.getBoundingClientRect().top - top <= 48) active = h.id;
   if (heads.length && scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4) active = heads.at(-1).id;
   $$(".toc-link").forEach((a) => (a.dataset.arg === active ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
 }
@@ -29,7 +30,8 @@ A["toc"] = (el) => {
   const target = document.getElementById(el.dataset.arg),
     scroller = $(".doc-scroll");
   if (!target || !scroller) return;
-  scroller.scrollTo({ top: scroller.scrollTop + target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 24, behavior: S.motion === "reduce" ? "auto" : "smooth" });
+  const inset = parseFloat(getComputedStyle(scroller).paddingTop);
+  scroller.scrollTo({ top: scroller.scrollTop + target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - inset - 24, behavior: S.motion === "reduce" ? "auto" : "smooth" });
   target.setAttribute("tabindex", "-1");
   target.focus({ preventScroll: true });
 };

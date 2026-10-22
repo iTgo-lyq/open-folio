@@ -21,8 +21,7 @@ const withIcons = (html) => html.replace(/\{\{ICON:(\w+)\}\}/g, (_, n) => icon(n
 
 const S = {
   theme: "light",
-  accent: "ink",
-  transparency: "normal",
+  accent: "clay",
   motion: "normal",
   scene: "normal",
   collapsed: null,
@@ -90,7 +89,7 @@ function parseHash() {
 function hashFor(path) {
   const q = new URLSearchParams();
   if (S.theme === "dark") q.set("theme", "dark");
-  if (S.accent !== "ink") q.set("accent", S.accent);
+  if (S.accent !== "clay") q.set("accent", S.accent);
   if (S.scene !== "normal") q.set("scene", S.scene);
   const qs = q.toString();
   return `#/${path}${qs ? "?" + qs : ""}`;
@@ -114,7 +113,6 @@ function render() {
   const root = document.documentElement;
   root.dataset.theme = S.theme;
   root.dataset.accent = S.accent;
-  root.dataset.transparency = S.transparency;
   root.dataset.motion = S.motion;
   $("#review").innerHTML = reviewBar();
   $("#app").innerHTML = view();

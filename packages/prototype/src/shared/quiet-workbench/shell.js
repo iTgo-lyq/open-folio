@@ -34,7 +34,7 @@ function pageKey() {
 function reviewBar() {
   const key = pageKey(),
     scenes = SCENES[key] || COMMON;
-  return `<span class="review-mark">${icon("eye")}<span>设计预览 · 示例数据</span></span><span class="review-tools"><label class="review-field"><span class="sr-only">页面</span><select data-review="page" aria-label="切换预览页面">${PAGES.map(([k, l]) => `<option value="${k}" ${k === key ? "selected" : ""}>${l}</option>`).join("")}</select></label><label class="review-field"><span class="sr-only">场景</span><select data-review="scene" aria-label="切换场景">${scenes.map(([k, l]) => `<option value="${k}" ${k === S.scene ? "selected" : ""}>${l}</option>`).join("")}</select></label>${ibtn(S.theme === "dark" ? "切换浅色" : "切换深色", "theme-toggle", S.theme === "dark" ? "sun" : "moon", { key: "review-theme", side: "bottom" })}${ibtn("评审设置：强调色、图标与降级", "review-settings", "settings", { key: "review-settings", popup: "dialog", side: "bottom" })}</span>`;
+  return `<span class="review-mark">${icon("eye")}<span>设计预览 · 示例数据</span></span><span class="review-tools"><label class="review-field"><span class="sr-only">页面</span><select data-review="page" aria-label="切换预览页面">${PAGES.map(([k, l]) => `<option value="${k}" ${k === key ? "selected" : ""}>${l}</option>`).join("")}</select></label><label class="review-field"><span class="sr-only">场景</span><select data-review="scene" aria-label="切换场景">${scenes.map(([k, l]) => `<option value="${k}" ${k === S.scene ? "selected" : ""}>${l}</option>`).join("")}</select></label>${ibtn(S.theme === "dark" ? "切换浅色" : "切换深色", "theme-toggle", S.theme === "dark" ? "sun" : "moon", { key: "review-theme", side: "bottom" })}${ibtn("评审设置：强调色、图标与动效", "review-settings", "settings", { key: "review-settings", popup: "dialog", side: "bottom" })}</span>`;
 }
 document.addEventListener("change", (event) => {
   const el = event.target;
@@ -60,8 +60,8 @@ A["set-theme"] = (el) => {
   refreshPop();
 };
 const ACCENTS = [
-  ["ink", "墨色"],
   ["clay", "陶土"],
+  ["ink", "墨色"],
   ["blue", "蓝色 · 上一版"],
 ];
 const switchRow = (label, action, on) => `<div class="menu-row"><span class="grow">${label}</span><button class="switch" role="switch" aria-checked="${on}" aria-label="${label}" data-action="${action}" data-key="${action}:"><i></i></button></div>`;
@@ -70,18 +70,13 @@ A["review-settings"] = (el) =>
     el,
     () => {
       const tile = S.accent === "blue" ? LEGACY_MARK : APP_ICON;
-      return `<div class="pop-pad review-pop"><div class="pop-title">评审设置</div><div class="pop-sub">强调色</div><span class="seg sm accent-seg" role="radiogroup" aria-label="强调色">${ACCENTS.map(([k, l]) => `<button role="radio" aria-checked="${S.accent === k}" data-action="set-accent" data-arg="${k}" data-key="accent:${k}">${l}</button>`).join("")}</span><p class="menu-note">墨色为本次方案；陶土是暖色备选，蓝色是上一版对照。</p><div class="pop-sub">标志与网站图标</div><div class="icon-preview"><span class="tab-mock" aria-hidden="true"><img src="${tile}" alt="">OpenFolio</span><span class="tab-mock dark" aria-hidden="true"><img src="${tile}" alt="">OpenFolio</span><img class="app-icon" src="${tile}" alt="应用图标"></div><div class="pop-sub">降级演示</div>${switchRow("减少透明度", "toggle-transparency", S.transparency === "reduce")}${switchRow("减少动态效果", "toggle-motion", S.motion === "reduce")}<p class="menu-note">系统开启相应偏好时自动生效；这里只用于评审。</p></div>`;
+      return `<div class="pop-pad review-pop"><div class="pop-title">评审设置</div><div class="pop-sub">强调色</div><span class="seg sm accent-seg" role="radiogroup" aria-label="强调色">${ACCENTS.map(([k, l]) => `<button role="radio" aria-checked="${S.accent === k}" data-action="set-accent" data-arg="${k}" data-key="accent:${k}">${l}</button>`).join("")}</span><p class="menu-note">陶土为本次方案；墨色与蓝色（上一版）只作对照。</p><div class="pop-sub">标志与网站图标</div><div class="icon-preview"><span class="tab-mock" aria-hidden="true"><img src="${tile}" alt="">OpenFolio</span><span class="tab-mock dark" aria-hidden="true"><img src="${tile}" alt="">OpenFolio</span><img class="app-icon" src="${tile}" alt="应用图标"></div><div class="pop-sub">动效</div>${switchRow("减少动态效果", "toggle-motion", S.motion === "reduce")}<p class="menu-note">系统开启“减少动态效果”时自动生效；这里只用于评审。</p></div>`;
     },
     { align: "end", label: "评审设置" },
   );
 A["set-accent"] = (el) => {
   S.accent = el.dataset.arg;
   history.replaceState(null, "", hashFor(S.path.join("/")));
-  render();
-  refreshPop();
-};
-A["toggle-transparency"] = () => {
-  S.transparency = S.transparency === "reduce" ? "normal" : "reduce";
   render();
   refreshPop();
 };
