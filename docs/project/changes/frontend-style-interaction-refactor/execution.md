@@ -28,3 +28,14 @@
 - `npm run typecheck`、`npm run format:check`、`npm run ui:build`、`npm run ui:test` 通过。
 - 测试注意：Radix 分段控件在下一轮事件中移动焦点，并以“方向键仍按下”决定是否同时选中，自动化需 `keyboard.down` 后稍候再 `up`；切换主题后控件有 0.12s 颜色过渡，截图前需等待。
 - 完整浏览器测试：`develop` 现状下 `npx playwright test` 因 `tests/browser/hosting.spec.ts` 经 `tests/fixture.ts` 导入 `server-only` 模块而整体加载失败（与本 Change 无关）；以 `NODE_OPTIONS=--conditions=react-server npx playwright test` 运行时可加载。本次按用户要求优先推进代码，运行到第 58 / 100 项（无失败）后中止，完整套件留到 T12。
+
+## T3 · Change 创建者读取
+
+范围：
+- `GitReader.changeCreations` 取代 `changeCreationTimes`：同一次 `git log --diff-filter=A` 扫描在格式中加入作者名与邮箱，按最早加入时间保留该提交的作者。
+- `changeCreator(name, email)` 只从 GitHub 隐私邮箱（`<id>+<login>@` 与 `<login>@users.noreply.github.com`）识别登录名，邮箱本身不进入快照；名称为空时以登录名代替，二者皆无则省略。`ChangeGroup.creator?: { name; login? }`。
+- 快照缓存版本 8 → 9（`store.ts`、`Snapshot` 类型、分享页 `sharedWorkbench`）；分享接口 `projectChange` 带上 `creator`。界面暂不使用。
+
+验证：
+- 扩展 `tests/change-creation-order.test.ts`：多作者下首次加入者在编辑与归档迁移后保持不变，合并引入取合并提交作者，noreply 登录名识别，快照中不含邮箱，分享投影带上创建者，暖刷新结果一致；`changeCreator` 单测覆盖两种 noreply、普通邮箱、伪造域名与空名称。`store`、`changes`、`shares`、`incremental-cache` 同跑 38 项通过；`npm run typecheck` 通过。
+- `npm test` 286 项中 285 项通过；失败的 `service-tools.test.ts`“service lifecycle…”在临时目录执行 `scripts/service.mjs update`（构建并启动服务）时失败，本 Change 未改动服务脚本，按用户要求记录为环境问题，留待 T12 复核。

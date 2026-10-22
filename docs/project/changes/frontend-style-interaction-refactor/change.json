@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "Change 创建者读取",
-      "status": "todo"
+      "status": "done",
+      "verification": "creator 相关单测与 store/changes/shares/incremental-cache 38 项通过；npm test 285/286（service-tools 环境问题已记录）",
+      "commitTitle": "frontend-style-interaction-refactor T3: read Change creators"
     },
     "T4": {
       "title": "工作台壳层与导航",

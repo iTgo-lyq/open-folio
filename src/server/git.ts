@@ -851,9 +851,13 @@ export class GitReader {
   }
   // Inspect additions across all parents: merge resolutions can introduce records too.
   // Group active and archived paths by stable ID so moving a Change never resets it.
-  async changeCreationTimes(commits: string[], signal?: AbortSignal) {
-    const times = new Map<string, number>();
-    if (!commits.length) return times;
+  // 首次加入 change.json 的时间与作者；作者邮箱只交给调用方识别平台登录名，不进入快照。
+  async changeCreations(commits: string[], signal?: AbortSignal) {
+    const created = new Map<
+      string,
+      { time: number; author: { name: string; email: string } }
+    >();
+    if (!commits.length) return created;
     const history = await this.run(
       [
         "log",
@@ -862,7 +866,7 @@ export class GitReader {
         "-m",
         "--no-renames",
         "--diff-filter=A",
-        "--format=%x00%ct",
+        "--format=%x00%ct%x00%an%x00%ae",
         "--name-only",
         ...new Set(commits),
         "--",
@@ -871,20 +875,24 @@ export class GitReader {
       ],
       signal,
     );
-    let time = NaN;
+    let time = NaN,
+      author = { name: "", email: "" };
     for (const line of history.toString().split("\n")) {
       if (line.startsWith("\0")) {
-        time = Number(line.slice(1)) * 1000;
+        const [, seconds, name = "", email = ""] = line.split("\0");
+        time = Number(seconds) * 1000;
+        author = { name, email };
         continue;
       }
       const match =
         /^docs\/project\/(?:changes\/|archive\/\d{4}-\d{2}-\d{2}-)([a-z0-9]+(?:-[a-z0-9]+)*)\/change\.json$/.exec(
           line,
         );
-      if (match && Number.isFinite(time))
-        times.set(match[1], Math.min(times.get(match[1]) ?? Infinity, time));
+      if (!match || !Number.isFinite(time)) continue;
+      const prior = created.get(match[1]);
+      if (!prior || time < prior.time) created.set(match[1], { time, author });
     }
-    return times;
+    return created;
   }
   async ancestor(base: string, tip: string, signal?: AbortSignal) {
     try {
