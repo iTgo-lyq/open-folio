@@ -4,16 +4,70 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "technical",
+  "stage": "plan",
   "branch": "develop",
   "confirmations": {
     "requirement": {
       "at": "2026-10-22T04:16:05.253Z",
       "summary": "七组入口按 Craft 重做，陶土强调与墨色标志，可见材质，精简控件并外露创建者",
       "source": "用户回复：还是陶土吧，不过现在好像没有什么玻璃特效存在？……logo保持墨色没问题。不用保留降级，默认用户浏览器都支持，不需要开启减少透明度。其他没问题。"
+    },
+    "technical": {
+      "at": "2026-10-22T05:32:02.253Z",
+      "summary": "按验收原型重建表现层与主题，详情与分享共用阅读页，后端补创建者",
+      "source": "用户在 change-sharing 合入后回复：现在 change-sharing 已经合入了。你重新review一下。开始制定实施计划吧。复查后仅同步分享页参数白名单与分享入口写法，未改变方案。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "主题、设计 token 与品牌标志",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "共享基础组件",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "Change 创建者读取",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "工作台壳层与导航",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "我的仓库与登录注册",
+      "status": "todo"
+    },
+    "T6": {
+      "title": "账号与 Token 设置",
+      "status": "todo"
+    },
+    "T7": {
+      "title": "阅读布局与 Specs",
+      "status": "todo"
+    },
+    "T8": {
+      "title": "Changes 列表",
+      "status": "todo"
+    },
+    "T9": {
+      "title": "Change 详情阅读页",
+      "status": "todo"
+    },
+    "T10": {
+      "title": "Change 分享页",
+      "status": "todo"
+    },
+    "T11": {
+      "title": "原型总览、画布与公开原型页",
+      "status": "todo"
+    },
+    "T12": {
+      "title": "旧样式清理与整体验证",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "previews": [
     {
@@ -331,6 +385,6 @@
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "技术方案已推送，等待用户确认实现方向与关键取舍；确认后编写 Plan，change-sharing 合入前不进入执行。"
+    "summary": "实施计划（T1–T12）已推送，等待用户确认；确认后移交工作分支并开始执行。"
   }
 }
