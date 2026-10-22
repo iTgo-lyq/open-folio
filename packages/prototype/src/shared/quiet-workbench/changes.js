@@ -306,7 +306,7 @@ function materialBody(c, m, shared) {
 function overviewBody(c, shared) {
   const toc = [];
   let html = "";
-  if (c.waiting) html += `<div class="callout ${c.waiting.kind === "confirmation" ? "accent" : "warn"}">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}<p><strong>${c.waiting.kind === "confirmation" ? "等待确认" : c.waiting.kind === "dependency" ? "等待依赖" : "暂停"}</strong> · ${esc(c.waiting.since)}<br>${esc(c.waiting.summary)}</p></div>`;
+  if (c.waiting) html += `<div class="callout warn">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}<p><strong>${c.waiting.kind === "confirmation" ? "等待确认" : c.waiting.kind === "dependency" ? "等待依赖" : "暂停"}</strong> · ${esc(c.waiting.since)}<br>${esc(c.waiting.summary)}</p></div>`;
   if (blockedTasks(c).length) html += `<div class="callout bad">${icon("blocked")}<p><strong>${blockedTasks(c)[0].id} 受阻</strong><br>${esc(blockedTasks(c)[0].reason)}</p></div>`;
   if (c.status === "cancelled") html += `<div class="callout">${icon("info")}<p><strong>已于 ${c.cancelled} 取消</strong><br>${esc(c.cancelReason)}</p></div>`;
   if (c.tasks.length) {
@@ -317,7 +317,7 @@ function overviewBody(c, shared) {
   }
   if (c.delivery) {
     toc.push({ id: "delivery", h: "交付" });
-    const pr = (p) => `<li><a class="pr-row" href="#" data-action="open-pr" data-arg="${p.n}" data-key="pr:${p.n}">${icon("merge")}<span class="grow stack"><span>#${p.n} ${esc(p.title)}</span><small><code>${esc(p.head)}</code> → <code>${esc(p.base)}</code>${p.version ? ` · 版本 ${p.version}` : ""}</small></span>${tag(p.state === "merged" ? "已合入" : p.draft ? "草稿" : p.state === "closed" ? "已关闭" : "待合入", p.state === "merged" ? "green" : p.draft ? "" : "accent")}${icon("arrowUpRight", "faint")}</a></li>`;
+    const pr = (p) => `<li><a class="pr-row" href="#" data-action="open-pr" data-arg="${p.n}" data-key="pr:${p.n}">${icon("merge")}<span class="grow stack"><span>#${p.n} ${esc(p.title)}</span><small><code>${esc(p.head)}</code> → <code>${esc(p.base)}</code>${p.version ? ` · 版本 ${p.version}` : ""}</small></span>${tag(p.state === "merged" ? "已合入" : p.draft ? "草稿" : p.state === "closed" ? "已关闭" : "待合入", p.state === "merged" ? "green" : "")}${icon("arrowUpRight", "faint")}</a></li>`;
     const d = c.delivery;
     html += section("delivery", "交付", `<div class="delivery">${d.stage ? `<p>${deliveryTag(c, false)}<span class="muted"> ${d.stage === "pendingRelease" ? "已合入集成分支，尚未发起发布 PR。" : d.stage === "pendingIntegration" ? "已具备交付条件，Change PR 尚未合入。" : d.stage === "releaseMerged" ? "发布 PR 已合入发布分支；是否已部署以发布记录为准。" : ""}</span></p>` : `<p class="muted">执行中，PR 仍是草稿；进入关闭阶段后显示交付状态。</p>`}<div class="pr-group"><div class="pr-label">Change PR</div><ul class="pr-list" role="list">${d.changePrs.map(pr).join("") || `<li class="muted">暂无关联 PR</li>`}</ul></div>${c.status === "completed" ? `<div class="pr-group"><div class="pr-label">发布 PR</div><ul class="pr-list" role="list">${d.releasePrs.map(pr).join("") || `<li class="muted">尚未发起</li>`}</ul></div>` : ""}</div>`);
   }

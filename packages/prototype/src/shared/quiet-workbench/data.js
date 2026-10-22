@@ -1,7 +1,7 @@
 // 示例数据：仓库、人员、工程记录全部虚构，只在内存中使用。
 const TODAY = "2026-10-22";
 const PEOPLE = {
-  lin: { name: "林知远", login: "demo-lin", hue: 214 },
+  lin: { name: "林知远", login: "demo-lin", hue: 30 },
   chen: { name: "陈一", login: "chen-yi", hue: 158 },
   zhou: { name: "周屿", login: "zhouyu", hue: 24 },
   xu: { name: "许宁", login: "xuning", hue: 276 },
@@ -17,7 +17,7 @@ const DEVICES = [
   { id: "d3", name: "Edge · Windows", kind: "monitor", last: "5 天前活动", since: "10 月 9 日登录" },
 ];
 const REPOS = [
-  { id: "atlas", name: "Atlas", owner: "demo-studio", repo: "atlas", branch: "develop", hue: 214, status: "ready" },
+  { id: "atlas", name: "Atlas", owner: "demo-studio", repo: "atlas", branch: "develop", hue: 36, status: "ready" },
   { id: "folio", name: "Folio", owner: "demo-studio", repo: "folio", branch: "develop", hue: 158, status: "ready" },
   { id: "fieldnotes", name: "Field Notes", owner: "demo-lab", repo: "field-notes", branch: "main", hue: 24, status: "ready" },
   { id: "design-kit", name: "Design Kit", owner: "demo-lab", repo: "design-kit", branch: "develop", hue: 276, status: "attention", reason: "协作分支的 workflow.json 缺少集成分支配置" },
@@ -182,8 +182,8 @@ const STAGES = [
 const URGENCY = { urgent: "紧急", high: "高", normal: "普通", low: "低" };
 const SIZE = { small: "Small", medium: "Medium", large: "Large", xlarge: "XLarge" };
 const DELIVERY = {
-  pendingIntegration: ["待集成", "accent"],
-  pendingRelease: ["待发布", "violet"],
+  pendingIntegration: ["待集成", ""],
+  pendingRelease: ["待发布", ""],
   releaseMerged: ["已发布", "green"],
   unknown: ["交付待核实", "amber"],
 };

@@ -201,7 +201,7 @@ await check("已完成按交付分组，来源异常仅在提示中出现", asyn
   await $('[data-key="scope:completed"]').click();
   const groups = await frame.locator(".group-h").allInnerTexts();
   assert.deepEqual(groups.map((g) => g.replace(/\s*\d+$/, "")), ["待发布", "已发布"]);
-  assert.ok((await count(".tag.violet")) >= 1);
+  assert.ok((await frame.locator(".change-row .tag", { hasText: "待发布" }).count()) >= 1);
   await $('[data-key="scope:active"]').click();
   await $('[data-action="show-issues"]').click();
   assert.match(await text(".change-row"), /无法完整读取|校验失败/);
@@ -412,6 +412,63 @@ await check("减少透明度与减少动态效果", async () => {
   await page.keyboard.press("Escape");
   assert.equal(await glass(), "none");
   assert.equal(await frame.evaluate(() => getComputedStyle(document.querySelector(".app")).transitionDuration), "0s");
+});
+await check("墨色框架与平面单色标志", async () => {
+  for (const theme of ["light", "dark"]) {
+    await open("changes", `/changes${theme === "dark" ? "?theme=dark" : ""}`);
+    assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "ink");
+    assert.equal(await count(".logo svg.mark"), 1);
+    assert.equal(await count("img.mark"), 0);
+    const [accent, ink, icon] = await frame.evaluate(() => [getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(), getComputedStyle(document.body).color, getComputedStyle(document.querySelector(".nav-item[aria-current] .i")).color]);
+    assert.equal(accent, theme === "dark" ? "#ececea" : "#1d1d1b");
+    assert.equal(icon, ink);
+  }
+});
+await check("评审栏切换强调色并保留在链接中", async () => {
+  await open("changes", "/changes");
+  await $('[data-key="review-settings"]').click();
+  assert.equal(await count(".icon-preview img"), 3);
+  await $('[data-key="accent:clay"]').click();
+  assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "clay");
+  assert.match(await frame.evaluate(() => location.hash), /accent=clay/);
+  await $('[data-key="accent:blue"]').click();
+  assert.equal(await count(".logo img.mark"), 1);
+  await page.keyboard.press("Escape");
+  await open("changes", "/changes?accent=clay&theme=dark");
+  assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "clay");
+});
+await check("强调色与状态色对比度（三种强调色 × 两套主题）", async () => {
+  const low = [];
+  for (const accent of ["ink", "clay", "blue"])
+    for (const theme of ["light", "dark"]) {
+      await open("changes", `/changes?theme=${theme}&accent=${accent}`);
+      const pairs = await frame.evaluate(() => {
+        const probe = document.body.appendChild(document.createElement("i"));
+        const rgba = (v) => {
+          probe.style.color = `var(${v})`;
+          const [r, g, b, a = 1] = getComputedStyle(probe).color.match(/[\d.]+/g).map(Number);
+          return [r, g, b, a];
+        };
+        const over = (fg, bg) => fg.slice(0, 3).map((c, i) => c * fg[3] + bg[i] * (1 - fg[3]));
+        const lum = (c) => c.map((v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+        const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+        const surface = rgba("--surface").slice(0, 3),
+          win = rgba("--win").slice(0, 3),
+          on = (fg, bg = surface) => over(rgba(fg), bg),
+          out = {
+            "主按钮文字": [ratio(on("--on-accent", on("--accent")), on("--accent")), 4.5],
+            "链接与选中文字": [ratio(on("--accent-ink"), surface), 4.5],
+            "选中底上的文字": [ratio(on("--accent-ink"), on("--accent-soft")), 4.5],
+            "焦点框对内容区": [ratio(on("--accent"), surface), 3],
+            "焦点框对窗口底": [ratio(on("--accent", win), win), 3],
+          };
+        for (const tone of ["amber", "red", "green"]) out[`${tone} 状态文字`] = [ratio(on(`--${tone}`, on(`--${tone}-soft`)), on(`--${tone}-soft`)), 4.5];
+        probe.remove();
+        return out;
+      });
+      for (const [name, [value, min]] of Object.entries(pairs)) if (value < min) low.push(`${accent}/${theme} ${name} ${value.toFixed(2)} < ${min}`);
+    }
+  assert.deepEqual(low, [], low.join("；"));
 });
 await check("跳过链接聚焦主内容且不改变路由", async () => {
   await open("specs", "/specs/maps/offline");

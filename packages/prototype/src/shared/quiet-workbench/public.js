@@ -1,6 +1,6 @@
 // ⑥ 公开原型页与 ⑦ Change 分享页：匿名只读，不显示工作台导航、账号或凭据。
 function publicBar(title, extra, right) {
-  return `<header class="pub-bar"><span class="pub-brand"><img src="${brand}" alt="OpenFolio"></span><span class="pub-title clamp">${title}</span>${extra || ""}<span class="grow"></span>${right}${ibtn(S.theme === "dark" ? "浅色" : "深色", "theme-toggle", S.theme === "dark" ? "sun" : "moon", { key: "pub-theme" })}</header>`;
+  return `<header class="pub-bar"><span class="pub-brand">${brandMark("", "OpenFolio")}</span><span class="pub-title clamp">${title}</span>${extra || ""}<span class="grow"></span>${right}${ibtn(S.theme === "dark" ? "浅色" : "深色", "theme-toggle", S.theme === "dark" ? "sun" : "moon", { key: "pub-theme" })}</header>`;
 }
 function publicView() {
   const p = protoById(S.path[1] || "offline-maps");

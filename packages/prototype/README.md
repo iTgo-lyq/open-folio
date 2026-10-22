@@ -20,7 +20,7 @@ token-workspaces 演示同 token 多设备恢复、不同 token 独立工作台�
 
 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 分别对应我的仓库与侧栏、Specs 阅读、Changes 列表与详情、原型总览与画布、账号与 Token、匿名公开原型、Change 分享阅读。源码位于 `src/shared/quiet-workbench/`，按模块拆为多个脚本，由各入口 HTML 内联；旧原型与固定引用保留。
 
-所有仓库、人员、时间和工程材料均为虚构，状态只在内存中。顶部评审细条可切换页面、场景（加载、失败、离线、无权限、登录过期及各页面特有状态）、主题与降级，不属于产品。示例账号 `lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`。hash 可直达，例如 `#/changes/offline-map-regions/technical?theme=dark`、`#/changes?side=collapsed`、`#/share/offline-map-regions?scene=sync-failed`。点击 Logo 或按 ⌘\ / Ctrl+\ 收起侧栏为悬浮胶囊。
+所有仓库、人员、时间和工程材料均为虚构，状态只在内存中。顶部评审细条可切换页面、场景（加载、失败、离线、无权限、登录过期及各页面特有状态）与主题；右侧“评审设置”可切换强调色（墨色为方案，陶土与上一版蓝色作对照）、预览网站与应用图标并演示降级，均不属于产品。标志与图标源文件为 `src/assets/openfolio-mark.svg`、`openfolio-icon.svg`。示例账号 `lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`。hash 可直达，例如 `#/changes/offline-map-regions/technical?theme=dark`、`#/changes?side=collapsed`、`#/changes?accent=clay`、`#/share/offline-map-regions?scene=sync-failed`。点击 Logo 或按 ⌘\ / Ctrl+\ 收起侧栏为悬浮胶囊。
 
 验证：先 `npm run build --workspace prototype`，再 `node packages/prototype/verify-quiet-workbench.mjs`。检查使用仅授予 `allow-scripts` 的 iframe 与项目 CSP，覆盖七个入口 × 两套主题 × 四档宽度及主要交互；结果和截图输出到 Git 忽略的 `artifacts/quiet-workbench/`。正式卡片截图继续使用本包 screenshot 命令。
 

@@ -9,11 +9,19 @@ const attr = (obj) =>
     .map(([k, v]) => (v === true ? k : `${k}="${esc(v)}"`))
     .join(" ");
 const clone = (v) => JSON.parse(JSON.stringify(v));
-const brand = "{{data:../../assets/mark.png}}";
+// 标志：平面单色矢量，跟随文字颜色；评审切到“蓝色（上一版）”时恢复旧图作对照。
+const MARK_SVG = `{{include:../../assets/openfolio-mark.svg}}`.trim();
+const APP_ICON = "{{data:../../assets/openfolio-icon.svg}}";
+const LEGACY_MARK = "{{data:../../assets/mark.png}}";
+const brandMark = (cls = "", label = "") =>
+  S.accent === "blue"
+    ? `<img class="mark ${cls}" src="${LEGACY_MARK}" alt="${esc(label)}">`
+    : MARK_SVG.replace("<svg ", `<svg class="mark ${cls}" ${label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"'} focusable="false" `);
 const withIcons = (html) => html.replace(/\{\{ICON:(\w+)\}\}/g, (_, n) => icon(n));
 
 const S = {
   theme: "light",
+  accent: "ink",
   transparency: "normal",
   motion: "normal",
   scene: "normal",
@@ -67,13 +75,14 @@ const tag = (text, tone = "") => `<span class="tag ${tone}">${esc(text)}</span>`
 const empty = (title, body, actions = "", glyph = "inbox") =>
   `<div class="empty" role="status">${icon(glyph, "empty-icon")}<h2>${esc(title)}</h2><p>${body}</p>${actions ? `<div class="empty-actions">${actions}</div>` : ""}</div>`;
 
-// hash 路由：#/changes/offline-map-regions/requirement?theme=dark&scene=loading
+// hash 路由：#/changes/offline-map-regions/requirement?theme=dark&accent=clay&scene=loading
 function parseHash() {
   const raw = location.hash.replace(/^#\/?/, "") || document.body.dataset.start;
   const [path, qs] = raw.split("?");
   S.path = path.split("/").filter(Boolean).map(decodeURIComponent);
   S.query = Object.fromEntries(new URLSearchParams(qs || ""));
   if (S.query.theme === "dark" || S.query.theme === "light") S.theme = S.query.theme;
+  if (["ink", "clay", "blue"].includes(S.query.accent)) S.accent = S.query.accent;
   if (S.query.scene) S.scene = S.query.scene;
   if (S.query.side === "collapsed") S.collapsed = true;
   if (S.query.side === "expanded") S.collapsed = false;
@@ -81,6 +90,7 @@ function parseHash() {
 function hashFor(path) {
   const q = new URLSearchParams();
   if (S.theme === "dark") q.set("theme", "dark");
+  if (S.accent !== "ink") q.set("accent", S.accent);
   if (S.scene !== "normal") q.set("scene", S.scene);
   const qs = q.toString();
   return `#/${path}${qs ? "?" + qs : ""}`;
@@ -103,6 +113,7 @@ function render() {
   $$("[data-scroll]").forEach((el) => (S.scroll[el.dataset.scroll] = el.scrollTop));
   const root = document.documentElement;
   root.dataset.theme = S.theme;
+  root.dataset.accent = S.accent;
   root.dataset.transparency = S.transparency;
   root.dataset.motion = S.motion;
   $("#review").innerHTML = reviewBar();
