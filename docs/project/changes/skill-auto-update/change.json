@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "skill-auto-update",
+  "title": "SpecTrail skill 自动更新机制",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "新功能",
+    "工程"
+  ],
+  "waitingFor": {
+    "kind": "pause",
+    "summary": "仅登记需求，待用户安排后续澄清与推进。"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "direct-share-links",
+  "title": "材料推送后直接提供分享链接",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/direct-share-links",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "简化分享指引与链接生成脚本",
+      "status": "done",
+      "verification": "5 个链接测试通过，覆盖离线零 HTTP 请求、概览/文档/原型定位、SSH/HTTPS origin 和 CLI；主 skill 与原型 skill 校验通过，脚本语法及 diff 检查通过。",
+      "commitTitle": "direct-share-links T1: generate links without remote checks"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T13:49:42.168Z",
+      "summary": "Agent 自查完整差异并逐项核对需求；5 个链接测试、两处 skill 校验、脚本语法及 diff 检查通过，未修改工作台实现。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T13:49:59.026Z",
+      "summary": "Agent 自验收：材料推送后直接给链接，生成过程无 HTTP 请求、远端比对或同步等待；文档与原型规则一致。",
+      "source": "按 SpecTrail small 默认自验收规则，依据 requirement.md 验收项和已推送 T1 提交 7200957 的验证记录。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T13:50:08.513Z",
+      "summary": "更新 change-workflow 的材料分享规则：推送后直接给链接，脚本仅本地构造地址，页面自行刷新获取内容。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T13:50:10.323Z",
+      "summary": "完成分享规则和链接脚本精简，离线链接测试及 skill 校验通过，按 small 默认规则自验收并同步 Specs。",
+      "path": "docs/project/archive/2026-10-22-direct-share-links"
+    }
+  },
+  "types": [
+    "流程",
+    "工程"
+  ]
+}

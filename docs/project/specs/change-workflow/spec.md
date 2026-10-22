@@ -125,9 +125,9 @@ archive 移动完整文档目录并标记 completed，不重建原型工程。Gi
 
 `docs/project/workflow.json` 的可选 `openfolioUrl` 保存服务根地址，沿用原型配置中的同一字段。服务入口须允许匿名访问且存在可读取目标仓库的已接入来源；不另设分享账号、密码或 Token。
 
-技术文档提交推送后，或原型发布、登记并推送后，Agent 使用零依赖 `share.mjs --change <id> --document <相对路径>` 或 `--preview <入口id>` 匿名验证并主动给出材料链接；省略材料参数分享概览。工具从 origin 和 workflow 构造目标，核对最新来源、已提交文档 blob 或原型 artifact，Git 原型还核对实际 HTML blob；未提交材料拒绝验证。同步等待有界，成功结果中的提交只表示本次核验来源，分享页继续跟随最新内容。
+材料提交推送后，Agent 直接提供对应 Change 材料链接，不验证工作台接口、远端正文或原型内容，不等待同步。可用零依赖 `share.mjs --change <id> --document <相对路径>` 或 `--preview <入口id>` 生成地址；省略材料参数分享概览。脚本只读取本地 origin 和 workflow，返回含仓库、集成分支、Change 及材料定位参数的 `url`，不附带服务分支或提交信息。
 
-缺少配置、登录重定向、权限或网络失败、内容尚未同步时说明实际结果，保留仓库材料或固定原型入口，不把 URL 构造成功视作访问成功。完整用法见 [Skill 分享链接](../../../../.agents/skills/spec-trail/references/sharing.md)。
+未配置服务地址时提供仓库材料链接。分享页跟随已推送内容，用户打开网页后由页面刷新获取；生成链接不表示工作台已同步最新材料。完整用法见 [Skill 分享链接](../../../../.agents/skills/spec-trail/references/sharing.md)。
 
 ## 归档后的去向
 
