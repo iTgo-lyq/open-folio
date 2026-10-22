@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "early-draft-pr",
-  "title": "准备实施时创建 Draft PR",
+  "title": "Plan 编写前移交分支，完成后创建 PR",
   "size": "small",
   "status": "active",
   "stage": "execution",
@@ -18,5 +18,10 @@
   "followUpTitle": "PR 交付流程",
   "types": [
     "流程"
-  ]
+  ],
+  "rework": {
+    "at": "2026-10-22T12:18:22.968Z",
+    "reason": "用户将分支移交前置到开始编写 Plan，Plan 完成后创建 PR，并要求 skill 措辞精炼",
+    "approach": "修改移交前置校验并用现有测试覆盖；主 skill 只保留时机，引用文档说明操作"
+  }
 }
