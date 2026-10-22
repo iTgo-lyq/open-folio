@@ -41,9 +41,11 @@ import page from "./personal.module.css";
 export function ChangeReading({
   group,
   onBack,
+  banner,
 }: {
   group?: ChangeGroup;
   onBack?: () => void;
+  banner?: React.ReactNode;
 }) {
   const { data, q, nav, projectId, sharing } = useWorkspace();
   const g = group ?? data?.changes.find((change) => change.id === q.c),
@@ -266,6 +268,7 @@ export function ChangeReading({
           ready={!doc || !!value}
           wide={material.id === "integration" || material.id === "prototypes"}
         >
+          {banner}
           {material.id === "overview" ? (
             <header className={styles.header}>
               <code>{g.id}</code>

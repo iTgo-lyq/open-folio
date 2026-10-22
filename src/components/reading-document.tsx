@@ -46,7 +46,7 @@ export function ReadingDocument({
   const doc = value.document;
   return (
     <>
-      <div className={styles.docMeta}>
+      <div className={styles.docMeta} role="group" aria-label="文档来源">
         <code title={doc.path}>{doc.path}</code>
         <span>· {doc.branch}</span>
         <code title={doc.commit}>{doc.commit.slice(0, 7)}</code>

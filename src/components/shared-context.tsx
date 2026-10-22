@@ -4,6 +4,7 @@ import { primaryRecord, type DocumentRef, type Workbench } from "@/lib/model";
 import { shareParams, sharedReadUrl, type ShareTarget } from "@/lib/share-link";
 import type { SharedChange } from "@/lib/shared-change";
 import { ReadingProvider, type Query } from "./context";
+import { documentReadingTarget } from "@/lib/change-reading";
 import { api } from "./api";
 
 export function documentLocation(data: Workbench, document: DocumentRef) {
@@ -201,11 +202,12 @@ export function SharedProvider({
         return;
       }
       const path = documentLocation(data, document);
+      const reading = documentReadingTarget(data, id);
       nav(
-        document.kind === "image"
-          ? { asset: path }
+        !reading
+          ? { asset: path, raw: raw ? "1" : null }
           : {
-              ct: "documents",
+              ct: reading.ct ?? "requirement",
               document: path,
               anchor: anchor || null,
               raw: raw ? "1" : null,
@@ -215,6 +217,14 @@ export function SharedProvider({
     },
     [data, nav],
   );
+  useEffect(() => {
+    if (!q.document || !data) return;
+    const document = data.documents.find(
+      (d) => documentLocation(data, d) === q.document,
+    );
+    if (document && !document.path.endsWith(".md"))
+      nav({ asset: q.document, document: null, ct: "evidence" }, true);
+  }, [q.document, data, nav]);
   const query = useMemo(
     () => ({
       ...q,

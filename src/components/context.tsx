@@ -476,7 +476,9 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
           .querySelector(`#${CSS.escape(anchor)}`)
           ?.scrollIntoView({ block: "start" }),
       );
-    } else if (!sharing) {
+    } else if (sharing) {
+      element.scrollTop = 0;
+    } else {
       try {
         element.scrollTop = Number(
           sessionStorage.getItem(`openfolio.scroll.${key}`) ?? 0,

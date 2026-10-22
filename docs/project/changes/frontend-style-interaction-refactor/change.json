@@ -80,7 +80,9 @@
     },
     "T10": {
       "title": "Change 分享页",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、build、shares/材料单测13项与匿名浏览器6项通过；双主题四档分享阅读已查",
+      "commitTitle": "frontend-style-interaction-refactor T10: anonymous Change reader"
     },
     "T11": {
       "title": "原型总览、画布与公开原型页",
