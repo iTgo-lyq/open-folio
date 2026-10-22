@@ -45,7 +45,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 | `changes/<id>/` | 尚未归档的 Change，含正文、状态和证据；取消的 Change 也保留在这里 |
 | `archive/YYYY-MM-DD-<id>/` | 已完成关闭的完整 Change，作为只读历史保存 |
 
-归档后尚未集成的 Change 可用 `rework` 恢复返修，见[集成流程](references/integration.md)。已集成归档的正文、状态与证据保持只读；后续需求或返修创建新 Change。历史勘误仅限用户明确要求，核实事实后在所属分支做最小人工修正，以独立提交说明原因，不改写已推送 Git 历史。
+归档后尚未集成的 Change 可用 `rework` 恢复返修，见[集成流程](references/integration.md)。已集成归档的正文、状态与证据保持只读；后续需求或返修创建新 Change。历史勘误仅限用户明确要求，核实事实后在所属分支做最小人工修正，以独立提交说明原因，不改写已推送 Git 历史。版本升级与历史发布补记见[升级说明](references/upgrade.md)。
 
 一个 Change 对应一个内聚目标。正文按阶段创建，省略空章节，不生成占位文件、额外索引、TODO、重复状态表或版本计数器，不按固定篇幅或评分凑内容；需求、技术和计划均不写逐文件操作说明。
 
@@ -150,6 +150,7 @@ interface ChangeState {
   size: "small" | "medium" | "large" | "xlarge";
   types?: string[]; // 自由多选类型；非空单行、无首尾空白、去重，省略或 [] 为无标签
   urgency?: "urgent" | "high" | "normal" | "low"; // 紧急/高/普通/低；省略等同普通
+  deliveryOverride?: "releaseMerged"; // 仅集成分支有效归档可覆盖交付标签；缺省自动判定
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string; // 规划时为集成分支；移交后指向实际工作分支，默认 change/<id>

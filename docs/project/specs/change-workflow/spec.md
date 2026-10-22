@@ -67,6 +67,8 @@ confirmations 下所有 summary 均为阶段内容简述：requirement 写目标
 
 工作分支只推进所属 Change，同一分支只有一个普通执行/关闭中的 Change；取消冻结所属工作分支，集成分支上的规划取消只冻结该记录。未集成归档可经 rework 恢复原 Change 返修，清除失效关闭记录并保留已完成任务；已集成归档只读，branch 保留历史归属。用户明确要求历史勘误时最小修正并保留普通提交，不改写已推送历史。
 
+历史发布补记是归档只读的限定例外：核实确已合入发布分支后，仅在集成分支有效归档的 change.json 增删可选 `deliveryOverride: "releaseMerged"`，以普通提交留痕，不改写其他关闭记录。字段只覆盖交付展示，不替代 Git/PR 证据或 CI；缺省恢复自动判定。版本升级步骤见[升级说明](../../../../.agents/skills/spec-trail/references/upgrade.md)。
+
 workspace.mjs 的 handoff 先在目标工作区提交并推送唯一的 branch 登记提交，再快进集成分支；两端共用祖先。失败重试检查完整所属目录和真实引用，保留无关脏文件与暂存现场，不制造指针文件、规划清理或执行状态镜像提交。locate 只读报告来源、新鲜度和本地 worktree 状态；prepare 定向刷新并复用或准备工作区，不重置、rebase 或 prune。创建 worktree 不证明会话已绑定，客户端无法自动绑定时使用人工打开与续接提示，再核对 cwd、命名分支及仓库身份。
 
 ## 讨论提交整理

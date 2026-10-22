@@ -28,6 +28,34 @@ function event(f: Fixture, base = "develop", body = changeBody) {
   };
 }
 
+test("delivery overrides cannot replace CI archive or integration evidence", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const record = { ...f.record, deliveryOverride: "releaseMerged" };
+  await f.put(`${f.archivePath}/change.json`, JSON.stringify(record));
+  f.commit();
+  assert.equal((await checkPullRequest(f.git, event(f))).kind, "change");
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", releaseBody)),
+    /verified integration/,
+  );
+  f.merge();
+  assert.equal(
+    (await checkPullRequest(f.git, event(f, "main", releaseBody))).kind,
+    "release",
+  );
+  f.git(["checkout", f.branch]);
+  await f.put(
+    `${f.archivePath}/change.json`,
+    JSON.stringify({ ...record, status: "active", closure: {} }),
+  );
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f)),
+    /valid completed archive/,
+  );
+});
+
 test("PR archive check accepts its completed archive and leaves inherited planning and Git untouched", async () => {
   const f = await integrationFixture();
   try {

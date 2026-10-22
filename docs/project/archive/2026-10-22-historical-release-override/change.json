@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "historical-release-override",
+  "title": "历史归档发布状态补记",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/historical-release-override",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "支持集成归档发布补记并补齐精简升级说明",
+      "status": "done",
+      "verification": "24 项交付与缓存测试、12 项 Setup 测试通过；typecheck、format:check、skill quick_validate 与 diff 检查通过，详见 execution.md",
+      "commitTitle": "Support release status overrides from integration archives"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T11:19:36.609Z",
+      "summary": "Agent 自查覆盖全部需求；36 项定向测试、类型与格式校验、skill 校验通过，集成分支已同步"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T11:19:38.450Z",
+      "summary": "Agent 自验收：五项验收均有实现与回归证据，分支来源、覆盖撤销及 CI 边界符合已确认方案",
+      "source": "requirement.md 与 execution.md；small 默认自验收"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T11:20:06.961Z",
+      "summary": "已同步 Change 状态维护与 Change 追踪：补记字段、集成归档来源、自动判定优先级及只读限定例外"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T11:20:08.720Z",
+      "summary": "历史发布补记及精简升级说明已完成，验证与 Specs 已同步",
+      "path": "docs/project/archive/2026-10-22-historical-release-override"
+    }
+  },
+  "followUpOf": "pr-release-delivery",
+  "types": [
+    "适配",
+    "流程"
+  ]
+}
