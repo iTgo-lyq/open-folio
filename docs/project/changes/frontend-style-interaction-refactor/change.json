@@ -116,7 +116,9 @@
     },
     "T16": {
       "title": "恢复 Changes 与原型内容区标题",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型、格式、12项定向浏览器、独立复核和生产构建通过；11356真实已有账号冒烟验证内容区标题、数量及桌面/手机布局通过，退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T16: verify restored page headings"
     }
   },
   "closure": {},
