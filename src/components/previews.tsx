@@ -31,7 +31,7 @@ export function ChangePreviews({
   change?: ChangeCandidate;
   current?: boolean;
 }) {
-  const { projectId, data, q, nav, notice, readUrl } = useWorkspace();
+  const { projectId, data, q, nav, notice, readUrl, sharing } = useWorkspace();
   const requestKey = `${projectId}:${change?.id ?? ""}:${data?.id}:${q.revision ?? ""}`;
   const [response, setResponse] = useState<{
     key: string;
@@ -81,7 +81,7 @@ export function ChangePreviews({
     entry?.id,
     result?.revision ?? undefined,
     current ? undefined : change?.id,
-    !!entry?.available,
+    !!entry?.available && !sharing,
   );
   const chosenDevice = (
     entry?.devices?.includes(q.device as Device)
@@ -114,8 +114,11 @@ export function ChangePreviews({
   const hosted =
     entry?.artifact?.type === "hosted" ? entry.artifact : undefined;
   const [hostStatus, setHostStatus] = useState("pending");
-  const url =
-    publication.publication && load
+  const url = sharing
+    ? entry?.url && !hosted
+      ? `${entry.url}&load=${load}`
+      : entry?.url
+    : publication.publication && load
       ? hosted
         ? publication.publication.url
         : `/api/public-previews/${publication.publication.id}/index.html?load=${load}`
@@ -130,8 +133,26 @@ export function ChangePreviews({
       return;
     }
     const controller = new AbortController();
-    fetch(url, { method: "HEAD", cache: "no-store", signal: controller.signal })
+    fetch(url, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: controller.signal,
+      ...(sharing ? { credentials: "omit" as const } : {}),
+    })
       .then((r) => {
+        if (controller.signal.aborted) return;
+        if (sharing && !r.ok && [403, 404, 409].includes(r.status))
+          window.dispatchEvent(
+            new CustomEvent("openfolio-share-error", {
+              detail: {
+                path: url,
+                code:
+                  r.status === 409
+                    ? "SHARE_VERSION_CHANGED"
+                    : "SHARE_UNAVAILABLE",
+              },
+            }),
+          );
         if (!r.ok)
           throw Error(
             r.status === 401 || r.status === 403
@@ -144,7 +165,7 @@ export function ChangePreviews({
         if (!controller.signal.aborted) setLoadError(e.message);
       });
     return () => controller.abort();
-  }, [url, load, hosted]);
+  }, [url, load, hosted, sharing]);
   useEffect(() => {
     if (!canvas.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -217,6 +238,18 @@ export function ChangePreviews({
         );
   async function copy() {
     if (!result?.revision || !entry) return;
+    if (sharing) {
+      const link = new URL(window.location.href);
+      link.searchParams.set("ct", "previews");
+      link.searchParams.set("preview", entry.id);
+      try {
+        await navigator.clipboard.writeText(link.href);
+        notice("已复制原型分享链接");
+      } catch {
+        notice("未能复制，请从浏览器地址栏复制链接。");
+      }
+      return;
+    }
     if (!publication.url) {
       notice(publication.error ?? "公开版本正在准备，请稍后重试。");
       return;
@@ -560,7 +593,7 @@ export function ChangePreviews({
             </span>
             <button type="button" className="text-button" onClick={copy}>
               <Link2 size={13} />
-              复制固定版本链接
+              {sharing ? "复制原型分享链接" : "复制固定版本链接"}
             </button>
           </div>
           {q.revision && (

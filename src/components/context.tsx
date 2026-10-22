@@ -15,7 +15,9 @@ import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
 export { api, ApiError } from "./api";
 export type Query = Record<string, string>;
-type Value = {
+export type ReadingContext = {
+  sharing?: boolean;
+  readScope?: string;
   q: Query;
   revealVersion: number;
   nav: (patch: Record<string, string | null>, replace?: boolean) => void;
@@ -38,7 +40,8 @@ type Value = {
     integrationBranch?: string,
   ) => void;
 };
-const Context = createContext<Value | null>(null);
+export const ReadingProvider = createContext<ReadingContext | null>(null);
+const Context = ReadingProvider;
 export const useWorkspace = () => useContext(Context)!;
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const personal = usePersonal();
@@ -363,6 +366,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     <Context.Provider
       value={{
         q,
+        readScope: connection?.id,
         revealVersion,
         nav,
         projects: personal.items.map((r) => ({
@@ -436,7 +440,8 @@ export function useDocument(id: string | undefined) {
   };
 }
 export function useSavedScroll(pageKey: string, anchor?: string) {
-  const key = `${usePersonal().connection?.id ?? ""}.${pageKey}`;
+  const { readScope, sharing } = useWorkspace();
+  const key = `${readScope ?? ""}.${pageKey}`;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -447,7 +452,7 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
           .querySelector(`#${CSS.escape(anchor)}`)
           ?.scrollIntoView({ block: "start" }),
       );
-    } else {
+    } else if (!sharing) {
       try {
         element.scrollTop = Number(
           sessionStorage.getItem(`openfolio.scroll.${key}`) ?? 0,
@@ -457,7 +462,7 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
     const save = () => {
       // A detached scroll container reports zero during passive cleanup.
       // Keep the position already captured by its last scroll event.
-      if (!element.isConnected) return;
+      if (!element.isConnected || sharing) return;
       try {
         sessionStorage.setItem(
           `openfolio.scroll.${key}`,
@@ -470,6 +475,6 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
       save();
       element.removeEventListener("scroll", save);
     };
-  }, [key, anchor]);
+  }, [key, anchor, sharing]);
   return ref;
 }

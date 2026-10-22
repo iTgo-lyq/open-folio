@@ -18,6 +18,7 @@ import {
 import { remarkHeadings, resolveDocumentLink } from "@/lib/markdown";
 import type { DocumentRef } from "@/lib/model";
 import { useDocument, useSavedScroll, useWorkspace } from "./context";
+import { reportSharedResourceFailure } from "./api";
 export function Empty({
   title,
   children,
@@ -63,7 +64,7 @@ export function Markdown({
   body: string;
   document: DocumentRef;
 }) {
-  const { data, projectId, openDocument, notice, nav, q, readUrl } =
+  const { data, projectId, openDocument, notice, nav, q, readUrl, sharing } =
     useWorkspace();
   const prose = useRef<HTMLDivElement>(null);
   const follow = (href: string) => {
@@ -80,7 +81,11 @@ export function Markdown({
           : d.branch === document.branch && d.commit === document.commit),
     );
     if (!target) {
-      notice(`当前提交中找不到 ${link.path}`);
+      notice(
+        sharing
+          ? `不在本页范围内：${link.path}`
+          : `当前提交中找不到 ${link.path}`,
+      );
       return;
     }
     if (target.id === document.id) {
@@ -140,6 +145,11 @@ export function Markdown({
                 alt={alt ?? ""}
                 loading="lazy"
                 src={readUrl(`assets/${ref.id}?snapshot=${data!.id}`)}
+                onError={() =>
+                  void reportSharedResourceFailure(
+                    readUrl(`assets/${ref.id}?snapshot=${data!.id}`),
+                  )
+                }
               />
             ) : (
               <span className="image-unavailable">
@@ -156,7 +166,7 @@ export function Markdown({
   );
 }
 export function CopyPageLink({ document: doc }: { document?: DocumentRef }) {
-  const { projectId, data, notice, q, repository } = useWorkspace();
+  const { projectId, data, notice, q, repository, sharing } = useWorkspace();
   return (
     <button
       className="text-button"
@@ -164,42 +174,44 @@ export function CopyPageLink({ document: doc }: { document?: DocumentRef }) {
       onClick={async () => {
         const url = new URL(window.location.href);
         url.hash = "";
-        const allowed = new Set([
-          "m",
-          "s",
-          "c",
-          "ct",
-          "branch",
-          "doc",
-          "da",
-          "anchor",
-          "raw",
-          "spec",
-          "stage",
-          "size",
-          "wait",
-          "taskStatus",
-          "scope",
-        ]);
-        for (const key of [...url.searchParams.keys()])
-          if (!allowed.has(key)) url.searchParams.delete(key);
-        url.searchParams.set("repo", projectId);
-        if (data?.integrationBranch)
-          url.searchParams.set("integrationBranch", data.integrationBranch);
-        if (repository)
-          for (const [key, value] of Object.entries({
-            provider: repository.providerId,
-            instance: repository.instanceId,
-            repositoryId: repository.repositoryId,
-            fullName: repository.fullName,
-          }))
-            url.searchParams.set(key, value);
-        if (doc && !q.doc) {
-          const spec = data?.specs.find((s) => s.documentId === doc.id);
-          if (spec) {
-            url.searchParams.set("m", "specs");
-            url.searchParams.set("s", spec.id);
-            url.searchParams.set("branch", doc.branch);
+        if (!sharing) {
+          const allowed = new Set([
+            "m",
+            "s",
+            "c",
+            "ct",
+            "branch",
+            "doc",
+            "da",
+            "anchor",
+            "raw",
+            "spec",
+            "stage",
+            "size",
+            "wait",
+            "taskStatus",
+            "scope",
+          ]);
+          for (const key of [...url.searchParams.keys()])
+            if (!allowed.has(key)) url.searchParams.delete(key);
+          url.searchParams.set("repo", projectId);
+          if (data?.integrationBranch)
+            url.searchParams.set("integrationBranch", data.integrationBranch);
+          if (repository)
+            for (const [key, value] of Object.entries({
+              provider: repository.providerId,
+              instance: repository.instanceId,
+              repositoryId: repository.repositoryId,
+              fullName: repository.fullName,
+            }))
+              url.searchParams.set(key, value);
+          if (doc && !q.doc) {
+            const spec = data?.specs.find((s) => s.documentId === doc.id);
+            if (spec) {
+              url.searchParams.set("m", "specs");
+              url.searchParams.set("s", spec.id);
+              url.searchParams.set("branch", doc.branch);
+            }
           }
         }
         try {
@@ -338,7 +350,7 @@ export function DocumentContent({
   );
 }
 export function DocumentModal() {
-  const { q, nav, data } = useWorkspace();
+  const { q, nav, data, sharing } = useWorkspace();
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (!q.doc || !data) {
@@ -350,6 +362,7 @@ export function DocumentModal() {
       // Mount the parent focus scope before opening a document from a deep link
       // or document link. Simultaneous modal roots can hide one another from AT.
       if (
+        !sharing &&
         q.m === "changes" &&
         q.c &&
         !window.document.querySelector(".change-drawer")
@@ -361,7 +374,7 @@ export function DocumentModal() {
     };
     frame = requestAnimationFrame(show);
     return () => cancelAnimationFrame(frame);
-  }, [q.doc, q.c, q.m, data?.id]);
+  }, [q.doc, q.c, q.m, data?.id, sharing]);
   const open = !!q.doc && !!data && ready;
   const previousFocus = useRef<HTMLElement | null>(null);
   const ref = data?.documents.find((d) => d.id === q.doc);
@@ -427,6 +440,11 @@ function ImageDocument({ doc }: { doc: DocumentRef }) {
       <img
         alt={doc.title}
         src={readUrl(`assets/${doc.id}?snapshot=${data?.id}`)}
+        onError={() =>
+          void reportSharedResourceFailure(
+            readUrl(`assets/${doc.id}?snapshot=${data?.id}`),
+          )
+        }
       />
       <Source document={doc} />
     </div>

@@ -2,6 +2,7 @@
   "schemaVersion": 3,
   "integrationBranch": "develop",
   "releaseBranch": "main",
+  "openfolioUrl": "https://drwulzcazu.merlin-devbox.bytedance.net",
   "prototype": {
     "status": "enabled",
     "packagePath": "packages/prototype",

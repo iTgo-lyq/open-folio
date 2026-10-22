@@ -11,7 +11,9 @@ export function usePublication(
   enabled = true,
 ) {
   const { readUrl, q, data, projectId } = useWorkspace(),
-    { connection, epoch } = usePersonal();
+    personal = usePersonal();
+  const connection = personal?.connection,
+    epoch = personal?.epoch;
   const key = `${connection?.id}:${connection?.revision}:${epoch}:${projectId}:${data?.integrationBranch}:${revision}:${change}:${entry}`;
   const [result, setResult] = useState<{
       key: string;

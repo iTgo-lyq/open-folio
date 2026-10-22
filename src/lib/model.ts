@@ -342,6 +342,7 @@ export type PreviewDescriptor = {
     available: boolean;
     message?: string;
     bytes?: number;
+    blob?: string;
     url?: string;
     thumbnails?: PreviewThumbnail[];
     sourceAvailable?: boolean;

@@ -43,6 +43,7 @@ import { ChangeDelivery, DeliveryBadge } from "./delivery";
 import { ChangeIntegration } from "./integration";
 import { GroupedChangeRows, FollowUpContext } from "./follow-ups";
 import { ChangeLabels, ChangeLabelFilters } from "./change-labels";
+import { ShareManager } from "./share-manager";
 import {
   readLabelQuery,
   labelQueryParams,
@@ -118,9 +119,15 @@ function StateIcon({ status }: { status: string }) {
   );
 }
 function Progress({ c }: { c: ChangeCandidate }) {
-  const { data } = useWorkspace(),
+  const { data, sharing } = useWorkspace(),
     s = c.state;
   if (!s) return <span className="muted">状态不可判定</span>;
+  if (s.size === "xlarge" && sharing)
+    return (
+      <span className="task-progress">
+        {s.children?.length ?? 0} 个子项 · 不在本页范围内
+      </span>
+    );
   if (s.size === "xlarge") {
     const children = s.children ?? [],
       resolved = children.filter((id) => {
@@ -835,7 +842,7 @@ function Dependencies({
   );
 }
 function RelationRow({ relation: r }: { relation: Relation }) {
-  const { data, nav } = useWorkspace(),
+  const { data, nav, sharing } = useWorkspace(),
     target = data?.changes.find((g) => g.id === r.target);
   return (
     <div className="relation-row">
@@ -864,6 +871,7 @@ function RelationRow({ relation: r }: { relation: Relation }) {
       >
         {target?.title ?? r.target}
         <code>{r.target}</code>
+        {sharing && !target && <small>不在本页范围内</small>}
       </button>
       <div className="relation-evidence">
         {r.kind !== "parent" && (
@@ -994,6 +1002,7 @@ export function ChangeDrawer() {
               Change 详情
             </span>
             <div className="row">
+              {g && c && <ShareManager changeId={g.id} />}
               <CopyPageLink />
               <Dialog.Close className="icon-button" aria-label="关闭变更详情">
                 <X size={19} />
@@ -1078,173 +1087,182 @@ export function ChangeDrawer() {
             ))}
           </div>
           <div className="drawer-body" key={`${g?.id}.${tab}`}>
-            {g && (!c || ["overview", "evidence"].includes(tab)) && (
-              <EntrySource group={g} />
-            )}
-            {!g ? (
-              <Empty title="当前记录中没有这个 Change">
-                <p>它可能已移动到其他分支，或尚未推送。</p>
-              </Empty>
-            ) : tab === "integration" ? (
-              <ChangeIntegration key={`${data!.id}:${g.id}`} id={g.id} />
-            ) : !c ? (
-              <>
-                <Diagnostics items={g.diagnostics} />
-                <CandidateSources group={g} />
-              </>
-            ) : tab === "previews" ? (
-              <ChangePreviews change={c} />
-            ) : tab === "documents" ? (
-              <DocumentList c={c} />
-            ) : tab === "evidence" ? (
-              <Evidence c={c} group={g} />
-            ) : tab === "tasks" ? (
-              s?.size === "xlarge" ? (
-                <>
-                  <SectionTitle>子 Change</SectionTitle>
-                  {g.relations
-                    .filter((r) => r.kind === "child")
-                    .map((r, i) => (
-                      <RelationRow key={i} relation={r} />
-                    ))}
-                  {!s.children?.length && (
-                    <p className="muted">尚未声明子项。</p>
-                  )}
-                  <p className="subtle-note">
-                    展示顺序不代表执行依赖；每个子 Change 独立验收。
-                  </p>
-                </>
-              ) : (
-                <TaskDetails c={c} />
-              )
-            ) : (
-              <>
-                <Diagnostics items={quality(g)} />
-                <FollowUpContext change={g} />
-                <ChangeDelivery id={g.id} />
-                {s && (
-                  <section
-                    className="change-label-details"
-                    aria-label="类型与紧急程度"
-                  >
-                    <SectionTitle>类型与紧急程度</SectionTitle>
-                    <ChangeLabels state={s} detail />
-                  </section>
-                )}
-                {ongoing && s?.waitingFor && (
-                  <div className="waiting-card">
-                    <Clock3 size={17} />
-                    <div>
-                      <strong>{WAIT_LABELS[s.waitingFor.kind]}</strong>
-                      <p>{s.waitingFor.summary}</p>
-                    </div>
-                  </div>
-                )}
-                {s?.cancellation && (
-                  <div className="waiting-card cancelled">
-                    <X size={17} />
-                    <div>
-                      <strong>该 Change 已取消</strong>
-                      <p>{s.cancellation.reason}</p>
-                      <time>{formatTime(s.cancellation.at)}</time>
-                    </div>
-                  </div>
-                )}
-                {s && c.validCompleted && (
-                  <div className="archive-outcome">
-                    <CheckCircle2 size={18} />
-                    <div>
-                      <strong>交付已归档</strong>
-                      <p>{s.closure.acceptance?.summary}</p>
-                      <time dateTime={s.closure.archive!.at}>
-                        归档于 {formatTime(s.closure.archive!.at)}
-                      </time>
-                      <button
-                        className="text-button"
-                        onClick={() => nav({ ct: "evidence" })}
-                      >
-                        查看验收依据 <ChevronRight size={12} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <SectionTitle>目标与材料</SectionTitle>
-                <p className="subtle-note">
-                  目标和验收以 Requirement 正文为准。
-                </p>
-                <DocumentList c={c} shortlist />
-                <Clarifications items={s?.clarifications} />
-                {s && ongoing && (
-                  <>
-                    <SectionTitle>
-                      {s.size === "xlarge" ? "子项进展" : "任务进展"}
-                    </SectionTitle>
-                    <div className="overview-progress">
-                      <Progress c={c} />
-                      <button
-                        className="text-button"
-                        onClick={() => nav({ ct: "tasks" })}
-                      >
-                        查看{s.size === "xlarge" ? "子项" : "任务"}
-                        <ChevronRight size={12} />
-                      </button>
-                    </div>
-                  </>
-                )}
-                {g.relations.length > 0 && (
-                  <>
-                    <SectionTitle>Change 关系</SectionTitle>
-                    {g.relations.map((r, i) => (
-                      <RelationRow key={i} relation={r} />
-                    ))}
-                  </>
-                )}
-                {c.relatedSpecs.length > 0 && (
-                  <>
-                    <SectionTitle>显式关联能力</SectionTitle>
-                    <div className="related-specs">
-                      {c.specReferences.map((ref, i) => (
-                        <button
-                          key={i}
-                          onClick={() => openDocument(ref.documentId)}
-                        >
-                          <BookIcon />
-                          <span>
-                            {ref.specId}
-                            <small>引用文档 · 第 {ref.line} 行</small>
-                          </span>
-                          <ArrowUpRight size={12} />
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {s?.rework && (
-                  <>
-                    <SectionTitle>最近返工</SectionTitle>
-                    <div className="evidence-card">
-                      <time>{formatTime(s.rework.at)}</time>
-                      <p>{s.rework.reason}</p>
-                      <p>{s.rework.approach}</p>
-                    </div>
-                  </>
-                )}
-                {s &&
-                  ongoing &&
-                  (s.stage === "close" ||
-                    Object.keys(s.closure).length > 0) && <Closure state={s} />}
-                <SectionTitle>主来源</SectionTitle>
-                <Source
-                  document={
-                    data!.documents.find((d) => d.id === c.jsonDocumentId)!
-                  }
-                />
-              </>
-            )}
+            <ChangeDetails group={g} tab={tab} />
           </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+export function ChangeDetails({
+  group: g,
+  tab,
+}: {
+  group?: ChangeGroup;
+  tab: string;
+}) {
+  const { data, nav, openDocument } = useWorkspace();
+  const c = g ? primaryRecord(g) : null,
+    s = c?.state;
+  const ongoing = !!g && activeFlow(g);
+  return (
+    <>
+      {g && (!c || ["overview", "evidence"].includes(tab)) && (
+        <EntrySource group={g} />
+      )}
+      {!g ? (
+        <Empty title="当前记录中没有这个 Change">
+          <p>它可能已移动到其他分支，或尚未推送。</p>
+        </Empty>
+      ) : tab === "integration" ? (
+        <ChangeIntegration key={`${data!.id}:${g.id}`} id={g.id} />
+      ) : !c ? (
+        <>
+          <Diagnostics items={g.diagnostics} />
+          <CandidateSources group={g} />
+        </>
+      ) : tab === "previews" ? (
+        <ChangePreviews change={c} />
+      ) : tab === "documents" ? (
+        <DocumentList c={c} />
+      ) : tab === "evidence" ? (
+        <Evidence c={c} group={g} />
+      ) : tab === "tasks" ? (
+        s?.size === "xlarge" ? (
+          <>
+            <SectionTitle>子 Change</SectionTitle>
+            {g.relations
+              .filter((r) => r.kind === "child")
+              .map((r, i) => (
+                <RelationRow key={i} relation={r} />
+              ))}
+            {!s.children?.length && <p className="muted">尚未声明子项。</p>}
+            <p className="subtle-note">
+              展示顺序不代表执行依赖；每个子 Change 独立验收。
+            </p>
+          </>
+        ) : (
+          <TaskDetails c={c} />
+        )
+      ) : (
+        <>
+          <Diagnostics items={quality(g)} />
+          <FollowUpContext change={g} />
+          <ChangeDelivery id={g.id} />
+          {s && (
+            <section
+              className="change-label-details"
+              aria-label="类型与紧急程度"
+            >
+              <SectionTitle>类型与紧急程度</SectionTitle>
+              <ChangeLabels state={s} detail />
+            </section>
+          )}
+          {ongoing && s?.waitingFor && (
+            <div className="waiting-card">
+              <Clock3 size={17} />
+              <div>
+                <strong>{WAIT_LABELS[s.waitingFor.kind]}</strong>
+                <p>{s.waitingFor.summary}</p>
+              </div>
+            </div>
+          )}
+          {s?.cancellation && (
+            <div className="waiting-card cancelled">
+              <X size={17} />
+              <div>
+                <strong>该 Change 已取消</strong>
+                <p>{s.cancellation.reason}</p>
+                <time>{formatTime(s.cancellation.at)}</time>
+              </div>
+            </div>
+          )}
+          {s && c.validCompleted && (
+            <div className="archive-outcome">
+              <CheckCircle2 size={18} />
+              <div>
+                <strong>交付已归档</strong>
+                <p>{s.closure.acceptance?.summary}</p>
+                <time dateTime={s.closure.archive!.at}>
+                  归档于 {formatTime(s.closure.archive!.at)}
+                </time>
+                <button
+                  className="text-button"
+                  onClick={() => nav({ ct: "evidence" })}
+                >
+                  查看验收依据 <ChevronRight size={12} />
+                </button>
+              </div>
+            </div>
+          )}
+          <SectionTitle>目标与材料</SectionTitle>
+          <p className="subtle-note">目标和验收以 Requirement 正文为准。</p>
+          <DocumentList c={c} shortlist />
+          <Clarifications items={s?.clarifications} />
+          {s && ongoing && (
+            <>
+              <SectionTitle>
+                {s.size === "xlarge" ? "子项进展" : "任务进展"}
+              </SectionTitle>
+              <div className="overview-progress">
+                <Progress c={c} />
+                <button
+                  className="text-button"
+                  onClick={() => nav({ ct: "tasks" })}
+                >
+                  查看{s.size === "xlarge" ? "子项" : "任务"}
+                  <ChevronRight size={12} />
+                </button>
+              </div>
+            </>
+          )}
+          {g.relations.length > 0 && (
+            <>
+              <SectionTitle>Change 关系</SectionTitle>
+              {g.relations.map((r, i) => (
+                <RelationRow key={i} relation={r} />
+              ))}
+            </>
+          )}
+          {c.relatedSpecs.length > 0 && (
+            <>
+              <SectionTitle>显式关联能力</SectionTitle>
+              <div className="related-specs">
+                {c.specReferences.map((ref, i) => (
+                  <button key={i} onClick={() => openDocument(ref.documentId)}>
+                    <BookIcon />
+                    <span>
+                      {ref.specId}
+                      <small>引用文档 · 第 {ref.line} 行</small>
+                    </span>
+                    <ArrowUpRight size={12} />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {s?.rework && (
+            <>
+              <SectionTitle>最近返工</SectionTitle>
+              <div className="evidence-card">
+                <time>{formatTime(s.rework.at)}</time>
+                <p>{s.rework.reason}</p>
+                <p>{s.rework.approach}</p>
+              </div>
+            </>
+          )}
+          {s &&
+            ongoing &&
+            (s.stage === "close" || Object.keys(s.closure).length > 0) && (
+              <Closure state={s} />
+            )}
+          <SectionTitle>主来源</SectionTitle>
+          <Source
+            document={data!.documents.find((d) => d.id === c.jsonDocumentId)!}
+          />
+        </>
+      )}
+    </>
   );
 }
 const BookIcon = () => <FileText size={15} />;

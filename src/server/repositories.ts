@@ -5,7 +5,7 @@ import { discovery, type Discovery } from "./discovery.ts";
 import {
   personalSessions,
   type PersonalSessions,
-  type ConnectionLease,
+  type WorkspaceLease,
 } from "./personal-sessions.ts";
 import {
   SUGGESTED_INTEGRATION_BRANCH,
@@ -22,7 +22,7 @@ import {
 } from "./providers/types.ts";
 import type { ProjectConfig, Limits } from "../lib/model.ts";
 export interface ReadContext {
-  lease: ConnectionLease;
+  lease: WorkspaceLease;
   repository: RepositoryIdentity;
   project: ProjectConfig;
   store: SnapshotStore;
@@ -65,48 +65,85 @@ export class Repositories {
     if (!/^[a-f0-9]{64}$/.test(key))
       throw new AppError("REPOSITORY_NOT_FOUND", "仓库不存在。", 404);
     const lease = await this.sessions.lease(cookie, connectionId, signal);
-    const permissions = repositoryPermissions(this.sessions);
-    let target: RepositorySelector | undefined;
     try {
-      const provider = this.sessions.registry.get(
-        lease.context.identity.providerId,
-      );
       const found = await this.discoveries.lookup(lease, key);
-      const integrationBranch =
+      const branch =
         selectedBranch ??
         found?.integrationBranch ??
         SUGGESTED_INTEGRATION_BRANCH;
-      if (!validBranchName(integrationBranch))
-        throw new AppError("INVALID_PARAMETER", "集成分支名称不合法。", 400);
-      target = found?.repository ?? selector;
+      const target = found?.repository ?? selector;
       if (!target)
         throw new AppError(
           "REPOSITORY_NOT_FOUND",
           "请先发现或检查这个仓库。",
           404,
         );
-      const repository = await permissions.check(cookie, lease, key, target, {
+      return await this.readLease(
+        lease,
+        key,
+        target,
+        branch,
+        operation,
+        !found || found.integrationBranch !== branch,
+      );
+    } finally {
+      lease.release();
+    }
+  }
+  async readShared<T>(
+    accountId: string,
+    workspaceId: string,
+    key: string,
+    target: RepositorySelector,
+    branch: string,
+    operation: (context: ReadContext) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const lease = await this.sessions.credentialLease(
+      accountId,
+      workspaceId,
+      signal,
+    );
+    try {
+      return await this.readLease(lease, key, target, branch, operation);
+    } finally {
+      lease.release();
+    }
+  }
+  private async readLease<T>(
+    lease: WorkspaceLease,
+    key: string,
+    target: RepositorySelector,
+    integrationBranch: string,
+    operation: (context: ReadContext) => Promise<T>,
+    diagnose = false,
+  ): Promise<T> {
+    const permissions = repositoryPermissions(this.sessions);
+    try {
+      if (!validBranchName(integrationBranch))
+        throw new AppError("INVALID_PARAMETER", "集成分支名称不合法。", 400);
+      const provider = this.sessions.registry.get(
+        lease.context.identity.providerId,
+      );
+      const repository = await permissions.checkWorkspace(lease, key, target, {
         integrationBranch,
       });
-      if (!found || found.integrationBranch !== integrationBranch) {
-        const diagnosed = await this.discoveries.diagnose(
+      if (diagnose) {
+        const result = await this.discoveries.diagnose(
           provider,
           lease.context,
           repository,
           integrationBranch,
         );
-        if (!["ready", "attention"].includes(diagnosed.state))
+        if (!["ready", "attention"].includes(result.state))
           throw new AppError(
             "WORKFLOW_NOT_FOUND",
-            diagnosed.message ?? "该仓库尚未接入 SpecTrail。",
+            result.message ?? "该仓库尚未接入 SpecTrail。",
             409,
           );
       }
-      const assertPermission = async (
-        owner: ConnectionLease,
-        force = false,
-      ) => {
-        await permissions.check(cookie, owner, key, repository, {
+      const assertPermission = async (owner: WorkspaceLease, force = false) => {
+        await permissions.checkWorkspace(owner, key, repository, {
           force,
           integrationBranch,
           workspaceOwned: owner !== lease,
@@ -116,7 +153,7 @@ export class Repositories {
       const assertRead = (force = false) => assertPermission(lease, force);
       await lease.assertCurrent();
       const cache = join(this.root, lease.workspaceId);
-      const makeStore = async (owner: ConnectionLease) => {
+      const makeStore = async (owner: WorkspaceLease) => {
         const transport = await provider.gitTransport(
           owner.context,
           repository,
@@ -152,9 +189,9 @@ export class Repositories {
           let next = locks.get(path);
           if (!next) {
             next = (async () => {
-              const owner = await this.sessions.workspaceLease(
-                cookie,
-                connectionId,
+              const owner = await this.sessions.credentialLease(
+                lease.accountId,
+                lease.workspaceId,
               );
               try {
                 await owner.assertCurrent();
@@ -225,10 +262,11 @@ export class Repositories {
         target &&
         !lease.context.signal.aborted
       )
-        await permissions.check(cookie, lease, key, target, { force: true });
+        await permissions.checkWorkspace(lease, key, target, {
+          force: true,
+          integrationBranch,
+        });
       throw error;
-    } finally {
-      lease.release();
     }
   }
 }

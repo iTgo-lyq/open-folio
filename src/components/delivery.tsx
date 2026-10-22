@@ -94,7 +94,7 @@ function PrList({
   );
 }
 export function ChangeDelivery({ id }: { id: string }) {
-  const { data } = useWorkspace();
+  const { data, sharing } = useWorkspace();
   const delivery: Delivery | undefined = data?.deliveryByChange?.[id];
   if (!delivery) return null;
   return (
@@ -125,7 +125,9 @@ export function ChangeDelivery({ id }: { id: string }) {
           PR 信息待更新
           {data?.deliveryLastSuccess
             ? `；最近成功读取：${new Date(data.deliveryLastSuccess).toLocaleString()}`
-            : "，尚无成功读取记录"}
+            : sharing
+              ? ""
+              : "，尚无成功读取记录"}
           。
         </p>
       )}

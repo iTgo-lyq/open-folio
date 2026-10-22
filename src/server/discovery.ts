@@ -202,10 +202,10 @@ export class Discovery {
     this.sessions = sessions;
     this.git = git;
   }
-  private path(lease: ConnectionLease) {
+  private path(lease: { workspaceId: string }) {
     return join(this.root, lease.workspaceId, "state.json");
   }
-  private async read(lease: ConnectionLease): Promise<Job | null> {
+  private async read(lease: { workspaceId: string }): Promise<Job | null> {
     try {
       const value = JSON.parse(await readFile(this.path(lease), "utf8"));
       // Discovery is rebuildable; old default-branch diagnoses are never current.
@@ -694,6 +694,10 @@ export class Discovery {
     } finally {
       lease.release();
     }
+  }
+  async knownRepositories(workspaceId: string) {
+    const job = await this.read({ workspaceId });
+    return job ? found(job) : [];
   }
   async lookup(lease: ConnectionLease, key: string) {
     await lease.assertCurrent();

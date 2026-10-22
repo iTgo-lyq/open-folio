@@ -294,8 +294,20 @@ export async function seed() {
         `${dir}/technical.md`,
         "# 技术方案\n\n## 数据来源\n\n从已推送提交建立一致的文档快照。",
       );
-    if (record.id === "document-reader")
+    if (record.id === "document-reader") {
       await symlink("missing-review.md", join(f.author, dir, "review.md"));
+      await f.put(
+        `${dir}/assets/diagram.png`,
+        Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5d0AAAAASUVORK5CYII=",
+          "base64",
+        ),
+      );
+      await f.put(
+        `${dir}/technical.md`,
+        "# 技术方案\n\n## 数据来源\n\n从已推送提交建立一致的文档快照。\n\n![范围示意](assets/diagram.png)",
+      );
+    }
     if (["document-reader", "mobile-reading"].includes(record.id)) {
       for (const id of record.id === "document-reader"
         ? ["orders", "detail", "card"]

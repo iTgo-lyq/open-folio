@@ -12,6 +12,60 @@
   background: #f0f5f9;
   font-synthesis: none;
 }
+.share-manager {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  z-index: 100;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 80px #25334430;
+}
+.share-manager header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.share-manager h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.share-manager p {
+  line-height: 1.8;
+  margin: 18px 0;
+}
+.share-manager label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+.share-link-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.share-link-row input {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f7f9fc;
+}
+.share-link-row button {
+  flex-shrink: 0;
+}
+.share-manager footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
 * {
   box-sizing: border-box;
 }

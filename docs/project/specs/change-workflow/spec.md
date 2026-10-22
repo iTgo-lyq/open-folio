@@ -119,6 +119,14 @@ workspace.mjs 的 handoff 先在目标工作区提交并推送唯一的 branch �
 
 archive 移动完整文档目录并标记 completed，不重建原型工程。Git 原型固定到本 Change 的 previews/<id>/index.html；仍引用共享目录时先复制 HTML，目标内容不同则停止，保留 sourceCommit。所有规模均在独立分支归档，不创建保留标签。目录移动与状态/index 更新不提供跨文件断电事务保证，异常终止后根据 Git diff 与实际文件恢复；普通写入失败尽量回退并报告。
 
+## 材料分享链接
+
+`docs/project/workflow.json` 的可选 `openfolioUrl` 保存服务根地址，沿用原型配置中的同一字段。服务入口须允许匿名访问且存在可读取目标仓库的已接入来源；不另设分享账号、密码或 Token。
+
+技术文档提交推送后，或原型发布、登记并推送后，Agent 使用零依赖 `share.mjs --change <id> --document <相对路径>` 或 `--preview <入口id>` 匿名验证并主动给出材料链接；省略材料参数分享概览。工具从 origin 和 workflow 构造目标，核对最新来源、已提交文档 blob 或原型 artifact，Git 原型还核对实际 HTML blob；未提交材料拒绝验证。同步等待有界，成功结果中的提交只表示本次核验来源，分享页继续跟随最新内容。
+
+缺少配置、登录重定向、权限或网络失败、内容尚未同步时说明实际结果，保留仓库材料或固定原型入口，不把 URL 构造成功视作访问成功。完整用法见 [Skill 分享链接](../../../../.agents/skills/spec-trail/references/sharing.md)。
+
 ## 归档后的去向
 
 归档前在独立 Change 工作区同步最新集成提交并验证。归档只表示开发关闭材料齐备；归档推送后通过 preflight，创建或更新 Change PR，按实际授权以普通 merge 合入集成分支，保留双亲提交和历史。正文末尾独立段落保留唯一 `SpecTrail-Change: <id>`，合并消息保留同一标记，并核对预期源 SHA；失败不自动回退直推。verify 从远端核实有效 M，主工作区只在干净时安全快进。命令与清理见 [PR 集成流程](../../../../.agents/skills/spec-trail/references/integration.md)。
