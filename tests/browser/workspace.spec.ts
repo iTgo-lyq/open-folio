@@ -35,9 +35,10 @@ test("collapsed Changes badge counts active records, hides zero and caps only th
     ];
   };
   setCount(3);
-  await page.route("**/api/repositories/*/workbench*", (route) =>
-    route.fulfill({ json: data }),
-  );
+  await page.route("**/api/repositories/*/workbench*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({ json: data });
+  });
   await page.goto(`/?${repositoryQuery}&m=specs`);
   const nav = page.getByRole("navigation", { name: "模块导航" });
   const changes = nav.getByRole("link", { name: "Changes", exact: true });
@@ -45,6 +46,32 @@ test("collapsed Changes badge counts active records, hides zero and caps only th
   await expect(badge).toHaveText("3");
   await expect(changes).toHaveAccessibleName("Changes");
   await expect(changes).toHaveAccessibleDescription("3 个进行中的 Change");
+  await page.evaluate(() => {
+    new MutationObserver(() => {
+      if (
+        !document.querySelector(
+          'a[aria-label="Changes"] span[aria-hidden="true"]',
+        )
+      )
+        document.documentElement.dataset.badgeDisappeared = "true";
+    }).observe(document.querySelector('aside[aria-label="工作台导航"]')!, {
+      childList: true,
+      subtree: true,
+    });
+  });
+  for (const [module, title] of [
+    ["prototypes", "原型"],
+    ["home", "我的仓库"],
+    ["specs", "Specs"],
+  ]) {
+    await nav.getByRole("link", { name: title, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`m=${module}`));
+    await expect(badge).toHaveText("3");
+  }
+  await expect(page.locator("html")).not.toHaveAttribute(
+    "data-badge-disappeared",
+    "true",
+  );
   const badgeBox = (await badge.boundingBox())!;
   await page.mouse.click(
     badgeBox.x + badgeBox.width / 2,

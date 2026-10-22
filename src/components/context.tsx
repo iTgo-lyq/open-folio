@@ -268,7 +268,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("openfolio-read-denied", clear);
   }, [connectionKey, connection?.id, projectId]);
   useEffect(() => {
-    setLoaded(null);
+    setLoaded((previous) => (previous?.key === scope ? previous : null));
     setFailure((previous) =>
       previous.identity === connectionKey &&
       ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(previous.code)

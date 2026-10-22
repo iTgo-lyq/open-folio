@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -155,15 +155,17 @@
       "status": "done",
       "verification": "类型、格式、生产构建、12项壳层/凭据回归及新增角标边界用例通过；独立评审通过；真实仓库计数、双主题桌面/平板、手机与退出清理确认",
       "commitTitle": "frontend-style-interaction-refactor T22: verify active Changes badge on the acceptance service"
+    },
+    "T23": {
+      "title": "修复导航切换时Changes角标闪烁",
+      "status": "doing"
+    },
+    "T24": {
+      "title": "修复顶栏位置文字下沿裁切",
+      "status": "todo"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-22T11:54:48.431Z",
-      "summary": "整体验证与独立Agent评审通过；新增目录密度、细线图标、整行淡色悬浮和Changes角标定向回归及同一验收服务真实账号双主题冒烟通过，退出清理确认"
-    }
-  },
+  "closure": {},
   "previews": [
     {
       "id": "quiet-changes",
@@ -384,9 +386,9 @@
     }
   ],
   "rework": {
-    "at": "2026-10-22T11:40:38.513Z",
-    "reason": "用户反馈Specs目录拥挤，需对齐Change材料列表节奏，并细化展开收起图标线条",
-    "approach": "统一目录字号行高与条目垂直留白，沿用Lucide并局部使用1.5线宽，核对真实目录后更新验收服务"
+    "at": "2026-10-22T11:57:24.029Z",
+    "reason": "切换模块会清空仓库快照，导致Changes角标短暂消失后重现",
+    "approach": "同作用域保留已加载快照，保留跨仓库和凭据的即时隔离，并验证导航期间角标稳定"
   },
   "clarifications": {
     "Q1": {
@@ -446,9 +448,5 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收目录密度、整行悬浮与Changes角标；通过后同步Specs、归档并集成develop"
   }
 }
