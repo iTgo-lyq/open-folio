@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "修复沙箱源的截图并回归服务隔离与真实页面",
-      "status": "doing"
+      "status": "done",
+      "verification": "沙箱跨域与注册拦截回归、5 项既有截图测试、真实六页截图、类型与生产构建通过。",
+      "commitTitle": "Fix Service Worker interception for opaque hosted origins"
     }
   },
   "closure": {},
