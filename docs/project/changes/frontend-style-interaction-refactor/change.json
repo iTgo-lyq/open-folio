@@ -147,6 +147,10 @@
     "T21": {
       "title": "统一阅读目录密度与轻量图标",
       "status": "doing"
+    },
+    "T22": {
+      "title": "收起侧栏显示进行中 Change 角标",
+      "status": "todo"
     }
   },
   "closure": {},
