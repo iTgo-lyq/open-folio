@@ -12,6 +12,7 @@ import type { GitReader } from "./git.ts";
 import {
   branchName,
   changeSchema,
+  deliveryOverrideSchema,
   followUpTitleSchema,
   identity,
   previewsSchema,
@@ -210,6 +211,12 @@ export async function indexChanges(
       const core = { ...object };
       const warnings: Diagnostic[] = [];
       for (const [key, schema, code, message] of [
+        [
+          "deliveryOverride",
+          deliveryOverrideSchema,
+          "DELIVERY_OVERRIDE_INVALID",
+          "发布补记格式不合法，已忽略覆盖并沿用自动判定。",
+        ],
         [
           "types",
           typesSchema,
