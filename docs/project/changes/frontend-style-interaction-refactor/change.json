@@ -146,7 +146,9 @@
     },
     "T21": {
       "title": "统一阅读目录密度与轻量图标",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型、格式、生产构建、6项目录回归和悬浮定向复验通过；独立评审通过；真实双页双主题三档密度与焦点、整行淡色悬浮及登录清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T21: verify reading directory density and hover"
     },
     "T22": {
       "title": "收起侧栏显示进行中 Change 角标",
