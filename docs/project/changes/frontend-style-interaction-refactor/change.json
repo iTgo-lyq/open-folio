@@ -164,7 +164,9 @@
     },
     "T24": {
       "title": "修复顶栏位置文字下沿裁切",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型、格式、生产构建、5项阅读/匿名回归及独立评审通过；真实双页四档与匿名两档字形范围完整、按钮/间距一致，双主题截图及退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T24: verify complete header text across readers"
     }
   },
   "closure": {},
