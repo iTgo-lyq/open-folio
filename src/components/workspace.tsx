@@ -5,6 +5,7 @@ import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
 import { useWorkspace, WorkspaceProvider } from "./context";
 import { PersonalProvider, usePersonal } from "./personal-context";
 import { Connections, PersonalHome } from "./personal";
+import { AccountLogin } from "./account-login";
 import { DocumentModal, Empty, CopyPageLink } from "./document";
 import { Shell } from "./shell";
 import { ToolbarSlot } from "./toolbar-slot";
@@ -12,12 +13,33 @@ import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
 import styles from "./shell.module.css";
+import personalStyles from "./personal.module.css";
 
 // 根据查询参数选择页面；壳层负责导航、顶栏与同步状态。
 function Body() {
   const { q, nav, projectId, data, loading, refreshing, error, refresh } =
     useWorkspace();
   const personal = usePersonal();
+  if (!personal.session)
+    return (
+      <main className={personalStyles.auth}>
+        <Empty
+          title={
+            personal.sessionError ? "工作台暂时无法打开" : "正在恢复个人工作台…"
+          }
+        >
+          {personal.sessionError && (
+            <>
+              <p>{personal.sessionError}</p>
+              <Button onClick={() => void personal.reloadSession()}>
+                重试
+              </Button>
+            </>
+          )}
+        </Empty>
+      </main>
+    );
+  if (!personal.session.authenticated) return <AccountLogin />;
   const module = (
     ["specs", "changes", "prototypes", "connections"].includes(q.m)
       ? q.m
@@ -60,38 +82,37 @@ function Body() {
           <CopyPageLink />
         </ToolbarSlot>
       )}
-      {legacy(
-        module === "home" ? (
-          <PersonalHome />
-        ) : module === "connections" ? (
-          <Connections />
-        ) : !personal.session?.authenticated ? (
-          <PersonalHome />
-        ) : !personal.connection ? (
-          <Connections />
-        ) : !projectId ? (
-          <Empty title="先选择一个仓库">
-            <Button onClick={() => go("home")}>查看我的仓库</Button>
-          </Empty>
-        ) : loading && !data ? (
-          <Empty
-            title={refreshing ? "正在读取中心仓库…" : "正在打开工作台…"}
-            icon={<LoaderCircle className="spin" />}
-          />
-        ) : !data ? (
-          <Empty title="暂时没有可读取的版本">
-            <p>确认当前连接能够访问该仓库后重试。</p>
-            <Button onClick={() => void refresh()} disabled={refreshing}>
-              读取中心仓库
-            </Button>
-          </Empty>
-        ) : module === "specs" ? (
-          <Specs />
-        ) : module === "prototypes" ? (
-          <Prototypes />
-        ) : (
-          <Changes />
-        ),
+      {module === "home" ||
+      (!personal.connection && module !== "connections") ? (
+        <PersonalHome />
+      ) : (
+        legacy(
+          module === "connections" ? (
+            <Connections />
+          ) : !projectId ? (
+            <Empty title="先选择一个仓库">
+              <Button onClick={() => go("home")}>查看我的仓库</Button>
+            </Empty>
+          ) : loading && !data ? (
+            <Empty
+              title={refreshing ? "正在读取中心仓库…" : "正在打开工作台…"}
+              icon={<LoaderCircle className="spin" />}
+            />
+          ) : !data ? (
+            <Empty title="暂时没有可读取的版本">
+              <p>确认当前连接能够访问该仓库后重试。</p>
+              <Button onClick={() => void refresh()} disabled={refreshing}>
+                读取中心仓库
+              </Button>
+            </Empty>
+          ) : module === "specs" ? (
+            <Specs />
+          ) : module === "prototypes" ? (
+            <Prototypes />
+          ) : (
+            <Changes />
+          ),
+        )
       )}
       {reading && data && <DocumentModal />}
     </Shell>

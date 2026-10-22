@@ -9,7 +9,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/?m=home");
-  await page.getByRole("button", { name: "用仓库地址检查" }).click();
+  await page.getByRole("button", { name: "添加仓库" }).click();
   await page
     .getByLabel("GitHub HTTPS 仓库地址")
     .fill("https://github.com/acme/fixture");
@@ -97,7 +97,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
     )
     .toBe("complete");
   await page.goto("/?m=home");
-  await expect(page.locator(".personal-repo-source")).toContainText(
+  await expect(page.getByRole("list", { name: "可阅读的仓库" })).toContainText(
     "team/integration",
   );
 });

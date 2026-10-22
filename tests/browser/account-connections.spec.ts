@@ -12,10 +12,10 @@ import type { Page } from "@playwright/test";
 const current = (page: Page) =>
   page.locator(".personal-identity-row").filter({ hasText: "当前使用" });
 async function addOther(page: Page) {
-  await page.getByRole("button", { name: "绑定 Token", exact: true }).click();
+  await page.getByRole("button", { name: "添加 Token", exact: true }).click();
   await page.getByLabel("名称（可选）", { exact: true }).fill("组织工程");
-  await page.getByLabel("GitHub token", { exact: true }).fill("token-b");
-  await page.getByRole("button", { name: "绑定并使用", exact: true }).click();
+  await page.getByLabel("GitHub Token", { exact: true }).fill("token-b");
+  await page.getByRole("button", { name: "验证并添加", exact: true }).click();
   await expect(current(page)).toContainText("@collaborator");
 }
 test("another browser logs in without Token, sees account bindings, and selects independently", async ({
@@ -194,7 +194,7 @@ test("unbinding in another browser prevents a delayed old private response from 
     await page.getByRole("button", { name: "确认解绑" }).click();
     await view.evaluate(() => window.dispatchEvent(new Event("focus")));
     await expect(
-      view.getByRole("heading", { name: "Token 管理", exact: true }),
+      view.getByRole("heading", { name: "绑定一个 GitHub Token", exact: true }),
     ).toBeVisible();
     await finish!();
     await expect(view.locator(".specs-tree")).toHaveCount(0);

@@ -50,7 +50,9 @@
     },
     "T5": {
       "title": "我的仓库与登录注册",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、生产构建及personal/account-connections/collaboration-source共16项通过；双主题三档仓库布局已检查",
+      "commitTitle": "frontend-style-interaction-refactor T5: repository home and account entry"
     },
     "T6": {
       "title": "账号与 Token 设置",

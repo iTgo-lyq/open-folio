@@ -80,7 +80,9 @@ test("same-token devices appear together and one can revoke another", async ({
     await page
       .getByRole("button", { name: "退出全部设备", exact: true })
       .click();
-    await expect(page.getByRole("heading", { name: "登录账号" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "登录 OpenFolio" }),
+    ).toBeVisible();
   } finally {
     await second.close();
   }
