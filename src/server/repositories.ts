@@ -5,10 +5,10 @@ import { discovery, type Discovery } from "./discovery.ts";
 import {
   personalSessions,
   type PersonalSessions,
-  type ConnectionLease,
+  type WorkspaceLease,
 } from "./personal-sessions.ts";
 import {
-  SUGGESTED_COLLABORATION_BRANCH,
+  SUGGESTED_INTEGRATION_BRANCH,
   validBranchName,
 } from "../lib/collaboration.ts";
 import { hash, GitReader } from "./git.ts";
@@ -22,7 +22,7 @@ import {
 } from "./providers/types.ts";
 import type { ProjectConfig, Limits } from "../lib/model.ts";
 export interface ReadContext {
-  lease: ConnectionLease;
+  lease: WorkspaceLease;
   repository: RepositoryIdentity;
   project: ProjectConfig;
   store: SnapshotStore;
@@ -65,50 +65,87 @@ export class Repositories {
     if (!/^[a-f0-9]{64}$/.test(key))
       throw new AppError("REPOSITORY_NOT_FOUND", "仓库不存在。", 404);
     const lease = await this.sessions.lease(cookie, connectionId, signal);
-    const permissions = repositoryPermissions(this.sessions);
-    let target: RepositorySelector | undefined;
     try {
-      const provider = this.sessions.registry.get(
-        lease.context.identity.providerId,
-      );
       const found = await this.discoveries.lookup(lease, key);
-      const collaborationBranch =
+      const branch =
         selectedBranch ??
-        found?.collaborationBranch ??
-        SUGGESTED_COLLABORATION_BRANCH;
-      if (!validBranchName(collaborationBranch))
-        throw new AppError("INVALID_PARAMETER", "协作分支名称不合法。", 400);
-      target = found?.repository ?? selector;
+        found?.integrationBranch ??
+        SUGGESTED_INTEGRATION_BRANCH;
+      const target = found?.repository ?? selector;
       if (!target)
         throw new AppError(
           "REPOSITORY_NOT_FOUND",
           "请先发现或检查这个仓库。",
           404,
         );
-      const repository = await permissions.check(cookie, lease, key, target, {
-        collaborationBranch,
+      return await this.readLease(
+        lease,
+        key,
+        target,
+        branch,
+        operation,
+        !found || found.integrationBranch !== branch,
+      );
+    } finally {
+      lease.release();
+    }
+  }
+  async readShared<T>(
+    accountId: string,
+    workspaceId: string,
+    key: string,
+    target: RepositorySelector,
+    branch: string,
+    operation: (context: ReadContext) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const lease = await this.sessions.credentialLease(
+      accountId,
+      workspaceId,
+      signal,
+    );
+    try {
+      return await this.readLease(lease, key, target, branch, operation);
+    } finally {
+      lease.release();
+    }
+  }
+  private async readLease<T>(
+    lease: WorkspaceLease,
+    key: string,
+    target: RepositorySelector,
+    integrationBranch: string,
+    operation: (context: ReadContext) => Promise<T>,
+    diagnose = false,
+  ): Promise<T> {
+    const permissions = repositoryPermissions(this.sessions);
+    try {
+      if (!validBranchName(integrationBranch))
+        throw new AppError("INVALID_PARAMETER", "集成分支名称不合法。", 400);
+      const provider = this.sessions.registry.get(
+        lease.context.identity.providerId,
+      );
+      const repository = await permissions.checkWorkspace(lease, key, target, {
+        integrationBranch,
       });
-      if (!found || found.collaborationBranch !== collaborationBranch) {
-        const diagnosed = await this.discoveries.diagnose(
+      if (diagnose) {
+        const result = await this.discoveries.diagnose(
           provider,
           lease.context,
           repository,
-          collaborationBranch,
+          integrationBranch,
         );
-        if (!["ready", "attention"].includes(diagnosed.state))
+        if (!["ready", "attention"].includes(result.state))
           throw new AppError(
             "WORKFLOW_NOT_FOUND",
-            diagnosed.message ?? "该仓库尚未接入 SpecTrail。",
+            result.message ?? "该仓库尚未接入 SpecTrail。",
             409,
           );
       }
-      const assertPermission = async (
-        owner: ConnectionLease,
-        force = false,
-      ) => {
-        await permissions.check(cookie, owner, key, repository, {
+      const assertPermission = async (owner: WorkspaceLease, force = false) => {
+        await permissions.checkWorkspace(owner, key, repository, {
           force,
-          collaborationBranch,
+          integrationBranch,
           workspaceOwned: owner !== lease,
         });
         await owner.assertCurrent();
@@ -116,7 +153,7 @@ export class Repositories {
       const assertRead = (force = false) => assertPermission(lease, force);
       await lease.assertCurrent();
       const cache = join(this.root, lease.workspaceId);
-      const makeStore = async (owner: ConnectionLease) => {
+      const makeStore = async (owner: WorkspaceLease) => {
         const transport = await provider.gitTransport(
           owner.context,
           repository,
@@ -128,7 +165,7 @@ export class Repositories {
             reader.signal = owner.context.signal;
             return reader;
           },
-          hash(JSON.stringify([key, collaborationBranch])),
+          hash(JSON.stringify([key, integrationBranch])),
         );
       };
       const store = await makeStore(lease);
@@ -136,7 +173,7 @@ export class Repositories {
         id: key,
         name: repository.fullName,
         repositoryUrl: repository.cloneUrl,
-        collaborationBranch,
+        integrationBranch,
       };
       const context: ReadContext = {
         lease,
@@ -152,9 +189,9 @@ export class Repositories {
           let next = locks.get(path);
           if (!next) {
             next = (async () => {
-              const owner = await this.sessions.workspaceLease(
-                cookie,
-                connectionId,
+              const owner = await this.sessions.credentialLease(
+                lease.accountId,
+                lease.workspaceId,
               );
               try {
                 await owner.assertCurrent();
@@ -163,6 +200,37 @@ export class Repositories {
                   automatic,
                   signal: owner.context.signal,
                   beforePublish: () => assertPermission(owner),
+                  delivery:
+                    provider.listPullRequests && provider.getPullRequest
+                      ? {
+                          repositoryId: repository.repositoryId,
+                          list: (query, cursor, signal) =>
+                            provider.listPullRequests!(
+                              {
+                                ...owner.context,
+                                signal: AbortSignal.any([
+                                  owner.context.signal,
+                                  signal,
+                                ]),
+                              },
+                              repository,
+                              query,
+                              cursor,
+                            ),
+                          get: (number, signal) =>
+                            provider.getPullRequest!(
+                              {
+                                ...owner.context,
+                                signal: AbortSignal.any([
+                                  owner.context.signal,
+                                  signal,
+                                ]),
+                              },
+                              repository,
+                              number,
+                            ),
+                        }
+                      : undefined,
                 });
                 await owner.assertCurrent();
                 permissions.assertAllowed(owner, key);
@@ -194,10 +262,11 @@ export class Repositories {
         target &&
         !lease.context.signal.aborted
       )
-        await permissions.check(cookie, lease, key, target, { force: true });
+        await permissions.checkWorkspace(lease, key, target, {
+          force: true,
+          integrationBranch,
+        });
       throw error;
-    } finally {
-      lease.release();
     }
   }
 }

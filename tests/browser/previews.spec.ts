@@ -1,10 +1,17 @@
-import { test, expect, repositoryQuery, repoKey } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  repoKey,
+  openMaterial,
+  backToChanges,
+} from "./connected";
 const path = `/?${repositoryQuery}&m=changes&c=document-reader&ct=previews`;
 test("unreadable fixed versions show a failure instead of an empty inventory or a replacement preview", async ({
   page,
 }) => {
   await page.goto(path + "&revision=" + "0".repeat(40));
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("main");
   await expect(dialog.getByText("原型读取失败", { exact: true })).toBeVisible();
   await expect(
     dialog.getByText("该 Git 版本已不可用，请重新获取对应交付历史。", {
@@ -33,13 +40,13 @@ test("Change previews switch declared devices without changing layout dimensions
   const frame = () =>
     page.frames().find((f) => f.url().includes("/api/public-previews/"))!;
   expect(await frame().evaluate(() => innerWidth)).toBe(1440);
-  await panel.getByRole("button", { name: "移动设备", exact: true }).click();
+  await panel.getByRole("radio", { name: "移动设备", exact: true }).click();
   await expect(iframe).toHaveAttribute("width", "390");
   await expect(iframe).toHaveAttribute("height", "844");
   expect(await frame().evaluate(() => innerWidth)).toBe(390);
-  await panel.getByRole("button", { name: "100%", exact: true }).click();
+  await panel.getByRole("radio", { name: "100%", exact: true }).click();
   await expect(iframe).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await panel.getByRole("button", { name: "适应画布", exact: true }).click();
+  await panel.getByRole("radio", { name: "适应画布", exact: true }).click();
   expect(await frame().evaluate(() => innerWidth)).toBe(390);
   await panel.getByRole("button", { name: "切换横竖方向" }).click();
   await expect(iframe).toHaveAttribute("width", "844");
@@ -48,10 +55,10 @@ test("Change previews switch declared devices without changing layout dimensions
     .getByRole("button", { name: "订单详情 页面", exact: true })
     .click();
   await expect(
-    panel.getByRole("button", { name: "移动设备", exact: true }),
+    panel.getByRole("radio", { name: "移动设备", exact: true }),
   ).toHaveCount(0);
   await expect(
-    panel.getByRole("button", { name: "iPad", exact: true }),
+    panel.getByRole("radio", { name: "iPad", exact: true }),
   ).toHaveCount(0);
   await panel
     .getByRole("button", { name: "价格卡片 组件", exact: true })
@@ -83,8 +90,10 @@ test("fixed revision links restore the entry and invalid exports remain readable
   await expect(
     page.getByText("入口缺失或不是常规 Git 文件。", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await backToChanges(page);
+  await expect(
+    page.getByRole("region", { name: "阅读正文", exact: true }),
+  ).toHaveCount(0);
   expect(new URL(page.url()).searchParams.has("revision")).toBe(false);
 });
 test("narrow screens keep component dimensions and unsupported links recover to declared choices", async ({
@@ -103,7 +112,7 @@ test("narrow screens keep component dimensions and unsupported links recover to 
   ).toBe(640);
   expect(
     await page
-      .getByRole("dialog")
+      .getByRole("region", { name: "阅读正文", exact: true })
       .evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true);
   await page.goto(path + "&preview=unknown&device=watch");
@@ -117,9 +126,14 @@ test("narrow screens keep component dimensions and unsupported links recover to 
     "width",
     "1440",
   );
-  await page.getByRole("tab", { name: "文档", exact: true }).click();
+  await openMaterial(page, "需求");
   await expect(
-    page.getByRole("dialog").getByText("Requirement", { exact: false }).first(),
+    page
+      .getByRole("region", { name: "阅读正文", exact: true })
+      .getByRole("heading", {
+        name: "让工程文档成为清晰的阅读体验",
+        exact: true,
+      }),
   ).toBeVisible();
 });
 

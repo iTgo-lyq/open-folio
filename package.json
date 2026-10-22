@@ -16,7 +16,7 @@
     "service:update": "node scripts/service.mjs update",
     "typecheck": "tsc --noEmit && npm run typecheck --workspace @open-folio/ui",
     "test": "node --conditions=react-server --test tests/*.test.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "node --conditions=react-server node_modules/@playwright/test/cli.js test",
     "format:check": "prettier --check src tests *.ts *.json README.md packages/ui",
     "format": "prettier --write src tests *.ts *.json README.md packages/ui",
     "ui:dev": "npm run dev --workspace @open-folio/ui",

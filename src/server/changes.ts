@@ -1,5 +1,6 @@
 import type {
   ChangeCandidate,
+  ChangeCreator,
   ChangeGroup,
   ChangeState,
   Diagnostic,
@@ -11,9 +12,12 @@ import type { GitReader } from "./git.ts";
 import {
   branchName,
   changeSchema,
+  deliveryOverrideSchema,
   followUpTitleSchema,
   identity,
   previewsSchema,
+  typesSchema,
+  urgencySchema,
   validDate,
 } from "./schema.ts";
 import { cyclicNodes, parsePlan } from "./plan.ts";
@@ -138,7 +142,7 @@ function semantics(c: ChangeCandidate, data: Collected) {
 }
 export async function indexChanges(
   data: Collected,
-  reader: Pick<GitReader, "ancestor" | "changeCreationTimes">,
+  reader: Pick<GitReader, "ancestor" | "changeCreations">,
   signal?: AbortSignal,
 ): Promise<ChangeGroup[]> {
   const groups = new Map<string, ChangeGroup>(
@@ -151,10 +155,10 @@ export async function indexChanges(
         candidates: [],
         relations: [],
         source: {
-          entryBranch: data.collaborationBranch!,
+          entryBranch: data.integrationBranch!,
           entryPath: route.entryPath,
           entryCommit: data.branches.find(
-            (b) => b.name === data.collaborationBranch,
+            (b) => b.name === data.integrationBranch,
           )!.commit,
           recordBranch: route.branch,
         },
@@ -207,6 +211,24 @@ export async function indexChanges(
       const core = { ...object };
       const warnings: Diagnostic[] = [];
       for (const [key, schema, code, message] of [
+        [
+          "deliveryOverride",
+          deliveryOverrideSchema,
+          "DELIVERY_OVERRIDE_INVALID",
+          "发布补记格式不合法，已忽略覆盖并沿用自动判定。",
+        ],
+        [
+          "types",
+          typesSchema,
+          "TYPES_INVALID",
+          "类型标签格式不合法，请检查 types；其余流程仍可阅读。",
+        ],
+        [
+          "urgency",
+          urgencySchema,
+          "URGENCY_INVALID",
+          "紧急程度格式不合法，请检查 urgency；其余流程仍可阅读。",
+        ],
         [
           "previews",
           previewsSchema,
@@ -303,8 +325,7 @@ export async function indexChanges(
       for (const { path, line } of paths)
         if (
           data.documents.some(
-            (ref) =>
-              ref.branch === data.collaborationBranch && ref.path === path,
+            (ref) => ref.branch === data.integrationBranch && ref.path === path,
           ) &&
           /^docs\/project\/specs\/.+\/spec.md$/.test(path)
         ) {
@@ -503,15 +524,31 @@ export async function indexChanges(
         r.ancestry = "found";
     }
   }
-  const creationTimes = await reader.changeCreationTimes(
+  const creations = await reader.changeCreations(
     data.branches.map((branch) => branch.commit),
     signal,
   );
   for (const group of groups.values()) {
-    const time = creationTimes.get(group.id);
-    if (time !== undefined) group.createdAt = new Date(time).toISOString();
+    const created = creations.get(group.id);
+    if (!created) continue;
+    group.createdAt = new Date(created.time).toISOString();
+    const creator = changeCreator(created.author.name, created.author.email);
+    if (creator) group.creator = creator;
   }
   return [...groups.values()].sort(compareChangeCreation);
+}
+
+// GitHub 隐私邮箱可识别登录名：<id>+<login>@ 或 <login>@users.noreply.github.com。
+const GITHUB_NOREPLY =
+  /^(?:\d+\+)?([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)@users\.noreply\.github\.com$/i;
+export function changeCreator(
+  name: string,
+  email: string,
+): ChangeCreator | undefined {
+  const login = GITHUB_NOREPLY.exec(email.trim())?.[1];
+  const display = name.trim() || login;
+  if (!display) return undefined;
+  return login ? { name: display, login } : { name: display };
 }
 
 export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {

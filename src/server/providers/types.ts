@@ -1,4 +1,5 @@
 import "server-only";
+import type { PullRequest } from "../../lib/model.ts";
 import { createHash } from "node:crypto";
 import { inspect } from "node:util";
 import { AppError } from "../errors.ts";
@@ -67,7 +68,24 @@ export type ProbeResult =
   | { kind: "branch-missing" }
   | { kind: "empty-repository" }
   | { kind: "unavailable"; reason: string; retryAfter?: string };
+export type ProviderPullRequest = PullRequest & { body: string };
+export type PullRequestQuery = {
+  base?: string;
+  head?: string;
+  commit?: string;
+};
 export interface RepositoryProvider {
+  listPullRequests?(
+    context: ProviderContext,
+    repo: RepositoryIdentity,
+    query: PullRequestQuery,
+    cursor: string | null,
+  ): Promise<Page<ProviderPullRequest>>;
+  getPullRequest?(
+    context: ProviderContext,
+    repo: RepositoryIdentity,
+    number: number,
+  ): Promise<ProviderPullRequest>;
   id: string;
   describeConnection(): ConnectionDescriptor;
   parseRepositoryUrl(input: string): RepositorySelector;
@@ -86,19 +104,19 @@ export interface RepositoryProvider {
   assertRead(
     context: ProviderContext,
     repo: RepositoryIdentity,
-    collaborationBranch?: string,
+    integrationBranch?: string,
   ): Promise<void>;
   probeWorkflow(
     context: ProviderContext,
     repo: RepositoryIdentity,
-    collaborationBranch: string,
+    integrationBranch: string,
   ): Promise<ProbeResult>;
   gitTransport(
     context: ProviderContext,
     repo: RepositoryIdentity,
   ): Promise<GitTransport>;
 }
-export class ProviderError extends AppError {
+class ProviderErrorClass extends AppError {
   retryAfter?: string;
   constructor(
     code: string,
@@ -110,6 +128,13 @@ export class ProviderError extends AppError {
     this.retryAfter = retryAfter;
   }
 }
+const errorGlobals = globalThis as typeof globalThis & {
+  folioProviderErrorClass?: typeof ProviderErrorClass;
+};
+export const ProviderError = (errorGlobals.folioProviderErrorClass ??=
+  ProviderErrorClass);
+export type ProviderError = ProviderErrorClass;
+
 export const repositoryKey = (
   r: Pick<RepositoryIdentity, "providerId" | "instanceId" | "repositoryId">,
 ) =>

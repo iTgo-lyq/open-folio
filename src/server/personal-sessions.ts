@@ -40,14 +40,17 @@ export const identitySchema = z
     displayName: z.string().max(500),
   })
   .strict();
-export const preferencesSchema = z
+const repositoryPreference = z.object({
+  providerId: z.string().min(1).max(80),
+  instanceId: z.string().min(1).max(255),
+  repositoryId: z.string().min(1).max(100),
+  fullName: z.string().min(1).max(255),
+});
+// Keep the persisted preference shape alongside existing encrypted credentials.
+const storedPreferencesSchema = z
   .object({
-    repository: z
-      .object({
-        providerId: z.string().min(1).max(80),
-        instanceId: z.string().min(1).max(255),
-        repositoryId: z.string().min(1).max(100),
-        fullName: z.string().min(1).max(255),
+    repository: repositoryPreference
+      .extend({
         collaborationBranch: z.string().refine(validBranchName).optional(),
       })
       .strict()
@@ -57,6 +60,30 @@ export const preferencesSchema = z
     railCollapsed: z.boolean().optional(),
   })
   .strict();
+export const preferencesSchema = storedPreferencesSchema.extend({
+  repository: repositoryPreference
+    .extend({
+      integrationBranch: z.string().refine(validBranchName).optional(),
+    })
+    .strict()
+    .nullable()
+    .optional(),
+});
+function publicPreferences(
+  p: z.infer<typeof storedPreferencesSchema>,
+): WorkspacePreferences {
+  if (!p.repository) return p as WorkspacePreferences;
+  const { collaborationBranch, ...repository } = p.repository;
+  return {
+    ...p,
+    repository: {
+      ...repository,
+      ...(collaborationBranch
+        ? { integrationBranch: collaborationBranch }
+        : {}),
+    },
+  };
+}
 export const workspaceSchema = z
   .object({
     id: z.string().uuid(),
@@ -74,7 +101,7 @@ export const workspaceSchema = z
     nonce: z.string(),
     ciphertext: z.string().max(8192),
     tag: z.string(),
-    preferences: preferencesSchema,
+    preferences: storedPreferencesSchema,
     createdAt: z.number().int().positive(),
   })
   .strict();
@@ -118,8 +145,8 @@ export type WorkspaceState = z.infer<typeof workspaceStateSchema>;
 export type WorkspacePreferences = z.infer<typeof preferencesSchema>;
 export type WorkspaceSummary = Pick<
   Workspace,
-  "id" | "identity" | "label" | "gitUsername" | "preferences"
->;
+  "id" | "identity" | "label" | "gitUsername"
+> & { preferences: WorkspacePreferences };
 export type ConnectionSummary = Pick<
   WorkspaceSummary,
   "id" | "identity" | "label"
@@ -137,15 +164,17 @@ export interface SessionSummary {
   selectionRevision?: number;
   renewed?: boolean;
 }
-export interface ConnectionLease {
+export interface WorkspaceLease {
   accountId: string;
-  sessionId: string;
-  deviceSessionId: string;
   workspaceId: string;
   connection: ConnectionSummary;
   context: ProviderContext;
   assertCurrent(): Promise<void>;
   release(): void;
+}
+export interface ConnectionLease extends WorkspaceLease {
+  sessionId: string;
+  deviceSessionId: string;
 }
 export const sessionIdleTtl = 30 * 24 * 60 * 60 * 1000;
 export const sessionAbsoluteTtl = 90 * 24 * 60 * 60 * 1000;
@@ -158,7 +187,7 @@ const workspaceSummary = (w: Workspace): WorkspaceSummary => ({
   identity: w.identity,
   label: w.label,
   gitUsername: w.gitUsername,
-  preferences: w.preferences,
+  preferences: publicPreferences(w.preferences),
 });
 export const connectionSummary = (w: Workspace): ConnectionSummary => ({
   id: w.id,
@@ -913,59 +942,100 @@ export class PersonalSessions {
         (w) => w.id === s.workspaceId && w.accountId === s.accountId,
       );
       if (!w || (id && id !== w.id)) throw denied();
-      const selectionRevision = s.selectionRevision,
-        secret = decryptWorkspace(w, (await this.keys(false)).credential),
-        controller = new AbortController();
-      const key = `${this.root}/${workspaceOwned ? w.id : s.id}`,
-        registry = workspaceOwned ? workspaceOperations() : operations(),
-        set = registry.get(key) ?? new Set<AbortController>();
-      set.add(controller);
-      registry.set(key, set);
-      return {
-        accountId: s.accountId,
-        sessionId: s.id,
-        deviceSessionId: s.id,
-        workspaceId: w.id,
-        connection: connectionSummary(w),
-        context: {
-          identity: w.identity,
-          gitUsername: w.gitUsername,
-          secret,
-          signal: signal
-            ? AbortSignal.any([signal, controller.signal])
-            : controller.signal,
-        },
-        assertCurrent: async () => {
-          controller.signal.throwIfAborted();
-          const latest = await this.load(),
-            current = this.find(latest, cookie);
-          if (
-            (!workspaceOwned &&
-              (!current ||
-                current.accountId !== s.accountId ||
-                current.id !== s.id ||
-                current.workspaceId !== w.id ||
-                current.selectionRevision !== selectionRevision)) ||
-            !latest.workspaces.some(
-              (x) =>
-                x.id === w.id &&
-                x.accountId === s.accountId &&
-                x.credentialFingerprint === w.credentialFingerprint,
-            )
-          ) {
-            controller.abort();
-            throw denied();
-          }
-        },
-        release: () => {
-          set.delete(controller);
-          if (!set.size && registry.get(key) === set) registry.delete(key);
-        },
-      };
+      const lease = await this.bindingLease(
+        w,
+        signal,
+        workspaceOwned ? undefined : { cookie, session: s },
+      );
+      return { ...lease, sessionId: s.id, deviceSessionId: s.id };
     });
   }
   workspaceLease(cookie: string, id: string) {
     return this.lease(cookie, id, undefined, true);
+  }
+  // Server-only source identities; no credentials or device sessions leave here.
+  async repositoryBindings() {
+    const state = await this.load();
+    return state.workspaces.map(
+      ({ id, accountId, providerId, instanceId }) => ({
+        workspaceId: id,
+        accountId,
+        providerId,
+        instanceId,
+      }),
+    );
+  }
+  // Internal credential ownership, used only after server-side scope authorization.
+  async credentialLease(
+    accountId: string,
+    workspaceId: string,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceLease> {
+    return this.lock(async () => {
+      const state = await this.load();
+      const workspace = state.workspaces.find(
+        (w) => w.id === workspaceId && w.accountId === accountId,
+      );
+      if (!workspace || !state.accounts.some((a) => a.id === accountId))
+        throw denied();
+      return this.bindingLease(workspace, signal);
+    });
+  }
+  private async bindingLease(
+    w: Workspace,
+    signal?: AbortSignal,
+    device?: { cookie: string; session: DeviceSession },
+  ): Promise<WorkspaceLease> {
+    const secret = decryptWorkspace(w, (await this.keys(false)).credential),
+      controller = new AbortController(),
+      key = `${this.root}/${device ? device.session.id : w.id}`,
+      registry = device ? operations() : workspaceOperations(),
+      set = registry.get(key) ?? new Set<AbortController>();
+    set.add(controller);
+    registry.set(key, set);
+    const context = {
+      identity: w.identity,
+      gitUsername: w.gitUsername,
+      secret,
+      signal: signal
+        ? AbortSignal.any([signal, controller.signal])
+        : controller.signal,
+    };
+    return {
+      accountId: w.accountId,
+      workspaceId: w.id,
+      connection: connectionSummary(w),
+      context,
+      assertCurrent: async () => {
+        if (controller.signal.aborted) throw denied();
+        context.signal.throwIfAborted();
+        const latest = await this.load(),
+          current = device && this.find(latest, device.cookie);
+        if (
+          (device &&
+            (!current ||
+              current.accountId !== w.accountId ||
+              current.id !== device.session.id ||
+              current.workspaceId !== w.id ||
+              current.selectionRevision !==
+                device.session.selectionRevision)) ||
+          !latest.accounts.some((a) => a.id === w.accountId) ||
+          !latest.workspaces.some(
+            (x) =>
+              x.id === w.id &&
+              x.accountId === w.accountId &&
+              x.credentialFingerprint === w.credentialFingerprint,
+          )
+        ) {
+          controller.abort();
+          throw denied();
+        }
+      },
+      release: () => {
+        set.delete(controller);
+        if (!set.size && registry.get(key) === set) registry.delete(key);
+      },
+    };
   }
   async updatePreferences(
     cookie: string,
@@ -993,9 +1063,21 @@ export class PersonalSessions {
           "最近仓库必须属于当前平台。",
           400,
         );
-      w.preferences = { ...w.preferences, ...parsed.data };
+      const { repository, ...rest } = parsed.data;
+      w.preferences = { ...w.preferences, ...rest };
+      if (repository) {
+        const { integrationBranch, ...identity } = repository;
+        w.preferences.repository = {
+          ...identity,
+          ...(integrationBranch
+            ? { collaborationBranch: integrationBranch }
+            : {}),
+        };
+      } else if (Object.hasOwn(parsed.data, "repository")) {
+        w.preferences.repository = repository;
+      }
       await this.save(state);
-      return w.preferences;
+      return publicPreferences(w.preferences);
     });
   }
   async devices(cookie: string, expectedRevision?: number) {

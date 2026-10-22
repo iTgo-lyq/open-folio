@@ -264,9 +264,9 @@ test("prepare HTTP requires an owned connection and same origin; published versi
     await t.g.put(
       "docs/project/workflow.json",
       JSON.stringify({
-        schemaVersion: 2,
-        collaborationBranch: "develop",
-        protectedBranches: ["trunk"],
+        schemaVersion: 3,
+        integrationBranch: "develop",
+        releaseBranch: "trunk",
         prototype: { status: "disabled" },
       }),
     );

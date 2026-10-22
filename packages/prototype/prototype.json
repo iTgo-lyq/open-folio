@@ -3,8 +3,8 @@
   "entries": [
     {
       "id": "quiet-home",
-      "title": "工作台新设计 · 仓库与导航",
-      "description": "仓库发现、状态筛选、项目切换与读取来源。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "title": "工作台新设计 · 我的仓库与侧栏",
+      "description": "可阅读仓库与需要处理的仓库分组；展开侧栏与 Logo 收起的悬浮胶囊。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-home.html",
       "kind": "page",
       "devices": [
@@ -14,22 +14,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/index.html",
-        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
-        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-home/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/mobile.png"
           }
         ]
       }
@@ -37,7 +37,7 @@
     {
       "id": "quiet-specs",
       "title": "工作台新设计 · Specs 阅读",
-      "description": "能力目录、章节定位、正文、原文与阅读链接。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "description": "能力目录、正文、随滚动高亮的本页目录与相关 Change。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-specs.html",
       "kind": "page",
       "devices": [
@@ -47,22 +47,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/index.html",
-        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
-        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-specs/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/mobile.png"
           }
         ]
       }
@@ -70,7 +70,7 @@
     {
       "id": "quiet-changes",
       "title": "工作台新设计 · Changes 与详情",
-      "description": "列表、只读看板、任务、问答、材料和合入差异。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "description": "按处理状态分组、精简筛选、创建者与交付标签；完整阅读页的详情与分享入口。浅色 / 深色；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-changes.html",
       "kind": "page",
       "devices": [
@@ -80,22 +80,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/index.html",
-        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
-        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-changes/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/mobile.png"
           }
         ]
       }
@@ -103,7 +103,7 @@
     {
       "id": "quiet-prototypes",
       "title": "工作台新设计 · 原型总览与画布",
-      "description": "设备缩略图、预览画布、固定版本准备与分享。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "description": "按设备切换的缩略图、详情面板、设备画布与公开链接。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-prototypes.html",
       "kind": "page",
       "devices": [
@@ -113,30 +113,30 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/index.html",
-        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
-        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-prototypes/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/mobile.png"
           }
         ]
       }
     },
     {
       "id": "quiet-credentials",
-      "title": "工作台新设计 · Token 登录与凭据",
-      "description": "示例 Token 登录、浏览器身份切换和设备撤销。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "title": "工作台新设计 · 账号与 Token",
+      "description": "账号密码登录 / 注册、账号绑定的 Token 与登录设备。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-credentials.html",
       "kind": "page",
       "devices": [
@@ -146,30 +146,30 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/index.html",
-        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
-        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-credentials/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/mobile.png"
           }
         ]
       }
     },
     {
       "id": "quiet-public",
-      "title": "工作台新设计 · 匿名公开预览",
-      "description": "仅展示已公开的固定原型，支持设备与画布操作。 浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据与内存状态。",
+      "title": "工作台新设计 · 匿名公开原型",
+      "description": "固定版本的匿名画布、设备切换、不存在与已撤回。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-public.html",
       "kind": "page",
       "devices": [
@@ -179,31 +179,31 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/index.html",
-        "sourceCommit": "300bb77e2fb00c706cee6883bfefc9c175beac5f",
-        "digest": "sha256:aaa9a50dfde0d0aa8c01a9fac895760d27a69a5b4dfeaa1ae5f5dd1a0d88cccb",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c0/quiet-public/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/mobile.png"
           }
         ]
       }
     },
     {
-      "id": "account-login",
-      "title": "账号登录与 Token 管理",
-      "description": "用户自设账号密码，管理账号绑定的 Token、跨浏览器选择及账号登录设备。仅使用示例数据。",
-      "sourcePath": "packages/prototype/src/pages/account-login.html",
+      "id": "quiet-share",
+      "title": "工作台新设计 · Change 分享阅读",
+      "description": "无需登录阅读单个 Change 的全部详情：材料目录、正文、本页目录与内嵌原型。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
+      "sourcePath": "packages/prototype/src/pages/quiet-share.html",
       "kind": "page",
       "devices": [
         "pc-web",
@@ -212,220 +212,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/index.html",
-        "sourceCommit": "d59c6a3c6dbf1c95db66d92e0026d9ca8021fbb1",
-        "digest": "sha256:7dd5dda5310e26b0d89ac1fce96b0243d80f3af83285d4b014f7dcd4504e8160",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/cdc2cda4422525ad7a4c476145f53bb751462abb8c558159e0f78a8fd6fd06a9/mobile.png"
-          }
-        ]
-      }
-    },
-    {
-      "id": "blue-glass-workbench",
-      "title": "蓝色玻璃工作台",
-      "description": "蓝色主题与克制的液态玻璃，覆盖仓库搜索与收藏、Specs 阅读、Change 详情、原型设备预览和明暗主题。仅使用示例数据。",
-      "sourcePath": "packages/prototype/src/pages/blue-glass-workbench.html",
-      "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
-      "artifact": {
-        "type": "hosted",
-        "version": "b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/index.html",
-        "sourceCommit": "3e404d91958c2c7e403664de9dede7c9a1819324",
-        "digest": "sha256:a7d6b40ea68663defbb82b54884fe93bcdeec8471ad49fdae09afe579b56681e",
-        "thumbnails": [
-          {
-            "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/pc-web.png"
-          },
-          {
-            "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/ipad.png"
-          },
-          {
-            "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b5795adb098c8063f19e164f7257d1836e69cee2e2534dee955426571e066f0a/mobile.png"
-          }
-        ]
-      }
-    },
-    {
-      "id": "change-integration",
-      "title": "Change 合入变更",
-      "description": "整体合入差异、文件选择、归档移动、展示限制与缺失及异常状态。仅使用示例数据。",
-      "sourcePath": "packages/prototype/src/pages/change-integration.html",
-      "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
-      "artifact": {
-        "type": "hosted",
-        "version": "f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/index.html",
-        "sourceCommit": "bfbfae4fe99240df2600afe169214a5acf14da71",
-        "digest": "sha256:f0c97a90cdc6a0d72c460466b9618ac9cbd04d1d9a629a17578d46b86a8d01bc",
-        "thumbnails": [
-          {
-            "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/pc-web.png"
-          },
-          {
-            "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/ipad.png"
-          },
-          {
-            "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/f31e062b0c4c6eb4283be8829854e2a2c56655dd396401e7d2cb260cf441b10f/mobile.png"
-          }
-        ]
-      }
-    },
-    {
-      "id": "clarification-detail",
-      "title": "Change 澄清问答",
-      "description": "详情概览中的问题与最终回答，含未回答、撤回、无记录及长文本示例。",
-      "sourcePath": "packages/prototype/src/pages/clarification-detail.html",
-      "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
-      "artifact": {
-        "type": "hosted",
-        "version": "e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/index.html",
-        "sourceCommit": "8d1358a57f7ce35d02251361071772149afd548a",
-        "digest": "sha256:891894b23192ad1392fa016c537f9a5515cec2c95cba2d5c20b6a3b74a923f9c",
-        "thumbnails": [
-          {
-            "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/pc-web.png"
-          },
-          {
-            "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/ipad.png"
-          },
-          {
-            "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e6ba254d8c8b673efb06271fd5a5697e65fea4d60d26fdd3fbc9a564fe35a447/mobile.png"
-          }
-        ]
-      }
-    },
-    {
-      "id": "token-workspaces",
-      "title": "Token 工作台与浏览器多身份",
-      "description": "浏览器记住身份与点选切换、移除、同 token 多设备恢复和设备撤销。仅使用示例凭据。",
-      "sourcePath": "packages/prototype/src/pages/token-workspaces.html",
-      "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
-      "artifact": {
-        "type": "hosted",
-        "version": "0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/index.html",
-        "sourceCommit": "2c139b4886ec3cc7d8ef6d1baa7826ef44953371",
-        "digest": "sha256:b18ea83c1c11752eea9018fc09b2137cb8afebf59c975f924b9c53ef746b871f",
-        "thumbnails": [
-          {
-            "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/pc-web.png"
-          },
-          {
-            "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/ipad.png"
-          },
-          {
-            "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/0c745f9670dd4b35c9e9bdc25ded7245dbb0095e25c20858a9f884039b89af6d/mobile.png"
-          }
-        ]
-      }
-    },
-    {
-      "id": "personal-workbench",
-      "title": "个人工作台",
-      "description": "连接 GitHub、发现 SpecTrail 仓库、阅读工程记录和公开分享原型的完整方案。",
-      "sourcePath": "packages/prototype/src/pages/personal-workbench.html",
-      "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
-      "artifact": {
-        "type": "hosted",
-        "version": "e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/index.html",
-        "sourceCommit": "d528edf8eb635a30c7191a55faa62250583998c2",
-        "digest": "sha256:f300ca5a3a4563ee5277b3285a56d2b37cf7a36b8cd2f60d469a8b54ef2e0cc4",
-        "thumbnails": [
-          {
-            "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/pc-web.png"
-          },
-          {
-            "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/ipad.png"
-          },
-          {
-            "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/e68119ca94424024c1b6b6fb667ce143e9ee2bcf8b5530f462647981225a066f/personal-workbench/mobile.png"
-          }
-        ]
-      }
-    },
-    {
-      "id": "workspace-shell",
-      "title": "工作台外壳",
-      "description": "基于当前产品的导航、项目上下文与内容容器。",
-      "sourcePath": "packages/prototype/src/pages/workspace-shell.html",
-      "kind": "page",
-      "devices": [
-        "pc-web",
-        "ipad",
-        "mobile"
-      ],
-      "artifact": {
-        "type": "hosted",
-        "version": "190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/index.html",
-        "sourceCommit": "192ede7a37346df8ce4acd2bafe61c5f56218a1a",
-        "digest": "sha256:ea9924681db706ae084a6da640c19decfb07ea8cfdd5c9090b09a6be09a7b75d",
-        "thumbnails": [
-          {
-            "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/pc-web.png"
-          },
-          {
-            "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/ipad.png"
-          },
-          {
-            "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/190a1aec90f9b2b28afee5f73643ab767aeec6e1f03cfb5d6b65194ee76cf97a/workspace-shell/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/mobile.png"
           }
         ]
       }

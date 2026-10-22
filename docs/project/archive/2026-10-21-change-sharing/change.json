@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "id": "change-sharing",
+  "title": "单个 Change 的公开只读分享",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/change-sharing",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-20T12:47:13.410Z",
+      "summary": "按仓库与 Change 直接分享全部最新详情且无需分享账号",
+      "source": "结合此前已确认的全部详情、实时更新和全文阅读要求；用户明确改为：分享链接设计上不该和账号挂钩，任何人都可以分享，只要那个 change 实际存在；链接上指定 change 和仓库，被分享者拿到链接后，只要目标访问内容真的存在就分享给他。"
+    },
+    "technical": {
+      "at": "2026-10-21T18:03:39.512Z",
+      "summary": "按仓库与 Change 直接定位可读来源并复用完整阅读能力",
+      "source": "确认，按新版方案继续实现，skill 的改动保持精简。"
+    },
+    "plan": {
+      "at": "2026-10-21T18:03:41.269Z",
+      "summary": "先替换账号分享机制，再交付无凭据链接工具与精简 Skill",
+      "source": "确认，按新版方案继续实现，skill 的改动保持精简。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "建立可撤销的实时 Change 分享读取",
+      "status": "done",
+      "verification": "类型检查通过；分享 7 项与账号/仓库/权限 25 项回归通过，覆盖范围隔离、撤回、解绑及并发交付。",
+      "commitTitle": "change-sharing T1: add revocable live Change share APIs"
+    },
+    "T2": {
+      "title": "完成分享管理与完整详情阅读",
+      "status": "done",
+      "verification": "类型与生产构建通过；25 项浏览器回归及原型桥接后 3 项分享检查通过，含匿名隔离、深链移交/归档和全宽窄屏。",
+      "commitTitle": "change-sharing T2: add full-width shared Change reader"
+    },
+    "T3": {
+      "title": "让 Agent 在文档和原型就绪后给出分享链接",
+      "status": "done",
+      "verification": "48项接口/CLI/权限/交付与29项浏览器通过；构建、类型、格式、Skill校验通过；真实匿名文档/原型及安全退出验证成功。",
+      "commitTitle": "change-sharing T3: verify and surface anonymous material links"
+    },
+    "T4": {
+      "title": "改为按仓库与 Change 直接读取分享内容",
+      "status": "done",
+      "verification": "类型检查、10 项分享接口与25项权限回归通过；25项浏览器回归及评审修复后5项分享浏览器验证通过。",
+      "commitTitle": "change-sharing T4: read shared Changes directly by repository"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-21T18:37:25.354Z",
+      "summary": "同步develop后48项接口/CLI与29项浏览器回归通过；类型、格式、构建及真实外部分享验证通过；独立上下文评审问题全部关闭。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T05:20:56.987Z",
+      "summary": "用户验收通过，授权保留最新原型并合入develop、更新长期服务。",
+      "source": "验收通过，继续合入 develop 并更新长期服务吧。但是注意 develop 的原型可能对分享有了新的重构。不要覆盖了。代码应该还没动。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T05:22:50.837Z",
+      "summary": "同步公开Change访问、完整阅读、原型资源与材料链接流程的当前能力约束。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T05:22:52.600Z",
+      "summary": "用户验收通过，保留develop原型重构并完成独立评审、回归及Specs同步。",
+      "path": "docs/project/archive/2026-10-21-change-sharing"
+    }
+  },
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "分享链接打开后，应该显示固定分享时的版本并支持主动更新，还是自动跟随 Change 最新内容？",
+      "recommendation": "固定分享时的版本，支持主动更新，便于评审同一份内容。",
+      "answer": "自动跟随 Change 最新内容。",
+      "source": "用户回复 Q1：自动跟随 Change 最新内容。"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "分享详情是否包含代码合入差异？",
+      "recommendation": "分享概览、任务、需求、技术方案、计划、执行/评审记录、澄清问答和原型；代码合入差异仍在原工作台查看。",
+      "answer": "包含该 Change 的全部详情，包括代码合入差异；同时完善 Skill，在技术文档推送或原型发布后主动提供分享链接，并复用合适的服务地址配置。",
+      "source": "用户回复 Q2：包含所有内容即可。包括 skill 也可以改下，后续编写完技术文档或者制作完原型，最好主动贴一下分享链接，方便我去查看。但是这个可能要求配置好服务地址，目前有配置的地方吗。"
+    },
+    "Q3": {
+      "round": 2,
+      "question": "沿用现有 Change 详情页，只增加分享管理和独立阅读入口，是否需要先制作单独原型？",
+      "recommendation": "不单独制作原型，复用现有组件，在实现时验证桌面和手机效果。",
+      "answer": "先制作分享模式原型。",
+      "source": "用户回答 Q3：先制作分享模式原型。"
+    },
+    "Q4": {
+      "round": 3,
+      "question": "任何人可分享的 Change，范围以哪个为准：本服务已明确开放分享的仓库、本服务已接入的所有仓库（包括私有仓库），还是仅公开 GitHub 仓库？",
+      "recommendation": "以服务已明确开放分享的仓库为准；仓库配置一次，之后任何人可分享 Change，无需分享账号。",
+      "answer": "链接直接指定仓库与 Change；任何人拿到链接后，只要目标内容存在且服务能够读取，就展示详情，不绑定分享账号，也不要求创建分享记录或开启分享。",
+      "source": "用户回复：链接上指定change和仓库，被分享者拿到链接后，只要目标访问内容真的存在就分享给他。"
+    }
+  },
+  "previews": [
+    {
+      "id": "change-sharing",
+      "title": "Change 分享 · 管理与只读阅读",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e/index.html",
+        "sourceCommit": "69b6aa134fcbc96b1c3588aa49b904765db0b173",
+        "digest": "sha256:c56849a783262a1d224d07bc978f13ce4b56e5831d6cdb2af1c071ab330fd90f",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e/mobile.png"
+          }
+        ]
+      }
+    }
+  ],
+  "rework": {
+    "at": "2026-10-20T12:38:17.771Z",
+    "reason": "分享不应绑定创建账号；任何人应能分享实际存在的 Change。",
+    "approach": "保留已验证的阅读与资源隔离能力，重整仓库范围、分享生命周期和无账号 Skill 链接流程。"
+  }
+}

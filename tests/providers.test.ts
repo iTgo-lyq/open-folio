@@ -47,7 +47,10 @@ function mock(responses: Record<string, unknown | Response>) {
     assert.equal(init?.cache, "no-store");
     const h = new Headers(init?.headers);
     assert.equal(h.get("authorization"), "Bearer test-user-token");
-    assert.equal(h.get("X-GitHub-Api-Version"), githubApiVersion);
+    assert.equal(
+      h.get("X-GitHub-Api-Version"),
+      /\/pulls(?:\/|$)/.test(u.pathname) ? "2022-11-28" : githubApiVersion,
+    );
     const value = responses[u.pathname + u.search] ?? responses[u.pathname];
     assert.notEqual(value, undefined, `Unexpected request ${u.pathname}`);
     return value instanceof Response ? value : Response.json(value);
@@ -59,9 +62,9 @@ async function repo(provider: GitHubProvider) {
 }
 function fixture() {
   const bytes = JSON.stringify({
-    schemaVersion: 2,
-    collaborationBranch: "develop",
-    protectedBranches: ["trunk"],
+    schemaVersion: 3,
+    integrationBranch: "develop",
+    releaseBranch: "trunk",
   });
   return {
     "/user": { id: 7, login: "demo", name: null },
@@ -169,7 +172,7 @@ test("workflow is read at one commit, through regular Git tree entries", async (
   if (result.kind !== "file") throw new Error();
   assert.equal(result.commit, oid("a"));
   assert.equal(
-    JSON.parse(Buffer.from(result.bytes).toString()).protectedBranches[0],
+    JSON.parse(Buffer.from(result.bytes).toString()).releaseBranch,
     "trunk",
   );
   assert.ok(!requests.some((u) => u.pathname.includes("/contents/")));
@@ -440,5 +443,98 @@ test("selected branch permission probes ignore the hosting default and require a
   assert.equal(
     (await missing.probeWorkflow(context, repository, "develop")).kind,
     "branch-missing",
+  );
+});
+
+test("PR reads normalize trusted links, merged facts, pagination and local permission failures", async () => {
+  const pull = {
+    number: 3,
+    title: "Feature",
+    body: "Feature\n\nSpecTrail-Change: example",
+    html_url: "https://github.com/demo/work/pull/3",
+    state: "open",
+    draft: true,
+    base: { ref: "develop", sha: oid("a"), repo: { id: 12 } },
+    head: { ref: "change/example", sha: oid("b"), repo: { id: 12 } },
+    merged_at: null,
+    merge_commit_sha: oid("c"),
+    updated_at: "2026-10-21T00:00:00Z",
+  };
+  const responses = {
+    ...fixture(),
+    "/repos/demo/work/pulls": Response.json([pull], {
+      headers: { link: '<https://else.test/secret>; rel="next"' },
+    }),
+    "/repos/demo/work/pulls/3": pull,
+    [`/repos/demo/work/commits/${oid("c")}/pulls`]: [
+      { ...pull, state: "closed", merged_at: "2026-10-21T00:00:00Z" },
+    ],
+  };
+  const { provider, requests } = mock(responses);
+  const repository = await repo(provider);
+  const page = await provider.listPullRequests(
+    context,
+    repository,
+    { head: "change/example", base: "develop" },
+    null,
+  );
+  assert.equal(page.nextCursor, "2");
+  assert.equal(page.items[0].mergeCommit, null);
+  assert.equal(
+    requests.at(-1)?.searchParams.get("head"),
+    "demo:change/example",
+  );
+  assert.equal(
+    (await provider.getPullRequest(context, repository, 3)).draft,
+    true,
+  );
+  const byCommit = await provider.listPullRequests(
+    context,
+    repository,
+    { commit: oid("c") },
+    null,
+  );
+  assert.equal(byCommit.items[0].number, 3);
+  assert.equal(byCommit.items[0].mergeCommit, oid("c"));
+  assert.equal(byCommit.nextCursor, null);
+  for (const status of [403, 404, 401, 429]) {
+    const denied = mock({
+      ...fixture(),
+      "/repos/demo/work/pulls/3": new Response(null, { status }),
+    });
+    await assert.rejects(
+      denied.provider.getPullRequest(context, repository, 3),
+      {
+        code:
+          status === 401
+            ? "TOKEN_INVALID"
+            : status === 429
+              ? "RATE_LIMITED"
+              : "PR_READ_DENIED",
+      },
+    );
+  }
+  const foreign = mock({
+    ...fixture(),
+    "/repos/demo/work/pulls/3": {
+      ...pull,
+      html_url: "https://evil.test/pull/3",
+    },
+  });
+  await assert.rejects(
+    foreign.provider.getPullRequest(context, repository, 3),
+    { code: "PROVIDER_DATA_INVALID" },
+  );
+  const merged = mock({
+    ...fixture(),
+    "/repos/demo/work/pulls/3": {
+      ...pull,
+      state: "closed",
+      merged_at: "2026-10-21T00:00:00Z",
+    },
+  });
+  assert.equal(
+    (await merged.provider.getPullRequest(context, repository, 3)).mergeCommit,
+    oid("c"),
   );
 });

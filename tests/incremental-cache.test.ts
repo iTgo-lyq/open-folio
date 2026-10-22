@@ -25,9 +25,9 @@ async function traced() {
   await f.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main", "release"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "release",
       prototype: { status: "enabled", packagePath: "packages/prototype" },
     }),
   );
@@ -99,7 +99,7 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.equal(same.id, first.id);
   assert.equal(same.capturedAt, first.capturedAt);
   assert(!f.calls.some((a) => ["ls-tree", "cat-file"].includes(a[0])));
-  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 3);
+  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 4);
   assert(!f.calls.some((a) => a[0] === "fetch"));
 
   await f.put(
@@ -186,6 +186,45 @@ test("default branch changes preserve the configured collaboration scope, and ol
   );
   assert.equal((await f.store.snapshot(f.project)).id, upgraded.id);
   assert.notEqual(first.id, upgraded.id);
+});
+
+test("old label parsing snapshots rebuild once even with unchanged Git refs", async (t) => {
+  const f = await traced();
+  t.after(f.cleanup);
+  await f.put(
+    "docs/project/changes/labels/change.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      id: "labels",
+      title: "标签",
+      size: "small",
+      status: "active",
+      stage: "requirement",
+      branch: "develop",
+      confirmations: {},
+      tasks: {},
+      closure: {},
+      types: ["安全"],
+      urgency: "high",
+    }),
+  );
+  f.commit();
+  const current = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const old = { ...current, cacheSchemaVersion: 6, changes: [] };
+  await writeFile(
+    join(f.store.directory(), "snapshots", current.id + ".json"),
+    JSON.stringify(old),
+  );
+  const upgraded = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
+  assert.notEqual(upgraded.id, current.id);
+  assert.deepEqual(primaryRecord(upgraded.changes[0])!.state!.types, ["安全"]);
+  assert.equal(primaryRecord(upgraded.changes[0])!.state!.urgency, "high");
+  f.calls.length = 0;
+  assert.equal(
+    (await f.makeStore().refresh(f.project, DEFAULT_LIMITS)).id,
+    upgraded.id,
+  );
+  assert.equal(f.scans().length, 0);
 });
 
 test("legacy archive tags never affect snapshots or trigger retention fetches", async (t) => {

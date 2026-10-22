@@ -1,6 +1,6 @@
 import "server-only";
 import { AppError } from "./errors.ts";
-import type { ConnectionLease, PersonalSessions } from "./personal-sessions.ts";
+import type { WorkspaceLease, PersonalSessions } from "./personal-sessions.ts";
 import {
   repositoryKey,
   type RepositoryIdentity,
@@ -23,14 +23,14 @@ export class RepositoryPermissions {
   constructor(sessions: PersonalSessions) {
     this.sessions = sessions;
   }
-  private key(lease: ConnectionLease, key: string) {
+  private key(lease: WorkspaceLease, key: string) {
     return `${lease.workspaceId}/${key}`;
   }
-  assertAllowed(lease: ConnectionLease, key: string) {
+  assertAllowed(lease: WorkspaceLease, key: string) {
     const denied = this.entries.get(this.key(lease, key))?.denied;
     if (denied) throw denied;
   }
-  reject(lease: ConnectionLease, key: string | undefined, error: unknown) {
+  reject(lease: WorkspaceLease, key: string | undefined, error: unknown) {
     if (!(error instanceof AppError)) return;
     const wholeWorkspace = ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(
       error.code,
@@ -54,13 +54,25 @@ export class RepositoryPermissions {
   }
   async check(
     cookie: string,
-    lease: ConnectionLease,
+    lease: WorkspaceLease,
     key: string,
     target: RepositorySelector,
     options: {
       force?: boolean;
       workspaceOwned?: boolean;
-      collaborationBranch?: string;
+      integrationBranch?: string;
+    } = {},
+  ): Promise<RepositoryIdentity> {
+    return this.checkWorkspace(lease, key, target, options);
+  }
+  async checkWorkspace(
+    lease: WorkspaceLease,
+    key: string,
+    target: RepositorySelector,
+    options: {
+      force?: boolean;
+      workspaceOwned?: boolean;
+      integrationBranch?: string;
     } = {},
   ): Promise<RepositoryIdentity> {
     await lease.assertCurrent();
@@ -85,7 +97,10 @@ export class RepositoryPermissions {
         // A shared check belongs to the credential workspace, not its first device.
         const owner = options.workspaceOwned
           ? lease
-          : await this.sessions.workspaceLease(cookie, lease.workspaceId);
+          : await this.sessions.credentialLease(
+              lease.accountId,
+              lease.workspaceId,
+            );
         try {
           const provider = this.sessions.registry.get(
             owner.context.identity.providerId,
@@ -99,7 +114,7 @@ export class RepositoryPermissions {
           await provider.assertRead(
             owner.context,
             repository,
-            options.collaborationBranch,
+            options.integrationBranch,
           );
           await owner.assertCurrent();
           // A later denial on another request must win over this older check.

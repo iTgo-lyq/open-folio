@@ -17,7 +17,7 @@ test("personal repository reads isolate snapshots and expire cached permissions 
     assert.equal((await t.request("refresh", "POST")).status, 200);
     const r = await t.request("workbench"),
       w = await r.json();
-    assert.equal(w.collaborationBranch, "develop");
+    assert.equal(w.integrationBranch, "develop");
     assert.equal(w.prototype.branch, "develop");
     assert.equal(
       w.currentPrototype.revision,
@@ -445,9 +445,9 @@ test("switching the selected collaboration source isolates snapshots and concurr
   await t.g.put(
     "docs/project/workflow.json",
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: branch,
-      protectedBranches: ["unpublished"],
+      schemaVersion: 3,
+      integrationBranch: branch,
+      releaseBranch: "unpublished",
       prototype: { status: "disabled" },
     }),
   );
@@ -506,7 +506,7 @@ test("switching the selected collaboration source isolates snapshots and concurr
       await restarted.read(t.c.cookie, t.c.connection.id, t.key, (ctx) =>
         ctx.store.workbench(ctx.project),
       )
-    ).collaborationBranch,
+    ).integrationBranch,
     branch,
   );
 });

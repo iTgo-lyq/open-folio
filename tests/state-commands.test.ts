@@ -19,7 +19,7 @@ const workspaceScript = resolve(
 );
 function fixture(
   t: import("node:test").TestContext,
-  collaborationBranch = "develop",
+  integrationBranch = "develop",
 ) {
   const directory = mkdtempSync(join(tmpdir(), "folio-state-")),
     planning = join(directory, "repo"),
@@ -35,7 +35,7 @@ function fixture(
     }).trim();
   const git = (...args: string[]) => at(root, ...args);
   at(directory, "init", "--bare", remote);
-  git("init", "-b", collaborationBranch);
+  git("init", "-b", integrationBranch);
   git("remote", "add", "origin", remote);
   git("config", "user.name", "State test");
   git("config", "user.email", "state@example.invalid");
@@ -43,15 +43,15 @@ function fixture(
   writeFileSync(
     join(root, "docs/project/workflow.json"),
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch,
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch,
+      releaseBranch: "main",
     }),
   );
   git("add", ".");
   git("commit", "-m", "Initialize");
   git("branch", "main");
-  git("push", "-u", "origin", collaborationBranch);
+  git("push", "-u", "origin", integrationBranch);
   const path = (id = "sample") =>
     join(root, `docs/project/changes/${id}/change.json`);
   const state = (id = "sample") => JSON.parse(readFileSync(path(id), "utf8"));
@@ -148,9 +148,9 @@ function fixture(
     );
     assert.equal(result.status, expected, result.stdout + result.stderr);
     if (expected) return result.stderr;
-    assert.equal(at(planning, "branch", "--show-current"), collaborationBranch);
+    assert.equal(at(planning, "branch", "--show-current"), integrationBranch);
     assert.equal(
-      at(remote, "rev-parse", collaborationBranch),
+      at(remote, "rev-parse", integrationBranch),
       at(remote, "rev-parse", `change/${id}`),
     );
     root = work;
@@ -183,6 +183,63 @@ function fixture(
     commit,
   };
 }
+
+test("labels support free names, partial updates and restoring normal without changing workflow", (t) => {
+  const f = fixture(t);
+  f.create("small", "sample", [
+    "--types",
+    '[" 修复 ","安全","修复","数据,迁移","none"]',
+    "--urgency",
+    "high",
+  ]);
+  assert.deepEqual(f.state().types, ["修复", "安全", "数据,迁移", "none"]);
+  assert.equal(f.state().urgency, "high");
+  const { types: _types, urgency: _urgency, ...workflow } = f.state();
+  f.run("labels", ["--types", '["自定义"]']);
+  assert.equal(f.state().urgency, "high");
+  f.run("labels", ["--urgency", "normal"]);
+  assert(!Object.hasOwn(f.state(), "urgency"));
+  assert.deepEqual(f.state().types, ["自定义"]);
+  const before = readFileSync(f.path(), "utf8");
+  f.run("labels", ["--types", "[]", "--dry-run"]);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  for (const options of [
+    [],
+    ["--types", "{broken"],
+    ["--types", "null"],
+    ["--types", "[1]"],
+    ["--types", '[" "]'],
+    ["--types", '["修复\\n"]'],
+    ["--types", '["新类型"]', "--urgency", "none"],
+  ]) {
+    f.run("labels", options, 1);
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+  }
+  f.run("labels", ["--types", "[]"]);
+  assert.deepEqual(f.state(), workflow);
+  f.begin();
+  f.run("labels", ["--urgency", "urgent"]);
+  assert.equal(f.state().tasks.T1.status, "doing");
+  f.done();
+  f.commit();
+  f.verify();
+  f.accept();
+  const archived = f.archive().path;
+  const frozen = readFileSync(join(f.root, archived), "utf8");
+  f.run("labels", ["--urgency", "normal"], 1);
+  assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
+});
+
+test("normal creates no stored urgency and cancelled labels remain read-only", (t) => {
+  const f = fixture(t);
+  f.create("small", "sample", ["--urgency", "normal", "--types", "[]"]);
+  assert(!Object.hasOwn(f.state(), "urgency"));
+  assert(!Object.hasOwn(f.state(), "types"));
+  f.run("cancel", ["--reason", "取消"]);
+  const before = readFileSync(f.path(), "utf8");
+  f.run("labels", ["--types", '["修复"]'], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+});
 
 test("follow-up registration requires a published closed predecessor and stays independent of dependencies", (t) => {
   const f = fixture(t);
@@ -915,9 +972,9 @@ test("preview association command preserves unrelated state and enforces configu
   writeFileSync(
     join(f.root, "docs/project/workflow.json"),
     JSON.stringify({
-      schemaVersion: 2,
-      collaborationBranch: "develop",
-      protectedBranches: ["main"],
+      schemaVersion: 3,
+      integrationBranch: "develop",
+      releaseBranch: "main",
       prototype: {
         status: "enabled",
         packagePath: "packages/prototype",
@@ -940,7 +997,7 @@ test("preview association command preserves unrelated state and enforces configu
   f.verify();
   f.accept();
   const result = f.archive();
-  assert.match(result.next, /integration.mjs merge/);
+  assert.match(result.next, /integration.mjs preflight/);
 });
 
 test("execution requires a published archived dependency already integrated in the branch", (t) => {
@@ -1014,7 +1071,7 @@ test("state commands reject legacy workflow before writing planning or execution
     join(f.root, "docs/project/workflow.json"),
     JSON.stringify({
       schemaVersion: 1,
-      protectedBranches: ["main"],
+      releaseBranch: "main",
     }),
   );
   for (const command of ["show", "execute", "retitle"])

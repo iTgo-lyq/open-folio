@@ -2,27 +2,35 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <title>OpenFolio · 安静的工作台</title>
+    <title>OpenFolio · Specs 阅读</title>
     <style>
       {{include:../shared/quiet-workbench/style.css}}
     </style>
   </head>
   <body data-start="specs">
     <a class="skip-link" href="#main">跳到主要内容</a>
-    <div id="review" class="review-strip" aria-label="原型评审工具"></div>
+    <div id="review" class="review" role="toolbar" aria-label="原型评审工具"></div>
     <div id="app"></div>
-    <dialog
-      id="detail"
-      class="detail-dialog"
-      aria-labelledby="detail-title"
-    ></dialog>
-    <dialog id="reader" aria-labelledby="reader-title"></dialog>
-    <dialog id="overlay" aria-labelledby="overlay-title"></dialog>
+    <div id="layer"></div>
+    <dialog id="dlg" class="dlg"></dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script>
-      {{include:../shared/quiet-workbench/app.js}}
+      (() => {
+      "use strict";
+      {{include:../shared/quiet-workbench/icons.js}}
+      {{include:../shared/quiet-workbench/data.js}}
+      {{include:../shared/quiet-workbench/core.js}}
+      {{include:../shared/quiet-workbench/shell.js}}
+      {{include:../shared/quiet-workbench/home.js}}
+      {{include:../shared/quiet-workbench/specs.js}}
+      {{include:../shared/quiet-workbench/changes.js}}
+      {{include:../shared/quiet-workbench/prototypes.js}}
+      {{include:../shared/quiet-workbench/account.js}}
+      {{include:../shared/quiet-workbench/public.js}}
+      {{include:../shared/quiet-workbench/main.js}}
+      })();
     </script>
   </body>
 </html>

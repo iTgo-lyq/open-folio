@@ -13,7 +13,7 @@ export type IntegrationFile = {
 };
 export type IntegrationSummary = {
   record: IntegrationResult;
-  collaborationBranch: string | null;
+  integrationBranch: string | null;
   command?: string;
   stats?: {
     total: number;

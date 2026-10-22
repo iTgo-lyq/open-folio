@@ -1,4 +1,4 @@
-export class AppError extends Error {
+class AppErrorClass extends Error {
   code: string;
   status: number;
   retryAfter?: string;
@@ -8,6 +8,13 @@ export class AppError extends Error {
     this.status = status;
   }
 }
+// Instrumentation and API bundles share stores, so their errors must share a class.
+const globals = globalThis as typeof globalThis & {
+  folioAppErrorClass?: typeof AppErrorClass;
+};
+export const AppError = (globals.folioAppErrorClass ??= AppErrorClass);
+export type AppError = AppErrorClass;
+
 export function publicError(e: unknown): AppError {
   return e instanceof AppError
     ? e

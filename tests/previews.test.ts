@@ -6,9 +6,9 @@ import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
 const confirmedAt = "2026-10-03T01:50:00+08:00";
 const workflow = {
-  schemaVersion: 2,
-  collaborationBranch: "develop",
-  protectedBranches: ["main"],
+  schemaVersion: 3,
+  integrationBranch: "develop",
+  releaseBranch: "main",
   prototype: { status: "enabled", packagePath: "packages/prototype" },
 };
 const entry = {

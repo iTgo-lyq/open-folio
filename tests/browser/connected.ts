@@ -1,4 +1,9 @@
-import { test as base, expect, type APIRequestContext } from "@playwright/test";
+import {
+  test as base,
+  expect,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
 import { createHash, randomUUID } from "node:crypto";
 export const repoKey = createHash("sha256")
   .update(JSON.stringify(["github", "fixture.test", "1"]))
@@ -73,3 +78,106 @@ export const test = base.extend<{
   request: async ({ context }, use) => use(context.request),
 });
 export { expect };
+export async function waitForWorkbenchLayout(page: Page, width: number) {
+  await expect
+    .poll(async () =>
+      Math.round((await page.getByRole("main").boundingBox())?.x ?? -1),
+    )
+    .toBe(width >= 761 ? 72 : 0);
+}
+// 壳层操作：顶栏“同步状态”弹层承载读取来源与刷新，账号菜单承载 Token 与设置入口。
+export async function openSyncStatus(page: Page) {
+  await page.getByRole("button", { name: /^同步状态：/ }).click();
+  return page.getByRole("dialog", { name: "读取来源" });
+}
+export async function refreshCentral(page: Page) {
+  const source = await openSyncStatus(page);
+  await source
+    .getByRole("button", { name: "刷新中心仓库", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+}
+export async function openAccountSettings(page: Page) {
+  await page.getByRole("button", { name: /^账号：/ }).click();
+  await page.getByRole("menuitem", { name: "账号与 Token" }).click();
+}
+export const tokenRows = (page: Page) =>
+  page
+    .getByRole("list", { name: "已绑定 Token", exact: true })
+    .getByRole("listitem");
+export async function openTokenMenu(page: Page, label: string) {
+  await page
+    .getByRole("button", { name: `${label} 的更多操作`, exact: true })
+    .click();
+  return page.getByRole("menu", { name: "Token 操作" });
+}
+export async function copyCurrentToken(page: Page) {
+  await tokenRows(page)
+    .filter({ hasText: "当前使用" })
+    .getByRole("button", { name: /的更多操作$/ })
+    .click();
+  await page.getByRole("menuitem", { name: "复制 Token", exact: true }).click();
+}
+export async function logoutCurrent(page: Page) {
+  await page
+    .getByRole("region", { name: "账号", exact: true })
+    .getByRole("button", { name: "退出登录", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "退出这台设备？" })
+    .getByRole("button", { name: "退出登录", exact: true })
+    .click();
+}
+export async function readingLink(page: Page) {
+  await expect(
+    page.getByRole("button", { name: "复制页面链接", exact: true }),
+  ).toHaveCount(0);
+  if (new URL(page.url()).searchParams.get("m") === "specs")
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("branch"))
+      .not.toBeNull();
+  return page.url();
+}
+export async function openChangeFilters(page: Page) {
+  const menu = page.getByRole("menu", { name: /^筛选/ });
+  if (!(await menu.isVisible()))
+    await page.getByRole("button", { name: /^筛选(?:，|$)/ }).click();
+  return menu;
+}
+export async function changeDisplay(page: Page, label: string) {
+  await page.getByRole("button", { name: "显示", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: label, exact: true }).click();
+}
+export const changeLinks = (page: Page) =>
+  page
+    .getByRole("region", { name: "Change 列表", exact: true })
+    .getByRole("link", { name: /^打开 / });
+export const changeRow = (page: Page, title: string) =>
+  page
+    .getByRole("link", { name: `打开 ${title}`, exact: true })
+    .locator("..")
+    .locator("..");
+export async function openMaterial(page: Page, title: string) {
+  let nav = page.getByRole("navigation", { name: "Change 材料", exact: true });
+  if (!(await nav.isVisible()))
+    await page.getByRole("button", { name: /^Change 材料：/ }).click();
+  const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await nav
+    .getByRole("link", { name: new RegExp(`^${escaped}(?:$|\\s)`) })
+    .click();
+}
+export async function backToChanges(page: Page) {
+  await page
+    .getByRole("button", { name: "返回 Changes 列表", exact: true })
+    .click();
+}
+
+export async function copyPublicPreviewLink(page: Page) {
+  await page.getByRole("button", { name: "公开链接", exact: true }).click();
+  const menu = page.getByRole("dialog", { name: "公开链接", exact: true });
+  await expect(menu.getByLabel("公开链接", { exact: true })).not.toHaveValue(
+    "",
+  );
+  await menu.getByRole("button", { name: "复制公开链接", exact: true }).click();
+  await menu.getByRole("button", { name: "关闭公开链接", exact: true }).click();
+}

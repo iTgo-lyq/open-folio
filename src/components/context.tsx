@@ -8,14 +8,18 @@ import {
   useState,
 } from "react";
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
-import { SUGGESTED_COLLABORATION_BRANCH } from "@/lib/collaboration";
+import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
+import { NETWORK_ERROR } from "@/lib/sync-status";
+import { documentReadingTarget } from "@/lib/change-reading";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
 export { api, ApiError } from "./api";
 export type Query = Record<string, string>;
-type Value = {
+export type ReadingContext = {
+  sharing?: boolean;
+  readScope?: string;
   q: Query;
   revealVersion: number;
   nav: (patch: Record<string, string | null>, replace?: boolean) => void;
@@ -26,6 +30,8 @@ type Value = {
   loading: boolean;
   refreshing: boolean;
   error: string;
+  /** 最近一次错误的分类码：接口错误码、网络失败为 NETWORK，否则省略。 */
+  errorCode?: string;
   refresh: () => Promise<void>;
   locked: boolean;
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
@@ -35,11 +41,16 @@ type Value = {
   selectRepository: (
     key: string,
     repository?: RepositoryIdentity,
-    collaborationBranch?: string,
+    integrationBranch?: string,
   ) => void;
 };
-const Context = createContext<Value | null>(null);
+export const ReadingProvider = createContext<ReadingContext | null>(null);
+const Context = ReadingProvider;
 export const useWorkspace = () => useContext(Context)!;
+function errorCodeOf(cause: unknown) {
+  if (cause instanceof ApiError) return cause.code;
+  return cause instanceof TypeError ? NETWORK_ERROR : "FAILED";
+}
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const personal = usePersonal();
   const [q, setQ] = useState<Query>({}),
@@ -51,18 +62,33 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     } | null>(null),
     [loading, setLoading] = useState(false),
     [refreshing, setRefreshing] = useState(false),
-    [error, setError] = useState(""),
+    [failure, setFailure] = useState({ message: "", code: "", identity: "" }),
     [message, setMessage] = useState(""),
     [retry, setRetry] = useState(0);
+  const setError = (message: string, cause?: unknown, confirmedRead = false) =>
+    setFailure((previous) => {
+      const code = message ? errorCodeOf(cause) : "";
+      if (
+        previous.identity === connectionKey &&
+        ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(previous.code) &&
+        !confirmedRead &&
+        !["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(code)
+      )
+        return previous;
+      return { message, code, identity: connectionKey };
+    });
   const generation = useRef(0),
     active = useRef<AbortController | null>(null);
   const projectId = q.repo ?? "",
     connection = personal.connection;
-  const collaborationBranch =
-    q.collaborationBranch ??
-    personal.items.find((r) => r.key === projectId)?.collaborationBranch ??
-    SUGGESTED_COLLABORATION_BRANCH;
-  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}:${collaborationBranch}`;
+  const connectionKey = `${personal.session?.deviceSessionId ?? ""}:${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}`;
+  const visibleFailure =
+    failure.identity === connectionKey ? failure : { message: "", code: "" };
+  const integrationBranch =
+    q.integrationBranch ??
+    personal.items.find((r) => r.key === projectId)?.integrationBranch ??
+    SUGGESTED_INTEGRATION_BRANCH;
+  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}:${integrationBranch}`;
   const data = loaded?.key === scope ? loaded.value : null;
   const repository =
     data?.repository ??
@@ -124,8 +150,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             instance: r.instanceId,
             repositoryId: r.repositoryId,
             fullName: r.fullName,
-            collaborationBranch:
-              r.collaborationBranch ?? SUGGESTED_COLLABORATION_BRANCH,
+            integrationBranch:
+              r.integrationBranch ?? SUGGESTED_INTEGRATION_BRANCH,
             m: preferences.module ?? "specs",
           },
           true,
@@ -142,7 +168,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const signature = JSON.stringify([
       connection?.id,
       r.repositoryId,
-      collaborationBranch,
+      integrationBranch,
       q.m,
     ]);
     if (savedPosition.current === signature) return;
@@ -154,7 +180,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           instanceId: r.instanceId,
           repositoryId: r.repositoryId,
           fullName: r.fullName,
-          collaborationBranch,
+          integrationBranch,
         },
         module: q.m as "specs" | "changes" | "prototypes",
       })
@@ -166,7 +192,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     data?.repository,
     q.m,
     connection?.id,
-    collaborationBranch,
+    integrationBranch,
     personal.updatePreferences,
   ]);
   const readUrl = useCallback(
@@ -174,20 +200,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const [name, query] = path.split("?");
       const params = new URLSearchParams(query);
       params.set("connectionId", connection?.id ?? "");
-      params.set("collaborationBranch", collaborationBranch);
+      params.set("integrationBranch", integrationBranch);
       if (q.repositoryId && q.fullName) {
         params.set("repositoryId", q.repositoryId);
         params.set("fullName", q.fullName);
       }
       return `/api/repositories/${encodeURIComponent(projectId)}/${name}?${params}`;
     },
-    [
-      connection?.id,
-      projectId,
-      collaborationBranch,
-      q.repositoryId,
-      q.fullName,
-    ],
+    [connection?.id, projectId, integrationBranch, q.repositoryId, q.fullName],
   );
   const selectRepository = useCallback(
     (
@@ -198,8 +218,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const item = checkedRepository
         ? {
             repository: checkedRepository,
-            collaborationBranch:
-              selectedBranch ?? SUGGESTED_COLLABORATION_BRANCH,
+            integrationBranch: selectedBranch ?? SUGGESTED_INTEGRATION_BRANCH,
           }
         : personal.items.find((r) => r.key === key);
       if (!item) return;
@@ -213,27 +232,49 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         instance: item.repository.instanceId,
         repositoryId: item.repository.repositoryId,
         fullName: item.repository.fullName,
-        collaborationBranch: item.collaborationBranch,
+        integrationBranch: item.integrationBranch,
         m: ["specs", "changes", "prototypes"].includes(q.m) ? q.m : "specs",
       });
     },
     [personal.items, q, nav],
   );
   useEffect(() => {
-    const clear = () => {
+    const clear = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{ path?: string; code?: string; message?: string }>
+      ).detail;
+      if (detail?.path) {
+        const url = new URL(detail.path, window.location.origin);
+        if (
+          url.searchParams.get("connectionId") !== connection?.id ||
+          (!["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(detail.code ?? "") &&
+            !url.pathname.startsWith(
+              `/api/repositories/${encodeURIComponent(projectId)}/`,
+            ))
+        )
+          return;
+      }
       active.current?.abort();
       generation.current++;
       setLoaded(null);
       setLoading(false);
       setRefreshing(false);
-      setError("读取权限暂时无法确认，请重试或切换凭据。");
+      setError(
+        detail?.message || "读取权限暂时无法确认，请重试或切换凭据。",
+        new ApiError(detail?.code ?? "READ_DENIED", detail?.message ?? ""),
+      );
     };
     window.addEventListener("openfolio-read-denied", clear);
     return () => window.removeEventListener("openfolio-read-denied", clear);
-  }, []);
+  }, [connectionKey, connection?.id, projectId]);
   useEffect(() => {
-    setLoaded(null);
-    setError("");
+    setLoaded((previous) => (previous?.key === scope ? previous : null));
+    setFailure((previous) =>
+      previous.identity === connectionKey &&
+      ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(previous.code)
+        ? previous
+        : { message: "", code: "", identity: connectionKey },
+    );
     setRefreshing(false);
     if (
       !ready ||
@@ -267,11 +308,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             signal: c.signal,
           });
         }
-        if (!c.signal.aborted && version === generation.current)
+        if (!c.signal.aborted && version === generation.current) {
           setLoaded({ key: scope, value: next });
+          setError("", undefined, true);
+        }
       } catch (e) {
         if (!c.signal.aborted && version === generation.current) {
-          setError((e as Error).message);
+          setError((e as Error).message, e);
         }
       } finally {
         if (!c.signal.aborted && version === generation.current) {
@@ -316,10 +359,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             setLoaded({ key: scope, value: next });
           }
         }
-        if (!c.signal.aborted && version === generation.current) setError("");
+        if (!c.signal.aborted && version === generation.current)
+          setError("", undefined, true);
       } catch (e) {
         if (!c.signal.aborted && version === generation.current)
-          setError(`自动更新失败：${(e as Error).message}`);
+          setError(`自动更新失败：${(e as Error).message}`, e);
       } finally {
         running = false;
         if (!c.signal.aborted)
@@ -350,7 +394,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setRetry((v) => v + 1);
     } catch (e) {
       if (!c.signal.aborted && version === generation.current) {
-        setError((e as Error).message);
+        setError((e as Error).message, e);
       }
     } finally {
       if (version === generation.current) setRefreshing(false);
@@ -362,14 +406,25 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [message]);
   const openDocument = useCallback(
-    (id: string, anchor = "", raw = false) =>
-      nav({ doc: id, da: anchor || null, raw: raw ? "1" : null }),
-    [nav],
+    (id: string, anchor = "", raw = false) => {
+      const target = data && documentReadingTarget(data, id);
+      if (target)
+        nav({
+          ...target,
+          doc: null,
+          da: null,
+          anchor: anchor || null,
+          raw: raw ? "1" : null,
+        });
+      else nav({ doc: id, da: anchor || null, raw: raw ? "1" : null });
+    },
+    [nav, data],
   );
   return (
     <Context.Provider
       value={{
         q,
+        readScope: connection?.id,
         revealVersion,
         nav,
         projects: personal.items.map((r) => ({
@@ -381,7 +436,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         repository,
         loading,
         refreshing,
-        error,
+        error: visibleFailure.message,
+        errorCode: visibleFailure.code || undefined,
         refresh,
         locked: !connection,
         openDocument,
@@ -443,7 +499,8 @@ export function useDocument(id: string | undefined) {
   };
 }
 export function useSavedScroll(pageKey: string, anchor?: string) {
-  const key = `${usePersonal().connection?.id ?? ""}.${pageKey}`;
+  const { readScope, sharing } = useWorkspace();
+  const key = `${readScope ?? ""}.${pageKey}`;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -454,6 +511,8 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
           .querySelector(`#${CSS.escape(anchor)}`)
           ?.scrollIntoView({ block: "start" }),
       );
+    } else if (sharing) {
+      element.scrollTop = 0;
     } else {
       try {
         element.scrollTop = Number(
@@ -464,7 +523,7 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
     const save = () => {
       // A detached scroll container reports zero during passive cleanup.
       // Keep the position already captured by its last scroll event.
-      if (!element.isConnected) return;
+      if (!element.isConnected || sharing) return;
       try {
         sessionStorage.setItem(
           `openfolio.scroll.${key}`,
@@ -477,6 +536,6 @@ export function useSavedScroll(pageKey: string, anchor?: string) {
       save();
       element.removeEventListener("scroll", save);
     };
-  }, [key, anchor]);
+  }, [key, anchor, sharing]);
   return ref;
 }

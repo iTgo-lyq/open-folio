@@ -12,6 +12,7 @@ import {
   renewPersonalResponse,
 } from "./personal-http.ts";
 import type { Limits } from "../lib/model.ts";
+import { noteRepositoryActivity } from "./background-refresh.ts";
 export async function repositoryResponse(
   request: Request,
   key: string,
@@ -66,6 +67,12 @@ export async function repositoryResponse(
                 400,
               );
           }
+          noteRepositoryActivity(
+            service.root,
+            ctx.lease.workspaceId,
+            key,
+            ctx.project.integrationBranch,
+          );
           const snap = await ctx.refresh(
             limits ?? limitsFor(await readConfig()),
             q.get("automatic") === "1",
@@ -179,7 +186,7 @@ export async function repositoryResponse(
       },
       selector,
       request.signal,
-      q.get("collaborationBranch") ?? undefined,
+      q.get("integrationBranch") ?? undefined,
     );
     await renewPersonalResponse(request, response, service.sessions, selection);
     return request.method === "HEAD"
