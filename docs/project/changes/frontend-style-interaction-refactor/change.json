@@ -110,7 +110,9 @@
     },
     "T15": {
       "title": "旧原型与分享入口清理",
-      "status": "doing"
+      "status": "done",
+      "verification": "原型构建7页/16单测/静态契约、类型/格式/生产构建通过；26个不同浏览器用例及独立评审通过；同一11356真实账号/匿名/外部分享冒烟通过",
+      "commitTitle": "frontend-style-interaction-refactor T15: verify acceptance fixes on the shared-data service"
     }
   },
   "closure": {},
