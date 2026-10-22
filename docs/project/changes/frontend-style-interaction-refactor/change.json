@@ -152,7 +152,9 @@
     },
     "T22": {
       "title": "收起侧栏显示进行中 Change 角标",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型、格式、生产构建、12项壳层/凭据回归及新增角标边界用例通过；独立评审通过；真实仓库计数、双主题桌面/平板、手机与退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T22: verify active Changes badge on the acceptance service"
     }
   },
   "closure": {},
