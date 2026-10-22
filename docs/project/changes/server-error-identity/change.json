@@ -4,13 +4,13 @@
   "title": "跨构建模块稳定识别服务错误",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/server-error-identity",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "稳定共享服务错误类并验证生产认证与分享",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
