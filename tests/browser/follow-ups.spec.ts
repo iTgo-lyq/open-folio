@@ -78,6 +78,35 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
       exact: true,
     }),
   ).toBeVisible();
+  for (const width of [1440, 834, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const positions = await page.evaluate(() => {
+      const row = (id: string) =>
+        document.querySelector(`[data-change-id="${id}"]`)!.parentElement!
+          .parentElement!;
+      const cells = (el: Element) =>
+        Array.from(el.children)
+          .filter((c) => getComputedStyle(c).display !== "none")
+          .map((c) => {
+            const r = c.getBoundingClientRect();
+            return { left: r.left, right: r.right };
+          });
+      return {
+        grouped: cells(row("source-connect")),
+        single: cells(row("unrelated")),
+      };
+    });
+    expect(positions.grouped.length).toBe(positions.single.length);
+    positions.grouped.forEach((cell, i) => {
+      expect(
+        Math.abs(cell.left - positions.single[i].left),
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(cell.right - positions.single[i].right),
+      ).toBeLessThanOrEqual(1);
+    });
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({
     path: "artifacts/follow-ups-grouped-desktop.png",
     fullPage: true,

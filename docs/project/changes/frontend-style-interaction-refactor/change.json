@@ -104,7 +104,9 @@
     },
     "T14": {
       "title": "Change 分组层次与边距统一",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型检查与格式通过；29个不同浏览器用例通过，含四档宽度分组内外各列1px内对齐、筛选/排序/看板回归",
+      "commitTitle": "frontend-style-interaction-refactor T14: align grouped Change rows"
     },
     "T15": {
       "title": "旧原型与分享入口清理",
