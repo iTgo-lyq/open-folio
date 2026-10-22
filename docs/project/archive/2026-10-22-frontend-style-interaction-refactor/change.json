@@ -3,7 +3,7 @@
   "id": "frontend-style-interaction-refactor",
   "title": "前端样式与交互重构",
   "size": "large",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
@@ -180,6 +180,17 @@
       "at": "2026-10-22T12:08:44.958Z",
       "summary": "用户人工验收当前样式与交互版本通过，并授权归档合入develop及更新常驻服务",
       "source": "这版没问题了，验收通过，归档并合入 develop，更新常驻服务吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T12:15:54.406Z",
+      "summary": "同步工作台、Spec阅读、Change追踪、原型浏览与共享UI五处当前能力及长期约束，独立复核通过"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T12:15:56.210Z",
+      "summary": "用户验收通过，完成Specs同步、集成验证和独立复核后归档",
+      "path": "docs/project/archive/2026-10-22-frontend-style-interaction-refactor"
     }
   },
   "previews": [
