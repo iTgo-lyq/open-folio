@@ -1,0 +1,479 @@
+{
+  "schemaVersion": 1,
+  "id": "frontend-style-interaction-refactor",
+  "title": "前端样式与交互重构",
+  "size": "large",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/frontend-style-interaction-refactor",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-22T04:16:05.253Z",
+      "summary": "七组入口按 Craft 重做，陶土强调与墨色标志，可见材质，精简控件并外露创建者",
+      "source": "用户回复：还是陶土吧，不过现在好像没有什么玻璃特效存在？……logo保持墨色没问题。不用保留降级，默认用户浏览器都支持，不需要开启减少透明度。其他没问题。"
+    },
+    "technical": {
+      "at": "2026-10-22T05:32:02.253Z",
+      "summary": "按验收原型重建表现层与主题，详情与分享共用阅读页，后端补创建者",
+      "source": "用户在 change-sharing 合入后回复：现在 change-sharing 已经合入了。你重新review一下。开始制定实施计划吧。复查后仅同步分享页参数白名单与分享入口写法，未改变方案。"
+    },
+    "plan": {
+      "at": "2026-10-22T05:43:39.170Z",
+      "summary": "按壳层、页面到清理分十二步串行替换，每步独立验证提交",
+      "source": "用户回复：开始推进吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "主题、设计 token 与品牌标志",
+      "status": "done",
+      "verification": "typecheck、format、ui:build/ui:test、build 通过；theme 与 workspace/personal/sharing 浏览器用例 13 项通过",
+      "commitTitle": "frontend-style-interaction-refactor T1: themes, design tokens and flat brand mark"
+    },
+    "T2": {
+      "title": "共享基础组件",
+      "status": "done",
+      "verification": "typecheck、format、ui:build、ui:test（新增组件键盘/焦点/深色/320px）通过；完整浏览器套件前 58 项无失败，余下留到 T12",
+      "commitTitle": "frontend-style-interaction-refactor T2: shared UI primitives"
+    },
+    "T3": {
+      "title": "Change 创建者读取",
+      "status": "done",
+      "verification": "creator 相关单测与 store/changes/shares/incremental-cache 38 项通过；npm test 285/286（service-tools 环境问题已记录）",
+      "commitTitle": "frontend-style-interaction-refactor T3: read Change creators"
+    },
+    "T4": {
+      "title": "工作台壳层与导航",
+      "status": "done",
+      "verification": "typecheck、Prettier、build、shell-state 2项与壳层/刷新/来源/权限浏览器11项通过；旧参数随页面迁移接入",
+      "commitTitle": "frontend-style-interaction-refactor T4: workbench shell and navigation"
+    },
+    "T5": {
+      "title": "我的仓库与登录注册",
+      "status": "done",
+      "verification": "类型、格式、生产构建及personal/account-connections/collaboration-source共16项通过；双主题三档仓库布局已检查",
+      "commitTitle": "frontend-style-interaction-refactor T5: repository home and account entry"
+    },
+    "T6": {
+      "title": "账号与 Token 设置",
+      "status": "done",
+      "verification": "类型、格式、build、UI构建/交互与完整单测288项通过；凭据相关27项及四档布局复验通过",
+      "commitTitle": "frontend-style-interaction-refactor T6: account and Token settings"
+    },
+    "T7": {
+      "title": "阅读布局与 Specs",
+      "status": "done",
+      "verification": "类型、格式、生产构建及阅读/SVG/分享/来源/刷新14个不同浏览器用例通过；三档窄屏与锚点焦点已查",
+      "commitTitle": "frontend-style-interaction-refactor T7: reading layout and Specs"
+    },
+    "T8": {
+      "title": "Changes 列表",
+      "status": "done",
+      "verification": "类型、格式、build及目录/标签/延续单测13项通过；Changes相关浏览器21项、壳层4项及来源复验3项通过",
+      "commitTitle": "frontend-style-interaction-refactor T8: Change directory and filters"
+    },
+    "T9": {
+      "title": "Change 详情阅读页",
+      "status": "done",
+      "verification": "类型、格式、build、材料映射单测3项及详情/差异/原型/标签/交付/来源/壳层浏览器分批验证通过；四档双主题已查",
+      "commitTitle": "frontend-style-interaction-refactor T9: Change material reading pages"
+    },
+    "T10": {
+      "title": "Change 分享页",
+      "status": "done",
+      "verification": "类型、格式、build、shares/材料单测13项与匿名浏览器6项通过；双主题四档分享阅读已查",
+      "commitTitle": "frontend-style-interaction-refactor T10: anonymous Change reader"
+    },
+    "T11": {
+      "title": "原型总览、画布与公开原型页",
+      "status": "done",
+      "verification": "类型、格式、build及原型单测21项通过；原型/分享31个不同浏览器用例通过，三类页面双主题四档布局已查",
+      "commitTitle": "frontend-style-interaction-refactor T11: prototype gallery and canvases"
+    },
+    "T12": {
+      "title": "旧样式清理与整体验证",
+      "status": "done",
+      "verification": "类型、格式、build、UI交互和296项单测通过；126个浏览器用例覆盖通过；独立评审与真实生产冒烟通过",
+      "commitTitle": "frontend-style-interaction-refactor T12: complete validation and review evidence"
+    },
+    "T13": {
+      "title": "阅读目录、抽屉与顶栏返修",
+      "status": "done",
+      "verification": "类型、格式、生产构建及阅读/分享/壳层浏览器24项通过，含最新5条关联、单行来源、加宽抽屉与默认收起回归",
+      "commitTitle": "frontend-style-interaction-refactor T13: refine reading and header interactions"
+    },
+    "T14": {
+      "title": "Change 分组层次与边距统一",
+      "status": "done",
+      "verification": "类型检查与格式通过；29个不同浏览器用例通过，含四档宽度分组内外各列1px内对齐、筛选/排序/看板回归",
+      "commitTitle": "frontend-style-interaction-refactor T14: align grouped Change rows"
+    },
+    "T15": {
+      "title": "旧原型与分享入口清理",
+      "status": "done",
+      "verification": "原型构建7页/16单测/静态契约、类型/格式/生产构建通过；26个不同浏览器用例及独立评审通过；同一11356真实账号/匿名/外部分享冒烟通过",
+      "commitTitle": "frontend-style-interaction-refactor T15: verify acceptance fixes on the shared-data service"
+    },
+    "T16": {
+      "title": "恢复 Changes 与原型内容区标题",
+      "status": "done",
+      "verification": "类型、格式、12项定向浏览器、独立复核和生产构建通过；11356真实已有账号冒烟验证内容区标题、数量及桌面/手机布局通过，退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T16: verify restored page headings"
+    },
+    "T17": {
+      "title": "阅读目录收起为顶栏位置按钮",
+      "status": "done",
+      "verification": "类型与格式通过；阅读、分享、Specs、Changes 等受影响浏览器 34/34 通过，含面板收起、顶栏位置按钮、弹层焦点与窄屏",
+      "commitTitle": "frontend-style-interaction-refactor T17: collapse reading directories into a header location switcher"
+    },
+    "T18": {
+      "title": "抽屉贴边玻璃与遮罩模糊",
+      "status": "done",
+      "verification": "格式、ui:build/ui:test、生产构建通过；抽屉相关浏览器34/34通过；双主题三档宽度截图复核贴边单层玻璃与模糊遮罩",
+      "commitTitle": "frontend-style-interaction-refactor T18: flush glass drawers over a blurred scrim"
+    },
+    "T19": {
+      "title": "位置按钮与抽屉评审修正",
+      "status": "done",
+      "verification": "类型、格式、22项阅读分享回归及新增断点焦点定向1项通过；独立评审扩宽卸载焦点问题已修复并复核",
+      "commitTitle": "frontend-style-interaction-refactor T19: finish reading interaction review fixes"
+    },
+    "T20": {
+      "title": "统一顶栏位置按钮与路径间距",
+      "status": "done",
+      "verification": "类型、格式、生产构建、7项定向回归及匿名复验通过；独立评审通过；真实Specs/Change四档按钮高度/字体/内边距相同、分隔两侧8px，匿名两档8px，登录清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T20: verify matching reading path controls"
+    },
+    "T21": {
+      "title": "统一阅读目录密度与轻量图标",
+      "status": "done",
+      "verification": "类型、格式、生产构建、6项目录回归和悬浮定向复验通过；独立评审通过；真实双页双主题三档密度与焦点、整行淡色悬浮及登录清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T21: verify reading directory density and hover"
+    },
+    "T22": {
+      "title": "收起侧栏显示进行中 Change 角标",
+      "status": "done",
+      "verification": "类型、格式、生产构建、12项壳层/凭据回归及新增角标边界用例通过；独立评审通过；真实仓库计数、双主题桌面/平板、手机与退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T22: verify active Changes badge on the acceptance service"
+    },
+    "T23": {
+      "title": "修复导航切换时Changes角标闪烁",
+      "status": "done",
+      "verification": "修复前复现，修复后13项壳层/凭据回归、类型/格式、独立评审和生产构建通过；真实导航与延迟响应时角标不消失，退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T23: verify stable navigation badge"
+    },
+    "T24": {
+      "title": "修复顶栏位置文字下沿裁切",
+      "status": "done",
+      "verification": "类型、格式、生产构建、5项阅读/匿名回归及独立评审通过；真实双页四档与匿名两档字形范围完整、按钮/间距一致，双主题截图及退出清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T24: verify complete header text across readers"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T12:03:52.688Z",
+      "summary": "整体验证和独立Agent评审通过；角标导航延迟响应回归、13项壳层凭据用例及5项阅读匿名回归通过；真实四档字形/间距与导航稳定、登录清理确认"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T12:08:44.958Z",
+      "summary": "用户人工验收当前样式与交互版本通过，并授权归档合入develop及更新常驻服务",
+      "source": "这版没问题了，验收通过，归档并合入 develop，更新常驻服务吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T12:15:54.406Z",
+      "summary": "同步工作台、Spec阅读、Change追踪、原型浏览与共享UI五处当前能力及长期约束，独立复核通过"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T12:15:56.210Z",
+      "summary": "用户验收通过，完成Specs同步、集成验证和独立复核后归档",
+      "path": "docs/project/archive/2026-10-22-frontend-style-interaction-refactor"
+    }
+  },
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "工作台新设计 · Changes 与详情",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-credentials",
+      "title": "工作台新设计 · 账号与 Token",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-home",
+      "title": "工作台新设计 · 我的仓库与侧栏",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-prototypes",
+      "title": "工作台新设计 · 原型总览与画布",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-public",
+      "title": "工作台新设计 · 匿名公开原型",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-share",
+      "title": "工作台新设计 · Change 分享阅读",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-specs",
+      "title": "工作台新设计 · Specs 阅读",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/index.html",
+        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/mobile.png"
+          }
+        ]
+      }
+    }
+  ],
+  "rework": {
+    "at": "2026-10-22T11:57:24.029Z",
+    "reason": "切换模块会清空仓库快照，导致Changes角标短暂消失后重现",
+    "approach": "同作用域保留已加载快照，保留跨仓库和凭据的即时隔离，并验证导航期间角标稳定"
+  },
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "需求：原型是否覆盖仓库首页与导航、Specs 目录阅读、Changes 列表详情、原型总览设备预览、登录凭据管理、匿名公开原型页六组入口，并排除运维配置完整页面与 UI 组件库预览？",
+      "recommendation": "推荐六组全部覆盖，以覆盖日常使用闭环；排除运维配置完整页面和 UI 组件库预览以控制范围。",
+      "answer": "六组全部覆盖；运维配置完整页面与 UI 组件库预览不纳入。",
+      "source": "本会话第 1 轮需求澄清 Q1：六组全部覆盖（推荐）。"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "需求：本轮原型是否同时覆盖浅色与深色模式，包含六组主体入口和桌面、平板、手机三种尺寸？",
+      "recommendation": "推荐浅色和深色同时覆盖，提前验证玻璃、长文和状态对比；代价是增加设计与检查工作。",
+      "answer": "浅色和深色同时覆盖六组主体入口及桌面、平板、手机三种尺寸。",
+      "source": "本会话第 1 轮需求澄清 Q2：浅色和深色同时覆盖（推荐）。"
+    },
+    "Q3": {
+      "round": 1,
+      "question": "需求：账号登录 Change 尚未验收合入，身份页面等待其合入后补齐，还是全部按当前已集成的 Token 登录能力设计？",
+      "recommendation": "推荐先设计已集成的核心页面，身份页待账号 Change 合入后按真实能力补齐，减少旧登录方案的重复设计。",
+      "answer": "全部按当前 Token 登录能力设计，不等待 centralized-accounts 合入。",
+      "source": "本会话第 1 轮需求澄清 Q3：全部按当前 Token 登录能力设计。",
+      "withdrawn": "centralized-accounts 已于 develop 集成，账号密码登录与账号绑定 Token 成为当前产品能力；用户要求原型同步协作分支。"
+    },
+    "Q4": {
+      "round": 2,
+      "question": "需求：pr-release-delivery 已实现待验收，会在 Changes 列表、卡片和详情增加交付标签（待集成/待发布/已合入发布分支）、PR 链接与便捷筛选。是否一并纳入本次 Changes 原型？",
+      "recommendation": "纳入。它和分享同样落在 Changes 列表与详情，现在一起设计可避免改版后再补；按其需求表达，不扩展发布管理。",
+      "answer": "纳入：pr-release-delivery 即将合码，交付标签与 PR 链接进入 Changes 原型。",
+      "source": "用户回复：Q4 马上已经完成合码。"
+    },
+    "Q5": {
+      "round": 2,
+      "question": "需求：允许后端配合后，是否在当前仓库内加入 Cmd/Ctrl+K 快速跳转，按标题或 ID 定位 Specs、Changes 和原型？",
+      "recommendation": "纳入仓库内标题/ID 快速跳转，解决长列表与多入口间切换的摩擦；不做全文搜索、跨仓库搜索与收藏，控制后端成本。",
+      "answer": "不加入搜索或快速跳转；搜索是旧版的冗余功能。",
+      "source": "用户回复：Q5 我觉得搜索功能没什么用，是旧版的冗余功能。"
+    },
+    "Q6": {
+      "round": 2,
+      "question": "需求：change-sharing 正在实现。本 Change 重做分享入口与分享阅读页原型；交付上，change-sharing 继续按现有样式完成合入、由本 Change 实施时统一改造，还是暂停等新设计？",
+      "recommendation": "继续按现有样式完成并合入，本 Change 实施时统一改造并登记依赖；功能不被视觉改版阻塞，代价是分享页样式会再改一次。",
+      "answer": "change-sharing 照常推进；本 Change 先做原型，正式实施前它会合入。",
+      "source": "用户回复：Q6 它先正常推进，你先做你的原型即可，等你正式实施之前它会合入的。"
+    },
+    "Q7": {
+      "round": 3,
+      "question": "需求：Logo 改为平面单色后，网站图标和应用图标是否一起换成同一形状的平面单色标志（浅色方底），还是保留蓝色作为品牌色、只在界面内使用单色版？",
+      "recommendation": "一起换，界面、浏览器标签和应用图标保持同一识别；保留蓝色会让图标与新界面再次脱节。",
+      "answer": "网站图标与应用图标一起换成平面单色标志。",
+      "source": "用户回复：可以，按这个方案改，图标一起换"
+    },
+    "Q8": {
+      "round": 3,
+      "question": "需求：蓝色强调色改为中性墨色、颜色只表达状态后，是否以墨色为默认，并在评审栏提供暖陶土备选和上一版蓝色作对比？",
+      "recommendation": "墨色为默认，最贴近 Craft 的中性框架；陶土与蓝色只作评审对比，便于判断纯黑白是否偏冷。",
+      "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
+      "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
+    }
+  }
+}

@@ -1,4 +1,10 @@
-import { test, expect, repositoryQuery } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  refreshCentral,
+  openSyncStatus,
+} from "./connected";
 
 test("cached interactions reuse permissions, periodic checks renew once, and transient manual failure keeps the page", async ({
   page,
@@ -29,8 +35,10 @@ test("cached interactions reuse permissions, periodic checks renew once, and tra
       json: { error: { code: "GIT_READ_FAILED", message: "临时网络故障" } },
     }),
   );
-  await page.getByRole("button", { name: "刷新中心仓库", exact: true }).click();
-  await expect(page.locator(".error-notice")).toContainText("临时网络故障");
+  await refreshCentral(page);
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "临时网络故障",
+  );
   await expect(heading).toBeVisible();
 });
 
@@ -49,9 +57,8 @@ test("visible workbench automatically updates main Specs and prototypes without 
   await expect(
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
-  await expect(page.locator(".header-source-details")).toContainText(
-    "develop · 预发布",
-  );
+  await expect(await openSyncStatus(page)).toContainText("develop");
+  await page.keyboard.press("Escape");
   try {
     await request.post("/_fixture/control", {
       data: { advanceMain: true, expireRefresh: personal.id },
@@ -118,13 +125,15 @@ test("hidden pages pause checks, foreground retries transient failures, and revo
     });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await expect(page.locator(".error-notice")).toContainText("自动更新失败");
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "自动更新失败",
+  );
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toBeVisible();
   await request.post("/_fixture/control", { data: { unavailable: false } });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(page.locator(".error-notice")).toHaveCount(0);
+  await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
   await request.post("/_fixture/control", {
     data: { revoke: "token-a", advancePermissions: 300_000 },
   });

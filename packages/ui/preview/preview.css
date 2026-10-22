@@ -7,9 +7,9 @@ html {
 }
 body {
   margin: 0;
-  background: var(--of-surface);
-  color: var(--of-ink);
-  font: 14px/1.7 var(--of-font);
+  background: var(--of-bg-surface);
+  color: var(--of-text);
+  font: 14px/1.7 var(--of-font-ui);
 }
 a {
   color: inherit;
@@ -18,7 +18,7 @@ a {
 a:focus-visible,
 select:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--of-focus);
+  outline: 2px solid var(--of-accent);
   outline-offset: 4px;
 }
 .catalog {
@@ -33,7 +33,7 @@ input:focus-visible {
   top: 0;
   height: 100dvh;
   padding: 38px 28px;
-  border-right: 1px solid var(--of-line);
+  border-right: 1px solid var(--of-border);
   display: flex;
   flex-direction: column;
 }
@@ -50,21 +50,21 @@ input:focus-visible {
   height: 38px;
   display: grid;
   place-items: center;
-  background: var(--of-blue);
+  background: var(--of-accent);
   color: white;
   border-radius: 8px 14px 8px 14px;
   font-size: 22px;
 }
 .brand small {
   font: 11px monospace;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   margin-left: 6px;
 }
 .nav-label {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   margin: 58px 0 12px;
 }
 .nav-label span {
@@ -75,30 +75,30 @@ nav a {
   align-items: center;
   gap: 13px;
   padding: 14px 0;
-  border-bottom: 1px solid var(--of-line);
+  border-bottom: 1px solid var(--of-border);
   font-size: 13px;
 }
 nav a:hover {
-  color: var(--of-blue);
+  color: var(--of-accent);
 }
 .nav-index {
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font: 10px monospace;
 }
 nav code {
   display: block;
   font: 10px monospace;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   margin-top: 4px;
 }
 .nav-arrow {
   margin-left: auto;
-  color: var(--of-muted);
+  color: var(--of-text-3);
 }
 .aside-note {
   margin-top: auto;
   padding-top: 36px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 11px;
 }
 .aside-note a {
@@ -114,10 +114,10 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 11px;
   padding-bottom: 22px;
-  border-bottom: 1px solid var(--of-line);
+  border-bottom: 1px solid var(--of-border);
 }
 .hero {
   position: relative;
@@ -126,7 +126,7 @@ main {
 .eyebrow {
   font: 10px monospace;
   letter-spacing: 0.15em;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   margin: 0 0 16px;
 }
 h1 {
@@ -137,10 +137,10 @@ h1 {
   margin: 0;
 }
 h1 span {
-  color: var(--of-blue);
+  color: var(--of-accent);
 }
 .intro {
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 13px;
   margin: 22px 0 34px;
 }
@@ -149,14 +149,14 @@ h1 span {
   align-items: center;
   gap: 24px;
   font-size: 11px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
 }
 .browse-link {
   display: inline-flex;
   align-items: center;
   gap: 24px;
-  color: var(--of-blue);
-  border-bottom: 1px solid var(--of-blue);
+  color: var(--of-accent);
+  border-bottom: 1px solid var(--of-accent);
   padding-bottom: 6px;
   font-size: 12px;
 }
@@ -166,16 +166,16 @@ h1 span {
   top: 70px;
   width: 32%;
   max-width: 268px;
-  border: 1px solid var(--of-line);
+  border: 1px solid var(--of-border);
   border-radius: 12px;
   padding: 20px;
-  background: var(--of-surface);
+  background: var(--of-bg-surface);
   transform: rotate(3deg);
 }
 .token-sheet > p {
   font: 9px monospace;
   letter-spacing: 0.1em;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   display: flex;
   justify-content: space-between;
   margin: 0 0 24px;
@@ -198,21 +198,21 @@ h1 span {
   padding: 20px 0;
 }
 .type-sample span {
-  font: 10px/1.9 var(--of-font);
+  font: 10px/1.9 var(--of-font-ui);
   letter-spacing: 0;
-  color: var(--of-muted);
+  color: var(--of-text-3);
 }
 .type-sample strong {
   font-weight: 500;
-  color: var(--of-ink);
+  color: var(--of-text);
 }
 .token-footer {
   display: flex;
   justify-content: space-between;
   padding-top: 12px;
-  border-top: 1px solid var(--of-line);
+  border-top: 1px solid var(--of-border);
   font-size: 9px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
 }
 .list-toolbar {
   display: flex;
@@ -220,7 +220,7 @@ h1 span {
   justify-content: space-between;
   gap: 20px;
   padding-top: 30px;
-  border-top: 1px solid var(--of-line);
+  border-top: 1px solid var(--of-border);
 }
 .list-toolbar .eyebrow {
   margin-bottom: 8px;
@@ -236,20 +236,20 @@ h2 {
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
-  border: 1px solid var(--of-line);
-  border-radius: var(--of-radius);
-  color: var(--of-muted);
+  border: 1px solid var(--of-border);
+  border-radius: var(--of-radius-md);
+  color: var(--of-text-3);
 }
 .search input {
   min-width: 0;
   width: 175px;
   border: 0;
   background: transparent;
-  color: var(--of-ink);
-  font: 12px var(--of-font);
+  color: var(--of-text);
+  font: 12px var(--of-font-ui);
 }
 .search-count {
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 11px;
   margin: 14px 0 8px;
 }
@@ -268,15 +268,15 @@ h2 {
   font-size: 17px;
 }
 .section-heading p {
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 12px;
   margin: 5px 0 0;
 }
 .section-heading > code {
   font: 10px monospace;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   padding: 5px 8px;
-  background: var(--of-surface);
+  background: var(--of-bg-surface);
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -294,7 +294,7 @@ h2 {
 .feedback,
 .source-note {
   min-height: 20px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 11px;
   margin: 18px 0 0;
 }
@@ -303,15 +303,15 @@ pre {
   overflow-x: auto;
   padding: 18px;
   border-radius: 6px;
-  background: var(--of-surface);
-  color: var(--of-blue);
+  background: var(--of-bg-surface);
+  color: var(--of-accent);
   font-size: 12px;
   line-height: 1.8;
 }
 select {
   margin: 0 12px;
-  color: var(--of-ink);
-  border: 1px solid var(--of-line);
+  color: var(--of-text);
+  border: 1px solid var(--of-border);
   background: white;
   padding: 5px;
   border-radius: 4px;
@@ -326,7 +326,7 @@ select {
   margin: 0 auto;
 }
 .sample-note {
-  color: var(--of-muted);
+  color: var(--of-text-3);
   font-size: 11px;
   flex: 1;
 }
@@ -336,14 +336,14 @@ select {
 .mini-page {
   height: 120px;
   display: flex;
-  border: 1px solid var(--of-line);
+  border: 1px solid var(--of-border);
   border-radius: 6px;
   overflow: hidden;
 }
 .mini-rail {
   width: 20%;
-  background: var(--of-blue-soft);
-  border-right: 1px solid var(--of-line);
+  background: var(--of-accent-soft);
+  border-right: 1px solid var(--of-border);
 }
 .mini-body {
   flex: 1;
@@ -353,13 +353,13 @@ select {
   display: block;
   width: 60%;
   height: 5px;
-  background: var(--of-line);
+  background: var(--of-border);
   border-radius: 2px;
   margin-bottom: 8px;
 }
 .mini-body > i:first-child {
   width: 35%;
-  background: var(--of-focus);
+  background: var(--of-accent);
 }
 .mini-body > div {
   display: flex;
@@ -369,9 +369,9 @@ select {
 }
 .mini-body span {
   flex: 1;
-  border: 1px solid var(--of-line);
+  border: 1px solid var(--of-border);
   border-radius: 4px;
-  background: var(--of-surface);
+  background: var(--of-bg-surface);
 }
 .sample-tabs {
   max-width: 480px;
@@ -379,8 +379,8 @@ select {
 }
 .tab-surface {
   padding: 20px;
-  border-radius: var(--of-radius);
-  background: var(--of-surface);
+  border-radius: var(--of-radius-md);
+  background: var(--of-bg-surface);
   min-height: 166px;
 }
 .tab-surface h3 {
@@ -390,17 +390,17 @@ select {
 }
 .tab-surface p {
   font-size: 12px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
   margin: 0 0 18px;
 }
 footer {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid var(--of-line);
+  border-top: 1px solid var(--of-border);
   padding: 24px 0;
   margin-top: 40px;
   font-size: 10px;
-  color: var(--of-muted);
+  color: var(--of-text-3);
 }
 @media (max-width: 1050px) {
   .catalog {
@@ -489,4 +489,13 @@ footer {
   html {
     scroll-behavior: auto;
   }
+}
+.popover-text {
+  margin: 4px 0 12px;
+  color: var(--of-text-2);
+}
+.skeleton-demo {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
 }

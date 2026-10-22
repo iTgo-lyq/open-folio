@@ -71,6 +71,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     if (
       typeof window !== "undefined" &&
       path.startsWith("/api/repositories/") &&
+      !init?.signal?.aborted &&
       [
         "TOKEN_INVALID",
         "SESSION_REQUIRED",
@@ -80,7 +81,15 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
         "CONNECTION_CHANGED",
       ].includes(data.error?.code)
     )
-      window.dispatchEvent(new CustomEvent("openfolio-read-denied"));
+      window.dispatchEvent(
+        new CustomEvent("openfolio-read-denied", {
+          detail: {
+            path,
+            code: data.error?.code,
+            message: data.error?.message,
+          },
+        }),
+      );
     throw new ApiError(
       data.error?.code ?? "FAILED",
       data.error?.message ?? "读取失败，请重试。",

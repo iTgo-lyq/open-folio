@@ -1,4 +1,12 @@
-import { test, expect, repositoryQuery } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  changeRow,
+  openMaterial,
+  backToChanges,
+  openChangeFilters,
+} from "./connected";
 import {
   primaryRecord,
   type Snapshot,
@@ -27,7 +35,7 @@ function pr(number: number, release = false): PullRequest {
     ...(release ? { version: "1.2" } : {}),
   };
 }
-test("delivery filters include archived Changes, combine labels and expose PRs without nested links", async ({
+test("delivery groups include archived Changes, combine labels and expose PRs without nested links", async ({
   page,
   request,
   personal,
@@ -51,19 +59,24 @@ test("delivery filters include archived Changes, combine labels and expose PRs w
     route.fulfill({ json: data }),
   );
   await page.goto(`/?${repositoryQuery}&m=changes&stage=execution&wait=pause`);
-  await page.getByRole("tab", { name: /^待集成/ }).click();
-  await expect(page).toHaveURL(/scope=pendingIntegration/);
+  await page.getByRole("tab", { name: /^已完成/ }).click();
+  await expect(page).toHaveURL(/scope=completed/);
   await expect(page).not.toHaveURL(/stage=|wait=/);
-  const row = page.getByRole("button", {
+  const row = page.getByRole("link", {
     name: `打开 ${group.title}`,
     exact: true,
   });
   await expect(row).toBeVisible();
-  await expect(row.getByText("待集成", { exact: true })).toBeVisible();
-  await expect(row.locator("a")).toHaveCount(0);
-  await page
-    .getByRole("combobox", { name: "筛选紧急程度" })
-    .selectOption("high");
+  await expect(
+    changeRow(page, group.title).getByText("待集成", { exact: true }),
+  ).toBeVisible();
+  await expect(changeRow(page, group.title).locator("a a")).toHaveCount(0);
+  await expect(
+    changeRow(page, group.title).getByRole("link", { name: "Change PR #1" }),
+  ).toHaveAttribute("href", pr(1).url);
+  const menu = await openChangeFilters(page);
+  await menu.getByRole("menuitemcheckbox", { name: "高", exact: true }).click();
+  await page.keyboard.press("Escape");
   await expect(row).toBeVisible();
   await row.click();
   const details = page.getByRole("region", { name: "交付进度" });
@@ -75,7 +88,7 @@ test("delivery filters include archived Changes, combine labels and expose PRs w
   await page.reload();
   await expect(details.getByText("PR 已关闭", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("dialog").getByText("交付已归档", { exact: true }),
+    page.getByRole("main").getByText("交付已归档", { exact: true }),
   ).toBeVisible();
   delivery.stage = "pendingRelease";
   delivery.changePrs[0].state = "merged";
@@ -86,7 +99,7 @@ test("delivery filters include archived Changes, combine labels and expose PRs w
   );
   await expect(row).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("tab", { name: /^待发布/ })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: /^已完成/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -101,10 +114,9 @@ test("delivery filters include archived Changes, combine labels and expose PRs w
   await expect(
     details.getByText("已合入发布分支", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await expect(row).toHaveCount(0);
-  await page.getByRole("tab", { name: /^已归档/ }).click();
+  await backToChanges(page);
   await expect(row).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^已发布/ })).toBeVisible();
 });
 
 test("delivery history, stale diagnostics and draft links stay readable on desktop and narrow screens", async ({
@@ -161,14 +173,12 @@ test("delivery history, stale diagnostics and draft links stay readable on deskt
     await details.scrollIntoViewIfNeeded();
     expect(
       await page
-        .locator(".drawer-body")
+        .getByRole("region", { name: "阅读正文", exact: true })
         .evaluate((el) => el.scrollWidth <= el.clientWidth),
     ).toBe(true);
     await page.screenshot({ path: `artifacts/delivery-${width}.png` });
-    await page.getByRole("tab", { name: "文档", exact: true }).click();
-    await expect(page.getByRole("dialog").locator(".delivery-pr")).toHaveCount(
-      0,
-    );
-    await page.getByRole("tab", { name: "概览", exact: true }).click();
+    await openMaterial(page, "需求");
+    await expect(page.getByRole("region", { name: "交付进度" })).toHaveCount(0);
+    await openMaterial(page, "概览");
   }
 });

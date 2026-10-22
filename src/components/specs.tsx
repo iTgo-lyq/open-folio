@@ -1,16 +1,17 @@
 "use client";
-import { usePersonal } from "./personal-context";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  Folder,
-  ListTree,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
+import { Avatar, Badge, Button } from "@open-folio/ui";
 import type { SpecRef } from "@/lib/model";
-import { useWorkspace } from "./context";
-import { DocumentContent, Empty } from "./document";
+import { primaryRecord, STAGE_LABELS } from "@/lib/model";
+import { sortDirectoryChanges } from "@/lib/change-directory";
+import { usePersonal } from "./personal-context";
+import { useWorkspace, useDocument } from "./context";
+import { Empty } from "./document";
+import { Reader } from "./reader";
+import { ReadingDocument } from "./reading-document";
+import styles from "./specs.module.css";
+
 type Tree = { path: string; name: string; spec?: SpecRef; children: Tree[] };
 function treeOf(specs: SpecRef[]) {
   const root: Tree = { path: "", name: "", children: [] };
@@ -35,15 +36,23 @@ function treeOf(specs: SpecRef[]) {
   return root;
 }
 export default function Specs() {
-  const { data, q, nav, projectId, revealVersion } = useWorkspace(),
-    [mobileTree, setMobileTree] = useState(false),
-    [closed, setClosed] = useState<string[]>([]);
-  const specs = data?.specs ?? [],
-    selected = q.s ? specs.find((s) => s.id === q.s) : specs[0];
-  const storageKey = `openfolio.tree.${usePersonal().connection?.id ?? ""}.${projectId}.${data?.selectedBranch}`;
+  const { data, q, nav, projectId, revealVersion } = useWorkspace();
+  const personal = usePersonal();
+  const [closed, setClosed] = useState<string[]>([]);
+  const specs = data?.specs ?? [];
+  const selected = q.s ? specs.find((spec) => spec.id === q.s) : specs[0];
+  useEffect(() => {
+    if (selected && (q.s !== selected.id || q.branch !== selected.branch))
+      nav({ s: selected.id, branch: selected.branch }, true);
+  }, [selected?.id, selected?.branch, q.s, q.branch, nav]);
+  const { value, error, loading } = useDocument(selected?.documentId);
+  const storageKey = `openfolio.tree.${personal.connection?.id ?? ""}.${projectId}.${data?.selectedBranch}`;
   useEffect(() => {
     try {
-      setClosed(JSON.parse(localStorage.getItem(storageKey) ?? "[]"));
+      const value = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+      setClosed(
+        Array.isArray(value) ? value.filter((p) => typeof p === "string") : [],
+      );
     } catch {
       setClosed([]);
     }
@@ -70,116 +79,174 @@ export default function Specs() {
     });
   const tree = useMemo(() => treeOf(specs), [specs]);
   function nodes(items: Tree[], depth = 0): React.ReactNode {
-    return items.map((n) => (
-      <li key={n.path}>
+    return items.map((node) => (
+      <li key={node.path}>
         <div
-          className={`tree-row ${selected?.id === n.path ? "selected" : ""}`}
-          style={{ paddingLeft: 10 + depth * 15 }}
+          className={styles.treeRow}
+          data-selected={selected?.id === node.path || undefined}
+          style={{ paddingLeft: depth * 14 }}
         >
-          {n.children.length ? (
+          {node.children.length ? (
             <button
-              className="tree-toggle"
-              aria-label={`${closed.includes(n.path) ? "展开" : "收起"} ${n.name}`}
-              aria-expanded={!closed.includes(n.path)}
-              onClick={() => toggle(n.path)}
+              className={styles.toggle}
+              type="button"
+              aria-label={`${closed.includes(node.path) ? "展开" : "收起"} ${node.name}`}
+              aria-expanded={!closed.includes(node.path)}
+              onClick={() => toggle(node.path)}
             >
-              {closed.includes(n.path) ? <ChevronRight /> : <ChevronDown />}
+              {closed.includes(node.path) ? (
+                <ChevronRight strokeWidth={1.5} />
+              ) : (
+                <ChevronDown strokeWidth={1.5} />
+              )}
             </button>
           ) : (
-            <span className="tree-spacer" />
+            <span className={styles.spacer} />
           )}
-          <button
-            className="tree-item"
-            onClick={() => {
-              if (n.spec) {
-                nav({ s: n.path, anchor: null });
-                setMobileTree(false);
-              } else toggle(n.path);
-            }}
-            aria-current={selected?.id === n.path ? "page" : undefined}
-          >
-            {n.spec ? <FileText size={14} /> : <Folder size={14} />}
-            <span>{n.spec?.title ?? n.name}</span>
-          </button>
+          {node.spec ? (
+            <a
+              className={styles.item}
+              href={`?${new URLSearchParams({ ...q, m: "specs", s: node.path, anchor: "", raw: "" })}`}
+              aria-current={selected?.id === node.path ? "page" : undefined}
+              onClick={(event) => {
+                if (
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  return;
+                event.preventDefault();
+                nav({ s: node.path, anchor: null, raw: null });
+              }}
+            >
+              <FileText aria-hidden="true" />
+              <span>{node.spec.title}</span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              className={styles.item}
+              onClick={() => toggle(node.path)}
+              aria-expanded={!closed.includes(node.path)}
+            >
+              <Folder aria-hidden="true" />
+              <span>{node.name}</span>
+            </button>
+          )}
         </div>
-        {n.children.length > 0 && !closed.includes(n.path) && (
-          <ul>{nodes(n.children, depth + 1)}</ul>
+        {node.children.length > 0 && !closed.includes(node.path) && (
+          <ul>{nodes(node.children, depth + 1)}</ul>
         )}
       </li>
     ));
   }
-  return (
-    <section className={`spec-workspace ${mobileTree ? "show-tree" : ""}`}>
-      <aside className="spec-sidebar">
-        <div className="sidebar-heading">
-          <span>能力目录</span>
-          <span className="count">{specs.length}</span>
-          <button
-            className="mobile-only icon-button"
-            aria-label="关闭目录"
-            onClick={() => setMobileTree(false)}
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <nav className="capability-tree" aria-label="能力目录">
-          <ul>{nodes(tree.children)}</ul>
-        </nav>
-        <footer className="sidebar-footer">
-          <span className="status-dot" />
-          已推送的能力文档
-        </footer>
-      </aside>
-      <div className="spec-reading">
-        <div className="reader-breadcrumb">
-          <button
-            className="mobile-only icon-button"
-            onClick={() => setMobileTree(true)}
-            aria-label="打开能力目录"
-          >
-            <ListTree size={17} />
-          </button>
-          <span>Specs</span>
-          {selected && (
-            <>
-              <ChevronRight size={13} />
-              <span className="truncate">{selected.id}</span>
-            </>
-          )}
-        </div>
-        {!data?.selectedBranch ? (
-          <Empty title="选择 Specs 来源">
-            <p>请选择一个已推送分支，开始阅读能力文档。</p>
-          </Empty>
-        ) : selected ? (
-          <DocumentContent
-            key={selected.documentId}
-            id={selected.documentId}
-            anchor={q.anchor}
-          />
-        ) : q.s ? (
-          <Empty title="此来源中没有这项能力">
-            <p>{q.s}</p>
-            <button
-              className="button"
-              onClick={() => nav({ s: null, anchor: null })}
-            >
-              返回能力目录
-            </button>
-          </Empty>
-        ) : (
-          <Empty title="这里还没有已实现的 Specs">
-            <p>
-              当前分支尚未提交能力文档。
-              <br />
-              Change 完成人工验收并同步 Specs 后，将在这里呈现。
-            </p>
-            <button className="button" onClick={() => nav({ m: "changes" })}>
-              查看 Changes
-            </button>
-          </Empty>
-        )}
+  const related = sortDirectoryChanges(
+    (data?.changes ?? []).filter(
+      (change) =>
+        selected && primaryRecord(change)?.relatedSpecs.includes(selected.id),
+    ),
+  ).slice(0, 5);
+  const doc = data?.documents.find((doc) => doc.id === selected?.documentId);
+  const headings = [
+    ...(doc?.headings.filter((h) => h.depth > 1) ?? []),
+    ...(related.length
+      ? [{ id: "related-changes", text: "相关 Change", depth: 2, line: 0 }]
+      : []),
+  ];
+  const after = !!related.length && (
+    <section className={styles.related} aria-labelledby="related-changes">
+      <div className={styles.relatedHeading}>
+        <h2 id="related-changes">相关 Change</h2>
+        <small>最近 {related.length} 项</small>
       </div>
+      <ul>
+        {related.map((change) => {
+          const state = primaryRecord(change)?.state,
+            creator = change.creator;
+          return (
+            <li key={change.id}>
+              <a
+                href={`?${new URLSearchParams({ ...q, m: "changes", c: change.id, ct: "overview" })}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  nav({
+                    m: "changes",
+                    c: change.id,
+                    ct: "overview",
+                    s: null,
+                    anchor: null,
+                    doc: null,
+                    raw: null,
+                  });
+                }}
+              >
+                <span>
+                  <strong>{change.title}</strong>
+                  <small>{change.id}</small>
+                </span>
+                <Badge>
+                  {state?.status === "completed"
+                    ? "已完成"
+                    : state?.status === "cancelled"
+                      ? "已取消"
+                      : state
+                        ? STAGE_LABELS[state.stage]
+                        : "来源异常"}
+                </Badge>
+                {creator && <Avatar name={creator.login ?? creator.name} />}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
     </section>
+  );
+  return (
+    <Reader
+      paneLabel="能力目录"
+      paneTitle="Specs"
+      current={
+        selected && {
+          icon: <FileText aria-hidden="true" />,
+          title: selected.title,
+        }
+      }
+      pane={
+        <nav aria-label="能力目录">
+          <ul className={styles.tree}>{nodes(tree.children)}</ul>
+        </nav>
+      }
+      headings={headings}
+      pageKey={`${projectId}.${doc?.branch}.${selected?.documentId ?? "empty"}`}
+      anchor={q.anchor}
+      onAnchor={(anchor) => nav({ anchor })}
+      ready={!!value}
+    >
+      {!data?.selectedBranch ? (
+        <Empty title="选择 Specs 来源">
+          <p>请选择一个已推送分支，开始阅读能力文档。</p>
+        </Empty>
+      ) : selected ? (
+        <ReadingDocument
+          value={value}
+          error={error}
+          loading={loading}
+          after={after}
+        />
+      ) : q.s ? (
+        <Empty title="此来源中没有这项能力">
+          <p>{q.s}</p>
+          <Button onClick={() => nav({ s: null, anchor: null })}>
+            返回能力目录
+          </Button>
+        </Empty>
+      ) : (
+        <Empty title="这里还没有已实现的 Specs">
+          <p>第一个 Change 完成并同步 Specs 后，会出现在这里。</p>
+          <Button onClick={() => nav({ m: "changes" })}>查看 Changes</Button>
+        </Empty>
+      )}
+    </Reader>
   );
 }

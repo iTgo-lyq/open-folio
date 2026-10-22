@@ -17,25 +17,25 @@ test("current cards show actual viewport screenshots and switch device consisten
   expect(
     await image.evaluate((img: HTMLImageElement) => img.naturalHeight),
   ).toBe(900);
-  await region
-    .getByRole("combobox", { name: "筛选原型适配" })
-    .selectOption("mobile");
+  await region.getByRole("radio", { name: "手机", exact: true }).click();
   await region
     .getByRole("button", { name: "预览订单列表", exact: true })
     .click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await page.getByRole("button", { name: "返回原型总览" }).click();
-  await region.getByRole("button", { name: "清除筛选" }).click();
+  await region.getByRole("radio", { name: "PC Web", exact: true }).click();
   await region
     .getByRole("heading", { name: "价格卡片", exact: true })
     .scrollIntoViewIfNeeded();
-  await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(4);
-  await region.locator(".prototype-gallery-scroll").evaluate((el) => {
+  await expect(region.locator('[data-thumbnail-status="ready"]')).toHaveCount(
+    4,
+  );
+  await region.evaluate((el) => {
     el.scrollTop = 0;
   });
   await page.screenshot({ path: "artifacts/prototype-thumbnails-desktop.png" });
   await page.setViewportSize({ width: 320, height: 720 });
-  await region.getByRole("button", { name: "组件 1", exact: true }).click();
+  await region.getByRole("radio", { name: "手机", exact: true }).click();
   const component = region.getByRole("img", { name: "价格卡片的首屏截图" });
   await expect
     .poll(() => component.evaluate((img: HTMLImageElement) => img.naturalWidth))
@@ -66,14 +66,22 @@ test("thumbnail loading and retry remain separate from the preview action", asyn
   await page.goto(path + "&pkind=component");
   const region = page.getByRole("region", { name: "项目原型总览" });
   await expect(region.getByText("截图暂不可用", { exact: true })).toBeVisible();
-  await expect(region.getByRole("button", { name: /^预览/ })).toBeEnabled();
-  await region.getByRole("button", { name: /^预览/ }).click();
+  await expect(
+    region.getByRole("button", { name: "预览价格卡片", exact: true }),
+  ).toBeEnabled();
+  await region
+    .getByRole("button", { name: "预览价格卡片", exact: true })
+    .click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
   await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(region.getByText("截图暂不可用", { exact: true })).toBeVisible();
   failed = false;
   await region.getByRole("button", { name: "重试截图" }).click();
-  await expect(region.locator(".prototype-thumbnail.ready")).toHaveCount(1);
+  await expect(
+    region.locator(
+      '[data-prototype-id="card"] [data-thumbnail-status="ready"]',
+    ),
+  ).toHaveCount(1);
   await region.getByRole("button", { name: "预览价格卡片" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "640");
 });

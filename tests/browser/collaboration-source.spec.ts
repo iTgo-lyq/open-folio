@@ -1,4 +1,10 @@
-import { test, expect, repositoryQuery, connectRequest } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  connectRequest,
+  readingLink,
+} from "./connected";
 
 test("custom collaboration selection persists through rediscovery, sharing, preferences and prototype preparation", async ({
   page,
@@ -9,7 +15,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/?m=home");
-  await page.getByRole("button", { name: "用仓库地址检查" }).click();
+  await page.getByRole("button", { name: "添加仓库" }).click();
   await page
     .getByLabel("GitHub HTTPS 仓库地址")
     .fill("https://github.com/acme/fixture");
@@ -28,8 +34,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
   await expect(
     page.getByRole("heading", { name: "自定义协作能力", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "复制页面链接" }).last().click();
-  const link = await page.evaluate(() => navigator.clipboard.readText());
+  const link = await readingLink(page);
   expect(new URL(link).searchParams.get("integrationBranch")).toBe(
     "team/integration",
   );
@@ -49,7 +54,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
       .poll(() => new URL(view.url()).searchParams.get("integrationBranch"))
       .toBe("team/integration");
     await view
-      .getByRole("button", { name: "自定义协作能力", exact: true })
+      .getByRole("link", { name: "自定义协作能力", exact: true })
       .click();
     await expect(
       view.getByRole("heading", { name: "自定义协作能力", exact: true }),
@@ -97,7 +102,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
     )
     .toBe("complete");
   await page.goto("/?m=home");
-  await expect(page.locator(".personal-repo-source")).toContainText(
+  await expect(page.getByRole("list", { name: "可阅读的仓库" })).toContainText(
     "team/integration",
   );
 });

@@ -1,4 +1,7 @@
-import { PublicPreviewView } from "@/components/public-preview";
+import {
+  PublicPreviewView,
+  PublicPreviewUnavailable,
+} from "@/components/public-preview";
 import { publicPreviews } from "@/server/public-previews";
 import { publicError } from "@/server/errors";
 export const runtime = "nodejs";
@@ -15,13 +18,6 @@ export default async function PublicPreviewPage({
       (value) => ({ value, error: null }),
       (error) => ({ value: null, error: publicError(error).message }),
     );
-  if (!result.value)
-    return (
-      <main className="public-preview-page">
-        <h1>原型暂不可用</h1>
-        <p>{result.error}</p>
-        <a href="/">返回 OpenFolio</a>
-      </main>
-    );
+  if (!result.value) return <PublicPreviewUnavailable error={result.error} />;
   return <PublicPreviewView meta={result.value} />;
 }
