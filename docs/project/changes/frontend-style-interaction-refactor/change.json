@@ -56,7 +56,9 @@
     },
     "T6": {
       "title": "账号与 Token 设置",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、build、UI构建/交互与完整单测288项通过；凭据相关27项及四档布局复验通过",
+      "commitTitle": "frontend-style-interaction-refactor T6: account and Token settings"
     },
     "T7": {
       "title": "阅读布局与 Specs",

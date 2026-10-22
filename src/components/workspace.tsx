@@ -4,7 +4,8 @@ import { Button } from "@open-folio/ui";
 import { CLEAR_PROTOTYPE_VIEW } from "@/lib/prototypes";
 import { useWorkspace, WorkspaceProvider } from "./context";
 import { PersonalProvider, usePersonal } from "./personal-context";
-import { Connections, PersonalHome } from "./personal";
+import { PersonalHome } from "./personal-home";
+import { AccountSettings } from "./account-settings";
 import { AccountLogin } from "./account-login";
 import { DocumentModal, Empty, CopyPageLink } from "./document";
 import { Shell } from "./shell";
@@ -85,11 +86,11 @@ function Body() {
       {module === "home" ||
       (!personal.connection && module !== "connections") ? (
         <PersonalHome />
+      ) : module === "connections" ? (
+        <AccountSettings />
       ) : (
         legacy(
-          module === "connections" ? (
-            <Connections />
-          ) : !projectId ? (
+          !projectId ? (
             <Empty title="先选择一个仓库">
               <Button onClick={() => go("home")}>查看我的仓库</Button>
             </Empty>

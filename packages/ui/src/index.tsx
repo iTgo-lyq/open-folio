@@ -1,7 +1,7 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { Tooltip } from "./components/tooltip";
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+export type ButtonProps = ComponentProps<"button"> & {
   /** text 为 ghost 的旧名称，保留给尚未迁移的调用方。 */
   variant?: "default" | "primary" | "ghost" | "danger" | "text";
   size?: "sm" | "md" | "lg";

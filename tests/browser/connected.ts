@@ -94,3 +94,30 @@ export async function openAccountSettings(page: Page) {
   await page.getByRole("button", { name: /^账号：/ }).click();
   await page.getByRole("menuitem", { name: "账号与 Token" }).click();
 }
+export const tokenRows = (page: Page) =>
+  page
+    .getByRole("list", { name: "已绑定 Token", exact: true })
+    .getByRole("listitem");
+export async function openTokenMenu(page: Page, label: string) {
+  await page
+    .getByRole("button", { name: `${label} 的更多操作`, exact: true })
+    .click();
+  return page.getByRole("menu", { name: "Token 操作" });
+}
+export async function copyCurrentToken(page: Page) {
+  await tokenRows(page)
+    .filter({ hasText: "当前使用" })
+    .getByRole("button", { name: /的更多操作$/ })
+    .click();
+  await page.getByRole("menuitem", { name: "复制 Token", exact: true }).click();
+}
+export async function logoutCurrent(page: Page) {
+  await page
+    .getByRole("region", { name: "账号", exact: true })
+    .getByRole("button", { name: "退出登录", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "退出这台设备？" })
+    .getByRole("button", { name: "退出登录", exact: true })
+    .click();
+}

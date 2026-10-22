@@ -1,6 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { connectRequest, testPassword } from "./connected";
+import {
+  connectRequest,
+  testPassword,
+  logoutCurrent,
+  tokenRows,
+} from "./connected";
 test.beforeEach(async ({ request }) => {
   await request.post("/_fixture/control", {
     data: { reset: true, newSessionScope: true },
@@ -68,7 +73,9 @@ test("invalid binding preserves account and selected Token, logout preserves bin
   await page.goto("/");
   const username = await register(page);
   await bind(page, "wrong");
-  await expect(page.getByRole("main").getByRole("alert")).toContainText("失效");
+  await expect(
+    page.getByRole("dialog", { name: "添加 Token" }).getByRole("alert"),
+  ).toContainText("失效");
   await expect(page.getByLabel("GitHub Token", { exact: true })).toHaveValue(
     "",
   );
@@ -77,13 +84,14 @@ test("invalid binding preserves account and selected Token, logout preserves bin
   await page.goto("/?m=connections");
   const original = await (await page.request.get("/api/session")).json();
   await bind(page, "wrong");
-  await expect(page.getByRole("main").getByRole("alert")).toContainText("失效");
+  await expect(
+    page.getByRole("dialog", { name: "添加 Token" }).getByRole("alert"),
+  ).toContainText("失效");
   await page.keyboard.press("Escape");
   expect(
     (await (await page.request.get("/api/session")).json()).workspace.id,
   ).toBe(original.workspace.id);
-  await page.getByRole("tab", { name: "登录设备", exact: true }).click();
-  await page.getByRole("button", { name: "退出当前设备" }).click();
+  await logoutCurrent(page);
   await page.getByLabel("账号", { exact: true }).fill(username);
   await page.getByLabel("密码", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "登录", exact: true }).click();
@@ -95,7 +103,7 @@ test("invalid binding preserves account and selected Token, logout preserves bin
   ).toContainText("账号或密码错误");
   await page.getByLabel("密码", { exact: true }).fill(testPassword);
   await page.getByLabel("密码", { exact: true }).press("Enter");
-  await expect(page.locator(".personal-identity-row")).toHaveCount(1);
+  await expect(tokenRows(page)).toHaveCount(1);
   const resumed = await (await page.request.get("/api/session")).json();
   expect(resumed.authenticated).toBe(true);
   expect(resumed.connected).toBe(false);
