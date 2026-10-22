@@ -1,13 +1,9 @@
 "use client";
 import { useRef } from "react";
-import { Copy, FileText, MoreHorizontal, X } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import {
   Button,
   IconButton,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
   Sheet,
   SheetBody,
   SheetContent,
@@ -15,7 +11,7 @@ import {
   SheetTitle,
 } from "@open-folio/ui";
 import type { DocumentRef } from "@/lib/model";
-import { Empty, Markdown, Source, useCopyPageLink } from "./document";
+import { Empty, Markdown, Source } from "./document";
 import { useWorkspace, useDocument } from "./context";
 import styles from "./reader.module.css";
 import { reportSharedResourceFailure } from "./api";
@@ -33,7 +29,6 @@ export function ReadingDocument({
 }) {
   const { q, nav, refresh } = useWorkspace();
   const trigger = useRef<HTMLButtonElement>(null);
-  const copy = useCopyPageLink(value?.document);
   if (error)
     return (
       <Empty title="暂时无法读取文档">
@@ -48,31 +43,16 @@ export function ReadingDocument({
     <>
       <div className={styles.docMeta} role="group" aria-label="文档来源">
         <code title={doc.path}>{doc.path}</code>
-        <span>· {doc.branch}</span>
+        <span aria-hidden="true">·</span>
         <code title={doc.commit}>{doc.commit.slice(0, 7)}</code>
-        <Menu>
-          <MenuTrigger asChild>
-            <IconButton ref={trigger} aria-label="更多操作" tooltip>
-              <MoreHorizontal />
-            </IconButton>
-          </MenuTrigger>
-          <MenuContent
-            aria-label="文档操作"
-            align="end"
-            onCloseAutoFocus={(event) => {
-              if (q.raw) event.preventDefault();
-            }}
-          >
-            <MenuItem onSelect={() => void copy()}>
-              <Copy />
-              复制阅读链接
-            </MenuItem>
-            <MenuItem onSelect={() => nav({ raw: "1" })}>
-              <FileText />
-              查看原文
-            </MenuItem>
-          </MenuContent>
-        </Menu>
+        <IconButton
+          ref={trigger}
+          aria-label="查看原文"
+          tooltip
+          onClick={() => nav({ raw: "1" })}
+        >
+          <FileText />
+        </IconButton>
       </div>
       {doc.kind === "json" ? (
         <>
@@ -90,13 +70,14 @@ export function ReadingDocument({
         }}
       >
         <SheetContent
+          className={styles.documentSheet}
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             trigger.current?.focus();
           }}
         >
-          <SheetHeader>
+          <SheetHeader className={styles.documentHeader}>
             <SheetTitle>原文</SheetTitle>
             <IconButton
               aria-label="关闭原文"
@@ -105,12 +86,11 @@ export function ReadingDocument({
               <X />
             </IconButton>
           </SheetHeader>
-          <SheetBody>
+          <SheetBody className={styles.documentBody}>
             <div className={styles.docMeta}>
               <code>{doc.path}</code>
-              <span>
-                {doc.branch} · {doc.commit.slice(0, 7)}
-              </span>
+              <span aria-hidden="true">·</span>
+              <code title={doc.commit}>{doc.commit.slice(0, 7)}</code>
             </div>
             <pre className={styles.raw} tabIndex={0}>
               {value.body}
@@ -137,6 +117,7 @@ export function DocumentSheet() {
       }}
     >
       <SheetContent
+        className={styles.documentSheet}
         aria-describedby={undefined}
         onOpenAutoFocus={() => {
           focus.current = window.document.activeElement as HTMLElement;
@@ -146,7 +127,7 @@ export function DocumentSheet() {
           if (focus.current?.isConnected) focus.current.focus();
         }}
       >
-        <SheetHeader>
+        <SheetHeader className={styles.documentHeader}>
           <SheetTitle>{doc?.title ?? "文档"}</SheetTitle>
           <IconButton
             aria-label="关闭文档"
@@ -155,7 +136,7 @@ export function DocumentSheet() {
             <X />
           </IconButton>
         </SheetHeader>
-        <SheetBody>
+        <SheetBody className={styles.documentBody}>
           {doc?.kind === "image" ? (
             <>
               <img

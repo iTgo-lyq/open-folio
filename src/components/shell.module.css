@@ -94,7 +94,23 @@
   transition: opacity 0.16s;
 }
 .app[data-collapsed] .wordmark {
-  opacity: 0;
+  display: none;
+}
+.app[data-collapsed] .logo {
+  width: 40px;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+.pageTitle {
+  margin: 0;
+  flex: none;
+  color: var(--of-text);
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  outline: none;
 }
 .full {
   position: absolute;

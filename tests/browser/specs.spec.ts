@@ -1,4 +1,4 @@
-import { test, expect, repositoryQuery, copyReadingLink } from "./connected";
+import { test, expect, repositoryQuery, readingLink } from "./connected";
 test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -18,8 +18,7 @@ test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
     .click();
   await expect(page).toHaveURL(/anchor=/);
   await expect(page.locator("h2#重复标题-1")).toBeVisible();
-  await page.getByRole("button", { name: "更多操作" }).click();
-  await page.getByRole("menuitem", { name: "查看原文" }).click();
+  await page.getByRole("button", { name: "查看原文", exact: true }).click();
   await expect(page.getByRole("dialog").locator("pre")).toContainText(
     "<script>",
   );
@@ -103,14 +102,13 @@ test("deep links reveal selected capability ancestors", async ({ page }) => {
   await expect(selected).toBeVisible();
 });
 
-test("copying a document link includes its actual capability and branch", async ({
+test("reading URL includes its actual capability and branch without a copy entry", async ({
   page,
   context,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
-  await copyReadingLink(page);
-  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const copied = await readingLink(page);
   expect(new URL(copied).searchParams.get("s")).toBe("platform/access");
   expect(new URL(copied).searchParams.get("branch")).toBe("develop");
 });

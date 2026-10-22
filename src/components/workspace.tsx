@@ -9,9 +9,8 @@ import { PersonalProvider, usePersonal } from "./personal-context";
 import { PersonalHome } from "./personal-home";
 import { AccountSettings } from "./account-settings";
 import { AccountLogin } from "./account-login";
-import { Empty, CopyPageLink } from "./document";
+import { Empty } from "./document";
 import { Shell } from "./shell";
-import { ToolbarSlot } from "./toolbar-slot";
 import { DocumentSheet } from "./reading-document";
 import Specs from "./specs";
 import Changes from "./changes";
@@ -86,11 +85,6 @@ function Body() {
   );
   return (
     <Shell module={module} focusedPreview={focusedPreview} banners={banners}>
-      {reading && data && module === "prototypes" && !focusedPreview && (
-        <ToolbarSlot side="right">
-          <CopyPageLink />
-        </ToolbarSlot>
-      )}
       {module === "home" ||
       (!personal.connection && module !== "connections") ? (
         <PersonalHome />

@@ -38,7 +38,7 @@ test("workspace uses one floating toolbar with sync status on desktop and mobile
       if (module === "prototypes")
         await expect(
           toolbar.getByRole("button", { name: "复制页面链接" }),
-        ).toBeVisible();
+        ).toHaveCount(0);
     }
   }
 });
@@ -52,6 +52,11 @@ test("logo and Ctrl+\\ collapse the sidebar into a capsule, tablet starts collap
     "aria-current",
     "page",
   );
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
+  await page.getByRole("button", { name: "展开侧栏" }).click();
+  await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
   await page.getByRole("button", { name: "收起侧栏" }).click();
   const logo = page.getByRole("button", { name: "展开侧栏" });
   await expect(logo).toBeFocused();

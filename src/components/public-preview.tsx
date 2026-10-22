@@ -1,13 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  Monitor,
-  Tablet,
-  Smartphone,
-  RotateCw,
-  RefreshCw,
-  Link2,
-} from "lucide-react";
+import { Monitor, Tablet, Smartphone, RotateCw, RefreshCw } from "lucide-react";
 import { IconButton, SegmentedControl } from "@open-folio/ui";
 import type { PublicPreview } from "@/server/public-previews";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
@@ -37,8 +30,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
   const [device, setDevice] = useState(meta.devices?.[0]),
     [rotated, setRotated] = useState(false),
     [zoom, setZoom] = useState("fit"),
-    [attempt, setAttempt] = useState(0),
-    [message, setMessage] = useState("");
+    [attempt, setAttempt] = useState(0);
   const [available, setAvailable] = useState({ width: 1000, height: 700 });
   const canvas = useRef<HTMLDivElement>(null);
   const mobile = useMediaQuery("(max-width: 760px)");
@@ -74,11 +66,6 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
     observer.observe(canvas.current);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
-    if (!message) return;
-    const timer = setTimeout(() => setMessage(""), 6000);
-    return () => clearTimeout(timer);
-  }, [message]);
   const viewport = meta.viewport ?? DEVICE_VIEWPORTS[device ?? "pc-web"],
     size = rotated
       ? { width: viewport.height, height: viewport.width }
@@ -142,33 +129,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
     <PublicShell
       title={meta.title}
       label="公开 · 固定版本"
-      actions={
-        <>
-          {!mobile && controls}
-          <IconButton
-            aria-label="复制链接"
-            tooltip
-            onClick={async () => {
-              const link = new URL(window.location.href);
-              if (device) link.searchParams.set("device", device);
-              link.searchParams.set(
-                "orientation",
-                size.width >= size.height ? "landscape" : "portrait",
-              );
-              if (zoom === "actual") link.searchParams.set("zoom", "actual");
-              else link.searchParams.delete("zoom");
-              try {
-                await navigator.clipboard.writeText(link.href);
-                setMessage("公开链接已复制。");
-              } catch {
-                setMessage("请从地址栏复制链接。");
-              }
-            }}
-          >
-            <Link2 />
-          </IconButton>
-        </>
-      }
+      actions={<>{!mobile && controls}</>}
     >
       <div className={styles.viewer}>
         {mobile && <div className={styles.mobileTools}>{controls}</div>}
@@ -212,11 +173,6 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
           <span title={meta.revision}>{meta.revision.slice(0, 12)}</span>
         </p>
       </div>
-      {message && (
-        <div className={styles.toast} role="status">
-          {message}
-        </div>
-      )}
     </PublicShell>
   );
 }

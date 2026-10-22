@@ -190,14 +190,6 @@ function PrototypeGallery({
       ref={scroll}
     >
       <div className={prototypeClass("gallery-inner")}>
-        <header className={prototypeClass("prototype-gallery-heading")}>
-          <div>
-            <h1 tabIndex={-1} data-prototype-gallery-title>
-              原型
-            </h1>
-            <p>{items.length} 个当前入口</p>
-          </div>
-        </header>
         <div className={prototypeClass("prototype-catalog-controls")}>
           <SegmentedControl
             label="预览设备"

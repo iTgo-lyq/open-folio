@@ -3,7 +3,7 @@ import {
   expect,
   repositoryQuery,
   connectRequest,
-  copyReadingLink,
+  readingLink,
 } from "./connected";
 
 test("custom collaboration selection persists through rediscovery, sharing, preferences and prototype preparation", async ({
@@ -34,8 +34,7 @@ test("custom collaboration selection persists through rediscovery, sharing, pref
   await expect(
     page.getByRole("heading", { name: "自定义协作能力", exact: true }),
   ).toBeVisible();
-  await copyReadingLink(page);
-  const link = await page.evaluate(() => navigator.clipboard.readText());
+  const link = await readingLink(page);
   expect(new URL(link).searchParams.get("integrationBranch")).toBe(
     "team/integration",
   );

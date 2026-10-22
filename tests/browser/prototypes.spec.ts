@@ -61,7 +61,7 @@ test("published hosted cards load the registered screenshot for every declared d
 test("capsule tooltips stay above the prototype gallery", async ({ page }) => {
   await page.goto(path);
   await expect(page.locator('[data-thumbnail-status="ready"]')).toHaveCount(4);
-  await page.getByRole("button", { name: "收起侧栏" }).click();
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
   const link = page
     .getByRole("navigation", { name: "模块导航" })
     .getByRole("link", { name: "Changes", exact: true });

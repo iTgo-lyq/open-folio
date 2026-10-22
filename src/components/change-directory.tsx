@@ -424,9 +424,6 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   return (
     <div className={page.page} ref={scroll}>
       <div className={`${page.inner} ${styles.inner}`}>
-        <header className={page.heading}>
-          <h1>Changes</h1>
-        </header>
         <div className={styles.toolbar}>
           <Tabs
             value={query.issues ? "issues" : query.scope}

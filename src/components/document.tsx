@@ -1,12 +1,11 @@
 "use client";
-import { IconButton, EmptyState } from "@open-folio/ui";
+import { EmptyState } from "@open-folio/ui";
 import { useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   AlertCircle,
   ArrowUpRight,
-  Copy,
   FileText,
   GitBranch,
   Hash,
@@ -167,84 +166,5 @@ export function Markdown({
         {body}
       </ReactMarkdown>
     </div>
-  );
-}
-export function useCopyPageLink(doc?: DocumentRef) {
-  const { projectId, data, notice, q, repository, sharing } = useWorkspace();
-  return async () => {
-    const url = new URL(window.location.href);
-    url.hash = "";
-    if (!sharing) {
-      const allowed = new Set([
-        "m",
-        "s",
-        "c",
-        "ct",
-        "branch",
-        "doc",
-        "da",
-        "anchor",
-        "raw",
-        "spec",
-        "stage",
-        "size",
-        "wait",
-        "taskStatus",
-        "scope",
-        "types",
-        "noTypes",
-        "urgency",
-        "creator",
-        "group",
-        "view",
-        "sort",
-        "cf",
-        "cv",
-        "prototype",
-        "pdevice",
-        "pdetail",
-        "pcount",
-        "device",
-        "orientation",
-        "zoom",
-        "revision",
-        "preview",
-      ]);
-      for (const key of [...url.searchParams.keys()])
-        if (!allowed.has(key)) url.searchParams.delete(key);
-      url.searchParams.set("repo", projectId);
-      if (data?.integrationBranch)
-        url.searchParams.set("integrationBranch", data.integrationBranch);
-      if (repository)
-        for (const [key, value] of Object.entries({
-          provider: repository.providerId,
-          instance: repository.instanceId,
-          repositoryId: repository.repositoryId,
-          fullName: repository.fullName,
-        }))
-          url.searchParams.set(key, value);
-      if (doc && !q.doc) {
-        const spec = data?.specs.find((s) => s.documentId === doc.id);
-        if (spec) {
-          url.searchParams.set("m", "specs");
-          url.searchParams.set("s", spec.id);
-          url.searchParams.set("branch", doc.branch);
-        }
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url.href);
-      notice("页面链接已复制。");
-    } catch {
-      notice("未能复制，请从浏览器地址栏复制链接。");
-    }
-  };
-}
-export function CopyPageLink({ document }: { document?: DocumentRef }) {
-  const copy = useCopyPageLink(document);
-  return (
-    <IconButton aria-label="复制页面链接" tooltip onClick={() => void copy()}>
-      <Copy />
-    </IconButton>
   );
 }

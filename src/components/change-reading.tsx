@@ -31,7 +31,7 @@ import { ReadingDocument } from "./reading-document";
 import { ChangeDetails, Flow, quality } from "./change-materials";
 import { ChangeLabels } from "./change-labels";
 import { ShareManager } from "./share-manager";
-import { CopyPageLink, Empty } from "./document";
+import { Empty } from "./document";
 import { ToolbarSlot } from "./toolbar-slot";
 import { sectionId } from "./material-styles";
 import { useMediaQuery } from "./use-media";
@@ -219,7 +219,6 @@ export function ChangeReading({
               <ArrowLeft />
               Changes
             </Button>
-            <span className={styles.toolbarTitle}>{g?.title ?? q.c}</span>
           </ToolbarSlot>
           <ToolbarSlot side="right">
             {!mobile && (
@@ -243,7 +242,6 @@ export function ChangeReading({
               </>
             )}
             {g && <ShareManager changeId={g.id} />}
-            <CopyPageLink />
           </ToolbarSlot>
         </>
       )}
@@ -307,13 +305,7 @@ export function ChangeReading({
               )}
             </header>
           ) : (
-            <>
-              <div className={styles.crumb}>
-                <button onClick={() => select(items[0])}>{g.title}</button>
-                <span> / {material.title}</span>
-              </div>
-              {!doc && <h1 className={styles.title}>{material.title}</h1>}
-            </>
+            !doc && <h1 className={styles.title}>{material.title}</h1>
           )}
           {doc ? (
             <ReadingDocument value={value} error={error} loading={loading} />

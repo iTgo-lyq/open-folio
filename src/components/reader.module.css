@@ -8,6 +8,35 @@
   grid-template-columns: var(--pane-width) minmax(0, 1fr) var(--toc-width);
   color: var(--of-text);
 }
+.paneControl {
+  flex: none;
+  order: -1;
+}
+.directorySheet:global(.of-ui-sheet[data-side]) {
+  width: min(380px, calc(100vw - 24px));
+}
+.directoryBody {
+  padding: 10px 12px;
+}
+.documentSheet:global(.of-ui-sheet[data-side="right"]) {
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(960px, calc(100vw - 24px));
+  border-radius: 16px;
+}
+.documentHeader {
+  padding: 16px 20px 14px 28px;
+}
+.documentBody {
+  padding: 24px 28px;
+}
+.documentBody .raw {
+  padding: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
 .reader[data-pane-hidden] {
   --pane-width: 0px;
 }
@@ -247,15 +276,27 @@
 .docMeta {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   color: var(--of-text-3);
   font-size: 12px;
   margin-bottom: 18px;
 }
 .docMeta > code {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font: 11px var(--of-font-mono);
+}
+.docMeta > code:first-child {
+  flex: 0 1 auto;
+}
+.docMeta > code:last-of-type {
+  flex-shrink: 0;
+}
+.docMeta > button {
+  flex-shrink: 0;
 }
 .docMeta > button {
   margin-left: auto;
@@ -289,6 +330,28 @@
   }
 }
 @media (max-width: 760px) {
+  .paneControl span {
+    display: none;
+  }
+  .documentSheet:global(.of-ui-sheet[data-side="right"]) {
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: calc(100vw - 16px);
+    max-height: none;
+    border-radius: 14px;
+  }
+  .directorySheet:global(.of-ui-sheet[data-side]) {
+    width: 100%;
+    max-height: 90dvh;
+  }
+  .documentHeader {
+    padding: 14px 12px 12px 20px;
+  }
+  .documentBody {
+    padding: 18px 16px;
+  }
   .article {
     padding: 22px 20px calc(110px + env(safe-area-inset-bottom));
   }

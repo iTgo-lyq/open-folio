@@ -17,6 +17,7 @@ test("another device restores the same snapshot, reading module and sidebar; dif
   await expect(
     page.getByRole("heading", { name: /^Changes/, exact: false }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "展开侧栏" }).click();
   await page.getByRole("button", { name: "收起侧栏" }).click();
   await expect
     .poll(
@@ -173,7 +174,7 @@ for (const action of ["switch", "logout"])
         };
       });
     });
-    await page.getByRole("button", { name: "收起侧栏" }).click();
+    await page.getByRole("button", { name: "展开侧栏" }).click();
     await expect.poll(() => !!finishPreferences).toBe(true);
     await page.route("**/api/session", async (route) => {
       if (route.request().method() !== "GET") return route.continue();

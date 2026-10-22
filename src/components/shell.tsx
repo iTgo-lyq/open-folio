@@ -71,7 +71,7 @@ export function Shell({
   const mobile = useMediaQuery("(max-width: 760px)");
   const tablet = useMediaQuery("(min-width: 761px) and (max-width: 1023px)");
   const preference =
-    personal.session?.workspace?.preferences.railCollapsed ?? false;
+    personal.session?.workspace?.preferences.railCollapsed ?? true;
   const [collapsedPref, setCollapsedPref] = useState(preference);
   const [tabletExpanded, setTabletExpanded] = useState(false);
   useEffect(() => setCollapsedPref(preference), [preference]);
@@ -250,6 +250,19 @@ export function Shell({
                   <BrandMark size={22} />
                 </span>
               )}
+              {!focusedPreview &&
+                !changeReading &&
+                (module === "changes" || module === "prototypes") && (
+                  <h1
+                    className={styles.pageTitle}
+                    tabIndex={-1}
+                    data-prototype-gallery-title={
+                      module === "prototypes" ? "" : undefined
+                    }
+                  >
+                    {module === "changes" ? "Changes" : "原型"}
+                  </h1>
+                )}
               <div className={styles.slot} ref={leftSlot} />
             </div>
             <div className={styles.tbRight}>

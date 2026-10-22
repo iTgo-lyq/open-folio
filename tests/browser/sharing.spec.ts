@@ -4,7 +4,7 @@ import {
   expect,
   repositoryQuery,
   connectRequest,
-  copyReadingLink,
+  readingLink,
 } from "./connected";
 test("engineering share links use each collaborator's connection and restore the original reading position", async ({
   page,
@@ -17,8 +17,7 @@ test("engineering share links use each collaborator's connection and restore the
   await expect(
     page.getByRole("heading", { name: "访问与来源", exact: true }),
   ).toBeVisible();
-  await copyReadingLink(page);
-  const link = await page.evaluate(() => navigator.clipboard.readText());
+  const link = await readingLink(page);
   const params = new URL(link).searchParams;
   expect(params.get("repositoryId")).toBe("1");
   expect(params.get("provider")).toBe("github");

@@ -9,26 +9,7 @@
 .gallery-inner {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 28px 40px 100px;
-}
-.prototype-gallery-heading {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  margin: 0 0 22px;
-}
-.prototype-gallery-heading h1 {
-  font-size: 26px;
-  line-height: 1.3;
-  font-weight: 680;
-  letter-spacing: -0.015em;
-  margin: 0 0 5px;
-  outline: none;
-}
-.prototype-gallery-heading p {
-  color: var(--of-text-3);
-  font-size: 12.5px;
-  margin: 0;
+  padding: 22px 40px 100px;
 }
 .prototype-catalog-controls {
   display: flex;

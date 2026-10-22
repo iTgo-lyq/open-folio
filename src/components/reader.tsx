@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ListTree, PanelLeft, Type, X } from "lucide-react";
 import {
   IconButton,
+  Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -57,6 +58,7 @@ export function Reader({
     [paneOpen, setPaneOpen] = useState(false),
     [tocOpen, setTocOpen] = useState(false);
   const [active, setActive] = useState("");
+  const paneId = useId();
   const paneTrigger = useRef<HTMLButtonElement>(null),
     tocTrigger = useRef<HTMLButtonElement>(null);
   const article = useRef<HTMLElement>(null),
@@ -186,22 +188,27 @@ export function Reader({
   };
   return (
     <>
+      <ToolbarSlot side="left">
+        <Button
+          ref={paneTrigger}
+          variant="ghost"
+          size="sm"
+          className={styles.paneControl}
+          aria-label={desktop && !hidePane ? "收起目录" : `打开${paneLabel}`}
+          aria-expanded={desktop ? !hidePane : paneOpen}
+          aria-controls={desktop ? paneId : `${paneId}-sheet`}
+          onClick={() => {
+            if (desktop) {
+              setHidden(!hidePane);
+              if (preferences.focus) update({ focus: false });
+            } else setPaneOpen(true);
+          }}
+        >
+          <PanelLeft />
+          <span>{paneLabel === "能力目录" ? "Specs 目录" : "材料"}</span>
+        </Button>
+      </ToolbarSlot>
       <ToolbarSlot side="right">
-        {(!desktop || hidePane) && (
-          <IconButton
-            ref={paneTrigger}
-            aria-label={`打开${paneLabel}`}
-            tooltip
-            onClick={() => {
-              if (desktop) {
-                setHidden(false);
-                update({ focus: false });
-              } else setPaneOpen(true);
-            }}
-          >
-            <PanelLeft />
-          </IconButton>
-        )}
         {headings.length > 0 && (!fullToc || preferences.focus || wide) && (
           <IconButton
             ref={tocTrigger}
@@ -263,17 +270,9 @@ export function Reader({
         data-size={preferences.size}
         data-wide={wide || undefined}
       >
-        <aside className={styles.pane} aria-label={paneLabel}>
+        <aside className={styles.pane} aria-label={paneLabel} id={paneId}>
           <div className={styles.paneHeading}>
             <strong>{paneTitle}</strong>
-            <IconButton
-              size="sm"
-              aria-label="收起目录"
-              tooltip
-              onClick={() => setHidden(true)}
-            >
-              <PanelLeft />
-            </IconButton>
           </div>
           {pane}
         </aside>
@@ -297,6 +296,8 @@ export function Reader({
       <Sheet open={paneOpen} onOpenChange={setPaneOpen}>
         <SheetContent
           side="left"
+          id={`${paneId}-sheet`}
+          className={styles.directorySheet}
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
@@ -322,7 +323,10 @@ export function Reader({
               <X />
             </IconButton>
           </SheetHeader>
-          <SheetBody onClick={closePaneForLink}>
+          <SheetBody
+            className={styles.directoryBody}
+            onClick={closePaneForLink}
+          >
             {pane}
             {!!headings.length && (
               <div className={styles.sheetToc}>
@@ -335,6 +339,7 @@ export function Reader({
       </Sheet>
       <Sheet open={tocOpen} onOpenChange={setTocOpen}>
         <SheetContent
+          className={styles.directorySheet}
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
             event.preventDefault();

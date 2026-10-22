@@ -262,18 +262,6 @@ export function ChangePreviews({
         );
   async function copy() {
     if (!result?.revision || !entry) return;
-    if (sharing) {
-      const link = new URL(window.location.href);
-      link.searchParams.set("ct", "previews");
-      link.searchParams.set("preview", entry.id);
-      try {
-        await navigator.clipboard.writeText(link.href);
-        notice("已复制原型分享链接");
-      } catch {
-        notice("未能复制，请从浏览器地址栏复制链接。");
-      }
-      return;
-    }
     if (!publication.url) {
       notice(publication.error ?? "公开版本正在准备，请稍后重试。");
       return;
@@ -648,14 +636,16 @@ export function ChangePreviews({
               <code>{result.revision?.slice(0, 12)}</code>
               {result.pinned ? "归档版本" : "已推送版本"}
             </span>
-            <button
-              type="button"
-              className={previewClass("text-button")}
-              onClick={copy}
-            >
-              <Link2 size={13} />
-              {sharing ? "复制原型分享链接" : "复制固定版本链接"}
-            </button>
+            {!sharing && (
+              <button
+                type="button"
+                className={previewClass("text-button")}
+                onClick={copy}
+              >
+                <Link2 size={13} />
+                复制固定版本链接
+              </button>
+            )}
           </div>
           {q.revision && (
             <button

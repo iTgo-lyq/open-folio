@@ -11,7 +11,7 @@ import {
 import { useWorkspace } from "./context";
 import { SharedProvider } from "./shared-context";
 import { ChangeReading } from "./change-reading";
-import { CopyPageLink, Empty } from "./document";
+import { Empty } from "./document";
 import { DocumentSheet } from "./reading-document";
 import { PublicShell } from "./public-shell";
 import { shareParams, type ShareTarget } from "@/lib/share-link";
@@ -115,7 +115,6 @@ function SharedReader({ target }: { target: ShareTarget }) {
               </PopoverContent>
             </Popover>
           )}
-          <CopyPageLink />
         </>
       }
     >

@@ -6,7 +6,7 @@ import {
   changeDisplay,
   backToChanges,
   openMaterial,
-  copyReadingLink,
+  readingLink,
 } from "./connected";
 
 test("adjacent Changes follow the filtered directory order and return to the current row", async ({
@@ -72,18 +72,16 @@ test("materials, raw source and copy fallback preserve a stable reading location
       exact: true,
     }),
   ).toBeVisible();
-  await copyReadingLink(page);
-  const link = await page.evaluate(() => navigator.clipboard.readText());
+  const link = await readingLink(page);
   await page.goto(link);
   await expect(page).toHaveURL(/ct=requirement/);
-  await page.getByRole("button", { name: "更多操作", exact: true }).click();
-  await page.getByRole("menuitem", { name: "查看原文" }).click();
+  await page.getByRole("button", { name: "查看原文", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "原文", exact: true }).locator("pre"),
   ).toContainText("# 让工程文档");
   await page.getByRole("button", { name: "关闭原文", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "更多操作", exact: true }),
+    page.getByRole("button", { name: "查看原文", exact: true }),
   ).toBeFocused();
   await page.getByRole("button", { name: "分享", exact: true }).click();
   const share = page.getByRole("dialog", { name: "分享这个 Change" });

@@ -83,7 +83,7 @@ export async function waitForWorkbenchLayout(page: Page, width: number) {
     .poll(async () =>
       Math.round((await page.getByRole("main").boundingBox())?.x ?? -1),
     )
-    .toBe(width >= 1024 ? 244 : width >= 761 ? 72 : 0);
+    .toBe(width >= 761 ? 72 : 0);
 }
 // 壳层操作：顶栏“同步状态”弹层承载读取来源与刷新，账号菜单承载 Token 与设置入口。
 export async function openSyncStatus(page: Page) {
@@ -128,11 +128,15 @@ export async function logoutCurrent(page: Page) {
     .getByRole("button", { name: "退出登录", exact: true })
     .click();
 }
-export async function copyReadingLink(page: Page) {
-  await page.getByRole("button", { name: "更多操作", exact: true }).click();
-  await page
-    .getByRole("menuitem", { name: "复制阅读链接", exact: true })
-    .click();
+export async function readingLink(page: Page) {
+  await expect(
+    page.getByRole("button", { name: "复制页面链接", exact: true }),
+  ).toHaveCount(0);
+  if (new URL(page.url()).searchParams.get("m") === "specs")
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("branch"))
+      .not.toBeNull();
+  return page.url();
 }
 export async function openChangeFilters(page: Page) {
   const menu = page.getByRole("menu", { name: /^筛选/ });

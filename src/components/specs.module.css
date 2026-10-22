@@ -91,6 +91,12 @@
   font-weight: 650;
   margin: 0 0 12px;
 }
+.relatedHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
 .related ul {
   list-style: none;
   padding: 0;

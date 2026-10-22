@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { Avatar, Badge, Button } from "@open-folio/ui";
 import type { SpecRef } from "@/lib/model";
 import { primaryRecord, STAGE_LABELS } from "@/lib/model";
+import { sortDirectoryChanges } from "@/lib/change-directory";
 import { usePersonal } from "./personal-context";
 import { useWorkspace, useDocument } from "./context";
 import { Empty } from "./document";
@@ -40,6 +41,10 @@ export default function Specs() {
   const [closed, setClosed] = useState<string[]>([]);
   const specs = data?.specs ?? [];
   const selected = q.s ? specs.find((spec) => spec.id === q.s) : specs[0];
+  useEffect(() => {
+    if (selected && data?.selectedBranch && !q.branch)
+      nav({ branch: data.selectedBranch }, true);
+  }, [selected?.id, data?.selectedBranch, q.branch, nav]);
   const { value, error, loading } = useDocument(selected?.documentId);
   const storageKey = `openfolio.tree.${personal.connection?.id ?? ""}.${projectId}.${data?.selectedBranch}`;
   useEffect(() => {
@@ -132,10 +137,12 @@ export default function Specs() {
       </li>
     ));
   }
-  const related = (data?.changes ?? []).filter(
-    (change) =>
-      selected && primaryRecord(change)?.relatedSpecs.includes(selected.id),
-  );
+  const related = sortDirectoryChanges(
+    (data?.changes ?? []).filter(
+      (change) =>
+        selected && primaryRecord(change)?.relatedSpecs.includes(selected.id),
+    ),
+  ).slice(0, 5);
   const doc = data?.documents.find((doc) => doc.id === selected?.documentId);
   const headings = [
     ...(doc?.headings.filter((h) => h.depth > 1) ?? []),
@@ -145,7 +152,10 @@ export default function Specs() {
   ];
   const after = !!related.length && (
     <section className={styles.related} aria-labelledby="related-changes">
-      <h2 id="related-changes">相关 Change</h2>
+      <div className={styles.relatedHeading}>
+        <h2 id="related-changes">相关 Change</h2>
+        <small>最近 {related.length} 项</small>
+      </div>
       <ul>
         {related.map((change) => {
           const state = primaryRecord(change)?.state,
