@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -97,7 +97,13 @@
       "commitTitle": "frontend-style-interaction-refactor T12: complete validation and review evidence"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T09:03:54.773Z",
+      "summary": "隔离上下文独立评审与截图复核通过，296项单测及126项浏览器用例覆盖通过"
+    }
+  },
   "previews": [
     {
       "id": "blue-glass-workbench",
@@ -411,5 +417,9 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待最终前端验收，通过后同步Specs、归档并合入develop更新11117"
   }
 }
