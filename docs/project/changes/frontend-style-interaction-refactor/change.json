@@ -331,6 +331,6 @@
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "按陶土强调与可见材质重做七组浅色/深色原型并发布固定版本后，等待用户明确验收；验收前不写 Technical/Plan 或改产品代码。"
+    "summary": "技术方案已推送，等待用户确认实现方向与关键取舍；确认后编写 Plan，change-sharing 合入前不进入执行。"
   }
 }
