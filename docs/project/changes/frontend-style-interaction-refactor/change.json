@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "主题、设计 token 与品牌标志",
-      "status": "todo"
+      "status": "done",
+      "verification": "typecheck、format、ui:build/ui:test、build 通过；theme 与 workspace/personal/sharing 浏览器用例 13 项通过",
+      "commitTitle": "frontend-style-interaction-refactor T1: themes, design tokens and flat brand mark"
     },
     "T2": {
       "title": "共享基础组件",

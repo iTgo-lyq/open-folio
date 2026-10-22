@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   Badge,
+  BrandMark,
   Button,
   Card,
   CardHeader,
@@ -323,7 +324,7 @@ export function AccountLogin() {
   return (
     <section className="personal-auth">
       <div className="personal-auth-heading">
-        <img src="/brand/openfolio-mark.png" alt="" />
+        <BrandMark size={26} />
         <h1>你的工程工作台</h1>
         <p>登录后，在不同浏览器恢复已绑定的 Token。</p>
       </div>

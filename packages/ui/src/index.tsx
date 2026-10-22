@@ -107,3 +107,4 @@ export {
   FieldLabel,
   FieldDescription,
 } from "./components/field";
+export { BrandMark, type BrandMarkProps } from "./components/brand-mark";

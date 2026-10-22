@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { RotateCw, Link2 } from "lucide-react";
-import { Button, Badge, IconButton } from "@open-folio/ui";
+import { BrandMark, Button, Badge, IconButton } from "@open-folio/ui";
 import type { PublicPreview } from "@/server/public-previews";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
 const labels = { "pc-web": "PC Web", ipad: "iPad", mobile: "手机" };
@@ -55,7 +55,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
     <main className="public-preview-page">
       <header>
         <a className="public-preview-brand" href="/">
-          <img src="/brand/openfolio-mark.png" alt="" />
+          <BrandMark size={22} />
           OpenFolio
         </a>
         <h1>{meta.title}</h1>

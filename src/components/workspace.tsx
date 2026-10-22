@@ -20,7 +20,7 @@ import { DocumentModal, Empty, ErrorNotice, CopyPageLink } from "./document";
 import Specs from "./specs";
 import Changes from "./changes";
 import Prototypes from "./prototypes";
-import { Button } from "@open-folio/ui";
+import { BrandMark, Button } from "@open-folio/ui";
 function Shell() {
   const {
     q,
@@ -114,7 +114,7 @@ function Shell() {
             onClick={toggle}
             aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
           >
-            <img src="/brand/openfolio-mark.png" alt="OpenFolio" />
+            <BrandMark size={28} label="OpenFolio" />
             <span className="restore-handle" />
           </button>
           {navigation}

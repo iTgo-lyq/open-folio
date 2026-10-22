@@ -178,10 +178,9 @@ input {
   border-radius: 14px;
   padding: 0;
 }
-.shell-brand img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
+.shell-brand svg {
+  width: 28px;
+  height: 28px;
 }
 .shell-brand:hover {
   background: #ffffff60;
@@ -275,7 +274,7 @@ input {
 }
 .rail-collapsed .module-nav,
 .rail-collapsed .rail-footer,
-.rail-collapsed .shell-brand img {
+.rail-collapsed .shell-brand svg {
   display: none;
 }
 .rail-collapsed .shell-brand {
@@ -4346,9 +4345,9 @@ input {
   font-size: 17px;
   font-weight: 600;
 }
-.public-preview-brand img {
-  width: 32px;
-  height: 32px;
+.public-preview-brand svg {
+  width: 22px;
+  height: 22px;
 }
 .public-preview-controls {
   display: flex;
@@ -4752,9 +4751,10 @@ input {
   margin-bottom: 24px;
   text-align: center;
 }
-.personal-auth-heading img {
-  width: 36px;
-  height: 36px;
+.personal-auth-heading svg {
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
 }
 .personal-auth-heading h1 {
   margin: 12px 0 8px;
