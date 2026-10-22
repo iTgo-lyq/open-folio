@@ -4,13 +4,13 @@
   "title": "准备实施时创建 Draft PR",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/early-draft-pr",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "前置 Draft PR 创建并统一流程说明",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
