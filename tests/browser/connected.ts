@@ -78,6 +78,13 @@ export const test = base.extend<{
   request: async ({ context }, use) => use(context.request),
 });
 export { expect };
+export async function waitForWorkbenchLayout(page: Page, width: number) {
+  await expect
+    .poll(async () =>
+      Math.round((await page.getByRole("main").boundingBox())?.x ?? -1),
+    )
+    .toBe(width >= 1024 ? 244 : width >= 761 ? 72 : 0);
+}
 // 壳层操作：顶栏“同步状态”弹层承载读取来源与刷新，账号菜单承载 Token 与设置入口。
 export async function openSyncStatus(page: Page) {
   await page.getByRole("button", { name: /^同步状态：/ }).click();

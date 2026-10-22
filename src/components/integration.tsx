@@ -203,7 +203,7 @@ export function ChangeIntegration({ id }: { id: string }) {
   return (
     <div className={materialClass("integration-view")}>
       <div className={materialClass("integration-meta")}>
-        <div>
+        <div className={materialClass("integration-timing")}>
           <span className={materialClass("integration-record-status")}>
             <GitMerge size={14} />
             已合入 {summary.integrationBranch}

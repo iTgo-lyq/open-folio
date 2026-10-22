@@ -4,6 +4,7 @@ import {
   repositoryQuery,
   copyPublicPreviewLink,
   origin,
+  waitForWorkbenchLayout,
 } from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
 test("prototype gallery, canvas and public page fit both themes at four widths", async ({
@@ -19,6 +20,8 @@ test("prototype gallery, canvas and public page fit both themes at four widths",
     for (const theme of ["light", "dark"])
       for (const width of [1440, 834, 390, 320]) {
         await target.setViewportSize({ width, height: 900 });
+        if (kind !== "public-prototype")
+          await waitForWorkbenchLayout(target, width);
         await target.evaluate(async (theme) => {
           document.documentElement.dataset.theme = theme;
           await new Promise<void>((resolve) =>

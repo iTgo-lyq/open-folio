@@ -1,4 +1,9 @@
-import { test, expect, repositoryQuery } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  waitForWorkbenchLayout,
+} from "./connected";
 const scenes = [
   ["home", "/?m=home", "我的仓库"],
   ["account", "/?m=connections", "账号与 Token"],
@@ -30,6 +35,7 @@ for (const [name, url, title] of scenes)
     for (const theme of ["light", "dark"])
       for (const width of [1440, 834, 390, 320]) {
         await page.setViewportSize({ width, height: 900 });
+        await waitForWorkbenchLayout(page, width);
         await page.evaluate(async (theme) => {
           document.documentElement.dataset.theme = theme;
           await new Promise<void>((resolve) =>

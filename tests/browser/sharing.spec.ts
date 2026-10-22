@@ -110,9 +110,9 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
     expect(image.ok()).toBe(true);
     expect(image.headers()["content-type"]).toBe("image/jpeg");
     await viewer.setViewportSize({ width: 320, height: 740 });
-    expect(
-      await viewer.evaluate(() => document.documentElement.scrollWidth),
-    ).toBeLessThanOrEqual(320);
+    await expect
+      .poll(() => viewer.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(320);
     await viewer.screenshot({ path: "artifacts/public-preview-mobile.png" });
   } finally {
     await anonymous.close();

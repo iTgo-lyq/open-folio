@@ -165,3 +165,10 @@
 - 完整单元测试 296 / 296 通过；类型、格式、生产构建和 UI 生产预览交互通过。
 - 23 项 Changes / 新矩阵 / 评审回归首轮 22 项通过，Token 测试的弹窗名称修订后，新增的失效→503→重新绑定路径通过；目录、弹层、diff、重复章节与手机焦点 5 项复验全部通过。
 - 浅色/深色实际动作、链接、选中和状态文字对比 ≥4.5:1，主按钮 ≥4.5:1、焦点 ≥3:1 的两个浏览器检查通过。独立复核确认无剩余可行动问题，token 引用和 git diff --check 通过。
+
+最终生产验证：
+- 在 `100b53d` 重新运行 `npm run typecheck`、`npm run format:check`、`npm test` 与 `npm run build`，全部通过，单元测试 296 / 296；其中包括此前由 develop 修复的 service-tools 生命周期检查。
+- 使用 `service:update` 在任务 worktree 启动独立 `11118` 预览，tmux `openfolio-refactor-review`，数据目录 `/home/tiger/.local/share/open-folio-refactor-review`。构建与运行记录均为 `100b53d`、clean；11117 长期服务保持原实现，按计划在验收合入后更新。
+- 真实 GitHub 仓库冒烟通过：登录后的仓库首页、当前 Change 技术材料、390px 阅读与账号 Token 列表；独立匿名浏览器的同一材料在 1440 / 320px 可读且无私有 API 请求、无页面错误。每个浏览器均在独立 `withSmokeSession` 回调内执行，退出后匿名且无可见绑定，账号绑定保留。首次冒烟的地址检查遇到正常的发现进行中 409，等待后重试通过；匿名接口参数曾混入页面材料参数而返回 400，改用接口白名单后通过，产品代码无需修改。
+- `share.mjs --document technical.md --wait-seconds 0` 匿名核实成功，来源为工作分支 `100b53d`；首次网络失败后复核通过。
+- 草稿 PR：[#3](https://github.com/iTgo-lyq/open-folio/pull/3)。归档 CI 当前因未完成用户验收与归档而失败；验收后按关闭流程归档，再复验检查，不绕过。

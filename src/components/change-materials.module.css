@@ -511,6 +511,12 @@
   color: var(--of-text-2);
   overflow-wrap: anywhere;
 }
+.integration-timing {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
 .integration-commit {
   display: flex;
   align-items: center;
