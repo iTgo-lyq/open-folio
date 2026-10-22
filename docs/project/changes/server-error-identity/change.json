@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "server-error-identity",
+  "title": "跨构建模块稳定识别服务错误",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "稳定共享服务错误类并验证生产认证与分享",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "background-repository-refresh",
+  "types": [
+    "修复"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "生产冒烟发现跨构建模块业务错误变成503，是否先修复再发布？",
+      "recommendation": "先以small统一错误类型身份，补生产回归后继续发布",
+      "answer": "先修复，再发布（推荐）",
+      "source": "本会话用户对发布前修复方案的明确选择"
+    }
+  }
+}
