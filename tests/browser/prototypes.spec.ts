@@ -96,9 +96,7 @@ test("main gallery opens current pages directly without Change/version selectors
   expect(catalog.items[0].references).toBeUndefined();
   await page.goto(path);
   const region = page.getByRole("region", { name: "项目原型总览" });
-  await expect(
-    page.locator("main > header").getByRole("heading", { level: 1 }),
-  ).toHaveText("原型");
+  await expect(region.getByRole("heading", { level: 1 })).toHaveText("原型");
   await expect(
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);

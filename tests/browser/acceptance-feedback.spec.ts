@@ -82,7 +82,7 @@ test("raw reading uses a wide sheet and one source line on desktop and phone", a
   ).toBeFocused();
 });
 
-test("first visit uses a centered collapsed logo and list titles live in the header", async ({
+test("first visit uses a centered collapsed logo and list titles stay in the content", async ({
   page,
 }) => {
   for (const [module, title] of [
@@ -96,7 +96,14 @@ test("first visit uses a centered collapsed logo and list titles live in the hea
       page
         .locator("main > header")
         .getByRole("heading", { name: title, exact: true }),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
+    await expect(titleNode).toHaveCount(1);
+    expect(
+      await titleNode.evaluate(
+        (el) =>
+          el.closest("main > header") === null && el.closest("main") !== null,
+      ),
+    ).toBe(true);
     const logo = page.getByRole("button", { name: "展开侧栏", exact: true });
     await expect(logo).toBeVisible();
     const dimensions = await logo.evaluate((el) => {

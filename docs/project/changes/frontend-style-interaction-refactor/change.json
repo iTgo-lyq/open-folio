@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -113,15 +113,13 @@
       "status": "done",
       "verification": "原型构建7页/16单测/静态契约、类型/格式/生产构建通过；26个不同浏览器用例及独立评审通过；同一11356真实账号/匿名/外部分享冒烟通过",
       "commitTitle": "frontend-style-interaction-refactor T15: verify acceptance fixes on the shared-data service"
+    },
+    "T16": {
+      "title": "恢复 Changes 与原型内容区标题",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-22T10:09:16.904Z",
-      "summary": "T13-T15返修任务均已验证推送；类型、格式、生产构建、受影响浏览器与原型检查通过，隔离上下文独立Agent评审及真实常驻数据登录/匿名/外部分享冒烟通过，无剩余可行动问题"
-    }
-  },
+  "closure": {},
   "previews": [
     {
       "id": "quiet-changes",
@@ -342,9 +340,9 @@
     }
   ],
   "rework": {
-    "at": "2026-10-22T09:41:01.137Z",
-    "reason": "用户验收反馈九项：目录入口、抽屉、分组层次与对齐、旧原型、标题、分享失败与冗余复制",
-    "approach": "阅读目录统一到顶栏左侧，改善抽居读取宽度，强化分组与对齐，精简标题/复制入口并清理旧原型，修复分享可用性"
+    "at": "2026-10-22T10:50:34.551Z",
+    "reason": "用户要求回滚Changes与原型标题进入header的调整，恢复内容区原位置",
+    "approach": "仅恢复两个页面标题、原型数量和原有标题间距及焦点位置，定向验证后更新同一验收服务"
   },
   "clarifications": {
     "Q1": {
@@ -404,9 +402,5 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收当前11356新版；通过后同步Specs、归档、合入develop并切回11117常驻服务"
   }
 }
