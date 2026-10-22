@@ -116,7 +116,7 @@ export interface RepositoryProvider {
     repo: RepositoryIdentity,
   ): Promise<GitTransport>;
 }
-export class ProviderError extends AppError {
+class ProviderErrorClass extends AppError {
   retryAfter?: string;
   constructor(
     code: string,
@@ -128,6 +128,13 @@ export class ProviderError extends AppError {
     this.retryAfter = retryAfter;
   }
 }
+const errorGlobals = globalThis as typeof globalThis & {
+  folioProviderErrorClass?: typeof ProviderErrorClass;
+};
+export const ProviderError = (errorGlobals.folioProviderErrorClass ??=
+  ProviderErrorClass);
+export type ProviderError = ProviderErrorClass;
+
 export const repositoryKey = (
   r: Pick<RepositoryIdentity, "providerId" | "instanceId" | "repositoryId">,
 ) =>
