@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -157,7 +157,13 @@
       "commitTitle": "frontend-style-interaction-refactor T22: verify active Changes badge on the acceptance service"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T11:54:48.431Z",
+      "summary": "整体验证与独立Agent评审通过；新增目录密度、细线图标、整行淡色悬浮和Changes角标定向回归及同一验收服务真实账号双主题冒烟通过，退出清理确认"
+    }
+  },
   "previews": [
     {
       "id": "quiet-changes",
@@ -440,5 +446,9 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收目录密度、整行悬浮与Changes角标；通过后同步Specs、归档并集成develop"
   }
 }
