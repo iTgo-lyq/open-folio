@@ -4,13 +4,15 @@
   "title": "后台常驻刷新工程记录",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/background-repository-refresh",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "实现后台常驻扫描与活跃间隔调整",
-      "status": "todo"
+      "status": "done",
+      "verification": "全量295项及新增6项测试、类型检查、生产构建、8项浏览器回归通过；独立生产启动确认首次HTTP请求前即扫描，后台在退出设备后更新Git记录并支持恢复与解绑",
+      "commitTitle": "background-repository-refresh T1: scan connected repositories without open pages"
     }
   },
   "closure": {},
