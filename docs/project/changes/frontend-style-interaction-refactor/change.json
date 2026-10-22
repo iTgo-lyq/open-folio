@@ -140,7 +140,9 @@
     },
     "T20": {
       "title": "统一顶栏位置按钮与路径间距",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型、格式、生产构建、7项定向回归及匿名复验通过；独立评审通过；真实Specs/Change四档按钮高度/字体/内边距相同、分隔两侧8px，匿名两档8px，登录清理确认",
+      "commitTitle": "frontend-style-interaction-refactor T20: verify matching reading path controls"
     }
   },
   "closure": {},
