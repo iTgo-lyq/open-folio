@@ -1,6 +1,6 @@
-import { test, expect, repositoryQuery } from "./connected";
+import { test, expect, repositoryQuery, openSyncStatus } from "./connected";
 
-test("workspace uses one header with accessible source and actions on desktop and mobile", async ({
+test("workspace uses one floating toolbar with sync status on desktop and mobile", async ({
   page,
 }) => {
   for (const width of [1440, 320]) {
@@ -8,61 +8,89 @@ test("workspace uses one header with accessible source and actions on desktop an
     for (const module of ["specs", "changes", "prototypes"]) {
       await page.goto(`/?${repositoryQuery}&m=${module}`);
       await expect(
-        page.getByRole("button", { name: "刷新中心仓库" }),
-      ).toBeEnabled();
-      await expect(page.locator(".workspace-source")).toHaveCount(0);
-      await expect(page.locator(".workspace-header")).toHaveCount(1);
-      const layout = await page.evaluate(() => {
-        const header = document
-          .querySelector(".workspace-header")!
-          .getBoundingClientRect();
-        const body = document
-          .querySelector(".workspace-body")!
-          .getBoundingClientRect();
-        const context = document
-          .querySelector(".header-context")!
-          .getBoundingClientRect();
-        const actions = document
-          .querySelector(".header-actions")!
-          .getBoundingClientRect();
+        page.getByRole("button", { name: "同步状态：已同步" }),
+      ).toBeVisible();
+      const toolbar = page.locator("main > header");
+      await expect(toolbar).toHaveCount(1);
+      const layout = await toolbar.evaluate((el) => {
+        const bar = el.getBoundingClientRect(),
+          main = el.parentElement!.getBoundingClientRect();
         return {
-          headerBottom: header.bottom,
-          bodyTop: body.top,
-          actionsLeft: actions.left,
-          contextRight: context.right,
+          top: bar.top - main.top,
+          blur: getComputedStyle(el).backdropFilter,
           overflow: document.documentElement.scrollWidth > innerWidth,
         };
       });
-      expect(layout.bodyTop).toBeCloseTo(layout.headerBottom, 0);
+      expect(layout.top).toBe(0);
+      expect(layout.blur).not.toBe("none");
       expect(layout.overflow).toBe(false);
-      expect(layout.actionsLeft).toBeGreaterThanOrEqual(layout.contextRight);
-      expect(
-        await page
-          .locator(".header-module")
-          .evaluate((el) => el.getBoundingClientRect().height),
-      ).toBeLessThan(30);
-      await page.locator(".header-source summary").click();
-      const source = page.locator(".header-source-details");
-      await expect(source).toBeVisible();
-      await expect(source).toContainText(
-        module === "changes" ? "develop 入口" : "develop",
-      );
-      await expect(source).toContainText("读取于");
+      const source = await openSyncStatus(page);
+      await expect(source).toContainText("develop");
+      await expect(source).toContainText("快照");
       expect(
         await source.evaluate((el) => {
           const box = el.getBoundingClientRect();
           return box.left >= 0 && box.right <= innerWidth;
         }),
       ).toBe(true);
-      await page.locator(".header-source summary").click();
+      await page.keyboard.press("Escape");
+      await expect(source).toHaveCount(0);
       if (module !== "specs")
         await expect(
-          page
-            .locator(".header-actions")
-            .getByRole("button", { name: "复制页面链接" }),
+          toolbar.getByRole("button", { name: "复制页面链接" }),
         ).toBeVisible();
     }
   }
+});
+
+test("logo and Ctrl+\\ collapse the sidebar into a capsule, tablet starts collapsed and phones use the bottom bar", async ({
+  page,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=changes`);
+  const nav = page.getByRole("navigation", { name: "模块导航" });
+  await expect(nav.getByRole("link", { name: "Changes" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await page.getByRole("button", { name: "收起侧栏" }).click();
+  const logo = page.getByRole("button", { name: "展开侧栏" });
+  await expect(logo).toBeFocused();
+  await expect(nav.getByRole("link")).toHaveCount(4);
+  await expect(
+    page.locator("main > header").getByRole("button", { name: /^当前仓库：/ }),
+  ).toBeVisible();
+  await page.keyboard.press("Control+Backslash");
+  await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
+  await page.setViewportSize({ width: 834, height: 1100 });
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("aside")).toBeHidden();
+  await nav.getByRole("link", { name: "Specs" }).click();
+  await expect(page).toHaveURL(/m=specs/);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("account menu switches theme and opens account settings", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto(`/?${repositoryQuery}&m=specs`);
+  await page.getByRole("button", { name: /^账号：/ }).click();
+  const menu = page.getByRole("menu", { name: "账号" });
+  await expect(
+    menu.getByRole("menuitemradio", { name: /reader/ }),
+  ).toHaveAttribute("aria-checked", "true");
+  await menu.getByRole("menuitemradio", { name: "深色" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: /^账号：/ }).click();
+  await page.getByRole("menuitem", { name: "账号与 Token" }).click();
+  await expect(page).toHaveURL(/m=connections/);
 });
 
 test("workbench has no search entry or shortcut requests", async ({ page }) => {
@@ -73,7 +101,7 @@ test("workbench has no search entry or shortcut requests", async ({ page }) => {
   });
   for (const module of ["home", "specs", "changes", "prototypes"]) {
     await page.goto(`/?${repositoryQuery}&m=${module}`);
-    await expect(page.locator(".workspace-body")).toBeVisible();
+    await expect(page.locator("main")).toBeVisible();
     await expect(
       page.getByRole("textbox", {
         name: /搜索|筛选能力|筛选原型|筛选变更|筛选预览目录/,

@@ -10,6 +10,7 @@ import {
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
 import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
+import { NETWORK_ERROR } from "@/lib/sync-status";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { usePersonal } from "./personal-context";
@@ -28,6 +29,8 @@ export type ReadingContext = {
   loading: boolean;
   refreshing: boolean;
   error: string;
+  /** 最近一次错误的分类码：接口错误码、网络失败为 NETWORK，否则省略。 */
+  errorCode?: string;
   refresh: () => Promise<void>;
   locked: boolean;
   openDocument: (id: string, anchor?: string, raw?: boolean) => void;
@@ -43,6 +46,10 @@ export type ReadingContext = {
 export const ReadingProvider = createContext<ReadingContext | null>(null);
 const Context = ReadingProvider;
 export const useWorkspace = () => useContext(Context)!;
+function errorCodeOf(cause: unknown) {
+  if (cause instanceof ApiError) return cause.code;
+  return cause instanceof TypeError ? NETWORK_ERROR : "FAILED";
+}
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const personal = usePersonal();
   const [q, setQ] = useState<Query>({}),
@@ -54,9 +61,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     } | null>(null),
     [loading, setLoading] = useState(false),
     [refreshing, setRefreshing] = useState(false),
-    [error, setError] = useState(""),
+    [failure, setFailure] = useState({ message: "", code: "" }),
     [message, setMessage] = useState(""),
     [retry, setRetry] = useState(0);
+  const setError = (message: string, cause?: unknown) =>
+    setFailure({ message, code: message ? errorCodeOf(cause) : "" });
   const generation = useRef(0),
     active = useRef<AbortController | null>(null);
   const projectId = q.repo ?? "",
@@ -222,7 +231,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setLoaded(null);
       setLoading(false);
       setRefreshing(false);
-      setError("读取权限暂时无法确认，请重试或切换凭据。");
+      setError(
+        "读取权限暂时无法确认，请重试或切换凭据。",
+        new ApiError("READ_DENIED", ""),
+      );
     };
     window.addEventListener("openfolio-read-denied", clear);
     return () => window.removeEventListener("openfolio-read-denied", clear);
@@ -267,7 +279,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           setLoaded({ key: scope, value: next });
       } catch (e) {
         if (!c.signal.aborted && version === generation.current) {
-          setError((e as Error).message);
+          setError((e as Error).message, e);
         }
       } finally {
         if (!c.signal.aborted && version === generation.current) {
@@ -315,7 +327,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         if (!c.signal.aborted && version === generation.current) setError("");
       } catch (e) {
         if (!c.signal.aborted && version === generation.current)
-          setError(`自动更新失败：${(e as Error).message}`);
+          setError(`自动更新失败：${(e as Error).message}`, e);
       } finally {
         running = false;
         if (!c.signal.aborted)
@@ -346,7 +358,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setRetry((v) => v + 1);
     } catch (e) {
       if (!c.signal.aborted && version === generation.current) {
-        setError((e as Error).message);
+        setError((e as Error).message, e);
       }
     } finally {
       if (version === generation.current) setRefreshing(false);
@@ -378,7 +390,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         repository,
         loading,
         refreshing,
-        error,
+        error: failure.message,
+        errorCode: failure.code || undefined,
         refresh,
         locked: !connection,
         openDocument,

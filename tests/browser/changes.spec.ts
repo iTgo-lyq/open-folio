@@ -312,7 +312,8 @@ test("changing projects clears filters that belong to the previous project", asy
       exact: true,
     }),
   ).toBeVisible();
-  await page.getByRole("combobox", { name: "当前仓库" }).selectOption("second");
+  await page.getByRole("button", { name: /^当前仓库：/ }).click();
+  await page.getByRole("menuitemradio", { name: "第二项目" }).click();
   await expect(page).not.toHaveURL(/spec=|types=|noTypes=|urgency=|sort=/);
   await expect(
     page.getByRole("button", {

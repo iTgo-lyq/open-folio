@@ -1,4 +1,9 @@
-import { test as base, expect, type APIRequestContext } from "@playwright/test";
+import {
+  test as base,
+  expect,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
 import { createHash, randomUUID } from "node:crypto";
 export const repoKey = createHash("sha256")
   .update(JSON.stringify(["github", "fixture.test", "1"]))
@@ -73,3 +78,19 @@ export const test = base.extend<{
   request: async ({ context }, use) => use(context.request),
 });
 export { expect };
+// 壳层操作：顶栏“同步状态”弹层承载读取来源与刷新，账号菜单承载 Token 与设置入口。
+export async function openSyncStatus(page: Page) {
+  await page.getByRole("button", { name: /^同步状态：/ }).click();
+  return page.getByRole("dialog", { name: "读取来源" });
+}
+export async function refreshCentral(page: Page) {
+  const source = await openSyncStatus(page);
+  await source
+    .getByRole("button", { name: "刷新中心仓库", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+}
+export async function openAccountSettings(page: Page) {
+  await page.getByRole("button", { name: /^账号：/ }).click();
+  await page.getByRole("menuitem", { name: "账号与 Token" }).click();
+}

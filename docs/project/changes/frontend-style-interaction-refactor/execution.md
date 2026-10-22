@@ -39,3 +39,19 @@
 验证：
 - 扩展 `tests/change-creation-order.test.ts`：多作者下首次加入者在编辑与归档迁移后保持不变，合并引入取合并提交作者，noreply 登录名识别，快照中不含邮箱，分享投影带上创建者，暖刷新结果一致；`changeCreator` 单测覆盖两种 noreply、普通邮箱、伪造域名与空名称。`store`、`changes`、`shares`、`incremental-cache` 同跑 38 项通过；`npm run typecheck` 通过。
 - `npm test` 286 项中 285 项通过；失败的 `service-tools.test.ts`“service lifecycle…”在临时目录执行 `scripts/service.mjs update`（构建并启动服务）时失败，本 Change 未改动服务脚本，按用户要求记录为环境问题，留待 T12 复核。
+
+## T4 · 工作台壳层与导航
+
+接手时工作区保留了 T4 的未提交实现。本轮先构建并阅读验收原型（`quiet-home`、`quiet-credentials`，含桌面与手机画面），再继续核对。合入本地 `develop@5d3ca6a` 的浏览器测试启动修复，保留原有改动；合并提交 `ec994bc` 已推送。
+
+范围：
+- 新壳层以 CSS Modules 实现 244px 展开侧栏、72px 图标轨与玻璃胶囊、手机底部导航，Logo 与快捷键控制收起并保留焦点，账号偏好沿用 `railCollapsed`。平板默认收起，可在当前视口临时展开，不覆盖桌面偏好。
+- 页面共用玻璃顶栏与左右插槽；仓库菜单、同步状态弹层、账号菜单、主题与 Token 切换、退出和 toast 接入现有 Provider。读取错误区分网络、权限、Token 与普通失败，暂时失败保留内容。
+- 原顶栏读取来源、设置与重复入口已替换。尚未迁移的页面暂用原布局容器，随着 T5–T11 替换；旧参数清理纯函数已准备，随 T8 / T11 页面迁移接入，以免提前删除仍在迁移的旧控件。
+- 迁移 workspace、automatic-refresh、account-connections、changes、prototypes、sharing 的壳层定位与辅助操作，保留业务断言；未删除业务覆盖。
+
+验证：
+- `npm run typecheck`、改动文件 Prettier 检查、`npm run build` 通过；`tests/shell-state.test.ts` 两项通过。
+- 修复后的 `npm run test:e2e -- --list` 正常加载 102 项，不再需要手动附加 `NODE_OPTIONS`。
+- workspace、automatic-refresh、collaboration-source、central-sources、access 共 11 项浏览器测试通过，覆盖三档布局、320px 顶栏、焦点、菜单、主题、刷新、离线/失权、延迟响应与自定义集成分支。
+- 其余凭据与页面回归随 T5 / T6 及最终整体验证继续执行。原 T3 服务生命周期环境失败尚未复核，不据此声称完整单测通过。

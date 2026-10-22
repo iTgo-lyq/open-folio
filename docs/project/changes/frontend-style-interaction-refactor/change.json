@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "工作台壳层与导航",
-      "status": "todo"
+      "status": "done",
+      "verification": "typecheck、Prettier、build、shell-state 2项与壳层/刷新/来源/权限浏览器11项通过；旧参数随页面迁移接入",
+      "commitTitle": "frontend-style-interaction-refactor T4: workbench shell and navigation"
     },
     "T5": {
       "title": "我的仓库与登录注册",

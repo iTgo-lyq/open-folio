@@ -5,6 +5,8 @@ import {
   loginAccount,
   revisionHeaders,
   repositoryQuery,
+  openAccountSettings,
+  refreshCentral,
 } from "./connected";
 import type { Page } from "@playwright/test";
 const current = (page: Page) =>
@@ -153,7 +155,7 @@ test("A-B-A selection discards a delayed repository response from the first A", 
   });
   await page.goto(`/?${repositoryQuery}&m=specs`);
   await expect.poll(() => !!finish).toBe(true);
-  await page.locator('.module-rail [aria-label="当前凭据"]').click();
+  await openAccountSettings(page);
   await expect(current(page)).toContainText("@reader");
   await page.getByRole("button", { name: "使用组织工程", exact: true }).click();
   await expect(current(page)).toContainText("@collaborator");
@@ -218,7 +220,7 @@ test("revoked active Token clears private content while the account can select a
   await request.post("/_fixture/control", {
     data: { revoke: "token-a", advancePermissions: 300000 },
   });
-  await page.getByRole("button", { name: "刷新中心仓库", exact: true }).click();
+  await refreshCentral(page);
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toHaveCount(0);

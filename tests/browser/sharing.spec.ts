@@ -39,9 +39,8 @@ test("engineering share links use each collaborator's connection and restore the
     await expect(
       other.getByRole("heading", { name: "访问与来源", exact: true }),
     ).toHaveCount(0);
-    await expect(
-      other.getByRole("button", { name: "当前凭据", exact: true }),
-    ).toBeVisible();
+    // 私有内容清除后，凭据管理仍可从账号菜单进入。
+    await expect(other.getByRole("button", { name: /^账号：/ })).toBeVisible();
   } finally {
     await collaborator.close();
   }

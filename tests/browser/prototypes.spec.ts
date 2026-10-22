@@ -1,4 +1,10 @@
-import { test, expect, repositoryQuery, repoKey } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  repoKey,
+  openSyncStatus,
+} from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
 test("published hosted cards load the registered screenshot for every declared device", async ({
   page,
@@ -46,31 +52,30 @@ test("published hosted cards load the registered screenshot for every declared d
   ).toBeVisible();
 });
 
-test("navigation hints stay above the prototype gallery", async ({ page }) => {
+test("capsule tooltips stay above the prototype gallery", async ({ page }) => {
   await page.goto(path);
   await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
+  await page.getByRole("button", { name: "收起侧栏" }).click();
   const link = page
     .getByRole("navigation", { name: "模块导航" })
     .getByRole("link", { name: "Changes", exact: true });
-  const hint = link.locator("span");
+  const tip = page.getByRole("tooltip", { name: "Changes" });
   const aboveContent = () =>
-    hint.evaluate((el) => {
+    tip.evaluate((el) => {
       const box = el.getBoundingClientRect();
-      const previous = el.style.pointerEvents;
-      el.style.pointerEvents = "auto";
       const top = document.elementFromPoint(
-        box.right - 2,
+        box.x + box.width / 2,
         box.y + box.height / 2,
       );
-      el.style.pointerEvents = previous;
-      return el === top;
+      return !!top && el.contains(top);
     });
   await link.hover();
-  await expect(hint).toHaveCSS("opacity", "1");
+  await expect(tip).toBeVisible();
   expect(await aboveContent()).toBe(true);
-  await page.mouse.move(500, 100);
+  await page.mouse.move(700, 400, { steps: 4 });
+  await page.keyboard.press("Escape");
   await link.focus();
-  await expect(hint).toHaveCSS("opacity", "1");
+  await expect(tip).toBeVisible();
   expect(await aboveContent()).toBe(true);
 });
 test("main gallery opens current pages directly without Change/version selectors", async ({
@@ -99,7 +104,6 @@ test("main gallery opens current pages directly without Change/version selectors
   await region.getByRole("button", { name: "预览订单列表" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.locator(".module-rail")).toHaveCount(0);
   await expect(page.locator(".workspace-source")).toHaveCount(0);
   await expect(
     page.getByRole("complementary", { name: "原型目录" }),
@@ -302,14 +306,14 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   await expect(page.frameLocator("iframe").getByRole("heading")).toBeVisible();
   await page.screenshot({ path: "artifacts/prototype-viewer-mobile.png" });
   await page
-    .getByRole("combobox", { name: "跳转工作台模块" })
-    .selectOption("specs");
+    .getByRole("navigation", { name: "模块导航" })
+    .getByRole("link", { name: "Specs" })
+    .click();
   await expect(
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
-  await expect(page.locator(".header-source-details")).toContainText(
-    "develop · 预发布",
-  );
+  await expect(await openSyncStatus(page)).toContainText("develop");
+  await page.keyboard.press("Escape");
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
 });
 
