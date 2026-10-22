@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -115,7 +115,13 @@
       "commitTitle": "frontend-style-interaction-refactor T15: verify acceptance fixes on the shared-data service"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T10:09:16.904Z",
+      "summary": "T13-T15返修任务均已验证推送；类型、格式、生产构建、受影响浏览器与原型检查通过，隔离上下文独立Agent评审及真实常驻数据登录/匿名/外部分享冒烟通过，无剩余可行动问题"
+    }
+  },
   "previews": [
     {
       "id": "quiet-changes",
@@ -398,5 +404,9 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收当前11356新版；通过后同步Specs、归档、合入develop并切回11117常驻服务"
   }
 }
