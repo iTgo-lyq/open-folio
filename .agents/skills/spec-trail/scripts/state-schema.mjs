@@ -236,6 +236,7 @@ const changeFields = object(
     size: oneOf("small", "medium", "large", "xlarge"),
     types,
     urgency,
+    deliveryOverride: oneOf("releaseMerged"),
     status: oneOf("active", "completed", "cancelled"),
     stage: oneOf("requirement", "technical", "plan", "execution", "close"),
     branch,

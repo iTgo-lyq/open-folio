@@ -130,6 +130,7 @@ export type ChangeState = {
   size: "small" | "medium" | "large" | "xlarge";
   types?: string[];
   urgency?: "urgent" | "high" | "normal" | "low";
+  deliveryOverride?: "releaseMerged";
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string;

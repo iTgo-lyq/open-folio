@@ -185,7 +185,15 @@ export async function collectDelivery(input: Input) {
           "存在多个待合入 PR，无法确定当前交付，请核对关联标记。",
         );
       let stage: Delivery["stage"];
-      if (integration.status === "found") {
+      // candidate.branch is the read source; state.branch retains historical ownership.
+      if (
+        candidate?.validCompleted &&
+        candidate.archived &&
+        candidate.branch === input.integrationBranch &&
+        candidate.state?.deliveryOverride === "releaseMerged"
+      ) {
+        stage = "releaseMerged";
+      } else if (integration.status === "found") {
         stage = "pendingRelease";
         if (
           changePrs.some(
