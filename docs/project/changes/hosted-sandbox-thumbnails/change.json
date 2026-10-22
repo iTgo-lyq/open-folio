@@ -4,13 +4,13 @@
   "title": "兼容带沙箱限制的托管原型截图",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/hosted-sandbox-thumbnails",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "修复沙箱源的截图并回归服务隔离与真实页面",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
