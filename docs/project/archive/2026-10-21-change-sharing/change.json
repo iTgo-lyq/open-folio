@@ -3,7 +3,7 @@
   "id": "change-sharing",
   "title": "单个 Change 的公开只读分享",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/change-sharing",
   "confirmations": {
@@ -54,6 +54,23 @@
       "result": "passed",
       "at": "2026-10-21T18:37:25.354Z",
       "summary": "同步develop后48项接口/CLI与29项浏览器回归通过；类型、格式、构建及真实外部分享验证通过；独立上下文评审问题全部关闭。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-22T05:20:56.987Z",
+      "summary": "用户验收通过，授权保留最新原型并合入develop、更新长期服务。",
+      "source": "验收通过，继续合入 develop 并更新长期服务吧。但是注意 develop 的原型可能对分享有了新的重构。不要覆盖了。代码应该还没动。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-22T05:22:50.837Z",
+      "summary": "同步公开Change访问、完整阅读、原型资源与材料链接流程的当前能力约束。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-22T05:22:52.600Z",
+      "summary": "用户验收通过，保留develop原型重构并完成独立评审、回归及Specs同步。",
+      "path": "docs/project/archive/2026-10-21-change-sharing"
     }
   },
   "clarifications": {
@@ -123,9 +140,5 @@
     "at": "2026-10-20T12:38:17.771Z",
     "reason": "分享不应绑定创建账号；任何人应能分享实际存在的 Change。",
     "approach": "保留已验证的阅读与资源隔离能力，重整仓库范围、分享生命周期和无账号 Skill 链接流程。"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现已推送并在独立11356服务验证，等待用户验收分享阅读；通过后归档并经PR集成develop、更新11117长期服务。"
   }
 }

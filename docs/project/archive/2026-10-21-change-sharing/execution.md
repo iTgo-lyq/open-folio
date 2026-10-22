@@ -39,3 +39,9 @@
 实际外部检查使用专用验证账号及 `withSmokeSession`，私有浏览器仅使用回调提供的 Cookie，匿名浏览器独立创建。已验证工作台复制、匿名技术文档、1920 全宽及 390px 无横向溢出、无私有 API 请求和页面异常；包装器退出并复查匿名及无可见绑定，退出后同一分享链接仍返回内容。已推送技术文档和 hosted 原型均经 CLI 在临时隔离 checkout 指向验收入口后匿名验证成功；临时 checkout 已清理。
 
 合并后 29 项浏览器回归、48 项接口/CLI/权限/交付回归、类型检查、格式检查、生产构建和 Skill quick_validate 通过。独立评审修复见 Review。真实桌面/手机截图位于 `artifacts/change-sharing-live-{desktop,mobile}.png`（不提交）。长期服务仍待人工验收、归档和 PR 集成后部署，验收实例由 tmux 保持运行。
+
+## 验收后的集成核对
+
+用户明确验收通过并授权合入 develop、更新长期服务，同时要求保留 develop 最新的分享原型重构。已同步 `f23c02f3b0d0d5b01baf0414bddbb0f150330ae3`，新增内容仅涉及原型及 frontend-style-interaction-refactor 的规划与验证材料，无应用代码冲突。合并后的 `packages/prototype` 与该 develop 提交完全一致，包括 quiet-share、新版公共模块、主题与当前清单；未覆盖主工作区未提交的其他 Change 状态。
+
+`npm run build --workspace prototype` 成功导出 15 个入口，`node packages/prototype/verify-quiet-workbench.mjs` 完成 126 项检查，0 失败、0 浏览器错误，覆盖七个入口、两套主题、四档宽度和主要交互。此前已验证的应用代码保持不变。Specs 按最终行为补充公开 Change 阅读、资源与权限边界，以及精简的材料链接流程；后续以 PR 的有效合入提交和长期服务运行版本核实部署。
