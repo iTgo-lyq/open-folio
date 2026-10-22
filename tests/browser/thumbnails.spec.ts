@@ -51,6 +51,79 @@ test("current cards show actual viewport screenshots and switch device consisten
   await page.screenshot({ path: "artifacts/prototype-thumbnails-mobile.png" });
 });
 
+test("hosted cards without supplied images generate screenshots and expose them in details", async ({
+  page,
+  request,
+  personal,
+}) => {
+  await request.post("/_fixture/control", { data: { autoThumbnails: true } });
+  try {
+    await request.post(personal.url("refresh"), {
+      headers: { origin: "http://127.0.0.1:10682" },
+    });
+    await page.goto(path);
+    const tile = page.locator('[data-prototype-id="hosted"]');
+    await tile.scrollIntoViewIfNeeded();
+    const image = tile.getByRole("img", {
+      name: "托管 React的首屏截图",
+      exact: true,
+    });
+    await expect(image).toBeVisible();
+    await expect
+      .poll(() =>
+        image.evaluate((element: HTMLImageElement) => element.naturalWidth),
+      )
+      .toBe(1440);
+    const src = await image.getAttribute("src");
+    expect(src).toMatch(/\/api\/public-previews\/[a-f0-9]+\/pc-web\.jpg/);
+    const first = await request.get(src!);
+    expect(first.headers()["content-type"]).toBe("image/jpeg");
+    expect(await (await request.get(src!)).body()).toEqual(await first.body());
+    await tile
+      .getByRole("button", { name: "查看原型详情：托管 React" })
+      .click();
+    const large = page.getByRole("img", { name: "托管 React的大图" });
+    await expect(large).toBeVisible();
+    await expect
+      .poll(() =>
+        large.evaluate((element: HTMLImageElement) => element.naturalWidth),
+      )
+      .toBe(1440);
+    await page
+      .getByRole("dialog")
+      .getByRole("radio", { name: "移动设备", exact: true })
+      .click();
+    await expect
+      .poll(() =>
+        large.evaluate((element: HTMLImageElement) => element.naturalWidth),
+      )
+      .toBe(390);
+  } finally {
+    await request.post("/_fixture/control", { data: { restoreMain: true } });
+    await request.post(personal.url("refresh"), {
+      headers: { origin: "http://127.0.0.1:10682" },
+    });
+  }
+});
+
+test("a screenshot preparation failure leaves hosted preview available", async ({
+  page,
+}) => {
+  await page.route("**/previews/prepare*", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: { code: "THUMBNAIL_RENDER_FAILED", message: "截图失败" } },
+    }),
+  );
+  await page.goto(path + "&prototype=hosted&preview=hosted");
+  await expect(
+    page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
+  ).toBeVisible();
+  await expect(page.getByText("公开原型准备失败", { exact: true })).toHaveCount(
+    0,
+  );
+});
+
 test("thumbnail loading and retry remain separate from the preview action", async ({
   page,
 }) => {

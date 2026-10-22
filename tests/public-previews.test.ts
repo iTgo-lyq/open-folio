@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { cp, rm, readdir, writeFile } from "node:fs/promises";
 import { repositoryFixture } from "./repositories-fixture.ts";
-import { PublicPreviews } from "../src/server/public-previews.ts";
+import { PublicPreviews, publicEntry } from "../src/server/public-previews.ts";
 import {
   publicPreviewResponse,
   preparePreviewResponse,
@@ -12,6 +12,7 @@ import {
 } from "../src/server/public-preview-api.ts";
 import { ThumbnailCache } from "../src/server/thumbnail-cache.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
+import { thumbnailResponse } from "../src/server/thumbnails.ts";
 async function setup() {
   const t = await repositoryFixture();
   const source = t.g.git(["rev-parse", "HEAD"]);
@@ -172,7 +173,7 @@ test("publication preparation is atomic on rendering or late authorization failu
     await t.cleanup();
   }
 });
-test("hosted publications retain only fixed public references for internal and external hosting", async () => {
+test("hosted publications generate missing views, retain overrides and serve screenshots without rendering again", async () => {
   const t = await setup();
   try {
     for (const url of [
@@ -209,7 +210,58 @@ test("hosted publications retain only fixed public references for internal and e
       await t.read((ctx) => ctx.refresh(DEFAULT_LIMITS));
       const meta = await t.prepare();
       assert.equal(meta.type, "hosted");
-      assert.deepEqual(meta.files, {});
+      assert.deepEqual(Object.keys(meta.files), ["mobile.jpg"]);
+      assert.equal(
+        meta.thumbnails?.[0].url,
+        url.replace("index.html", "pc-web.png"),
+      );
+      const count = t.renders();
+      assert.equal((await t.prepare()).id, meta.id);
+      assert.equal(t.renders(), count);
+      const links = publicEntry(meta).thumbnails!;
+      assert.equal(links[0].url, url.replace("index.html", "pc-web.png"));
+      assert.equal(links[1].url, `/api/public-previews/${meta.id}/mobile.jpg`);
+      assert.equal(
+        (
+          await publicPreviewResponse(
+            new Request("https://folio.test"),
+            meta.id,
+            "mobile.jpg",
+            t.store,
+          )
+        ).status,
+        200,
+      );
+      assert.equal(t.renders(), count);
+      const privateCache = new ThumbnailCache(
+        join(t.root, "private"),
+        async (source, viewport) => {
+          assert.deepEqual(source, { url });
+          assert.deepEqual(viewport, { width: 390, height: 844 });
+          return Buffer.from([255, 216, 255, 217]);
+        },
+      );
+      const thumbnail = (device: string) =>
+        t.service.read(t.c.cookie, t.c.connection.id, t.key, (ctx) =>
+          thumbnailResponse(
+            new Request(`https://folio.test/image?device=${device}`),
+            ctx.project,
+            ctx.store,
+            privateCache,
+            DEFAULT_LIMITS,
+            "",
+            "screen",
+            true,
+          ),
+        );
+      assert.equal(
+        (await thumbnail("pc-web")).headers.get("location"),
+        url.replace("index.html", "pc-web.png"),
+      );
+      assert.equal(
+        (await thumbnail("mobile")).headers.get("content-type"),
+        "image/jpeg",
+      );
       const response = await publicPreviewResponse(
         new Request("https://folio.test"),
         meta.id,
@@ -222,6 +274,72 @@ test("hosted publications retain only fixed public references for internal and e
   } finally {
     await t.cleanup();
   }
+});
+
+test("existing hosted snapshots remain immutable while missing screenshots receive a new publication", async (test) => {
+  const t = await setup();
+  test.after(t.cleanup);
+  const artifact = {
+    type: "hosted",
+    version: "v1",
+    url: "https://static.example.test/screen.html",
+    sourceCommit: t.entry.artifact.sourceCommit,
+    digest: "sha256:" + "b".repeat(64),
+  };
+  const entry = { ...t.entry, artifact };
+  await t.g.put(
+    "packages/prototype/prototype.json",
+    JSON.stringify({ schemaVersion: 1, entries: [entry] }),
+  );
+  t.g.commit();
+  await t.read((ctx) => ctx.refresh(DEFAULT_LIMITS));
+  const current = await t.prepare();
+  const oldId = createHash("sha256")
+    .update(
+      JSON.stringify([
+        1,
+        t.key,
+        current.revision,
+        "",
+        entry.id,
+        artifact,
+        artifact.digest,
+      ]),
+    )
+    .digest("hex");
+  const oldDir = join(t.root, "versions", oldId);
+  await cp(join(t.root, "versions", current.id), oldDir, { recursive: true });
+  await writeFile(
+    join(oldDir, "manifest.json"),
+    JSON.stringify({ ...current, id: oldId, files: {} }),
+  );
+  assert.notEqual(current.id, oldId);
+  assert.deepEqual((await t.store.get(oldId)).files, {});
+  assert.deepEqual(Object.keys(current.files), ["pc-web.jpg", "mobile.jpg"]);
+  assert.equal(t.renders(), 2);
+  await t.g.put(
+    "packages/prototype/prototype.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      entries: [
+        {
+          ...entry,
+          kind: "component",
+          devices: undefined,
+          viewport: { width: 320, height: 200 },
+          artifact: {
+            ...artifact,
+            thumbnails: [{ url: "https://static.example.test/custom.png" }],
+          },
+        },
+      ],
+    }),
+  );
+  t.g.commit();
+  await t.read((ctx) => ctx.refresh(DEFAULT_LIMITS));
+  const overridden = await t.prepare();
+  assert.deepEqual(overridden.files, {});
+  assert.equal(t.renders(), 2);
 });
 test("prepare HTTP requires an owned connection and same origin; published version remains after subsequent disable", async () => {
   const t = await setup();

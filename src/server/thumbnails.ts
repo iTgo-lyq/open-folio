@@ -47,22 +47,20 @@ export async function thumbnailResponse(
     const thumbnail = entry.thumbnails?.find(
       (t) => t.device === (device ?? entry.devices?.[0]),
     );
-    if (!thumbnail)
-      throw new AppError(
-        "THUMBNAIL_UNAVAILABLE",
-        "宿主尚未提供此视口的截图。",
-        404,
-      );
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: thumbnail.url,
-        "Referrer-Policy": "no-referrer",
-        "Cache-Control": "private, no-store",
-      },
-    });
+    if (thumbnail)
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: thumbnail.url,
+          "Referrer-Policy": "no-referrer",
+          "Cache-Control": "private, no-store",
+        },
+      });
   }
-  if (!entry?.available || html === undefined)
+  if (
+    !entry?.available ||
+    (entry.artifact?.type !== "hosted" && html === undefined)
+  )
     throw new AppError(
       "THUMBNAIL_UNAVAILABLE",
       descriptor.message ?? entry?.message ?? "原型入口不可用。",
@@ -72,15 +70,20 @@ export async function thumbnailResponse(
     throw new AppError("INVALID_PARAMETER", "截图设备未在该入口声明。", 400);
   const { viewport } = previewViewport(entry, device);
   const result = await cache.get(
-    JSON.stringify([project.id, project.repositoryUrl]),
-    html,
+    JSON.stringify([
+      project.id,
+      project.repositoryUrl,
+      entry.artifact?.type === "hosted" ? entry.artifact : undefined,
+    ]),
+    entry.artifact?.type === "hosted" ? { url: entry.artifact.url } : html!,
     viewport,
   );
   // Generation may outlive a refresh: never serve a cached image after revocation.
   const current = await resolve();
   if (
     current.html !== html ||
-    current.descriptor.revision !== descriptor.revision
+    current.descriptor.revision !== descriptor.revision ||
+    !current.descriptor.entries.find((e) => e.id === entryId)?.available
   )
     throw new AppError(
       "THUMBNAIL_UNAVAILABLE",

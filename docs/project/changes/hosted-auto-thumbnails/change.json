@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "统一托管原型截图生成、项目覆盖及各入口验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "跨域渲染、覆盖与公开版本测试通过；19 项浏览器场景、类型、格式、生产构建通过；服务项首轮超时后单独复跑通过。",
+      "commitTitle": "hosted-auto-thumbnails T1: generate hosted screenshots with per-view overrides"
     }
   },
   "closure": {},

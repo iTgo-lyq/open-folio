@@ -177,7 +177,7 @@ export class PublicPreviews {
       artifact.type === "git" ? `sha256:${digest(html!)}` : artifact.digest;
     const id = digest(
       JSON.stringify([
-        1,
+        artifact.type === "hosted" ? 2 : 1,
         project.id,
         result.descriptor.revision,
         input.change ?? "",
@@ -207,12 +207,21 @@ export class PublicPreviews {
       };
       if (artifact.type === "git") {
         await put("index.html", Buffer.from(html!));
-        for (const device of entry.devices ?? [undefined]) {
-          context.lease.context.signal.throwIfAborted();
-          const { viewport } = previewViewport(entry, device);
-          const image = await this.screenshots.get(id, html!, viewport);
-          await put(`${device ?? "component"}.jpg`, image.body);
-        }
+      }
+      for (const device of entry.devices ?? [undefined]) {
+        if (
+          artifact.type === "hosted" &&
+          artifact.thumbnails?.some((t) => t.device === device)
+        )
+          continue;
+        context.lease.context.signal.throwIfAborted();
+        const { viewport } = previewViewport(entry, device);
+        const image = await this.screenshots.get(
+          id,
+          artifact.type === "git" ? html! : { url: artifact.url },
+          viewport,
+        );
+        await put(`${device ?? "component"}.jpg`, image.body);
       }
       const meta: PublicPreview = schema.parse({
         schemaVersion: 1,
@@ -282,12 +291,11 @@ export function publicEntry(
     viewport: meta.viewport,
     available: true,
     url: `/api/public-previews/${meta.id}/index.html`,
-    thumbnails:
-      meta.type === "hosted"
-        ? meta.thumbnails
-        : (meta.devices ?? [undefined]).map((device) => ({
-            device,
-            url: `/api/public-previews/${meta.id}/${device ?? "component"}.jpg`,
-          })),
+    thumbnails: (meta.devices ?? [undefined]).map((device) => ({
+      device,
+      url:
+        meta.thumbnails?.find((t) => t.device === device)?.url ??
+        `/api/public-previews/${meta.id}/${device ?? "component"}.jpg`,
+    })),
   };
 }

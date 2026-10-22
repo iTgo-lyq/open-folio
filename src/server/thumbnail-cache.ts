@@ -15,6 +15,7 @@ import {
   renderThumbnail,
   THUMBNAIL_VERSION,
   type ThumbnailViewport,
+  type ThumbnailSource,
 } from "./thumbnail-renderer.ts";
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -52,14 +53,14 @@ export class ThumbnailCache {
 
   get(
     namespace: string,
-    html: string,
+    html: ThumbnailSource,
     viewport: ThumbnailViewport,
   ): Promise<Result> {
     const key = digest(
       JSON.stringify([
         THUMBNAIL_VERSION,
         namespace,
-        digest(html),
+        digest(typeof html === "string" ? html : JSON.stringify(html)),
         viewport.width,
         viewport.height,
       ]),
@@ -101,7 +102,7 @@ export class ThumbnailCache {
   }
   private async load(
     key: string,
-    html: string,
+    html: ThumbnailSource,
     viewport: ThumbnailViewport,
   ): Promise<Result> {
     const path = join(this.root, `${key}.jpg`);

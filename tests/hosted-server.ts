@@ -1,10 +1,11 @@
 import { createServer } from "node:https";
+import { createServer as createHttpServer } from "node:http";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { join, resolve, extname } from "node:path";
 import { build } from "vite";
 import { chromium } from "playwright";
-// Test host owns its React build, CORS and TLS. OpenFolio only reads its reference.
+// HTTP mirror gives the server renderer a trusted cross-origin fixture without weakening TLS.
 export async function hostedServer(root: string) {
   const dist = join(root, "hosted-dist");
   await build({
@@ -72,6 +73,12 @@ export async function hostedServer(root: string) {
   await new Promise<void>((resolve) =>
     server.listen(10686, "127.0.0.1", resolve),
   );
+  const http = createHttpServer((req, res) => {
+    server.emit("request", req, res);
+  });
+  await new Promise<void>((resolve) =>
+    http.listen(10687, "127.0.0.1", resolve),
+  );
   const browser = await chromium.launch({
     chromiumSandbox: true,
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
@@ -95,5 +102,10 @@ export async function hostedServer(root: string) {
   } finally {
     await browser.close();
   }
-  return server;
+  return {
+    close() {
+      server.close();
+      http.close();
+    },
+  };
 }
