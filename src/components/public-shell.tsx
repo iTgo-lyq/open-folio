@@ -37,7 +37,7 @@ export function PublicShell({
     <ToolbarSlotContext value={slots}>
       <div className={styles.shell}>
         <header className={styles.header} aria-label="公开阅读工具栏">
-          <BrandMark className={styles.brand} aria-label="OpenFolio" />
+          <BrandMark className={styles.brand} label="OpenFolio" />
           <span className={styles.title} title={title}>
             {title}
           </span>

@@ -70,7 +70,7 @@ export function AccountLogin() {
       style={{ colorScheme: "var(--of-color-scheme)" }}
     >
       <section className={styles.authCard} aria-labelledby="auth-title">
-        <BrandMark size={34} />
+        <BrandMark size={34} label="OpenFolio" />
         <h1 id="auth-title">
           {registering ? "创建 OpenFolio 账号" : "登录 OpenFolio"}
         </h1>
