@@ -28,7 +28,21 @@ test("hosted rendering loads cross-origin modules, CSS and images without cookie
   const host = createServer((req, res) => {
     requests.push({ path: req.url!, cookie: req.headers.cookie });
     res.setHeader("Content-Type", "text/html");
-    if (req.url === "/broken") res.writeHead(503).end("unavailable");
+    if (req.url === "/sandbox")
+      res.setHeader(
+        "Content-Security-Policy",
+        "sandbox allow-scripts; default-src http:; script-src http:; worker-src 'none'",
+      );
+    if (req.url === "/worker.js") {
+      res.setHeader("Content-Type", "text/javascript");
+      res.end("self.addEventListener('fetch',()=>{})");
+    } else if (req.url === "/service-worker") {
+      res.end(`<html><body style="margin:0;background:red"><script>
+        navigator.serviceWorker.register('/worker.js').then(
+          () => {}, () => document.body.style.background='rgb(0,220,0)'
+        );
+      </script></body></html>`);
+    } else if (req.url === "/broken") res.writeHead(503).end("unavailable");
     else if (req.url === "/hang") res.end("<script>while(true){}</script>");
     else
       res.end(
@@ -50,27 +64,35 @@ test("hosted rendering loads cross-origin modules, CSS and images without cookie
   const base = `http://127.0.0.1:${(host.address() as { port: number }).port}`;
   const viewport = { width: 390, height: 844 };
   const body = await renderThumbnail({ url: base + "/screen" }, viewport);
+  const sandboxed = await renderThumbnail({ url: base + "/sandbox" }, viewport);
+  const workerBlocked = await renderThumbnail(
+    { url: base + "/service-worker" },
+    viewport,
+  );
+  assert(!requests.some((req) => req.path === "/worker.js"));
   const browser = await chromium.launch({ chromiumSandbox: true });
   t.after(() => browser.close());
   const page = await browser.newPage();
-  const rendered = await page.evaluate(async (data) => {
-    const image = new Image();
-    image.src = `data:image/jpeg;base64,${data}`;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(image, 0, 0);
-    return {
-      width: image.width,
-      height: image.height,
-      pixel: [...ctx.getImageData(30, 30, 1, 1).data],
-    };
-  }, body.toString("base64"));
-  assert.equal(rendered.width, 390);
-  assert.equal(rendered.height, 844);
-  assert(rendered.pixel[1] > 190 && rendered.pixel[0] < 10);
+  for (const result of [body, sandboxed, workerBlocked]) {
+    const rendered = await page.evaluate(async (data) => {
+      const image = new Image();
+      image.src = `data:image/jpeg;base64,${data}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(image, 0, 0);
+      return {
+        width: image.width,
+        height: image.height,
+        pixel: [...ctx.getImageData(30, 30, 1, 1).data],
+      };
+    }, result.toString("base64"));
+    assert.equal(rendered.width, 390);
+    assert.equal(rendered.height, 844);
+    assert(rendered.pixel[1] > 190 && rendered.pixel[0] < 10);
+  }
   assert(requests.every((req) => !req.cookie));
   await assert.rejects(renderThumbnail({ url: base + "/broken" }, viewport), {
     code: "THUMBNAIL_RENDER_FAILED",

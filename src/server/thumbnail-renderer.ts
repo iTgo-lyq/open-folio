@@ -55,11 +55,8 @@ export async function renderThumbnail(
       deviceScaleFactor: 1,
       colorScheme: "light",
       reducedMotion: "reduce",
-      // CSP's opaque origin and worker-src:none already prohibit workers.
-      // Playwright's serviceWorkers:block init script throws in opaque origins.
       acceptDownloads: false,
       offline: !hosted,
-      ...(hosted ? { serviceWorkers: "block" as const } : {}),
       locale: "zh-CN",
       timezoneId: "UTC",
     });
@@ -120,6 +117,17 @@ export async function renderThumbnail(
       });
     }
     await page.addInitScript(() => {
+      // Playwright's serviceWorkers:block script throws on sandboxed origins.
+      // Keep registration blocked where the source permits accessing the API.
+      let workers;
+      try {
+        workers = navigator.serviceWorker;
+      } catch {
+        // The browser already prohibits Service Workers for this origin.
+      }
+      if (workers)
+        workers.register = () =>
+          Promise.reject(new Error("Thumbnail blocks Service Workers"));
       addEventListener("securitypolicyviolation", () => {
         throw new Error("Thumbnail blocked an unsupported resource");
       });
