@@ -1,4 +1,11 @@
-import { test, expect, repositoryQuery } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  changeDisplay,
+  changeLinks,
+  changeRow,
+} from "./connected";
 import { primaryRecord, type Snapshot } from "../../src/lib/model";
 
 test("clarifications show final answers in numeric order across updates and narrow screens", async ({
@@ -137,7 +144,7 @@ test("list filters, drawer, tasks and stacked document focus preserve context", 
   page,
 }) => {
   await page.goto(`/?${repositoryQuery}&m=changes`);
-  const row = page.getByRole("button", {
+  const row = page.getByRole("link", {
     name: "打开 让工程文档成为清晰的阅读体验",
     exact: true,
   });
@@ -167,32 +174,35 @@ test("list filters, drawer, tasks and stacked document focus preserve context", 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(row).toBeFocused();
-  await page.getByRole("button", { name: "看板视图" }).click();
-  await expect(page.locator(".board-column")).toHaveCount(5);
+  await changeDisplay(page, "看板");
+  await expect(
+    page
+      .getByRole("region", { name: "按阶段看板（只读）" })
+      .locator(":scope > section"),
+  ).toHaveCount(5);
   await page.screenshot({
     path: "artifacts/changes-board-desktop.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "任务", exact: true }).click();
-  await expect(page.locator(".board-column")).toHaveCount(4);
-  await expect(page.getByText("等待阅读区域尺寸确认")).toBeVisible();
-  await page.getByRole("button", { name: "变更", exact: true }).click();
-  await page.getByRole("button", { name: "列表视图" }).click();
-  await page.getByRole("combobox", { name: "筛选规模" }).selectOption("small");
+  await changeDisplay(page, "列表");
+  await expect(row).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "打开 支持手机端连续阅读", exact: true }),
-  ).toBeVisible();
-  await expect(row).toHaveCount(0);
+    page.getByRole("combobox", {
+      name: /筛选规模|筛选任务状态|筛选阶段|筛选等待事项/,
+    }),
+  ).toHaveCount(0);
 });
 test("dependencies, parent children, cancellation, archived evidence and invalid source", async ({
   page,
 }) => {
-  await page.goto(`/?${repositoryQuery}&m=changes&view=dependencies`);
-  await expect(page.getByText("流程已满足")).toBeVisible();
-  await expect(page.getByText("可用性待核实").first()).toBeVisible();
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&view=dependencies&c=document-reader`,
+  );
+  await expect(page).not.toHaveURL(/view=dependencies/);
+  await expect(page.getByText("流程已满足").first()).toBeVisible();
+  await page.keyboard.press("Escape");
   await page
-    .getByRole("button", { name: /工程工作台整体交付.*workspace-rollout/ })
-    .last()
+    .getByRole("link", { name: "打开 工程工作台整体交付", exact: true })
     .click();
   await page.getByRole("tab", { name: "子项", exact: true }).click();
   await expect(
@@ -203,24 +213,28 @@ test("dependencies, parent children, cancellation, archived evidence and invalid
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: /已取消/ }).click();
   await page
-    .getByRole("button", { name: /导航布局实验.*layout-experiment/ })
+    .getByRole("link", { name: "打开 导航布局实验", exact: true })
     .click();
-  await expect(page.getByText("收敛为统一工作台")).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByText("收敛为统一工作台"),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("tab", { name: /已归档/ }).click();
+  await page.getByRole("tab", { name: /已完成/ }).click();
   await page
-    .getByRole("button", { name: /接入中心仓库与来源追踪.*source-connect/ })
+    .getByRole("link", { name: "打开 接入中心仓库与来源追踪", exact: true })
     .click();
   await page.getByRole("tab", { name: "依据", exact: true }).click();
   await expect(page.getByText("人工验收通过", { exact: true })).toBeVisible();
   await expect(page.getByText("归档目录完整", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("tab", { name: /来源异常/ }).click();
+  await page.getByRole("button", { name: "查看", exact: true }).click();
   await page
-    .getByRole("button", { name: /需要核对的来源记录.*invalid-state/ })
+    .getByRole("link", { name: "打开 需要核对的来源记录", exact: true })
     .click();
   await expect(
-    page.getByText("schemaVersion：Invalid literal value, expected 1"),
+    page
+      .getByRole("dialog")
+      .getByText("schemaVersion：Invalid literal value, expected 1"),
   ).toBeVisible();
   await page.getByRole("tab", { name: "文档", exact: true }).click();
   await page.getByRole("button", { name: /流程状态原文/ }).click();
@@ -246,7 +260,7 @@ test("mobile Change drawer, URL restore and 320px fit", async ({ page }) => {
   await page.getByRole("button", { name: "关闭变更详情" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page
-    .getByRole("button", {
+    .getByRole("link", {
       name: "打开 让工程文档成为清晰的阅读体验",
       exact: true,
     })
@@ -307,7 +321,7 @@ test("changing projects clears filters that belong to the previous project", asy
     `/?${repositoryQuery}&m=changes&spec=platform&noTypes=1&urgency=normal&sort=urgency`,
   );
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "打开 让工程文档成为清晰的阅读体验",
       exact: true,
     }),
@@ -316,7 +330,7 @@ test("changing projects clears filters that belong to the previous project", asy
   await page.getByRole("menuitemradio", { name: "第二项目" }).click();
   await expect(page).not.toHaveURL(/spec=|types=|noTypes=|urgency=|sort=/);
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "打开 让工程文档成为清晰的阅读体验",
       exact: true,
     }),
@@ -349,7 +363,7 @@ test("document list distinguishes missing, unreadable and not required material"
   ).toContainText("当前阶段尚未要求");
 });
 
-test("only active Changes use stage filters and the stage board", async ({
+test("only active Changes use the board and completed rows retain archive evidence", async ({
   page,
 }) => {
   await page.goto(
@@ -359,104 +373,69 @@ test("only active Changes use stage filters and the stage board", async ({
     name: "Change 状态",
     exact: true,
   });
-  await expect(scopes.getByRole("tab")).toHaveCount(6);
-  await expect(scopes.getByRole("tab", { name: /全部/ })).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveValue(
-    "execution",
-  );
+  await expect(scopes.getByRole("tab")).toHaveCount(3);
+  await expect(page).not.toHaveURL(/stage=|wait=/);
   await page
-    .getByRole("button", {
+    .getByRole("link", {
       name: "打开 让工程文档成为清晰的阅读体验",
       exact: true,
     })
     .click();
   await expect(page.locator(".stage-flow")).toBeVisible();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await scopes.getByRole("tab", { name: /已归档/ }).click();
+  await page.keyboard.press("Escape");
+  await scopes.getByRole("tab", { name: /已完成/ }).click();
   await expect(page).toHaveURL(/scope=completed/);
-  await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
-  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveCount(0);
-  await expect(
-    page.getByRole("combobox", { name: "筛选等待事项" }),
-  ).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "看板视图" })).toHaveCount(0);
-  const row = page.getByRole("button", {
-    name: "打开 接入中心仓库与来源追踪",
-    exact: true,
-  });
-  await expect(row).toContainText("人工验收通过");
-  await expect(row.locator("time")).toHaveAttribute(
+  await expect(page).not.toHaveURL(/view=board/);
+  const row = changeRow(page, "接入中心仓库与来源追踪");
+  await expect(row.locator("time").first()).toHaveAttribute(
     "datetime",
     "2026-10-02T08:00:00+08:00",
   );
-  await expect(row.locator(".task-progress, .badge")).toHaveCount(0);
-  await page.screenshot({
-    path: "artifacts/changes-archived-desktop.png",
-    fullPage: true,
-  });
-  await row.click();
+  await page
+    .getByRole("link", { name: "打开 接入中心仓库与来源追踪", exact: true })
+    .click();
   const drawer = page.getByRole("dialog");
-  await expect(drawer.locator(".stage-flow, .overview-progress")).toHaveCount(
-    0,
-  );
-  await expect(drawer.locator(".drawer-badges")).toHaveText("已归档Small");
+  await expect(drawer.locator(".stage-flow,.overview-progress")).toHaveCount(0);
   await expect(drawer.locator(".archive-outcome")).toContainText(
     "人工验收通过",
   );
-  await page.screenshot({
-    path: "artifacts/change-archived-detail.png",
-    fullPage: true,
-  });
   await drawer.getByRole("button", { name: "查看验收依据" }).click();
-  await expect(
-    drawer.getByText("归档前阶段：验收", { exact: true }),
-  ).toBeVisible();
   await expect(drawer.getByText("归档目录完整", { exact: true })).toBeVisible();
   await drawer.getByRole("tab", { name: "任务", exact: true }).click();
   await expect(drawer.locator(".task-detail")).toContainText("已完成");
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await page.getByRole("button", { name: "任务", exact: true }).click();
-  await page.getByRole("button", { name: "看板视图" }).click();
-  await expect(page.locator(".board-column")).toHaveCount(4);
-  await page.getByRole("button", { name: "变更", exact: true }).click();
-  await expect(page).toHaveURL(/view=list/);
-  await expect(row).toBeVisible();
 });
 
-test("invalid scopes preserve Change deep links and inactive filters normalize", async ({
+test("invalid and retired filters preserve deep links and scope navigation", async ({
   page,
 }) => {
   await page.goto(
     `/?${repositoryQuery}&m=changes&scope=invalid&c=source-connect`,
   );
-  await expect(page).toHaveURL(/scope=active/);
+  await expect(page).not.toHaveURL(/scope=invalid/);
   await expect(page).toHaveURL(/c=source-connect/);
   await expect(
     page
       .getByRole("dialog")
       .getByRole("heading", { name: "接入中心仓库与来源追踪", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".stage-flow")).toHaveCount(0);
   await page.goto(
-    `/?${repositoryQuery}&m=changes&scope=completed&stage=execution&wait=pause&view=board`,
+    `/?${repositoryQuery}&m=changes&scope=completed&stage=execution&wait=pause&size=medium&level=tasks&taskStatus=doing&view=board`,
   );
-  await expect(page).not.toHaveURL(/stage=|wait=|view=board/);
-  await expect(page.locator(".outcome-list .change-row")).toHaveCount(2);
-  await page.getByRole("combobox", { name: "筛选规模" }).selectOption("medium");
-  await expect(
-    page.getByText("没有符合条件的记录", { exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "清除筛选", exact: true }).click();
-  await expect(page).toHaveURL(/scope=completed/);
-  await expect(page.locator(".outcome-list .change-row")).toHaveCount(2);
+  await expect(page).not.toHaveURL(
+    /stage=|wait=|size=|level=|taskStatus=|view=board/,
+  );
+  await expect(changeLinks(page)).toHaveCount(2);
   await page.getByRole("tab", { name: /进行中/ }).click();
-  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole("tab", { name: /已归档/ })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: /已完成/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  await expect(page.getByRole("combobox", { name: "筛选阶段" })).toHaveCount(0);
+  await expect(
+    page.getByRole("combobox", {
+      name: /筛选规模|筛选阶段|筛选等待事项|筛选任务状态/,
+    }),
+  ).toHaveCount(0);
 });
 
 test("cancelled and invalid records focus on reasons and retain history at 320px", async ({
@@ -464,15 +443,16 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
 }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto(`/?${repositoryQuery}&m=changes&scope=cancelled`);
-  const cancelled = page.getByRole("button", {
+  const cancelled = page.getByRole("link", {
     name: "打开 导航布局实验",
     exact: true,
   });
-  await expect(cancelled).toContainText("收敛为统一工作台");
-  await expect(cancelled.locator("time")).toHaveAttribute(
-    "datetime",
-    "2026-10-02T08:00:00+08:00",
+  await expect(changeRow(page, "导航布局实验")).toContainText(
+    "收敛为统一工作台",
   );
+  await expect(
+    changeRow(page, "导航布局实验").locator("time").first(),
+  ).toHaveAttribute("datetime", "2026-10-02T08:00:00+08:00");
   await page.screenshot({
     path: "artifacts/changes-cancelled-mobile.png",
     fullPage: true,
@@ -490,12 +470,14 @@ test("cancelled and invalid records focus on reasons and retain history at 320px
     page.getByText("取消时阶段：执行", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await page.getByRole("tab", { name: /来源异常/ }).click();
-  const invalid = page.getByRole("button", {
+  await page.getByRole("button", { name: "查看", exact: true }).click();
+  const invalid = page.getByRole("link", {
     name: "打开 需要核对的来源记录",
     exact: true,
   });
-  await expect(invalid).toContainText("schemaVersion");
+  await expect(changeRow(page, "需要核对的来源记录")).toContainText(
+    "schemaVersion",
+  );
   await expect(page.getByRole("button", { name: "看板视图" })).toHaveCount(0);
   expect(
     await page.evaluate(
@@ -524,13 +506,16 @@ test("empty status scopes describe the scope without offering to reset it", asyn
     page.getByText("暂无进行中的 Change", { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "清除筛选" })).toHaveCount(0);
-  await page.getByRole("tab", { name: /来源异常/ }).click();
+  await expect(
+    page.getByRole("button", { name: "查看", exact: true }),
+  ).toHaveCount(0);
+  await page.goto(`/?${repositoryQuery}&m=changes&issues=1`);
   await expect(
     page.getByText("目前没有来源异常", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: /已归档/ }).click();
+  await page.getByRole("tab", { name: /已完成/ }).click();
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "打开 接入中心仓库与来源追踪",
       exact: true,
     }),

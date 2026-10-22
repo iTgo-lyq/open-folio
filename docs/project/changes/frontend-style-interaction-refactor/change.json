@@ -68,7 +68,9 @@
     },
     "T8": {
       "title": "Changes 列表",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、build及目录/标签/延续单测13项通过；Changes相关浏览器21项、壳层4项及来源复验3项通过",
+      "commitTitle": "frontend-style-interaction-refactor T8: Change directory and filters"
     },
     "T9": {
       "title": "Change 详情阅读页",

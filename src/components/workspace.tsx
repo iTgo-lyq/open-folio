@@ -90,6 +90,8 @@ function Body() {
         <AccountSettings />
       ) : module === "specs" && data ? (
         <Specs />
+      ) : module === "changes" && data ? (
+        <Changes />
       ) : (
         legacy(
           !projectId ? (

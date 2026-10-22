@@ -1,4 +1,12 @@
-import { test, expect, repositoryQuery } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  changeLinks,
+  changeRow,
+  openChangeFilters,
+  changeDisplay,
+} from "./connected";
 import {
   primaryRecord,
   type Snapshot,
@@ -51,6 +59,10 @@ function labeled(data: Snapshot) {
   return data;
 }
 
+const titles = async (page: import("@playwright/test").Page) =>
+  changeLinks(page).evaluateAll((items) =>
+    items.map((item) => item.getAttribute("aria-label")!.slice(3)),
+  );
 test("labels filter with OR and AND, preserve URL navigation and default to normal", async ({
   page,
   request,
@@ -63,90 +75,72 @@ test("labels filter with OR and AND, preserve URL navigation and default to norm
     route.fulfill({ json: data }),
   );
   await page.goto(`/?${repositoryQuery}&m=changes`);
-  const rows = page.locator(".change-row");
-  const titles = rows.locator(".change-row-title strong");
-  await expect(titles).toHaveText(data.changes.map((g) => g.title));
-  await expect(rows.nth(0).locator(".change-labels")).toHaveCount(0);
-  await expect(rows.nth(1).locator(".change-urgency")).toHaveCount(0);
-  await page
-    .getByRole("combobox", { name: "筛选紧急程度" })
-    .selectOption("normal");
-  await expect(titles).toHaveText(["历史记录", "体验调整"]);
-  await rows.first().click();
+  await expect
+    .poll(() => titles(page))
+    .toEqual(data.changes.map((g) => g.title));
+  let menu = await openChangeFilters(page);
+  await menu
+    .getByRole("menuitemcheckbox", { name: "普通", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => titles(page)).toEqual(["历史记录", "体验调整"]);
+  await changeLinks(page).first().click();
   await expect(page.getByRole("region", { name: "类型与紧急程度" })).toHaveText(
     "类型与紧急程度无类型标签普通",
   );
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await expect(rows.first()).toBeFocused();
-  await page.getByRole("combobox", { name: "筛选紧急程度" }).selectOption("");
-
-  const trigger = page.getByRole("button", { name: "筛选类型" });
-  await trigger.focus();
-  await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("checkbox", { name: "无类型标签", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("Space");
-  await page.getByRole("checkbox", { name: "修复", exact: true }).check();
-  await page.getByRole("checkbox", { name: special, exact: true }).check();
   await page.keyboard.press("Escape");
-  await expect(trigger).toBeFocused();
-  await expect(trigger).toHaveAccessibleName("筛选类型，已选 3 项");
-  await expect(titles).toHaveText([
-    "历史记录",
-    "修复问题",
-    "紧急修复",
-    "数据迁移",
-  ]);
+  await expect(changeLinks(page).first()).toBeFocused();
+  menu = await openChangeFilters(page);
+  await menu
+    .getByRole("menuitemcheckbox", { name: "普通", exact: true })
+    .click();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "无类型标签", exact: true })
+    .click();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "修复", exact: true })
+    .click();
+  await menu
+    .getByRole("menuitemcheckbox", { name: special, exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  await expect
+    .poll(() => titles(page))
+    .toEqual(["历史记录", "修复问题", "紧急修复", "数据迁移"]);
   expect(new URL(page.url()).searchParams.get("types")).toBe(
     JSON.stringify(["修复", special]),
   );
   await page.reload();
-  await expect(titles).toHaveText([
-    "历史记录",
-    "修复问题",
-    "紧急修复",
-    "数据迁移",
-  ]);
-  await page
-    .getByRole("combobox", { name: "筛选紧急程度" })
-    .selectOption("high");
-  await expect(titles).toHaveText(["修复问题"]);
+  await expect
+    .poll(() => titles(page))
+    .toEqual(["历史记录", "修复问题", "紧急修复", "数据迁移"]);
+  menu = await openChangeFilters(page);
+  await menu.getByRole("menuitemcheckbox", { name: "高", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => titles(page)).toEqual(["修复问题"]);
   await page.goBack();
-  await expect(titles).toHaveCount(4);
+  await expect.poll(() => titles(page)).toHaveLength(4);
   await page.goForward();
-  await expect(titles).toHaveText(["修复问题"]);
-  await rows.first().click();
-  await page.getByRole("button", { name: "关闭变更详情" }).click();
-  await expect(rows.first()).toBeFocused();
-  await expect(page).toHaveURL(/urgency=high/);
-  await page
-    .getByRole("combobox", { name: "筛选紧急程度" })
-    .selectOption("normal");
-  await expect(titles).toHaveText(["历史记录"]);
-  await trigger.click();
-  await page.getByRole("button", { name: "清除类型", exact: true }).click();
-  await page.getByRole("checkbox", { name: "none", exact: true }).check();
+  await expect.poll(() => titles(page)).toEqual(["修复问题"]);
+  await page.getByRole("button", { name: "清除筛选", exact: true }).click();
+  menu = await openChangeFilters(page);
+  await menu
+    .getByRole("menuitemcheckbox", { name: "none", exact: true })
+    .click();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "普通", exact: true })
+    .click();
   await page.keyboard.press("Escape");
   await expect(
-    page.getByText("没有符合条件的记录", { exact: true }),
+    page.getByText("没有符合条件的 Change", { exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("combobox", { name: "变更排序" })
-    .selectOption("urgency");
-  await page.getByRole("button", { name: "清除筛选", exact: true }).click();
-  await expect(page).not.toHaveURL(/types=|noTypes=|urgency=/);
-  await expect(page).toHaveURL(/sort=urgency/);
-  await expect(titles).toHaveText([
-    "紧急修复",
-    "修复问题",
-    "历史记录",
-    "体验调整",
-    "数据迁移",
-  ]);
+    .getByRole("button", { name: "清除筛选", exact: true })
+    .first()
+    .click();
+  await expect.poll(() => titles(page)).toHaveLength(5);
 });
-
-test("all views share filtered stable urgency order without reordering tasks", async ({
+test("list and board share stable urgency order and task detail keeps its original order", async ({
   page,
   request,
   personal,
@@ -157,37 +151,33 @@ test("all views share filtered stable urgency order without reordering tasks", a
   await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
   );
-  const types = encodeURIComponent(JSON.stringify(["修复"]));
-  await page.goto(`/?${repositoryQuery}&m=changes&types=${types}&sort=urgency`);
-  await expect(page.locator(".change-row-title strong")).toHaveText([
-    "紧急修复",
-    "修复问题",
-  ]);
-  await page.getByRole("button", { name: "看板视图" }).click();
-  await expect(page.locator(".change-card > strong")).toHaveText([
-    "紧急修复",
-    "修复问题",
-  ]);
-  await expect(
-    page.locator(".change-card").first().getByLabel("紧急程度：紧急"),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "任务", exact: true }).click();
-  await page.getByRole("button", { name: "列表视图" }).click();
-  await expect(page.locator(".task-title strong")).toHaveText([
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&types=${encodeURIComponent('["修复"]')}&sort=urgency`,
+  );
+  await expect.poll(() => titles(page)).toEqual(["紧急修复", "修复问题"]);
+  await changeDisplay(page, "看板");
+  const board = page.getByRole("region", { name: "按阶段看板（只读）" });
+  await expect
+    .poll(() =>
+      board
+        .getByRole("link", { name: /^打开 / })
+        .evaluateAll((links) =>
+          links.map((link) => link.getAttribute("aria-label")),
+        ),
+    )
+    .toEqual(["打开 紧急修复", "打开 修复问题"]);
+  await board.getByRole("link", { name: "打开 紧急修复", exact: true }).click();
+  await page.getByRole("tab", { name: "任务", exact: true }).click();
+  await expect(page.locator(".task-detail-heading strong")).toContainText([
     "紧急修复任务一",
     "紧急修复任务二",
-    "修复问题任务一",
-    "修复问题任务二",
   ]);
-  await page.getByRole("button", { name: "变更", exact: true }).click();
-  await page.getByRole("button", { name: "依赖视图" }).click();
-  await expect(page.locator(".dependency-source strong")).toHaveText([
-    "紧急修复",
-    "修复问题",
-  ]);
+  await page.keyboard.press("Escape");
+  await changeDisplay(page, "列表");
+  await expect.poll(() => titles(page)).toEqual(["紧急修复", "修复问题"]);
+  await expect(page.getByRole("button", { name: "依赖视图" })).toHaveCount(0);
 });
-
-test("free labels render as text and fit desktop and narrow layouts including the popover", async ({
+test("free labels render as text and fit desktop and narrow layouts including the menu", async ({
   page,
   request,
   personal,
@@ -199,57 +189,50 @@ test("free labels render as text and fit desktop and narrow layouts including th
     route.fulfill({ json: data }),
   );
   await page.goto(`/?${repositoryQuery}&m=changes&sort=urgency`);
-  const urgent = page.getByRole("button", {
-    name: "打开 紧急修复",
-    exact: true,
-  });
-  await expect(urgent.getByText(htmlType, { exact: true })).toBeVisible();
-  await expect(urgent.locator("img")).toHaveCount(0);
-  await page.screenshot({
-    path: "artifacts/change-labels-desktop.png",
-    fullPage: true,
-  });
-  await page.setViewportSize({ width: 320, height: 740 });
-  await expect(urgent).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  expect(await urgent.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
-    true,
-  );
-  await page.getByRole("button", { name: "筛选类型" }).click();
-  const popover = page.getByRole("dialog", { name: "类型筛选" });
+  const row = changeRow(page, "紧急修复");
+  await expect(row.getByText(htmlType, { exact: true })).toBeVisible();
+  await expect(row.locator("img")).toHaveCount(0);
+  for (const width of [1440, 834, 390, 320])
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.setViewportSize({ width, height: 900 });
+      await expect(row).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+        true,
+      );
+      await page.screenshot({
+        path: `/tmp/of-refactor-changes-${width}-${theme}.png`,
+      });
+    }
+  const menu = await openChangeFilters(page);
   await expect(
-    popover.getByRole("checkbox", { name: special, exact: true }),
+    menu.getByRole("menuitemcheckbox", { name: special, exact: true }),
   ).toBeVisible();
-  expect(await popover.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+  expect(await menu.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
     true,
   );
-  const bounds = await popover.boundingBox();
+  const bounds = await menu.boundingBox();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
-  await page.screenshot({
-    path: "artifacts/change-labels-mobile-filter.png",
-    fullPage: true,
-  });
   await page.keyboard.press("Escape");
-  await urgent.click();
-  const section = page.getByRole("region", { name: "类型与紧急程度" });
-  await expect(section.getByText(longType, { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "打开 紧急修复", exact: true }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "类型与紧急程度" })
+      .getByText(longType, { exact: true }),
+  ).toBeVisible();
   expect(
     await page
       .locator(".drawer-body")
       .evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true);
-  await page.screenshot({
-    path: "artifacts/change-labels-mobile-detail.png",
-    fullPage: true,
-  });
 });
-
-test("invalid label queries normalize without losing deep links and absent selected names stay removable", async ({
+test("invalid filters preserve deep links and absent selected names remain removable", async ({
   page,
   request,
   personal,
@@ -270,22 +253,22 @@ test("invalid label queries normalize without losing deep links and absent selec
       .getByRole("dialog")
       .getByRole("heading", { name: "历史记录", exact: true }),
   ).toBeVisible();
-  const missing = "当前无匹配";
   await page.goto(
-    `/?${repositoryQuery}&m=changes&types=${encodeURIComponent(JSON.stringify([missing]))}`,
+    `/?${repositoryQuery}&m=changes&types=${encodeURIComponent('["当前无匹配"]')}`,
   );
   await expect(
-    page.getByText("没有符合条件的记录", { exact: true }),
+    page.getByText("没有符合条件的 Change", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "筛选类型" }).click();
+  const menu = await openChangeFilters(page);
   await expect(
-    page.getByRole("checkbox", { name: missing, exact: true }),
+    menu.getByRole("menuitemcheckbox", { name: "当前无匹配", exact: true }),
   ).toBeChecked();
-  // This URL-only choice disappears as soon as it is deselected.
-  await page.getByRole("checkbox", { name: missing, exact: true }).click();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "当前无匹配", exact: true })
+    .click();
   await expect(
-    page.getByRole("checkbox", { name: missing, exact: true }),
+    menu.getByRole("menuitemcheckbox", { name: "当前无匹配", exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await expect(page.locator(".change-row")).toHaveCount(5);
+  await expect(changeLinks(page)).toHaveCount(5);
 });

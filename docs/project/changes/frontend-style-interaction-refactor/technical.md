@@ -56,6 +56,8 @@
 | `doc`、`da`、`raw` | 文档改为在所属阅读页内联打开：Specs 文档落到 Specs 页，Change 材料落到详情页对应材料，原文以抽屉打开。 |
 | `level`、`taskStatus`、`size`、`stage`、`wait`、Changes 的 `spec` 筛选、`pkind`、`view=dependencies` | 对应控件已删除。读到时以替换历史的方式移除；`scope=issues` 打开来源异常提示，`pendingIntegration` 归入进行中，`pendingRelease` 归入已完成。 |
 
+类型与创建者筛选使用 JSON 数组保存任意名称；紧急程度多选时同样使用 JSON 数组，单项继续接受原枚举值。无类型选择保留 `noTypes=1`。
+
 旧链接因此仍能打开最接近的页面，不做逐项还原。
 
 ## 页面实现

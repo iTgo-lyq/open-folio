@@ -127,3 +127,22 @@ export async function copyReadingLink(page: Page) {
     .getByRole("menuitem", { name: "复制阅读链接", exact: true })
     .click();
 }
+export async function openChangeFilters(page: Page) {
+  const menu = page.getByRole("menu", { name: /^筛选/ });
+  if (!(await menu.isVisible()))
+    await page.getByRole("button", { name: /^筛选(?:，|$)/ }).click();
+  return menu;
+}
+export async function changeDisplay(page: Page, label: string) {
+  await page.getByRole("button", { name: "显示", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: label, exact: true }).click();
+}
+export const changeLinks = (page: Page) =>
+  page
+    .getByRole("region", { name: "Change 列表", exact: true })
+    .getByRole("link", { name: /^打开 / });
+export const changeRow = (page: Page, title: string) =>
+  page
+    .getByRole("link", { name: `打开 ${title}`, exact: true })
+    .locator("..")
+    .locator("..");
