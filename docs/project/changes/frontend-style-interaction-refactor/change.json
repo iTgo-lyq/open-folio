@@ -92,7 +92,9 @@
     },
     "T12": {
       "title": "旧样式清理与整体验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型、格式、build、UI交互和296项单测通过；126个浏览器用例覆盖通过；独立评审与真实生产冒烟通过",
+      "commitTitle": "frontend-style-interaction-refactor T12: complete validation and review evidence"
     }
   },
   "closure": {},
