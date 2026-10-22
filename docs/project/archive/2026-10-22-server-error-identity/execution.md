@@ -10,6 +10,7 @@
 
 - `npm test`：314 项全部通过，包含模块副本身份、Provider 继承和重试提示、未知异常隔离 3 项新增回归。
 - `npm run typecheck`、`npm run format:check`、`git diff --check` 通过。
+- `npm run test:e2e -- tests/browser/workspace.spec.ts tests/browser/delivery.spec.ts --reporter=line`：7 项全部通过，覆盖导航、主题、交付状态与窄屏。
 - `npm run build` 通过；使用独立临时数据启动该生产构建，保留 instrumentation 后台启动路径，三个匿名私有接口均返回 `401 / SESSION_REQUIRED`，匿名会话接口返回 200。
 - 停止常驻实例后，在 11118 临时实例独占复用既有数据、配置及密钥。真实 `withSmokeSession` 使用原有账号和 Token 绑定，Spec、Change、原型正常；Change 阅读在 1440 / 834 / 390 / 320px 无横向溢出，匿名分享的桌面与手机读取正常且不请求私有接口，匿名私有读取返回 401。包装器退出后确认匿名且无可见绑定，账号原有绑定保留。
 - 验收实例已停止，常驻实例已恢复；没有并发读写同一持久数据目录。新增测试与完整差异由 Agent 自查，未发现剩余验收问题。
