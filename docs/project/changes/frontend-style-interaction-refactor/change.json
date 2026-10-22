@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -119,15 +119,17 @@
       "status": "done",
       "verification": "类型、格式、12项定向浏览器、独立复核和生产构建通过；11356真实已有账号冒烟验证内容区标题、数量及桌面/手机布局通过，退出清理确认",
       "commitTitle": "frontend-style-interaction-refactor T16: verify restored page headings"
+    },
+    "T17": {
+      "title": "阅读目录收起为顶栏位置按钮",
+      "status": "todo"
+    },
+    "T18": {
+      "title": "抽屉贴边玻璃与遮罩模糊",
+      "status": "todo"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-22T10:53:37.045Z",
-      "summary": "T16标题位置回退已验证推送；类型、格式、12项定向浏览器与独立Agent复核通过，生产构建和同一11356真实账号冒烟通过，前轮证据继续适用"
-    }
-  },
+  "closure": {},
   "previews": [
     {
       "id": "quiet-changes",
@@ -348,9 +350,9 @@
     }
   ],
   "rework": {
-    "at": "2026-10-22T10:50:34.551Z",
-    "reason": "用户要求回滚Changes与原型标题进入header的调整，恢复内容区原位置",
-    "approach": "仅恢复两个页面标题、原型数量和原有标题间距及焦点位置，定向验证后更新同一验收服务"
+    "at": "2026-10-22T11:08:07.945Z",
+    "reason": "用户验收反馈：目录收起应为顶栏仓库式位置按钮且收起不在顶栏；抽屉边距多层边框、遮罩不够模糊、抽屉需玻璃",
+    "approach": "收起移入目录面板标题行，收起后在顶栏仓库后显示当前位置按钮弹出目录；遮罩加模糊，抽屉贴边单层玻璃"
   },
   "clarifications": {
     "Q1": {
@@ -410,9 +412,5 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收标题恢复内容区后的当前11356新版；通过后同步Specs、归档、合入develop并切回11117常驻服务"
   }
 }
