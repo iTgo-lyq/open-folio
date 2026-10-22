@@ -1,4 +1,5 @@
 import {
+  copyPublicPreviewLink,
   test,
   expect,
   repositoryQuery,
@@ -65,7 +66,7 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
   await expect(
     page.frameLocator("iframe").getByRole("heading", { name: "订单列表原型" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "复制预览链接" }).click();
+  await copyPublicPreviewLink(page);
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
   const id = new URL(link).pathname.split("/").pop()!;

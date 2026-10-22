@@ -162,3 +162,13 @@ export async function backToChanges(page: Page) {
     .getByRole("button", { name: "返回 Changes 列表", exact: true })
     .click();
 }
+
+export async function copyPublicPreviewLink(page: Page) {
+  await page.getByRole("button", { name: "公开链接", exact: true }).click();
+  const menu = page.getByRole("dialog", { name: "公开链接", exact: true });
+  await expect(menu.getByLabel("公开链接", { exact: true })).not.toHaveValue(
+    "",
+  );
+  await menu.getByRole("button", { name: "复制公开链接", exact: true }).click();
+  await menu.getByRole("button", { name: "关闭公开链接", exact: true }).click();
+}

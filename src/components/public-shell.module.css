@@ -20,8 +20,8 @@
   padding: 0 20px;
   border-bottom: 0.5px solid var(--of-border);
   background: var(--of-bar-glass);
-  backdrop-filter: var(--of-blur);
   -webkit-backdrop-filter: var(--of-blur);
+  backdrop-filter: var(--of-blur);
 }
 .brand {
   width: 24px;

@@ -40,13 +40,13 @@ test("Change previews switch declared devices without changing layout dimensions
   const frame = () =>
     page.frames().find((f) => f.url().includes("/api/public-previews/"))!;
   expect(await frame().evaluate(() => innerWidth)).toBe(1440);
-  await panel.getByRole("button", { name: "移动设备", exact: true }).click();
+  await panel.getByRole("radio", { name: "移动设备", exact: true }).click();
   await expect(iframe).toHaveAttribute("width", "390");
   await expect(iframe).toHaveAttribute("height", "844");
   expect(await frame().evaluate(() => innerWidth)).toBe(390);
-  await panel.getByRole("button", { name: "100%", exact: true }).click();
+  await panel.getByRole("radio", { name: "100%", exact: true }).click();
   await expect(iframe).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await panel.getByRole("button", { name: "适应画布", exact: true }).click();
+  await panel.getByRole("radio", { name: "适应画布", exact: true }).click();
   expect(await frame().evaluate(() => innerWidth)).toBe(390);
   await panel.getByRole("button", { name: "切换横竖方向" }).click();
   await expect(iframe).toHaveAttribute("width", "844");
@@ -55,10 +55,10 @@ test("Change previews switch declared devices without changing layout dimensions
     .getByRole("button", { name: "订单详情 页面", exact: true })
     .click();
   await expect(
-    panel.getByRole("button", { name: "移动设备", exact: true }),
+    panel.getByRole("radio", { name: "移动设备", exact: true }),
   ).toHaveCount(0);
   await expect(
-    panel.getByRole("button", { name: "iPad", exact: true }),
+    panel.getByRole("radio", { name: "iPad", exact: true }),
   ).toHaveCount(0);
   await panel
     .getByRole("button", { name: "价格卡片 组件", exact: true })

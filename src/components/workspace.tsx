@@ -80,15 +80,13 @@ function Body() {
         ))}
     </>
   );
-  // 尚未迁移的页面仍放在旧容器中，并从顶栏下方开始。
-  const legacy = (content: React.ReactNode) => (
-    <div className={styles.legacy}>
-      <div className="workspace-body">{content}</div>
-    </div>
+  // 加载和错误入口位于工具栏下方。
+  const fallback = (content: React.ReactNode) => (
+    <div className={styles.legacy}>{content}</div>
   );
   return (
     <Shell module={module} focusedPreview={focusedPreview} banners={banners}>
-      {reading && data && module === "prototypes" && (
+      {reading && data && module === "prototypes" && !focusedPreview && (
         <ToolbarSlot side="right">
           <CopyPageLink />
         </ToolbarSlot>
@@ -102,8 +100,10 @@ function Body() {
         <Specs />
       ) : module === "changes" && data ? (
         <Changes />
+      ) : module === "prototypes" && data ? (
+        <Prototypes />
       ) : (
-        legacy(
+        fallback(
           !projectId ? (
             <Empty title="先选择一个仓库">
               <Button onClick={() => go("home")}>查看我的仓库</Button>

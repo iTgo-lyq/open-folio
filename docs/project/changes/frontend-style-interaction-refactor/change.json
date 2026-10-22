@@ -86,7 +86,9 @@
     },
     "T11": {
       "title": "原型总览、画布与公开原型页",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型、格式、build及原型单测21项通过；原型/分享31个不同浏览器用例通过，三类页面双主题四档布局已查",
+      "commitTitle": "frontend-style-interaction-refactor T11: prototype gallery and canvases"
     },
     "T12": {
       "title": "旧样式清理与整体验证",

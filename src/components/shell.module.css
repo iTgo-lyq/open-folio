@@ -663,3 +663,10 @@
     display: none;
   }
 }
+
+@media (max-width: 760px) {
+  .app[data-focused-preview] .sync,
+  .app[data-focused-preview] .back > span {
+    display: none;
+  }
+}

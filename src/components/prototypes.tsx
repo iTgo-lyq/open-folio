@@ -1,9 +1,66 @@
 "use client";
 import { usePublication, publicationThumbnail } from "./publication";
-import { Badge, Button, IconButton } from "@open-folio/ui";
+import {
+  Badge,
+  Button,
+  IconButton,
+  SegmentedControl,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from "@open-folio/ui";
 import { useEffect, useRef, useState } from "react";
-import { ImageOff, LoaderCircle, PanelsTopLeft, X } from "lucide-react";
-import { Dialog } from "radix-ui";
+import {
+  Globe,
+  ImageOff,
+  LoaderCircle,
+  PanelsTopLeft,
+  X,
+  Monitor,
+  Tablet,
+  Smartphone,
+} from "lucide-react";
+import { PublicLinkPopover } from "./public-link-popover";
+import { legacyPrototypesPatch } from "@/lib/legacy-query";
+import { primaryRecord } from "@/lib/model";
+import styles from "./prototypes.module.css";
+const prototypeClass = (names: string) =>
+  names
+    .split(/\s+/)
+    .map((name) => styles[name])
+    .filter(Boolean)
+    .join(" ");
+const deviceItems = [
+  {
+    value: "pc-web",
+    label: (
+      <>
+        <Monitor />
+        <span>PC Web</span>
+      </>
+    ),
+  },
+  {
+    value: "ipad",
+    label: (
+      <>
+        <Tablet />
+        <span>iPad</span>
+      </>
+    ),
+  },
+  {
+    value: "mobile",
+    label: (
+      <>
+        <Smartphone />
+        <span>手机</span>
+      </>
+    ),
+  },
+];
 import { previewViewport } from "@/lib/preview-viewport";
 import {
   CLEAR_PROTOTYPE_VIEW,
@@ -16,7 +73,16 @@ import { Empty, ErrorNotice } from "./document";
 import { ChangePreviews } from "./previews";
 const clearPreview = CLEAR_PROTOTYPE_VIEW;
 export default function Prototypes() {
-  const { data, projectId, q, readUrl } = useWorkspace();
+  const { data, projectId, q, readUrl, nav } = useWorkspace();
+  useEffect(() => {
+    const patch = {
+      ...(legacyPrototypesPatch(q) ?? {}),
+      ...(q.pdevice && !["pc-web", "ipad", "mobile"].includes(q.pdevice)
+        ? { pdevice: null }
+        : {}),
+    };
+    if (Object.keys(patch).length) nav(patch, true);
+  }, [q, nav]);
   const previous = useRef("");
   useEffect(() => {
     if (q.prototype) previous.current = q.prototype;
@@ -44,12 +110,21 @@ export default function Prototypes() {
   }, [key, projectId, data, retry, readUrl]);
   const catalog = response.key === key ? response.value : undefined;
   const error = response.key === key ? response.error : undefined;
-  if (q.prototype) return <ChangePreviews current />;
+  if (q.prototype)
+    return (
+      <>
+        <ChangePreviews current />
+        <PrototypeDetails catalog={catalog} error={error} />
+      </>
+    );
   // Restore scroll only after the complete list exists; keep the fetched catalog
   // in this parent while the viewer temporarily replaces the gallery.
   if (!catalog)
     return (
-      <section className="prototypes-workspace" aria-label="项目原型总览">
+      <section
+        className={prototypeClass("prototypes-workspace")}
+        aria-label="项目原型总览"
+      >
         {error ? (
           <ErrorNotice>
             {error}
@@ -90,150 +165,108 @@ function PrototypeGallery({
         `[data-prototype-id="${CSS.escape(restoreId)}"]`,
       );
       (
-        tile?.querySelector(
-          ".prototype-thumbnail-open, .prototype-title-open",
-        ) as HTMLElement | null
+        tile?.querySelector("[data-prototype-cover]") as HTMLElement | null
       )?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(id);
   }, [catalog, restoreId]);
-  const kind = ["page", "component"].includes(q.pkind) ? q.pkind : "";
-  const device = ["pc-web", "ipad", "mobile", "custom"].includes(q.pdevice)
+  const device = ["pc-web", "ipad", "mobile"].includes(q.pdevice)
     ? q.pdevice
-    : "";
+    : "pc-web";
   const items = catalog.items;
   const rows = items.filter(
     (item) =>
-      (!kind || item.kind === kind) &&
-      (!device ||
-        (device === "custom"
-          ? !!item.viewport
-          : item.devices?.some((d) => d === device))),
+      item.kind === "component" || item.devices?.some((d) => d === device),
   );
   const requestedLimit = Number(q.pcount);
   const limit =
     Number.isSafeInteger(requestedLimit) && requestedLimit > 24
       ? Math.min(requestedLimit, Math.max(24, rows.length))
       : 24;
-  const filtered = !!(kind || device);
-  const clear = () => nav({ pkind: null, pdevice: null, pcount: null });
   return (
-    <section className="prototypes-workspace" aria-label="项目原型总览">
-      <div className="changes-heading prototype-gallery-heading">
-        <div>
-          <div className="eyebrow">EXPLORE THE PROJECT</div>
-          <h1 tabIndex={-1}>
-            项目里的页面 {catalog && <span>{items.length}</span>}
-          </h1>
-          <p>从一个入口，发现项目的页面、细节与各种状态。</p>
-        </div>
-        <Badge tone="info">
-          {catalog.policy.branch ?? "集成分支"} · 预发布状态
-        </Badge>
-      </div>
-      <div className="prototype-catalog-controls">
-        <div className="scope-tabs" role="group" aria-label="原型类型">
-          {[
-            ["", "全部"],
-            ["page", "页面"],
-            ["component", "组件"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              aria-pressed={kind === value}
-              onClick={() => nav({ pkind: value || null, pcount: null })}
-            >
-              {label}
-              <span>
-                {value
-                  ? items.filter((item) => item.kind === value).length
-                  : items.length}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="changes-toolbar prototype-catalog-toolbar">
-          <div className="filter-controls">
-            <select
-              aria-label="筛选原型适配"
-              value={device}
-              onChange={(e) =>
-                nav({ pdevice: e.target.value || null, pcount: null })
-              }
-            >
-              <option value="">所有适配</option>
-              {Object.entries(DEVICE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-              <option value="custom">自定义尺寸</option>
-            </select>
-            {filtered && (
-              <Button variant="text" onClick={clear}>
-                清除筛选
-              </Button>
-            )}
+    <section
+      className={prototypeClass("prototypes-workspace")}
+      aria-label="项目原型总览"
+      ref={scroll}
+    >
+      <div className={prototypeClass("gallery-inner")}>
+        <header className={prototypeClass("prototype-gallery-heading")}>
+          <div>
+            <h1 tabIndex={-1} data-prototype-gallery-title>
+              原型
+            </h1>
+            <p>{items.length} 个当前入口</p>
           </div>
+        </header>
+        <div className={prototypeClass("prototype-catalog-controls")}>
+          <SegmentedControl
+            label="预览设备"
+            value={device}
+            onValueChange={(value) => nav({ pdevice: value, pcount: null })}
+            items={deviceItems}
+          />
         </div>
-      </div>
-      <div className="prototype-gallery-scroll" ref={scroll}>
-        <>
-          {catalog.message && (
-            <div className="prototype-policy" role="status">
-              <p>{catalog.message}</p>
-            </div>
-          )}
-          {!!catalog.issues.length && (
-            <details className="prototype-issues">
-              <summary>{catalog.issues.length} 项清单内容需检查</summary>
-              <ul>
-                {catalog.issues.map((issue, i) => (
-                  <li key={i}>{issue}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {!items.length ? (
-            <Empty title="暂无当前页面" icon={<PanelsTopLeft size={28} />}>
-              <p>项目在集成分支登记页面预览后，就会展示在这里。</p>
-            </Empty>
-          ) : (
-            <>
-              <div className="prototype-result-line">
-                <span aria-live="polite">
-                  {filtered
-                    ? `找到 ${rows.length} 个原型`
-                    : `${items.length} 个当前入口`}
-                </span>
+        <div className={prototypeClass("prototype-gallery-scroll")}>
+          <>
+            {catalog.message && (
+              <div className={prototypeClass("prototype-policy")} role="status">
+                <p>{catalog.message}</p>
               </div>
-              {!rows.length ? (
-                <Empty title="没有匹配的原型">
-                  <p>调整类型或适配范围，查看其他页面与组件。</p>
-                  <Button onClick={clear}>清除筛选</Button>
-                </Empty>
-              ) : (
-                <ul className="prototype-grid" aria-label="项目原型列表">
-                  {rows.slice(0, limit).map((item) => (
-                    <PrototypeCard
-                      key={item.id}
-                      item={item}
-                      revision={catalog.revision!}
-                    />
+            )}
+            {!!catalog.issues.length && (
+              <details className={prototypeClass("prototype-issues")}>
+                <summary>{catalog.issues.length} 项清单内容需检查</summary>
+                <ul>
+                  {catalog.issues.map((issue, i) => (
+                    <li key={i}>{issue}</li>
                   ))}
                 </ul>
-              )}
-              {rows.length > limit && (
-                <Button
-                  className="prototype-load-more"
-                  onClick={() => nav({ pcount: String(limit + 24) }, true)}
-                >
-                  显示更多原型（已显示 {limit} / {rows.length}）
-                </Button>
-              )}
-            </>
-          )}
-        </>
+              </details>
+            )}
+            {!items.length ? (
+              <Empty
+                title="这个仓库还没有原型"
+                icon={<PanelsTopLeft size={28} />}
+              >
+                <p>项目在集成分支登记页面预览后，就会展示在这里。</p>
+              </Empty>
+            ) : (
+              <>
+                <div className={prototypeClass("prototype-result-line")}>
+                  <span aria-live="polite">
+                    {`${rows.length} 个适配${DEVICE_LABELS[device as keyof typeof DEVICE_LABELS]}的入口`}
+                  </span>
+                </div>
+                {!rows.length ? (
+                  <Empty title="没有匹配的原型">
+                    <p>切换预览设备，查看其他页面与组件。</p>
+                  </Empty>
+                ) : (
+                  <ul
+                    className={prototypeClass("prototype-grid")}
+                    aria-label="项目原型列表"
+                  >
+                    {rows.slice(0, limit).map((item) => (
+                      <PrototypeCard
+                        key={item.id}
+                        item={item}
+                        revision={catalog.revision!}
+                      />
+                    ))}
+                  </ul>
+                )}
+                {rows.length > limit && (
+                  <Button
+                    className={prototypeClass("prototype-load-more")}
+                    onClick={() => nav({ pcount: String(limit + 24) }, true)}
+                  >
+                    显示更多原型（已显示 {limit} / {rows.length}）
+                  </Button>
+                )}
+              </>
+            )}
+          </>
+        </div>
       </div>
       <PrototypeDetails catalog={catalog} />
     </section>
@@ -246,7 +279,7 @@ function PrototypeCard({
   item: PrototypeItem;
   revision: string;
 }) {
-  const { nav, q, projectId } = useWorkspace();
+  const { nav, q, data } = useWorkspace();
   const { device, viewport } = previewViewport(item, q.pdevice);
   const params = new URLSearchParams({ revision });
   if (device) params.set("device", device);
@@ -270,7 +303,10 @@ function PrototypeCard({
     (item.artifact?.type === "hosted" &&
       item.artifact.thumbnails?.some((t) => t.device === device));
   return (
-    <li className="prototype-tile" data-prototype-id={item.id}>
+    <li
+      className={prototypeClass("prototype-tile")}
+      data-prototype-id={item.id}
+    >
       <PrototypeThumbnail
         key={`${item.id}:${device ?? "component"}`}
         url={imageUrl}
@@ -281,26 +317,48 @@ function PrototypeCard({
         retryPrepare={publication.retry}
         open={open}
       />
-      <div className="prototype-tile-body">
-        <div className="prototype-tile-caption">
-          <h2 aria-label={item.title}>
-            <button
-              className="prototype-title-open"
-              aria-label={`查看原型详情：${item.title}`}
-              onClick={() => nav({ ...clearPreview, pdetail: item.id })}
-            >
-              {item.title}
-            </button>
-          </h2>
-          <span className="prototype-kind-label">
-            {item.kind === "page" ? "页面" : "组件"}
+      <button
+        className={prototypeClass("prototype-tile-body")}
+        aria-label={`查看原型详情：${item.title}`}
+        aria-haspopup="dialog"
+        onClick={() => nav({ ...clearPreview, pdetail: item.id })}
+      >
+        <span
+          className={prototypeClass("prototype-tile-caption")}
+          role="heading"
+          aria-level={2}
+          aria-label={item.title}
+        >
+          <span className={prototypeClass("prototype-title-open")}>
+            {item.title}
           </span>
-        </div>
-        <p className="prototype-description">
+          {item.kind === "component" && <Badge>组件</Badge>}
+        </span>
+        <span
+          className={prototypeClass("prototype-description")}
+          data-prototype-description
+        >
           {item.description ??
             (item.artifact ? "打开查看页面与交互细节" : "尚未发布预览")}
-        </p>
-      </div>
+        </span>
+        <span className={prototypeClass("prototype-card-meta")}>
+          <span>
+            {item.devices?.map((d) => DEVICE_LABELS[d]).join(" · ") ??
+              `${viewport.width} × ${viewport.height}`}
+          </span>
+          {prototypeChanges(data?.changes ?? [], item)
+            .slice(0, 1)
+            .map((change) => (
+              <span
+                className={prototypeClass("prototype-change")}
+                key={change.id}
+              >
+                {change.title}
+              </span>
+            ))}
+          {publication.url && <Globe aria-label="公开链接已准备" />}
+        </span>
+      </button>
     </li>
   );
 }
@@ -370,17 +428,21 @@ function PrototypeThumbnail({
   );
   return (
     <div
-      className={`prototype-thumbnail ${large ? "prototype-detail-image" : ""} ${status}`}
+      className={prototypeClass(
+        `prototype-thumbnail ${large ? "prototype-detail-image" : ""} ${status}`,
+      )}
       style={
         large
           ? { aspectRatio: `${viewport.width} / ${viewport.height}` }
           : undefined
       }
       ref={root}
+      data-thumbnail-status={status}
     >
       {open ? (
         <button
-          className="prototype-thumbnail-open"
+          className={prototypeClass("prototype-thumbnail-open")}
+          data-prototype-cover
           aria-label={`预览${title}`}
           onClick={open}
         >
@@ -390,9 +452,12 @@ function PrototypeThumbnail({
         screenshot
       )}
       {(!enabled || status !== "ready") && (
-        <div className="prototype-thumbnail-state" role="status">
+        <div
+          className={prototypeClass("prototype-thumbnail-state")}
+          role="status"
+        >
           {enabled && status === "loading" ? (
-            <LoaderCircle size={20} className="spin" />
+            <LoaderCircle size={20} className={prototypeClass("spin")} />
           ) : (
             <ImageOff size={20} />
           )}
@@ -439,70 +504,65 @@ function PrototypeDetails({
   const focus = useRef<HTMLElement | null>(null);
   const item = catalog?.items.find((row) => row.id === q.pdetail);
   return (
-    <Dialog.Root
+    <Sheet
       open={!!q.pdetail}
       onOpenChange={(open) => {
         if (!open) nav({ pdetail: null });
       }}
     >
-      <Dialog.Portal>
-        <Dialog.Overlay className="drawer-overlay" />
-        <Dialog.Content
-          className="change-drawer prototype-detail-drawer"
-          aria-describedby={undefined}
-          onOpenAutoFocus={() => {
-            focus.current = document.activeElement as HTMLElement;
-          }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            const target =
-              focus.current?.isConnected && focus.current !== document.body
-                ? focus.current
-                : document.querySelector<HTMLElement>(
-                    ".prototype-gallery-heading h1",
-                  );
-            target?.focus({ preventScroll: true });
-          }}
-        >
-          <div className="drawer-toolbar">
-            <span>
-              <PanelsTopLeft size={15} />
-              原型详情
-            </span>
-            <Dialog.Close asChild>
-              <IconButton aria-label="关闭原型详情">
-                <X size={18} />
-              </IconButton>
-            </Dialog.Close>
-          </div>
-          <div className="prototype-detail-scroll">
-            {item && catalog?.revision ? (
-              <PrototypeDetailBody
-                key={item.id}
-                item={item}
-                revision={catalog.revision}
-              />
-            ) : (
-              <div className="prototype-detail-empty">
-                <Dialog.Title>
-                  {error
-                    ? "原型详情读取失败"
-                    : !catalog
-                      ? "正在读取原型详情…"
-                      : "未找到此原型"}
-                </Dialog.Title>
-                <p>
-                  {error ??
-                    (catalog
-                      ? "这个入口已不在集成分支的当前清单中。关闭详情后可查看其他原型。"
-                      : "请稍候")}
-                </p>
-              </div>
-            )}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      <SheetContent
+        className={styles.detailSheet}
+        aria-describedby={undefined}
+        onOpenAutoFocus={() => {
+          focus.current = document.activeElement as HTMLElement;
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          const target =
+            focus.current?.isConnected && focus.current !== document.body
+              ? focus.current
+              : document.querySelector<HTMLElement>(
+                  "[data-prototype-gallery-title]",
+                );
+          target?.focus({ preventScroll: true });
+        }}
+      >
+        <SheetHeader>
+          <SheetTitle>原型详情</SheetTitle>
+          <IconButton
+            aria-label="关闭原型详情"
+            onClick={() => nav({ pdetail: null })}
+          >
+            <X />
+          </IconButton>
+        </SheetHeader>
+        <SheetBody>
+          {item && catalog?.revision ? (
+            <PrototypeDetailBody
+              key={item.id}
+              item={item}
+              revision={catalog.revision}
+            />
+          ) : (
+            <div className={prototypeClass("prototype-detail-empty")}>
+              <h2>
+                {error
+                  ? "原型详情读取失败"
+                  : !catalog
+                    ? "正在读取原型详情…"
+                    : "未找到此原型"}
+              </h2>
+              <p>
+                {error ??
+                  (catalog
+                    ? "这个入口已不在集成分支的当前清单中。关闭详情后可查看其他原型。"
+                    : "请稍候")}
+              </p>
+            </div>
+          )}
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 function PrototypeDetailBody({
@@ -512,7 +572,7 @@ function PrototypeDetailBody({
   item: PrototypeItem;
   revision: string;
 }) {
-  const { projectId, q, nav } = useWorkspace();
+  const { q, nav, data, notice } = useWorkspace();
   const [selectedDevice, setSelectedDevice] = useState(q.pdevice);
   const { device, viewport } = previewViewport(item, selectedDevice);
   const params = new URLSearchParams({ revision });
@@ -530,30 +590,28 @@ function PrototypeDetailBody({
       item.artifact.thumbnails?.some((t) => t.device === device));
   return (
     <>
-      <div className="prototype-detail-heading">
-        <span className="eyebrow">
+      <div className={prototypeClass("prototype-detail-heading")}>
+        <span className={prototypeClass("eyebrow")}>
           {item.kind === "page" ? "页面" : "组件"}
         </span>
-        <Dialog.Title>{item.title}</Dialog.Title>
+        <h2>{item.title}</h2>
         {item.description && <p>{item.description}</p>}
       </div>
-      <div className="prototype-detail-actions">
+      <div className={prototypeClass("prototype-detail-actions")}>
         {item.devices ? (
-          <select
-            aria-label="详情截图设备"
-            value={device}
-            onChange={(event) => setSelectedDevice(event.target.value)}
-          >
-            {item.devices.map((value) => (
-              <option key={value} value={value}>
-                {DEVICE_LABELS[value]}
-              </option>
-            ))}
-          </select>
+          <SegmentedControl
+            label="详情截图设备"
+            value={device ?? item.devices[0]}
+            onValueChange={setSelectedDevice}
+            items={item.devices.map((value) => ({
+              value,
+              label: DEVICE_LABELS[value],
+            }))}
+          />
         ) : (
           <span>自定义组件</span>
         )}
-        <span className="prototype-detail-size">
+        <span className={prototypeClass("prototype-detail-size")}>
           {viewport.width} × {viewport.height}
         </span>
         <Button
@@ -580,7 +638,40 @@ function PrototypeDetailBody({
         retryPrepare={publication.retry}
         large
       />
-      <dl className="prototype-detail-source">
+      <dl
+        className={prototypeClass("prototype-detail-source")}
+        aria-label="原型来源"
+      >
+        <div>
+          <dt>关联 Change</dt>
+          <dd>
+            {prototypeChanges(data?.changes ?? [], item).length
+              ? prototypeChanges(data?.changes ?? [], item).map((change) => (
+                  <Button
+                    variant="text"
+                    key={change.id}
+                    onClick={() =>
+                      nav({ ...clearPreview, m: "changes", c: change.id })
+                    }
+                  >
+                    {change.title}
+                  </Button>
+                ))
+              : "尚无关联记录"}
+          </dd>
+        </div>
+        <div>
+          <dt>公开链接</dt>
+          <dd>
+            {publication.url
+              ? "已准备"
+              : publication.error
+                ? "准备失败"
+                : item.artifact
+                  ? "正在准备…"
+                  : "尚未发布"}
+          </dd>
+        </div>
         <div>
           <dt>源码位置</dt>
           <dd>
@@ -618,6 +709,36 @@ function PrototypeDetailBody({
           </div>
         )}
       </dl>
+      <PublicLinkPopover
+        url={publication.url}
+        error={publication.error}
+        retry={publication.retry}
+        device={device}
+        disabled={!item.artifact}
+      />
     </>
+  );
+}
+
+function prototypeChanges(
+  changes: import("@/lib/model").ChangeGroup[],
+  item: PrototypeItem,
+) {
+  const artifact = item.artifact;
+  if (!artifact) return [];
+  return changes.filter((group) =>
+    primaryRecord(group)?.state?.previews?.some((preview) => {
+      const other = preview.artifact;
+      return (
+        other &&
+        preview.id === item.id &&
+        other.sourceCommit === artifact.sourceCommit &&
+        (other.type === "hosted" && artifact.type === "hosted"
+          ? other.version === artifact.version
+          : other.type === "git" &&
+            artifact.type === "git" &&
+            other.path === artifact.path)
+      );
+    }),
   );
 }

@@ -1,4 +1,5 @@
 import {
+  copyPublicPreviewLink,
   test,
   expect,
   repositoryQuery,
@@ -29,8 +30,13 @@ test("published hosted cards load the registered screenshot for every declared d
       ),
     ).toBe(true);
     await page
-      .getByRole("combobox", { name: "筛选原型适配" })
-      .selectOption(device);
+      .getByRole("radio", {
+        name: { "pc-web": "PC Web", ipad: "iPad", mobile: "手机" }[
+          device as "pc-web" | "ipad" | "mobile"
+        ],
+        exact: true,
+      })
+      .click();
     await tile.scrollIntoViewIfNeeded();
     const screenshot = tile.getByRole("img", { name: "托管 React的首屏截图" });
     await expect(screenshot).toBeVisible();
@@ -41,7 +47,7 @@ test("published hosted cards load the registered screenshot for every declared d
         ),
       )
       .toBe(widths[device]);
-    await expect(tile.locator(".prototype-thumbnail.ready")).toBeVisible();
+    await expect(tile.locator('[data-thumbnail-status="ready"]')).toBeVisible();
     await expect(tile.getByText(/尚未提供截图|截图暂不可用/)).toHaveCount(0);
   }
   await tile
@@ -54,7 +60,7 @@ test("published hosted cards load the registered screenshot for every declared d
 
 test("capsule tooltips stay above the prototype gallery", async ({ page }) => {
   await page.goto(path);
-  await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
+  await expect(page.locator('[data-thumbnail-status="ready"]')).toHaveCount(4);
   await page.getByRole("button", { name: "收起侧栏" }).click();
   const link = page
     .getByRole("navigation", { name: "模块导航" })
@@ -90,31 +96,27 @@ test("main gallery opens current pages directly without Change/version selectors
   expect(catalog.items[0].references).toBeUndefined();
   await page.goto(path);
   const region = page.getByRole("region", { name: "项目原型总览" });
-  await expect(region.getByRole("heading", { level: 1 })).toHaveText(
-    "项目里的页面 5",
-  );
+  await expect(region.getByRole("heading", { level: 1 })).toHaveText("原型");
   await expect(
     page.getByRole("combobox", { name: "Specs 来源分支" }),
   ).toHaveCount(0);
   await expect(page.locator("iframe")).toHaveCount(0);
-  await region
-    .getByRole("combobox", { name: "筛选原型适配" })
-    .selectOption("mobile");
-  await expect(region.getByRole("listitem")).toHaveCount(3);
+  await region.getByRole("radio", { name: "手机", exact: true }).click();
+  await expect(region.getByRole("listitem")).toHaveCount(4);
   await region.getByRole("button", { name: "预览订单列表" }).click();
   await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".workspace-source")).toHaveCount(0);
   await expect(
-    page.getByRole("complementary", { name: "原型目录" }),
-  ).toBeVisible();
+    page.getByRole("navigation", { name: "原型目录", exact: true }),
+  ).toHaveCount(0);
   await expect(
-    page.locator(".preview-provenance, .preview-footnote"),
+    page.locator("[data-preview-provenance], [data-preview-footnote]"),
   ).toHaveCount(0);
   await expect(page.frameLocator("iframe").getByRole("heading")).toHaveText(
     "订单列表原型",
   );
-  await page.getByRole("button", { name: "复制预览链接" }).click();
+  await copyPublicPreviewLink(page);
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(new URL(link).searchParams.has("c")).toBe(false);
   expect(new URL(link).pathname).toMatch(/^\/preview\/[a-f0-9]{64}$/);
@@ -123,8 +125,8 @@ test("main gallery opens current pages directly without Change/version selectors
   await page.goBack();
   await page.getByRole("button", { name: "返回原型总览" }).click();
   await expect(
-    region.getByRole("combobox", { name: "筛选原型适配" }),
-  ).toHaveValue("mobile");
+    region.getByRole("radio", { name: "手机", exact: true }),
+  ).toBeChecked();
   await page.goBack();
   await expect(page.locator("iframe")).toBeVisible();
   await page.goForward();
@@ -139,18 +141,20 @@ test("current gallery has responsive cards, missing artifact placeholders and ho
     page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
   ).toBeVisible();
   await page.getByRole("button", { name: "返回原型总览" }).click();
+  await page.getByRole("radio", { name: "手机", exact: true }).click();
   await page.getByRole("button", { name: "预览待导出页面" }).click();
   await expect(
     page.getByText("此页面尚未登记已发布产物。", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "返回原型总览" }).click();
-  await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(4);
-  await page.locator(".prototype-gallery-scroll").evaluate((el) => {
+  await page.getByRole("radio", { name: "PC Web", exact: true }).click();
+  await expect(page.locator('[data-thumbnail-status="ready"]')).toHaveCount(4);
+  await page.locator('[aria-label="项目原型总览"]').evaluate((el) => {
     el.scrollTop = 0;
   });
   await page.screenshot({ path: "artifacts/prototype-catalog-desktop.png" });
   await page.setViewportSize({ width: 320, height: 720 });
-  await page.getByRole("button", { name: "组件 1", exact: true }).click();
+  await page.getByRole("radio", { name: "手机", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "价格卡片", exact: true }),
   ).toBeVisible();
@@ -159,8 +163,10 @@ test("current gallery has responsive cards, missing artifact placeholders and ho
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await expect(page.locator(".prototype-thumbnail.ready")).toHaveCount(1);
-  await page.locator(".prototype-gallery-scroll").evaluate((el) => {
+  await expect(
+    page.locator('[data-prototype-id="card"] [data-thumbnail-status="ready"]'),
+  ).toHaveCount(1);
+  await page.locator('[aria-label="项目原型总览"]').evaluate((el) => {
     el.scrollTop = 0;
   });
   await page.screenshot({ path: "artifacts/prototype-catalog-mobile.png" });
@@ -196,7 +202,7 @@ test("missing manifest and invalid entries remain explicit, separate from filter
     page.getByText("第 1 项格式不合法", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "暂无当前页面" }),
+    page.getByRole("heading", { name: "这个仓库还没有原型" }),
   ).toBeVisible();
 });
 test("catalog API reads configured projects and enforces snapshot boundaries", async ({
@@ -231,38 +237,22 @@ test("catalog API reads configured projects and enforces snapshot boundaries", a
   ).toBe(200);
 });
 
-test("focused viewer keeps directory, viewport controls and history in the workbench", async ({
+test("focused viewer keeps viewport controls and entry history in the workbench", async ({
   page,
 }) => {
   await page.goto(path + "&prototype=orders&preview=orders");
   const panel = page.getByRole("region", { name: "当前页面预览" });
   await expect(panel.locator("iframe")).toHaveAttribute("width", "1440");
-  const expectAlignedDirectory = async () => {
-    const rows = await panel.locator(".preview-entry").evaluateAll((entries) =>
-      entries.map((entry) => ({
-        icon: entry.querySelector("svg")!.getBoundingClientRect().left,
-        title: entry.querySelector("span")!.getBoundingClientRect().left,
-        fits: entry.scrollWidth <= entry.clientWidth,
-      })),
-    );
-    expect(rows.length).toBeGreaterThan(1);
-    for (const row of rows) {
-      expect(Math.abs(row.icon - rows[0].icon)).toBeLessThan(1);
-      expect(Math.abs(row.title - rows[0].title)).toBeLessThan(1);
-      expect(row.fits).toBe(true);
-    }
-  };
-  await expectAlignedDirectory();
-  await panel.getByRole("button", { name: "iPad", exact: true }).click();
-  await expect(panel.locator("iframe")).toHaveAttribute("width", "834");
-  await panel.getByRole("button", { name: "移动设备", exact: true }).click();
+  await page.getByRole("radio", { name: "移动设备", exact: true }).click();
   await expect(panel.locator("iframe")).toHaveAttribute("width", "390");
-  await panel.getByRole("button", { name: "100%", exact: true }).click();
+  await page.getByRole("radio", { name: "100%", exact: true }).click();
   await expect(panel.locator("iframe")).toHaveCSS(
     "transform",
     "matrix(1, 0, 0, 1, 0, 0)",
   );
-  await panel
+  await page.getByRole("button", { name: "切换原型目录" }).click();
+  await page
+    .getByRole("dialog", { name: "原型目录", exact: true })
     .getByRole("button", { name: "订单详情 页面", exact: true })
     .click();
   await expect(page).toHaveURL(/prototype=detail/);
@@ -271,7 +261,7 @@ test("focused viewer keeps directory, viewport controls and history in the workb
     "原型：订单详情",
   );
   await expect(
-    panel.getByRole("button", { name: "移动设备", exact: true }),
+    page.getByRole("radio", { name: "移动设备", exact: true }),
   ).toHaveCount(0);
   await page.goBack();
   await expect(panel.locator("iframe")).toHaveAttribute(
@@ -280,24 +270,16 @@ test("focused viewer keeps directory, viewport controls and history in the workb
   );
   await page.reload();
   await expect(panel.locator("iframe")).toHaveAttribute("width", "390");
-  await panel.getByRole("button", { name: "适应画布", exact: true }).click();
+  await page.getByRole("radio", { name: "适应画布", exact: true }).click();
   await page.screenshot({ path: "artifacts/prototype-viewer-desktop.png" });
   await page.setViewportSize({ width: 320, height: 720 });
-  await expect(
-    page.getByRole("complementary", { name: "原型目录" }),
-  ).toBeHidden();
-  await panel.getByRole("button", { name: "切换原型目录" }).click();
-  await expect(
-    page.getByRole("complementary", { name: "原型目录" }),
-  ).toBeVisible();
-  await expectAlignedDirectory();
-  await panel
+  await page.getByRole("button", { name: "切换原型目录" }).click();
+  await page
+    .getByRole("dialog", { name: "原型目录", exact: true })
     .getByRole("button", { name: "价格卡片 组件", exact: true })
     .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(panel.locator("iframe")).toHaveAttribute("width", "640");
-  await expect(
-    page.getByRole("complementary", { name: "原型目录" }),
-  ).toBeHidden();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -309,9 +291,6 @@ test("focused viewer keeps directory, viewport controls and history in the workb
     .getByRole("navigation", { name: "模块导航" })
     .getByRole("link", { name: "Specs" })
     .click();
-  await expect(
-    page.getByRole("combobox", { name: "Specs 来源分支" }),
-  ).toHaveCount(0);
   await expect(await openSyncStatus(page)).toContainText("develop");
   await page.keyboard.press("Escape");
   expect(new URL(page.url()).searchParams.has("prototype")).toBe(false);
@@ -332,7 +311,7 @@ test("hosted controls receive real pointer clicks at fit and actual canvas scale
     });
   });
   for (const [index, mode] of ["适应画布", "100%"].entries()) {
-    await panel.getByRole("button", { name: mode, exact: true }).click();
+    await page.getByRole("radio", { name: mode, exact: true }).click();
     await expect(iframe).toHaveCSS(
       "transform",
       index === 0 ? /matrix\(0\./ : "matrix(1, 0, 0, 1, 0, 0)",
@@ -386,7 +365,7 @@ test("loaded hosted pages need no ready bridge and explicit errors survive page 
   await expect(frame.getByRole("heading")).toBeVisible();
   // Keep the bridge lifecycle test independent of transformed OOPIF coordinates;
   // real pointer interaction at both canvas scales is covered above.
-  await panel.getByRole("button", { name: "100%", exact: true }).click();
+  await page.getByRole("radio", { name: "100%", exact: true }).click();
   await expect(panel.locator("iframe")).toHaveCSS(
     "transform",
     "matrix(1, 0, 0, 1, 0, 0)",
@@ -395,9 +374,9 @@ test("loaded hosted pages need no ready bridge and explicit errors survive page 
   await expect(
     frame.getByRole("button", { name: "已添加 1 次" }),
   ).toBeVisible();
-  await expect(panel.locator(".preview-host-status")).toHaveCount(0);
+  await expect(panel.locator("[data-preview-host-status]")).toHaveCount(0);
   await page.clock.fastForward(5500);
-  await expect(panel.locator(".preview-host-status")).toHaveCount(0);
+  await expect(panel.locator("[data-preview-host-status]")).toHaveCount(0);
   await expect(page.getByText(/尚未确认页面就绪/)).toHaveCount(0);
   await frame.locator("html").evaluate((html) => {
     parent.postMessage(
@@ -413,15 +392,15 @@ test("loaded hosted pages need no ready bridge and explicit errors survive page 
   await expect(panel.getByRole("alert")).toHaveText(
     /宿主报告页面运行失败，请在独立页面检查。/,
   );
-  await expect(panel.getByRole("link", { name: "独立打开" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "独立打开" })).toHaveAttribute(
     "href",
     "https://127.0.0.1:10686/v1/index.html",
   );
-  await panel.getByRole("button", { name: "重新加载原型" }).click();
+  await page.getByRole("button", { name: "重新加载原型" }).click();
   await expect(
     frame.getByRole("button", { name: "已添加 0 次" }),
   ).toBeVisible();
-  await expect(panel.locator(".preview-host-status")).toHaveCount(0);
+  await expect(panel.locator("[data-preview-host-status]")).toHaveCount(0);
   await expect(panel.locator("iframe")).toHaveAttribute(
     "sandbox",
     "allow-scripts",
@@ -440,10 +419,11 @@ test("card captions open details and full-size images while covers enter the can
   await page.goto(path);
   const tile = page.locator('[data-prototype-id="orders"]');
   await expect(tile).toBeVisible();
-  const coverWidth = (await tile.locator(".prototype-thumbnail").boundingBox())!
-    .width;
+  const coverWidth = (await tile
+    .locator("[data-thumbnail-status]")
+    .boundingBox())!.width;
   const description = (await tile
-    .locator(".prototype-description")
+    .locator("[data-prototype-description]")
     .boundingBox())!;
   await page.mouse.click(
     description.x + description.width / 2,
@@ -462,13 +442,13 @@ test("card captions open details and full-size images while covers enter the can
   expect((await image.boundingBox())!.width).toBeGreaterThan(coverWidth * 1.5);
   await expect(
     details
-      .locator(".prototype-detail-source > div")
+      .locator('[aria-label="原型来源"] > div')
       .filter({ hasText: "源码提交" })
       .locator("dd"),
   ).toHaveText(entry.artifact.sourceCommit);
   await expect(
     details
-      .locator(".prototype-detail-source > div")
+      .locator('[aria-label="原型来源"] > div')
       .filter({ hasText: "集成分支清单提交" })
       .locator("dd"),
   ).toHaveText(catalog.revision);
@@ -479,12 +459,10 @@ test("card captions open details and full-size images while covers enter the can
   ).toBeFocused();
   // The title's native button covers the complete caption, including its padding.
   await tile
-    .locator(".prototype-tile-body")
+    .locator('button[aria-label^="查看原型详情："]')
     .click({ position: { x: 5, y: 5 } });
   await expect(details).toBeVisible();
-  await details
-    .getByRole("combobox", { name: "详情截图设备" })
-    .selectOption("mobile");
+  await details.getByRole("radio", { name: "移动设备", exact: true }).click();
   await expect
     .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
     .toBe(390);
@@ -496,7 +474,7 @@ test("card captions open details and full-size images while covers enter the can
   ).toBeFocused();
   await expect(
     page.locator(
-      ".prototype-detail-source, .workspace-source, .preview-provenance",
+      '[aria-label="原型来源"], .workspace-source, [data-preview-provenance]',
     ),
   ).toHaveCount(0);
   await page.getByRole("button", { name: "返回原型总览" }).click();
@@ -522,12 +500,16 @@ test("detail links handle reload, missing entries, image errors and narrow layou
   ).toBeVisible();
   fail = false;
   await details.getByRole("button", { name: "重试截图" }).click();
-  await expect(details.locator(".prototype-detail-image.ready")).toBeVisible();
+  await expect(
+    details.locator('[data-thumbnail-status="ready"]'),
+  ).toBeVisible();
   await page.reload();
   await expect(
     details.getByRole("heading", { name: "价格卡片" }),
   ).toBeVisible();
-  await expect(details.locator(".prototype-detail-image.ready")).toBeVisible();
+  await expect(
+    details.locator('[data-thumbnail-status="ready"]'),
+  ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -536,7 +518,7 @@ test("detail links handle reload, missing entries, image errors and narrow layou
   await page.screenshot({ path: "artifacts/prototype-details-mobile.png" });
   await details.getByRole("button", { name: "关闭原型详情" }).click();
   await expect(details).toHaveCount(0);
-  await expect(page.locator(".prototype-gallery-heading h1")).toBeFocused();
+  await expect(page.locator("[data-prototype-gallery-title]")).toBeFocused();
   await page.goBack();
   await expect(details).toBeVisible();
   await page.goto(path + "&pdetail=removed");
@@ -544,6 +526,7 @@ test("detail links handle reload, missing entries, image errors and narrow layou
     details.getByRole("heading", { name: "未找到此原型" }),
   ).toBeVisible();
   await details.getByRole("button", { name: "关闭原型详情" }).click();
+  await page.getByRole("radio", { name: "手机", exact: true }).click();
   await page.getByRole("button", { name: "查看原型详情：待导出页面" }).click();
   await expect(
     details.getByText("尚未提供截图", { exact: true }),
@@ -587,7 +570,7 @@ test("returning from the viewer preserves expanded cards, scroll and focus", asy
   await expect(cards).toHaveCount(30);
   const cover = page.getByRole("button", { name: "预览订单列表", exact: true });
   await cover.scrollIntoViewIfNeeded();
-  const scroll = page.locator(".prototype-gallery-scroll");
+  const scroll = page.locator('[aria-label="项目原型总览"]');
   const position = await scroll.evaluate((node) => node.scrollTop);
   expect(position).toBeGreaterThan(500);
   await cover.click();

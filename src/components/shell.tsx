@@ -179,6 +179,7 @@ export function Shell({
         className={styles.app}
         data-collapsed={collapsed || undefined}
         data-change-reading={changeReading || undefined}
+        data-focused-preview={focusedPreview || undefined}
         style={{ colorScheme: "var(--of-color-scheme)" }}
       >
         <aside className={styles.side} aria-label="工作台导航">
@@ -240,7 +241,7 @@ export function Shell({
                   aria-label="返回原型总览"
                 >
                   <ChevronLeft size={16} aria-hidden="true" />
-                  原型
+                  <span>原型</span>
                 </button>
               ) : changeReading ? null : reading && personal.connection ? (
                 <RepoMenu variant="toolbar" />
@@ -254,7 +255,7 @@ export function Shell({
             <div className={styles.tbRight}>
               <div className={styles.slot} ref={rightSlot} />
               {reading && personal.connection && <SyncStatus module={module} />}
-              {signedIn && !changeReading && (
+              {signedIn && !changeReading && !focusedPreview && (
                 <span className={styles.tbAccount}>
                   <AccountMenu compact active={module === "connections"} />
                 </span>
