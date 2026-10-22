@@ -12,35 +12,33 @@
 .crumb {
   display: flex;
   align-items: center;
+  gap: 8px;
   min-width: 0;
 }
-.crumb::before {
-  content: "/" / "";
+.separator {
   flex: none;
-  margin: 0 2px 0 1px;
   color: var(--of-text-4);
-  font-size: 15px;
+  font: 400 13px/1 var(--of-font-ui);
 }
 .switcher {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
   max-width: 280px;
-  height: 32px;
-  padding: 0 8px 0 7px;
+  height: 28px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--of-radius-md);
   background: none;
   color: var(--of-text);
-  font: inherit;
-  font-weight: 600;
+  font: 500 13px/1 var(--of-font-ui);
   cursor: pointer;
 }
 .switcher > svg:first-child {
   flex: none;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   color: var(--of-text-2);
 }
 .switcher > span {

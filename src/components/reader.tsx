@@ -222,6 +222,13 @@ export function Reader({
       {collapsed && (
         <ToolbarSlot side="left">
           <span className={styles.crumb} data-crumb="">
+            <span
+              className={styles.separator}
+              data-crumb-separator=""
+              aria-hidden="true"
+            >
+              /
+            </span>
             <Popover open={switcherOpen} onOpenChange={setSwitcherOpen}>
               <PopoverTrigger asChild>
                 <button

@@ -334,21 +334,27 @@
 .tbLeft {
   flex: 1;
 }
+.tbLeft:has([data-crumb]) {
+  gap: 0;
+}
+.tbLeft [data-crumb] {
+  padding-left: 8px;
+}
 .slot {
   display: contents;
 }
 .tbRepo {
   display: none;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   max-width: 260px;
-  height: 32px;
-  padding: 0 8px 0 5px;
+  height: 28px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--of-radius-md);
   background: none;
   color: var(--of-text);
-  font-weight: 600;
+  font: 500 13px/1 var(--of-font-ui);
   cursor: pointer;
 }
 .tbRepo:hover,
@@ -360,8 +366,14 @@
 }
 /* 侧栏展开时仓库按钮不在顶栏，阅读位置按钮成为首项，不显示路径分隔。 */
 @media (min-width: 761px) {
-  .app:not([data-collapsed]) .slot > [data-crumb]:first-child::before {
-    content: none;
+  .app:not([data-collapsed]) .slot > [data-crumb]:first-child {
+    padding-left: 0;
+  }
+  .app:not([data-collapsed])
+    .slot
+    > [data-crumb]:first-child
+    > [data-crumb-separator] {
+    display: none;
   }
 }
 .tbBrand {
