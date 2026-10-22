@@ -1,9 +1,15 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ListTree, PanelLeft, Type, X } from "lucide-react";
+import {
+  ChevronDown,
+  ListTree,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Type,
+  X,
+} from "lucide-react";
 import {
   IconButton,
-  Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -25,10 +31,12 @@ type Preferences = { size: "normal" | "large"; focus: boolean };
 const preferenceKey = "openfolio.reading";
 
 // Specs、Change 材料和匿名分享共用滚动、目录及本机阅读偏好。
+// 目录在面板标题行收起；收起或窄屏时以顶栏左侧的当前位置按钮弹出目录。
 export function Reader({
   pane,
   paneLabel,
   paneTitle,
+  current,
   headings = [],
   pageKey,
   anchor,
@@ -40,6 +48,7 @@ export function Reader({
   pane: ReactNode;
   paneLabel: string;
   paneTitle: string;
+  current?: { icon: ReactNode; title: string };
   headings?: Heading[];
   pageKey: string;
   anchor?: string;
@@ -55,14 +64,17 @@ export function Reader({
     focus: false,
   });
   const [hidden, setHidden] = useState(false),
-    [paneOpen, setPaneOpen] = useState(false),
+    [switcherOpen, setSwitcherOpen] = useState(false),
     [tocOpen, setTocOpen] = useState(false);
   const [active, setActive] = useState("");
   const paneId = useId();
-  const paneTrigger = useRef<HTMLButtonElement>(null),
+  const switcher = useRef<HTMLButtonElement>(null),
+    collapseButton = useRef<HTMLButtonElement>(null),
+    switcherPanel = useRef<HTMLDivElement>(null),
     tocTrigger = useRef<HTMLButtonElement>(null);
   const article = useRef<HTMLElement>(null),
     paneNavigated = useRef(false),
+    paneExpanded = useRef(false),
     tocNavigated = useRef(false),
     headingFocus = useRef("");
   const scroll = useSavedScroll(
@@ -151,14 +163,13 @@ export function Reader({
     });
   };
   const selectHeading = (id: string) => {
-    if (tocOpen || paneOpen) tocNavigated.current = true;
+    if (tocOpen) tocNavigated.current = true;
     scroll.current
       ?.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
       ?.scrollIntoView({ block: "start" });
     headingFocus.current = id;
     onAnchor(id);
     setTocOpen(false);
-    setPaneOpen(false);
     focusHeading();
   };
   const toc = (
@@ -180,34 +191,93 @@ export function Reader({
     </nav>
   );
   const hidePane = hidden || preferences.focus;
+  const collapsed = !desktop || hidePane;
+  const collapse = () => {
+    setHidden(true);
+    requestAnimationFrame(() =>
+      switcher.current?.focus({ preventScroll: true }),
+    );
+  };
+  const expand = () => {
+    paneExpanded.current = true;
+    setSwitcherOpen(false);
+    setHidden(false);
+    if (preferences.focus) update({ focus: false });
+  };
   const closePaneForLink = (event: React.MouseEvent) => {
     if ((event.target as Element).closest("a")) {
       paneNavigated.current = true;
-      setPaneOpen(false);
+      setSwitcherOpen(false);
     }
   };
+  const location = current?.title ?? paneTitle;
   return (
     <>
-      <ToolbarSlot side="left">
-        <Button
-          ref={paneTrigger}
-          variant="ghost"
-          size="sm"
-          className={styles.paneControl}
-          aria-label={desktop && !hidePane ? "收起目录" : `打开${paneLabel}`}
-          aria-expanded={desktop ? !hidePane : paneOpen}
-          aria-controls={desktop ? paneId : `${paneId}-sheet`}
-          onClick={() => {
-            if (desktop) {
-              setHidden(!hidePane);
-              if (preferences.focus) update({ focus: false });
-            } else setPaneOpen(true);
-          }}
-        >
-          <PanelLeft />
-          <span>{paneLabel === "能力目录" ? "Specs 目录" : "材料"}</span>
-        </Button>
-      </ToolbarSlot>
+      {collapsed && (
+        <ToolbarSlot side="left">
+          <span className={styles.crumb} data-crumb="">
+            <Popover open={switcherOpen} onOpenChange={setSwitcherOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  ref={switcher}
+                  type="button"
+                  className={styles.switcher}
+                  aria-label={`${paneLabel}：${location}`}
+                >
+                  {current?.icon}
+                  <span>{location}</span>
+                  <ChevronDown
+                    size={14}
+                    className={styles.chevron}
+                    aria-hidden="true"
+                  />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                ref={switcherPanel}
+                aria-label={paneLabel}
+                className={styles.switcherPanel}
+                onClick={closePaneForLink}
+                onOpenAutoFocus={(event) => {
+                  const panel = switcherPanel.current,
+                    item =
+                      panel?.querySelector<HTMLElement>("[aria-current]") ??
+                      panel?.querySelector<HTMLElement>("a[href]");
+                  if (!item) return;
+                  event.preventDefault();
+                  item.focus({ preventScroll: true });
+                }}
+                onCloseAutoFocus={(event) => {
+                  if (paneExpanded.current) {
+                    event.preventDefault();
+                    collapseButton.current?.focus({ preventScroll: true });
+                  } else if (paneNavigated.current) {
+                    event.preventDefault();
+                    article.current?.focus({ preventScroll: true });
+                  }
+                  paneExpanded.current = false;
+                  paneNavigated.current = false;
+                }}
+              >
+                <div className={styles.paneHeading}>
+                  <strong>{paneTitle}</strong>
+                  {desktop && (
+                    <IconButton
+                      size="sm"
+                      aria-label="展开目录"
+                      tooltip
+                      onClick={expand}
+                    >
+                      <PanelLeftOpen />
+                    </IconButton>
+                  )}
+                </div>
+                {pane}
+              </PopoverContent>
+            </Popover>
+          </span>
+        </ToolbarSlot>
+      )}
       <ToolbarSlot side="right">
         {headings.length > 0 && (!fullToc || preferences.focus || wide) && (
           <IconButton
@@ -273,6 +343,16 @@ export function Reader({
         <aside className={styles.pane} aria-label={paneLabel} id={paneId}>
           <div className={styles.paneHeading}>
             <strong>{paneTitle}</strong>
+            <IconButton
+              ref={collapseButton}
+              size="sm"
+              aria-label="收起目录"
+              aria-controls={paneId}
+              tooltip
+              onClick={collapse}
+            >
+              <PanelLeftClose />
+            </IconButton>
           </div>
           {pane}
         </aside>
@@ -293,50 +373,6 @@ export function Reader({
           </aside>
         )}
       </div>
-      <Sheet open={paneOpen} onOpenChange={setPaneOpen}>
-        <SheetContent
-          side="left"
-          id={`${paneId}-sheet`}
-          className={styles.directorySheet}
-          aria-describedby={undefined}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            if (tocNavigated.current) {
-              tocNavigated.current = false;
-              headingFocus.current = anchor ?? "";
-              focusHeading();
-            } else {
-              (paneNavigated.current
-                ? article.current
-                : paneTrigger.current
-              )?.focus({ preventScroll: true });
-            }
-            paneNavigated.current = false;
-          }}
-        >
-          <SheetHeader>
-            <SheetTitle>{paneLabel}</SheetTitle>
-            <IconButton
-              aria-label="关闭目录"
-              onClick={() => setPaneOpen(false)}
-            >
-              <X />
-            </IconButton>
-          </SheetHeader>
-          <SheetBody
-            className={styles.directoryBody}
-            onClick={closePaneForLink}
-          >
-            {pane}
-            {!!headings.length && (
-              <div className={styles.sheetToc}>
-                <strong>本页目录</strong>
-                {toc}
-              </div>
-            )}
-          </SheetBody>
-        </SheetContent>
-      </Sheet>
       <Sheet open={tocOpen} onOpenChange={setTocOpen}>
         <SheetContent
           className={styles.directorySheet}

@@ -202,6 +202,12 @@ export default function Specs() {
     <Reader
       paneLabel="能力目录"
       paneTitle="Specs"
+      current={
+        selected && {
+          icon: <FileText aria-hidden="true" />,
+          title: selected.title,
+        }
+      }
       pane={
         <nav aria-label="能力目录">
           <ul className={styles.tree}>{nodes(tree.children)}</ul>

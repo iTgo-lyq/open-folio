@@ -38,6 +38,17 @@ import { useMediaQuery } from "./use-media";
 import styles from "./change-reading.module.css";
 import page from "./personal.module.css";
 
+const materialIcon = (id: string) =>
+  id === "overview"
+    ? Info
+    : id === "tasks"
+      ? ListChecks
+      : id === "prototypes"
+        ? PanelsTopLeft
+        : id === "evidence"
+          ? ShieldCheck
+          : FileText;
+
 export function ChangeReading({
   group,
   onBack,
@@ -137,22 +148,14 @@ export function ChangeReading({
     ? doc.headings.filter((heading) => heading.depth > 1)
     : overviewHeadings;
   let section: string | undefined;
+  const MaterialIcon = materialIcon(material?.id ?? "");
   const pane = (
     <nav aria-label="Change 材料">
       <ul className={styles.materials}>
         {items.map((item) => {
           const showSection = item.section && item.section !== section;
           section = item.section;
-          const Icon =
-            item.id === "overview"
-              ? Info
-              : item.id === "tasks"
-                ? ListChecks
-                : item.id === "prototypes"
-                  ? PanelsTopLeft
-                  : item.id === "evidence"
-                    ? ShieldCheck
-                    : FileText;
+          const Icon = materialIcon(item.id);
           return (
             <li key={item.id}>
               {showSection && (
@@ -258,6 +261,10 @@ export function ChangeReading({
         <Reader
           paneLabel="Change 材料"
           paneTitle={g.title}
+          current={{
+            icon: <MaterialIcon aria-hidden="true" />,
+            title: material.title,
+          }}
           pane={pane}
           headings={headings}
           pageKey={`${projectId}.${g.id}.${material.id}.${doc?.branch ?? record?.branch}`}

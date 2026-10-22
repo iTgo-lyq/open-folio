@@ -1,39 +1,46 @@
 import { test, expect, repositoryQuery } from "./connected";
 import { primaryRecord, type Snapshot } from "../../src/lib/model";
 
-test("reading directory controls remain in the left header when collapsed", async ({
+test("reading directories collapse from the pane into a header location switcher", async ({
   page,
 }) => {
-  for (const [target, label] of [
-    [`/?${repositoryQuery}&m=specs&s=platform`, "能力目录"],
-    [`/?${repositoryQuery}&m=changes&c=document-reader`, "Change 材料"],
+  for (const [target, label, current] of [
+    [`/?${repositoryQuery}&m=specs&s=platform`, "能力目录", "工程协作"],
+    [`/?${repositoryQuery}&m=changes&c=document-reader`, "Change 材料", "概览"],
   ]) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(target);
     const bar = page.locator("main > header");
-    const hide = bar.getByRole("button", { name: "收起目录", exact: true });
-    await expect(hide).toBeVisible();
-    await hide.click();
-    const open = bar.getByRole("button", { name: `打开${label}`, exact: true });
-    await expect(open).toBeFocused();
-    const layout = await open.evaluate((el) => {
-      const b = el.getBoundingClientRect(),
-        h = el.closest("header")!.getBoundingClientRect();
-      return { left: b.left - h.left, mid: h.width / 2 };
+    const pane = page.getByRole("complementary", { name: label, exact: true });
+    const hide = pane.getByRole("button", { name: "收起目录", exact: true });
+    const switcher = bar.getByRole("button", {
+      name: `${label}：${current}`,
+      exact: true,
     });
-    expect(layout.left).toBeLessThan(layout.mid);
-    await open.click();
-    await expect(hide).toHaveAttribute("aria-expanded", "true");
+    await expect(hide).toBeVisible();
+    await expect(bar.getByRole("button", { name: "收起目录" })).toHaveCount(0);
+    await expect(switcher).toHaveCount(0);
+    await hide.click();
+    await expect(pane).toBeHidden();
+    await expect(switcher).toBeFocused();
+    await expect(switcher).toContainText(current);
+    await switcher.click();
+    const panel = page.getByRole("dialog", { name: label, exact: true });
+    await expect(panel.getByRole("navigation", { name: label })).toBeVisible();
+    await expect(panel.locator("[aria-current]")).toBeFocused();
+    await panel.getByRole("button", { name: "展开目录", exact: true }).click();
+    await expect(panel).toBeHidden();
+    await expect(hide).toBeFocused();
+    await expect(switcher).toHaveCount(0);
     await page.setViewportSize({ width: 390, height: 844 });
-    await bar
-      .getByRole("button", { name: `打开${label}`, exact: true })
-      .click();
-    const sheet = page.getByRole("dialog", { name: label, exact: true });
-    await expect(sheet).toBeVisible();
-    await page.keyboard.press("Escape");
+    await switcher.click();
     await expect(
-      bar.getByRole("button", { name: `打开${label}`, exact: true }),
-    ).toBeFocused();
-    await page.setViewportSize({ width: 1440, height: 1000 });
+      page
+        .getByRole("dialog", { name: label, exact: true })
+        .getByRole("button", { name: "展开目录" }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(switcher).toBeFocused();
   }
 });
 

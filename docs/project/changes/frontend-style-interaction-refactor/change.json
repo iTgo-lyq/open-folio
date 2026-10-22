@@ -122,7 +122,9 @@
     },
     "T17": {
       "title": "阅读目录收起为顶栏位置按钮",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型与格式通过；阅读、分享、Specs、Changes 等受影响浏览器 34/34 通过，含面板收起、顶栏位置按钮、弹层焦点与窄屏",
+      "commitTitle": "frontend-style-interaction-refactor T17: collapse reading directories into a header location switcher"
     },
     "T18": {
       "title": "抽屉贴边玻璃与遮罩模糊",

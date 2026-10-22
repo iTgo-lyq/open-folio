@@ -358,6 +358,12 @@
 .app[data-collapsed] .tbRepo {
   display: flex;
 }
+/* 侧栏展开时仓库按钮不在顶栏，阅读位置按钮成为首项，不显示路径分隔。 */
+@media (min-width: 761px) {
+  .app:not([data-collapsed]) .slot > [data-crumb]:first-child::before {
+    content: none;
+  }
+}
 .tbBrand {
   display: none;
   padding: 0 3px;
@@ -604,6 +610,10 @@
   }
   .tbRepo {
     display: flex;
+  }
+  /* 阅读页手机顶栏优先显示当前位置，仓库只保留字标。 */
+  .tbLeft:has([data-crumb]) .tbRepo > .clamp {
+    display: none;
   }
   .tbBrand,
   .tbAccount {

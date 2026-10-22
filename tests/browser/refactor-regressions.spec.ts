@@ -12,10 +12,7 @@ test("directory sheets restore keyboard focus or focus the selected reading cont
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
-  const openPane = page.getByRole("button", {
-    name: "打开能力目录",
-    exact: true,
-  });
+  const openPane = page.getByRole("button", { name: /^能力目录：/ });
   await openPane.click();
   await page.keyboard.press("Escape");
   await expect(openPane).toBeFocused();
@@ -190,9 +187,9 @@ test("selecting the same chapter again scrolls back and restores heading focus",
   await expect(page.locator("h2#重复标题-1")).toBeFocused();
   await page.setViewportSize({ width: 390, height: 500 });
   await scroll.evaluate((element) => (element.scrollTop = 0));
-  await page.getByRole("button", { name: "打开能力目录", exact: true }).click();
+  await page.getByRole("button", { name: "本页目录", exact: true }).click();
   await page
-    .getByRole("dialog", { name: "能力目录", exact: true })
+    .getByRole("dialog", { name: "本页目录", exact: true })
     .getByRole("link", { name: "重复标题", exact: true })
     .last()
     .click();

@@ -160,9 +160,7 @@ export const changeRow = (page: Page, title: string) =>
 export async function openMaterial(page: Page, title: string) {
   let nav = page.getByRole("navigation", { name: "Change 材料", exact: true });
   if (!(await nav.isVisible()))
-    await page
-      .getByRole("button", { name: "打开Change 材料", exact: true })
-      .click();
+    await page.getByRole("button", { name: /^Change 材料：/ }).click();
   const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await nav
     .getByRole("link", { name: new RegExp(`^${escaped}(?:$|\\s)`) })

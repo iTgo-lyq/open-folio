@@ -62,7 +62,7 @@ test("deep namespace, invalid selection and mobile navigation remain usable", as
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "打开能力目录" }).click();
+  await page.getByRole("button", { name: /^能力目录：/ }).click();
   await page
     .getByRole("navigation", { name: "能力目录" })
     .getByRole("link", { name: "交付记录" })
@@ -144,9 +144,10 @@ test("reading settings persist and the floating header leaves anchors and mobile
       .getByRole("heading", { name: "工程协作", exact: true })
       .evaluate((el) => getComputedStyle(el.parentElement!).fontSize),
   ).toBe("17.5px");
-  await page.getByRole("button", { name: "打开能力目录" }).click();
+  await page.getByRole("button", { name: /^能力目录：/ }).click();
+  await page.getByRole("button", { name: "展开目录", exact: true }).click();
   await expect(
-    page.getByRole("navigation", { name: "能力目录" }),
+    page.getByRole("complementary", { name: "能力目录" }),
   ).toBeVisible();
   await page
     .getByRole("navigation", { name: "本页目录" })
@@ -166,7 +167,7 @@ test("reading settings persist and the floating header leaves anchors and mobile
   ).toBe(true);
   for (const width of [834, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.getByRole("button", { name: "打开能力目录" }).click();
+    await page.getByRole("button", { name: /^能力目录：/ }).click();
     await page
       .getByRole("navigation", { name: "能力目录" })
       .getByRole("link", { name: "访问与来源", exact: true })
