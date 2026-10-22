@@ -4,7 +4,7 @@
   "title": "前端样式与交互重构",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/frontend-style-interaction-refactor",
   "confirmations": {
     "requirement": {
@@ -169,7 +169,13 @@
       "commitTitle": "frontend-style-interaction-refactor T24: verify complete header text across readers"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-22T12:03:52.688Z",
+      "summary": "整体验证和独立Agent评审通过；角标导航延迟响应回归、13项壳层凭据用例及5项阅读匿名回归通过；真实四档字形/间距与导航稳定、登录清理确认"
+    }
+  },
   "previews": [
     {
       "id": "quiet-changes",
@@ -452,5 +458,9 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收导航角标稳定和顶栏完整文字；通过后同步Specs、归档并集成develop"
   }
 }
