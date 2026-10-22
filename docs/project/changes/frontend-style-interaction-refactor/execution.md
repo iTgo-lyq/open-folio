@@ -222,3 +222,9 @@
 - 按实现验收补充第 12 项更正 T13：顶栏不再有“Specs 目录 / 材料”开关。收起按钮在目录面板标题行右侧；收起后（窄屏始终）Reader 在顶栏左插槽渲染与仓库按钮同形的位置按钮（当前 Spec / 材料图标、名称、下拉箭头），以“/”接在仓库或“Changes”返回按钮后；侧栏展开、仓库按钮不在顶栏时不显示分隔。点击以 Popover 弹出同一目录，打开时聚焦当前项，选择后关闭并聚焦正文；桌面弹层提供“展开目录”恢复侧栏并聚焦收起按钮。手机顶栏仓库只留字标。原窄屏目录抽屉删除，本页目录继续由右侧按钮打开。
 - 方向经用户在“顶栏接在仓库后 / 正文左上浮动”两案中选择前者。实现前在独立 worktree 以测试夹具截图复核 Specs、Change、匿名分享页在 1440 / 834 / 390px 的展开、收起与弹层。
 - `npm run typecheck`、`npm run format:check` 通过；`npm run test:e2e -- acceptance-feedback refactor-regressions specs change-reader changes change-sharing` 34 / 34 通过。新用例覆盖面板内收起、顶栏无收起开关、位置按钮获焦与文案、弹层聚焦当前项、展开恢复焦点、手机无展开按钮与 Escape 返回；既有用例改用位置按钮名称，窄屏章节跳转改走本页目录抽屉。
+
+## T18 抽屉贴边玻璃与遮罩模糊
+
+- 按实现验收补充第 13 项：遮罩新增 `--of-scrim-blur`（`blur(10px) saturate(1.2)`），背后文字不可辨认，浅色遮罩透明度由 26% 降为 20%、深色由 50% 降为 42%；Change 合入差异的复制对话框遮罩同步模糊。抽屉改用 `--of-sheet-glass`（浅色 78%、深色 78% 不透明）单层玻璃，删除内嵌实底卡片的外边距、圆角与边界线；原文 / 文档抽屉取消 12px 外边距，贴合窗口右缘，宽度 `min(960px, 100vw - 48px)`。手机上沿用底部弹出，原文抽屉距顶 24px、全宽。
+- 适用于原文、文档、本页目录、原型详情和画布目录抽屉；对话框沿用同一遮罩，本体仍为实底。
+- `npm run format:check`、`npm run ui:build && npm run ui:test` 通过（含 sheet、dialog、深色与 320px）；`npm run test:e2e -- acceptance-feedback refactor-regressions prototypes previews specs integration` 34 / 34 通过。与 T17 相同代码的任务 worktree 中 `npm run build` 通过。测试夹具截图复核浅色 / 深色 × 1440 / 834 / 390px 的原文、原型详情与本页目录抽屉。

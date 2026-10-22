@@ -685,6 +685,8 @@
   inset: 0;
   z-index: 80;
   background: var(--of-scrim);
+  -webkit-backdrop-filter: var(--of-scrim-blur);
+  backdrop-filter: var(--of-scrim-blur);
 }
 .integration-copy-dialog {
   position: fixed;

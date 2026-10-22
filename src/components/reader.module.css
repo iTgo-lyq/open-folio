@@ -73,17 +73,13 @@
   width: min(380px, calc(100vw - 24px));
 }
 .documentSheet:global(.of-ui-sheet[data-side="right"]) {
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: min(960px, calc(100vw - 24px));
-  border-radius: 16px;
+  width: min(960px, calc(100vw - 48px));
 }
 .documentHeader {
-  padding: 16px 20px 14px 28px;
+  padding: 16px 20px 12px 28px;
 }
 .documentBody {
-  padding: 24px 28px;
+  padding: 8px 28px 28px;
 }
 .documentBody .raw {
   padding: 0;
@@ -380,13 +376,9 @@
     max-width: 180px;
   }
   .documentSheet:global(.of-ui-sheet[data-side="right"]) {
-    top: 8px;
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    width: calc(100vw - 16px);
+    top: 24px;
+    width: 100vw;
     max-height: none;
-    border-radius: 14px;
   }
   .directorySheet:global(.of-ui-sheet[data-side]) {
     width: 100%;
@@ -396,7 +388,7 @@
     padding: 14px 12px 12px 20px;
   }
   .documentBody {
-    padding: 18px 16px;
+    padding: 6px 16px 24px;
   }
   .article {
     padding: 22px 20px calc(110px + env(safe-area-inset-bottom));

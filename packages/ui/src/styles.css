@@ -51,7 +51,9 @@
     inset 0 0 0 0.5px var(--of-glass-line), inset 0 1px 0 var(--of-glass-edge),
     inset 0 -1px 0 rgba(30, 30, 24, 0.04), 0 1px 2px rgba(0, 0, 0, 0.05),
     0 8px 18px -8px rgba(0, 0, 0, 0.12), 0 22px 44px -18px rgba(0, 0, 0, 0.22);
-  --of-scrim: rgba(18, 18, 14, 0.26);
+  --of-scrim: rgba(18, 18, 14, 0.2);
+  --of-scrim-blur: blur(10px) saturate(1.2);
+  --of-sheet-glass: rgba(251, 251, 249, 0.78);
   --of-radius-sm: 6px;
   --of-radius-md: 8px;
   --of-radius-lg: 12px;
@@ -103,7 +105,9 @@
     inset 0 0 0 0.5px var(--of-glass-line), inset 0 1px 0 var(--of-glass-edge),
     0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px -8px rgba(0, 0, 0, 0.5),
     0 24px 52px -18px rgba(0, 0, 0, 0.7);
-  --of-scrim: rgba(0, 0, 0, 0.5);
+  --of-scrim: rgba(0, 0, 0, 0.42);
+  --of-scrim-blur: blur(10px) saturate(1.2);
+  --of-sheet-glass: rgba(30, 30, 33, 0.78);
 }
 @media (max-width: 760px) {
   /* 手机深色使用纯黑底，与系统界面衔接。 */
@@ -705,12 +709,14 @@
   background: #3a3a3e;
 }
 
-/* 对话框为实底；抽屉外层与标题区为玻璃，阅读区为实底卡片。 */
+/* 遮罩模糊背后的页面；对话框为实底，抽屉贴合窗口边缘，整体为一层玻璃。 */
 .of-ui-overlay {
   position: fixed;
   inset: 0;
   z-index: 80;
   background: var(--of-scrim);
+  -webkit-backdrop-filter: var(--of-scrim-blur);
+  backdrop-filter: var(--of-scrim-blur);
   animation: of-ui-fade-in 0.16s ease;
 }
 @keyframes of-ui-fade-in {
@@ -771,12 +777,11 @@
   z-index: 81;
   display: flex;
   flex-direction: column;
-  background: var(--of-glass);
+  background: var(--of-sheet-glass);
   -webkit-backdrop-filter: var(--of-blur);
   backdrop-filter: var(--of-blur);
   box-shadow:
     inset 0 0 0 0.5px var(--of-glass-line),
-    inset 0 1px 0 var(--of-glass-edge),
     var(--of-shadow-pop);
   color: var(--of-text);
   font: 13.5px/1.6 var(--of-font-ui);
@@ -849,11 +854,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  margin: 0 8px 8px;
-  padding: 18px 20px;
-  border-radius: var(--of-radius-lg);
-  background: var(--of-bg-surface);
-  box-shadow: inset 0 0 0 0.5px var(--of-border);
+  padding: 6px 20px 24px;
 }
 
 /* 分段控件、开关、头像与骨架。 */

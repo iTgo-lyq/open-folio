@@ -128,7 +128,9 @@
     },
     "T18": {
       "title": "抽屉贴边玻璃与遮罩模糊",
-      "status": "todo"
+      "status": "done",
+      "verification": "格式、ui:build/ui:test、生产构建通过；抽屉相关浏览器34/34通过；双主题三档宽度截图复核贴边单层玻璃与模糊遮罩",
+      "commitTitle": "frontend-style-interaction-refactor T18: flush glass drawers over a blurred scrim"
     }
   },
   "closure": {},
