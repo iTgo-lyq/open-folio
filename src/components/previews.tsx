@@ -142,11 +142,10 @@ export function ChangePreviews({
     ? entry?.url && !hosted
       ? `${entry.url}&load=${load}`
       : entry?.url
-    : publication.publication && load
-      ? hosted
-        ? publication.publication.url
-        : `/api/public-previews/${publication.publication.id}/index.html?load=${load}`
-      : undefined;
+    : (hosted?.url ??
+      (publication.publication && load
+        ? `/api/public-previews/${publication.publication.id}/index.html?load=${load}`
+        : undefined));
   useEffect(() => {
     setReady("");
     setLoadError("");
@@ -573,7 +572,7 @@ export function ChangePreviews({
             <Empty title="暂时无法预览">
               <p>{entry?.message}</p>
             </Empty>
-          ) : publication.error ? (
+          ) : publication.error && !hosted ? (
             <Empty title="公开原型准备失败">
               <p>{publication.error}</p>
               <Button onClick={publication.retry}>重新准备</Button>

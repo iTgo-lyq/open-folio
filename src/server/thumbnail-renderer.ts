@@ -4,11 +4,12 @@ import { AppError } from "./errors.ts";
 import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 
 export type ThumbnailViewport = { width: number; height: number };
+export type ThumbnailSource = string | { url: string };
 export const THUMBNAIL_VERSION = "playwright-1.63.0-jpeg-1";
 
-// No workbench URL, credentials, profile or project code is given to Chromium.
+// Chromium receives no workbench session, repository credentials or user profile.
 export async function renderThumbnail(
-  html: string,
+  source: ThumbnailSource,
   viewport: ThumbnailViewport,
   timeoutMs = 12_000,
 ): Promise<Buffer> {
@@ -19,17 +20,29 @@ export async function renderThumbnail(
     void server?.kill().catch(() => {});
   }, timeoutMs);
   try {
+    const hosted = typeof source !== "string";
+    const target = hosted
+      ? source.url
+      : "https://openfolio-thumbnail.invalid/index.html";
+    const proxy = hosted && (process.env.HTTPS_PROXY || process.env.HTTP_PROXY);
     const { chromium } = await import("playwright");
     server = await chromium.launchServer({
       host: "127.0.0.1",
       chromiumSandbox: true,
       timeout: Math.min(timeoutMs, 5_000),
       env: { PATH: process.env.PATH ?? "", HOME: tmpdir(), LANG: "C.UTF-8" },
+      ...(proxy
+        ? { proxy: { server: proxy, bypass: process.env.NO_PROXY } }
+        : {}),
       args: [
         "--js-flags=--max-old-space-size=128",
-        "--proxy-server=http://127.0.0.1:9",
-        "--proxy-bypass-list=<-loopback>",
-        "--host-resolver-rules=MAP * ~NOTFOUND",
+        ...(!hosted
+          ? [
+              "--proxy-server=http://127.0.0.1:9",
+              "--proxy-bypass-list=<-loopback>",
+              "--host-resolver-rules=MAP * ~NOTFOUND",
+            ]
+          : []),
         "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
       ],
     });
@@ -45,7 +58,8 @@ export async function renderThumbnail(
       // CSP's opaque origin and worker-src:none already prohibit workers.
       // Playwright's serviceWorkers:block init script throws in opaque origins.
       acceptDownloads: false,
-      offline: true,
+      offline: !hosted,
+      ...(hosted ? { serviceWorkers: "block" as const } : {}),
       locale: "zh-CN",
       timezoneId: "UTC",
     });
@@ -53,10 +67,22 @@ export async function renderThumbnail(
     page.setDefaultTimeout(5_000);
     let failed = false;
     let delivered = false;
-    const target = "https://openfolio-thumbnail.invalid/index.html";
     await context.route("**/*", async (route) => {
       const request = route.request();
+      if (hosted) {
+        const url = new URL(request.url());
+        if (
+          ["http:", "https:"].includes(url.protocol) &&
+          !url.username &&
+          !url.password &&
+          ["GET", "HEAD"].includes(request.method())
+        ) {
+          await route.continue();
+          return;
+        }
+      }
       if (
+        !hosted &&
         !delivered &&
         request.url() === target &&
         request.method() === "GET" &&
@@ -68,7 +94,7 @@ export async function renderThumbnail(
           status: 200,
           contentType: "text/html; charset=utf-8",
           headers: { "content-security-policy": sandboxCsp },
-          body: html,
+          body: source as string,
         });
       } else {
         failed = true;
@@ -82,6 +108,17 @@ export async function renderThumbnail(
     page.on("pageerror", () => {
       failed = true;
     });
+    if (hosted) {
+      page.on("requestfailed", () => {
+        failed = true;
+      });
+      page.on("response", (response) => {
+        if (response.status() >= 400) failed = true;
+      });
+      context.on("page", (popup) => {
+        void popup.close();
+      });
+    }
     await page.addInitScript(() => {
       addEventListener("securitypolicyviolation", () => {
         throw new Error("Thumbnail blocked an unsupported resource");
@@ -104,15 +141,15 @@ export async function renderThumbnail(
       scale: "css",
       timeout: 5_000,
     });
-    if (failed || page.url().split("#")[0] !== target)
-      throw Error("Invalid offline render");
+    if (failed || (!hosted && page.url().split("#")[0] !== target))
+      throw Error("Invalid thumbnail render");
     return result;
   } catch {
     throw new AppError(
       expired ? "THUMBNAIL_TIMEOUT" : "THUMBNAIL_RENDER_FAILED",
       expired
         ? "截图生成超时，仍可打开原型预览。"
-        : "截图暂不可用，请检查原型离线运行及服务 Chromium 沙箱环境。",
+        : "截图暂不可用，请检查原型加载及服务 Chromium 沙箱环境。",
     );
   } finally {
     clearTimeout(timer);

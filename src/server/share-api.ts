@@ -38,21 +38,23 @@ function previewLinks(
   return {
     ...descriptor,
     entries: descriptor.entries.map((entry) => {
-      if (entry.artifact?.type === "hosted" || !entry.available) return entry;
+      if (!entry.available) return entry;
       const base = `previews/${encodeURIComponent(entry.id)}`;
       const query = `?snapshot=${encodeURIComponent(snapshot)}`;
       return {
         ...entry,
-        url: sharedReadUrl(target, `${base}/index.html${query}`),
-        thumbnails: (entry.kind === "page"
-          ? (entry.devices ?? [])
-          : [undefined]
-        ).map((device) => ({
+        url:
+          entry.artifact?.type === "hosted"
+            ? entry.url
+            : sharedReadUrl(target, `${base}/index.html${query}`),
+        thumbnails: (entry.devices ?? [undefined]).map((device) => ({
           device,
-          url: sharedReadUrl(
-            target,
-            `${base}/${device ?? "component"}.jpg${query}`,
-          ),
+          url:
+            entry.thumbnails?.find((t) => t.device === device)?.url ??
+            sharedReadUrl(
+              target,
+              `${base}/${device ?? "component"}.jpg${query}`,
+            ),
         })),
       };
     }),
@@ -190,27 +192,36 @@ export async function sharedResponse(
             );
           else {
             const entry = descriptor.entries.find((e) => e.id === segments[1]);
-            if (!entry?.available || entry.artifact?.type === "hosted" || !html)
+            if (
+              !entry?.available ||
+              (entry.artifact?.type !== "hosted" && !html)
+            )
               throw new AppError(
                 "PREVIEW_UNAVAILABLE",
                 "原型内容不可用。",
                 404,
               );
             const asset = segments[2];
-            if (asset === "index.html")
-              value = new Response(diagnosticHtml(html), {
+            if (asset === "index.html") {
+              if (entry.artifact?.type === "hosted")
+                throw new AppError(
+                  "PREVIEW_UNAVAILABLE",
+                  "托管原型使用原始地址。",
+                  404,
+                );
+              value = new Response(diagnosticHtml(html!), {
                 headers: {
                   "Content-Type": "text/html; charset=utf-8",
                   "Content-Security-Policy": sandboxCsp,
                 },
               });
-            else {
+            } else {
               const device = asset.replace(/\.jpg$/, "");
               if (
                 asset !== `${device}.jpg` ||
-                (entry.kind === "component"
-                  ? device !== "component"
-                  : !entry.devices?.includes(device as Device))
+                (entry.devices
+                  ? !entry.devices.includes(device as Device)
+                  : device !== "component")
               )
                 throw new AppError(
                   "PREVIEW_UNAVAILABLE",
@@ -221,17 +232,37 @@ export async function sharedResponse(
                 entry,
                 device === "component" ? undefined : (device as Device),
               );
-              const image = await (screenshots ?? thumbnailCache()).get(
-                `${ctx.lease.workspaceId}/${target.change}/${entry.id}`,
-                html,
-                viewport,
+              const override = entry.thumbnails?.find(
+                (t) =>
+                  t.device === (device === "component" ? undefined : device),
               );
-              value = new Response(new Uint8Array(image.body), {
-                headers: {
-                  "Content-Type": "image/jpeg",
-                  "Content-Security-Policy": "default-src 'none'; sandbox",
-                },
-              });
+              if (override)
+                value = new Response(null, {
+                  status: 302,
+                  headers: { Location: override.url },
+                });
+              else {
+                const image = await (screenshots ?? thumbnailCache()).get(
+                  JSON.stringify([
+                    ctx.lease.workspaceId,
+                    target.change,
+                    entry.id,
+                    entry.artifact?.type === "hosted"
+                      ? entry.artifact
+                      : undefined,
+                  ]),
+                  entry.artifact?.type === "hosted"
+                    ? { url: entry.artifact.url }
+                    : html!,
+                  viewport,
+                );
+                value = new Response(new Uint8Array(image.body), {
+                  headers: {
+                    "Content-Type": "image/jpeg",
+                    "Content-Security-Policy": "default-src 'none'; sandbox",
+                  },
+                });
+              }
             }
           }
         } else throw new AppError("NOT_FOUND", "接口不存在。", 404);

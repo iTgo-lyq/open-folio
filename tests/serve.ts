@@ -214,6 +214,18 @@ const server = createServer(async (req, res) => {
           await f.put(path, JSON.stringify(manifest));
           f.commit();
         }
+        if (input.autoThumbnails) {
+          f.git(["checkout", "develop"]);
+          const path = "packages/prototype/prototype.json";
+          const manifest = JSON.parse(f.git(["show", `develop:${path}`]));
+          const entry = manifest.entries.find(
+            (entry: { id: string }) => entry.id === "hosted",
+          );
+          delete entry.artifact.thumbnails;
+          entry.artifact.url = "http://127.0.0.1:10687/v1/index.html";
+          await f.put(path, JSON.stringify(manifest));
+          f.commit();
+        }
         if (input.shareMove && input.shareMove !== "restore") {
           const directory = "docs/project/changes/document-reader";
           const target = "change/shared-reader-next";

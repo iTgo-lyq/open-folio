@@ -159,7 +159,7 @@ export async function seed() {
           artifact: {
             type: "hosted",
             version: "v1",
-            url: "https://127.0.0.1:10686/v1/index.html#no-bridge",
+            url: "http://127.0.0.1:10687/v1/index.html#no-bridge",
             sourceCommit,
             digest: "sha256:" + "a".repeat(64),
           },
