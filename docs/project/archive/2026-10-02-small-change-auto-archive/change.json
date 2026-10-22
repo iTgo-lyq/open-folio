@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/small-change-auto-archive",
+  "deliveryOverride": "releaseMerged",
   "dependsOn": [
     "impeccable-submodule"
   ],

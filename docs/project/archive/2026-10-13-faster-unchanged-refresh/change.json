@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/faster-unchanged-refresh",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

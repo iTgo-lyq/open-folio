@@ -111,9 +111,7 @@ test("delivery groups include archived Changes, combine labels and expose PRs wi
   delivery.stage = "releaseMerged";
   delivery.releasePrs[0].state = "merged";
   await page.reload();
-  await expect(
-    details.getByText("已合入发布分支", { exact: true }),
-  ).toBeVisible();
+  await expect(details.getByText("已发布", { exact: true })).toBeVisible();
   await backToChanges(page);
   await expect(row).toBeVisible();
   await expect(page.getByRole("heading", { name: /^已发布/ })).toBeVisible();

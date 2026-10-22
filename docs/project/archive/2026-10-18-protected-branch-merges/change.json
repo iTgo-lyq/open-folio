@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/protected-branch-merges",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

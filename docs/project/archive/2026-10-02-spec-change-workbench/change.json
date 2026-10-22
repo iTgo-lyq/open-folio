@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "change/spec-change-workbench",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-02T07:35:59+08:00",

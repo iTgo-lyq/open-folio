@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/browser-identities",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-14T08:32:32.361Z",

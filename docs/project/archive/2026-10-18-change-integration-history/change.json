@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/change-integration-history",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-18T06:58:31.703Z",

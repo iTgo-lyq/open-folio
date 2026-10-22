@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/project-ui-library",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-10T03:52:27.610Z",

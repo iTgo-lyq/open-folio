@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/update-document-diagrams",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

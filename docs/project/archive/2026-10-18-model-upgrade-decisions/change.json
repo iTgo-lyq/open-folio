@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/model-upgrade-decisions",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

@@ -7,7 +7,7 @@ import { useWorkspace } from "./context";
 const labels = {
   pendingIntegration: "待集成",
   pendingRelease: "待发布",
-  releaseMerged: "已合入发布分支",
+  releaseMerged: "已发布",
   unknown: "交付待核实",
 };
 const tones: Record<keyof typeof labels, BadgeTone> = {

@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/personal-workbench",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-12T10:24:43.458Z",

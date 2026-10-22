@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/centralized-accounts",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-19T09:07:09.538Z",

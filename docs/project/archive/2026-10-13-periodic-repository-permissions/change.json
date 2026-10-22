@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/periodic-repository-permissions",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/independent-clarification-budgets",
+  "deliveryOverride": "releaseMerged",
   "followUpOf": "technical-clarification",
   "followUpTitle": "完善技术方案问询机制",
   "confirmations": {},

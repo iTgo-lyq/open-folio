@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "change/bounded-requirement-clarification",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-15T08:23:57.563Z",
