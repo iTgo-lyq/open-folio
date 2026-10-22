@@ -265,3 +265,17 @@ R2 固定版本 `dc671716fc3ceadc3eb7dc47fe201adeb06923357abc17024f3c4819ad4543c
 ### 验证
 
 `node packages/prototype/verify-quiet-workbench.mjs` 126 项通过、失败 0、浏览器错误 0。相对第三轮：默认强调色检查改为陶土（侧栏当前项图标为强调色、标志仍为文字色）；强调色切换改为墨色 / 蓝色 / 回到陶土；材质检查改为胶囊与弹层有模糊且不再有减少透明度开关；新增顶栏检查（Specs、Changes、分享页的顶栏半透明且有模糊，滚动区从顶栏下方开始、初始内容不被遮挡、滚动后有文字位于顶栏下方）与抽屉检查（外层模糊、阅读区实底）。
+
+### 第四轮固定发布（2026-10-22）
+
+源码提交 `9351a48`，本地检查清单见 [126 项本地检查](assets/clay-local-checks.json)；`npm test --workspace prototype` 16 项通过。R2 version `06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b`，sourceCommit `9351a484a55a1ae2c60c2592f7130ea97124901e`，digest `sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2`。适配器公开读取并校验字节后返回成功；`publish register` 更新当前清单与本 Change 的七个入口（各含桌面、iPad、手机缩略图）；`validate.mjs --browser` 对 15 个已登记入口的沙箱加载检查通过。此前各轮固定链接保持可访问。
+
+| 入口 | 浅色 | 深色 |
+| --- | --- | --- |
+| 我的仓库与侧栏 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/index.html#/home?theme=dark) |
+| Specs 阅读 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/index.html#/specs/maps/offline?theme=dark) |
+| Changes 与详情 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/index.html#/changes?theme=dark) |
+| 原型总览与画布 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/index.html#/prototypes?theme=dark) |
+| 账号与 Token | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/index.html#/account?theme=dark) |
+| 匿名公开原型 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/index.html#/public/offline-maps?theme=dark) |
+| Change 分享阅读 | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/index.html) | [打开](https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/index.html#/share/offline-map-regions?theme=dark) |
