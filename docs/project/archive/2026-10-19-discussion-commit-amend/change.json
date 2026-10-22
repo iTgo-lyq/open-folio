@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/discussion-commit-amend",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

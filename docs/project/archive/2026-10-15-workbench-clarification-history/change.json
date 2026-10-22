@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "change/workbench-clarification-history",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/technical-anti-bloat",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

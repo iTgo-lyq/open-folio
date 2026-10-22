@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/impeccable-submodule",
+  "deliveryOverride": "releaseMerged",
   "dependsOn": [
     "spec-change-workbench"
   ],

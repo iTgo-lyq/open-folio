@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/default-serial-tasks",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-09T07:59:01.591Z",

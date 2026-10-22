@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/clear-requirement-writing",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

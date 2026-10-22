@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/remove-host-validation",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-10T07:12:30.802Z",

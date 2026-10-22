@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/revert-testing-strategy",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

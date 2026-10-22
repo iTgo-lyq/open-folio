@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "change/central-change-routing",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-18T00:36:20.550Z",

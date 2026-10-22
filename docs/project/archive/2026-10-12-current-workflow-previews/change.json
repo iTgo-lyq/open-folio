@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/current-workflow-previews",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

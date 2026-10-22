@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/simplify-deployment-requests",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-10T07:30:48.150Z",

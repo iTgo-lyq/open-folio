@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/faster-workspace-reads",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {},
   "tasks": {
     "T1": {

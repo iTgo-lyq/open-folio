@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/direct-collaboration-reading",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-18T03:46:20.194Z",
