@@ -159,6 +159,124 @@ test("planning stays on develop; shared registration is idempotent and routes st
   );
   assert.equal(at(f.remote, "rev-parse", "main"), main);
 });
+for (const size of ["medium", "large", "xlarge"]) {
+  test(`${size} hands off before Plan and keeps execution confirmation gates`, (t) => {
+    const f = fixture(t);
+    f.state("create", [
+      "--title",
+      "Plan in work branch",
+      "--size",
+      size,
+      ...(size === "xlarge" ? ["--children", "child"] : []),
+    ]);
+    if (size === "xlarge")
+      f.state(
+        "create",
+        ["--title", "Child delivery", "--size", "small", "--parent", "sample"],
+        0,
+        "child",
+      );
+    for (const name of ["requirement", "technical"])
+      f.put(`docs/project/changes/sample/${name}.md`, `# ${name}\n`);
+    f.commit();
+    f.handoff(1);
+    assert(!existsSync(f.work));
+    const confirm = (phase: string, cwd = f.repo) =>
+      f.state(
+        "confirm",
+        ["--phase", phase, "--summary", "Scope", "--source", "Fixture"],
+        0,
+        "sample",
+        cwd,
+      );
+    confirm("requirement");
+    f.commit();
+    if (size === "large") {
+      assert.match(f.handoff(1), /Missing technical confirmation/);
+      confirm("technical");
+      f.commit();
+    }
+    const before = at(f.repo, "rev-parse", "HEAD");
+    f.workspace("handoff", ["--path", f.work, "--dry-run"]);
+    assert(!existsSync(f.work));
+    assert.equal(at(f.repo, "rev-parse", "HEAD"), before);
+    f.handoff();
+    assert(!existsSync(join(f.work, "docs/project/changes/sample/plan.md")));
+    assert.deepEqual(f.state("show", [], 0, "sample", f.work).state.tasks, {});
+    assert.equal(
+      f.state("show", [], 0, "sample", f.work).state.confirmations.plan,
+      undefined,
+    );
+    assert.match(
+      f.state("execute", [], 1, "sample", f.work),
+      /Missing plan.md/,
+    );
+    f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
+    if (size !== "xlarge")
+      f.state("task-add", ["--title", "Implement"], 0, "sample", f.work);
+    assert.match(
+      f.state("execute", [], 1, "sample", f.work),
+      /Missing .* confirmation/,
+    );
+    if (size !== "large") confirm("technical", f.work);
+    confirm("plan", f.work);
+    f.commit(f.work);
+    assert(!existsSync(join(f.repo, "docs/project/changes/sample/plan.md")));
+    assert.equal(f.state("show").state.confirmations.plan.summary, "Scope");
+    f.state("execute", [], 0, "sample", f.work);
+    if (size === "xlarge")
+      assert.match(
+        f.state(
+          "verify",
+          ["--result", "passed", "--summary", "Check children"],
+          1,
+          "sample",
+          f.work,
+        ),
+        /child.*not closed/i,
+      );
+  });
+}
+test("Plan handoff permits pending delivery dependencies but execution still checks them", (t) => {
+  const f = fixture(t);
+  f.planning("upstream");
+  f.state("create", [
+    "--title",
+    "Dependent plan",
+    "--size",
+    "medium",
+    "--depends-on",
+    "upstream",
+  ]);
+  for (const name of ["requirement", "technical"])
+    f.put(`docs/project/changes/sample/${name}.md`, `# ${name}\n`);
+  f.state("confirm", [
+    "--phase",
+    "requirement",
+    "--summary",
+    "Scope",
+    "--source",
+    "Fixture",
+  ]);
+  f.state("wait", ["--kind", "pause", "--summary", "Explicit pause"]);
+  f.commit();
+  assert.match(f.handoff(1), /Resolve the pause/);
+  f.state("resume");
+  f.commit();
+  f.handoff();
+  f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
+  f.state("task-add", ["--title", "Implement"], 0, "sample", f.work);
+  for (const phase of ["technical", "plan"])
+    f.state(
+      "confirm",
+      ["--phase", phase, "--summary", "Scope", "--source", "Fixture"],
+      0,
+      "sample",
+      f.work,
+    );
+  f.commit(f.work);
+  assert.match(f.state("execute", [], 1, "sample", f.work), /closed|archived/);
+});
 test("target push failure and registration refusal preserve public routing and retry safely", (t) => {
   const f = fixture(t);
   f.planning();

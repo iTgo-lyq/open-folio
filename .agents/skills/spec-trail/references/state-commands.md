@@ -37,10 +37,11 @@
 node .agents/skills/spec-trail/scripts/change.mjs create --change example --title '具体目标' --size small
 # 按实际需求编辑 requirement.md，然后登记任务。
 node .agents/skills/spec-trail/scripts/change.mjs task-add --change example --title '实现目标行为'
-# 推送规划后移交；在目标 worktree 的执行会话继续，见 workspaces.md。
+# small 推送需求与任务后移交；其余规模在编写 Plan 前移交，见 workspaces.md。
 node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
 node .agents/skills/spec-trail/scripts/change.mjs execute --change example
 node .agents/skills/spec-trail/scripts/change.mjs task-start --change example --task T1
+# small 提交推送真实执行状态后创建 Draft PR，再开始实现，见 integration.md。
 # 完成实现与验证后，填真实结果；提交、推送与 done 一起完成。
 node .agents/skills/spec-trail/scripts/change.mjs task-complete --change example --task T1 --verification '实际验证命令与结果'
 node .agents/skills/spec-trail/scripts/change.mjs verify --change example --result passed --summary '实际整体验证与评审结论'
