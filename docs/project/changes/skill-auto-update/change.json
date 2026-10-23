@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "skill-auto-update",
-  "title": "SpecTrail skill 自动更新机制",
+  "title": "SpecTrail 版本标识与更新检查",
   "size": "medium",
   "status": "active",
   "stage": "requirement",
