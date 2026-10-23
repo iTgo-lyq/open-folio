@@ -4,19 +4,29 @@
   "title": "缓存优先阅读与跨浏览器 Token 恢复",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/cache-first-reading",
   "confirmations": {
     "requirement": {
       "at": "2026-10-23T05:01:04.613Z",
       "summary": "缓存优先并后台更新，减少重复加载并恢复跨浏览器已有 Token",
       "source": "用户对包含缓存优先、减少重复加载、唯一 Token 自动恢复和多 Token 选择的范围回答：按建议范围推进"
+    },
+    "technical": {
+      "at": "2026-10-23T05:06:33.563Z",
+      "summary": "缓存先读再更新，按会话隔离复用正文并自动选用唯一 Token",
+      "source": "用户：确认方案与计划，不绘制原型"
+    },
+    "plan": {
+      "at": "2026-10-23T05:06:35.347Z",
+      "summary": "先交付分享缓存，再优化阅读复用，最后恢复跨浏览器绑定",
+      "source": "用户：确认方案与计划，不绘制原型"
     }
   },
   "tasks": {
     "T1": {
       "title": "分享详情缓存先读与后台更新",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "阅读缓存复用与暂时失败保留",
@@ -40,9 +50,5 @@
       "recommendation": "一并处理，覆盖打开页面和跨浏览器恢复的完整体验。",
       "answer": "按建议范围推进"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "需求范围已确认，技术方案与 T1–T3 计划已就绪，等待合并确认后实施；小型文案与状态调整建议不绘制原型。"
   }
 }
