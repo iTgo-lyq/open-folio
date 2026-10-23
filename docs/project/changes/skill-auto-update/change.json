@@ -4,7 +4,7 @@
   "title": "SpecTrail 版本标识与更新检查",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/skill-auto-update",
   "confirmations": {
     "requirement": {
@@ -37,9 +37,19 @@
       "commitTitle": "skill-auto-update T2: check published updates per project"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-23T19:54:25.206Z",
+      "summary": "全量325项、自包含15项、setup12项及类型格式构建通过，隔离上下文独立评审无可操作问题。"
+    }
+  },
   "types": [
     "新功能",
     "工程"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立评审已完成，待用户验收后归档并交付 develop。"
+  }
 }
