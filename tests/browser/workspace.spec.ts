@@ -125,10 +125,14 @@ test("workspace uses one floating toolbar with sync status on desktop and mobile
     for (const module of ["specs", "changes", "prototypes"]) {
       await page.goto(`/?${repositoryQuery}&m=${module}`);
       await expect(
-        page.getByRole("button", { name: "同步状态：已同步" }),
+        page.getByRole("button", { name: /^同步状态：上次更新/ }),
       ).toBeVisible();
       const toolbar = page.locator("main > header");
       await expect(toolbar).toHaveCount(1);
+      await expect(toolbar.locator("time")).toBeVisible();
+      await expect(
+        toolbar.getByRole("button", { name: "刷新中心仓库", exact: true }),
+      ).toBeEnabled();
       const layout = await toolbar.evaluate((el) => {
         const bar = el.getBoundingClientRect(),
           main = el.parentElement!.getBoundingClientRect();
