@@ -22,6 +22,8 @@ export type PersonalSession = SessionSummary & {
 type PersonalValue = {
   session: PersonalSession | null;
   sessionError: string;
+  restoringConnection: boolean;
+  connectionError: string;
   connection: ConnectionSummary | undefined;
   updatePreferences: (patch: WorkspacePreferences) => Promise<void>;
   reloadSession: (select?: string, listOnly?: boolean) => Promise<void>;
@@ -41,6 +43,8 @@ export const usePersonal = () => useContext(Personal)!;
 export function PersonalProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<PersonalSession | null>(null),
     [sessionError, setSessionError] = useState(""),
+    [restoringConnection, setRestoringConnection] = useState(false),
+    [connectionError, setConnectionError] = useState(""),
     [epoch, setEpoch] = useState(0),
     [items, setItems] = useState<DiscoveredRepository[]>([]),
     [discovery, setDiscovery] = useState<DiscoverySummary | null>(null),
@@ -93,6 +97,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       setPersonalRevision(next.browserRevision);
       setSession(next);
       setSessionError("");
+      if (next.connected) setConnectionError("");
     } catch (e) {
       if (version !== sequence.current) return;
       if (e instanceof ApiError && e.code === "SESSION_REQUIRED") {
@@ -112,6 +117,47 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     },
     [recover],
   );
+  const restoredDevice = useRef("");
+  useEffect(() => {
+    setRestoringConnection(false);
+    setConnectionError("");
+    const device = session?.deviceSessionId;
+    if (!device || restoredDevice.current === device) return;
+    restoredDevice.current = device;
+    if (session.connected || session.connections.length !== 1) return;
+    const c = new AbortController();
+    setRestoringConnection(true);
+    void api("/api/session/switch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-OpenFolio-Revision": String(session.browserRevision),
+      },
+      body: JSON.stringify({ connectionId: session.connections[0].id }),
+      signal: c.signal,
+    })
+      .then(async () => {
+        if (!c.signal.aborted) await reloadSession(undefined, true);
+      })
+      .catch(async (error) => {
+        if (c.signal.aborted) return;
+        setConnectionError(`已有 Token 未能自动恢复：${error.message}`);
+        // Reconcile a concurrent selection or binding change without logging out.
+        if (
+          error instanceof ApiError &&
+          [
+            "SESSION_CHANGED",
+            "SESSION_REQUIRED",
+            "CONNECTION_NOT_FOUND",
+          ].includes(error.code)
+        )
+          await recover();
+      })
+      .finally(() => {
+        if (!c.signal.aborted) setRestoringConnection(false);
+      });
+    return () => c.abort();
+  }, [session?.deviceSessionId, recover, reloadSession]);
   useEffect(() => {
     if (typeof BroadcastChannel !== "undefined") {
       const c = new BroadcastChannel("openfolio-account");
@@ -279,6 +325,8 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       value={{
         session,
         sessionError,
+        restoringConnection,
+        connectionError,
         connection,
         updatePreferences,
         reloadSession,

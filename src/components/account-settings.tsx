@@ -189,6 +189,12 @@ function SettingsBody() {
         <header className={page.heading}>
           <h1>账号与 Token</h1>
         </header>
+        {p.connectionError && (
+          <p role="alert" className={page.error}>
+            {p.connectionError}
+          </p>
+        )}
+        {p.restoringConnection && <p role="status">正在恢复已有 Token…</p>}
         {error && !dialogError && (
           <p role="alert" className={page.error}>
             {error}

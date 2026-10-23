@@ -38,6 +38,12 @@
     },
     "T3": {
       "title": "跨浏览器自动恢复已有 Token",
+      "status": "done",
+      "verification": "账号与个人工作台回归17项及修正定位后补跑4/4通过，类型检查通过；覆盖唯一/多/零绑定、失败重试、并发选择和设备隔离。",
+      "commitTitle": "cache-first-reading T3: restore the sole saved Token after login"
+    },
+    "T4": {
+      "title": "修复评审发现的阅读更新与失权边界",
       "status": "todo"
     }
   },
