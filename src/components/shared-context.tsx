@@ -82,7 +82,8 @@ export function SharedProvider({
   const [error, setError] = useState(""),
     [message, notice] = useState("");
   const pending = useRef<Promise<void> | null>(null),
-    generation = useRef(0);
+    generation = useRef(0),
+    retryVersion = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const nav = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
@@ -103,46 +104,66 @@ export function SharedProvider({
     },
     [target],
   );
-  const refresh = useCallback(() => {
-    if (pending.current) return pending.current;
-    const version = ++generation.current;
-    const c = new AbortController();
-    controller.current = c;
-    setRefreshing(true);
-    const operation = (async () => {
-      try {
-        const value = await api<SharedChange>(sharedReadUrl(target, "change"), {
-          signal: c.signal,
-        });
-        if (version !== generation.current || c.signal.aborted) return;
-        setData((previous) =>
-          previous?.id === value.snapshotId ? previous : sharedWorkbench(value),
-        );
-        setError("");
-      } catch (e) {
-        if (!c.signal.aborted && version === generation.current) {
-          const code = (e as { code?: string }).code;
-          if (unavailable.has(code ?? "")) setData(null);
-          setError((e as Error).message);
+  const load = useCallback(
+    (initial = false) => {
+      if (pending.current) return pending.current;
+      const version = ++generation.current;
+      const c = new AbortController();
+      controller.current = c;
+      setRefreshing(true);
+      const operation = (async () => {
+        try {
+          const read = async (path: string) => {
+            const value = await api<SharedChange>(sharedReadUrl(target, path), {
+              signal: c.signal,
+            });
+            if (version !== generation.current || c.signal.aborted) return;
+            setData((previous) =>
+              previous?.id === value.snapshotId
+                ? previous
+                : sharedWorkbench(value),
+            );
+            setLoading(false);
+            setError("");
+          };
+          if (initial) await read("change");
+          if (!c.signal.aborted && version === generation.current)
+            await read("change?refresh=1");
+        } catch (e) {
+          if (!c.signal.aborted && version === generation.current) {
+            const code = (e as { code?: string }).code;
+            if (unavailable.has(code ?? "")) setData(null);
+            setError((e as Error).message);
+          }
+        } finally {
+          if (!c.signal.aborted && version === generation.current) {
+            setLoading(false);
+            setRefreshing(false);
+          }
         }
-      } finally {
-        if (!c.signal.aborted && version === generation.current) {
-          setLoading(false);
-          setRefreshing(false);
+      })().finally(() => {
+        if (pending.current === operation) pending.current = null;
+        if (
+          retryVersion.current &&
+          !c.signal.aborted &&
+          version === generation.current
+        ) {
+          retryVersion.current = false;
+          void load();
         }
-      }
-    })().finally(() => {
-      if (pending.current === operation) pending.current = null;
-    });
-    pending.current = operation;
-    return operation;
-  }, [target]);
+      });
+      pending.current = operation;
+      return operation;
+    },
+    [target],
+  );
+  const refresh = useCallback(() => load(), [load]);
   useEffect(() => {
     const read = () =>
       setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
     read();
     window.addEventListener("popstate", read);
-    void refresh();
+    void load(true);
     const check = () => {
       if (document.visibilityState === "visible") void refresh();
     };
@@ -165,12 +186,16 @@ export function SharedProvider({
         setLoading(false);
         setRefreshing(false);
         setError(detail.message ?? "分享已不可用。");
-      } else if (detail.code === "SHARE_VERSION_CHANGED") void refresh();
+      } else if (detail.code === "SHARE_VERSION_CHANGED") {
+        if (pending.current) retryVersion.current = true;
+        else void refresh();
+      }
     };
     window.addEventListener("openfolio-share-error", failed);
     return () => {
       controller.current?.abort();
       pending.current = null;
+      retryVersion.current = false;
       generation.current++;
       clearInterval(interval);
       window.removeEventListener("popstate", read);
@@ -178,7 +203,7 @@ export function SharedProvider({
       document.removeEventListener("visibilitychange", check);
       window.removeEventListener("openfolio-share-error", failed);
     };
-  }, [target, refresh]);
+  }, [target, refresh, load]);
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => notice(""), 6000);

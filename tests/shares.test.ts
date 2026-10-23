@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { repositoryFixture } from "./repositories-fixture.ts";
 import { sharedResponse } from "../src/server/share-api.ts";
@@ -405,9 +405,10 @@ test("branch ambiguity requires a selected known source; repository renaming is 
   assert.equal((await f.read()).status, 404);
 });
 
-test("one in-flight refresh serves private and anonymous readers", async (t) => {
+test("cached shares return during a coalesced private and anonymous refresh", async (t) => {
   const f = await setup();
   t.after(f.cleanup);
+  assert.equal((await f.read()).status, 200);
   let release!: () => void, started!: () => void;
   const gate = new Promise<void>((r) => (release = r)),
     begun = new Promise<void>((r) => (started = r));
@@ -421,9 +422,12 @@ test("one in-flight refresh serves private and anonymous readers", async (t) => 
       return original.apply(this, args);
     },
   );
-  const first = f.read();
+  const first = f.read("shared", "change?refresh=1");
   await begun;
-  const second = f.read("private"),
+  // This would deadlock if cached reads still joined the remote refresh.
+  assert.equal((await f.read()).status, 200);
+  assert.equal((await f.read("shared", "change?refresh=0")).status, 400);
+  const second = f.read("private", "change?refresh=1"),
     privateRead = f.readPrivate((ctx) => ctx.refresh(DEFAULT_LIMITS, true));
   await new Promise((r) => setTimeout(r, 25));
   release();
@@ -492,4 +496,32 @@ test("a corrupt discovery cache on another binding cannot disable a readable tar
   assert.equal((await f.read()).status, 200);
   await f.f.sessions.unbind(f.c.cookie, f.c.connection.id);
   assert.equal((await f.read()).status, 404);
+});
+
+test("a Change absent from a cached repository is refreshed before declaring it missing", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  assert.equal((await f.read()).status, 200);
+  await f.g.put(
+    "docs/project/changes/new-change/change.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      id: "new-change",
+      title: "new",
+      size: "small",
+      status: "active",
+      stage: "requirement",
+      branch: "develop",
+      confirmations: {},
+      tasks: {},
+      closure: {},
+    }),
+  );
+  f.g.commit();
+  await f.readPrivate((ctx) =>
+    rm(join(ctx.store.directory(), "last-checked.json"), { force: true }),
+  );
+  const response = await f.read("new-change");
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).change.id, "new-change");
 });

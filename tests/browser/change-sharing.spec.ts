@@ -243,7 +243,7 @@ test("a relative document deep link follows branch handoff and archive", async (
           .getByRole("heading", { level: 1 }),
       ).toContainText("让工程文档");
       const fresh = await anonymous.request.get(
-        share.replace("/share?", "/api/shared-changes/change?"),
+        share.replace("/share?", "/api/shared-changes/change?refresh=1&"),
       );
       expect(fresh.ok()).toBe(true);
       const detail: SharedChange = await fresh.json();
@@ -317,7 +317,7 @@ test("shared image version errors refresh details and lost sources clear the rea
         const fresh = await anonymous.request.get(
           directLink("document-reader").replace(
             "/share?",
-            "/api/shared-changes/change?",
+            "/api/shared-changes/change?refresh=1&",
           ),
         );
         expect(fresh.ok()).toBe(true);
@@ -335,7 +335,7 @@ test("shared image version errors refresh details and lost sources clear the rea
     const fresh = await anonymous.request.get(
       directLink("document-reader").replace(
         "/share?",
-        "/api/shared-changes/change?",
+        "/api/shared-changes/change?refresh=1&",
       ),
     );
     expect(fresh.ok()).toBe(true);
@@ -450,5 +450,46 @@ test("a temporary sync failure retains readable content and can recover", async 
     await expect(page).not.toHaveURL(/asset=|document=/);
   } finally {
     await anonymous.close();
+  }
+});
+
+test("cached shared content appears while its update is pending and survives an update failure", async ({
+  browser,
+}) => {
+  const viewer = await browser.newContext({ baseURL: origin });
+  try {
+    const page = await viewer.newPage();
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let updating = false;
+    await page.route("**/api/shared-changes/change?*", async (route) => {
+      if (new URL(route.request().url()).searchParams.get("refresh") !== "1")
+        return route.continue();
+      updating = true;
+      await held;
+      await route.fulfill({
+        status: 503,
+        json: { error: { code: "GIT_READ_FAILED", message: "更新暂时失败" } },
+      });
+    });
+    await page.goto(directLink("document-reader"));
+    const heading = page.getByRole("heading", {
+      name: "让工程文档成为清晰的阅读体验",
+      exact: true,
+    });
+    try {
+      await expect.poll(() => updating).toBe(true);
+      await expect(heading).toBeVisible();
+    } finally {
+      release();
+    }
+    await expect(page.locator("main").getByRole("alert")).toContainText(
+      "更新暂时失败",
+    );
+    await expect(heading).toBeVisible();
+  } finally {
+    await viewer.close();
   }
 });

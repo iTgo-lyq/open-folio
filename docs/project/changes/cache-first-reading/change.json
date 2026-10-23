@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "分享详情缓存先读与后台更新",
-      "status": "doing"
+      "status": "done",
+      "verification": "分享服务端 12/12、浏览器 7/7 通过，类型检查通过；覆盖缓存先返、失败保留、版本竞争与失权。",
+      "commitTitle": "cache-first-reading T1: show shared snapshots before remote refresh"
     },
     "T2": {
       "title": "阅读缓存复用与暂时失败保留",
