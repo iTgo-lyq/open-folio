@@ -18,10 +18,23 @@
       "source": "可以，技术方案确认，继续推进执行计划。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "发布可重复执行的 skill 版本",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "按项目配置检查并提醒 skill 更新",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "新功能",
     "工程"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "待确认执行计划后，按 T1、T2 串行开始实现。"
+  }
 }
