@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useRef,
+  useMemo,
   useState,
 } from "react";
 import type { DocumentRef, ProjectSummary, Workbench } from "@/lib/model";
@@ -14,10 +15,12 @@ import { NETWORK_ERROR } from "@/lib/sync-status";
 import { documentReadingTarget } from "@/lib/change-reading";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
+import { ReadingCache, type DocumentValue } from "./reading-cache";
 import { usePersonal } from "./personal-context";
 export { api, ApiError } from "./api";
 export type Query = Record<string, string>;
 export type ReadingContext = {
+  cache: ReadingCache;
   sharing?: boolean;
   readScope?: string;
   q: Query;
@@ -82,14 +85,20 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const projectId = q.repo ?? "",
     connection = personal.connection;
   const connectionKey = `${personal.session?.deviceSessionId ?? ""}:${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}`;
+  const cache = useMemo(() => new ReadingCache(), [connectionKey]);
+  const reading = ["specs", "changes", "prototypes"].includes(q.m);
   const visibleFailure =
     failure.identity === connectionKey ? failure : { message: "", code: "" };
   const integrationBranch =
     q.integrationBranch ??
     personal.items.find((r) => r.key === projectId)?.integrationBranch ??
     SUGGESTED_INTEGRATION_BRANCH;
-  const scope = `${connection?.id ?? ""}:${connection?.revision ?? ""}:${personal.epoch}:${projectId}:${integrationBranch}`;
-  const data = loaded?.key === scope ? loaded.value : null;
+  const scope = `${connectionKey}:${projectId}:${integrationBranch}`;
+  const data =
+    loaded?.key === scope
+      ? loaded.value
+      : (cache.get<Workbench & { repository?: RepositoryIdentity }>(scope) ??
+        null);
   const repository =
     data?.repository ??
     personal.items.find((r) => r.key === projectId)?.repository;
@@ -256,6 +265,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       }
       active.current?.abort();
       generation.current++;
+      cache.clear();
       setLoaded(null);
       setLoading(false);
       setRefreshing(false);
@@ -266,9 +276,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("openfolio-read-denied", clear);
     return () => window.removeEventListener("openfolio-read-denied", clear);
-  }, [connectionKey, connection?.id, projectId]);
+  }, [connectionKey, connection?.id, projectId, cache]);
   useEffect(() => {
-    setLoaded((previous) => (previous?.key === scope ? previous : null));
+    setLoaded((previous) =>
+      previous?.key === scope
+        ? previous
+        : cache.get<Workbench>(scope)
+          ? { key: scope, value: cache.get<Workbench>(scope)! }
+          : null,
+    );
     setFailure((previous) =>
       previous.identity === connectionKey &&
       ["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(previous.code)
@@ -276,12 +292,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         : { message: "", code: "", identity: connectionKey },
     );
     setRefreshing(false);
-    if (
-      !ready ||
-      !connection ||
-      !projectId ||
-      ["home", "connections"].includes(q.m ?? "home")
-    ) {
+    if (!ready || !connection || !projectId || !reading) {
       setLoading(false);
       return;
     }
@@ -308,7 +319,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             signal: c.signal,
           });
         }
+        await cache.prepare(next, readUrl, c.signal);
         if (!c.signal.aborted && version === generation.current) {
+          cache.set(scope, next);
           setLoaded({ key: scope, value: next });
           setError("", undefined, true);
         }
@@ -328,10 +341,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       c.abort();
       generation.current++;
     };
-  }, [scope, ready, readUrl, q.m, retry]);
+  }, [scope, ready, readUrl, reading, retry, cache]);
   const hasData = !!data;
   useEffect(() => {
-    if (!data || loading || refreshing) return;
+    if (!reading || !data || loading || refreshing) return;
     const c = new AbortController(),
       version = generation.current;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -354,7 +367,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           const next = await api<Workbench>(readUrl("workbench"), {
             signal: c.signal,
           });
+          await cache.prepare(next, readUrl, c.signal);
           if (!c.signal.aborted && version === generation.current) {
+            cache.set(scope, next);
             snapshotId = next.id;
             setLoaded({ key: scope, value: next });
           }
@@ -380,7 +395,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", resume);
       document.removeEventListener("visibilitychange", resume);
     };
-  }, [hasData, scope, loading, refreshing, readUrl, q.m]);
+  }, [hasData, scope, loading, refreshing, readUrl, reading, cache]);
   const refresh = useCallback(async () => {
     if (!projectId || !connection || refreshing) return;
     const version = ++generation.current;
@@ -423,6 +438,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   return (
     <Context.Provider
       value={{
+        cache,
         q,
         readScope: connection?.id,
         revealVersion,
@@ -452,50 +468,47 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   );
 }
 export function useDocument(id: string | undefined) {
-  const { data, projectId, readUrl } = useWorkspace();
-  const [value, setValue] = useState<{
-      document: DocumentRef;
-      body: string;
-    } | null>(null),
-    [error, setError] = useState(""),
-    [loading, setLoading] = useState(false);
+  const { data, readUrl, cache } = useWorkspace();
+  const document = data?.documents.find((d) => d.id === id);
   const snapshot = data?.id;
+  const key = document
+    ? JSON.stringify([readUrl("workbench"), document.id, document.blob])
+    : "";
+  const [result, setResult] = useState<{
+    key: string;
+    cache: ReadingCache;
+    value?: DocumentValue;
+    error?: string;
+  }>();
+  const cached = document && cache.document(document, readUrl);
   useEffect(() => {
-    setValue(null);
-    setError("");
-    if (!id || !snapshot) {
-      setLoading(false);
-      return;
-    }
+    if (!id || !document || !snapshot) return;
+    const unwatch = cache.watch(id, readUrl);
     const c = new AbortController();
-    setLoading(true);
-    api<{ document: DocumentRef; body: string }>(
-      readUrl(`documents/${encodeURIComponent(id)}?snapshot=${snapshot}`),
-      { signal: c.signal },
-    )
+    void cache
+      .readDocument(document, snapshot, readUrl, c.signal)
       .then((value) => {
-        if (!c.signal.aborted) setValue(value);
+        if (!c.signal.aborted) setResult({ key, cache, value });
       })
-      .catch((e) => {
-        if (!c.signal.aborted) setError(e.message);
-      })
-      .finally(() => {
-        if (!c.signal.aborted) setLoading(false);
+      .catch((error) => {
+        if (!c.signal.aborted) setResult({ key, cache, error: error.message });
       });
-    return () => c.abort();
-  }, [id, snapshot, projectId, readUrl]);
-  // A changing id is hidden immediately, before its next request settles.
+    return () => {
+      c.abort();
+      unwatch();
+    };
+  }, [key, snapshot, cache, readUrl]);
+  const current =
+    result?.key === key && result.cache === cache ? result : undefined;
+  const value =
+    cached ??
+    (current?.value && document
+      ? { document, body: current.value.body }
+      : null);
   return {
-    value:
-      value &&
-      value.document.id === id &&
-      data?.documents.some(
-        (d) => d.id === id && d.commit === value.document.commit,
-      )
-        ? value
-        : null,
-    error,
-    loading,
+    value,
+    error: current?.error ?? "",
+    loading: !!document && !value && !current?.error,
   };
 }
 export function useSavedScroll(pageKey: string, anchor?: string) {

@@ -95,11 +95,13 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       setSessionError("");
     } catch (e) {
       if (version !== sequence.current) return;
-      snapshot.current = null;
-      setPersonalRevision();
-      setSession(null);
-      setItems([]);
-      setEpoch((v) => v + 1);
+      if (e instanceof ApiError && e.code === "SESSION_REQUIRED") {
+        snapshot.current = null;
+        setPersonalRevision();
+        setSession(null);
+        setItems([]);
+        setEpoch((v) => v + 1);
+      }
       setSessionError((e as Error).message);
     }
   }, []);
@@ -196,50 +198,63 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     const c = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     let last = "";
+    const readPage = async () => {
+      const page = await api<{
+        items: DiscoveredRepository[];
+        nextOffset: number | null;
+        unavailable: number;
+      }>(`/api/repositories?connectionId=${connection.id}&cursor=${cursor}`, {
+        signal: c.signal,
+      });
+      if (c.signal.aborted) return;
+      setItems((old) =>
+        cursor
+          ? [
+              ...old.filter((i) => !page.items.some((n) => n.key === i.key)),
+              ...page.items,
+            ]
+          : page.items,
+      );
+      setMore(page.nextOffset);
+      setUnavailable(page.unavailable);
+    };
     const load = async () => {
       setListing(true);
-      try {
+      const first = !last;
+      const statusRequest = (async () => {
         const status = await api<{ discovery: DiscoverySummary | null }>(
           `/api/connections/${connection.id}/discovery`,
           { signal: c.signal },
         );
         if (c.signal.aborted) return;
         setDiscovery(status.discovery);
-        if (last !== status.discovery?.updatedAt || !last) {
-          const page = await api<{
-            items: DiscoveredRepository[];
-            nextOffset: number | null;
-            unavailable: number;
-          }>(
-            `/api/repositories?connectionId=${connection.id}&cursor=${cursor}`,
-            { signal: c.signal },
-          );
-          if (c.signal.aborted) return;
-          setItems((old) =>
-            cursor
-              ? [
-                  ...old.filter(
-                    (i) => !page.items.some((n) => n.key === i.key),
-                  ),
-                  ...page.items,
-                ]
-              : page.items,
-          );
-          setMore(page.nextOffset);
-          setUnavailable(page.unavailable);
-          setDirectoryError("");
-          last = status.discovery?.updatedAt ?? "idle";
-        }
+        if (!first && last !== status.discovery?.updatedAt) await readPage();
+        last = status.discovery?.updatedAt ?? "idle";
         if (status.discovery?.state === "running")
           timer = setTimeout(() => void load(), 2500);
-      } catch (e) {
-        if (!c.signal.aborted) {
+      })();
+      const results = await Promise.allSettled([
+        statusRequest,
+        ...(first ? [readPage()] : []),
+      ]);
+      if (c.signal.aborted) return;
+      const failed = results.find((r) => r.status === "rejected");
+      if (failed?.status === "rejected") {
+        last = "";
+        const error = failed.reason;
+        if (
+          error instanceof ApiError &&
+          [
+            "SESSION_REQUIRED",
+            "TOKEN_INVALID",
+            "IDENTITY_CHANGED",
+            "CONNECTION_NOT_FOUND",
+          ].includes(error.code)
+        )
           setItems([]);
-          setDirectoryError((e as Error).message);
-        }
-      } finally {
-        if (!c.signal.aborted) setListing(false);
-      }
+        setDirectoryError(error.message);
+      } else setDirectoryError("");
+      setListing(false);
     };
     void load();
     return () => {

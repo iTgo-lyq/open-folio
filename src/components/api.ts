@@ -70,7 +70,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
       );
     if (
       typeof window !== "undefined" &&
-      path.startsWith("/api/repositories/") &&
+      (path.startsWith("/api/repositories/") ||
+        path.startsWith("/api/repositories?")) &&
       !init?.signal?.aborted &&
       [
         "TOKEN_INVALID",

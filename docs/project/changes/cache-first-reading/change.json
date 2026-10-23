@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "阅读缓存复用与暂时失败保留",
-      "status": "todo"
+      "status": "done",
+      "verification": "内存缓存测试 2/2，相关浏览器回归 19/19，附加连续阅读/目录/原型套件 6/6，类型检查通过。",
+      "commitTitle": "cache-first-reading T2: reuse scoped reading data and preserve content during updates"
     },
     "T3": {
       "title": "跨浏览器自动恢复已有 Token",

@@ -6,6 +6,7 @@ import type { SharedChange } from "@/lib/shared-change";
 import { ReadingProvider, type Query } from "./context";
 import { documentReadingTarget } from "@/lib/change-reading";
 import { api } from "./api";
+import { ReadingCache } from "./reading-cache";
 
 export function documentLocation(data: Workbench, document: DocumentRef) {
   const primary = primaryRecord(data.changes[0]);
@@ -75,6 +76,7 @@ export function SharedProvider({
   children: React.ReactNode;
 }) {
   const id = shareParams(target).toString();
+  const cache = useMemo(() => new ReadingCache(), [id]);
   const [q, setQ] = useState<Query>({});
   const [data, setData] = useState<Workbench | null>(null);
   const [loading, setLoading] = useState(true),
@@ -104,6 +106,16 @@ export function SharedProvider({
     },
     [target],
   );
+  const readUrl = useCallback(
+    (path: string) => {
+      const [name, query] = path.split("?");
+      const scoped = name
+        .replace(/^changes\/[^/]+\/integration/, "integration")
+        .replace(/^previews\/[^/]+$/, "previews");
+      return sharedReadUrl(target, `${scoped}${query ? `?${query}` : ""}`);
+    },
+    [target],
+  );
   const load = useCallback(
     (initial = false) => {
       if (pending.current) return pending.current;
@@ -117,11 +129,11 @@ export function SharedProvider({
             const value = await api<SharedChange>(sharedReadUrl(target, path), {
               signal: c.signal,
             });
+            const next = sharedWorkbench(value);
+            await cache.prepare(next, readUrl, c.signal);
             if (version !== generation.current || c.signal.aborted) return;
             setData((previous) =>
-              previous?.id === value.snapshotId
-                ? previous
-                : sharedWorkbench(value),
+              previous?.id === value.snapshotId ? previous : next,
             );
             setLoading(false);
             setError("");
@@ -132,7 +144,10 @@ export function SharedProvider({
         } catch (e) {
           if (!c.signal.aborted && version === generation.current) {
             const code = (e as { code?: string }).code;
-            if (unavailable.has(code ?? "")) setData(null);
+            if (unavailable.has(code ?? "")) {
+              cache.clear();
+              setData(null);
+            }
             setError((e as Error).message);
           }
         } finally {
@@ -155,7 +170,7 @@ export function SharedProvider({
       pending.current = operation;
       return operation;
     },
-    [target],
+    [target, cache, readUrl],
   );
   const refresh = useCallback(() => load(), [load]);
   useEffect(() => {
@@ -182,6 +197,8 @@ export function SharedProvider({
         return;
       if (unavailable.has(detail.code)) {
         generation.current++;
+        controller.current?.abort();
+        cache.clear();
         setData(null);
         setLoading(false);
         setRefreshing(false);
@@ -203,22 +220,12 @@ export function SharedProvider({
       document.removeEventListener("visibilitychange", check);
       window.removeEventListener("openfolio-share-error", failed);
     };
-  }, [target, refresh, load]);
+  }, [target, refresh, load, cache]);
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => notice(""), 6000);
     return () => clearTimeout(timer);
   }, [message]);
-  const readUrl = useCallback(
-    (path: string) => {
-      const [name, query] = path.split("?");
-      const scoped = name
-        .replace(/^changes\/[^/]+\/integration/, "integration")
-        .replace(/^previews\/[^/]+$/, "previews");
-      return sharedReadUrl(target, `${scoped}${query ? `?${query}` : ""}`);
-    },
-    [target],
-  );
   const openDocument = useCallback(
     (id: string, anchor = "", raw = false) => {
       const document = data?.documents.find((d) => d.id === id);
@@ -267,6 +274,7 @@ export function SharedProvider({
   return (
     <ReadingProvider.Provider
       value={{
+        cache,
         sharing: true,
         readScope: id,
         q: query,

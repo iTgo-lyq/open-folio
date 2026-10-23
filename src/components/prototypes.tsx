@@ -73,7 +73,7 @@ import { Empty, ErrorNotice } from "./document";
 import { ChangePreviews } from "./previews";
 const clearPreview = CLEAR_PROTOTYPE_VIEW;
 export default function Prototypes() {
-  const { data, projectId, q, readUrl, nav } = useWorkspace();
+  const { data, projectId, q, readUrl, nav, cache } = useWorkspace();
   useEffect(() => {
     const patch = {
       ...(legacyPrototypesPatch(q) ?? {}),
@@ -87,29 +87,41 @@ export default function Prototypes() {
   useEffect(() => {
     if (q.prototype) previous.current = q.prototype;
   }, [q.prototype]);
-  const key = `${projectId}:${data!.id}`;
+  const key = readUrl(`prototypes?snapshot=${data!.id}`);
   const [response, setResponse] = useState<{
     key: string;
+    cache?: typeof cache;
     value?: PrototypeCatalog;
     error?: string;
   }>({ key: "" });
   const [retry, setRetry] = useState(0);
   useEffect(() => {
+    if (cache.get<PrototypeCatalog>(key)) return;
     const controller = new AbortController();
-    api<PrototypeCatalog>(readUrl(`prototypes?snapshot=${data!.id}`), {
+    api<PrototypeCatalog>(key, {
       signal: controller.signal,
     })
       .then((value) => {
-        if (!controller.signal.aborted) setResponse({ key, value });
+        if (!controller.signal.aborted) {
+          cache.set(key, value);
+          setResponse({ key, cache, value });
+        }
       })
       .catch((error) => {
         if (!controller.signal.aborted)
-          setResponse({ key, error: error.message });
+          setResponse({ key, cache, error: error.message });
       });
     return () => controller.abort();
-  }, [key, projectId, data, retry, readUrl]);
-  const catalog = response.key === key ? response.value : undefined;
-  const error = response.key === key ? response.error : undefined;
+  }, [key, retry, cache]);
+  const catalog =
+    cache.get<PrototypeCatalog>(key) ??
+    (response.key === key && response.cache === cache
+      ? response.value
+      : undefined);
+  const error =
+    response.key === key && response.cache === cache
+      ? response.error
+      : undefined;
   if (q.prototype)
     return (
       <>
