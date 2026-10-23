@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "reduce-github-requests",
+  "title": "减少 GitHub 重复请求与历史 PR 扫描",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "性能",
+    "修复"
+  ]
+}

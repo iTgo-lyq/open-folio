@@ -98,12 +98,18 @@ try {
     assert.equal(await el('[data-view-field="creators"][value="@me"]').isChecked(),true);
   });
   await check('排序、显隐、删除及键盘/触屏替代，确认才生效',async()=>{
-    await open('/changes?scene=views-saved'); await action('manage-views');
+    await open('/changes?scene=views-saved');
+    const tabIds=()=>el('.view-tabs [role="tab"]').evaluateAll(tabs=>tabs.map(t=>t.dataset.arg));
+    const systemTabs=['system:active','system:completed','system:archived','system:cancelled'];
+    assert.deepEqual(await tabIds(),[...systemTabs,'mine','high','shipped']);
+    assert.match(await selected(),/我的/);
+    await action('manage-views');
     await el('[data-view-drag="high"]').focus(); await page.keyboard.press('Alt+ArrowUp');
     assert.equal(await el('[data-view-row]').first().getAttribute('data-view-row'),'high');
     await action('view-visibility','mine');
     assert.equal(await el('.view-tabs [data-arg="mine"]').count(),1);
     await action('confirm-view-manager'); assert.equal(await el('.view-tabs [data-arg="mine"]').count(),0);
+    assert.deepEqual(await tabIds(),[...systemTabs,'high','shipped']);
     assert.match(await selected(),/进行中/);
     await action('manage-views'); await action('view-visibility','mine'); await action('confirm-view-manager');
     assert.equal(await el('.view-tabs [data-arg="mine"]').count(),1);

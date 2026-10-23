@@ -49,7 +49,7 @@ function viewTabs(all) {
     const c = v.config;
     return all.filter(row => matchesViewStates(row,c.states) && (!c.creators.length || c.creators.includes(row.creator) || (c.creators.includes("@me") && row.creator === ACCOUNT.person)) && (!c.types.length || row.labels.some(t => c.types.includes(t)) || (!row.labels.length && c.types.includes("__none"))) && (!c.urgency.length || c.urgency.includes(row.urgency || "normal"))).length;
   };
-  return `<div class="view-tab-bar"><div class="seg view-tabs" role="tablist" aria-label="Change 视图">${viewStore().views.filter(v => v.visible).map(v => tab(v.id,v.name,countView(v))).join("")}${SCOPES.filter(([k]) => k !== "cancelled" || all.some(c => inScope(c,k))).map(([k,l]) => tab("system:"+k,l,all.filter(c => inScope(c,k)).length)).join("")}</div>${ibtn("管理视图", "manage-views", "settings", { key: "manage-views", popup: "dialog", cls: "view-settings" })}</div>`;
+  return `<div class="view-tab-bar"><div class="seg view-tabs" role="tablist" aria-label="Change 视图">${SCOPES.filter(([k]) => k !== "cancelled" || all.some(c => inScope(c,k))).map(([k,l]) => tab("system:"+k,l,all.filter(c => inScope(c,k)).length)).join("")}${viewStore().views.filter(v => v.visible).map(v => tab(v.id,v.name,countView(v))).join("")}</div>${ibtn("管理视图", "manage-views", "settings", { key: "manage-views", popup: "dialog", cls: "view-settings" })}</div>`;
 }
 function visibleViewFilters() {
   const f = S.changes, selected = viewStore().selected;
