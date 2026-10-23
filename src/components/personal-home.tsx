@@ -43,6 +43,7 @@ export function PersonalHome() {
       setBusy(false);
     }
   };
+  const hasBindings = !!p.session?.connections.length;
   const ready = p.items.filter((i) => i.state === "ready");
   const issues = p.items.filter((i) => i.state !== "ready");
   const name = (item: DiscoveredRepository) => item.repository.displayName;
@@ -52,6 +53,7 @@ export function PersonalHome() {
         <header className={styles.heading}>
           <div>
             <h1>我的仓库</h1>
+            {!p.connection && <p>当前账号：{p.session?.account?.username}</p>}
             {p.connection && (
               <p>
                 {ready.length} 个可阅读 · 由 Token「{p.connection.label}」发现
@@ -71,21 +73,36 @@ export function PersonalHome() {
             aria-labelledby="first-token-title"
           >
             <KeyRound aria-hidden="true" />
-            <h2 id="first-token-title">绑定一个 GitHub Token</h2>
+            <h2 id="first-token-title">
+              {p.restoringConnection
+                ? "正在恢复已有 Token…"
+                : hasBindings
+                  ? "选择已保存的 Token"
+                  : "绑定一个 GitHub Token"}
+            </h2>
             <p>
-              OpenFolio 用你的 Token 读取有权限的仓库，并只列出已接入 SpecTrail
-              的项目。Token 随账号保存，换浏览器登录后也能直接使用。
+              {hasBindings
+                ? "Token 已随当前账号保存，无需重新填写。选择已有 Token 即可恢复对应工作台。"
+                : "OpenFolio 用你的 Token 读取有权限的仓库，并只列出已接入 SpecTrail 的项目。Token 随账号保存，换浏览器登录后也能直接使用。"}
             </p>
+            {p.connectionError && <p role="alert">{p.connectionError}</p>}
             <div className={styles.actions}>
-              <Button variant="primary" onClick={() => setAdding(true)}>
-                <Plus />
-                添加 Token
-              </Button>
-              {!!p.session?.connections.length && (
-                <Button onClick={() => nav({ m: "connections" })}>
+              {hasBindings && (
+                <Button
+                  variant="primary"
+                  loading={p.restoringConnection}
+                  onClick={() => nav({ m: "connections" })}
+                >
                   选择已有 Token
                 </Button>
               )}
+              <Button
+                variant={hasBindings ? "default" : "primary"}
+                onClick={() => setAdding(true)}
+              >
+                <Plus />
+                添加 Token
+              </Button>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost">所需权限</Button>

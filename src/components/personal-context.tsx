@@ -22,6 +22,8 @@ export type PersonalSession = SessionSummary & {
 type PersonalValue = {
   session: PersonalSession | null;
   sessionError: string;
+  restoringConnection: boolean;
+  connectionError: string;
   connection: ConnectionSummary | undefined;
   updatePreferences: (patch: WorkspacePreferences) => Promise<void>;
   reloadSession: (select?: string, listOnly?: boolean) => Promise<void>;
@@ -41,6 +43,8 @@ export const usePersonal = () => useContext(Personal)!;
 export function PersonalProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<PersonalSession | null>(null),
     [sessionError, setSessionError] = useState(""),
+    [restoringConnection, setRestoringConnection] = useState(false),
+    [connectionError, setConnectionError] = useState(""),
     [epoch, setEpoch] = useState(0),
     [items, setItems] = useState<DiscoveredRepository[]>([]),
     [discovery, setDiscovery] = useState<DiscoverySummary | null>(null),
@@ -93,13 +97,16 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       setPersonalRevision(next.browserRevision);
       setSession(next);
       setSessionError("");
+      if (next.connected) setConnectionError("");
     } catch (e) {
       if (version !== sequence.current) return;
-      snapshot.current = null;
-      setPersonalRevision();
-      setSession(null);
-      setItems([]);
-      setEpoch((v) => v + 1);
+      if (e instanceof ApiError && e.code === "SESSION_REQUIRED") {
+        snapshot.current = null;
+        setPersonalRevision();
+        setSession(null);
+        setItems([]);
+        setEpoch((v) => v + 1);
+      }
       setSessionError((e as Error).message);
     }
   }, []);
@@ -110,6 +117,48 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     },
     [recover],
   );
+  const restoredDevice = useRef("");
+  useEffect(() => {
+    setRestoringConnection(false);
+    setConnectionError("");
+    const device = session?.deviceSessionId;
+    if (!device || restoredDevice.current === device) return;
+    restoredDevice.current = device;
+    if (session.connected || session.connections.length !== 1) return;
+    const c = new AbortController();
+    setRestoringConnection(true);
+    void api("/api/session/switch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-OpenFolio-Revision": String(session.browserRevision),
+      },
+      body: JSON.stringify({ connectionId: session.connections[0].id }),
+      signal: c.signal,
+    })
+      .then(async () => {
+        if (!c.signal.aborted) await reloadSession(undefined, true);
+      })
+      .catch(async (error) => {
+        if (c.signal.aborted) return;
+        setConnectionError(`已有 Token 未能自动恢复：${error.message}`);
+        // Reconcile a concurrent selection or binding change without logging out.
+        if (
+          error instanceof ApiError &&
+          [
+            "SESSION_CHANGED",
+            "SESSION_REQUIRED",
+            "CONNECTION_NOT_FOUND",
+            "CONNECTION_CHANGED",
+          ].includes(error.code)
+        )
+          await recover();
+      })
+      .finally(() => {
+        if (!c.signal.aborted) setRestoringConnection(false);
+      });
+    return () => c.abort();
+  }, [session?.deviceSessionId, recover, reloadSession]);
   useEffect(() => {
     if (typeof BroadcastChannel !== "undefined") {
       const c = new BroadcastChannel("openfolio-account");
@@ -196,50 +245,64 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     const c = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     let last = "";
+    const readPage = async () => {
+      const page = await api<{
+        items: DiscoveredRepository[];
+        nextOffset: number | null;
+        unavailable: number;
+      }>(`/api/repositories?connectionId=${connection.id}&cursor=${cursor}`, {
+        signal: c.signal,
+      });
+      if (c.signal.aborted) return;
+      setItems((old) =>
+        cursor
+          ? [
+              ...old.filter((i) => !page.items.some((n) => n.key === i.key)),
+              ...page.items,
+            ]
+          : page.items,
+      );
+      setMore(page.nextOffset);
+      setUnavailable(page.unavailable);
+    };
     const load = async () => {
       setListing(true);
-      try {
+      const first = !last;
+      const statusRequest = (async () => {
         const status = await api<{ discovery: DiscoverySummary | null }>(
           `/api/connections/${connection.id}/discovery`,
           { signal: c.signal },
         );
         if (c.signal.aborted) return;
         setDiscovery(status.discovery);
-        if (last !== status.discovery?.updatedAt || !last) {
-          const page = await api<{
-            items: DiscoveredRepository[];
-            nextOffset: number | null;
-            unavailable: number;
-          }>(
-            `/api/repositories?connectionId=${connection.id}&cursor=${cursor}`,
-            { signal: c.signal },
-          );
-          if (c.signal.aborted) return;
-          setItems((old) =>
-            cursor
-              ? [
-                  ...old.filter(
-                    (i) => !page.items.some((n) => n.key === i.key),
-                  ),
-                  ...page.items,
-                ]
-              : page.items,
-          );
-          setMore(page.nextOffset);
-          setUnavailable(page.unavailable);
-          setDirectoryError("");
-          last = status.discovery?.updatedAt ?? "idle";
-        }
+        if (!first && last !== status.discovery?.updatedAt) await readPage();
+        last = status.discovery?.updatedAt ?? "idle";
         if (status.discovery?.state === "running")
           timer = setTimeout(() => void load(), 2500);
-      } catch (e) {
-        if (!c.signal.aborted) {
+      })();
+      const results = await Promise.allSettled([
+        statusRequest,
+        ...(first ? [readPage()] : []),
+      ]);
+      if (c.signal.aborted) return;
+      const failed = results.find((r) => r.status === "rejected");
+      if (failed?.status === "rejected") {
+        last = "";
+        const error = failed.reason;
+        if (
+          error instanceof ApiError &&
+          [
+            "SESSION_REQUIRED",
+            "TOKEN_INVALID",
+            "IDENTITY_CHANGED",
+            "CONNECTION_NOT_FOUND",
+            "CONNECTION_CHANGED",
+          ].includes(error.code)
+        )
           setItems([]);
-          setDirectoryError((e as Error).message);
-        }
-      } finally {
-        if (!c.signal.aborted) setListing(false);
-      }
+        setDirectoryError(error.message);
+      } else setDirectoryError("");
+      setListing(false);
     };
     void load();
     return () => {
@@ -264,6 +327,8 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
       value={{
         session,
         sessionError,
+        restoringConnection,
+        connectionError,
         connection,
         updatePreferences,
         reloadSession,

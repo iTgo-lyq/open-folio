@@ -106,7 +106,12 @@ test("invalid binding preserves account and selected Token, logout preserves bin
   await expect(tokenRows(page)).toHaveCount(1);
   const resumed = await (await page.request.get("/api/session")).json();
   expect(resumed.authenticated).toBe(true);
-  expect(resumed.connected).toBe(false);
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get("/api/session")).json()).connected,
+    )
+    .toBe(true);
 });
 for (const width of [834, 390, 320])
   test(`account form and bindings fit ${width}px`, async ({ page }) => {

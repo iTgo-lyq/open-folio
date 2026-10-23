@@ -82,10 +82,18 @@ export async function sharedResponse(
             "snapshot",
             "cursor",
             "load",
+            "refresh",
           ].includes(k) || q.getAll(k).length !== 1,
       )
     )
       throw new AppError("INVALID_PARAMETER", "分享读取参数不合法。", 400);
+    const isDetail = segments.length === 1 && segments[0] === "change";
+    if (q.has("refresh") && (!isDetail || q.get("refresh") !== "1"))
+      throw new AppError(
+        "INVALID_PARAMETER",
+        "刷新参数仅适用于分享详情。",
+        400,
+      );
     const target: ShareTarget = {
       repository: q.get("repository") ?? "",
       change: q.get("change") ?? "",
@@ -99,7 +107,6 @@ export async function sharedResponse(
       request.signal,
       async (ctx) => {
         const effectiveLimits = limits ?? limitsFor(await readConfig());
-        const isDetail = segments.length === 1 && segments[0] === "change";
         if (isDetail)
           noteRepositoryActivity(
             repos.root,
@@ -107,19 +114,38 @@ export async function sharedResponse(
             ctx.project.id,
             ctx.project.integrationBranch,
           );
-        const snapshot = isDetail
-          ? await ctx.refresh(effectiveLimits, true)
-          : await ctx.store.snapshot(ctx.project).catch(async (error) => {
-              if (error instanceof AppError && error.code === "NO_SNAPSHOT")
-                return ctx.refresh(effectiveLimits, true);
-              throw error;
-            });
+        let snapshot =
+          isDetail && q.get("refresh") === "1"
+            ? await ctx.refresh(effectiveLimits, true)
+            : await ctx.store.snapshot(ctx.project).catch(async (error) => {
+                if (
+                  error instanceof AppError &&
+                  ["NO_SNAPSHOT", "CACHE_INVALID"].includes(error.code)
+                )
+                  return ctx.refresh(effectiveLimits, true);
+                throw error;
+              });
         if (
           (!isDetail || q.has("snapshot")) &&
           q.get("snapshot") !== snapshot.id
         )
           throw versionChanged();
-        const data = projectChange(snapshot, target.change, ctx.project.name);
+        let data;
+        try {
+          data = projectChange(snapshot, target.change, ctx.project.name);
+        } catch (error) {
+          // A newly pushed Change may not exist in the cached repository yet.
+          if (
+            !isDetail ||
+            q.has("snapshot") ||
+            q.has("refresh") ||
+            !(error instanceof AppError) ||
+            error.code !== "SHARE_SOURCE_UNAVAILABLE"
+          )
+            throw error;
+          snapshot = await ctx.refresh(effectiveLimits, true);
+          data = projectChange(snapshot, target.change, ctx.project.name);
+        }
         let value: Response;
         if (isDetail) value = Response.json(data);
         else if (
@@ -267,7 +293,10 @@ export async function sharedResponse(
           }
         } else throw new AppError("NOT_FOUND", "接口不存在。", 404);
         await ctx.assertRead();
-        if ((await ctx.store.snapshot(ctx.project)).id !== snapshot.id)
+        if (
+          !isDetail &&
+          (await ctx.store.snapshot(ctx.project)).id !== snapshot.id
+        )
           throw versionChanged();
         return value;
       },

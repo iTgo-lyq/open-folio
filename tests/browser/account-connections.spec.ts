@@ -32,7 +32,16 @@ test("another browser logs in without Token, sees account bindings, and selects 
     expect(session.connected).toBe(false);
     expect(session.connections).toHaveLength(2);
     const b = await second.newPage();
-    await b.goto("/?m=connections");
+    await b.goto("/?m=home");
+    await expect(
+      b.getByRole("heading", { name: "选择已保存的 Token" }),
+    ).toBeVisible();
+    await expect(
+      b.getByText(`当前账号：${personal.username}`, { exact: true }),
+    ).toBeVisible();
+    await b
+      .getByRole("button", { name: "选择已有 Token", exact: true })
+      .click();
     await b.getByRole("button", { name: "使用reader", exact: true }).click();
     await expect(current(b)).toContainText("@reader");
     await expect(current(page)).toContainText("@collaborator");
@@ -270,4 +279,129 @@ test("failed Token switching keeps the current selection and exposes a recoverab
   await expect(
     page.getByRole("button", { name: "reader 的更多操作" }),
   ).toBeFocused();
+});
+
+test("a second browser automatically restores the sole saved Token without submitting it again", async ({
+  browser,
+  page,
+  personal,
+}) => {
+  const second = await browser.newContext();
+  try {
+    await loginAccount(second.request, personal.username);
+    const view = await second.newPage();
+    let submissions = 0;
+    view.on("request", (r) => {
+      if (
+        new URL(r.url()).pathname === "/api/connections" &&
+        r.method() === "POST"
+      )
+        submissions++;
+    });
+    await view.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+    await expect(
+      view.getByRole("heading", { name: "工程协作", exact: true }),
+    ).toBeVisible();
+    expect(
+      (await (await second.request.get("/api/session")).json()).workspace.id,
+    ).toBe(personal.id);
+    expect(
+      (await (await page.request.get("/api/session")).json()).workspace.id,
+    ).toBe(personal.id);
+    expect(submissions).toBe(0);
+  } finally {
+    await second.close();
+  }
+});
+
+test("failed automatic Token recovery preserves login and supports manual selection", async ({
+  browser,
+  personal,
+}) => {
+  const second = await browser.newContext();
+  try {
+    await loginAccount(second.request, personal.username);
+    const view = await second.newPage();
+    let attempts = 0;
+    await view.route("**/api/session/switch", (route) => {
+      attempts++;
+      return route.fulfill({
+        status: 503,
+        json: {
+          error: {
+            code: "PROVIDER_UNAVAILABLE",
+            message: "GitHub 暂时无法响应",
+          },
+        },
+      });
+    });
+    await view.goto("/?m=home");
+    await expect(view.getByRole("main").getByRole("alert")).toContainText(
+      "已有 Token 未能自动恢复",
+    );
+    await expect(
+      view.getByRole("heading", { name: "选择已保存的 Token" }),
+    ).toBeVisible();
+    await view.evaluate(() => window.dispatchEvent(new Event("focus")));
+    const session = await (await second.request.get("/api/session")).json();
+    expect(session.authenticated).toBe(true);
+    expect(session.connections).toHaveLength(1);
+    expect(attempts).toBe(1);
+    await view.unroute("**/api/session/switch");
+    await view
+      .getByRole("button", { name: "选择已有 Token", exact: true })
+      .click();
+    await view.getByRole("button", { name: "使用reader", exact: true }).click();
+    await expect(current(view)).toContainText("@reader");
+  } finally {
+    await second.close();
+  }
+});
+
+test("a delayed automatic recovery cannot overwrite a newer manual selection", async ({
+  browser,
+  personal,
+}) => {
+  const second = await browser.newContext();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  try {
+    await loginAccount(second.request, personal.username);
+    const view = await second.newPage();
+    let started = false;
+    await view.route("**/api/session/switch", async (route) => {
+      started = true;
+      await held;
+      await route.continue();
+    });
+    await view.goto("/?m=home");
+    await expect.poll(() => started).toBe(true);
+    const newer = await connectRequest(
+      second.request,
+      "token-b",
+      personal.username,
+    );
+    const rejected = view.waitForResponse((r) =>
+      r.url().endsWith("/api/session/switch"),
+    );
+    release();
+    expect((await rejected).status()).toBe(409);
+    await expect(
+      view.getByRole("heading", { name: "选择已保存的 Token" }),
+    ).toHaveCount(0);
+    await expect
+      .poll(
+        async () =>
+          (await (await second.request.get("/api/session")).json()).workspace
+            .id,
+      )
+      .toBe(newer.id);
+    await view.goto("/?m=connections");
+    await expect(current(view)).toContainText("@collaborator");
+  } finally {
+    release();
+    await second.close();
+  }
 });
