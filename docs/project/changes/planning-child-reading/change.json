@@ -4,13 +4,13 @@
   "title": "修复规划期父 Change 的待创建子项读取",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/planning-child-reading",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "修复规划期待创建子项的关系校验与展示并验证材料访问",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
