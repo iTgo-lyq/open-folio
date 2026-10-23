@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "发布可重复执行的 skill 版本",
-      "status": "doing"
+      "status": "done",
+      "verification": "本地发布与版本测试 10 项、setup 与版本测试 14 项通过；覆盖重复发布、非法版本、失败推送重试及分发保留，未发布真实版本。",
+      "commitTitle": "skill-auto-update T1: publish versioned skill artifacts"
     },
     "T2": {
       "title": "按项目配置检查并提醒 skill 更新",
