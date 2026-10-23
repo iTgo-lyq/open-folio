@@ -191,6 +191,7 @@ export type Relation = {
   kind: "dependency" | "child" | "parent";
   target: string;
   exists: boolean;
+  pendingCreation?: boolean;
   process: "satisfied" | "unsatisfied" | "unknown";
   ancestry: "found" | "unknown";
   diagnostics: string[];

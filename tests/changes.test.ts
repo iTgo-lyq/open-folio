@@ -542,6 +542,122 @@ test("completion, dependency ancestry, live leftovers, cancellation and parent c
   );
 });
 
+test("xlarge planning children may await creation without diagnostics or completion", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  f.git(["checkout", "-b", "change/planning"]);
+  const records = [
+    ...(["requirement", "technical", "execution", "close"] as const).map(
+      (stage) =>
+        state(`${stage}-parent`, {
+          branch: "change/planning",
+          size: "xlarge",
+          stage,
+          tasks: {},
+          children: ["future-child"],
+          confirmations,
+        }),
+    ),
+    {
+      ...completed("completed-parent"),
+      branch: "change/planning",
+      size: "xlarge" as const,
+      tasks: {},
+      children: ["future-child"],
+      confirmations,
+    },
+  ];
+  for (const record of records) {
+    const directory =
+      record.status === "completed"
+        ? record.closure.archive!.path!
+        : `docs/project/changes/${record.id}`;
+    await f.put(`${directory}/change.json`, JSON.stringify(record));
+    await f.put(`${directory}/requirement.md`, `# ${record.title}`);
+  }
+  f.commit();
+  await f.register(Object.fromEntries(records.map((r) => [r.id, r.branch])));
+  const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (const record of records) {
+    const group = snap.changes.find((g) => g.id === record.id)!;
+    const relation = group.relations[0];
+    const planning = ["requirement", "technical"].includes(record.stage);
+    assert.equal(relation.exists, false);
+    assert.equal(relation.pendingCreation, planning ? true : undefined);
+    assert.equal(relation.process, "unknown");
+    assert.equal(relation.ancestry, "unknown");
+    assert.equal(relation.diagnostics.length === 0, planning);
+    assert.equal(group.diagnostics.length === 0, planning);
+    assert.equal(primaryRecord(group)!.validCompleted, false);
+    if (planning) assert.deepEqual(primaryRecord(group)!.diagnostics, []);
+    assert.equal(primaryRecord(group)!.documentIds.length, 2);
+    if (record.stage === "close")
+      assert(
+        primaryRecord(group)!.diagnostics.some(
+          (d) => d.code === "CHILDREN_UNFINISHED",
+        ),
+      );
+  }
+});
+
+test("planning preserves invalid existing child, self, parent and dependency diagnostics", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  f.git(["checkout", "-b", "change/planning"]);
+  const records = [
+    state("planning-parent", {
+      size: "xlarge",
+      stage: "technical",
+      tasks: {},
+      confirmations: { requirement: confirmation },
+      children: [
+        "future-child",
+        "unlinked-child",
+        "invalid-child",
+        "unavailable-child",
+        "planning-parent",
+      ],
+    }),
+    state("unlinked-child"),
+    state("invalid-child"),
+    state("missing-relations", {
+      stage: "requirement",
+      parent: "future-parent",
+      dependsOn: ["future-dependency"],
+    }),
+  ];
+  for (const record of records)
+    await f.put(
+      `docs/project/changes/${record.id}/change.json`,
+      JSON.stringify({
+        ...record,
+        branch: "change/planning",
+        ...(record.id === "invalid-child" ? { schemaVersion: 2 } : {}),
+      }),
+    );
+  f.commit();
+  await f.register({
+    ...Object.fromEntries(records.map((r) => [r.id, "change/planning"])),
+    "unavailable-child": "change/not-created",
+  });
+  const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const parent = snap.changes.find((g) => g.id === "planning-parent")!;
+  assert.equal(parent.relations[0].pendingCreation, true);
+  assert.deepEqual(parent.relations[0].diagnostics, []);
+  for (const relation of parent.relations.slice(1)) {
+    assert.equal(relation.exists, true);
+    assert.equal(relation.pendingCreation, undefined);
+    assert(relation.diagnostics.length > 0);
+  }
+  assert(parent.relations[1].diagnostics.some((d) => d.includes("反向声明")));
+  assert(parent.diagnostics.some((d) => d.code === "RELATION_CYCLE"));
+  const missing = snap.changes.find((g) => g.id === "missing-relations")!;
+  for (const relation of missing.relations) {
+    assert.equal(relation.pendingCreation, undefined);
+    assert(relation.diagnostics.length > 0);
+  }
+});
+
 test("size routes preserve confirmations, closure order and explicit Spec references", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);

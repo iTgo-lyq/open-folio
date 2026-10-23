@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "planning-child-reading",
+  "title": "修复规划期父 Change 的待创建子项读取",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/planning-child-reading",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复规划期待创建子项的关系校验与展示并验证材料访问",
+      "status": "done",
+      "verification": "316 项自动化测试、27 项浏览器回归、类型检查和生产构建通过，含待创建展示与文档原型实际访问"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-23T02:57:42.576Z",
+      "summary": "Agent 自查完整差异及验收条件，316 项自动化测试、27 项浏览器回归、类型检查和生产构建全部通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-23T02:57:44.336Z",
+      "summary": "Agent 自验收：规划期子项显示待创建且无读取异常，未计为结束，文档与原型可实际访问，异常边界仍受校验",
+      "source": "本 Change 为 small，按已记录需求和自动化、浏览器验证证据逐项自验收"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-23T02:57:55.715Z",
+      "summary": "Change 追踪 Spec 补充 xlarge 需求与技术阶段的待创建子项展示、异常边界及材料阅读约定"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-23T02:57:57.587Z",
+      "summary": "规划期父 Change 的待创建子项读取修复已验证并由 Agent 自验收",
+      "path": "docs/project/archive/2026-10-23-planning-child-reading"
+    }
+  },
+  "types": [
+    "修复"
+  ]
+}
