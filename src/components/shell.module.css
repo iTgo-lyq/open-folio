@@ -477,12 +477,18 @@
 }
 
 /* 同步状态按钮与弹层。 */
+.syncControls {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+}
 .sync {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 30px;
-  padding: 0 10px;
+  min-height: 36px;
+  padding: 2px 8px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -490,6 +496,17 @@
   font-size: 12.5px;
   white-space: nowrap;
   cursor: pointer;
+}
+.syncInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.syncLabel {
+  color: var(--of-text-3);
+  font-size: 10px;
 }
 .sync:hover,
 .sync[data-state="open"] {
@@ -660,7 +677,7 @@
   .tbAccount {
     display: inline-flex;
   }
-  .syncLabel {
+  .syncDate {
     display: none;
   }
   .legacy {
@@ -716,13 +733,13 @@
   }
 }
 @media (max-width: 760px) {
-  .app[data-change-reading] .sync {
-    display: none;
+  .sync {
+    gap: 5px;
+    padding-inline: 5px;
   }
 }
 
 @media (max-width: 760px) {
-  .app[data-focused-preview] .sync,
   .app[data-focused-preview] .back > span {
     display: none;
   }

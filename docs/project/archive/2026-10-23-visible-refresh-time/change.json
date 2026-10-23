@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "visible-refresh-time",
+  "title": "顶栏保留刷新入口与上次更新时间",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/visible-refresh-time",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "顶栏直接展示刷新入口与当前内容更新时间",
+      "status": "done",
+      "verification": "类型检查、生产构建、格式检查通过；20 项浏览器测试通过，桌面和 320px 手机截图自查通过。",
+      "commitTitle": "visible-refresh-time T1: expose refresh and last update time"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-23T03:31:42.101Z",
+      "summary": "Agent 自查完整差异与桌面/窄屏截图，类型检查、构建及 20 项浏览器测试通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-23T03:31:43.859Z",
+      "summary": "Agent 自验收：顶栏直接刷新、快照时间、失败保留及窄屏布局均符合需求。",
+      "source": "需求验收逐项核对，类型检查、生产构建、20 项浏览器测试及截图自查通过。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-23T03:31:53.549Z",
+      "summary": "更新项目知识工作台能力边界，明确顶栏刷新入口、内容更新时间及窄屏行为。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-23T03:31:55.343Z",
+      "summary": "顶栏刷新入口与内容更新时间通过验证和 Agent 自验收，Specs 已同步。",
+      "path": "docs/project/archive/2026-10-23-visible-refresh-time"
+    }
+  },
+  "types": [
+    "体验"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "本次局部顶栏调整是否先绘制原型？",
+      "recommendation": "直接沿用现有样式实现。",
+      "answer": "直接沿用现有样式实现。",
+      "source": "直接沿用现有样式实现（推荐）"
+    }
+  }
+}
