@@ -29,6 +29,7 @@ async function open(hash='/changes',width=1440,height=900) {
 }
 const el=s=>frame.locator(s);
 const action=(name,arg)=>el(`[data-action="${name}"]${arg!==undefined?`[data-arg="${arg}"]`:''}`).first().click();
+const toggleFilter=async arg=>{ await action('filter-menu'); await action('toggle-filter',arg); await page.keyboard.press('Escape'); };
 const selected=()=>el('.view-tabs [aria-selected="true"]').innerText();
 const rowCount=()=>el('.change-row').count();
 const overflow=()=>frame.evaluate(()=>[document.documentElement,...document.querySelectorAll('.page,.views-toolbar,.view-tab-bar,.pop')].filter(e=>e.scrollWidth>e.clientWidth+1).map(e=>e.className||e.tagName));
@@ -49,12 +50,20 @@ try {
   });
   await check('首次默认我的；临时修改、恢复及显式保存',async()=>{
     await open(); assert.match(await selected(),/我的/); assert.equal(await rowCount(),3);
-    await action('drop-filter','creators:@me'); assert.equal(await rowCount(),8);
+    assert.equal(await el('.view-condition-chips').count(),0);
+    assert.equal(await el('[data-key="filter-menu"] .badge-count').count(),0);
+    await toggleFilter('urgency:high');
+    assert.equal(await el('.chip').count(),1);
+    assert.match(await el('.chip').innerText(),/紧急程度/);
+    await action('drop-filter','urgency:high'); assert.equal(await rowCount(),3);
+    assert.equal(await el('.view-condition-chips').count(),0);
+    await toggleFilter('creators:@me'); assert.equal(await rowCount(),8);
     assert.equal(await el('.view-dirty-bar').count(),1);
     await action('restore-change-view'); assert.equal(await rowCount(),3);
-    await action('drop-filter','creators:@me'); await action('save-current-view');
+    await toggleFilter('creators:@me'); await action('save-current-view');
     assert.equal(await el('.view-dirty-bar').count(),0);
     await action('select-change-view','system:archived'); assert.equal(await rowCount(),3);
+    assert.equal(await el('.view-condition-chips').count(),0);
     await action('select-change-view','mine'); assert.equal(await rowCount(),8);
   });
   await check('添加继承当前筛选显示；取消不保存；状态并集与创建者交集',async()=>{
@@ -85,7 +94,7 @@ try {
     assert.match(await el('.view-editor-error').innerText(),/请输入/);
     await el('#view-name').fill('我的'); await action('apply-view-editor'); assert.match(await el('.view-editor-error').innerText(),/同名/);
     await action('cancel-view-editor'); await action('cancel-view-manager');
-    await action('drop-filter','creators:@me'); await action('manage-views'); await action('edit-managed-view','mine');
+    await toggleFilter('creators:@me'); await action('manage-views'); await action('edit-managed-view','mine');
     assert.equal(await el('[data-view-field="creators"][value="@me"]').isChecked(),true);
   });
   await check('排序、显隐、删除及键盘/触屏替代，确认才生效',async()=>{
@@ -111,7 +120,8 @@ try {
     await action('manage-views'); await action('add-managed-view'); assert.equal(await el('[data-view-field="states"][value="cancelled"]').isEnabled(),true);
     await page.keyboard.press('Escape');
     await action('select-change-view','system:completed'); assert.equal(await rowCount(),1); assert.match(await el('.rows').innerText(),/费用导出/);
-    await action('select-change-view','system:archived'); assert.equal(await rowCount(),3); assert.doesNotMatch(await el('.table').innerText(),/费用导出/);
+    await action('select-change-view','system:archived'); assert.equal(await rowCount(),3);
+    assert.equal(await el('.view-condition-chips').count(),0); assert.doesNotMatch(await el('.table').innerText(),/费用导出/);
   });
   await check('保存失败保留草稿，重试成功后更新 tab',async()=>{
     await open('/changes?scene=views-save-error'); await action('manage-views'); await action('edit-managed-view','mine'); await el('#view-name').fill('我的工作'); await action('apply-view-editor'); await action('confirm-view-manager');

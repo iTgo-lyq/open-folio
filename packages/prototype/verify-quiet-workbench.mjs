@@ -183,7 +183,7 @@ await check("筛选：按创建者筛选、标签移除与清除", async () => {
   assert.equal(await count(".change-row"), 3);
   assert.ok(before > 3);
   await page.keyboard.press("Escape");
-  assert.equal(await count(".chip"), 2);
+  assert.equal(await count(".chip"), 1);
   await $('[data-key="chip:creators:lin"]').click();
   assert.equal(await count(".change-row"), before);
 });

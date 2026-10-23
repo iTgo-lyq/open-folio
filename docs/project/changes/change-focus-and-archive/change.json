@@ -67,9 +67,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "已按反馈恢复现有视觉样式并发布修正版，等待原型评审验收。"
-  }
+  ]
 }

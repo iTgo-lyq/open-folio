@@ -51,10 +51,18 @@ function viewTabs(all) {
   };
   return `<div class="view-tab-bar"><div class="seg view-tabs" role="tablist" aria-label="Change 视图">${viewStore().views.filter(v => v.visible).map(v => tab(v.id,v.name,countView(v))).join("")}${SCOPES.filter(([k]) => k !== "cancelled" || all.some(c => inScope(c,k))).map(([k,l]) => tab("system:"+k,l,all.filter(c => inScope(c,k)).length)).join("")}</div>${ibtn("管理视图", "manage-views", "settings", { key: "manage-views", popup: "dialog", cls: "view-settings" })}</div>`;
 }
+function visibleViewFilters() {
+  const f = S.changes, selected = viewStore().selected;
+  // 仅省略系统默认条件；自定义视图及额外添加的条件继续可见。
+  const intrinsic = selected === "mine" ? { states: ["active"], creators: ["@me"] }
+    : selected.startsWith("system:") ? { states: [selected.slice(7)] } : {};
+  return Object.fromEntries(["states", "creators", "types", "urgency"].map(k => [k, f[k].filter(v => !intrinsic[k]?.includes(v))]));
+}
+function visibleViewFilterCount() { return Object.values(visibleViewFilters()).reduce((n, values) => n + values.length, 0); }
 function conditionChips() {
-  const f = S.changes;
+  const f = visibleViewFilters();
   const selections = [...f.states.map(v => ["states",v,SCOPES.find(([k]) => k === v)?.[1]]), ...f.creators.map(v => ["creators",v,`创建者：${v === "@me" ? "我" : person(v).name}`]), ...f.types.map(v => ["types",v,`类型：${v === "__none" ? "无类型" : v}`]), ...f.urgency.map(v => ["urgency",v,`紧急程度：${URGENCY[v]}`])];
-  return selections.map(([k,v,l]) => `<button class="chip" data-action="drop-filter" data-arg="${esc(k+":"+v)}" data-key="chip:${esc(k+":"+v)}" aria-label="移除筛选 ${esc(l)}">${esc(l)}${icon("x")}</button>`).join("") || '<span class="muted">全部状态 · 不限创建者</span>';
+  return selections.map(([k,v,l]) => `<button class="chip" data-action="drop-filter" data-arg="${esc(k+":"+v)}" data-key="chip:${esc(k+":"+v)}" aria-label="移除筛选 ${esc(l)}">${esc(l)}${icon("x")}</button>`).join("");
 }
 function viewDirtyBar() {
   if (!viewIsDirty()) return "";
