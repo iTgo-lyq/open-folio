@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "visible-refresh-time",
+  "title": "顶栏保留刷新入口与上次更新时间",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "顶栏直接展示刷新入口与当前内容更新时间",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "体验"
+  ]
+}
