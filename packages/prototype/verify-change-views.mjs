@@ -118,6 +118,12 @@ try {
     assert.match(await el('.view-save-error').innerText(),/修改仍在这里/); assert.match(await selected(),/我的/);
     await action('confirm-view-manager'); assert.match(await selected(),/我的工作/); assert.equal(await el('.pop').count(),0);
   });
+  await check('窄屏切换右侧 tab 后选中项保持可见',async()=>{
+    await open('/changes?scene=views-saved',320,720);
+    await action('select-change-view','system:archived'); await page.waitForTimeout(100);
+    const visible=await el('.view-tabs').evaluate(t=>{const b=t.getBoundingClientRect(),a=t.querySelector('[aria-selected="true"]').getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1;});
+    assert.equal(visible,true);
+  });
   await check('详情返回保持视图，手机列表降级不覆盖看板选择',async()=>{
     await open(); await action('display-menu'); await action('set-display','view:board'); await page.keyboard.press('Escape'); await action('save-current-view');
     await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(200);

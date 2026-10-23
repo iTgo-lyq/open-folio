@@ -128,6 +128,12 @@ function render() {
   frame = requestAnimationFrame(afterRender);
 }
 function afterRender() {
+  const tabs = $(".view-tabs"), selected = tabs && $('[aria-selected="true"]', tabs);
+  if (selected) {
+    const box = tabs.getBoundingClientRect(), active = selected.getBoundingClientRect();
+    if (active.left < box.left) tabs.scrollLeft += active.left - box.left;
+    else if (active.right > box.right) tabs.scrollLeft += active.right - box.right;
+  }
   updateToc();
   fitCanvas();
   $$(".thumb-stage").forEach(fitThumb);
