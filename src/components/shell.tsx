@@ -503,7 +503,7 @@ function AccountMenu({
   );
 }
 
-// 顶栏唯一的读取状态入口：来源、快照时间与刷新。
+// 顶栏直接展示刷新和内容更新时间，弹层保留来源详情。
 function SyncStatus({ module }: { module: Module }) {
   const { data, loading, refreshing, error, errorCode, refresh, q, nav } =
     useWorkspace();
@@ -515,73 +515,99 @@ function SyncStatus({ module }: { module: Module }) {
       ? data?.integrationBranch
       : (data?.selectedBranch ?? data?.integrationBranch);
   const commit = data?.branches.find((b) => b.name === branch)?.commit;
+  const capturedAt = data ? new Date(data.capturedAt) : null;
   const time = data
     ? new Date(data.capturedAt).toLocaleString("zh-CN", { hour12: false })
     : "尚未读取";
+  const label = status.tone === "ok" ? "上次更新" : status.label;
+  const busy = loading || refreshing;
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={styles.sync}
-          data-tone={status.tone}
-          aria-label={`同步状态：${status.label}`}
-        >
-          <span className={styles.syncDot} aria-hidden="true" />
-          <span className={styles.syncLabel}>{status.label}</span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        aria-label="读取来源"
-        align="end"
-        className={styles.syncPop}
-      >
-        <strong className={styles.popTitle}>读取来源</strong>
-        <dl className={styles.kv}>
-          <dt>仓库</dt>
-          <dd>{data?.projectName ?? q.fullName ?? "—"}</dd>
-          <dt>分支</dt>
-          <dd>
-            <code>{branch ?? "待接入"}</code>
-          </dd>
-          <dt>快照</dt>
-          <dd>
-            {commit && <code>{commit.slice(0, 7)}</code>}{" "}
-            {refreshing ? "正在读取…" : time}
-          </dd>
-          <dt>Token</dt>
-          <dd>{personal.connection?.label ?? "未选择"}</dd>
-        </dl>
-        {status.detail && (
-          <p className={styles.popNote} data-tone={status.tone}>
-            <TriangleAlert size={15} aria-hidden="true" />
-            <span>{status.detail}</span>
-          </p>
-        )}
-        <div className={styles.popActions}>
-          <Button
-            size="sm"
-            onClick={() => void refresh()}
-            disabled={!personal.connection || refreshing}
-            aria-label={refreshing ? "正在读取中心仓库" : "刷新中心仓库"}
+    <div className={styles.syncControls}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={styles.sync}
+            data-tone={status.tone}
+            aria-label={`同步状态：${label}，${time}`}
           >
-            <RefreshCw
-              className={refreshing ? styles.spin : undefined}
-              aria-hidden="true"
-            />
-            刷新
-          </Button>
-          {status.tone === "error" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => nav({ m: "connections", ...CLEAR_PROTOTYPE_VIEW })}
-            >
-              当前凭据
-            </Button>
+            <span className={styles.syncDot} aria-hidden="true" />
+            <span className={styles.syncInfo}>
+              <span className={styles.syncLabel}>{label}</span>
+              {data && capturedAt ? (
+                <time dateTime={data.capturedAt} title={`上次更新：${time}`}>
+                  <span className={styles.syncDate}>
+                    {capturedAt.toLocaleDateString("zh-CN", {
+                      month: "2-digit",
+                      day: "2-digit",
+                    })}{" "}
+                  </span>
+                  {capturedAt.toLocaleTimeString("zh-CN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false,
+                  })}
+                </time>
+              ) : (
+                <span>尚未读取</span>
+              )}
+            </span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          aria-label="读取来源"
+          align="end"
+          className={styles.syncPop}
+        >
+          <strong className={styles.popTitle}>读取来源</strong>
+          <dl className={styles.kv}>
+            <dt>仓库</dt>
+            <dd>{data?.projectName ?? q.fullName ?? "—"}</dd>
+            <dt>分支</dt>
+            <dd>
+              <code>{branch ?? "待接入"}</code>
+            </dd>
+            <dt>快照</dt>
+            <dd>
+              {commit && <code>{commit.slice(0, 7)}</code>} {time}
+            </dd>
+            <dt>Token</dt>
+            <dd>{personal.connection?.label ?? "未选择"}</dd>
+          </dl>
+          {status.detail && (
+            <p className={styles.popNote} data-tone={status.tone}>
+              <TriangleAlert size={15} aria-hidden="true" />
+              <span>{status.detail}</span>
+            </p>
           )}
-        </div>
-      </PopoverContent>
-    </Popover>
+          {status.tone === "error" && (
+            <div className={styles.popActions}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  nav({ m: "connections", ...CLEAR_PROTOTYPE_VIEW })
+                }
+              >
+                当前凭据
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+      <IconButton
+        size="sm"
+        tooltip
+        aria-label={busy ? "正在读取中心仓库" : "刷新中心仓库"}
+        disabled={!personal.connection || busy}
+        onClick={() => void refresh()}
+      >
+        <RefreshCw
+          className={busy ? styles.spin : undefined}
+          aria-hidden="true"
+        />
+      </IconButton>
+    </div>
   );
 }

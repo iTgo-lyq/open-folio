@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "顶栏直接展示刷新入口与当前内容更新时间",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型检查、生产构建、格式检查通过；20 项浏览器测试通过，桌面和 320px 手机截图自查通过。",
+      "commitTitle": "visible-refresh-time T1: expose refresh and last update time"
     }
   },
   "closure": {},

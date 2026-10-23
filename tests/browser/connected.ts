@@ -85,17 +85,16 @@ export async function waitForWorkbenchLayout(page: Page, width: number) {
     )
     .toBe(width >= 761 ? 72 : 0);
 }
-// 壳层操作：顶栏“同步状态”弹层承载读取来源与刷新，账号菜单承载 Token 与设置入口。
+// 壳层操作：顶栏直接刷新，更新时间弹层承载来源详情。
 export async function openSyncStatus(page: Page) {
   await page.getByRole("button", { name: /^同步状态：/ }).click();
   return page.getByRole("dialog", { name: "读取来源" });
 }
 export async function refreshCentral(page: Page) {
-  const source = await openSyncStatus(page);
-  await source
+  await page
+    .locator("main > header")
     .getByRole("button", { name: "刷新中心仓库", exact: true })
     .click();
-  await page.keyboard.press("Escape");
 }
 export async function openAccountSettings(page: Page) {
   await page.getByRole("button", { name: /^账号：/ }).click();
