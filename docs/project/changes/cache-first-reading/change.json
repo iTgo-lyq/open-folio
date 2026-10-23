@@ -13,7 +13,20 @@
       "source": "用户对包含缓存优先、减少重复加载、唯一 Token 自动恢复和多 Token 选择的范围回答：按建议范围推进"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "分享详情缓存先读与后台更新",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "阅读缓存复用与暂时失败保留",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "跨浏览器自动恢复已有 Token",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "性能",
@@ -27,5 +40,9 @@
       "recommendation": "一并处理，覆盖打开页面和跨浏览器恢复的完整体验。",
       "answer": "按建议范围推进"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求范围已确认，技术方案与 T1–T3 计划已就绪，等待合并确认后实施；小型文案与状态调整建议不绘制原型。"
   }
 }
