@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "change-focus-and-archive",
+  "title": "Changes 默认关注本人并分离已发布记录",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "体验",
+    "新功能"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "已归档页签自动收纳已发布 Change，还是由用户手动归档不再关注的记录？",
+      "recommendation": "已发布后自动进入已归档，已完成保留待集成、待发布和待核实记录。",
+      "answer": "已发布后自动进入已归档（推荐）",
+      "source": "用户对本轮归档规则问题的选择。"
+    }
+  }
+}
