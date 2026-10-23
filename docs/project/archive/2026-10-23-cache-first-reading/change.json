@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "id": "cache-first-reading",
+  "title": "缓存优先阅读与跨浏览器 Token 恢复",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/cache-first-reading",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-23T05:01:04.613Z",
+      "summary": "缓存优先并后台更新，减少重复加载并恢复跨浏览器已有 Token",
+      "source": "用户对包含缓存优先、减少重复加载、唯一 Token 自动恢复和多 Token 选择的范围回答：按建议范围推进"
+    },
+    "technical": {
+      "at": "2026-10-23T05:06:33.563Z",
+      "summary": "缓存先读再更新，按会话隔离复用正文并自动选用唯一 Token",
+      "source": "用户：确认方案与计划，不绘制原型"
+    },
+    "plan": {
+      "at": "2026-10-23T05:06:35.347Z",
+      "summary": "先交付分享缓存，再优化阅读复用，最后恢复跨浏览器绑定",
+      "source": "用户：确认方案与计划，不绘制原型"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "分享详情缓存先读与后台更新",
+      "status": "done",
+      "verification": "分享服务端 12/12、浏览器 7/7 通过，类型检查通过；覆盖缓存先返、失败保留、版本竞争与失权。",
+      "commitTitle": "cache-first-reading T1: show shared snapshots before remote refresh"
+    },
+    "T2": {
+      "title": "阅读缓存复用与暂时失败保留",
+      "status": "done",
+      "verification": "内存缓存测试 2/2，相关浏览器回归 19/19，附加连续阅读/目录/原型套件 6/6，类型检查通过。",
+      "commitTitle": "cache-first-reading T2: reuse scoped reading data and preserve content during updates"
+    },
+    "T3": {
+      "title": "跨浏览器自动恢复已有 Token",
+      "status": "done",
+      "verification": "账号与个人工作台回归17项及修正定位后补跑4/4通过，类型检查通过；覆盖唯一/多/零绑定、失败重试、并发选择和设备隔离。",
+      "commitTitle": "cache-first-reading T3: restore the sole saved Token after login"
+    },
+    "T4": {
+      "title": "修复评审发现的阅读更新与失权边界",
+      "status": "done",
+      "verification": "缓存3/3、相关浏览器35项经定位修正全部通过、类型检查及构建通过，独立复审关闭3项问题且无新增项。",
+      "commitTitle": "cache-first-reading T4: preserve complete versions and clear revoked reading scopes"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-23T05:30:03.549Z",
+      "summary": "Node、浏览器、类型及构建通过；独立复审无遗留问题，双浏览器真实冒烟与会话清理通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-23T07:27:07.446Z",
+      "summary": "用户验收通过，授权归档、合入 develop 并发布 main。",
+      "source": "验收通过，归档并合入 develop，更新常驻服务。同时也发布到 main 吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-23T07:27:09.437Z",
+      "summary": "同步个人访问的唯一 Token 恢复与分享先读后更新，以及工程阅读缓存和连续显示边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-23T07:27:11.400Z",
+      "summary": "用户验收通过，验证及独立复审完成，Specs 已同步。",
+      "path": "docs/project/archive/2026-10-23-cache-first-reading"
+    }
+  },
+  "types": [
+    "性能",
+    "体验",
+    "修复"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "是否以 medium Change 同时优化缓存优先、减少重复加载，以及唯一 Token 自动恢复、多 Token 选择？",
+      "recommendation": "一并处理，覆盖打开页面和跨浏览器恢复的完整体验。",
+      "answer": "按建议范围推进"
+    }
+  }
+}

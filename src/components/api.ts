@@ -70,7 +70,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
       );
     if (
       typeof window !== "undefined" &&
-      path.startsWith("/api/repositories/") &&
+      (path.startsWith("/api/repositories/") ||
+        path.startsWith("/api/repositories?")) &&
       !init?.signal?.aborted &&
       [
         "TOKEN_INVALID",
@@ -79,6 +80,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
         "IDENTITY_CHANGED",
         "REPOSITORY_MISMATCH",
         "CONNECTION_CHANGED",
+        "CONNECTION_NOT_FOUND",
       ].includes(data.error?.code)
     )
       window.dispatchEvent(

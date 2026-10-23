@@ -30,3 +30,5 @@
 - 拦截 /api/session 制造网络失败后触发 focus，已有阅读页被「工作台暂时无法打开」替代。
 
 以上为基线证据，尚不是优化效果。实现后用确定性的请求挂起、失败与身份切换测试验证缓存先展示，再以相同真实服务方法补充结果。
+
+在独立 Change 工作区执行 `node --conditions=react-server --test tests/account-connections.test.ts tests/personal-sessions.test.ts tests/repository-permissions.test.ts tests/shares.test.ts`，37 项全部通过。确认现有账号隔离、权限期限、撤销与分享版本竞争行为可作为实现回归基线。

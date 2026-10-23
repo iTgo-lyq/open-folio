@@ -58,9 +58,24 @@ function Body() {
   const reading = ["specs", "changes", "prototypes"].includes(module),
     focusedPreview = module === "prototypes" && !!q.prototype;
   const go = (m: string) => nav({ m, doc: null, ...CLEAR_PROTOTYPE_VIEW });
-  const banners = reading && (
+  const banners = (
     <>
-      {error && (
+      {personal.sessionError && (
+        <div className={styles.banner} data-tone="warning" role="alert">
+          <span className={styles.grow}>
+            账号状态检查失败：{personal.sessionError}
+            {data && " 当前保留上次读取的内容。"}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => void personal.reloadSession(undefined, true)}
+          >
+            重试
+          </Button>
+        </div>
+      )}
+      {reading && error && (
         <div className={styles.banner} data-tone="error" role="alert">
           <span className={styles.grow}>{error}</span>
           <Button size="sm" variant="ghost" onClick={() => void refresh()}>
@@ -71,7 +86,8 @@ function Body() {
           </Button>
         </div>
       )}
-      {!focusedPreview &&
+      {reading &&
+        !focusedPreview &&
         data?.diagnostics.map((d, i) => (
           <div className={styles.banner} data-tone="warning" key={i}>
             {d.message}

@@ -145,3 +145,226 @@ test("hidden pages pause checks, foreground retries transient failures, and revo
     page.getByRole("heading", { name: "暂时没有可读取的版本" }),
   ).toBeVisible();
 });
+
+test("module navigation and revisited materials reuse cached data, and session failure keeps the reader", async ({
+  page,
+}) => {
+  const calls: string[] = [];
+  page.on("request", (r) => {
+    if (/\/(workbench|refresh|documents|prototypes)(\/|\?)/.test(r.url()))
+      calls.push(r.url());
+  });
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+  const heading = page.getByRole("heading", { name: "工程协作", exact: true });
+  await expect(heading).toBeVisible();
+  await expect
+    .poll(() => calls.filter((u) => u.includes("/refresh?")).length)
+    .toBe(1);
+  const baseline = calls.filter((u) =>
+    /\/(workbench|refresh)\?/.test(u),
+  ).length;
+  const docs = calls.filter((u) => u.includes("/documents/")).length;
+  await page.getByRole("link", { name: "Changes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Changes", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Specs", exact: true }).click();
+  await expect(heading).toBeVisible();
+  expect(calls.filter((u) => /\/(workbench|refresh)\?/.test(u)).length).toBe(
+    baseline,
+  );
+  expect(calls.filter((u) => u.includes("/documents/")).length).toBe(docs);
+  await page.getByRole("link", { name: "原型", exact: true }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "项目原型总览" })
+      .getByRole("heading", { level: 1 }),
+  ).toHaveText("原型");
+  const catalogs = calls.filter((u) => u.includes("/prototypes?")).length;
+  await page.getByRole("link", { name: "Specs", exact: true }).click();
+  await expect(heading).toBeVisible();
+  await page.getByRole("link", { name: "原型", exact: true }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "项目原型总览" })
+      .getByRole("heading", { level: 1 }),
+  ).toHaveText("原型");
+  expect(calls.filter((u) => u.includes("/prototypes?")).length).toBe(catalogs);
+  await page.getByRole("link", { name: "Specs", exact: true }).click();
+  await expect(heading).toBeVisible();
+  expect(calls.filter((u) => /\/(workbench|refresh)\?/.test(u)).length).toBe(
+    baseline,
+  );
+  await page.route("**/api/session", (route) => route.abort("failed"));
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "账号状态检查失败",
+  );
+  await expect(heading).toBeVisible();
+  await page.unroute("**/api/session");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
+  await expect(heading).toBeVisible();
+});
+
+test("new body and snapshot replace the visible document together", async ({
+  page,
+  request,
+  personal,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+  const old = page.getByRole("heading", { name: "工程协作", exact: true });
+  await expect(old).toBeVisible();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let started = false;
+  await page.route("**/documents/**", async (route) => {
+    started = true;
+    await held;
+    await route.continue();
+  });
+  try {
+    await request.post("/_fixture/control", {
+      data: { advanceMain: true, expireRefresh: personal.id },
+    });
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect.poll(() => started).toBe(true);
+    await expect(old).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "自动更新后的能力", exact: true }),
+    ).toHaveCount(0);
+    release();
+    await expect(
+      page.getByRole("heading", { name: "自动更新后的能力", exact: true }),
+    ).toBeVisible();
+    await expect(old).toHaveCount(0);
+  } finally {
+    release();
+    await request.post("/_fixture/control", { data: { restoreMain: true } });
+  }
+});
+
+test("directory refresh failure keeps the existing repository list", async ({
+  page,
+}) => {
+  await page.goto("/?m=home");
+  const repositories = page
+    .getByRole("list", { name: "可阅读的仓库" })
+    .getByRole("link");
+  await expect(repositories).toHaveCount(1);
+  await page.route("**/api/connections/*/discovery", async (route) => {
+    if (route.request().method() === "POST")
+      await route.fulfill({ status: 202, json: {} });
+    else await route.continue();
+  });
+  await page.route("**/api/repositories?*", (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        error: { code: "PROVIDER_UNAVAILABLE", message: "目录暂时不可达" },
+      },
+    }),
+  );
+  await page.getByRole("button", { name: "重新发现", exact: true }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "目录暂时不可达",
+  );
+  await expect(repositories).toHaveCount(1);
+});
+
+test("prototype updates keep the previous complete catalogue until the next one succeeds", async ({
+  page,
+  request,
+  personal,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=prototypes`);
+  const region = page.getByRole("region", { name: "项目原型总览" });
+  await expect(region.getByRole("heading", { level: 1 })).toHaveText("原型");
+  const titles = region.getByRole("heading");
+  const before = await titles.allTextContents();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let started = false;
+  await page.route("**/prototypes?*", async (route) => {
+    started = true;
+    await held;
+    await route.fulfill({
+      status: 503,
+      json: {
+        error: { code: "PROVIDER_UNAVAILABLE", message: "原型目录暂时不可达" },
+      },
+    });
+  });
+  try {
+    await request.post("/_fixture/control", {
+      data: { advanceMain: true, expireRefresh: personal.id },
+    });
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect.poll(() => started).toBe(true);
+    await expect(titles).toHaveText(before);
+    release();
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      "原型目录暂时不可达",
+    );
+    await expect(titles).toHaveText(before);
+    await page.unroute("**/prototypes?*");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(
+      page.getByRole("heading", { name: "自动更新后的原型", exact: true }),
+    ).toBeVisible();
+  } finally {
+    release();
+    await request.post("/_fixture/control", { data: { restoreMain: true } });
+  }
+});
+
+for (const code of [
+  "SESSION_REQUIRED",
+  "CONNECTION_CHANGED",
+  "CONNECTION_NOT_FOUND",
+]) {
+  test(`directory ${code} clears the reader even when session recovery is offline`, async ({
+    page,
+  }) => {
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/api/repositories?*", async (route) => {
+      await held;
+      await route.fulfill({
+        status: 401,
+        json: { error: { code, message: "当前读取身份已失效" } },
+      });
+    });
+    try {
+      await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+      const heading = page.getByRole("heading", {
+        name: "工程协作",
+        exact: true,
+      });
+      await expect(heading).toBeVisible();
+      await page.route("**/api/session", (route) => route.abort("failed"));
+      const failed = page.waitForResponse(
+        (r) => r.url().includes("/api/repositories?") && r.status() === 401,
+      );
+      release();
+      await failed;
+      await expect(heading).toHaveCount(0);
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(
+        page
+          .getByRole("main")
+          .getByRole("alert")
+          .filter({ hasText: "账号状态检查失败" }),
+      ).toContainText("账号状态检查失败");
+      await expect(heading).toHaveCount(0);
+    } finally {
+      release();
+    }
+  });
+}
