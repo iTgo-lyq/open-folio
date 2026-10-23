@@ -4,9 +4,15 @@
   "title": "SpecTrail 版本标识与更新检查",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-23T11:52:47.923Z",
+      "summary": "发布内容自动递增版本，单入口检查更新并支持项目关闭。",
+      "source": "可以，就按这个方向来，需求确认，继续推进技术方案。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
