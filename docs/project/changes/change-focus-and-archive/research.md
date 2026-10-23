@@ -11,8 +11,8 @@
 ## 本地原型验证
 
 - `npm run build --workspace prototype`：7 个自包含 HTML 入口成功构建。
-- `node packages/prototype/verify-change-views.mjs`：8 组检查通过，零页面/控制台错误。覆盖浅深色 × 1440/834/390/320、管理/编辑布局、新增继承、多状态并集及作者交集、名称校验、编辑初值、取消/确认、拖拽/Alt 方向键/上下移、显隐与删除、失败重试、归档分类、取消零数量、详情返回和窄屏看板降级。
-- `node packages/prototype/verify-quiet-workbench.mjs`：126 项通过，0 失败，0 浏览器错误。既有 Changes 断言按本次默认我的、状态归档和新 tab 定位更新；滚动验证使用完整进行中列表，避免因默认我的仅 3 条不足以滚动而产生无效断言。
+- `node packages/prototype/verify-change-views.mjs`：9 组检查通过，零页面/控制台错误。覆盖浅深色 × 1440/834/390/320、管理/编辑布局、新增继承、多状态并集及作者交集、名称校验、编辑初值、取消/确认、拖拽/Alt 方向键/上下移、显隐与删除、失败重试、归档分类、取消零数量、详情返回、窄屏看板降级及切换右侧 tab 后选中项保持可见。
+- `node packages/prototype/verify-quiet-workbench.mjs`：126 项通过，0 失败，0 浏览器错误（基础原型提交 783d203）。后续仅追加窄屏选中 tab 可见性修正，重新跑上述 9 组动态视图检查通过。既有 Changes 断言按本次默认我的、状态归档和新 tab 定位更新；滚动验证使用完整进行中列表，避免因默认我的仅 3 条不足以滚动而产生无效断言。
 - `node .agents/skills/spec-trail/prototype/scripts/validate.mjs`：当前清单 7 个入口的元数据/静态校验通过。
 - 人工查看桌面/手机首屏及管理、编辑截图，修复长弹层底部按钮超出视口，以及聚焦后排序辅助按钮引起编辑/删除点击目标位移。桌面和平板使用锚定弹层，手机保持两侧留白和可滚动表单。
 
@@ -22,6 +22,6 @@
 
 ## 固定版本发布
 
-源码提交 `783d2038bbcb20f8c951722f21311690c8c87f55`；R2 版本 `686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5`。
+源码提交 `5b19bdd072c0dbfda833843b19a56a01dbd1ec1b`；R2 版本 `96c1740f9e93916ab46b5115ec21de0efad71b5eaa1aeb224eb54f4444e2acd0`。
 
 使用 `publish.mjs prepare`、项目 `publish-r2.mjs` 上传并进行公开字节校验，再以 `publish.mjs register --change change-focus-and-archive` 登记。result、项目当前清单和 Change 固定引用的版本及 sourceCommit 一致；三处 thumbnails 均覆盖 pc-web、ipad、mobile，各固定截图 URL 公开读取 HTTP 200。其他六个入口保留原有固定版本。
