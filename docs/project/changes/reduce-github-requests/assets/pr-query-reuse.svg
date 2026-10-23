@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="pr-query-reuse-title pr-query-reuse-desc">
+  <title id="pr-query-reuse-title">PR 批量查询与页面缓存复用</title>
+  <desc id="pr-query-reuse-desc">同一仓库来源的刷新合并为集成分支与发布分支两类查询。页面缓存向 GitHub 发送条件请求，200 替换页面，304 复用页面。完整列表和已有 Git 证据在本地计算所有 Change 的交付状态。</desc>
+  <defs>
+    <style>
+      text { font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif; }
+      .title { font-size: 16px; font-weight: 600; fill: #1e293b; }
+      .name { font-size: 12px; font-weight: 600; }
+      .sub { font-size: 10px; fill: #64748b; }
+      .tag { font-size: 10px; }
+    </style>
+    <marker id="pr-query-reuse-arrow" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,4 L0,8 L2,4 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="960" height="600" fill="#ffffff"/>
+  <text x="40" y="48" class="title">一次批量读取，服务全部 Change</text>
+  <text x="40" y="76" class="sub">同一工作台、仓库与集成来源内复用；私有缓存保持隔离</text>
+  <g fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#pr-query-reuse-arrow)">
+    <path d="M205 160 H237"/>
+    <path d="M429 160 H461"/>
+    <path d="M669 160 H701"/>
+    <path d="M520 205 V309"/>
+    <path d="M616 315 V211" stroke-dasharray="4,3"/>
+    <path d="M816 315 V211"/>
+  </g>
+  <g>
+    <rect x="436" y="244" width="76" height="20" fill="#ffffff"/>
+    <text x="506" y="258" class="sub" text-anchor="end">ETag 条件请求</text>
+    <rect x="624" y="244" width="72" height="20" fill="#ffffff"/>
+    <text x="630" y="258" class="sub">200 / 304</text>
+    <rect x="824" y="244" width="92" height="20" fill="#ffffff"/>
+    <text x="830" y="258" class="sub">本地交付证据</text>
+  </g>
+  <g>
+    <rect x="40" y="120" width="160" height="80" rx="6" fill="#ffffff"/>
+    <rect x="40" y="120" width="160" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6"/>
+    <rect x="48" y="128" width="32" height="16" rx="2" fill="none" stroke="#3b82f6"/>
+    <text x="64" y="140" class="tag" fill="#1e40af" text-anchor="middle">输入</text>
+    <text x="120" y="165" class="name" fill="#1e40af" text-anchor="middle">共享刷新</text>
+    <text x="120" y="184" class="sub" text-anchor="middle">页面 · 后台 · 手动</text>
+    <rect x="248" y="120" width="176" height="80" rx="6" fill="#ffffff"/>
+    <rect x="248" y="120" width="176" height="80" rx="6" fill="#fef3c7" stroke="#b45309"/>
+    <rect x="256" y="128" width="32" height="16" rx="2" fill="none" stroke="#b45309"/>
+    <text x="272" y="140" class="tag" fill="#b45309" text-anchor="middle">查询</text>
+    <text x="336" y="165" class="name" fill="#b45309" text-anchor="middle">两类 base 查询</text>
+    <text x="336" y="184" class="sub" text-anchor="middle">集成分支 · 发布分支</text>
+    <rect x="472" y="120" width="192" height="80" rx="6" fill="#ffffff"/>
+    <rect x="472" y="120" width="192" height="80" rx="6" fill="#d1fae5" stroke="#166534" stroke-width="1.5"/>
+    <rect x="480" y="128" width="32" height="16" rx="2" fill="none" stroke="#166534"/>
+    <text x="496" y="140" class="tag" fill="#166534" text-anchor="middle">缓存</text>
+    <text x="568" y="165" class="name" fill="#166534" text-anchor="middle">每页 ETag ＋ PR 字段</text>
+    <text x="568" y="184" class="sub" text-anchor="middle">每轮复验完整页集合</text>
+    <rect x="712" y="120" width="208" height="80" rx="6" fill="#ffffff"/>
+    <rect x="712" y="120" width="208" height="80" rx="6" fill="#fef3c7" stroke="#b45309"/>
+    <rect x="720" y="128" width="32" height="16" rx="2" fill="none" stroke="#b45309"/>
+    <text x="736" y="140" class="tag" fill="#b45309" text-anchor="middle">计算</text>
+    <text x="816" y="164" class="name" fill="#b45309" text-anchor="middle">全部 Change 本地关联</text>
+    <text x="816" y="184" class="sub" text-anchor="middle">交付状态 · PR 链接 · 诊断</text>
+    <rect x="472" y="320" width="192" height="80" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <rect x="480" y="328" width="32" height="16" rx="2" fill="none" stroke="#94a3b8"/>
+    <text x="496" y="340" class="tag" fill="#64748b" text-anchor="middle">API</text>
+    <text x="568" y="366" class="name" fill="#1e293b" text-anchor="middle">GitHub PR 列表</text>
+    <rect x="712" y="320" width="208" height="80" rx="6" fill="#d1fae5" stroke="#166534"/>
+    <rect x="720" y="328" width="32" height="16" rx="2" fill="none" stroke="#166534"/>
+    <text x="736" y="340" class="tag" fill="#166534" text-anchor="middle">数据</text>
+    <text x="816" y="366" class="name" fill="#166534" text-anchor="middle">已有 Git 快照与集成记录</text>
+  </g>
+  <text x="40" y="452" class="name" fill="#1e293b">请求数量按页计算，不再按 Change 逐条计算</text>
+  <text x="40" y="478" class="sub">单页 304 仅复用这一页；完整结果成功后再更新缓存，旧 PR 修改仍会被正常刷新发现。</text>
+  <line x1="40" y1="540" x2="920" y2="540" stroke="#94a3b8" stroke-width="0.8"/>
+  <rect x="40" y="560" width="12" height="12" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="60" y="570" class="sub">读取入口</text>
+  <rect x="184" y="560" width="12" height="12" fill="#fef3c7" stroke="#b45309"/>
+  <text x="204" y="570" class="sub">查询与计算</text>
+  <rect x="344" y="560" width="12" height="12" fill="#d1fae5" stroke="#166534"/>
+  <text x="364" y="570" class="sub">缓存与既有数据</text>
+  <path d="M552 566 H588" fill="none" stroke="#64748b" stroke-dasharray="4,3"/>
+  <text x="600" y="570" class="sub">平台响应</text>
+</svg>

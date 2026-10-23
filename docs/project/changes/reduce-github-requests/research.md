@@ -51,3 +51,24 @@ node --conditions=react-server --test tests/providers.test.ts tests/delivery.tes
 [GitHub REST API 最佳实践](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api)说明，正确认证的条件请求返回 304 时不消耗主额度。条件请求可作为正常缓存复验手段评估，但仍存在网络请求，不能替代减少重复查询和无变化历史扫描。
 
 用户随后明确只优先推进统一冷却、查询去重与历史 PR 缓存，要求从算法减少请求，限流仍报错，不新增兜底。因此不把评审中提及的动态额度预算、普遍调整轮询频率或其他外部接入方案自动纳入交付。
+
+## 技术方案离线验证
+
+2026-10-24（用户时区）进一步核对 [GitHub PR 列表契约](https://docs.github.com/en/rest/pulls/pulls#list-pull-requests)：支持 state、base、created 排序与最多 100 条分页，也支持 304。现有适配器已经从列表规范化正文、base/head、合并提交和状态，无需通过详情请求补齐交付字段。
+
+技术方案采用两种 base 的完整分页和页面 ETag，不采用更新时间水位。官方[缓存最佳实践](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#make-requests-that-can-be-cached)建议稳定排序，以避免单条更新引起页间重排；PR 列表没有可直接消费的 since 游标。一次完整复验可能仍遇到分页期间的远端变化，按普通读取的最终一致性处理，不新增补查。
+
+用纯内存模拟传输验证了分页和缓存算法；模拟 ETag 由对应页面内容生成，304 故意不带 Link，未访问网络、未改写生产代码或常驻数据。
+
+| 场景 | 结果 |
+| --- | --- |
+| 两种 base 各不足 100 条，首次读取 | 共 2 次请求，完整结果可用于本地关联。 |
+| 相同数据再次读取 | 共 2 次条件请求，304 复用对应页面。 |
+| 单 base 有 1001 条 PR | 11 次请求，取得全部记录，没有套用原十页帽。 |
+| 首页未变、末页历史 PR 正文修改 | 仍访问末页并更新该 PR。 |
+| 历史 PR 的有效标记被删除 | 完整集合中移除旧关联。 |
+| 之前恰好 100 条，旧 PR 改 base 后进入末尾 | 满页即继续，首页 304 且无 Link 时仍读到第 101 条。 |
+| 原始列表包含大量无标记 PR | 按原始条数翻页，不因过滤后条数少而提前结束。 |
+| 后一页失败；另测完整空集合 | 失败不修改上一份完整缓存；空集合一页即可形成完整空结果。 |
+
+八组实验全部通过，覆盖上述断言。它们验证的是候选分页算法，并非已完成生产实现；真实 GitHub 响应、持久化、冷却和交付计算的联动仍由实施阶段验证。
