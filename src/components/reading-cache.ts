@@ -1,3 +1,4 @@
+import type { PrototypeCatalog } from "../lib/prototypes.ts";
 import type { DocumentRef, Workbench } from "../lib/model.ts";
 import { api } from "./api.ts";
 
@@ -83,20 +84,49 @@ export class ReadingCache {
       if (!readers!.size) this.readers.delete(key);
     };
   }
+  watchCatalog(readUrl: ReadUrl) {
+    return this.watch("\0prototypes", readUrl);
+  }
+  async readCatalog(snapshot: string, readUrl: ReadUrl, signal: AbortSignal) {
+    const key = readUrl(`prototypes?snapshot=${snapshot}`);
+    const cached = this.get<PrototypeCatalog>(key);
+    if (cached) return cached;
+    const generation = this.generation;
+    const value = await api<PrototypeCatalog>(key, { signal });
+    signal.throwIfAborted();
+    if (generation !== this.generation)
+      throw new DOMException("Reading identity changed", "AbortError");
+    this.set(key, value);
+    return value;
+  }
   async prepare(next: Workbench, readUrl: ReadUrl, signal: AbortSignal) {
-    // Publish the next reading snapshot only when its visible text is ready.
-    // Until then body, metadata, links and resources all use the previous version.
-    const readers = this.readers.get(readUrl("workbench"));
-    await Promise.all(
-      next.documents
+    // Keep body, metadata, links and resources on the previous version until
+    // every currently visible reader is ready, including navigation during IO.
+    const prepared = new Set<string>();
+    const generation = this.generation;
+    for (;;) {
+      signal.throwIfAborted();
+      if (generation !== this.generation)
+        throw new DOMException("Reading identity changed", "AbortError");
+      const readers = this.readers.get(readUrl("workbench"));
+      const pending: Promise<unknown>[] = next.documents
         .filter(
           (d) =>
             readers?.has(d.id) &&
+            !prepared.has(d.id) &&
             d.readable &&
             ["markdown", "json"].includes(d.kind),
         )
-        .map((d) => this.readDocument(d, next.id, readUrl, signal)),
-    );
-    signal.throwIfAborted();
+        .map((d) => {
+          prepared.add(d.id);
+          return this.readDocument(d, next.id, readUrl, signal);
+        });
+      if (readers?.has("\0prototypes") && !prepared.has("\0prototypes")) {
+        prepared.add("\0prototypes");
+        pending.push(this.readCatalog(next.id, readUrl, signal));
+      }
+      if (!pending.length) return;
+      await Promise.all(pending);
+    }
   }
 }

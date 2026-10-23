@@ -63,7 +63,8 @@ function Body() {
       {personal.sessionError && (
         <div className={styles.banner} data-tone="warning" role="alert">
           <span className={styles.grow}>
-            账号状态检查失败：{personal.sessionError} 当前保留上次读取的内容。
+            账号状态检查失败：{personal.sessionError}
+            {data && " 当前保留上次读取的内容。"}
           </span>
           <Button
             size="sm"

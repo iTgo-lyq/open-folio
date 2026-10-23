@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "修复评审发现的阅读更新与失权边界",
-      "status": "todo"
+      "status": "done",
+      "verification": "缓存3/3、相关浏览器35项经定位修正全部通过、类型检查及构建通过，独立复审关闭3项问题且无新增项。",
+      "commitTitle": "cache-first-reading T4: preserve complete versions and clear revoked reading scopes"
     }
   },
   "closure": {},

@@ -149,6 +149,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
             "SESSION_CHANGED",
             "SESSION_REQUIRED",
             "CONNECTION_NOT_FOUND",
+            "CONNECTION_CHANGED",
           ].includes(error.code)
         )
           await recover();
@@ -295,6 +296,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
             "TOKEN_INVALID",
             "IDENTITY_CHANGED",
             "CONNECTION_NOT_FOUND",
+            "CONNECTION_CHANGED",
           ].includes(error.code)
         )
           setItems([]);

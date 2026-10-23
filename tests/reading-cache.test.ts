@@ -64,3 +64,46 @@ test("a late body cannot repopulate cleared credentials and an unchanged blob re
     undefined,
   );
 });
+
+test("snapshot preparation follows readers that change while another body is pending", async (t) => {
+  const cache = new ReadingCache();
+  const url = (path: string) => `/repo/${path}`;
+  const a = {
+    id: "a",
+    blob: "new-a",
+    readable: true,
+    kind: "markdown",
+  } as DocumentRef;
+  const b = { ...a, id: "b", blob: "new-b" } as DocumentRef;
+  const releases = new Map<string, () => void>();
+  t.mock.method(globalThis, "fetch", async (path: string) => {
+    const id = path.includes("documents/a?") ? "a" : "b";
+    await new Promise<void>((resolve) => releases.set(id, resolve));
+    return Response.json({ body: id });
+  });
+  const stopA = cache.watch("a", url);
+  let finished = false;
+  const pending = cache
+    .prepare(
+      {
+        id: "next",
+        documents: [a, b],
+      } as import("../src/lib/model.ts").Workbench,
+      url,
+      new AbortController().signal,
+    )
+    .then(() => {
+      finished = true;
+    });
+  await new Promise((resolve) => setImmediate(resolve));
+  stopA();
+  const stopB = cache.watch("b", url);
+  releases.get("a")!();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(finished, false);
+  assert.ok(releases.has("b"));
+  releases.get("b")!();
+  await pending;
+  assert.equal(cache.document(b, url)?.body, "b");
+  stopB();
+});

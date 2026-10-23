@@ -273,3 +273,98 @@ test("directory refresh failure keeps the existing repository list", async ({
   );
   await expect(repositories).toHaveCount(1);
 });
+
+test("prototype updates keep the previous complete catalogue until the next one succeeds", async ({
+  page,
+  request,
+  personal,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=prototypes`);
+  const region = page.getByRole("region", { name: "项目原型总览" });
+  await expect(region.getByRole("heading", { level: 1 })).toHaveText("原型");
+  const titles = region.getByRole("heading");
+  const before = await titles.allTextContents();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let started = false;
+  await page.route("**/prototypes?*", async (route) => {
+    started = true;
+    await held;
+    await route.fulfill({
+      status: 503,
+      json: {
+        error: { code: "PROVIDER_UNAVAILABLE", message: "原型目录暂时不可达" },
+      },
+    });
+  });
+  try {
+    await request.post("/_fixture/control", {
+      data: { advanceMain: true, expireRefresh: personal.id },
+    });
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect.poll(() => started).toBe(true);
+    await expect(titles).toHaveText(before);
+    release();
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      "原型目录暂时不可达",
+    );
+    await expect(titles).toHaveText(before);
+    await page.unroute("**/prototypes?*");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(
+      page.getByRole("heading", { name: "自动更新后的原型", exact: true }),
+    ).toBeVisible();
+  } finally {
+    release();
+    await request.post("/_fixture/control", { data: { restoreMain: true } });
+  }
+});
+
+for (const code of [
+  "SESSION_REQUIRED",
+  "CONNECTION_CHANGED",
+  "CONNECTION_NOT_FOUND",
+]) {
+  test(`directory ${code} clears the reader even when session recovery is offline`, async ({
+    page,
+  }) => {
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/api/repositories?*", async (route) => {
+      await held;
+      await route.fulfill({
+        status: 401,
+        json: { error: { code, message: "当前读取身份已失效" } },
+      });
+    });
+    try {
+      await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+      const heading = page.getByRole("heading", {
+        name: "工程协作",
+        exact: true,
+      });
+      await expect(heading).toBeVisible();
+      await page.route("**/api/session", (route) => route.abort("failed"));
+      const failed = page.waitForResponse(
+        (r) => r.url().includes("/api/repositories?") && r.status() === 401,
+      );
+      release();
+      await failed;
+      await expect(heading).toHaveCount(0);
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(
+        page
+          .getByRole("main")
+          .getByRole("alert")
+          .filter({ hasText: "账号状态检查失败" }),
+      ).toContainText("账号状态检查失败");
+      await expect(heading).toHaveCount(0);
+    } finally {
+      release();
+    }
+  });
+}

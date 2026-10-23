@@ -88,6 +88,7 @@ export default function Prototypes() {
     if (q.prototype) previous.current = q.prototype;
   }, [q.prototype]);
   const key = readUrl(`prototypes?snapshot=${data!.id}`);
+  useEffect(() => cache.watchCatalog(readUrl), [cache, readUrl]);
   const [response, setResponse] = useState<{
     key: string;
     cache?: typeof cache;
@@ -98,12 +99,10 @@ export default function Prototypes() {
   useEffect(() => {
     if (cache.get<PrototypeCatalog>(key)) return;
     const controller = new AbortController();
-    api<PrototypeCatalog>(key, {
-      signal: controller.signal,
-    })
+    cache
+      .readCatalog(data!.id, readUrl, controller.signal)
       .then((value) => {
         if (!controller.signal.aborted) {
-          cache.set(key, value);
           setResponse({ key, cache, value });
         }
       })
@@ -112,7 +111,7 @@ export default function Prototypes() {
           setResponse({ key, cache, error: error.message });
       });
     return () => controller.abort();
-  }, [key, retry, cache]);
+  }, [key, retry, cache, data!.id, readUrl]);
   const catalog =
     cache.get<PrototypeCatalog>(key) ??
     (response.key === key && response.cache === cache

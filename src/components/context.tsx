@@ -256,7 +256,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         const url = new URL(detail.path, window.location.origin);
         if (
           url.searchParams.get("connectionId") !== connection?.id ||
-          (!["TOKEN_INVALID", "IDENTITY_CHANGED"].includes(detail.code ?? "") &&
+          (![
+            "TOKEN_INVALID",
+            "IDENTITY_CHANGED",
+            "SESSION_REQUIRED",
+            "CONNECTION_CHANGED",
+            "CONNECTION_NOT_FOUND",
+          ].includes(detail.code ?? "") &&
             !url.pathname.startsWith(
               `/api/repositories/${encodeURIComponent(projectId)}/`,
             ))
