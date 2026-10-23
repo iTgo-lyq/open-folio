@@ -67,5 +67,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "系统 tab 前置及实施边界已更新，修正版原型验证通过，待评审验收。"
+  }
 }
