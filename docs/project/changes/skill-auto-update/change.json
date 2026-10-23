@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/skill-auto-update",
   "confirmations": {
     "requirement": {
       "at": "2026-10-23T11:52:47.923Z",
