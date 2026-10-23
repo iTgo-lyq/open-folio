@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "change-focus-and-archive",
-  "title": "Changes 默认关注本人并分离已发布记录",
+  "title": "Changes 动态视图与已发布归档",
   "size": "medium",
   "status": "active",
   "stage": "requirement",
@@ -20,6 +20,13 @@
       "recommendation": "已发布后自动进入已归档，已完成保留待集成、待发布和待核实记录。",
       "answer": "已发布后自动进入已归档（推荐）",
       "source": "用户对本轮归档规则问题的选择。"
+    },
+    "Q2": {
+      "round": 2,
+      "question": "视图作为 tab 并在右侧设置入口管理；新增保存当前范围、筛选和显示，后续临时调整显式保存，是否采用？",
+      "recommendation": "视图作为 tab，显式保存修改；默认我的与自定义视图可直接切换。",
+      "answer": "用户以截图指定横向 tab、末尾齿轮和管理弹层，包含拖拽、显隐、编辑、删除、添加及取消/确认；未单独确认主列表临时修改的保存规则。另补充创建视图时暴露进行中、取消、归档、完成状态筛选。",
+      "source": "用户：参考我截图给的形态。另补充：这些状态在创建视图的时候可以暴露筛选项目。截图保存于 assets/views-reference.png。"
     }
   }
 }
