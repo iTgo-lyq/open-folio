@@ -36,8 +36,10 @@ node .agents/skills/spec-trail/scripts/integration.mjs verify --change example
 node .agents/skills/spec-trail/scripts/integration.mjs cleanup --repo /path/to/primary --change example --verified-commit <M> --idle-worktree /path/to/source
 ```
 
-`--verified-commit` 记录 Agent 已完成的交付/服务与托管产物验证，`--idle-worktree` 记录实际占用核对，不是新增用户审批。无 source worktree 时可省略后者。脚本复验远端 M、归属、依赖、源码/HTML 对象、待删 tip、Git 锁与文件状态；未知或不满足条件即保留。
+`--verified-commit` 记录 Agent 已完成的交付/服务与托管产物验证，`--idle-worktree` 记录实际占用核对，不是新增用户审批。无 source worktree 时可省略后者。脚本复验远端 M、归属、依赖、源码/HTML 对象、待删 tip、Git 锁与文件状态；未知或不满足条件时暂留，由 Agent 核查处理。
 
-任何未提交、未跟踪或忽略文件都会阻止工作区删除；assume-unchanged / skip-worktree 标记须先解除并检查文件。先按项目规则处理可重建依赖与构建产物；独有环境配置、用户资料和持久数据须保留，不能用强制删除绕过。主工作区、协作/发布分支及其他 active/cancelled 入口依赖不能删除。
+未提交、未跟踪或忽略文件会阻止脚本直接删除；assume-unchanged / skip-worktree 标记须先解除并检查文件。无保留价值的来源 worktree 默认删除，无需再确认：主动清除可重建依赖、构建产物、无用临时文件及已核实有副本的配置，再重试，不例行备份、不强制绕过检查。主工作区、协作/发布分支及其他 active/cancelled 入口依赖不能删除。
+
+若因独有成果、配置、数据、占用或无法核实安全性而决定保留，简述具体原因并询问用户是否保留；答复前暂留。用户选择删除时，按授权保存或丢弃相关内容，再完成清理。
 
 顺序为远端源分支 → worktree → 本地源分支。远端按预期 tip 条件删除，本地使用已合并检查和非强制 worktree 删除。结果逐对象标为 cleaned/retained/failed；退出码 2 表示清理遗留，合入事实仍成立。相同命令可继续清理，不重复生成 M，已不存在对象视作完成。
