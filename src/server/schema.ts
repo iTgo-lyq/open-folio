@@ -213,6 +213,7 @@ const workflowFields = z
     schemaVersion: z.literal(3),
     integrationBranch: branchName,
     releaseBranch: branchName,
+    checkForUpdates: z.boolean().optional(),
     prototype: z.unknown().optional(),
     openfolioUrl: z
       .custom<string | null>((v) => v === null || serviceUrl(v))

@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "按项目配置检查并提醒 skill 更新",
-      "status": "todo"
+      "status": "done",
+      "verification": "更新与版本自包含测试 15 项、配置和状态测试 28 项、setup 12 项、全量 325 项通过；类型、格式、构建及独立评审通过。",
+      "commitTitle": "skill-auto-update T2: check published updates per project"
     }
   },
   "closure": {},

@@ -96,6 +96,7 @@ interface WorkflowConfig {
   releaseBranch: string; // 与集成分支不同；用户明确要求时提交发布 PR
   openfolioUrl?: string | null; // 缺失为未询问，null 为无自建服务
   prototype?: PrototypeConfig; // 可选原型接入；缺失表示未选择
+  checkForUpdates?: boolean; // change CLI 更新检查，省略为开启
 }
 
 interface PrototypeConfig {
