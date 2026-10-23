@@ -399,7 +399,12 @@ export async function indexChanges(
     ];
     for (const [kind, target] of links) {
       const other = groups.get(target),
-        t = other ? primaryRecord(other) : null;
+        t = other ? primaryRecord(other) : null,
+        pendingCreation =
+          kind === "child" &&
+          !other &&
+          s.size === "xlarge" &&
+          ["requirement", "technical"].includes(s.stage);
       const r: Relation = {
         kind,
         target,
@@ -415,10 +420,11 @@ export async function indexChanges(
         ancestry: "unknown",
         diagnostics: [],
       };
-      if (!other) r.diagnostics.push("目标不存在于已推送记录中。");
+      if (pendingCreation) r.pendingCreation = true;
+      else if (!other) r.diagnostics.push("目标不存在于已推送记录中。");
       else if (!t?.state) r.diagnostics.push("目标主来源或状态不可判定。");
       if (target === s.id) r.diagnostics.push("不能引用自身。");
-      if (kind === "child" && t?.state?.parent !== s.id)
+      if (kind === "child" && !pendingCreation && t?.state?.parent !== s.id)
         r.diagnostics.push("子项未反向声明当前父 Change。");
       if (
         kind === "parent" &&

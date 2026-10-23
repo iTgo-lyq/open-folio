@@ -10,6 +10,76 @@ import {
 } from "./connected";
 import { primaryRecord, type Snapshot } from "../../src/lib/model";
 
+test("planning children await creation without reading issues and preserve parent materials", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const response = await request.get(personal.url("workbench"));
+  expect(response.ok()).toBe(true);
+  const data: Snapshot = await response.json();
+  const parent = data.changes.find((g) => g.id === "workspace-rollout")!;
+  expect(parent.diagnostics).toEqual([]);
+  expect(primaryRecord(parent)!.diagnostics).toEqual([]);
+  expect(
+    parent.relations.find((r) => r.target === "future-child"),
+  ).toMatchObject({
+    pendingCreation: true,
+    exists: false,
+    process: "unknown",
+    diagnostics: [],
+  });
+
+  await page.goto(`/?${repositoryQuery}&m=changes&issues=1`);
+  await expect(
+    page.getByRole("link", { name: "打开 需要核对的来源记录", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "打开 工程工作台整体交付", exact: true }),
+  ).toHaveCount(0);
+
+  await page.goto(`/?${repositoryQuery}&m=changes&c=workspace-rollout`);
+  const main = page.getByRole("main");
+  await expect(
+    main.getByRole("progressbar", { name: "子 Change 结束数" }),
+  ).toHaveAttribute("aria-valuenow", "0");
+  await expect(main.getByText("0 / 2 子项结束", { exact: true })).toBeVisible();
+  await expect(main.getByText("来源待核对", { exact: true })).toHaveCount(0);
+  await openMaterial(page, "子项");
+  await expect(
+    main.getByRole("button", {
+      name: "future-child future-child",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect(main.getByText("待创建", { exact: true })).toBeVisible();
+  await expect(main.getByText("流程未知", { exact: true })).toHaveCount(0);
+  await expect(
+    main.getByRole("button", { name: /支持手机端连续阅读/ }),
+  ).toBeEnabled();
+
+  await openMaterial(page, "需求");
+  await expect(
+    main.getByRole("heading", { name: "工程工作台整体交付", exact: true }),
+  ).toBeVisible();
+  await expect(
+    main.getByText("建立清晰、可追溯的工程阅读体验。", { exact: true }),
+  ).toBeVisible();
+  await openMaterial(page, "技术方案");
+  await expect(
+    main.getByText("从已推送提交建立一致的文档快照。", { exact: true }),
+  ).toBeVisible();
+  await openMaterial(page, "原型");
+  const preview = page.frameLocator('iframe[title="原型：订单列表"]');
+  await expect(
+    preview.getByRole("heading", { name: "订单列表原型" }),
+  ).toBeVisible();
+  await preview.getByRole("button", { name: "0", exact: true }).click();
+  await expect(
+    preview.getByRole("button", { name: "1", exact: true }),
+  ).toBeVisible();
+});
+
 test("clarifications show final answers in numeric order across updates and narrow screens", async ({
   page,
   request,

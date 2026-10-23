@@ -232,8 +232,23 @@ export async function seed() {
     }),
     make("workspace-rollout", "工程工作台整体交付", {
       size: "xlarge",
-      children: ["mobile-reading"],
+      stage: "technical",
+      confirmations: { requirement: confirmed },
+      children: ["mobile-reading", "future-child"],
       tasks: {},
+      previews: [
+        {
+          id: "orders",
+          title: "订单列表",
+          kind: "page",
+          artifact: {
+            type: "git",
+            path: "packages/prototype/preview/orders",
+            sourceCommit,
+          },
+          devices: ["pc-web"],
+        },
+      ],
     }),
     make("mobile-reading", "支持手机端连续阅读", {
       previews: [
@@ -308,7 +323,11 @@ export async function seed() {
         "# 技术方案\n\n## 数据来源\n\n从已推送提交建立一致的文档快照。\n\n![范围示意](assets/diagram.png)",
       );
     }
-    if (["document-reader", "mobile-reading"].includes(record.id)) {
+    if (
+      ["document-reader", "mobile-reading", "workspace-rollout"].includes(
+        record.id,
+      )
+    ) {
       for (const id of record.id === "document-reader"
         ? ["orders", "detail", "card"]
         : ["orders"])

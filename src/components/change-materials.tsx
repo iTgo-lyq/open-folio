@@ -184,20 +184,24 @@ function RelationRow({ relation: r }: { relation: Relation }) {
         {sharing && !target && <small>不在本页范围内</small>}
       </button>
       <div className={materialClass("relation-evidence")}>
-        {r.kind !== "parent" && (
-          <>
-            <Badge tone={r.process === "satisfied" ? "done" : "warning"}>
-              流程
-              {r.process === "satisfied"
-                ? "已满足"
-                : r.process === "unsatisfied"
-                  ? "未满足"
-                  : "未知"}
-            </Badge>
-            <span>
-              {r.ancestry === "found" ? "已找到祖先提交" : "可用性待核实"}
-            </span>
-          </>
+        {r.pendingCreation ? (
+          <Badge>待创建</Badge>
+        ) : (
+          r.kind !== "parent" && (
+            <>
+              <Badge tone={r.process === "satisfied" ? "done" : "warning"}>
+                流程
+                {r.process === "satisfied"
+                  ? "已满足"
+                  : r.process === "unsatisfied"
+                    ? "未满足"
+                    : "未知"}
+              </Badge>
+              <span>
+                {r.ancestry === "found" ? "已找到祖先提交" : "可用性待核实"}
+              </span>
+            </>
+          )
         )}
         {r.diagnostics.map((d, i) => (
           <span className={materialClass("warning-text")} key={i}>
