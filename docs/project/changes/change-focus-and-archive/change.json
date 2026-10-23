@@ -67,5 +67,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案与交互原型已发布，等待原型评审反馈与验收后准备实施计划。"
+  }
 }

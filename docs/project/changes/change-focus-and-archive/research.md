@@ -25,3 +25,7 @@
 源码提交 `5b19bdd072c0dbfda833843b19a56a01dbd1ec1b`；R2 版本 `96c1740f9e93916ab46b5115ec21de0efad71b5eaa1aeb224eb54f4444e2acd0`。
 
 使用 `publish.mjs prepare`、项目 `publish-r2.mjs` 上传并进行公开字节校验，再以 `publish.mjs register --change change-focus-and-archive` 登记。result、项目当前清单和 Change 固定引用的版本及 sourceCommit 一致；三处 thumbnails 均覆盖 pc-web、ipad、mobile，各固定截图 URL 公开读取 HTTP 200。其他六个入口保留原有固定版本。
+
+最终引用登记后，再次运行 `validate.mjs --browser`：7 个当前入口在 Chromium 沙箱中加载通过。使用专用测试账号及 `withSmokeSession` 刷新真实工作台仓库，确认原型清单指向最终固定版本；逐项切换 PC Web/iPad/手机，卡片 `img.complete=true` 且 naturalWidth 分别为 1440/834/390，src 均包含最终版本 ID。从真实卡片打开原型，核对默认我的、四个状态选项，完成添加及管理确认；浏览器无 pageerror。包装器完成退出并复查匿名、未连接、无可见绑定，账号原有绑定保留。
+
+线上断言证据保存在 `artifacts/change-views/published-verification.json`（只含版本与检查结果，无凭据/Cookie）。常驻应用未重建或切换；服务通过仓库刷新读取新文档和原型清单。原型数据仍仅为内存示例，用户交互验收与正式实现验收尚未发生。
