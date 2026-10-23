@@ -34,5 +34,38 @@
       "answer": "用户以截图指定横向 tab、末尾齿轮和管理弹层，包含拖拽、显隐、编辑、删除、添加及取消/确认；未单独确认主列表临时修改的保存规则。另补充创建视图时暴露进行中、取消、归档、完成状态筛选。",
       "source": "用户：参考我截图给的形态。另补充：这些状态在创建视图的时候可以暴露筛选项目。截图保存于 assets/views-reference.png。"
     }
-  }
+  },
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "Changes · 动态视图与已发布归档",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5/index.html",
+        "sourceCommit": "783d2038bbcb20f8c951722f21311690c8c87f55",
+        "digest": "sha256:3235e27acff371fa267c846ef1e7029ba215c89387204e67bf1d5db527e52b9f",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }

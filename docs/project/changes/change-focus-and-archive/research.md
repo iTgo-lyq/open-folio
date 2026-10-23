@@ -19,3 +19,9 @@
 验证产物位于 Git 忽略的 `artifacts/change-views/`、`artifacts/quiet-workbench/`；标准卡片截图由包内 screenshot 命令按桌面、iPad、手机生成。原型无真实业务请求与持久存储，验证在 `sandbox="allow-scripts"`、项目 CSP 和 Chromium OS 沙箱下执行。
 
 原型交付范围为 `quiet-changes`，其余六组现有发布引用保留。固定版本、截图和真实工作台卡片加载结果以发布后的补充证据为准。
+
+## 固定版本发布
+
+源码提交 `783d2038bbcb20f8c951722f21311690c8c87f55`；R2 版本 `686491305a048bf11fa8557927f282f562cb4406da444f391032f72738e15eb5`。
+
+使用 `publish.mjs prepare`、项目 `publish-r2.mjs` 上传并进行公开字节校验，再以 `publish.mjs register --change change-focus-and-archive` 登记。result、项目当前清单和 Change 固定引用的版本及 sourceCommit 一致；三处 thumbnails 均覆盖 pc-web、ipad、mobile，各固定截图 URL 公开读取 HTTP 200。其他六个入口保留原有固定版本。
