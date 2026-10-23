@@ -4,7 +4,7 @@
   "title": "SpecTrail 版本标识与更新检查",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/skill-auto-update",
   "confirmations": {
     "requirement": {
@@ -16,12 +16,17 @@
       "at": "2026-10-23T12:46:21.078Z",
       "summary": "发布补丁版本并以项目开关控制单入口检查，缓存结果且失败降级。",
       "source": "可以，技术方案确认，继续推进执行计划。"
+    },
+    "plan": {
+      "at": "2026-10-23T19:40:09.402Z",
+      "summary": "先交付可重复版本发布，再交付项目开关与更新提示并验证异常路径。",
+      "source": "可以，执行计划确认，开始执行。"
     }
   },
   "tasks": {
     "T1": {
       "title": "发布可重复执行的 skill 版本",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "按项目配置检查并提醒 skill 更新",
@@ -32,9 +37,5 @@
   "types": [
     "新功能",
     "工程"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "待确认执行计划后，按 T1、T2 串行开始实现。"
-  }
+  ]
 }
