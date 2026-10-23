@@ -3,7 +3,7 @@
   "id": "cache-first-reading",
   "title": "缓存优先阅读与跨浏览器 Token 恢复",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/cache-first-reading",
   "confirmations": {
@@ -54,6 +54,23 @@
       "result": "passed",
       "at": "2026-10-23T05:30:03.549Z",
       "summary": "Node、浏览器、类型及构建通过；独立复审无遗留问题，双浏览器真实冒烟与会话清理通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-23T07:27:07.446Z",
+      "summary": "用户验收通过，授权归档、合入 develop 并发布 main。",
+      "source": "验收通过，归档并合入 develop，更新常驻服务。同时也发布到 main 吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-23T07:27:09.437Z",
+      "summary": "同步个人访问的唯一 Token 恢复与分享先读后更新，以及工程阅读缓存和连续显示边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-23T07:27:11.400Z",
+      "summary": "用户验收通过，验证及独立复审完成，Specs 已同步。",
+      "path": "docs/project/archive/2026-10-23-cache-first-reading"
     }
   },
   "types": [
@@ -68,9 +85,5 @@
       "recommendation": "一并处理，覆盖打开页面和跨浏览器恢复的完整体验。",
       "answer": "按建议范围推进"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "开发验收版已运行，等待用户验收后同步 Specs、归档并合入 develop。"
   }
 }
