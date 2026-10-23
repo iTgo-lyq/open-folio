@@ -31,7 +31,7 @@ const el=s=>frame.locator(s);
 const action=(name,arg)=>el(`[data-action="${name}"]${arg!==undefined?`[data-arg="${arg}"]`:''}`).first().click();
 const selected=()=>el('.view-tabs [aria-selected="true"]').innerText();
 const rowCount=()=>el('.change-row').count();
-const overflow=()=>frame.evaluate(()=>[document.documentElement,...document.querySelectorAll('.page,.views-tools,.view-tab-bar,.pop')].filter(e=>e.scrollWidth>e.clientWidth+1).map(e=>e.className||e.tagName));
+const overflow=()=>frame.evaluate(()=>[document.documentElement,...document.querySelectorAll('.page,.views-toolbar,.view-tab-bar,.pop')].filter(e=>e.scrollWidth>e.clientWidth+1).map(e=>e.className||e.tagName));
 async function check(name,run) { await run(); checks.push(name); console.log('PASS '+name); }
 try {
   await check('浅深主题 × 桌面平板手机及 320px，管理与编辑无溢出',async()=>{
