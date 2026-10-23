@@ -171,19 +171,20 @@ await open("changes", "/changes");
 await check("Changes：按处理状态分组并显示创建者", async () => {
   const groups = await frame.locator(".group-h").allInnerTexts();
   assert.deepEqual(groups.map((g) => g.replace(/\s*\d+$/, "")), ["等待确认", "受阻", "推进中"]);
-  assert.ok((await count(".change-row .cell-who .av")) >= 8);
+  assert.equal(await count(".change-row .cell-who .av"), 3);
   assert.equal(await count(".list-bar select"), 0);
-  assert.equal(await count('.list-bar [role="tab"]'), 3);
+  assert.equal(await count('.view-tabs [role="tab"]'), 5);
 });
 await check("筛选：按创建者筛选、标签移除与清除", async () => {
+  await $('[data-key="view-tab:system:active"]').click();
   const before = await count(".change-row");
   await $('[data-key="filter-menu"]').click();
   await $('[data-key="f:creators:lin"]').click();
   assert.equal(await count(".change-row"), 3);
   assert.ok(before > 3);
   await page.keyboard.press("Escape");
-  assert.equal(await count(".chip"), 1);
-  await $(".chip").click();
+  assert.equal(await count(".chip"), 2);
+  await $('[data-key="chip:creators:lin"]').click();
   assert.equal(await count(".change-row"), before);
 });
 await check("显示：看板只读五列，排序可切换", async () => {
@@ -198,11 +199,11 @@ await check("显示：看板只读五列，排序可切换", async () => {
   assert.match(await $(".change-row .row-title").innerText(), /紧急/);
 });
 await check("已完成按交付分组，来源异常仅在提示中出现", async () => {
-  await $('[data-key="scope:completed"]').click();
+  await $('[data-key="view-tab:system:completed"]').click();
   const groups = await frame.locator(".group-h").allInnerTexts();
-  assert.deepEqual(groups.map((g) => g.replace(/\s*\d+$/, "")), ["待发布", "已发布"]);
+  assert.deepEqual(groups.map((g) => g.replace(/\s*\d+$/, "")), ["待发布"]);
   assert.ok((await frame.locator(".change-row .tag", { hasText: "待发布" }).count()) >= 1);
-  await $('[data-key="scope:active"]').click();
+  await $('[data-key="view-tab:system:active"]').click();
   await $('[data-action="show-issues"]').click();
   assert.match(await text(".change-row"), /无法完整读取|校验失败/);
 });
@@ -415,6 +416,7 @@ await check("胶囊与弹层为玻璃材质，减少动态效果后无过渡", a
 await check("顶栏为玻璃层，正文与列表从其下方滚过", async () => {
   for (const [entry, hash, bar, scroller] of [["specs", "/specs/maps/offline", ".toolbar", ".doc-scroll"], ["changes", "/changes", ".toolbar", ".page"], ["share", "/share/offline-map-regions", ".pub-bar", ".doc-scroll"]]) {
     await open(entry, hash);
+    if (entry === "changes") await $('[data-key="view-tab:system:active"]').click();
     const r = await frame.evaluate(([bar, scroller]) => {
       const b = document.querySelector(bar),
         el = document.querySelector(scroller),

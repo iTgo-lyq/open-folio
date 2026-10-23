@@ -180,7 +180,7 @@ function positionPop() {
     if (y + h > innerHeight - 8 && a.top - h - gap > 8) y = a.top - h - gap;
   }
   pop.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + "px";
-  pop.style.top = Math.max(8, y) + "px";
+  pop.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + "px";
 }
 function closePop(restore = true) {
   if (!S.pop) return;

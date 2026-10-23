@@ -69,8 +69,8 @@
     },
     {
       "id": "quiet-changes",
-      "title": "工作台新设计 · Changes 与详情",
-      "description": "按处理状态分组、精简筛选、创建者与交付标签；完整阅读页的详情与分享入口。浅色 / 深色；仅虚构数据。",
+      "title": "Changes · 动态视图与已发布归档",
+      "description": "默认我的，横向视图 tab 与齿轮管理；状态多选、继承当前筛选显示、排序显隐和取消/确认，已发布独立归档。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-changes.html",
       "kind": "page",
       "devices": [

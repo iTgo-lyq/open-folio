@@ -1,0 +1,21 @@
+# 技术与原型验证证据
+
+2026-10-23，基于当前 develop 准备；本轮仅修改技术文档与原型包，未实施账号存储/API/真实 Changes 页面。
+
+## 现状调查与方案核对
+
+定向阅读账号存储、仓库上下文、作者解析、目录查询、阅读缓存与原型包。独立只读调查确认：Token 工作台偏好无法直接承载账号级视图；已有 repositoryKey 可作为稳定仓库键，账号锁与原子写入可复用；现有 browserRevision 只保护会话身份，管理整批写入仍需要仓库配置 revision。
+
+技术稿核对后修正三点：仅 GitHub 数字 subjectId 可自动确认本人，旧 login 继续固定筛选；后台定义更新不覆盖显式 URL/history 的查询；取消数量动态归零与首次打开历史零结果链接分开处理。该核对属于方案准备，不替代正式实现的独立评审。
+
+## 本地原型验证
+
+- `npm run build --workspace prototype`：7 个自包含 HTML 入口成功构建。
+- `node packages/prototype/verify-change-views.mjs`：8 组检查通过，零页面/控制台错误。覆盖浅深色 × 1440/834/390/320、管理/编辑布局、新增继承、多状态并集及作者交集、名称校验、编辑初值、取消/确认、拖拽/Alt 方向键/上下移、显隐与删除、失败重试、归档分类、取消零数量、详情返回和窄屏看板降级。
+- `node packages/prototype/verify-quiet-workbench.mjs`：126 项通过，0 失败，0 浏览器错误。既有 Changes 断言按本次默认我的、状态归档和新 tab 定位更新；滚动验证使用完整进行中列表，避免因默认我的仅 3 条不足以滚动而产生无效断言。
+- `node .agents/skills/spec-trail/prototype/scripts/validate.mjs`：当前清单 7 个入口的元数据/静态校验通过。
+- 人工查看桌面/手机首屏及管理、编辑截图，修复长弹层底部按钮超出视口，以及聚焦后排序辅助按钮引起编辑/删除点击目标位移。桌面和平板使用锚定弹层，手机保持两侧留白和可滚动表单。
+
+验证产物位于 Git 忽略的 `artifacts/change-views/`、`artifacts/quiet-workbench/`；标准卡片截图由包内 screenshot 命令按桌面、iPad、手机生成。原型无真实业务请求与持久存储，验证在 `sandbox="allow-scripts"`、项目 CSP 和 Chromium OS 沙箱下执行。
+
+原型交付范围为 `quiet-changes`，其余六组现有发布引用保留。固定版本、截图和真实工作台卡片加载结果以发布后的补充证据为准。

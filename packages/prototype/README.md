@@ -79,3 +79,9 @@ npm run screenshot --workspace prototype -- --entry dist/quiet-home/index.html -
 3. 从卡片进入原型页面并验证交互；保留卡片截图或等效浏览器断言证据。未通过时记录失败并修复，不能仅以本地 artifacts 截图代替发布验收。真实登录使用项目的测试会话清理约定，结束后核验退出结果。
 
 本地 Agent 可从本机配置发布。向远端交接时只传 request/result 的非敏感内容；request 的 artifactDirectory 是发布机器本地路径，远端登记前需指向内容摘要完全相同的构建目录。不要传 S3 凭据。
+
+## Changes 动态视图预览
+
+`quiet-changes` 已更新为默认“我的”、个人视图 tab、管理齿轮和状态多选。进入管理面板可添加（继承当前筛选/显示）、编辑、排序、显隐与删除；编辑完成后需在管理面板统一确认。主列表临时调整支持恢复、显式保存或另存。评审场景可切换已有个人视图、取消数量 0 和保存失败（首次失败、重试成功）。所有配置仅在内存中，页面重开恢复示例，不连接真实账号。
+
+验证 `npm run build --workspace prototype && node packages/prototype/verify-change-views.mjs`。只发布此入口时，用 `dist/quiet-changes` 作为产物目录，入口清单为 `[{"id":"quiet-changes","entryPath":"index.html"}]`；保留其他六组已有固定引用。

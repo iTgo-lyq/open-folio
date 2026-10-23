@@ -15,7 +15,7 @@ function attention(c) {
   return "moving";
 }
 function statusText(c) {
-  if (c.status === "completed") return `已归档 · ${c.archived}`;
+  if (c.status === "completed") return `${c.delivery?.stage === "releaseMerged" ? "已归档" : "已完成"} · ${c.archived}`;
   if (c.status === "cancelled") return `已取消 · ${c.cancelled}`;
   if (c.status === "unknown") return "记录无法完整读取";
   if (c.waiting?.kind === "confirmation") return `${stageName(c)} · 等待确认`;
@@ -45,59 +45,57 @@ const ring = (p) => `<svg class="ring" viewBox="0 0 16 16" aria-hidden="true"><c
 const SCOPES = [
   ["active", "进行中"],
   ["completed", "已完成"],
+  ["archived", "已归档"],
   ["cancelled", "已取消"],
 ];
-const inScope = (c, s) => c.status === s;
+const inScope = (c, s) => directoryStatus(c) === s;
 function filtered(list) {
   const f = S.changes;
-  let out = list.filter((c) => (!f.types.length || c.labels.some((l) => f.types.includes(l))) && (!f.urgency.length || f.urgency.includes(c.urgency || "normal")) && (!f.creators.length || f.creators.includes(c.creator)));
+  let out = list.filter((c) => (!f.types.length || c.labels.some((l) => f.types.includes(l)) || (!c.labels.length && f.types.includes("__none"))) && (!f.urgency.length || f.urgency.includes(c.urgency || "normal")) && (!f.creators.length || f.creators.includes(c.creator) || (f.creators.includes("@me") && c.creator === ACCOUNT.person)));
   const rank = { urgent: 0, high: 1, normal: 2, low: 3 };
   out.sort((a, b) => (f.sort === "urgency" ? rank[a.urgency || "normal"] - rank[b.urgency || "normal"] : 0) || b.created.localeCompare(a.created) || a.id.localeCompare(b.id));
   return out;
 }
-const filterCount = () => S.changes.types.length + S.changes.urgency.length + S.changes.creators.length;
+const filterCount = () => (S.changes.states?.length || 0) + S.changes.types.length + S.changes.urgency.length + S.changes.creators.length;
 function changesView() {
+  ensureChangeViews();
   if (S.path[1]) return changeDetailView(S.path[1]);
   const gate = sceneGate();
   if (gate) return gate;
-  const all = changesOf(),
-    f = S.changes;
+  const all = viewRecords(), f = S.changes;
   const wrap = (inner) => ({ body: `<div class="page" data-scroll="changes-${f.scope}"><div class="page-inner wide">${inner}</div></div>` });
-  if (S.scene === "empty" || !all.length)
-    return wrap(`<header class="page-head"><h1>Changes</h1></header>${empty("还没有 Change", "使用 SpecTrail 在协作分支创建并推送 Change 后，会出现在这里。", "", "change")}`);
   const issues = all.filter((c) => c.status === "unknown");
-  const count = (s) => all.filter((c) => inScope(c, s)).length;
-  const scoped = f.issues ? issues : all.filter((c) => inScope(c, f.scope));
+  const scoped = f.issues ? issues : all.filter((c) => matchesViewStates(c, f.states));
   const list = filtered(scoped);
   const board = f.view === "board" && f.scope === "active" && !f.issues && !mobile();
-  const head = `<header class="page-head"><h1>Changes</h1></header>`;
-  const bar = `<div class="list-bar"><div class="seg" role="tablist" aria-label="范围">${SCOPES.map(([k, l]) => `<button role="tab" aria-selected="${!f.issues && f.scope === k}" data-action="scope" data-arg="${k}" data-key="scope:${k}" tabindex="${!f.issues && f.scope === k ? 0 : -1}">${l}<span class="count">${count(k)}</span></button>`).join("")}</div><span class="grow"></span>${mobile() ? `${ibtn("筛选", "filter-menu", "filter", { popup: "dialog", key: "filter-menu", cls: filterCount() ? "on" : "" })}${ibtn("显示", "display-menu", "display", { popup: "dialog", key: "display-menu" })}` : `${btn("筛选", "filter-menu", { icon: "filter", kind: `ghost ${filterCount() ? "on" : ""}`, popup: "dialog", key: "filter-menu", badge: filterCount() || "" })}${btn("显示", "display-menu", { icon: "display", kind: "ghost", popup: "dialog", key: "display-menu" })}`}</div>`;
-  const chips = filterCount()
-    ? `<div class="chips" aria-label="已选筛选">${[...f.types.map((v) => ["types", v, `类型：${v}`]), ...f.urgency.map((v) => ["urgency", v, `紧急程度：${URGENCY[v]}`]), ...f.creators.map((v) => ["creators", v, `创建者：${person(v).name}`])].map(([k, v, l]) => `<button class="chip" data-action="drop-filter" data-arg="${k}:${v}" data-key="chip:${k}:${v}" aria-label="移除筛选 ${esc(l)}">${esc(l)}${icon("x")}</button>`).join("")}<button class="chip-clear" data-action="clear-filters" data-key="clear-filters">清除</button></div>`
-    : "";
-  const banner = issues.length && !f.issues && f.scope === "active" ? `<div class="banner warn">${icon("warning")}<span class="grow">${issues.length} 个 Change 的记录无法完整读取</span>${btn("查看", "show-issues", { kind: "sm" })}</div>` : f.issues ? `<div class="banner warn">${icon("warning")}<span class="grow">正在查看无法完整读取的记录</span>${btn("返回列表", "hide-issues", { kind: "sm" })}</div>` : "";
-  let content;
-  if (!list.length) content = empty("没有符合条件的 Change", "调整或清除筛选后再看看。", btn("清除筛选", "clear-filters", { key: "clear-empty" }), "filter");
-  else if (board) content = changeBoard(list);
-  else content = changeTable(list, f.issues ? "issues" : f.scope);
-  return wrap(head + offlineBanner() + bar + chips + banner + content);
+  const tools = `${btn("筛选", "filter-menu", { icon: "filter", kind: `ghost ${filterCount() ? "on" : ""}`, popup: "dialog", key: "filter-menu", badge: filterCount() || "" })}${btn("显示", "display-menu", { icon: "display", kind: "ghost", popup: "dialog", key: "display-menu" })}`;
+  const header = `<header class="page-head"><h1>Changes</h1></header>${offlineBanner()}${viewTabs(all)}<div class="views-tools"><div class="view-condition-chips" aria-label="已选筛选">${conditionChips()}</div><div class="view-tools-actions">${tools}</div></div>${viewDirtyBar()}`;
+  const banner = issues.length && !f.issues ? `<div class="banner warn">${icon("warning")}<span class="grow">${issues.length} 个 Change 的记录无法完整读取</span>${btn("查看", "show-issues", { kind: "sm" })}</div>` : f.issues ? `<div class="banner warn">${icon("warning")}<span class="grow">正在查看无法完整读取的记录</span>${btn("返回列表", "hide-issues", { kind: "sm" })}</div>` : "";
+  const content = !list.length ? empty(f.creators.includes("@me") ? "暂无你创建的 Change" : "没有符合条件的 Change", "调整筛选，或切换视图查看其他记录。", btn("查看进行中", "scope", { arg: "active" }), "filter") : board ? changeBoard(list) : changeTable(list, f.issues ? "issues" : f.scope);
+  const note = f.view === "board" && !board ? `<p class="view-layout-note">${mobile() ? "窄屏以列表展示" : "当前状态组合以列表展示"}，保留已选看板设置。</p>` : "";
+  return wrap(header + banner + note + content);
 }
 function groupsFor(list, scope) {
   const g = S.changes.group;
+  if (g === "none") return [["", list]];
   if (scope === "active" && g === "status")
     return [["confirm", "等待确认"], ["blocked", "受阻"], ["moving", "推进中"]].map(([k, l]) => [l, list.filter((c) => attention(c) === k)]);
   if (scope === "active" && g === "stage") return STAGES.map(([k, l]) => [k === "close" ? "验收" : l, list.filter((c) => c.stage === k)]);
-  if (scope === "completed") return [["待发布", list.filter((c) => c.delivery?.stage === "pendingRelease")], ["已发布", list.filter((c) => c.delivery?.stage === "releaseMerged")], ["交付待核实", list.filter((c) => !c.delivery || c.delivery.stage === "unknown")]];
+  if (scope === "mixed") return SCOPES.flatMap(([key, label]) => {
+    const items = list.filter(c => inScope(c, key));
+    return groupsFor(items, key).map(([sub, rows]) => [sub ? `${label} · ${sub}` : label, rows]);
+  });
+  if (scope === "completed") return [["待集成", list.filter(c => c.delivery?.stage === "pendingIntegration")], ["待发布", list.filter((c) => c.delivery?.stage === "pendingRelease")], ["已发布", list.filter((c) => c.delivery?.stage === "releaseMerged")], ["交付待核实", list.filter((c) => !c.delivery || c.delivery.stage === "unknown")]];
   return [["", list]];
 }
 function changeTable(list, scope) {
-  const cols = scope === "completed" ? ["交付", "归档"] : scope === "cancelled" ? ["原因", "取消"] : scope === "issues" ? ["问题", ""] : ["阶段", "任务"];
+  const cols = scope === "mixed" ? ["状态", "任务"] : ["completed", "archived"].includes(scope) ? ["交付", "归档"] : scope === "cancelled" ? ["原因", "取消"] : scope === "issues" ? ["问题", ""] : ["阶段", "任务"];
   const row = (c) => {
     const second =
-      scope === "completed" ? `<span class="cell-a">${deliveryTag(c, false)}</span><span class="cell-b muted">${c.archived}</span>`
+      ["completed", "archived"].includes(scope) ? `<span class="cell-a">${deliveryTag(c, false)}</span><span class="cell-b muted">${c.archived}</span>`
       : scope === "cancelled" ? `<span class="cell-a muted clamp">${esc(c.cancelReason)}</span><span class="cell-b muted">${c.cancelled}</span>`
       : scope === "issues" ? `<span class="cell-a issue-text clamp">${esc(c.issue)}</span><span class="cell-b"></span>`
-      : `<span class="cell-a stage-cell">${stageDots(c)}<span>${stageName(c)}</span></span><span class="cell-b">${taskCell(c)}</span>`;
+      : `<span class="cell-a stage-cell">${stageDots(c)}<span>${scope === "mixed" ? (SCOPES.find(([k]) => k === directoryStatus(c))?.[1] || "—") : stageName(c)}</span></span><span class="cell-b">${taskCell(c)}</span>`;
     const parent = c.followUpOf ? changeById(c.followUpOf) : null;
     return `<li><a class="change-row" href="#/changes/${c.id}" data-action="open-change" data-arg="${c.id}" data-key="row:${c.id}"><span class="cell-main"><span class="row-title">${urgencyFlag(c)}<span class="title-text">${esc(c.title)}</span></span><span class="row-meta"><code>${c.id}</code>${labelTags(c)}${parent ? `<span class="follow">${icon("followup")}延续“${esc(parent.groupTitle || parent.title)}”</span>` : ""}${scope === "active" ? deliveryTag(c) : ""}${c.waiting && scope === "active" ? `<span class="wait-text">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}${esc(c.waiting.summary)}</span>` : ""}${blockedTasks(c).length && scope === "active" ? `<span class="wait-text bad">${icon("blocked")}${esc(blockedTasks(c)[0].reason)}</span>` : ""}</span></span>${second}<span class="cell-who">${avatar(c.creator, "sm")}<span>${esc(person(c.creator).name)}</span></span><span class="cell-date">${dateLabel(c.created)}</span></a></li>`;
   };
@@ -111,9 +109,7 @@ function changeBoard(list) {
   }).join("")}</div>`;
 }
 A["scope"] = (el) => {
-  S.changes.scope = el.dataset.arg;
-  S.changes.issues = false;
-  render();
+  selectChangeView("system:" + el.dataset.arg);
 };
 A["show-issues"] = () => {
   S.changes.issues = true;
@@ -129,25 +125,28 @@ A["filter-menu"] = (el) =>
       f = S.changes;
     const types = [...new Set(all.flatMap((c) => c.labels))];
     const creators = [...new Set(all.map((c) => c.creator))];
-    const n = (fn) => all.filter((c) => inScope(c, f.scope) && fn(c)).length;
+    const n = (fn) => all.filter((c) => matchesViewStates(c, f.states) && fn(c)).length;
     const item = (group, value, label, count, lead = "") => `<button class="menu-item" role="menuitemcheckbox" aria-checked="${f[group].includes(value)}" data-action="toggle-filter" data-arg="${group}:${value}" data-key="f:${group}:${value}"><span class="check-box">${f[group].includes(value) ? icon("check") : ""}</span>${lead}<span class="grow">${esc(label)}</span><span class="count">${count}</span></button>`;
-    return `<div class="menu filter-pop" role="menu" aria-label="筛选"><div class="menu-label">类型</div>${types.map((t) => item("types", t, t, n((c) => c.labels.includes(t)))).join("")}<div class="menu-sep"></div><div class="menu-label">紧急程度</div>${Object.entries(URGENCY).map(([k, l]) => item("urgency", k, l, n((c) => (c.urgency || "normal") === k))).join("")}<div class="menu-sep"></div><div class="menu-label">创建者</div>${creators.map((p) => item("creators", p, person(p).name + (p === ACCOUNT.person ? "（我）" : ""), n((c) => c.creator === p), avatar(p, "sm"))).join("")}${filterCount() ? `<div class="menu-sep"></div><button class="menu-item" role="menuitem" data-action="clear-filters" data-key="clear-in-menu">${icon("x")}<span class="grow">清除筛选</span></button>` : ""}</div>`;
+    return `<div class="menu filter-pop" role="menu" aria-label="筛选"><div class="menu-label">状态 · 可多选</div>${SCOPES.map(([k,l]) => item("states", k, l, all.filter(c => inScope(c,k)).length)).join("")}<div class="menu-sep"></div><div class="menu-label">类型</div>${types.map((t) => item("types", t, t, n((c) => c.labels.includes(t)))).join("")}${item("types", "__none", "无类型", all.filter(c => !c.labels.length).length)}<div class="menu-sep"></div><div class="menu-label">紧急程度</div>${Object.entries(URGENCY).map(([k, l]) => item("urgency", k, l, n((c) => (c.urgency || "normal") === k))).join("")}<div class="menu-sep"></div><div class="menu-label">创建者</div>${item("creators", "@me", "我（当前 GitHub 身份）", n(c => c.creator === ACCOUNT.person))}${creators.map((p) => item("creators", p, person(p).name + (p === ACCOUNT.person ? "（我）" : ""), n((c) => c.creator === p), avatar(p, "sm"))).join("")}${filterCount() ? `<div class="menu-sep"></div><button class="menu-item" role="menuitem" data-action="clear-filters" data-key="clear-in-menu">${icon("x")}<span class="grow">清除筛选</span></button>` : ""}</div>`;
   }, { label: "筛选", align: "end", cls: "wide" });
 A["toggle-filter"] = (el) => {
   const [k, v] = el.dataset.arg.split(":");
   const arr = S.changes[k];
   S.changes[k] = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+  syncViewScope();
   render();
   refreshPop();
 };
 A["drop-filter"] = (el) => {
   const [k, v] = el.dataset.arg.split(":");
   S.changes[k] = S.changes[k].filter((x) => x !== v);
+  syncViewScope();
   render();
   ($(".chip") || $('[data-key="filter-menu"]'))?.focus();
 };
 A["clear-filters"] = () => {
-  Object.assign(S.changes, { types: [], urgency: [], creators: [] });
+  Object.assign(S.changes, { states: [], types: [], urgency: [], creators: [] });
+  syncViewScope();
   closePop(false);
   render();
   $('[data-key="filter-menu"]')?.focus();

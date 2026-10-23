@@ -15,7 +15,7 @@ const COMMON = [["normal", "正常"], ["loading", "加载中"], ["error", "加�
 const SCENES = {
   home: [["normal", "正常"], ["discovering", "正在发现"], ["partial", "部分仓库检查失败"], ["empty", "没有发现仓库"], ["no-token", "尚未绑定 Token"], ["loading", "加载中"], ["offline", "离线"], ["expired", "登录已过期"]],
   specs: [...COMMON, ["empty", "没有 Specs"]],
-  changes: [...COMMON, ["empty", "没有 Change"]],
+  changes: [...COMMON, ["empty", "没有 Change"], ["views-saved", "已有个人视图"], ["views-no-cancelled", "取消数量为 0"], ["views-save-error", "视图保存失败（可重试）"]],
   change: [["normal", "正常"], ["missing", "材料缺失"], ["integration-error", "合入记录异常"], ["copy-fail", "复制失败"], ...COMMON.slice(1)],
   prototypes: [...COMMON, ["empty", "没有原型"]],
   viewer: [["normal", "正常"], ["loading", "加载中"], ["preview-error", "原型加载失败"], ["copy-fail", "复制失败"], ["offline", "离线"], ["denied", "无权限"]],
