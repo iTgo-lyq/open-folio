@@ -4,9 +4,15 @@
   "title": "Changes 动态视图与已发布归档",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-23T11:46:59.017Z",
+      "summary": "默认我的动态视图、状态多选与视图管理及已发布归档",
+      "source": "用户：需求没问题，按这个方案继续，先准备技术方案和交互原型。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
