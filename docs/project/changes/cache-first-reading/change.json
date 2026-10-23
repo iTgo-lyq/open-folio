@@ -4,7 +4,7 @@
   "title": "缓存优先阅读与跨浏览器 Token 恢复",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/cache-first-reading",
   "confirmations": {
     "requirement": {
@@ -49,7 +49,13 @@
       "commitTitle": "cache-first-reading T4: preserve complete versions and clear revoked reading scopes"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-23T05:30:03.549Z",
+      "summary": "Node、浏览器、类型及构建通过；独立复审无遗留问题，双浏览器真实冒烟与会话清理通过。"
+    }
+  },
   "types": [
     "性能",
     "体验",
@@ -62,5 +68,9 @@
       "recommendation": "一并处理，覆盖打开页面和跨浏览器恢复的完整体验。",
       "answer": "按建议范围推进"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "开发验收版已运行，等待用户验收后同步 Specs、归档并合入 develop。"
   }
 }
