@@ -4,19 +4,29 @@
   "title": "Changes 动态视图与已发布归档",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-focus-and-archive",
   "confirmations": {
     "requirement": {
       "at": "2026-10-23T11:46:59.017Z",
       "summary": "默认我的动态视图、状态多选与视图管理及已发布归档",
       "source": "用户：需求没问题，按这个方案继续，先准备技术方案和交互原型。"
+    },
+    "technical": {
+      "at": "2026-10-25T04:38:06.040Z",
+      "summary": "复用账号存储和读取缓存支持视图配置与统一状态查询",
+      "source": "用户确认技术方案与三项串行计划：确认，开始实施。"
+    },
+    "plan": {
+      "at": "2026-10-25T04:38:07.729Z",
+      "summary": "依次交付状态与本人筛选、视图恢复和拖拽管理交互",
+      "source": "用户确认技术方案与三项串行计划：确认，开始实施。"
     }
   },
   "tasks": {
     "T1": {
       "title": "统一状态范围与本人筛选",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "保存并恢复账号级视图",
@@ -80,9 +90,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "原型已通过，实施计划已准备，待技术方案与三项串行计划共同确认。"
-  }
+  ]
 }
