@@ -1,7 +1,7 @@
 import "server-only";
 import { AUTO_REFRESH_MS, type Limits } from "../lib/model.ts";
 import { limitsFor, readConfig } from "./config.ts";
-import { publicError } from "./errors.ts";
+import { AppError, publicError } from "./errors.ts";
 import { repositories, type Repositories } from "./repositories.ts";
 import type { DiscoveredRepository } from "./discovery.ts";
 
@@ -101,6 +101,11 @@ export class RepositoryRefresher {
           binding.workspaceId,
         );
         for (const repository of found) {
+          if (
+            repository.repository.archived ||
+            binding.untrackedRepositories?.[repository.key]
+          )
+            continue;
           const id = targetKey(
             binding.workspaceId,
             repository.key,
@@ -145,7 +150,13 @@ export class RepositoryRefresher {
             this.controller.signal,
           );
         } catch (error) {
-          this.report(error);
+          if (
+            !(
+              error instanceof AppError &&
+              error.code === "REPOSITORY_NOT_TRACKED"
+            )
+          )
+            this.report(error);
         } finally {
           this.completed.set(id, this.now());
         }

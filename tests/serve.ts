@@ -197,7 +197,9 @@ const server = createServer(async (req, res) => {
           git.allowed.add("reader:token-a");
           git.allowed.add("reader:token-b");
           unavailable = false;
+          repository.archived = false;
         }
+        if (input.archived !== undefined) repository.archived = input.archived;
         if (input.revoke) {
           valid.delete(input.revoke);
           git.allowed.delete(`reader:${input.revoke}`);

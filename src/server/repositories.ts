@@ -151,6 +151,23 @@ export class Repositories {
         await owner.assertCurrent();
       };
       const assertRead = (force = false) => assertPermission(lease, force);
+      const assertTracked = async (owner: WorkspaceLease) => {
+        const current = await permissions.checkWorkspace(
+          owner,
+          key,
+          repository,
+          { integrationBranch, workspaceOwned: owner !== lease },
+        );
+        const preferences = await this.sessions.repositoryPreferences(owner);
+        if (current.archived || preferences.untrackedRepositories?.[key])
+          throw new AppError(
+            "REPOSITORY_NOT_TRACKED",
+            current.archived
+              ? "仓库已归档，已停止追踪。"
+              : "已停止追踪此仓库，请先在我的仓库中恢复追踪。",
+            409,
+          );
+      };
       await lease.assertCurrent();
       const cache = join(this.root, lease.workspaceId);
       const makeStore = async (owner: WorkspaceLease) => {
@@ -182,6 +199,7 @@ export class Repositories {
         store,
         assertRead,
         refresh: async (limits, automatic = false) => {
+          await assertTracked(lease);
           const locks = (state.folioRefreshes ??= new Map());
           const path = store.directory();
           // A credential-owned job survives an individual device logout. Each
@@ -199,7 +217,10 @@ export class Repositories {
                 const snapshot = await shared.refresh(project, limits, {
                   automatic,
                   signal: owner.context.signal,
-                  beforePublish: () => assertPermission(owner),
+                  beforePublish: async () => {
+                    await assertPermission(owner);
+                    await assertTracked(owner);
+                  },
                   delivery: provider.listPullRequests
                     ? {
                         repositoryId: repository.repositoryId,

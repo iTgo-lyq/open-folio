@@ -1,5 +1,4 @@
 import test from "node:test";
-import { GitReader as GitReaderForTest } from "../src/server/git.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -597,3 +596,74 @@ test("two accounts using the same Token isolate real snapshots, preferences and 
     assert.deepEqual(await result.json(), { token: "first" });
   }
 });
+
+test("untracking and archiving reject new refreshes while retaining authorized snapshots", async () => {
+  const t = await setup();
+  try {
+    const initial = await (await t.request("refresh", "POST")).json();
+    const { providerId, instanceId, repositoryId, fullName } = t.repo;
+    await t.f.sessions.updatePreferences(t.c.cookie, {
+      untrackedRepositories: {
+        [t.key]: { providerId, instanceId, repositoryId, fullName },
+      },
+    });
+    assert.equal((await t.request("refresh", "POST")).status, 409);
+    assert.equal(
+      (await (await t.request("workbench")).json()).id,
+      initial.snapshotId,
+    );
+    await t.f.sessions.updatePreferences(t.c.cookie, {
+      untrackedRepositories: {},
+    });
+    assert.equal((await t.request("refresh", "POST")).status, 200);
+    t.repo.archived = true;
+    repositoryPermissions(t.f.sessions).now = () =>
+      Date.now() + PERMISSION_CHECK_MS;
+    assert.equal((await t.request("refresh", "POST")).status, 409);
+    assert.equal((await t.request("workbench")).status, 200);
+  } finally {
+    await t.cleanup();
+  }
+});
+test("a refresh already collecting data cannot publish after tracking is stopped", async () => {
+  const t = await setup();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  try {
+    const initial = await (await t.request("refresh", "POST")).json();
+    let reached!: () => void;
+    const collecting = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
+    t.f.provider.listPullRequests = async () => {
+      reached();
+      await gate;
+      return { items: [], nextCursor: null };
+    };
+    await t.g.put(
+      "docs/project/specs/platform/spec.md",
+      "# New unpublished content",
+    );
+    t.g.commit();
+    const refresh = t.request("refresh", "POST");
+    await collecting;
+    const { providerId, instanceId, repositoryId, fullName } = t.repo;
+    await t.f.sessions.updatePreferences(t.c.cookie, {
+      untrackedRepositories: {
+        [t.key]: { providerId, instanceId, repositoryId, fullName },
+      },
+    });
+    release();
+    assert.equal((await refresh).status, 409);
+    assert.equal(
+      (await (await t.request("workbench")).json()).id,
+      initial.snapshotId,
+    );
+  } finally {
+    release();
+    await t.cleanup();
+  }
+});
+import { GitReader as GitReaderForTest } from "../src/server/git.ts";

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "repository-tracking-controls",
+  "title": "归档仓库自动退出追踪并支持手动停止追踪",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/repository-tracking-controls",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一归档过滤、追踪偏好和仓库列表恢复入口并验证",
+      "status": "done",
+      "verification": "完整回归352项、浏览器停止与恢复/归档切换2项、类型与格式检查、生产构建均通过；覆盖偏好持久化与隔离、旧快照保留及在途刷新竞争"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T08:42:52.303Z",
+      "summary": "Agent 自查，352项完整回归、两项浏览器流程、类型格式及生产构建通过，归档与手动排除覆盖发现、列表和刷新发布"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T08:42:53.692Z",
+      "summary": "Agent 自验收：归档隐藏、停止与恢复、持久化隔离及旧快照保留均符合要求",
+      "source": "small Change 默认自验收，按用户提出的归档停止追踪与手动控制目标逐项核对"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T08:43:24.685Z",
+      "summary": "同步工作台仓库追踪行为及服务配置中的可选偏好字段、范围与恢复方式"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T08:43:26.129Z",
+      "summary": "归档隐藏与手动停止、恢复追踪已完成并验证",
+      "path": "docs/project/archive/2026-10-25-repository-tracking-controls"
+    }
+  },
+  "types": [
+    "修复",
+    "体验"
+  ]
+}
