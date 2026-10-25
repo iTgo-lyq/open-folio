@@ -81,7 +81,11 @@ export async function fixture() {
       nextCursor: null,
     }),
   };
-  const context = { delivery, signal: new AbortController().signal };
+  const context = {
+    delivery,
+    signal: new AbortController().signal,
+    beforePublish: async () => {},
+  };
   const readPullRequests = async () => ({ repositoryId: "1", pullRequests });
   const recordMerge = (
     id: string,

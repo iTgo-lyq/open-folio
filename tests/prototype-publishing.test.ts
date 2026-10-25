@@ -1,3 +1,5 @@
+import { verify } from "../.agents/skills/spec-trail/scripts/integration.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
@@ -479,11 +481,8 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     join(f.common, ".."),
   );
   f.git(["push", "origin", "develop"], join(f.common, ".."));
-  run(".agents/skills/spec-trail/scripts/integration.mjs", [
-    "verify",
-    "--change",
-    "publish-demo",
-  ]);
+  f.recordMerge("publish-demo", state.branch, f.git(["rev-parse", "develop"]));
+  await verify(repository(f.author), "publish-demo", f.readPullRequests);
   assert.equal(f.git(["tag", "--list", "spec-trail/archive-v2/*"]), "");
 });
 

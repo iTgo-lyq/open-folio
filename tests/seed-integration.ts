@@ -35,6 +35,7 @@ export async function seedIntegration(f: Awaited<ReturnType<typeof fixture>>) {
     "-m",
     `Merge Change ${id} into develop\n\nSpecTrail-Change: ${id}`,
   ]);
+  f.recordMerge(id, branch);
   f.git(["push", "origin", "develop"]);
   f.git(["push", "origin", "--delete", branch]);
   f.git(["branch", "-d", branch]);

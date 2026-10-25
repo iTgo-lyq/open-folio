@@ -72,7 +72,7 @@ const cacheSchema = z
   .refine(
     ({ queries }) => new Set(queries.map((q) => q.key)).size === queries.length,
   );
-type CatalogItem = z.infer<typeof item>;
+export type CatalogItem = z.infer<typeof item>;
 type CacheData = z.infer<typeof cacheSchema>;
 const queryKey = (reader: DeliveryReader, base: string) =>
   JSON.stringify([reader.cacheKey, base, "all", "created", "desc", 100]);

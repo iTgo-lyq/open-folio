@@ -119,7 +119,7 @@ export async function preflight(repo, id, readPullRequests = githubPullRequests)
   const {branch,route} = sourceIdentity(catalog,id);
   const integration = await changeIntegration(repo,catalog,id,branch,readPullRequests);
   assert(!['invalid','unavailable'].includes(integration.status), integration.message);
-  if (route.kind === 'archive') return {...inclusion(repo,catalog,id),integration};
+  if (route.kind === 'archive' || integration.status === 'found') return {...inclusion(repo,catalog,id),integration};
   const result = {integrationBranch:catalog.branch,tip:catalog.commit,integration};
   const delivery = source(repo,catalog,id);
   assert(remoteBranch(repo,delivery.branch) === delivery.commit, 'Push the archived source before preparing its PR');

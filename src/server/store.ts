@@ -23,6 +23,10 @@ import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
 import { PullRequestCache } from "./pull-requests.ts";
+import {
+  INTEGRATION_VERSION,
+  inspectIntegration,
+} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 import { collectDelivery, type DeliveryReader } from "./delivery.ts";
 import { IntegrationReader } from "./integration.ts";
 import {
@@ -208,6 +212,7 @@ export class SnapshotStore {
       if (
         context?.automatic &&
         previous &&
+        previous.integrations.version === INTEGRATION_VERSION &&
         previous.scanFingerprint === scanFingerprint(limits) &&
         checked?.snapshotId === previous.id &&
         Date.now() - checked.at >= 0 &&
@@ -250,7 +255,20 @@ export class SnapshotStore {
         : undefined;
       const delivery = await collectDelivery({
         changes,
-        integrations: data.integrations,
+        integrationTip: data.integrations.tip,
+        readIntegration: (commit, id) => {
+          const prior =
+            previous?.integrations?.version === INTEGRATION_VERSION
+              ? previous.integrations.records[id]
+              : undefined;
+          return prior?.status === "found" && prior.commit === commit
+            ? Promise.resolve(prior)
+            : inspectIntegration(
+                (args) => reader.run(args, signal),
+                commit,
+                id,
+              );
+        },
         integrationBranch: data.integrationBranch,
         releaseSource: data.releaseSource,
         previous: previous?.deliveryByChange,
@@ -274,6 +292,8 @@ export class SnapshotStore {
       if (
         data.unchanged &&
         previous &&
+        JSON.stringify(delivery.integrations) ===
+          JSON.stringify(previous.integrations) &&
         JSON.stringify(delivery.deliveryByChange) ===
           JSON.stringify(previous.deliveryByChange)
       ) {
@@ -299,7 +319,7 @@ export class SnapshotStore {
       };
       const s: Snapshot = {
         cacheSchemaVersion: 9,
-        integrations: data.integrations,
+        integrations: delivery.integrations,
         releaseSource: data.releaseSource,
         deliveryByChange: delivery.deliveryByChange,
         integrationBranch: data.integrationBranch,

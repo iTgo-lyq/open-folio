@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "使工作台状态与差异共同使用 PR 记录并完成整体验证",
-      "status": "todo"
+      "status": "done",
+      "verification": "354项项目测试、27项技能测试、5项浏览器回归及9项索引测试通过；类型格式构建通过，独立评审无问题。",
+      "commitTitle": "pr-based-integration T2: derive workspace integration from PR records"
     }
   },
   "closure": {},

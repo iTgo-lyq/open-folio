@@ -1,3 +1,4 @@
+import { githubCli } from "./github-cli-fixture.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -508,7 +509,7 @@ test("parent closure checks the live registered child ref rather than a deleted 
   assert.equal(parent("show").state.stage, "execution");
 });
 
-test("xlarge parents move to a closing branch after child delivery and cannot archive on collaboration", (t) => {
+test("xlarge parents move to a closing branch after child delivery and cannot archive on collaboration", async (t) => {
   const f = fixture(t),
     child = { ...completedChange("child"), parent: "parent" };
   f.put(`${child.closure.archive.path}/change.json`, JSON.stringify(child));
@@ -581,6 +582,31 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
     "Change PR\n\nSpecTrail-Change: parent",
   );
   at(f.repo, "push", "origin", "develop");
+  const env = await githubCli(
+    { root: f.root, remote: f.remote, git: (args) => at(f.repo, ...args) },
+    [
+      {
+        number: 1,
+        title: "Parent delivery",
+        url: "https://github.com/demo/work/pull/1",
+        body: "Delivery\n\nSpecTrail-Change: parent",
+        state: "merged",
+        draft: false,
+        head: {
+          repositoryId: "1",
+          branch: at(path, "branch", "--show-current"),
+          commit: at(path, "rev-parse", "HEAD"),
+        },
+        base: {
+          repositoryId: "1",
+          branch: "develop",
+          commit: at(f.repo, "rev-parse", "HEAD^1"),
+        },
+        mergeCommit: at(f.repo, "rev-parse", "HEAD"),
+        updatedAt: "2026-10-25T00:00:00Z",
+      },
+    ],
+  );
   const output = JSON.parse(
     execFileSync(
       process.execPath,
@@ -592,7 +618,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
         "--change",
         "parent",
       ],
-      { encoding: "utf8" },
+      { encoding: "utf8", env },
     ),
   );
   assert.equal(output.sourceIncluded, true);

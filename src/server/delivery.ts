@@ -7,13 +7,23 @@ import type {
   ReleaseSource,
 } from "../lib/model.ts";
 import { AppError } from "./errors.ts";
-import { integrationFor } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { PullRequestCache, type DeliveryReader } from "./pull-requests.ts";
+import {
+  INTEGRATION_VERSION,
+  changePullRequests,
+  integrationEvidence,
+  type IntegrationResult,
+} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import {
+  PullRequestCache,
+  type DeliveryReader,
+  type CatalogItem,
+} from "./pull-requests.ts";
 export type { DeliveryReader } from "./pull-requests.ts";
 
 type Input = {
   changes: ChangeGroup[];
-  integrations: IntegrationIndex;
+  integrationTip: string | null;
+  readIntegration: (commit: string, id: string) => Promise<IntegrationResult>;
   integrationBranch: string | null;
   releaseSource: ReleaseSource;
   previous?: Record<string, Delivery>;
@@ -51,13 +61,9 @@ export async function collectDelivery(input: Input) {
         (base): base is string => !!base,
       ),
     );
-  const changeIndex = new Map<string, PullRequest[]>();
+  const changeIndex = new Map<string, CatalogItem[]>();
   const releaseIndex = new Map<string, PullRequest[]>();
-  const add = (
-    index: Map<string, PullRequest[]>,
-    key: string,
-    pr: PullRequest,
-  ) => {
+  const add = <T>(index: Map<string, T[]>, key: string, pr: T) => {
     const items = index.get(key) ?? [];
     items.push(pr);
     index.set(key, items);
@@ -71,13 +77,10 @@ export async function collectDelivery(input: Input) {
     let errorMessage: string | undefined;
     if (reader && base) {
       try {
-        for (const { marker, ...pr } of await cache.query(
-          reader,
-          base,
-          signal,
-        )) {
+        for (const item of await cache.query(reader, base, signal)) {
+          const { marker, ...pr } = item;
           if (kind === "change" && marker.kind === "change")
-            add(changeIndex, JSON.stringify([marker.id, pr.head.branch]), pr);
+            add(changeIndex, marker.id, item);
           if (kind === "release" && marker.kind === "release")
             for (const id of marker.includes)
               add(releaseIndex, id, { ...pr, version: marker.version });
@@ -91,6 +94,16 @@ export async function collectDelivery(input: Input) {
     else releaseError = errorMessage;
   }
 
+  const integrations: IntegrationIndex = {
+    version: INTEGRATION_VERSION,
+    tip: input.integrationTip,
+    complete: !changeError && !!input.integrationTip,
+    records: {},
+    issues: [],
+    ...(changeError || !input.integrationTip
+      ? { message: changeError ?? "集成版本尚不可读取。" }
+      : {}),
+  };
   const deliveryByChange: Record<string, Delivery> = {};
   let complete = !changeError && !releaseError;
   const remaining = [...input.changes];
@@ -99,7 +112,6 @@ export async function collectDelivery(input: Input) {
       signal.throwIfAborted();
       const prior = input.previous?.[group.id];
       const candidate = group.candidates.find((c) => c.key === group.primary);
-      const integration = integrationFor(input.integrations, group.id);
       const branch = candidate?.state?.branch;
       const diagnostics: string[] = [];
       let changePrsStale = false;
@@ -110,9 +122,12 @@ export async function collectDelivery(input: Input) {
         changePrsStale = true;
         changePrs = prior?.changePrs ?? [];
       } else if (branch) {
-        changePrs = [
-          ...(changeIndex.get(JSON.stringify([group.id, branch])) ?? []),
-        ];
+        changePrs = changePullRequests(changeIndex.get(group.id) ?? [], {
+          repositoryId: reader!.repositoryId,
+          integrationBranch: input.integrationBranch!,
+          id: group.id,
+          branch,
+        }).map(({ marker: _marker, ...pr }) => pr);
       } else {
         diagnostics.push("Change 来源或 PR 读取能力尚未就绪。");
         changePrsStale = true;
@@ -130,27 +145,31 @@ export async function collectDelivery(input: Input) {
         diagnostics.push(
           "存在多个待合入 PR，无法确定当前交付，请核对关联标记。",
         );
-      let integratedCommit =
-        integration.status === "found" ? integration.commit : null;
-      if (!integratedCommit && input.integrations.tip) {
-        for (const p of changePrs) {
-          if (
-            p.state === "merged" &&
-            p.mergeCommit &&
-            (await input.ancestor(p.mergeCommit, input.integrations.tip))
-          ) {
-            integratedCommit = p.mergeCommit;
-            diagnostics.push(
-              "PR 合入已核实，合入差异暂不可用。" +
-                (integration.status === "missing" ||
-                integration.status === "found"
-                  ? ""
-                  : integration.message),
-            );
-            break;
+      const evidence = changePrsStale
+        ? {
+            status: "unavailable" as const,
+            message: changeError ?? "Change 来源或 PR 读取能力尚未就绪。",
           }
-        }
-      }
+        : await integrationEvidence(
+            input.ancestor,
+            input.integrationTip,
+            changePrs,
+          );
+      const integration =
+        evidence.status === "found"
+          ? await input.readIntegration(evidence.commit, group.id)
+          : evidence;
+      Object.defineProperty(integrations.records, group.id, {
+        value: integration,
+        enumerable: true,
+      });
+      if (evidence.status === "unavailable") complete = false;
+      const integratedCommit =
+        evidence.status === "found" ? evidence.commit : null;
+      if (integratedCommit && integration.status !== "found")
+        diagnostics.push(
+          "PR 合入已核实，合入差异暂不可用。" + integration.message,
+        );
       let stage: Delivery["stage"];
       // candidate.branch is the read source; state.branch retains historical ownership.
       if (
@@ -162,14 +181,6 @@ export async function collectDelivery(input: Input) {
         stage = "releaseMerged";
       } else if (integratedCommit) {
         stage = "pendingRelease";
-        if (
-          changePrs.some(
-            (p) => p.state === "merged" && p.mergeCommit !== integratedCommit,
-          )
-        )
-          diagnostics.push(
-            "Change PR 合并提交与有效集成记录不一致，请核对历史。",
-          );
         if (releaseSource.message) diagnostics.push(releaseSource.message);
         if (!releaseSource.commit || releaseError) stage = "unknown";
         else {
@@ -188,12 +199,9 @@ export async function collectDelivery(input: Input) {
             }
           }
         }
-      } else if (
-        integration.status !== "missing" &&
-        integration.status !== "found"
-      ) {
+      } else if (evidence.status !== "missing") {
         stage = "unknown";
-        diagnostics.push(integration.message);
+        if (evidence.status !== "found") diagnostics.push(evidence.message);
       } else if (candidate?.validCompleted) {
         stage = "pendingIntegration";
         if (changePrs.some((p) => p.state === "merged")) {
@@ -225,7 +233,11 @@ export async function collectDelivery(input: Input) {
     Array.from({ length: Math.min(4, remaining.length) }, worker),
   );
   // Stable ordering avoids new snapshots caused only by request completion order.
+  integrations.records = Object.fromEntries(
+    Object.entries(integrations.records).sort(([a], [b]) => a.localeCompare(b)),
+  );
   return {
+    integrations,
     deliveryByChange: Object.fromEntries(
       Object.entries(deliveryByChange).sort(([a], [b]) => a.localeCompare(b)),
     ),

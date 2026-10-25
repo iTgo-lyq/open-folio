@@ -42,7 +42,7 @@ test("whole integration diff includes all paths, renames, exact lines, binary an
   f.git(["push", "origin", f.branch]);
   const merge = f.merge();
   f.git(["push", "origin", "--delete", f.branch]);
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const reader = await f.store.integration(f.project, f.id, snapshot.id);
   const summary = await reader.summary(),
     page = await reader.files();
@@ -100,7 +100,7 @@ test("file pagination binds cursors to the complete snapshot and commit pair", a
   for (let n = 0; n < 105; n++) await f.put(`files/${n}.txt`, `${n}\n`);
   f.commit();
   f.merge();
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const reader = await f.store.integration(f.project, f.id, snapshot.id);
   const first = await reader.files();
   assert.equal(first.files.length, 100);
@@ -116,7 +116,7 @@ test("file pagination binds cursors to the complete snapshot and commit pair", a
   });
   await f.put("docs/project/specs/new/spec.md", "# new");
   f.commit();
-  const updated = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const updated = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   await assert.rejects(
     (await f.store.integration(f.project, f.id, updated.id)).files(first.next),
     { code: "INVALID_PARAMETER" },
@@ -144,6 +144,7 @@ test("integration API requires snapshots, rechecks permissions and rejects forei
     "-m",
     "Deliver\n\nSpecTrail-Change: example",
   ]);
+  f.g.recordMerge("example", "change/example");
   f.g.git(["push", "origin", "develop"]);
   assert.equal((await f.request("refresh", "POST")).status, 200);
   const snapshot = await (await f.request("workbench")).json();

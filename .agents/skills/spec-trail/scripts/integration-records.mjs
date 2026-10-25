@@ -102,13 +102,6 @@ export async function inspectIntegration(run, commit, id) {
   } catch { return {status:'unavailable',message:'合入提交暂不可读取。',candidates:[commit]}; }
 }
 
-/** PR collection must be supplied by the caller; Git alone cannot discover integrations.
- * @param {GitRun} run @param {string} tip @returns {Promise<IntegrationIndex>}
- */
-export async function scanIntegrations(run, tip) {
-  return {version:INTEGRATION_VERSION,tip,complete:false,records:{},issues:[],message:'合入索引等待 PR 记录核实。'};
-}
-
 /** @param {IntegrationIndex} index @param {string} id @returns {IntegrationResult} */
 export function integrationFor(index, id) {
   if (!validChangeId(id)) throw Error('Invalid Change id');

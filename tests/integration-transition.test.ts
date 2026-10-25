@@ -162,13 +162,14 @@ syncBuiltinESMExports();
     `Change PR\n\nSpecTrail-Change: ${id}`,
   ]);
   f.git(["push", "origin", "develop"]);
-  const result = await verify(repository(f.author), id);
+  f.recordMerge(id, branch);
+  const result = await verify(repository(f.author), id, f.readPullRequests);
   assert.equal(result.sourceIncluded, true);
   assert.match(
     f.git(["show", `${result.tip}:prototype/preview/page/index.html`]),
     /CONCURRENT OTHER DELIVERY/,
   );
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const preview = await f.store.preview(
     f.project,
     id,
@@ -260,8 +261,9 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
     `Change PR\n\nSpecTrail-Change: ${id}`,
   ]);
   f.git(["push", "origin", "develop"]);
+  f.recordMerge(id, branch);
   const repo = repository(f.author),
-    delivery = await verify(repo, id),
+    delivery = await verify(repo, id, f.readPullRequests),
     merge = delivery.tip;
   f.git(["merge", "--ff-only", "origin/develop"]);
   const cleaned = await cleanup(repo, id, {
@@ -280,7 +282,7 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   assert.equal((await retire(repo, plan, true)).complete, true);
   assert.equal((await retire(repo, plan, true)).complete, true);
   assert.ok(f.git(["ls-remote", "origin", "refs/tags/release-keep"]));
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const reader = await f.store.integration(f.project, id, snapshot.id),
     files = await reader.files();
   const feature = files.files.find((file) => file.path === "src/feature.txt")!;
@@ -321,7 +323,9 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   await writeFile(join(dir, "current"), oldId);
   const userData = join(f.root, "user-preferences.json");
   await writeFile(userData, "untouched");
-  const rebuilt = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
+  const rebuilt = await f
+    .makeStore()
+    .refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.notEqual(rebuilt.id, oldId);
   assert.equal(
     f.git(

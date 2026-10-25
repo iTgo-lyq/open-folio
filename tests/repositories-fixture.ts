@@ -37,6 +37,10 @@ export async function repositoryFixture(https = false) {
   g.git(["symbolic-ref", "HEAD", "refs/heads/trunk"], g.remote);
   g.git(["checkout", "-b", "develop"]);
   g.git(["push", "-u", "origin", "develop"]);
+  f.provider.listPullRequests = async (_ctx, _repo, query) => ({
+    items: g.pullRequests.filter((pr) => pr.base.branch === query.base),
+    nextCursor: null,
+  });
   const repo = f.repositories[0];
   if (https)
     repo.cloneUrl = (g as Awaited<ReturnType<typeof gitHttpsFixture>>).url;
