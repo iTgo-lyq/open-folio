@@ -18,6 +18,9 @@ function archive(records, id) {
   assert(rows.length === 1 && !record.error && record.archived && record.state?.id === id &&
     !validateChange(record.state).length && closedRecord(record.state, record.directory),
   `Change ${id}: merge requires one valid completed archive with verification, acceptance and Specs recorded`);
+  assert((record.state.previews ?? []).every(preview => preview.artifact.type !== 'git' ||
+    preview.artifact.path === `${record.directory}/previews/${preview.id}`),
+  `Change ${id}: Git prototypes must be fixed inside the archive subtree`);
   return record;
 }
 

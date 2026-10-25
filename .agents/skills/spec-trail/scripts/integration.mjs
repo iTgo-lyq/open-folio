@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { repository, collaborationCatalog, recordsAt, revision, remoteBranch, fetchBranch } from './repository.mjs';
 import { closedRecord, validBranchName } from './routing.mjs';
 import { validateChange } from './state-schema.mjs';
-import { integrationFor, scanIntegrations, validChangeId } from './integration-records.mjs';
+import { validChangeId } from './integration-records.mjs';
 import { entryPath } from '../prototype/scripts/contract.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
@@ -66,11 +66,32 @@ function previewObjects(repo, record, commit, configuration) {
   }
 }
 
-async function current(repo, id) {
-  const catalog = collaborationCatalog(repo, {refresh:true});
-  const integration = integrationFor(await scanIntegrations(async args => repo.git(args), catalog.commit), id);
-  assert(!['invalid','unavailable'].includes(integration.status), integration.message ?? 'Invalid integration');
-  return {catalog,integration};
+function sourceIdentity(catalog, id) {
+  const route = catalog.routes.find(route => route.id === id);
+  assert(route && !route.errors.length, 'A valid central Change entry is required to identify its source');
+  const record = catalog.entries.find(record => record.id === id);
+  const branch = route.kind === 'archive' ? record.state.branch : route.branch;
+  sourceBranch(catalog,branch);
+  return {route,record,branch};
+}
+
+function localSource(repo, branch) {
+  const ref = `refs/heads/${branch}`;
+  try { repo.git(['show-ref','--verify','--quiet',ref]); }
+  catch (error) { if (error.status === 1) return null; throw error; }
+  return repo.git(['show-ref','--verify','--hash',ref]);
+}
+
+// Source inclusion and diff availability are independent facts.
+function inclusion(repo, catalog, id) {
+  const {branch} = sourceIdentity(catalog,id);
+  const remote = remoteBranch(repo,branch);
+  if (remote) assert(fetchBranch(repo,branch) === remote, 'Remote source tip changed; retry verification');
+  const local = localSource(repo,branch);
+  const tips = [...new Set([remote,local].filter(Boolean))];
+  return {remoteVerified:true,integrationBranch:catalog.branch,tip:catalog.commit,
+    source:{branch,remote,local},sourceAbsent:tips.length === 0,
+    sourceIncluded:tips.length ? tips.every(tip => ancestor(repo,tip,catalog.commit)) : null};
 }
 
 function source(repo, catalog, id) {
@@ -78,7 +99,7 @@ function source(repo, catalog, id) {
   assert(route && !route.errors.length && route.kind === 'target', 'Register the archived source branch on the integration branch first');
   const branch = route.branch;
   sourceBranch(catalog, branch);
-  const local = revision(repo, `refs/heads/${branch}`);
+  const local = localSource(repo,branch);
   const commit = local ?? fetchBranch(repo, branch);
   const record = archived(repo,commit,id);
   assert(record.state.branch === branch, 'Archive ownership does not match the registered source');
@@ -93,22 +114,21 @@ function source(repo, catalog, id) {
 /** Read-only remote checks (fetches tracking refs), without pushing or deleting. */
 export async function preflight(repo, id) {
   assert(validChangeId(id), 'Invalid Change id');
-  const {catalog,integration} = await current(repo,id);
-  const result = {integration,integrationBranch:catalog.branch,tip:catalog.commit,
+  const catalog = collaborationCatalog(repo, {refresh:true});
+  if (sourceIdentity(catalog,id).route.kind === 'archive') return inclusion(repo,catalog,id);
+  const result = {integrationBranch:catalog.branch,tip:catalog.commit,
     mergeMessage:`Merge Change ${id} into ${catalog.branch}\n\nSpecTrail-Change: ${id}`};
-  if (integration.status === 'found') return {...result,sourceBranch:archived(repo,integration.commit,id).state.branch};
   const delivery = source(repo,catalog,id);
   assert(remoteBranch(repo,delivery.branch) === delivery.commit, 'Push the archived source before preparing its PR');
-  assert(!ancestor(repo,delivery.commit,catalog.commit), 'Source was integrated without a valid Change merge; inspect history');
-  return {...result,source:delivery};
+  return {...result,source:delivery,sourceIncluded:ancestor(repo,delivery.commit,catalog.commit)};
 }
 
-/** Verify the platform merge from remote Git history; never push an integration. */
+/** Verify source inclusion in remote Git history, independently of PR/diff metadata. */
 export async function verify(repo, id) {
   assert(validChangeId(id), 'Invalid Change id');
-  const {integration} = await current(repo,id);
-  if (integration.status !== 'found') throw Error('No verified remote integration; retain the PR and source');
-  return {merged:true,remoteVerified:true,integration};
+  const result = inclusion(repo,collaborationCatalog(repo, {refresh:true}),id);
+  assert(result.sourceIncluded !== false, 'Remote integration branch does not contain all current source commits; retain the source');
+  return result;
 }
 
 function dependencies(catalog, branch, id) {
@@ -140,25 +160,23 @@ function treeReady(repo, branch, idleWorktree) {
 export async function cleanup(repo, id, options = {}) {
   assert(validChangeId(id), 'Invalid Change id');
   return withRepositoryLock(repo, async () => {
-    const {catalog,integration} = await current(repo,id);
-    assert(integration.status === 'found', 'No verified remote integration; retain all sources');
-    const result = {merged:true,remoteVerified:true,integration,cleanup:{
+    const catalog = collaborationCatalog(repo, {refresh:true});
+    const {route,branch} = sourceIdentity(catalog,id);
+    const result = {...inclusion(repo,catalog,id),cleanup:{
       remote:{status:'retained',reason:'Preflight not complete'},worktree:{status:'retained',reason:'Preflight not complete'},branch:{status:'retained',reason:'Preflight not complete'},
     }};
-    let branch, remote, local, tree;
+    let remote, local, tree;
     const precheck = () => {
-      assert(options.verifiedCommit === integration.commit, 'Validate project delivery/service and hosted artifacts, then pass --verified-commit <M>');
-      const record = archived(repo,integration.commit,id);
-      branch = record.state.branch;
-      sourceBranch(catalog,branch);
+      assert(route.kind === 'archive', 'Complete the Change archive on the integration branch before cleanup');
+      assert(typeof options.verifiedCommit === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(options.verifiedCommit) &&
+        ancestor(repo,options.verifiedCommit,catalog.commit), 'Validate project delivery/service and artifacts, then pass --verified-commit <included delivery commit>');
       dependencies(catalog,branch,id);
-      previewObjects(repo,record,integration.commit,catalog.config.prototype);
       tree = treeReady(repo,branch,options.idleWorktree);
-      remote = remoteBranch(repo,branch);
-      if (remote) { const fetched = fetchBranch(repo,branch); assert(fetched === remote && ancestor(repo,remote,integration.commit), 'Remote source has new/unmerged work'); }
-      local = revision(repo,`refs/heads/${branch}`);
-      assert(!local || ancestor(repo,local,integration.commit), 'Local source has new/unmerged work');
-      assert(ancestor(repo,integration.commit,revision(repo,'HEAD') ?? ''), 'Run cleanup from a checkout containing the verified integration');
+      remote = result.source.remote;
+      assert(!remote || ancestor(repo,remote,options.verifiedCommit), 'Remote source has new/unmerged work');
+      local = localSource(repo,branch);
+      assert(!local || ancestor(repo,local,options.verifiedCommit), 'Local source has new/unmerged work');
+      assert(ancestor(repo,options.verifiedCommit,revision(repo,'HEAD') ?? ''), 'Run cleanup from a checkout containing the verified delivery');
       assert(!existsSync(join(repo.common,'packed-refs.lock')) && !existsSync(join(repo.common,`refs/heads/${branch}.lock`)), 'Source refs are locked');
     };
     try { precheck(); }
@@ -170,13 +188,13 @@ export async function cleanup(repo, id, options = {}) {
     } catch (error) { result.cleanup.remote = {status:'failed',reason:error.message}; return result; }
     try {
       // Recheck local state immediately before each destructive step.
-      assert(revision(repo,`refs/heads/${branch}`) === local, 'Local source tip changed');
+      assert(localSource(repo,branch) === local, 'Local source tip changed');
       tree = treeReady(repo,branch,options.idleWorktree);
       if (tree) repo.git(['worktree','remove',tree.path]);
       result.cleanup.worktree = {status:'cleaned',reason:tree ? 'Removed clean idle worktree' : 'Already absent'};
     } catch (error) { result.cleanup.worktree = {status:'failed',reason:error.message}; return result; }
     try {
-      assert(revision(repo,`refs/heads/${branch}`) === local && !worktrees(repo).some(tree => tree.branch === branch), 'Local source changed or was checked out');
+      assert(localSource(repo,branch) === local && !worktrees(repo).some(tree => tree.branch === branch), 'Local source changed or was checked out');
       if (local) repo.git(['branch','-d',branch]);
       result.cleanup.branch = {status:'cleaned',reason:local ? 'Deleted merged branch' : 'Already absent'};
     } catch (error) { result.cleanup.branch = {status:'failed',reason:error.message}; }

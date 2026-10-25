@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-history-recovery",
+  "title": "并发同步后保留有效合入识别",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/integration-history-recovery",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-25T05:05:06.508Z",
+      "summary": "合入事实与差异展示及来源清理解耦并保留防误删检查",
+      "source": "继续吧"
+    },
+    "technical": {
+      "at": "2026-10-25T05:05:08.315Z",
+      "summary": "使用Git祖先关系确认纳入并以普通合并历史定位差异",
+      "source": "继续吧"
+    },
+    "plan": {
+      "at": "2026-10-25T05:05:10.761Z",
+      "summary": "交付独立合入确认与简化差异定位并回归删除保护",
+      "source": "继续吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "同步合并后持续识别并验证原始交付",
+      "status": "done",
+      "verification": "项目344项与自包含27项测试、类型格式检查及生产构建通过；独立评审问题修复并复验通过。",
+      "commitTitle": "integration-history-recovery T1: separate source inclusion from diff lookup"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T05:19:22.126Z",
+      "summary": "344项项目与27项自包含测试、类型格式检查和构建通过；独立评审发现的引用读取问题已修复并复验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T05:23:29.793Z",
+      "summary": "用户要求“合入吧”，接受当前已验证的简化交付并授权合入 develop。",
+      "source": "合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T05:23:31.628Z",
+      "summary": "同步 Change 合入确认、独立差异定位与来源清理，以及工作台交付判断。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T05:23:33.467Z",
+      "summary": "验收通过，Specs 已同步，归档后通过原 PR 合入 develop。",
+      "path": "docs/project/archive/2026-10-24-integration-history-recovery"
+    }
+  },
+  "types": [
+    "修复",
+    "流程"
+  ],
+  "rework": {
+    "at": "2026-10-25T05:03:29.336Z",
+    "reason": "用户要求去掉过度的合入格式门禁，将差异定位与来源清理解耦。",
+    "approach": "以 Git 祖先关系确认代码纳入，保留防误删检查，归档完整性放在合入前 CI。"
+  }
+}

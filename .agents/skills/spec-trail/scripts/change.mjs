@@ -24,7 +24,6 @@ import {
 } from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
-import { integrationFor, scanIntegrations } from "./integration-records.mjs";
 import { closedRecord } from "./routing.mjs";
 import { checkForUpdates } from "./update-check.mjs";
 import {
@@ -328,13 +327,11 @@ async function main() {
     if (restoring) {
       assert(!existsSync(liveDir), "The active Change directory already exists");
       assert(closedRecord(state, relative(root, dirname(file))), "Only valid completed archives can be restored");
-      const index = await scanIntegrations(async args => repo.git(args), catalog.commit);
-      const integration = integrationFor(index, id);
-      assert(index.complete && integration.status === "missing", "Integrated or unverifiable archives are read-only");
+      assert(!catalog.routes.some(route => route.id === id && route.kind === "archive"), "Integrated archives are read-only");
       let included = false;
       try { git(["merge-base", "--is-ancestor", "HEAD", catalog.commit]); included = true; }
       catch (error) { if (error.status !== 1) throw error; }
-      assert(!included, "Source is already integrated without a valid Change merge");
+      assert(!included, "Source commits are already included in the integration branch");
     } else assert(state.status === "active", "Only active Changes can be modified");
     const recordDir = restoring ? dirname(file) : liveDir;
     const now = new Date().toISOString();

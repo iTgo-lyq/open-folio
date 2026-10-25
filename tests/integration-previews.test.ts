@@ -131,9 +131,13 @@ test("Git and hosted publications use M after integration, survive source/tag de
     (await publications.asset(gitAfter.id, "index.html")).body!.toString(),
     /Fixed delivery/,
   );
+  f.g.git(["checkout", "-b", "ambiguous-diff"]);
+  f.g.git(["commit", "--allow-empty", "-m", "Additional work"]);
+  f.g.git(["checkout", "develop"]);
   f.g.git([
-    "commit",
-    "--allow-empty",
+    "merge",
+    "--no-ff",
+    "ambiguous-diff",
     "-m",
     `Duplicate\n\nSpecTrail-Change: ${id}`,
   ]);
@@ -143,7 +147,7 @@ test("Git and hosted publications use M after integration, survive source/tag de
     ctx.store.preview(ctx.project, id, merge, DEFAULT_LIMITS),
   );
   assert.equal(invalid.descriptor.failed, true);
-  assert.match(invalid.descriptor.message!, /重复/);
+  assert.match(invalid.descriptor.message!, /多个/);
   assert.match(
     (await publications.asset(gitAfter.id, "index.html")).body!.toString(),
     /Fixed delivery/,

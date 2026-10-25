@@ -130,6 +130,27 @@ export async function collectDelivery(input: Input) {
         diagnostics.push(
           "存在多个待合入 PR，无法确定当前交付，请核对关联标记。",
         );
+      let integratedCommit =
+        integration.status === "found" ? integration.commit : null;
+      if (!integratedCommit && input.integrations.tip) {
+        for (const p of changePrs) {
+          if (
+            p.state === "merged" &&
+            p.mergeCommit &&
+            (await input.ancestor(p.mergeCommit, input.integrations.tip))
+          ) {
+            integratedCommit = p.mergeCommit;
+            diagnostics.push(
+              "PR 合入已核实，合入差异暂不可用。" +
+                (integration.status === "missing" ||
+                integration.status === "found"
+                  ? ""
+                  : integration.message),
+            );
+            break;
+          }
+        }
+      }
       let stage: Delivery["stage"];
       // candidate.branch is the read source; state.branch retains historical ownership.
       if (
@@ -139,11 +160,11 @@ export async function collectDelivery(input: Input) {
         candidate.state?.deliveryOverride === "releaseMerged"
       ) {
         stage = "releaseMerged";
-      } else if (integration.status === "found") {
+      } else if (integratedCommit) {
         stage = "pendingRelease";
         if (
           changePrs.some(
-            (p) => p.state === "merged" && p.mergeCommit !== integration.commit,
+            (p) => p.state === "merged" && p.mergeCommit !== integratedCommit,
           )
         )
           diagnostics.push(
@@ -156,7 +177,7 @@ export async function collectDelivery(input: Input) {
             if (
               p.mergeCommit &&
               (await input.ancestor(p.mergeCommit, releaseSource.commit)) &&
-              (await input.ancestor(integration.commit, p.mergeCommit))
+              (await input.ancestor(integratedCommit, p.mergeCommit))
             )
               stage = "releaseMerged";
             else {
@@ -167,7 +188,10 @@ export async function collectDelivery(input: Input) {
             }
           }
         }
-      } else if (integration.status !== "missing") {
+      } else if (
+        integration.status !== "missing" &&
+        integration.status !== "found"
+      ) {
         stage = "unknown";
         diagnostics.push(integration.message);
       } else if (candidate?.validCompleted) {
