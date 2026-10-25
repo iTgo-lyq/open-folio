@@ -97,6 +97,8 @@ test("directory query keeps single urgency links, normalizes invalid fields and 
     view: "dependencies",
   });
   assert.deepEqual(directoryQueryParams(invalid), {
+    states: '["active"]',
+    creatorSelf: null,
     types: null,
     noTypes: null,
     urgency: null,
@@ -184,8 +186,107 @@ test("completed records group by delivery without treating an invalid archive as
     ).map((g) => [g.name, g.items.map((i) => i.id)]),
     [
       ["待发布", ["integrated"]],
-      ["已发布", ["released"]],
       ["交付待核实", ["unknown"]],
     ],
+  );
+});
+
+test("released records are archived; multi-state filters share classification and retain valid legacy links", () => {
+  const active = change("active"),
+    done = change("done", { status: "completed" }),
+    shipped = change("shipped", { status: "completed" }),
+    cancelled = change("cancelled", { status: "cancelled" });
+  const delivery = { shipped: { stage: "releaseMerged" } as Delivery };
+  const all = [active, done, shipped, cancelled];
+  assert.deepEqual(
+    filterDirectoryChanges(
+      all,
+      readDirectoryQuery({ scope: "completed" }),
+      delivery,
+    ).map((g) => g.id),
+    ["done"],
+  );
+  const query = readDirectoryQuery({
+    states: '["active","archived","active"]',
+  });
+  assert.deepEqual(
+    filterDirectoryChanges(all, query, delivery).map((g) => g.id),
+    ["active", "shipped"],
+  );
+  assert.deepEqual(
+    groupDirectoryChanges([active, shipped], query, delivery).map(
+      (g) => g.name,
+    ),
+    ["进行中 · 推进中", "已归档"],
+  );
+  assert.equal(
+    filterDirectoryChanges(all, readDirectoryQuery({ states: "[]" }), delivery)
+      .length,
+    4,
+  );
+  assert.deepEqual(readDirectoryQuery({ scope: "pendingRelease" }).states, [
+    "completed",
+  ]);
+  assert.deepEqual(
+    readDirectoryQuery({ states: '["bad"]', scope: "archived" }).states,
+    ["archived"],
+  );
+  assert.deepEqual(
+    readDirectoryQuery(directoryQueryParams(query) as Record<string, string>)
+      .states,
+    ["active", "archived"],
+  );
+  assert.equal(
+    matchesDirectoryScope(shipped, "archived", delivery.shipped),
+    true,
+  );
+  assert.equal(matchesDirectoryScope(shipped, "archived"), false);
+  shipped.candidates[0].state!.deliveryOverride = "releaseMerged";
+  assert.equal(matchesDirectoryScope(shipped, "archived"), true);
+  shipped.candidates[0].validCompleted = false;
+  assert.equal(
+    matchesDirectoryScope(shipped, "archived", delivery.shipped),
+    false,
+  );
+});
+
+test("self matches only numeric GitHub identity; fixed authors remain an OR alternative", () => {
+  const mine = change("mine"),
+    renamed = change("renamed"),
+    conflict = change("conflict"),
+    legacy = change("legacy");
+  mine.creator = { name: "Lin", login: "lin", subjectId: "42" };
+  renamed.creator = { name: "Lin", login: "old-login", subjectId: "42" };
+  conflict.creator = { name: "Lin", login: "lin", subjectId: "99" };
+  legacy.creator = { name: "Lin", login: "lin" };
+  const all = [mine, renamed, conflict, legacy],
+    query = readDirectoryQuery({ creatorSelf: "1" });
+  assert.deepEqual(
+    filterDirectoryChanges(
+      all,
+      query,
+      {},
+      { providerId: "github", subjectId: "42" },
+    ).map((g) => g.id),
+    ["mine", "renamed"],
+  );
+  assert.equal(filterDirectoryChanges(all, query).length, 0);
+  assert.equal(
+    filterDirectoryChanges(
+      all,
+      query,
+      {},
+      { providerId: "other", subjectId: "42" },
+    ).length,
+    0,
+  );
+  assert.equal(
+    filterDirectoryChanges(
+      all,
+      { ...query, creators: ["lin"] },
+      {},
+      { providerId: "github", subjectId: "42" },
+    ).length,
+    4,
   );
 });

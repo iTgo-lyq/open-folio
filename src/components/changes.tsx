@@ -6,25 +6,45 @@ import { ChangeReading } from "./change-reading";
 import {
   readDirectoryQuery,
   directoryQueryParams,
+  matchesDirectoryScope,
 } from "@/lib/change-directory";
 import { legacyChangesPatch } from "@/lib/legacy-query";
 export default function Changes() {
-  const { q, nav } = useWorkspace();
+  const { q, nav, data, projectId } = useWorkspace();
+  const cancelled = data?.changes.filter((g) =>
+    matchesDirectoryScope(g, "cancelled"),
+  ).length;
+  const previousCancelled = useRef<{ projectId: string; count: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (cancelled === undefined) return;
+    const last = previousCancelled.current;
+    previousCancelled.current = { projectId, count: cancelled };
+    if (
+      last?.projectId === projectId &&
+      last.count > 0 &&
+      cancelled === 0 &&
+      (!q.changeView || q.changeView === "system:cancelled") &&
+      readDirectoryQuery(q).scope === "cancelled"
+    )
+      nav({ scope: "active", states: '["active"]' }, true);
+  }, [cancelled, projectId, q, nav]);
   const query = useMemo(() => readDirectoryQuery(q), [q]);
   useEffect(() => {
     const patch: Record<string, string | null> = {
       ...directoryQueryParams(query),
       ...(legacyChangesPatch(q) ?? {}),
     };
+    if (q.states === undefined) delete patch.states;
     if (
       q.scope &&
-      !["active", "completed", "cancelled"].includes(q.scope) &&
+      !["active", "completed", "archived", "cancelled"].includes(q.scope) &&
       !["issues", "pendingIntegration", "pendingRelease"].includes(q.scope)
     )
       patch.scope = null;
     if (q.group && !["status", "stage", "none"].includes(q.group))
       patch.group = null;
-    if (query.scope !== "active" && q.view === "board") patch.view = null;
     for (const key of Object.keys(patch))
       if ((q[key] ?? null) === patch[key]) delete patch[key];
     if (Object.keys(patch).length) nav(patch, true);

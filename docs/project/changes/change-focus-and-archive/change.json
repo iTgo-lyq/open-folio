@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "统一状态范围与本人筛选",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型检查、22 项单元测试与 2 项目录浏览器场景通过，详见 execution.md",
+      "commitTitle": "change-focus-and-archive T1: classify archive and current creator"
     },
     "T2": {
       "title": "保存并恢复账号级视图",

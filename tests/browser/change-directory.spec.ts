@@ -103,3 +103,42 @@ test("processing groups expose real creators and creation order independently of
     .click();
   await expect(changeLinks(page)).toHaveCount(3);
 });
+
+test("published records move to archive and zero cancelled hides only the tab", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const original = data.changes.find(
+    (change) => change.id === "document-reader",
+  )!;
+  data.changes = ["待发布记录", "已发布记录"].map((title, index) => {
+    const change = structuredClone(original);
+    change.id = `archive-${index}`;
+    change.title = title;
+    change.diagnostics = [];
+    const record = primaryRecord(change)!;
+    record.validCompleted = true;
+    record.diagnostics = [];
+    record.state!.status = "completed";
+    return change;
+  });
+  data.deliveryByChange = {
+    "archive-0": { stage: "pendingRelease", changePrs: [] },
+    "archive-1": { stage: "releaseMerged", changePrs: [] },
+  } as Snapshot["deliveryByChange"];
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=completed`);
+  await expect(changeLinks(page)).toHaveCount(1);
+  await expect(changeLinks(page)).toHaveAccessibleName("打开 待发布记录");
+  await expect(page.getByRole("tab", { name: /已取消/ })).toHaveCount(0);
+  await page.getByRole("tab", { name: /已归档/ }).click();
+  await expect(changeLinks(page)).toHaveAccessibleName("打开 已发布记录");
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=cancelled`);
+  await expect(page.getByText("暂无已取消的 Change")).toBeVisible();
+});

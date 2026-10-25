@@ -34,6 +34,9 @@ import {
 import { matchingFollowUps } from "@/lib/follow-ups";
 import { URGENCY_LABELS } from "@/lib/change-labels";
 import {
+  classifyDirectoryState,
+  DIRECTORY_STATES,
+  DIRECTORY_LABELS,
   changeDiagnostics,
   creatorName,
   filterDirectoryChanges,
@@ -43,6 +46,7 @@ import {
   sortDirectoryChanges,
 } from "@/lib/change-directory";
 import { useSavedScroll, useWorkspace } from "./context";
+import { usePersonal } from "./personal-context";
 import { useMediaQuery } from "./use-media";
 import { Empty } from "./document";
 import page from "./personal.module.css";
@@ -51,6 +55,7 @@ import styles from "./change-directory.module.css";
 const SCOPES = [
   ["active", "进行中"],
   ["completed", "已完成"],
+  ["archived", "已归档"],
   ["cancelled", "已取消"],
 ] as const;
 const deliveryLabels = {
@@ -148,11 +153,12 @@ function Series({
 }
 export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   const { data, q, nav, projectId } = useWorkspace();
+  const identity = usePersonal()?.connection?.identity;
   const all = data!.changes;
   const query = useMemo(() => readDirectoryQuery(q), [q]);
   const mobile = useMediaQuery("(max-width: 760px)");
   const visible = sortDirectoryChanges(
-    filterDirectoryChanges(all, query),
+    filterDirectoryChanges(all, query, data?.deliveryByChange, identity),
     query.labels.sortByUrgency,
   );
   const groups = groupDirectoryChanges(visible, query, data?.deliveryByChange);
@@ -168,23 +174,38 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
     `${projectId}.changes.${query.scope}.${board ? "board" : "list"}`,
   );
   const clear = () =>
-    nav({ types: null, noTypes: null, urgency: null, creator: null });
-  const toggle = (key: "types" | "creator" | "urgency", value: string) => {
+    nav({
+      types: null,
+      noTypes: null,
+      urgency: null,
+      creator: null,
+      creatorSelf: null,
+      states: "[]",
+    });
+  const toggle = (
+    key: "types" | "creator" | "urgency" | "states",
+    value: string,
+  ) => {
     const current =
-      key === "types"
-        ? query.labels.types
-        : key === "creator"
-          ? query.creators
-          : query.urgencies;
-    const next = current.includes(value)
+      key === "states"
+        ? query.states
+        : key === "types"
+          ? query.labels.types
+          : key === "creator"
+            ? query.creators
+            : query.urgencies;
+    const next = (current as string[]).includes(value)
       ? current.filter((v) => v !== value)
       : [...current, value];
     nav({
-      [key]: next.length
-        ? key === "urgency" && next.length === 1
-          ? next[0]
-          : JSON.stringify(next)
-        : null,
+      [key]:
+        key === "states"
+          ? JSON.stringify(next)
+          : next.length
+            ? key === "urgency" && next.length === 1
+              ? next[0]
+              : JSON.stringify(next)
+            : null,
     });
   };
   const types = [
@@ -200,8 +221,17 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
     query.labels.types.length +
     Number(query.labels.noTypes) +
     query.urgencies.length +
-    query.creators.length;
+    query.creators.length +
+    Number(query.creatorSelf) +
+    (query.scope === "mixed" ? query.states.length : 0);
   const chips = [
+    ...(query.scope === "mixed"
+      ? query.states.map((v) => ({
+          key: "states" as const,
+          value: v,
+          label: DIRECTORY_LABELS[v],
+        }))
+      : []),
     ...query.labels.types.map((v) => ({
       key: "types" as const,
       value: v,
@@ -318,7 +348,11 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
       state = record?.state,
       creator = creatorName(change),
       date = change.createdAt ? new Date(change.createdAt) : undefined,
-      ended = query.scope !== "active" && !query.issues,
+      rowScope = classifyDirectoryState(
+        change,
+        data?.deliveryByChange?.[change.id],
+      ),
+      ended = rowScope !== "active" && !query.issues,
       endAt =
         state?.status === "cancelled"
           ? state.cancellation?.at
@@ -342,7 +376,10 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
           <div className={styles.meta}>
             <code>{change.id}</code>
             {labels(change)}
-            {delivery(change, query.scope !== "completed")}
+            {delivery(
+              change,
+              rowScope !== "completed" && rowScope !== "archived",
+            )}
             {summary(change) && (
               <span
                 className={styles.wait}
@@ -360,7 +397,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         <span className={styles.stage}>
           {query.issues ? (
             "来源异常"
-          ) : query.scope === "completed" ? (
+          ) : rowScope === "completed" || rowScope === "archived" ? (
             <Badge
               tone={
                 deliveryStage === "releaseMerged"
@@ -372,7 +409,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
             >
               {deliveryLabels[deliveryStage]}
             </Badge>
-          ) : query.scope === "cancelled" ? (
+          ) : rowScope === "cancelled" ? (
             "已取消"
           ) : state ? (
             STAGE_LABELS[state.stage]
@@ -433,17 +470,36 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
             onValueChange={(scope) =>
               nav({
                 scope: scope === "active" ? null : scope,
+                states: JSON.stringify([scope]),
                 issues: null,
                 c: null,
               })
             }
           >
             <TabsList aria-label="Change 状态">
-              {SCOPES.map(([scope, label]) => (
+              {SCOPES.filter(
+                ([scope]) =>
+                  scope !== "cancelled" ||
+                  all.some((g) =>
+                    matchesDirectoryScope(
+                      g,
+                      scope,
+                      data?.deliveryByChange?.[g.id],
+                    ),
+                  ),
+              ).map(([scope, label]) => (
                 <TabsTrigger key={scope} value={scope}>
                   {label}
                   <span className={styles.count}>
-                    {all.filter((g) => matchesDirectoryScope(g, scope)).length}
+                    {
+                      all.filter((g) =>
+                        matchesDirectoryScope(
+                          g,
+                          scope,
+                          data?.deliveryByChange?.[g.id],
+                        ),
+                      ).length
+                    }
                   </span>
                 </TabsTrigger>
               ))}
@@ -470,6 +526,18 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
               align="end"
               className={styles.filterMenu}
             >
+              <MenuLabel>状态 · 可多选</MenuLabel>
+              {DIRECTORY_STATES.map((state) => (
+                <MenuCheckboxItem
+                  key={state}
+                  checked={query.states.includes(state)}
+                  onCheckedChange={() => toggle("states", state)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {DIRECTORY_LABELS[state]}
+                </MenuCheckboxItem>
+              ))}
+              <MenuSeparator />
               <MenuLabel>类型</MenuLabel>
               <MenuCheckboxItem
                 checked={query.labels.noTypes}
@@ -502,10 +570,19 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                   {label}
                 </MenuCheckboxItem>
               ))}
-              {creators.length > 1 || query.creators.length ? (
+              {
                 <>
                   <MenuSeparator />
                   <MenuLabel>创建者</MenuLabel>
+                  <MenuCheckboxItem
+                    checked={query.creatorSelf}
+                    onCheckedChange={(checked) =>
+                      nav({ creatorSelf: checked ? "1" : null })
+                    }
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    我（当前 GitHub 身份）
+                  </MenuCheckboxItem>
                   {creators.map((creator) => (
                     <MenuCheckboxItem
                       key={creator}
@@ -518,7 +595,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                     </MenuCheckboxItem>
                   ))}
                 </>
-              ) : null}
+              }
               {!!filterCount && (
                 <>
                   <MenuSeparator />
@@ -584,6 +661,15 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         </div>
         {!!filterCount && (
           <div className={styles.chips} aria-label="已选筛选">
+            {query.creatorSelf && (
+              <button
+                aria-label="移除筛选 创建者：我"
+                onClick={() => nav({ creatorSelf: null })}
+              >
+                创建者：我
+                <X />
+              </button>
+            )}
             {query.labels.noTypes && (
               <button onClick={() => nav({ noTypes: null })}>
                 无类型标签
@@ -624,11 +710,13 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         {!visible.length ? (
           <Empty
             title={
-              filterCount
+              filterCount > Number(query.creatorSelf)
                 ? "没有符合条件的 Change"
                 : query.issues
                   ? "目前没有来源异常"
-                  : `暂无${SCOPES.find(([scope]) => scope === query.scope)![1]}的 Change`
+                  : query.creatorSelf
+                    ? "暂无你创建的 Change"
+                    : `暂无${SCOPES.find(([scope]) => scope === query.scope)?.[1] ?? "符合条件"}的 Change`
             }
           >
             {filterCount > 0 && <Button onClick={clear}>清除筛选</Button>}
@@ -697,7 +785,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
               <span>
                 {query.issues
                   ? "问题"
-                  : query.scope === "completed"
+                  : query.scope === "completed" || query.scope === "archived"
                     ? "交付"
                     : query.scope === "cancelled"
                       ? "状态"
@@ -706,7 +794,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
               <span>
                 {query.issues
                   ? ""
-                  : query.scope === "completed"
+                  : query.scope === "completed" || query.scope === "archived"
                     ? "归档"
                     : query.scope === "cancelled"
                       ? "取消"
