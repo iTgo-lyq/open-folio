@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/reduce-github-requests",
   "confirmations": {
     "requirement": {
       "at": "2026-10-23T19:46:32.542Z",
