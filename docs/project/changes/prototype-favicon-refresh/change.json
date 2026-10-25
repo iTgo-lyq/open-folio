@@ -3,7 +3,7 @@
   "id": "prototype-favicon-refresh",
   "title": "统一原型页面与评审预览图标",
   "size": "small",
-  "status": "active",
+  "status": "cancelled",
   "stage": "execution",
   "branch": "codex/prototype-favicon-refresh",
   "confirmations": {},
@@ -16,5 +16,9 @@
   "closure": {},
   "types": [
     "修复"
-  ]
+  ],
+  "cancellation": {
+    "at": "2026-10-25T08:23:52.780Z",
+    "reason": "实测自建服务返回当前新版图标，用户接受缓存可能性并要求避免无必要变更，因此撤回未合入的修改"
+  }
 }
