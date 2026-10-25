@@ -6,24 +6,11 @@ import type {
   PullRequest,
   ReleaseSource,
 } from "../lib/model.ts";
-import type {
-  Page,
-  ProviderPullRequest,
-  PullRequestQuery,
-} from "./providers/types.ts";
 import { AppError } from "./errors.ts";
 import { integrationFor } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { prMarker } from "../../.agents/skills/spec-trail/scripts/pr-markers.mjs";
+import { PullRequestCache, type DeliveryReader } from "./pull-requests.ts";
+export type { DeliveryReader } from "./pull-requests.ts";
 
-export type DeliveryReader = {
-  repositoryId: string;
-  list: (
-    query: PullRequestQuery,
-    cursor: string | null,
-    signal: AbortSignal,
-  ) => Promise<Page<ProviderPullRequest>>;
-  get: (number: number, signal: AbortSignal) => Promise<ProviderPullRequest>;
-};
 type Input = {
   changes: ChangeGroup[];
   integrations: IntegrationIndex;
@@ -31,20 +18,20 @@ type Input = {
   releaseSource: ReleaseSource;
   previous?: Record<string, Delivery>;
   reader?: DeliveryReader;
+  cache?: PullRequestCache;
   ancestor: (before: string, after: string) => Promise<boolean>;
   signal: AbortSignal;
-};
-const summary = ({ body, ...p }: ProviderPullRequest): PullRequest => {
-  const marker = prMarker(body);
-  return {
-    ...p,
-    ...(marker.kind === "release" ? { version: marker.version } : {}),
-  };
 };
 const message = (error: unknown) => {
   if (
     error instanceof AppError &&
-    ["TOKEN_INVALID", "READ_DENIED", "OPERATION_CANCELLED"].includes(error.code)
+    [
+      "TOKEN_INVALID",
+      "READ_DENIED",
+      "OPERATION_CANCELLED",
+      "PR_CACHE_INVALID",
+      "PR_CACHE_LIMIT",
+    ].includes(error.code)
   )
     throw error;
   return error instanceof AppError
@@ -55,48 +42,56 @@ const message = (error: unknown) => {
 /** Project only known Changes; platform data never discovers or mutates a Change. */
 export async function collectDelivery(input: Input) {
   const { reader, signal, releaseSource } = input;
-  const details = new Map<number, Promise<ProviderPullRequest>>();
-  const get = (number: number) => {
-    if (!details.has(number)) details.set(number, reader!.get(number, signal));
-    return details.get(number)!;
+  const cache = input.cache ?? new PullRequestCache();
+  if (reader)
+    cache.retain(
+      reader,
+      [input.integrationBranch, releaseSource.branch].filter(
+        (base): base is string => !!base,
+      ),
+    );
+  const changeIndex = new Map<string, PullRequest[]>();
+  const releaseIndex = new Map<string, PullRequest[]>();
+  const add = (
+    index: Map<string, PullRequest[]>,
+    key: string,
+    pr: PullRequest,
+  ) => {
+    const items = index.get(key) ?? [];
+    items.push(pr);
+    index.set(key, items);
   };
-  const list = async (query: PullRequestQuery) => {
-    const items: ProviderPullRequest[] = [];
-    let cursor: string | null = null;
-    for (let page = 0; page < 10; page++) {
-      signal.throwIfAborted();
-      const result = await reader!.list(query, cursor, signal);
-      items.push(...result.items);
-      if (!result.nextCursor) return items;
-      if (result.nextCursor === cursor) break;
-      cursor = result.nextCursor;
-    }
-    throw new AppError("PR_INCOMPLETE", "PR 查询未完成分页，交付结果待核实。");
-  };
-  const sameRepo = (p: ProviderPullRequest) =>
-    p.base.repositoryId === reader?.repositoryId &&
-    // GitHub may omit a deleted source repository; same-repository branches retain its id.
-    p.head.repositoryId === reader?.repositoryId;
-  const releases: ProviderPullRequest[] = [];
+  let changeError: string | undefined;
   let releaseError: string | undefined;
-  if (reader && releaseSource.branch) {
-    try {
-      releases.push(
-        ...(await list({ base: releaseSource.branch })).filter(
-          (p) =>
-            sameRepo(p) &&
-            p.base.branch === releaseSource.branch &&
-            prMarker(p.body).kind === "release",
-        ),
-      );
-    } catch (error) {
-      signal.throwIfAborted();
-      releaseError = message(error);
-    }
-  } else releaseError = "PR 信息未接通，交付结果待核实。";
+  for (const [kind, base] of [
+    ["change", input.integrationBranch],
+    ["release", releaseSource.branch],
+  ] as const) {
+    let errorMessage: string | undefined;
+    if (reader && base) {
+      try {
+        for (const { marker, ...pr } of await cache.query(
+          reader,
+          base,
+          signal,
+        )) {
+          if (kind === "change" && marker.kind === "change")
+            add(changeIndex, JSON.stringify([marker.id, pr.head.branch]), pr);
+          if (kind === "release" && marker.kind === "release")
+            for (const id of marker.includes)
+              add(releaseIndex, id, { ...pr, version: marker.version });
+        }
+      } catch (error) {
+        signal.throwIfAborted();
+        errorMessage = message(error);
+      }
+    } else errorMessage = "PR 信息未接通，交付结果待核实。";
+    if (kind === "change") changeError = errorMessage;
+    else releaseError = errorMessage;
+  }
 
   const deliveryByChange: Record<string, Delivery> = {};
-  let complete = !releaseError;
+  let complete = !changeError && !releaseError;
   const remaining = [...input.changes];
   const worker = async () => {
     for (let group = remaining.shift(); group; group = remaining.shift()) {
@@ -108,57 +103,15 @@ export async function collectDelivery(input: Input) {
       const diagnostics: string[] = [];
       let changePrsStale = false;
       const releasePrsStale = !!releaseError;
-      const prs = new Map<number, ProviderPullRequest>();
-      const match = (p: ProviderPullRequest) => {
-        const marker = prMarker(p.body);
-        return (
-          sameRepo(p) &&
-          p.base.branch === input.integrationBranch &&
-          p.head.branch === branch &&
-          marker.kind === "change" &&
-          marker.id === group.id
-        );
-      };
       let changePrs: PullRequest[] = [];
-      if (reader && branch && input.integrationBranch) {
-        try {
-          for (const old of prior?.changePrs ?? []) {
-            const current = await get(old.number);
-            if (match(current)) prs.set(current.number, current);
-          }
-          const current = [...prs.values()];
-          if (
-            !current.some((p) => p.state === "open") &&
-            !(
-              integration.status === "found" &&
-              current.some(
-                (p) =>
-                  p.state === "merged" && p.mergeCommit === integration.commit,
-              )
-            )
-          ) {
-            for (const p of await list({
-              head: branch,
-              base: input.integrationBranch,
-            }))
-              if (match(p)) prs.set(p.number, p);
-            if (
-              integration.status === "found" &&
-              ![...prs.values()].some(
-                (p) =>
-                  p.state === "merged" && p.mergeCommit === integration.commit,
-              )
-            )
-              for (const p of await list({ commit: integration.commit }))
-                if (match(p)) prs.set(p.number, p);
-          }
-          changePrs = [...prs.values()].map(summary);
-        } catch (error) {
-          signal.throwIfAborted();
-          diagnostics.push(message(error));
-          changePrsStale = true;
-          changePrs = prior?.changePrs ?? [];
-        }
+      if (changeError) {
+        diagnostics.push(changeError);
+        changePrsStale = true;
+        changePrs = prior?.changePrs ?? [];
+      } else if (branch) {
+        changePrs = [
+          ...(changeIndex.get(JSON.stringify([group.id, branch])) ?? []),
+        ];
       } else {
         diagnostics.push("Change 来源或 PR 读取能力尚未就绪。");
         changePrsStale = true;
@@ -167,15 +120,7 @@ export async function collectDelivery(input: Input) {
       if (releaseError) {
         diagnostics.push(releaseError);
         releasePrs = prior?.releasePrs ?? [];
-      } else
-        releasePrs = releases
-          .filter((p) => {
-            const marker = prMarker(p.body);
-            return (
-              marker.kind === "release" && marker.includes.includes(group.id)
-            );
-          })
-          .map(summary);
+      } else releasePrs = [...(releaseIndex.get(group.id) ?? [])];
       const changeConflict =
         changePrs.filter((p) => p.state === "open").length > 1;
       const releaseConflict =

@@ -16,6 +16,7 @@ import {
   type ProviderIdentity,
   type ProviderPullRequest,
   type PullRequestQuery,
+  type PullRequestPage,
 } from "./types.ts";
 
 const api = "https://api.github.com";
@@ -142,6 +143,7 @@ function pageNumber(input: string): number {
 }
 export class GitHubProvider implements RepositoryProvider {
   readonly id = "github";
+  readonly pullRequestCacheVersion = githubPullApiVersion;
   #fetch: typeof fetch;
   constructor(fetcher: typeof fetch = fetch) {
     this.#fetch = fetcher;
@@ -164,6 +166,7 @@ export class GitHubProvider implements RepositoryProvider {
     secret: SecretHandle,
     signal: AbortSignal,
     purpose = "read",
+    etag?: string,
   ) {
     const url = new URL(path, api);
     if (url.origin !== api || url.username || url.password || url.hash)
@@ -181,6 +184,7 @@ export class GitHubProvider implements RepositoryProvider {
             "X-GitHub-Api-Version":
               purpose === "pulls" ? githubPullApiVersion : githubApiVersion,
             "User-Agent": "OpenFolio",
+            ...(etag ? { "If-None-Match": etag } : {}),
           },
         }),
       );
@@ -190,6 +194,8 @@ export class GitHubProvider implements RepositoryProvider {
         signal.aborted ? "操作已取消。" : "暂时无法连接 GitHub，请重试。",
       );
     }
+    if (response.status === 304 && etag)
+      return { value: undefined, headers: response.headers, notModified: true };
     if (!response.ok) {
       await response.body?.cancel();
       if (response.status === 401)
@@ -314,7 +320,8 @@ export class GitHubProvider implements RepositoryProvider {
     repo: RepositoryIdentity,
     query: PullRequestQuery,
     cursor: string | null,
-  ) {
+    etag?: string,
+  ): Promise<PullRequestPage> {
     this.#context(ctx, repo);
     if (cursor && !/^[1-9]\d{0,5}$/.test(cursor)) throw dataError();
     const page = Number(cursor ?? 1);
@@ -323,22 +330,33 @@ export class GitHubProvider implements RepositoryProvider {
     const params = new URLSearchParams({ per_page: "100", page: String(page) });
     if (!query.commit) {
       params.set("state", "all");
-      params.set("sort", "updated");
+      params.set("sort", "created");
       params.set("direction", "desc");
       if (query.base) params.set("base", query.base);
       if (query.head)
         params.set("head", `${repo.fullName.split("/")[0]}:${query.head}`);
     }
-    const { value, headers } = await this.#request(
+    const { value, headers, notModified } = await this.#request(
       `${path}?${params}`,
       ctx.secret,
       ctx.signal,
       "pulls",
+      etag,
     );
-    if (!Array.isArray(value)) throw dataError();
-    // Never follow a server-supplied URL with credentials. Only increment this query's page.
+    const currentEtag = headers.get("etag") ?? undefined;
     const more = /rel="next"/.test(headers.get("link") ?? "");
+    if (notModified)
+      return {
+        notModified: true,
+        etag: currentEtag,
+        ...(headers.has("link")
+          ? { nextCursor: more ? String(page + 1) : null }
+          : {}),
+      };
+    if (!Array.isArray(value) || value.length > 100) throw dataError();
+    // Never follow a server-supplied URL with credentials. Only increment this query's page.
     return {
+      etag: currentEtag,
       items: value.map((item) => this.#pull(item, repo)),
       nextCursor: more ? String(page + 1) : null,
     };

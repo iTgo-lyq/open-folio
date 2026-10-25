@@ -38,30 +38,17 @@ function pr(number = 1, release = false): ProviderPullRequest {
 function remote() {
   let prs = [pr()];
   let error: ProviderError | undefined;
-  let deleted = false;
   const calls: string[] = [];
   const reader: DeliveryReader = {
     repositoryId: "12",
+    cacheKey: "test:12:v1",
     async list(query) {
       calls.push(JSON.stringify(query));
       if (error) throw error;
       return {
-        items: query.commit
-          ? prs.filter((p) => p.mergeCommit === query.commit)
-          : deleted && query.head
-            ? []
-            : prs.filter(
-                (p) =>
-                  (!query.base || p.base.branch === query.base) &&
-                  (!query.head || p.head.branch === query.head),
-              ),
+        items: prs.filter((p) => p.base.branch === query.base),
         nextCursor: null,
       };
-    },
-    async get(number) {
-      calls.push(`#${number}`);
-      if (error) throw error;
-      return prs.find((p) => p.number === number)!;
     },
   };
   return {
@@ -72,9 +59,6 @@ function remote() {
     },
     fail: (value?: ProviderError) => {
       error = value;
-    },
-    deleteSource: () => {
-      deleted = true;
     },
   };
 }
@@ -96,12 +80,17 @@ test("PR-only refreshes update snapshots, preserve close/reopen history and rech
   assert.equal(checks, 1);
   const same = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(same.id, first.id);
-  assert.equal(checks, 1);
-  assert.ok(r.calls.includes("#1"));
+  assert.equal(checks, 2);
+  assert.deepEqual(r.calls, [
+    '{"base":"develop"}',
+    '{"base":"main"}',
+    '{"base":"develop"}',
+    '{"base":"main"}',
+  ]);
   r.set([{ ...pr(), state: "closed" }, pr(2)]);
   const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.notEqual(rebuilt.id, first.id);
-  assert.equal(checks, 2);
+  assert.equal(checks, 3);
   assert.deepEqual(
     rebuilt.deliveryByChange?.example.changePrs.map((p) => [p.number, p.state]),
     [
@@ -137,13 +126,12 @@ test("PR-only refreshes update snapshots, preserve close/reopen history and rech
   });
 });
 
-test("cold commit lookup survives deleted sources; release inclusion also requires real Git ancestry", async (t) => {
+test("cold base catalog survives deleted sources; release inclusion also requires real Git ancestry", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const m = f.merge();
   f.git(["push", "origin", "--delete", f.branch]);
   const r = remote();
-  r.deleteSource();
   r.set([{ ...pr(), state: "merged", mergeCommit: m }]);
   const context = {
     signal: new AbortController().signal,
@@ -152,7 +140,7 @@ test("cold commit lookup survives deleted sources; release inclusion also requir
   };
   const integrated = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(integrated.deliveryByChange?.example.stage, "pendingRelease");
-  assert.ok(r.calls.some((call) => call.includes(`"commit":"${m}"`)));
+  assert.deepEqual(r.calls, ['{"base":"develop"}', '{"base":"main"}']);
   r.set([
     { ...pr(), state: "merged", mergeCommit: m },
     { ...pr(2, true), state: "merged", mergeCommit: oid("f") },
@@ -316,4 +304,36 @@ test("unrelated PR read failures do not erase verified delivery phases", async (
       d.includes("尚无"),
     ),
   );
+});
+
+test("delivery request count depends on base pages, not the number or history of Changes", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const r = remote();
+  const changes = Array.from({ length: 138 }, (_, i) => ({
+    ...snapshot.changes[0],
+    id: `item-${i}`,
+  }));
+  const input = {
+    changes,
+    integrations: snapshot.integrations,
+    integrationBranch: "develop",
+    releaseSource: snapshot.releaseSource!,
+    reader: r.reader,
+    signal: new AbortController().signal,
+    ancestor: async () => false,
+  };
+  const first = await collectDelivery(input);
+  assert.equal(Object.keys(first.deliveryByChange).length, 138);
+  assert.deepEqual(r.calls, ['{"base":"develop"}', '{"base":"main"}']);
+  r.calls.length = 0;
+  await collectDelivery({ ...input, previous: first.deliveryByChange });
+  assert.equal(r.calls.length, 2);
+  r.calls.length = 0;
+  await collectDelivery({
+    ...input,
+    releaseSource: { ...input.releaseSource, branch: "develop" },
+  });
+  assert.equal(r.calls.length, 1);
 });

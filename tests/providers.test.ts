@@ -479,6 +479,7 @@ test("PR reads normalize trusted links, merged facts, pagination and local permi
     null,
   );
   assert.equal(page.nextCursor, "2");
+  assert(!page.notModified);
   assert.equal(page.items[0].mergeCommit, null);
   assert.equal(
     requests.at(-1)?.searchParams.get("head"),
@@ -494,6 +495,7 @@ test("PR reads normalize trusted links, merged facts, pagination and local permi
     { commit: oid("c") },
     null,
   );
+  assert(!byCommit.notModified);
   assert.equal(byCommit.items[0].number, 3);
   assert.equal(byCommit.items[0].mergeCommit, oid("c"));
   assert.equal(byCommit.nextCursor, null);

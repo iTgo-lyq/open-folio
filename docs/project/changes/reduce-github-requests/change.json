@@ -4,7 +4,7 @@
   "title": "减少 GitHub 重复请求与历史 PR 扫描",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/reduce-github-requests",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "批量读取与复用 PR 页面",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型检查通过，44 项相关回归及新增请求计数与页面缓存回归通过，详见 execution.md。",
+      "commitTitle": "reduce-github-requests T1: batch PR reads and reuse complete pages"
     },
     "T2": {
       "title": "统一冷却与限流错误传递",
