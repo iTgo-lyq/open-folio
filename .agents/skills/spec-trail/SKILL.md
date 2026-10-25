@@ -34,6 +34,8 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 
 ## 文档与事实来源
 
+公开分发的 skill 在根目录携带 `version.json`。首次版本为 `0.1.0`，现有发布同步仅在 skill 内容变化时递增补丁号；同一内容重复发布不加版本，版本与内容在同一分发提交交付。版本文件由发布链路生成，不在业务项目或源仓库中手动维护。从源目录使用的开发副本可能没有发布版本，不能用项目 Git 提交代替安装版本。
+
 `change.json` 是流程状态的唯一来源，并保存澄清问答；Markdown 保存正文与证据，Git 保存历史。工作台和协作者以推送到中心仓库的 Change 文档为准；本地工作区、暂存区及未推送提交不算已持久化的流程事实，提交标题和历史只供查找参考。
 
 材料提交推送后，按[分享链接](./references/sharing.md)使用 `workflow.openfolioUrl` 直接提供对应 Change 材料链接；不验证接口或等待工作台同步，由页面刷新获取内容。未配置服务地址时提供仓库材料链接。
@@ -94,6 +96,7 @@ interface WorkflowConfig {
   releaseBranch: string; // 与集成分支不同；用户明确要求时提交发布 PR
   openfolioUrl?: string | null; // 缺失为未询问，null 为无自建服务
   prototype?: PrototypeConfig; // 可选原型接入；缺失表示未选择
+  checkForUpdates?: boolean; // change CLI 更新检查，省略为开启
 }
 
 interface PrototypeConfig {
