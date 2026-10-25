@@ -4,19 +4,29 @@
   "title": "统一依据 PR 识别 Change 集成",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/pr-based-integration",
   "confirmations": {
     "requirement": {
       "at": "2026-10-25T05:27:10.843Z",
       "summary": "依据PR记录统一核实Change集成并识别平台默认合并消息",
       "source": "请调整 OpenFolio / SpecTrail 的 Change 集成识别：统一以 PR 记录为依据，不再依赖合并提交消息中的标记，避免平台生成默认合并消息时漏识别已合入的 Change。新建独立 Change，保留现有 Change。"
+    },
+    "technical": {
+      "at": "2026-10-25T05:29:45.021Z",
+      "summary": "以PR关联和合并提交统一识别并保留独立差异与清理检查",
+      "source": "继续吧"
+    },
+    "plan": {
+      "at": "2026-10-25T05:29:46.795Z",
+      "summary": "先统一CLI与发布检查再接入工作台和缓存并完成回归",
+      "source": "继续吧"
     }
   },
   "tasks": {
     "T1": {
       "title": "以 PR 记录统一 CLI 与发布检查的集成证据",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "使工作台状态与差异共同使用 PR 记录并完成整体验证",
@@ -30,9 +40,5 @@
   "types": [
     "修复",
     "流程"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "技术方案与计划已准备，等待确认后实施 PR 集成识别。"
-  }
+  ]
 }
