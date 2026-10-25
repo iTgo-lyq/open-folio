@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "skill-auto-update",
+  "title": "SpecTrail 版本标识与更新检查",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/skill-auto-update",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-23T11:52:47.923Z",
+      "summary": "发布内容自动递增版本，单入口检查更新并支持项目关闭。",
+      "source": "可以，就按这个方向来，需求确认，继续推进技术方案。"
+    },
+    "technical": {
+      "at": "2026-10-23T12:46:21.078Z",
+      "summary": "发布补丁版本并以项目开关控制单入口检查，缓存结果且失败降级。",
+      "source": "可以，技术方案确认，继续推进执行计划。"
+    },
+    "plan": {
+      "at": "2026-10-23T19:40:09.402Z",
+      "summary": "先交付可重复版本发布，再交付项目开关与更新提示并验证异常路径。",
+      "source": "可以，执行计划确认，开始执行。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "发布可重复执行的 skill 版本",
+      "status": "done",
+      "verification": "本地发布与版本测试 10 项、setup 与版本测试 14 项通过；覆盖重复发布、非法版本、失败推送重试及分发保留，未发布真实版本。",
+      "commitTitle": "skill-auto-update T1: publish versioned skill artifacts"
+    },
+    "T2": {
+      "title": "按项目配置检查并提醒 skill 更新",
+      "status": "done",
+      "verification": "更新与版本自包含测试 15 项、配置和状态测试 28 项、setup 12 项、全量 325 项通过；类型、格式、构建及独立评审通过。",
+      "commitTitle": "skill-auto-update T2: check published updates per project"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-23T19:54:25.206Z",
+      "summary": "全量325项、自包含15项、setup12项及类型格式构建通过，隔离上下文独立评审无可操作问题。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T04:26:34.570Z",
+      "summary": "用户要求“合入吧”，接受当前已验证交付并授权合入 develop。",
+      "source": "合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T04:27:08.884Z",
+      "summary": "同步 change-workflow 的发布版本、单入口更新检查、项目开关与输出契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T04:27:10.696Z",
+      "summary": "验收后归档版本标识与更新检查交付，准备合入 develop。",
+      "path": "docs/project/archive/2026-10-25-skill-auto-update"
+    }
+  },
+  "types": [
+    "新功能",
+    "工程"
+  ]
+}

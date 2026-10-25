@@ -26,6 +26,7 @@ import { entryPath } from "../prototype/scripts/contract.mjs";
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
 import { integrationFor, scanIntegrations } from "./integration-records.mjs";
 import { closedRecord } from "./routing.mjs";
+import { checkForUpdates } from "./update-check.mjs";
 import {
   repository,
   collaborationCatalog,
@@ -187,6 +188,7 @@ async function main() {
   const route = catalog?.routes.find((entry) => entry.id === id);
   const matches = records().filter((r) => r.state.id === id);
   if (command === "show") {
+    let output;
     if (route?.errors.length) throw Error(route.errors.join("; "));
     const local =
       (!route || (route.kind !== "archive" && route.branch === repo.branch)) &&
@@ -196,22 +198,18 @@ async function main() {
       local.length === 1 &&
       (route || repo.branch === repo.config.integrationBranch)
     ) {
-      console.log(
-        json({
-          path: relative(root, local[0].file),
-          state: local[0].state,
-          errors: validateChange(local[0].state),
-          source: "working-tree",
-          branch: repo.branch,
-          entryCommit: catalog.commit,
-          freshness: catalog.freshness,
-        }),
-      );
+      output = {
+        path: relative(root, local[0].file),
+        state: local[0].state,
+        errors: validateChange(local[0].state),
+        source: "working-tree",
+        branch: repo.branch,
+        entryCommit: catalog.commit,
+        freshness: catalog.freshness,
+      };
     } else
-      console.log(
-        json({ ...routedRecord(repo, catalog, id), source: "pushed-record" }),
-      );
-    return;
+      output = { ...routedRecord(repo, catalog, id), source: "pushed-record" };
+    return { output, repo, skipUpdate: opts["dry-run"] };
   }
   assert(
     matches.length <= 1,
@@ -1150,8 +1148,7 @@ async function main() {
       ...(availability.length ? { availability } : {}),
     };
     if (opts["dry-run"]) {
-      console.log(json(result));
-      return;
+      return { output: result, repo, skipUpdate: true };
     }
     assert(
       original === null
@@ -1250,14 +1247,20 @@ async function main() {
       archiveDir
         ? `Commit and push the archived source, then run scripts/integration.mjs preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use rework for corrections before integration.`
         : "Review the local diff, commit and push. A local command is not a published workflow fact.";
-    console.log(json(result));
+    return { output: result, repo };
   } finally {
     rmSync(lock, { recursive: true });
   }
 }
 
 try {
-  await main();
+  const completed = await main();
+  if (completed) {
+    const update = completed.skipUpdate
+      ? undefined
+      : await checkForUpdates(completed.repo);
+    console.log(json(update ? { ...completed.output, skillUpdate: update } : completed.output));
+  }
 } catch (error) {
   console.error(`SpecTrail state: ${error.message}`);
   process.exitCode = 1;
