@@ -1,3 +1,4 @@
+import { defaultRepositoryViews } from "../../src/lib/change-views";
 import {
   test,
   expect,
@@ -222,7 +223,7 @@ test("a narrative Plan uses default serial order without a source warning", asyn
 test("list filters, inline materials and task order preserve context", async ({
   page,
 }) => {
-  await page.goto(`/?${repositoryQuery}&m=changes`);
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=active`);
   const row = page.getByRole("link", {
     name: "打开 让工程文档成为清晰的阅读体验",
     exact: true,
@@ -395,6 +396,9 @@ test("changing projects clears filters that belong to the previous project", asy
   await page.route("**/api/repositories/second/workbench*", (route) =>
     route.fulfill({ json: second }),
   );
+  await page.route("**/api/repositories/second/change-views*", (route) =>
+    route.fulfill({ json: defaultRepositoryViews() }),
+  );
   await page.goto(
     `/?${repositoryQuery}&m=changes&spec=platform&noTypes=1&urgency=normal&sort=urgency`,
   );
@@ -407,6 +411,11 @@ test("changing projects clears filters that belong to the previous project", asy
   await page.getByRole("button", { name: /^当前仓库：/ }).click();
   await page.getByRole("menuitemradio", { name: "第二项目" }).click();
   await expect(page).not.toHaveURL(/spec=|types=|noTypes=|urgency=|sort=/);
+  await expect(page.getByRole("tab", { name: /^我的/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await page.getByRole("tab", { name: /进行中/ }).click();
   await expect(
     page.getByRole("link", {
       name: "打开 让工程文档成为清晰的阅读体验",
@@ -452,7 +461,7 @@ test("only active Changes use the board and completed rows retain archive eviden
     name: "Change 状态",
     exact: true,
   });
-  await expect(scopes.getByRole("tab")).toHaveCount(3);
+  await expect(scopes.getByRole("tab")).toHaveCount(5);
   await expect(page).not.toHaveURL(/stage=|wait=/);
   await page
     .getByRole("link", {
@@ -504,9 +513,7 @@ test("invalid and retired filters preserve deep links and scope navigation", asy
   await page.goto(
     `/?${repositoryQuery}&m=changes&scope=completed&stage=execution&wait=pause&size=medium&level=tasks&taskStatus=doing&view=board`,
   );
-  await expect(page).not.toHaveURL(
-    /stage=|wait=|size=|level=|taskStatus=|view=board/,
-  );
+  await expect(page).not.toHaveURL(/stage=|wait=|size=|level=|taskStatus=/);
   await expect(changeLinks(page)).toHaveCount(2);
   await page.getByRole("tab", { name: /进行中/ }).click();
   await page.goBack();
@@ -588,7 +595,7 @@ test("empty status scopes describe the scope without offering to reset it", asyn
   await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
   );
-  await page.goto(`/?${repositoryQuery}&m=changes`);
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=active`);
   await expect(
     page.getByText("暂无进行中的 Change", { exact: true }),
   ).toBeVisible();

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useEffect, useRef, type ReactNode } from "react";
 import {
   Flag,
   GitPullRequest,
@@ -162,6 +162,27 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   const { data, q, nav, projectId } = useWorkspace();
   const identity = usePersonal()?.connection?.identity;
   const views = useChangeViews();
+  const tabContainer = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = tabContainer.current;
+    if (!container) return;
+    const reveal = () => {
+      const active = container.querySelector<HTMLElement>(
+        '[role="tab"][aria-selected="true"]',
+      );
+      if (!active) return;
+      const parent = container.getBoundingClientRect(),
+        child = active.getBoundingClientRect();
+      if (child.right > parent.right)
+        container.scrollLeft += child.right - parent.right;
+      else if (child.left < parent.left)
+        container.scrollLeft -= parent.left - child.left;
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [q.changeView, q.scope, views.record?.revision]);
   const all = data!.changes;
   const query = useMemo(() => readDirectoryQuery(q), [q]);
   const mobile = useMediaQuery("(max-width: 760px)");
@@ -487,6 +508,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         </header>
         <div className={styles.toolbar}>
           <Tabs
+            ref={tabContainer}
             className={styles.viewTabs}
             value={
               query.issues

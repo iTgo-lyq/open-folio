@@ -41,7 +41,7 @@ export default function Changes() {
       ...directoryQueryParams(query),
       ...(legacyChangesPatch(q) ?? {}),
     };
-    if (q.states === undefined) delete patch.states;
+    if (!hasDirectoryQuery(q)) delete patch.states;
     if (
       q.scope &&
       !["active", "completed", "archived", "cancelled"].includes(q.scope) &&

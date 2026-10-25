@@ -31,10 +31,7 @@ export function classifyDirectoryState(
 ): DirectoryScope | undefined {
   const record = primaryRecord(group);
   if (record?.validCompleted)
-    return delivery?.stage === "releaseMerged" ||
-      record.state?.deliveryOverride === "releaseMerged"
-      ? "archived"
-      : "completed";
+    return delivery?.stage === "releaseMerged" ? "archived" : "completed";
   const status = record?.state?.status;
   return status === "active" || status === "cancelled" ? status : undefined;
 }

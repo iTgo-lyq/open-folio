@@ -242,7 +242,12 @@ test("released records are archived; multi-state filters share classification an
   );
   assert.equal(matchesDirectoryScope(shipped, "archived"), false);
   shipped.candidates[0].state!.deliveryOverride = "releaseMerged";
-  assert.equal(matchesDirectoryScope(shipped, "archived"), true);
+  // Only the server can validate that an override belongs to the integration archive.
+  assert.equal(matchesDirectoryScope(shipped, "archived"), false);
+  assert.equal(
+    matchesDirectoryScope(shipped, "archived", delivery.shipped),
+    true,
+  );
   shipped.candidates[0].validCompleted = false;
   assert.equal(
     matchesDirectoryScope(shipped, "archived", delivery.shipped),

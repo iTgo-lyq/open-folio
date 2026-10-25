@@ -59,7 +59,7 @@ test("Token invalidation retains its error class and recovery action in account 
   );
   await refreshCentral(page);
   await expect(
-    page.getByRole("button", { name: "同步状态：Token 失效", exact: true }),
+    page.getByRole("button", { name: /^同步状态：Token 失效，/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "工程协作", exact: true }),
@@ -77,7 +77,7 @@ test("Token invalidation retains its error class and recovery action in account 
   await refreshCentral(page);
   await failedRetry;
   await expect(
-    page.getByRole("button", { name: "同步状态：Token 失效", exact: true }),
+    page.getByRole("button", { name: /^同步状态：Token 失效，/ }),
   ).toBeVisible();
   await openAccountSettings(page);
   await expect(page.getByRole("main").getByRole("alert")).toContainText(

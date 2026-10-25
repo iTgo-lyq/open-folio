@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "交付视图管理与完整交互",
-      "status": "doing"
+      "status": "done",
+      "verification": "342项单测、类型检查、生产构建及视图交互回归通过；2项develop既有布局失败已复现记录",
+      "commitTitle": "change-focus-and-archive T3: finish views and regression review"
     }
   },
   "closure": {},

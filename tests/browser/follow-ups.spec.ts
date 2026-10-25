@@ -156,7 +156,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     .click();
   await expect(page).toHaveURL(/c=source-connect/);
   await backToChanges(page);
-  await page.goto(`/?${repositoryQuery}&m=changes`);
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=active`);
   await group
     .getByRole("link", { name: `打开 ${active.title}`, exact: true })
     .click();

@@ -57,6 +57,7 @@ function ScopedViews({ children }: { children: ReactNode }) {
   latest.current = { q, record, nav };
   const selectedPending = useRef<SelectedView | undefined>(undefined);
   const selecting = useRef(false);
+  const selectionFlight = useRef<Promise<void> | undefined>(undefined);
   const selectionVersion = useRef(0);
   useEffect(() => {
     controller.current = new AbortController();
@@ -81,7 +82,9 @@ function ScopedViews({ children }: { children: ReactNode }) {
           "REPOSITORY_MISMATCH",
         ].includes(cause.code)
       ) {
+        sequence.current++;
         cache.clear();
+        latest.current.record = undefined;
         setRecord(undefined);
         await reloadSession();
       }
@@ -186,10 +189,11 @@ function ScopedViews({ children }: { children: ReactNode }) {
     selectedPending.current = selected;
     if (selecting.current) return;
     selecting.current = true;
-    void (async () => {
+    selectionFlight.current = (async () => {
       try {
         while (selectedPending.current && !controller.current?.signal.aborted) {
           const target = selectedPending.current;
+          const targetVersion = selectionVersion.current;
           selectedPending.current = undefined;
           if (!latest.current.record) {
             const initial = await api<RepositoryViews>(
@@ -208,7 +212,8 @@ function ScopedViews({ children }: { children: ReactNode }) {
           if (controller.current?.signal.aborted) return;
           // A selection reply never replaces definitions or navigates the page.
           const current = latest.current.record;
-          if (current) apply({ ...current, selected: next.selected });
+          if (current && targetVersion === selectionVersion.current)
+            apply({ ...current, selected: next.selected });
           setError("");
         }
       } catch (cause) {
@@ -229,9 +234,12 @@ function ScopedViews({ children }: { children: ReactNode }) {
     views,
     selectAfterSave,
   ) => {
-    sequence.current++;
     const navigationAtSave = window.location.search;
-    const next = await api<RepositoryViews>(readUrl("change-views"), {
+    await selectionFlight.current;
+    controller.current!.signal.throwIfAborted();
+    sequence.current++;
+    const selectionAtSave = selectionVersion.current;
+    let next = await api<RepositoryViews>(readUrl("change-views"), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ expectedRevision, views, selectAfterSave }),
@@ -241,6 +249,8 @@ function ScopedViews({ children }: { children: ReactNode }) {
       throw cause;
     });
     controller.current!.signal.throwIfAborted();
+    if (selectionAtSave !== selectionVersion.current && latest.current.record)
+      next = { ...next, selected: latest.current.record.selected };
     const current = latest.current.q.changeView;
     const removed =
       current &&

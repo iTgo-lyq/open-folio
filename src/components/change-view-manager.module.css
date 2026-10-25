@@ -1,5 +1,7 @@
 .panel {
   width: min(460px, calc(100vw - 16px));
+  max-width: min(460px, calc(100vw - 16px));
+  overflow: hidden;
   max-height: min(680px, var(--radix-popover-content-available-height));
   display: flex;
   flex-direction: column;
