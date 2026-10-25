@@ -67,5 +67,6 @@
   "types": [
     "修复",
     "流程"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

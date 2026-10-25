@@ -43,5 +43,6 @@
   "followUpTitle": "托管原型自动截图",
   "types": [
     "修复"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

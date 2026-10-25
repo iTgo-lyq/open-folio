@@ -117,7 +117,7 @@
         "type": "hosted",
         "version": "346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/346cf668a7b11e6eb7913f684c27ee5a37fbf56651c979a0645c82ddf31a4d6e/index.html",
-        "sourceCommit": "69b6aa134fcbc96b1c3588aa49b904765db0b173",
+        "sourceCommit": "50a012b09c15827a833153ae5cb8246bf6fad275",
         "digest": "sha256:c56849a783262a1d224d07bc978f13ce4b56e5831d6cdb2af1c071ab330fd90f",
         "thumbnails": [
           {
@@ -140,5 +140,6 @@
     "at": "2026-10-20T12:38:17.771Z",
     "reason": "分享不应绑定创建账号；任何人应能分享实际存在的 Change。",
     "approach": "保留已验证的阅读与资源隔离能力，重整仓库范围、分享生命周期和无账号 Skill 链接流程。"
-  }
+  },
+  "deliveryOverride": "releaseMerged"
 }

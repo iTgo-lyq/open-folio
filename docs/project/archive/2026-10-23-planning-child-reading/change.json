@@ -40,5 +40,6 @@
   },
   "types": [
     "修复"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

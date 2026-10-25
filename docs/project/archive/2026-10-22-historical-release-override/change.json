@@ -43,5 +43,6 @@
   "types": [
     "适配",
     "流程"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

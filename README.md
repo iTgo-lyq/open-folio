@@ -2,6 +2,17 @@
 
 基于中心 Git 已推送记录的个人工程工作台。使用自设账号密码登录并绑定 GitHub Token，自动发现接入 SpecTrail 的仓库，阅读 Specs、Changes 与原型。协作者各自使用 GitHub 仓库权限。界面保留窄侧轨、玻璃胶囊与圆角工作面。
 
+## SpecTrail Skill
+
+OpenFolio 与 SpecTrail 在本仓库统一维护，技能直接从 `.agents/skills/spec-trail/` 分发。在目标 Git 项目根目录安装：
+
+```bash
+npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
+npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-code --copy -y
+```
+
+完整用法与许可见 [SpecTrail 安装指南](docs/spec-trail.md)，[产品介绍站](https://spec-trail.pages.dev/)的源码和发布方式见 [website/README.md](website/README.md)。技能不再通过另一个仓库同步发布。
+
 ## 启动与个人连接
 
 需要 Node.js 24、Git、持久磁盘；原型自动截图需要 Playwright Chromium 和可用的 OS 沙箱。

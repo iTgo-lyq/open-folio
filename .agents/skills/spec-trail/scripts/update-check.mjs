@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { compareVersions, parseVersion, readVersion } from "./version.mjs";
 
 export const UPDATE_URL =
-  "https://raw.githubusercontent.com/iTgo-lyq/spec-trail/main/skills/spec-trail/version.json";
+  "https://raw.githubusercontent.com/iTgo-lyq/open-folio/main/.agents/skills/spec-trail/version.json";
 export const CACHE_MS = 24 * 60 * 60 * 1000;
 const MAX_BYTES = 16 * 1024;
 const installedVersion = fileURLToPath(

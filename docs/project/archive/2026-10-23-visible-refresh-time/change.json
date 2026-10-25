@@ -50,5 +50,6 @@
       "answer": "直接沿用现有样式实现。",
       "source": "直接沿用现有样式实现（推荐）"
     }
-  }
+  },
+  "deliveryOverride": "releaseMerged"
 }

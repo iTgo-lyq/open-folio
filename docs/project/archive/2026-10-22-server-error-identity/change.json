@@ -51,5 +51,6 @@
       "answer": "先修复，再发布（推荐）",
       "source": "本会话用户对发布前修复方案的明确选择"
     }
-  }
+  },
+  "deliveryOverride": "releaseMerged"
 }

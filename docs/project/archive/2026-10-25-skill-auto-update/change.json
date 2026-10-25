@@ -64,5 +64,6 @@
   "types": [
     "新功能",
     "工程"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

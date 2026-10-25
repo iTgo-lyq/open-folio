@@ -4,13 +4,13 @@
   "title": "统一公开仓库与 SpecTrail 分发",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/unified-public-repository",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一技能和介绍站分发、迁移公开仓库并补记历史发布状态",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},

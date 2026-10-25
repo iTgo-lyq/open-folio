@@ -64,5 +64,6 @@
   "types": [
     "性能",
     "修复"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

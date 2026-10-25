@@ -41,5 +41,6 @@
   },
   "types": [
     "新功能"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

@@ -149,7 +149,7 @@
       "artifact": {
         "type": "git",
         "path": "docs/project/archive/2026-10-04-change-prototype-preview/previews/change-overview",
-        "sourceCommit": "4aa15437403153400624d59a4402dc2137862af5"
+        "sourceCommit": "697419744db8c57dfcaf61328a0f665738395256"
       }
     },
     {
@@ -164,7 +164,7 @@
       "artifact": {
         "type": "git",
         "path": "docs/project/archive/2026-10-04-change-prototype-preview/previews/empty-state",
-        "sourceCommit": "4aa15437403153400624d59a4402dc2137862af5"
+        "sourceCommit": "697419744db8c57dfcaf61328a0f665738395256"
       }
     },
     {
@@ -178,7 +178,7 @@
       "artifact": {
         "type": "git",
         "path": "docs/project/archive/2026-10-04-change-prototype-preview/previews/preview-toolbar",
-        "sourceCommit": "4aa15437403153400624d59a4402dc2137862af5"
+        "sourceCommit": "697419744db8c57dfcaf61328a0f665738395256"
       }
     }
   ]

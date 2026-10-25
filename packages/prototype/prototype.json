@@ -16,7 +16,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -49,7 +49,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -82,7 +82,7 @@
         "type": "hosted",
         "version": "22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5/index.html",
-        "sourceCommit": "67f51dce8898d61e555732d5e91cb06e5f68dc3b",
+        "sourceCommit": "8c007a894b80f4230245cc88361c9afda8a86106",
         "digest": "sha256:219be786b149b324d17054885a5b0f6dcf0c6f5a93fc65b0778f983250bfb6c1",
         "thumbnails": [
           {
@@ -115,7 +115,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -148,7 +148,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -181,7 +181,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -214,7 +214,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {

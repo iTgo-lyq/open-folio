@@ -33,7 +33,7 @@
 
 只有 `change.mjs` 在成功操作或 show 结束后检查 skill 新版。默认开启，可在目标项目 `docs/project/workflow.json` 设置 `"checkForUpdates": false` 关闭；关闭后不读取检查缓存、不联网、不显示提醒。此字段需使用支持它的 skill 与 OpenFolio 读取器，旧配置不必修改。
 
-有新版时 JSON 外层追加 `skillUpdate`，包含 `status: "available"`、`currentVersion`、`latestVersion` 与 `message`；已是最新时省略字段。安装缺少版本或检查异常时返回 `status: "unknown"`，不改变原操作、state 或退出码。首次接入的旧安装需要手动更新一次，取得检查代码及发布生成的 version.json；源目录开发副本没有发布版本时不会联网猜测。
+有新版时 JSON 外层追加 `skillUpdate`，包含 `status: "available"`、`currentVersion`、`latestVersion` 与 `message`；已是最新时省略字段。安装缺少版本或检查异常时返回 `status: "unknown"`，不改变原操作、state 或退出码。旧安装需从 OpenFolio 仓库重新安装一次，取得检查代码及随源码提交的 version.json；缺少版本文件时不会联网猜测。
 
 请求仅访问公开分发版本地址，无需 Token，最多等待 3 秒。检查结果在 Git common-dir 的 `spec-trail/update-check.json` 缓存 24 小时，worktree 共享结果但分别读取各自项目开关。help、dry-run 和原操作失败不检查。脚本只提醒，不下载或安装更新，也不改变原有协作 Git 读取。
 

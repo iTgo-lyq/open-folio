@@ -207,7 +207,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-changes/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -238,7 +238,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-credentials/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -269,7 +269,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-home/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -300,7 +300,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-prototypes/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -331,7 +331,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-public/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -362,7 +362,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-share/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -393,7 +393,7 @@
         "type": "hosted",
         "version": "06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/06e078ce433a283f7767337163f8b70c08c4270c3b43a275a47cc4a76be0053b/quiet-specs/index.html",
-        "sourceCommit": "9351a484a55a1ae2c60c2592f7130ea97124901e",
+        "sourceCommit": "b45ac9645f48b23b75faf6263c402a706f4e3e1b",
         "digest": "sha256:ecf9f042c5b1e8a6a1adaf6628139a3e48b7681079bb621f25137698790891e2",
         "thumbnails": [
           {
@@ -475,5 +475,6 @@
       "answer": "陶土为默认强调色，评审栏保留墨色与上一版蓝色对照；标志保持墨色。",
       "source": "用户看过 46c2404c 后回复：还是陶土吧……logo保持墨色没问题。"
     }
-  }
+  },
+  "deliveryOverride": "releaseMerged"
 }

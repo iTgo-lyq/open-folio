@@ -28,9 +28,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 `.next` 是可重建的构建产物，切换 Git 分支不会自动重建它。本仓库长期服务固定使用主工作区 `/home/tiger/workspace/open-folio/.next`，从主工作区的 `develop` 构建更新；任务 worktree 的 `.next` 仅用于各自验证。实际构建与运行提交以主工作区中的 `.openfolio/build-version.json`、`runtime-version.json` 为准；用户数据位于上面的持久数据目录，不在 `.next` 中。
 
-## SpecTrail 同步
+## SpecTrail 分发
 
-`.agents/skills/spec-trail/` 的变更合入 `main` 后，由 [GitHub Actions](.github/workflows/sync-spec-trail.yml) 自动同步至公开仓库 [iTgo-lyq/spec-trail](https://github.com/iTgo-lyq/spec-trail) 的 `skills/spec-trail/`，无需逐次确认。以 `main` 已提交内容为准，保留分发仓库的 `LICENSE`。
+`.agents/skills/spec-trail/` 是技能的唯一源码与公开安装入口，与 OpenFolio 在同一仓库维护，不再向独立仓库同步。技能内容及根目录的 `version.json` 一起提交，保留技能包的 MIT `LICENSE`。安装说明见 [SpecTrail](docs/spec-trail.md)，介绍站源码在 `website/`。
 
 ## 前端开发
 

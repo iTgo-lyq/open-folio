@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 .next*/
 out/
 *.tsbuildinfo
@@ -13,3 +13,5 @@ playwright-report/
 next-env.d.ts
 
 packages/ui/dist/
+dist/
+.cache/

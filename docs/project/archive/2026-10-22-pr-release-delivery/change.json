@@ -124,5 +124,6 @@
     "at": "2026-10-21T17:37:59.775Z",
     "reason": "用户要求补充未归档禁止合入的 Agent 规则与 CI，并在 Setup 推荐首次配置",
     "approach": "复用归档校验增加只读 PR 检查，保留规划直推并补齐接入说明"
-  }
+  },
+  "deliveryOverride": "releaseMerged"
 }

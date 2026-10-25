@@ -42,5 +42,6 @@
   "types": [
     "流程",
     "工程"
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

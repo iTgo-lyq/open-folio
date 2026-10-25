@@ -96,7 +96,7 @@
       "artifact": {
         "type": "git",
         "path": "docs/project/archive/2026-10-12-prototype-hosting/previews/workspace-shell",
-        "sourceCommit": "95175dfdcae0fab149a3920c49f2261de24a340d"
+        "sourceCommit": "e63a26184e0b5c65e5e782490e13b650e53650e2"
       }
     }
   ]

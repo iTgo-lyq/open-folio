@@ -101,7 +101,7 @@
         "type": "hosted",
         "version": "22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5",
         "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5/index.html",
-        "sourceCommit": "67f51dce8898d61e555732d5e91cb06e5f68dc3b",
+        "sourceCommit": "8c007a894b80f4230245cc88361c9afda8a86106",
         "digest": "sha256:219be786b149b324d17054885a5b0f6dcf0c6f5a93fc65b0778f983250bfb6c1",
         "thumbnails": [
           {
@@ -119,5 +119,6 @@
         ]
       }
     }
-  ]
+  ],
+  "deliveryOverride": "releaseMerged"
 }

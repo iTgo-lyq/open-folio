@@ -85,5 +85,6 @@
       "recommendation": "一并处理，覆盖打开页面和跨浏览器恢复的完整体验。",
       "answer": "按建议范围推进"
     }
-  }
+  },
+  "deliveryOverride": "releaseMerged"
 }
