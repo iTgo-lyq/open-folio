@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useRef,
+  useMemo,
 } from "react";
 import type {
   SessionSummary,
@@ -19,7 +20,9 @@ import { api, ApiError, setPersonalRevision } from "./api";
 export type PersonalSession = SessionSummary & {
   providers: ConnectionDescriptor[];
 };
+import { ReadingCache } from "./reading-cache";
 type PersonalValue = {
+  viewsCache: ReadingCache;
   session: PersonalSession | null;
   sessionError: string;
   restoringConnection: boolean;
@@ -54,6 +57,10 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     [more, setMore] = useState<number | null>(null),
     [version, setVersion] = useState(0),
     [cursor, setCursor] = useState(0);
+  const viewsCache = useMemo(
+    () => new ReadingCache(),
+    [session?.account?.id, session?.deviceSessionId],
+  );
   const snapshot = useRef<PersonalSession | null>(null),
     sequence = useRef(0),
     channel = useRef<BroadcastChannel | null>(null);
@@ -326,6 +333,7 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
     <Personal.Provider
       value={{
         session,
+        viewsCache,
         sessionError,
         restoringConnection,
         connectionError,

@@ -546,15 +546,19 @@ export async function indexChanges(
 
 // GitHub 隐私邮箱可识别登录名：<id>+<login>@ 或 <login>@users.noreply.github.com。
 const GITHUB_NOREPLY =
-  /^(?:\d+\+)?([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)@users\.noreply\.github\.com$/i;
+  /^(?:(\d+)\+)?([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)@users\.noreply\.github\.com$/i;
 export function changeCreator(
   name: string,
   email: string,
 ): ChangeCreator | undefined {
-  const login = GITHUB_NOREPLY.exec(email.trim())?.[1];
+  const match = GITHUB_NOREPLY.exec(email.trim());
+  const login = match?.[2],
+    subjectId = match?.[1];
   const display = name.trim() || login;
   if (!display) return undefined;
-  return login ? { name: display, login } : { name: display };
+  return login
+    ? { name: display, login, ...(subjectId ? { subjectId } : {}) }
+    : { name: display };
 }
 
 export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {

@@ -76,7 +76,7 @@ test("labels filter with OR and AND, preserve URL navigation and default to norm
   await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
   );
-  await page.goto(`/?${repositoryQuery}&m=changes`);
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=active`);
   await expect
     .poll(() => titles(page))
     .toEqual(data.changes.map((g) => g.title));

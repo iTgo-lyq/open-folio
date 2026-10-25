@@ -14,6 +14,7 @@ import { Shell } from "./shell";
 import { DocumentSheet } from "./reading-document";
 import Specs from "./specs";
 import Changes from "./changes";
+import { ChangeViewsProvider } from "./change-views-context";
 import Prototypes from "./prototypes";
 import styles from "./shell.module.css";
 import personalStyles from "./personal.module.css";
@@ -145,7 +146,9 @@ export default function Workspace() {
   return (
     <PersonalProvider>
       <WorkspaceProvider>
-        <Body />
+        <ChangeViewsProvider>
+          <Body />
+        </ChangeViewsProvider>
       </WorkspaceProvider>
     </PersonalProvider>
   );

@@ -3,18 +3,70 @@
   "id": "change-focus-and-archive",
   "title": "Changes 动态视图与已发布归档",
   "size": "medium",
-  "status": "active",
-  "stage": "technical",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/change-focus-and-archive",
   "confirmations": {
     "requirement": {
       "at": "2026-10-23T11:46:59.017Z",
       "summary": "默认我的动态视图、状态多选与视图管理及已发布归档",
       "source": "用户：需求没问题，按这个方案继续，先准备技术方案和交互原型。"
+    },
+    "technical": {
+      "at": "2026-10-25T04:38:06.040Z",
+      "summary": "复用账号存储和读取缓存支持视图配置与统一状态查询",
+      "source": "用户确认技术方案与三项串行计划：确认，开始实施。"
+    },
+    "plan": {
+      "at": "2026-10-25T04:38:07.729Z",
+      "summary": "依次交付状态与本人筛选、视图恢复和拖拽管理交互",
+      "source": "用户确认技术方案与三项串行计划：确认，开始实施。"
     }
   },
-  "tasks": {},
-  "closure": {},
+  "tasks": {
+    "T1": {
+      "title": "统一状态范围与本人筛选",
+      "status": "done",
+      "verification": "类型检查、22 项单元测试与 2 项目录浏览器场景通过，详见 execution.md",
+      "commitTitle": "change-focus-and-archive T1: classify archive and current creator"
+    },
+    "T2": {
+      "title": "保存并恢复账号级视图",
+      "status": "done",
+      "verification": "类型检查、7 项存储与兼容测试、2 项视图浏览器及 2 项目录回归通过",
+      "commitTitle": "change-focus-and-archive T2: persist account repository views"
+    },
+    "T3": {
+      "title": "交付视图管理与完整交互",
+      "status": "done",
+      "verification": "342项单测、类型检查、生产构建及视图交互回归通过；2项develop既有布局失败已复现记录",
+      "commitTitle": "change-focus-and-archive T3: finish views and regression review"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T05:16:56.152Z",
+      "summary": "独立评审及本次实现验证通过；两项既有窄屏布局失败已在develop复现并记录"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T05:18:58.134Z",
+      "summary": "用户确认当前实现并授权合入develop",
+      "source": "用户：合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T05:19:00.364Z",
+      "summary": "同步Change状态分类、个人动态视图及账号持久化契约"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T05:19:02.592Z",
+      "summary": "用户验收后归档动态视图与已发布分类实现",
+      "path": "docs/project/archive/2026-10-24-change-focus-and-archive"
+    }
+  },
   "types": [
     "体验",
     "新功能"

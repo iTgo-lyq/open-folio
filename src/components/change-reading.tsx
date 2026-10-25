@@ -34,6 +34,7 @@ import { ShareManager } from "./share-manager";
 import { Empty } from "./document";
 import { ToolbarSlot } from "./toolbar-slot";
 import { sectionId } from "./material-styles";
+import { usePersonal } from "./personal-context";
 import { useMediaQuery } from "./use-media";
 import styles from "./change-reading.module.css";
 import page from "./personal.module.css";
@@ -88,9 +89,15 @@ export function ChangeReading({
       cf: null,
       cv: null,
     });
+  const identity = usePersonal()?.connection?.identity;
   const query = readDirectoryQuery(q);
   const visible = sortDirectoryChanges(
-    filterDirectoryChanges(data?.changes ?? [], query),
+    filterDirectoryChanges(
+      data?.changes ?? [],
+      query,
+      data?.deliveryByChange,
+      identity,
+    ),
     query.labels.sortByUrgency,
   );
   const bins =
