@@ -69,18 +69,23 @@ export type ProbeResult =
   | { kind: "empty-repository" }
   | { kind: "unavailable"; reason: string; retryAfter?: string };
 export type ProviderPullRequest = PullRequest & { body: string };
+export type PullRequestPage =
+  | (Page<ProviderPullRequest> & { notModified?: false; etag?: string })
+  | { notModified: true; etag?: string; nextCursor?: string | null };
 export type PullRequestQuery = {
   base?: string;
   head?: string;
   commit?: string;
 };
 export interface RepositoryProvider {
+  pullRequestCacheVersion?: string;
   listPullRequests?(
     context: ProviderContext,
     repo: RepositoryIdentity,
     query: PullRequestQuery,
     cursor: string | null,
-  ): Promise<Page<ProviderPullRequest>>;
+    etag?: string,
+  ): Promise<PullRequestPage>;
   getPullRequest?(
     context: ProviderContext,
     repo: RepositoryIdentity,
@@ -92,6 +97,7 @@ export interface RepositoryProvider {
   authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
+    knownIdentity?: ProviderIdentity,
   ): Promise<ProviderIdentity & { gitUsername?: string }>;
   listRepositories(
     context: ProviderContext,

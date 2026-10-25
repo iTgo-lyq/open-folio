@@ -200,37 +200,32 @@ export class Repositories {
                   automatic,
                   signal: owner.context.signal,
                   beforePublish: () => assertPermission(owner),
-                  delivery:
-                    provider.listPullRequests && provider.getPullRequest
-                      ? {
-                          repositoryId: repository.repositoryId,
-                          list: (query, cursor, signal) =>
-                            provider.listPullRequests!(
-                              {
-                                ...owner.context,
-                                signal: AbortSignal.any([
-                                  owner.context.signal,
-                                  signal,
-                                ]),
-                              },
-                              repository,
-                              query,
-                              cursor,
-                            ),
-                          get: (number, signal) =>
-                            provider.getPullRequest!(
-                              {
-                                ...owner.context,
-                                signal: AbortSignal.any([
-                                  owner.context.signal,
-                                  signal,
-                                ]),
-                              },
-                              repository,
-                              number,
-                            ),
-                        }
-                      : undefined,
+                  delivery: provider.listPullRequests
+                    ? {
+                        repositoryId: repository.repositoryId,
+                        cacheKey: JSON.stringify([
+                          repository.providerId,
+                          repository.instanceId,
+                          repository.repositoryId,
+                          repository.fullName,
+                          provider.pullRequestCacheVersion,
+                        ]),
+                        list: (query, cursor, signal, etag) =>
+                          provider.listPullRequests!(
+                            {
+                              ...owner.context,
+                              signal: AbortSignal.any([
+                                owner.context.signal,
+                                signal,
+                              ]),
+                            },
+                            repository,
+                            query,
+                            cursor,
+                            etag,
+                          ),
+                      }
+                    : undefined,
                 });
                 await owner.assertCurrent();
                 permissions.assertAllowed(owner, key);

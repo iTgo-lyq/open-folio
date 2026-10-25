@@ -22,6 +22,7 @@ import { indexChanges } from "./changes.ts";
 import { indexBase } from "./indexer.ts";
 import { AppError, publicError } from "./errors.ts";
 import { prototypePolicy, resolvePreview } from "./previews.ts";
+import { PullRequestCache } from "./pull-requests.ts";
 import { collectDelivery, type DeliveryReader } from "./delivery.ts";
 import { IntegrationReader } from "./integration.ts";
 import {
@@ -241,6 +242,12 @@ export class SnapshotStore {
         data.unchanged && previous
           ? previous.changes
           : await indexChanges(data, reader, signal);
+      const prCache = context?.delivery
+        ? await PullRequestCache.load(
+            join(dir, "pull-requests.json"),
+            limits.totalBytes,
+          )
+        : undefined;
       const delivery = await collectDelivery({
         changes,
         integrations: data.integrations,
@@ -248,6 +255,7 @@ export class SnapshotStore {
         releaseSource: data.releaseSource,
         previous: previous?.deliveryByChange,
         reader: context?.delivery,
+        cache: prCache,
         signal,
         ancestor: (before, after) => reader.ancestor(before, after, signal),
       });
@@ -270,6 +278,10 @@ export class SnapshotStore {
           JSON.stringify(previous.deliveryByChange)
       ) {
         signal.throwIfAborted();
+        await context?.beforePublish();
+        signal.throwIfAborted();
+        if (prCache)
+          await atomic(join(dir, "pull-requests.json"), prCache.serialize());
         await markChecked(previous.id);
         await unlink(join(dir, "last-error.json")).catch(() => {});
         return previous;
@@ -333,6 +345,8 @@ export class SnapshotStore {
       signal.throwIfAborted();
       await context?.beforePublish();
       signal.throwIfAborted();
+      if (prCache)
+        await atomic(join(dir, "pull-requests.json"), prCache.serialize());
       await atomic(join(dir, "snapshots", `${s.id}.json`), JSON.stringify(s));
       await atomic(join(dir, "current"), s.id);
       await markChecked(s.id).catch(() => {});

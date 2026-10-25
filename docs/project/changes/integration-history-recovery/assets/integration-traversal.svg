@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="integration-traversal-title integration-traversal-desc">
+  <title id="integration-traversal-title">同步历史中的合入识别</title>
+  <desc id="integration-traversal-desc">从已推送的集成提交开始扫描。遇到没有 Change 标记的普通同步时，沿全部父路径继续；遇到有标记的合入候选时，校验该提交并仅沿第一父路径继续，排除来源历史。提交去重后，按 Change 汇总结果。</desc>
+  <defs>
+    <style>
+      text { font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif; }
+      .title { font-size: 16px; font-weight: 600; fill: #1e293b; }
+      .label { font-size: 12px; font-weight: 600; }
+      .secondary { font-size: 10px; fill: #64748b; }
+      .analysis-note { fill: #6b21a8; }
+      .processing-note { fill: #b45309; }
+      .output-note { fill: #166534; }
+      .arrow-label { font-size: 12px; fill: #1e293b; }
+      .connector { fill: none; stroke: #64748b; stroke-width: 1.5; marker-end: url(#integration-traversal-arrow); }
+    </style>
+    <marker id="integration-traversal-arrow" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,4 L0,8 L2,4 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="960" height="600" fill="#ffffff"/>
+  <text x="480" y="48" text-anchor="middle" class="title">同步历史中的合入识别</text>
+  <text x="480" y="72" text-anchor="middle" class="secondary">同步时展开两侧历史，交付处保留来源边界</text>
+
+  <path d="M480 141 V165" class="connector"/>
+  <path d="M609 236 H673" class="connector"/>
+  <path d="M480 301 V337" class="connector"/>
+  <path d="M480 417 V428 Q480 436 472 436 H448 Q440 436 440 444 V469" class="connector"/>
+  <path d="M796 273 V440 Q796 448 788 448 H528 Q520 448 520 456 V469" class="connector"/>
+
+  <rect x="624" y="208" width="36" height="20" fill="#ffffff"/>
+  <text x="642" y="222" text-anchor="middle" class="arrow-label">有</text>
+  <rect x="492" y="308" width="36" height="20" fill="#ffffff"/>
+  <text x="510" y="322" text-anchor="middle" class="arrow-label">无</text>
+
+  <rect x="360" y="96" width="240" height="40" rx="20" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="480" y="121" text-anchor="middle" class="label" fill="#1e40af">从固定的已推送集成 tip 开始</text>
+
+  <polygon points="480,176 604,236 480,296 356,236" fill="#f3e8ff" stroke="#6b21a8" stroke-width="2"/>
+  <text x="480" y="232" text-anchor="middle" class="label" fill="#6b21a8">含 Change 标记？</text>
+  <text x="480" y="252" text-anchor="middle" class="secondary analysis-note">只读取提交 trailer</text>
+
+  <rect x="684" y="204" width="224" height="64" rx="6" fill="#fef3c7" stroke="#b45309"/>
+  <text x="796" y="230" text-anchor="middle" class="label" fill="#b45309">校验该候选，只沿第一父继续</text>
+  <text x="796" y="250" text-anchor="middle" class="secondary processing-note">不进入其来源历史</text>
+
+  <rect x="360" y="348" width="240" height="64" rx="6" fill="#fef3c7" stroke="#b45309"/>
+  <text x="480" y="374" text-anchor="middle" class="label" fill="#b45309">沿全部父路径继续</text>
+  <text x="480" y="394" text-anchor="middle" class="secondary processing-note">普通同步可以带入原合入记录</text>
+
+  <rect x="340" y="480" width="280" height="48" rx="6" fill="#d1fae5" stroke="#166534"/>
+  <text x="480" y="500" text-anchor="middle" class="label" fill="#166534">遍历结束后，按 Change 汇总结果</text>
+  <text x="480" y="518" text-anchor="middle" class="secondary output-note">同一提交只处理一次；不同候选仍查重</text>
+
+  <line x1="40" y1="552" x2="920" y2="552" stroke="#94a3b8"/>
+  <rect x="120" y="568" width="12" height="12" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="140" y="578" class="secondary">扫描入口</text>
+  <rect x="308" y="568" width="12" height="12" fill="#f3e8ff" stroke="#6b21a8"/>
+  <text x="328" y="578" class="secondary">边界判断</text>
+  <rect x="496" y="568" width="12" height="12" fill="#fef3c7" stroke="#b45309"/>
+  <text x="516" y="578" class="secondary">处理历史</text>
+  <rect x="684" y="568" width="12" height="12" fill="#d1fae5" stroke="#166534"/>
+  <text x="704" y="578" class="secondary">识别结果</text>
+</svg>

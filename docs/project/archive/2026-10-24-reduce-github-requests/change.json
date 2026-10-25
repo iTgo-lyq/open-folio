@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "reduce-github-requests",
+  "title": "减少 GitHub 重复请求与历史 PR 扫描",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/reduce-github-requests",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-23T19:46:32.542Z",
+      "summary": "以查询去重和历史缓存减少常规请求，统一冷却且限流明确报错。",
+      "source": "需求确认，继续推进技术方案，重点从查询算法和缓存复用上减少请求，保持简单，不要增加额外兜底。"
+    },
+    "technical": {
+      "at": "2026-10-25T01:59:42.830Z",
+      "summary": "按分支批量查询并复用页面缓存，实际限流后共享冷却。",
+      "source": "开始优化吧（在已展示技术方案后要求实施）"
+    },
+    "plan": {
+      "at": "2026-10-25T01:59:44.606Z",
+      "summary": "先交付批量查询和页面复用，再接入统一冷却与错误传递。",
+      "source": "开始优化吧；依照该实施授权补齐已确认方案的常规执行顺序，无新增方案决策。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "批量读取与复用 PR 页面",
+      "status": "done",
+      "verification": "类型检查通过，44 项相关回归及新增请求计数与页面缓存回归通过，详见 execution.md。",
+      "commitTitle": "reduce-github-requests T1: batch PR reads and reuse complete pages"
+    },
+    "T2": {
+      "title": "统一冷却与限流错误传递",
+      "status": "done",
+      "verification": "最终 331 项测试、类型检查、构建及浏览器验证通过，独立评审 R1 已修复并复验。",
+      "commitTitle": "reduce-github-requests T2: share actual GitHub cooldowns and propagate errors"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T02:10:47.061Z",
+      "summary": "331 项测试、类型检查、构建和浏览器验证通过；独立评审完整差异，R1 修复复验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T04:36:58.230Z",
+      "summary": "用户验收当前优化并授权合入 develop、更新开发机服务。",
+      "source": "合入吧（回应已实现内容、验证证据及合入 develop 并更新服务的确认）"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T04:37:00.025Z",
+      "summary": "同步 Change 追踪的批量 PR 与页面缓存契约、访问能力的限流错误与共享冷却边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T04:37:01.840Z",
+      "summary": "人工验收后归档，336 项集成回归及类型检查通过，独立评审问题均已解决。",
+      "path": "docs/project/archive/2026-10-24-reduce-github-requests"
+    }
+  },
+  "types": [
+    "性能",
+    "修复"
+  ]
+}

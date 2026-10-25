@@ -6,6 +6,7 @@ import {
   openMaterial,
   backToChanges,
   openChangeFilters,
+  refreshCentral,
 } from "./connected";
 import {
   primaryRecord,
@@ -179,4 +180,54 @@ test("delivery history, stale diagnostics and draft links stay readable on deskt
     await expect(page.getByRole("region", { name: "交付进度" })).toHaveCount(0);
     await openMaterial(page, "概览");
   }
+});
+
+test("rate-limited refresh shows the wait and preserves the currently displayed delivery", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  data.deliveryByChange = {
+    "document-reader": {
+      changePrs: [pr(1)],
+      releasePrs: [],
+      diagnostics: [],
+      stale: false,
+    },
+  };
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader`);
+  const details = page.getByRole("region", { name: "交付进度" });
+  await expect(
+    details.getByRole("link", { name: /#1 改进交付流程/ }),
+  ).toBeVisible();
+  await page.route("**/api/repositories/*/refresh*", (route) =>
+    route.fulfill({
+      status: 429,
+      headers: { "Retry-After": "90" },
+      json: {
+        error: {
+          code: "RATE_LIMITED",
+          message:
+            "GitHub 暂时限制了请求，至少 90 秒后再试；恢复时间以 GitHub 为准。",
+          retryAfter: "90",
+        },
+      },
+    }),
+  );
+  await refreshCentral(page);
+  await expect(
+    page.getByRole("alert").filter({ hasText: "至少 90 秒后再试" }),
+  ).toBeVisible();
+  await expect(
+    details.getByRole("link", { name: /#1 改进交付流程/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "刷新中心仓库", exact: true }),
+  ).toBeEnabled();
 });

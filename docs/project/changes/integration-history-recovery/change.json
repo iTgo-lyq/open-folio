@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-history-recovery",
+  "title": "并发同步后保留有效合入识别",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "codex/integration-history-recovery",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-25T04:47:11.177Z",
+      "summary": "并发同步后持续识别有效合入并保留归档校验与来源清理保护",
+      "source": "继续吧"
+    }
+  },
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "修复",
+    "流程"
+  ]
+}
