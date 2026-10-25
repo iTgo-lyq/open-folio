@@ -3,7 +3,7 @@
   "id": "pr-based-integration",
   "title": "统一依据 PR 识别 Change 集成",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/pr-based-integration",
   "confirmations": {
@@ -42,6 +42,23 @@
       "result": "passed",
       "at": "2026-10-25T05:40:58.957Z",
       "summary": "项目354项、技能27项、浏览器5项及索引9项通过，类型格式构建通过；隔离上下文独立评审无可行动问题。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T05:42:04.647Z",
+      "summary": "用户验收当前PR26交付并授权归档合入develop。",
+      "source": "归档合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T05:42:33.944Z",
+      "summary": "同步Change工作流和Change跟踪Specs，统一PR证据、差异边界及缓存失效语义。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T05:42:35.910Z",
+      "summary": "用户验收后完成Specs同步，归档PR记录集成识别及验证证据。",
+      "path": "docs/project/archive/2026-10-24-pr-based-integration"
     }
   },
   "dependsOn": [
@@ -50,9 +67,5 @@
   "types": [
     "修复",
     "流程"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现及验证已推送PR26，等待人工验收后同步Specs、归档并获授权合入develop。"
-  }
+  ]
 }
