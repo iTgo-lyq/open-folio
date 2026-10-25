@@ -26,6 +26,8 @@ npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-c
 
 安装后确认项目内 `.agents/skills/spec-trail/` 包含完整目录，其他客户端的入口由安装器管理。工作流由 Agent 执行，脚本校验流程状态、原型发布引用和 Git 兜底产物。
 
+若此前从独立的 `iTgo-lyq/spec-trail` 仓库安装，先重新执行上面的 `skills add iTgo-lyq/open-folio` 命令，切换安装来源；随后再使用下方更新命令。
+
 更新项目内安装：
 
 ```bash
@@ -65,7 +67,7 @@ Agent 会按任务规模整理文档、确认必要的决策并推进 Change。�
 | 状态操作   | `change.json` 的语义命令及共享字段校验                                                        |
 | 接入检查   | 只读环境检查，以及业务项目现有 hook 的接入指导                                                |
 | 关闭与归档 | 验证、验收、Specs 同步和完整 Change 历史；通过关联 PR 集成到 develop，再按用户要求发布到 main |
-| 可选原型   | 宿主构建与托管、main 当前清单、Change 固定版本引用，以及 Git 单 HTML 兜底                     |
+| 可选原型   | 宿主构建与托管、集成分支当前清单、Change 固定版本引用，以及 Git 单 HTML 兜底                  |
 
 业务项目中的文档结构：
 
