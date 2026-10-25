@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { SnapshotStore } from "../src/server/store.ts";
+import type { ProviderPullRequest } from "../src/server/providers/types.ts";
+import type { DeliveryReader } from "../src/server/pull-requests.ts";
 import { GitReader } from "../src/server/git.ts";
 export async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "openfolio-test-")),
@@ -70,6 +72,43 @@ export async function fixture() {
     commit();
     git(["checkout", original]);
   };
+  const pullRequests: ProviderPullRequest[] = [];
+  const delivery: DeliveryReader = {
+    repositoryId: "1",
+    cacheKey: "fixture:1",
+    list: async ({ base }) => ({
+      items: pullRequests.filter((pr) => pr.base.branch === base),
+      nextCursor: null,
+    }),
+  };
+  const context = {
+    delivery,
+    signal: new AbortController().signal,
+    beforePublish: async () => {},
+  };
+  const readPullRequests = async () => ({ repositoryId: "1", pullRequests });
+  const recordMerge = (
+    id: string,
+    branch: string,
+    commit = git(["rev-parse", "HEAD"]),
+  ) => {
+    const number = pullRequests.length + 1;
+    const parents = git(["show", "-s", "--format=%P", commit]).split(" ");
+    const pr: ProviderPullRequest = {
+      number,
+      title: `Deliver ${id}`,
+      url: `https://github.com/demo/work/pull/${number}`,
+      body: `Delivery\n\nSpecTrail-Change: ${id}`,
+      state: "merged",
+      draft: false,
+      base: { repositoryId: "1", branch: "develop", commit: parents[0] },
+      head: { repositoryId: "1", branch, commit: parents[1] ?? commit },
+      mergeCommit: commit,
+      updatedAt: "2026-10-25T00:00:00Z",
+    };
+    pullRequests.push(pr);
+    return pr;
+  };
   const project = {
     id: "fixture",
     integrationBranch: "develop",
@@ -84,6 +123,11 @@ export async function fixture() {
     );
   return {
     root,
+    pullRequests,
+    delivery,
+    context,
+    readPullRequests,
+    recordMerge,
     remote,
     author,
     project,

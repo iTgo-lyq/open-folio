@@ -87,6 +87,7 @@ test("Git and hosted publications use M after integration, survive source/tag de
     `Deliver\n\nSpecTrail-Change: ${id}`,
   ]);
   const merge = f.g.git(["rev-parse", "HEAD"]);
+  f.g.recordMerge(id, branch, merge);
   f.g.git(["push", "origin", "develop"]);
   f.g.git(["tag", `spec-trail/archive-v2/${id}`, source]);
   f.g.git(["push", "origin", `refs/tags/spec-trail/archive-v2/${id}`]);
@@ -142,6 +143,7 @@ test("Git and hosted publications use M after integration, survive source/tag de
     `Duplicate\n\nSpecTrail-Change: ${id}`,
   ]);
   f.g.git(["push", "origin", "develop"]);
+  f.g.recordMerge(id, branch);
   await read((ctx) => ctx.refresh(DEFAULT_LIMITS));
   const invalid = await read((ctx) =>
     ctx.store.preview(ctx.project, id, merge, DEFAULT_LIMITS),

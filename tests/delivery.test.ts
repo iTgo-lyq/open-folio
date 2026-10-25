@@ -1,3 +1,4 @@
+import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { integrationFixture } from "./integration-fixture.ts";
@@ -196,10 +197,9 @@ test("verified merged PR facts survive missing, ambiguous or unreadable diff ind
   ]) {
     const result = await collectDelivery({
       changes: snapshot.changes,
-      integrations: {
-        ...snapshot.integrations,
-        records: record ? { example: record } : {},
-      },
+      integrationTip: snapshot.integrations.tip,
+      readIntegration: async () =>
+        record ?? { status: "missing" as const, message: "No diff" },
       integrationBranch: "develop",
       releaseSource: snapshot.releaseSource!,
       reader: r.reader,
@@ -217,7 +217,9 @@ test("verified merged PR facts survive missing, ambiguous or unreadable diff ind
   r.set([{ ...pr(), state: "merged", mergeCommit: oid("f") }]);
   const unknown = await collectDelivery({
     changes: snapshot.changes,
-    integrations: { ...snapshot.integrations, records: {} },
+    integrationTip: snapshot.integrations.tip,
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
     integrationBranch: "develop",
     releaseSource: snapshot.releaseSource!,
     reader: r.reader,
@@ -234,7 +236,9 @@ test("draft work, ambiguous matches, invalid M and incomplete pagination retain 
   const r = remote();
   const input = {
     changes: snapshot.changes,
-    integrations: snapshot.integrations,
+    integrationTip: snapshot.integrations.tip,
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
     integrationBranch: "develop",
     releaseSource: snapshot.releaseSource!,
     reader: r.reader,
@@ -252,12 +256,13 @@ test("draft work, ambiguous matches, invalid M and incomplete pagination retain 
   assert.equal(ambiguous.deliveryByChange.example.stage, "unknown");
   assert.match(ambiguous.deliveryByChange.example.diagnostics.join(), /多个/);
   r.set([pr()]);
+  r.set([{ ...pr(), state: "merged", mergeCommit: oid("f") }]);
   const invalid = await collectDelivery({
     ...input,
-    integrations: {
-      ...snapshot.integrations,
-      records: { example: { status: "invalid", message: "Invalid M" } },
-    },
+    readIntegration: async () => ({
+      status: "invalid" as const,
+      message: "Invalid M",
+    }),
   });
   assert.equal(invalid.deliveryByChange.example.changePrs.length, 1);
   assert.equal(invalid.deliveryByChange.example.stage, "unknown");
@@ -307,7 +312,9 @@ test("unrelated PR read failures do not erase verified delivery phases", async (
   const r = remote();
   const input = {
     changes: initial.changes,
-    integrations: initial.integrations,
+    integrationTip: initial.integrations.tip,
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
     integrationBranch: "develop",
     releaseSource: initial.releaseSource!,
     signal: new AbortController().signal,
@@ -333,14 +340,16 @@ test("unrelated PR read failures do not erase verified delivery phases", async (
   const released = await collectDelivery({
     ...input,
     changes: integrated.changes,
-    integrations: integrated.integrations,
+    integrationTip: integrated.integrations.tip,
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
     reader: {
       ...r.reader,
       list: (q, c, s) =>
         q.base !== "main" ? denied() : r.reader.list(q, c, s),
     },
   });
-  assert.equal(released.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(released.deliveryByChange.example.stage, "unknown");
   assert.equal(released.deliveryByChange.example.changePrsStale, true);
   assert.equal(released.deliveryByChange.example.releasePrsStale, false);
   assert.equal(released.deliveryByChange.example.releasePrs[0].state, "merged");
@@ -362,7 +371,9 @@ test("delivery request count depends on base pages, not the number or history of
   }));
   const input = {
     changes,
-    integrations: snapshot.integrations,
+    integrationTip: snapshot.integrations.tip,
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
     integrationBranch: "develop",
     releaseSource: snapshot.releaseSource!,
     reader: r.reader,

@@ -1,3 +1,4 @@
+import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { completedChange, integrationFixture } from "./integration-fixture.ts";
@@ -82,7 +83,7 @@ test("only the integration archive overrides delivery; removal restores automati
   assert.equal(candidate.branch, "develop");
   assert.equal(candidate.state!.branch, f.branch);
   assert.equal(candidate.validCompleted, true);
-  assert.equal(central.integrations.records.example, undefined);
+  assert.equal(central.integrations.records.example.status, "missing");
   assert.equal(central.deliveryByChange!.example.stage, "releaseMerged");
   assert.deepEqual(central.deliveryByChange!.example.changePrs, []);
   assert.deepEqual(central.deliveryByChange!.example.releasePrs, []);
@@ -152,7 +153,8 @@ test("a central override survives missing history and PR failures without bypass
     };
     const result = await collectDelivery({
       ...input,
-      integrations,
+      integrationTip: integrations.tip,
+      readIntegration: async () => ({ status, message: "Legacy history" }),
       reader: reader("PR_READ_DENIED"),
     });
     assert.equal(result.deliveryByChange.example.stage, "releaseMerged");
@@ -163,7 +165,9 @@ test("a central override survives missing history and PR failures without bypass
     await assert.rejects(
       collectDelivery({
         ...input,
-        integrations: snapshot.integrations,
+        integrationTip: snapshot.integrations.tip,
+        readIntegration: (commit: string, id: string) =>
+          inspectIntegration(f.run, commit, id),
         reader: reader(code),
       }),
       { code },
@@ -184,7 +188,9 @@ test("a central override survives missing history and PR failures without bypass
   });
   const ambiguous = await collectDelivery({
     ...input,
-    integrations: snapshot.integrations,
+    integrationTip: snapshot.integrations.tip,
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
     reader: {
       ...emptyReader,
       list: async (q) => ({
@@ -217,7 +223,9 @@ test("active or invalid candidates cannot become released through an override", 
     candidate.state!.deliveryOverride = "releaseMerged";
     const result = await collectDelivery({
       changes,
-      integrations: snapshot.integrations,
+      integrationTip: snapshot.integrations.tip,
+      readIntegration: (commit: string, id: string) =>
+        inspectIntegration(f.run, commit, id),
       integrationBranch: "develop",
       releaseSource: snapshot.releaseSource!,
       reader: emptyReader,

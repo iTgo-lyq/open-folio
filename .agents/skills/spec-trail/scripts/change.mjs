@@ -25,6 +25,7 @@ import {
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
 import { closedRecord } from "./routing.mjs";
+import { changeIntegration } from "./github-prs.mjs";
 import { checkForUpdates } from "./update-check.mjs";
 import {
   repository,
@@ -332,6 +333,8 @@ async function main() {
       try { git(["merge-base", "--is-ancestor", "HEAD", catalog.commit]); included = true; }
       catch (error) { if (error.status !== 1) throw error; }
       assert(!included, "Source commits are already included in the integration branch");
+      const integration = await changeIntegration(repo, catalog, id, state.branch);
+      assert(integration.status === "missing", "Integrated or unverifiable PR deliveries are read-only");
     } else assert(state.status === "active", "Only active Changes can be modified");
     const recordDir = restoring ? dirname(file) : liveDir;
     const now = new Date().toISOString();

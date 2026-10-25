@@ -47,7 +47,7 @@ async function source() {
   await f.put(`${entry.artifact.path}/index.html`, html("first"));
   const revision = f.commit();
   await f.register({ [state.id]: state.branch });
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   return { ...f, revision };
 }
 const preview = (
@@ -65,12 +65,13 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
   assert.match(initial.html!, /first/);
   await f.put(`${entry.artifact.path}/index.html`, html("not pushed"));
   const next = f.commit(false);
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.match((await preview(f)).html!, /first/);
   f.git(["push"]);
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.equal((await preview(f)).descriptor.revision, next);
-  for (let i = 0; i < 4; i++) await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (let i = 0; i < 4; i++)
+    await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const cold = f.makeStore();
   assert.match(
     (
@@ -94,7 +95,7 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
     }),
   );
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const disabled = await preview(f, f.revision);
   assert.equal(disabled.html, undefined);
   assert.equal(disabled.descriptor.policy.status, "disabled");
@@ -154,11 +155,12 @@ test("integrated archive uses its merge after source deletion and cold rebuild, 
   f.git(["rm", "-r", "--ignore-unmatch", "docs/project/changes/preview-demo"]);
   f.git(["commit", "-m", "Delivery\n\nSpecTrail-Change: preview-demo"]);
   const merged = f.git(["rev-parse", "HEAD"]);
+  f.recordMerge(state.id, state.branch, merged);
   await f.put("docs/project/workflow.json", JSON.stringify(workflow));
   f.commit();
   f.git(["push", "origin", "--delete", state.branch]);
   f.git(["branch", "-d", state.branch]);
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const result = await preview(f);
   assert(result.descriptor.pinned);
   assert.equal(result.descriptor.revision, merged);
@@ -166,7 +168,7 @@ test("integrated archive uses its merge after source deletion and cold rebuild, 
   assert.equal(result.descriptor.entries[0].artifact?.sourceCommit, f.revision);
   await rm(join(f.root, "cache"), { recursive: true, force: true });
   const cold = f.makeStore();
-  await cold.refresh(f.project, DEFAULT_LIMITS);
+  await cold.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.match(
     (
       await cold.preview(
@@ -205,7 +207,7 @@ test("Change previews ignore historical workflow and fail on invalid current con
     if (oldWorkflow === null) f.git(["rm", "docs/project/workflow.json"]);
     else await f.put("docs/project/workflow.json", oldWorkflow);
     const revision = f.commit();
-    await f.store.refresh(f.project, DEFAULT_LIMITS);
+    await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
     assert.match((await preview(f)).html!, /first/);
     assert.match((await preview(f, revision)).html!, /first/);
   }
@@ -213,7 +215,7 @@ test("Change previews ignore historical workflow and fail on invalid current con
   f.git(["checkout", "develop"]);
   await f.put("docs/project/workflow.json", "{broken");
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const invalid = await f.store.preview(
     f.project,
     state.id,
@@ -237,7 +239,7 @@ test("Change previews ignore historical workflow and fail on invalid current con
     }),
   );
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const moved = await preview(f, f.revision);
   assert.equal(moved.html, undefined);
   assert.equal(moved.descriptor.entries[0].available, false);
@@ -254,7 +256,7 @@ test("Change previews ignore historical workflow and fail on invalid current con
     }),
   );
   const invalidRevision = f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const rejected = await preview(f, invalidRevision);
   assert.equal(rejected.html, undefined);
   assert.equal(rejected.descriptor.entries[0].available, false);
@@ -281,7 +283,7 @@ test("previews reject unreachable revisions, invalid entries, symlinks, LFS and 
     join(f.author, entry.artifact.path, "index.html"),
   );
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.equal((await preview(f)).html, undefined);
   await rm(join(f.author, entry.artifact.path, "index.html"));
   await f.put(
@@ -289,14 +291,14 @@ test("previews reject unreachable revisions, invalid entries, symlinks, LFS and 
     "version https://git-lfs.github.com/spec/v1\noid sha256:123\nsize 200\n",
   );
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.match((await preview(f)).descriptor.entries[0].message!, /LFS/);
   await f.put(
     `${entry.artifact.path}/index.html`,
     '<!doctype html><script src="./chunk.js"></script>',
   );
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.match((await preview(f)).descriptor.entries[0].message!, /自包含/);
   await f.put(`${entry.artifact.path}/index.html`, html("valid"));
   await f.put(
@@ -307,7 +309,7 @@ test("previews reject unreachable revisions, invalid entries, symlinks, LFS and 
     }),
   );
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const partial = await preview(f);
   assert.match(partial.html!, /valid/);
   assert.equal(partial.descriptor.entries[1].available, false);
@@ -341,7 +343,7 @@ test("archives without previews need no retention tag, including fixed revision 
       JSON.stringify({ ...archived, previews }),
     );
     const revision = f.commit();
-    await f.store.refresh(f.project, DEFAULT_LIMITS);
+    await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
     for (const version of [undefined, revision]) {
       const result = await f.store.preview(
         f.project,
@@ -369,7 +371,7 @@ test("two Changes can share one exported entry without a separate prototype mani
   );
   const revision = f.commit();
   await f.register({ "shared-consumer": "change/shared-consumer" });
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const original = await preview(f),
     reused = await f.store.preview(
       f.project,
@@ -466,7 +468,7 @@ test("unmerged source archives treat constructor as an ordinary id without reten
   f.git(["push", "origin", tag]);
   await f.register({ [id]: state.branch });
   for (const store of [f.store, f.makeStore()]) {
-    const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
+    const snapshot = await store.refresh(f.project, DEFAULT_LIMITS, f.context);
     assert.equal(Object.hasOwn(snapshot, "archivePins"), false);
     const result = await store.preview(
       f.project,
@@ -499,7 +501,7 @@ test("hosted Change references are fixed, accept any HTTP/HTTPS source, and do n
     JSON.stringify({ ...state, previews: [{ ...base, artifact }] }),
   );
   const first = f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.equal((await preview(f)).descriptor.entries[0].available, true);
   const project = f.project;
   const read = (revision?: string) =>
@@ -555,6 +557,6 @@ test("new Git fallback reads its Change-owned snapshot independently from curren
   );
   await f.put(`${entry.artifact.path}/index.html`, html("current output"));
   f.commit();
-  await f.store.refresh(f.project, DEFAULT_LIMITS);
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.match((await preview(f)).html!, /change snapshot/);
 });

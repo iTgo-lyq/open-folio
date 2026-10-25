@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rename, rm, writeFile } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
-import { checkPullRequest } from "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs";
+import { checkPullRequest as check } from "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 
 const cli = resolve(".agents/skills/spec-trail/setup/scripts/check-pr.mjs");
@@ -11,8 +11,14 @@ const changeBody = "Delivery\n\nSpecTrail-Change: example";
 const releaseBody =
   "Release\n\nSpecTrail-Version: 1.0.0\nSpecTrail-Includes: example";
 type Fixture = Awaited<ReturnType<typeof integrationFixture>>;
+const checkPullRequest = (
+  git: (args: string[]) => string,
+  ev: ReturnType<typeof event>,
+) => check(git, ev, ev.readPullRequests);
+
 function event(f: Fixture, base = "develop", body = changeBody) {
   return {
+    readPullRequests: f.readPullRequests,
     action: "synchronize",
     repository: { id: 1 },
     pull_request: {

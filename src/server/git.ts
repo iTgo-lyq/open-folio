@@ -30,10 +30,7 @@ import {
   changeLocation,
   validBranchName,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
-import {
-  scanIntegrations,
-  INTEGRATION_VERSION,
-} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
@@ -608,8 +605,6 @@ export class GitReader {
         previous &&
         previous.integrationBranch === integrationBranch &&
         JSON.stringify(previous.branches) === JSON.stringify(branches) &&
-        JSON.stringify(previous.integrations) ===
-          JSON.stringify(integrations) &&
         JSON.stringify(previous.routes) === JSON.stringify(routes) &&
         JSON.stringify(previous.releaseSource) ===
           JSON.stringify(releaseSource) &&
@@ -665,40 +660,26 @@ export class GitReader {
       signal.throwIfAborted();
       releaseSource.message = "发布分支暂不可读取，发布结果待核实。";
     }
+    // PR records determine integrations after the known Change catalog is loaded.
+    // Fetch complete Git history so PR ancestry and immutable diffs can be verified.
     if (
-      previous?.integrations?.complete &&
-      previous.integrations.tip === collab.commit &&
-      previous.integrations.version === INTEGRATION_VERSION &&
-      !Object.values(previous.integrations.records).some(
-        (record) => record.status === "unavailable",
-      )
+      (await this.run(["rev-parse", "--is-shallow-repository"], signal))
+        .toString()
+        .trim() === "true"
     ) {
-      integrations = previous.integrations;
-    } else {
-      if (
-        (await this.run(["rev-parse", "--is-shallow-repository"], signal))
-          .toString()
-          .trim() === "true"
-      ) {
-        await this.run(
-          [
-            "fetch",
-            "--no-tags",
-            "--no-recurse-submodules",
-            "--unshallow",
-            "origin",
-            `refs/heads/${integrationBranch}`,
-          ],
-          signal,
-        );
-      }
-      integrations = await scanIntegrations(
-        (args) => this.run(args, signal),
-        collab.commit,
+      await this.run(
+        [
+          "fetch",
+          "--no-tags",
+          "--no-recurse-submodules",
+          "--unshallow",
+          "origin",
+          `refs/heads/${integrationBranch}`,
+        ],
+        signal,
       );
     }
-    for (const message of integrations.issues)
-      diagnostic(message, "INTEGRATION_INVALID");
+    integrations.tip = collab.commit;
     routes = routeCatalog(
       documents
         .filter((d) => d.branch === integrationBranch && changeLocation(d.path))

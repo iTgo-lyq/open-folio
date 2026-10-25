@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "pr-based-integration",
+  "title": "统一依据 PR 识别 Change 集成",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/pr-based-integration",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-25T05:27:10.843Z",
+      "summary": "依据PR记录统一核实Change集成并识别平台默认合并消息",
+      "source": "请调整 OpenFolio / SpecTrail 的 Change 集成识别：统一以 PR 记录为依据，不再依赖合并提交消息中的标记，避免平台生成默认合并消息时漏识别已合入的 Change。新建独立 Change，保留现有 Change。"
+    },
+    "technical": {
+      "at": "2026-10-25T05:29:45.021Z",
+      "summary": "以PR关联和合并提交统一识别并保留独立差异与清理检查",
+      "source": "继续吧"
+    },
+    "plan": {
+      "at": "2026-10-25T05:29:46.795Z",
+      "summary": "先统一CLI与发布检查再接入工作台和缓存并完成回归",
+      "source": "继续吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "以 PR 记录统一 CLI 与发布检查的集成证据",
+      "status": "done",
+      "verification": "28项PR及CLI发布回归、27项自包含测试、类型检查通过；真实已删来源PR25核实通过。",
+      "commitTitle": "pr-based-integration T1: verify integration from PR records"
+    },
+    "T2": {
+      "title": "使工作台状态与差异共同使用 PR 记录并完成整体验证",
+      "status": "done",
+      "verification": "354项项目测试、27项技能测试、5项浏览器回归及9项索引测试通过；类型格式构建通过，独立评审无问题。",
+      "commitTitle": "pr-based-integration T2: derive workspace integration from PR records"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T05:40:58.957Z",
+      "summary": "项目354项、技能27项、浏览器5项及索引9项通过，类型格式构建通过；隔离上下文独立评审无可行动问题。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T05:42:04.647Z",
+      "summary": "用户验收当前PR26交付并授权归档合入develop。",
+      "source": "归档合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T05:42:33.944Z",
+      "summary": "同步Change工作流和Change跟踪Specs，统一PR证据、差异边界及缓存失效语义。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T05:42:35.910Z",
+      "summary": "用户验收后完成Specs同步，归档PR记录集成识别及验证证据。",
+      "path": "docs/project/archive/2026-10-24-pr-based-integration"
+    }
+  },
+  "dependsOn": [
+    "integration-history-recovery"
+  ],
+  "types": [
+    "修复",
+    "流程"
+  ]
+}

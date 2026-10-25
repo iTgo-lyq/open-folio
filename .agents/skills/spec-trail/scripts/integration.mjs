@@ -9,6 +9,7 @@ import { repository, collaborationCatalog, recordsAt, revision, remoteBranch, fe
 import { closedRecord, validBranchName } from './routing.mjs';
 import { validateChange } from './state-schema.mjs';
 import { validChangeId } from './integration-records.mjs';
+import { changeIntegration, githubPullRequests } from './github-prs.mjs';
 import { entryPath } from '../prototype/scripts/contract.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
@@ -112,23 +113,28 @@ function source(repo, catalog, id) {
 }
 
 /** Read-only remote checks (fetches tracking refs), without pushing or deleting. */
-export async function preflight(repo, id) {
+export async function preflight(repo, id, readPullRequests = githubPullRequests) {
   assert(validChangeId(id), 'Invalid Change id');
   const catalog = collaborationCatalog(repo, {refresh:true});
-  if (sourceIdentity(catalog,id).route.kind === 'archive') return inclusion(repo,catalog,id);
-  const result = {integrationBranch:catalog.branch,tip:catalog.commit,
-    mergeMessage:`Merge Change ${id} into ${catalog.branch}\n\nSpecTrail-Change: ${id}`};
+  const {branch,route} = sourceIdentity(catalog,id);
+  const integration = await changeIntegration(repo,catalog,id,branch,readPullRequests);
+  assert(!['invalid','unavailable'].includes(integration.status), integration.message);
+  if (route.kind === 'archive' || integration.status === 'found') return {...inclusion(repo,catalog,id),integration};
+  const result = {integrationBranch:catalog.branch,tip:catalog.commit,integration};
   const delivery = source(repo,catalog,id);
   assert(remoteBranch(repo,delivery.branch) === delivery.commit, 'Push the archived source before preparing its PR');
   return {...result,source:delivery,sourceIncluded:ancestor(repo,delivery.commit,catalog.commit)};
 }
 
-/** Verify source inclusion in remote Git history, independently of PR/diff metadata. */
-export async function verify(repo, id) {
+/** Verify the PR delivery and current source inclusion independently of diff availability. */
+export async function verify(repo, id, readPullRequests = githubPullRequests) {
   assert(validChangeId(id), 'Invalid Change id');
-  const result = inclusion(repo,collaborationCatalog(repo, {refresh:true}),id);
+  const catalog = collaborationCatalog(repo, {refresh:true});
+  const result = inclusion(repo,catalog,id);
+  const integration = await changeIntegration(repo,catalog,id,result.source.branch,readPullRequests);
+  if (integration.status !== 'found') throw Error(`No verified Change PR integration: ${integration.message}`);
   assert(result.sourceIncluded !== false, 'Remote integration branch does not contain all current source commits; retain the source');
-  return result;
+  return {...result,integration};
 }
 
 function dependencies(catalog, branch, id) {

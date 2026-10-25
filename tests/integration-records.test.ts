@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { readFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 import {
-  scanIntegrations,
+  INTEGRATION_VERSION,
   integrationFor,
   inspectIntegration,
 } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
@@ -53,7 +53,7 @@ test("a forced merge preserves a unique delivery after source deletion and a fre
     (dir) => new GitReader(dir, f.remote, "file"),
     f.project.id,
   );
-  const snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
+  const snapshot = await store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const result = integrationFor(snapshot.integrations, f.id);
   assert.equal(result.status, "found");
   if (result.status !== "found") return;
@@ -66,7 +66,7 @@ test("a forced merge preserves a unique delivery after source deletion and a fre
     ["develop"],
   );
   assert.equal(
-    (await store.refresh(f.project, DEFAULT_LIMITS)).id,
+    (await store.refresh(f.project, DEFAULT_LIMITS, f.context)).id,
     snapshot.id,
   );
   assert.equal(
@@ -75,40 +75,30 @@ test("a forced merge preserves a unique delivery after source deletion and a fre
   );
 });
 
-test("ordinary commit markers and prose do not replace or invalidate the unique merge diff", async (t) => {
+test("commit message markers never create or override PR associations", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
-  f.git([
-    "commit",
-    "--allow-empty",
-    "-m",
-    "Side task\n\nSpecTrail-Change: side-task",
-  ]);
-  f.git(["push", "origin", f.branch]);
   const merge = f.merge();
-  assert.equal(
-    integrationFor(await scanIntegrations(f.run, merge), "side-task").status,
-    "missing",
-  );
+  f.git(["checkout", "-b", "noise"]);
+  f.git(["commit", "--allow-empty", "-m", "No new delivery"]);
+  f.git(["checkout", "develop"]);
   f.git([
-    "commit",
-    "--allow-empty",
+    "merge",
+    "--no-ff",
+    "noise",
     "-m",
-    "SpecTrail-Change: example\n\nMention only, without a trailer.",
-  ]);
-  let index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "found");
-  f.git([
-    "commit",
-    "--allow-empty",
-    "-m",
-    "Duplicate\n\nSpecTrail-Change: example",
+    "False association\n\nSpecTrail-Change: example",
   ]);
   f.git(["push", "origin", "develop"]);
-  index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "found");
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(integrationFor(snapshot.integrations, f.id).status, "found");
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  const result = integrationFor(snapshot.integrations, f.id);
+  assert.equal(result.status, "found");
+  if (result.status === "found") assert.equal(result.commit, merge);
+  f.pullRequests.length = 0;
+  const missing = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(integrationFor(missing.integrations, f.id).status, "missing");
+  assert.notEqual(missing.id, snapshot.id);
+  assert.deepEqual(missing.branches, snapshot.branches);
 });
 
 test("diff location needs merge parents but leaves archive content and introduction policy to CI", async (t) => {
@@ -148,52 +138,37 @@ test("diff location needs merge parents but leaves archive content and introduct
   assert.equal(result.status, "found");
 });
 
-test("failed or shallow history is unavailable, and one unreadable archive does not mask another missing id", async (t) => {
+test("unreadable diff objects retain diagnostics without fabricating a diff", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const merge = f.merge();
-  const shallow = await scanIntegrations(
-    async (args) => (args[0] === "rev-parse" ? "true" : f.run(args)),
-    merge,
-  );
-  assert.equal(integrationFor(shallow, f.id).status, "unavailable");
-  const broken = await scanIntegrations(async (args) => {
-    if (args[0] === "log") throw Error("missing history");
-    return f.run(args);
-  }, merge);
-  assert.equal(integrationFor(broken, "unknown").status, "unavailable");
-  const missingObject = await scanIntegrations(async (args) => {
-    if (args[0] === "ls-tree") throw Error("missing object");
-    return f.run(args);
-  }, merge);
-  assert.equal(missingObject.complete, true);
-  assert.equal(integrationFor(missingObject, f.id).status, "unavailable");
-  assert.equal(integrationFor(missingObject, "unknown").status, "missing");
+  for (const operation of ["log", "ls-tree"]) {
+    const result = await inspectIntegration(
+      async (args) => {
+        if (args[0] === operation) throw Error("Object missing");
+        return f.run(args);
+      },
+      merge,
+      f.id,
+    );
+    assert.equal(result.status, "unavailable");
+  }
 });
 
-test("duplicate trailers remain ambiguous while archived state is checked by readers and CI", async (t) => {
+test("prototype-named Change ids use own records and duplicate PRs are ambiguous", async (t) => {
   const f = await integrationFixture("constructor");
   t.after(f.cleanup);
   f.merge();
-  let index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "found");
-  f.git([
-    "commit",
-    "--amend",
-    "-m",
-    "Merge\n\nSpecTrail-Change: constructor\nSpecTrail-Change: constructor",
-  ]);
-  index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "invalid");
-  f.git(["commit", "--amend", "-m", "Merge\n\nSpecTrail-Change: constructor"]);
-  await f.put(
-    `${f.archivePath}/change.json`,
-    JSON.stringify({ ...f.record, status: "active" }),
-  );
-  f.git(["add", "."]);
-  f.git(["commit", "--amend", "--no-edit"]);
-  index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "found");
+  const before = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(integrationFor(before.integrations, f.id).status, "found");
+  f.pullRequests.push({
+    ...f.pullRequests[0],
+    number: 2,
+    url: "https://github.com/demo/work/pull/2",
+  });
+  const after = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(integrationFor(after.integrations, f.id).status, "invalid");
+  assert.equal(after.deliveryByChange?.[f.id].stage, "unknown");
 });
 
 test("a transient candidate read failure is retried even if the collaboration tip is unchanged", async (t) => {
@@ -218,16 +193,16 @@ test("a transient candidate read failure is retried even if the collaboration ti
     (dir) => new Reader(dir, f.remote, "file"),
     f.project.id,
   );
-  const before = await store.refresh(f.project, DEFAULT_LIMITS);
+  const before = await store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.equal(integrationFor(before.integrations, f.id).status, "unavailable");
   fail = false;
-  const after = await store.refresh(f.project, DEFAULT_LIMITS);
+  const after = await store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.equal(integrationFor(after.integrations, f.id).status, "found");
   assert.notEqual(after.id, before.id);
   assert.deepEqual(after.branches, before.branches);
 });
 
-test("ordinary Git history finds the original merge after concurrent synchronization and rebuilds an old same-tip index", async (t) => {
+test("PR history finds the original merge after concurrent synchronization and rebuilds an old same-tip index", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const merge = f.merge();
@@ -240,7 +215,7 @@ test("ordinary Git history finds the original merge after concurrent synchroniza
   assert.ok(
     !f.git(["rev-list", "--first-parent", sync]).split("\n").includes(merge),
   );
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const record = integrationFor(snapshot.integrations, f.id);
   assert.equal(record.status, "found");
   if (record.status !== "found") return;
@@ -248,25 +223,38 @@ test("ordinary Git history finds the original merge after concurrent synchroniza
   assert.equal(record.base, f.base);
   const old = structuredClone(snapshot);
   old.integrations = { ...old.integrations, version: 1, records: {} };
-  const reader = new GitReader(
-    join(f.store.directory(), "git"),
-    f.remote,
-    "file",
+  await writeFile(
+    join(f.store.directory(), "snapshots", `${old.id}.json`),
+    JSON.stringify(old),
   );
-  const data = await reader.collect(
-    DEFAULT_LIMITS,
-    AbortSignal.timeout(DEFAULT_LIMITS.refreshMs),
-    "develop",
-    {
-      snapshot: old,
-      readBlob: (blob) => readFile(join(f.store.directory(), "blobs", blob)),
-    },
-  );
-  assert.equal(data.integrations.tip, old.integrations.tip);
-  assert.equal(data.integrations.version, 2);
-  assert.equal(integrationFor(data.integrations, f.id).status, "found");
+  const refreshed = await f.store.refresh(f.project, DEFAULT_LIMITS, {
+    ...f.context,
+    automatic: true,
+  });
+  assert.equal(refreshed.integrations.tip, old.integrations.tip);
+  assert.equal(refreshed.integrations.version, INTEGRATION_VERSION);
+  assert.equal(integrationFor(refreshed.integrations, f.id).status, "found");
   const summary = await (
-    await f.store.integration(f.project, f.id, snapshot.id)
+    await f.store.integration(f.project, f.id, refreshed.id)
   ).summary();
   assert.equal(summary.record.status, "found");
+});
+
+test("PR body changes at the same Git tip refresh associations without reusing stale evidence", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.merge();
+  const first = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  const original = f.pullRequests[0].body;
+  f.pullRequests[0].body = "PR\n\nSpecTrail-Change: unrelated";
+  const second = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(integrationFor(second.integrations, f.id).status, "missing");
+  assert.equal(second.deliveryByChange?.example.stage, "pendingIntegration");
+  assert.deepEqual(first.branches, second.branches);
+  assert.notEqual(first.id, second.id);
+  f.pullRequests[0].body = original;
+  const third = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(integrationFor(third.integrations, f.id).status, "found");
+  const fourth = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(fourth.id, third.id);
 });
