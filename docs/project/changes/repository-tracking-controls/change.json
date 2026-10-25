@@ -4,13 +4,13 @@
   "title": "归档仓库自动退出追踪并支持手动停止追踪",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/repository-tracking-controls",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一归档过滤、追踪偏好和仓库列表恢复入口并验证",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
