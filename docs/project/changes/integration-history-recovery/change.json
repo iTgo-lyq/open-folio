@@ -4,7 +4,7 @@
   "title": "并发同步后保留有效合入识别",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/integration-history-recovery",
   "confirmations": {
     "requirement": {
@@ -31,7 +31,13 @@
       "commitTitle": "integration-history-recovery T1: separate source inclusion from diff lookup"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T05:19:22.126Z",
+      "summary": "344项项目与27项自包含测试、类型格式检查和构建通过；独立评审发现的引用读取问题已修复并复验通过。"
+    }
+  },
   "types": [
     "修复",
     "流程"
@@ -40,5 +46,9 @@
     "at": "2026-10-25T05:03:29.336Z",
     "reason": "用户要求去掉过度的合入格式门禁，将差异定位与来源清理解耦。",
     "approach": "以 Git 祖先关系确认代码纳入，保留防误删检查，归档完整性放在合入前 CI。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "简化实现及整体验证完成，等待人工验收后归档合入 develop。"
   }
 }
