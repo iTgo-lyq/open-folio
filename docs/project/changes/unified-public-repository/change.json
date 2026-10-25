@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "unified-public-repository",
+  "title": "统一公开仓库与 SpecTrail 分发",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一技能和介绍站分发、迁移公开仓库并补记历史发布状态",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "工程",
+    "安全"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "新仓库是否沿用 iTgo-lyq/open-folio，旧库改名为 open-folio-legacy 并保留私有归档？",
+      "recommendation": "新仓库沿用原名，旧库改名并保持私有归档。",
+      "answer": "沿用 iTgo-lyq/open-folio；旧库改名为 open-folio-legacy 并保留私有归档。",
+      "source": "用户回答：你说的没问题。"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "新仓库保留清理后的提交历史，还是从当前代码建立新的初始提交？",
+      "recommendation": "保留已清理的提交历史，只放弃旧 PR 记录。",
+      "answer": "保留已清理的提交历史，只放弃旧 PR 记录。",
+      "source": "用户选择：保留已清理的提交历史，只放弃旧 PR 记录。"
+    }
+  }
+}
