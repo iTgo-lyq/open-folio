@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/change-focus-and-archive",
   "confirmations": {
     "requirement": {
       "at": "2026-10-23T11:46:59.017Z",
