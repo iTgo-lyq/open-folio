@@ -15,10 +15,8 @@ import {
 
 const emptyReader: DeliveryReader = {
   repositoryId: "12",
+  cacheKey: "test:12:v1",
   list: async () => ({ items: [], nextCursor: null }),
-  get: async () => {
-    throw Error("Unexpected PR lookup");
-  },
 };
 const context = {
   delivery: emptyReader,
