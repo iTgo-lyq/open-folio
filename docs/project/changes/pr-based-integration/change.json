@@ -13,7 +13,16 @@
       "source": "请调整 OpenFolio / SpecTrail 的 Change 集成识别：统一以 PR 记录为依据，不再依赖合并提交消息中的标记，避免平台生成默认合并消息时漏识别已合入的 Change。新建独立 Change，保留现有 Change。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "以 PR 记录统一 CLI 与发布检查的集成证据",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "使工作台状态与差异共同使用 PR 记录并完成整体验证",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "dependsOn": [
     "integration-history-recovery"
@@ -21,5 +30,9 @@
   "types": [
     "修复",
     "流程"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案与计划已准备，等待确认后实施 PR 集成识别。"
+  }
 }
