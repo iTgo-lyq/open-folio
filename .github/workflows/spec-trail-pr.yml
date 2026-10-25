@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: spec-trail-pr-${{ github.event.pull_request.number }}
@@ -32,4 +33,6 @@ jobs:
           node-version: "24"
 
       - name: Require completed archives
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node .agents/skills/spec-trail/setup/scripts/check-pr.mjs

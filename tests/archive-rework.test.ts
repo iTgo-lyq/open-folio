@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
+import { githubCli } from "./github-cli-fixture.ts";
 import { integrationFixture } from "./integration-fixture.ts";
 const cli = resolve(".agents/skills/spec-trail/scripts/change.mjs");
-const restore = (repo: string) =>
+const restore = (repo: string, env = process.env) =>
   JSON.parse(
     execFileSync(
       process.execPath,
@@ -23,7 +24,7 @@ const restore = (repo: string) =>
         "--approach",
         "Repair then validate",
       ],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env },
     ),
   );
 
@@ -46,7 +47,7 @@ test("an unintegrated archive restores its documents and Git prototype for PR re
     await f.put(`${path}/index.html`, "<html>Accepted prototype</html>");
     await f.put(`${f.archivePath}/change.json`, JSON.stringify(record));
     f.commit();
-    const result = restore(f.author);
+    const result = restore(f.author, await githubCli(f));
     assert.equal(result.state.status, "active");
     assert.equal(result.state.stage, "execution");
     assert.deepEqual(result.state.closure, {});

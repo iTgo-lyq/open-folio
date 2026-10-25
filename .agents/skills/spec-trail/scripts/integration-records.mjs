@@ -1,28 +1,59 @@
-import { trailingFields } from './pr-markers.mjs';
+import { prMarker } from './pr-markers.mjs';
 import { changeLocation } from './routing.mjs';
 
-export const INTEGRATION_VERSION = 2;
+export const INTEGRATION_VERSION = 3;
 export const validChangeId = (id) => typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
 const sha = (value) => /^[a-f0-9]{40,64}$/.test(value);
-const format = '%H%x00%P%x00%cI%x00%s%x00%B%x00';
+const format = '%H%x00%P%x00%cI%x00%s%x00';
 /** @typedef {{status:'found', commit:string, base:string, source:string, archivePath:string, title:string, committedAt:string}} IntegrationRecord */
 /** @typedef {IntegrationRecord | {status:'missing'|'invalid'|'unavailable', message:string, candidates?:string[]}} IntegrationResult */
 /** @typedef {{version:number, tip:string|null, complete:boolean, records:Record<string,IntegrationResult>, issues:string[], message?:string}} IntegrationIndex */
 /** @typedef {(args:string[]) => Promise<Buffer|string>} GitRun */
 
-export function changeTrailers(message) {
-  return trailingFields(message).filter(field => field.key === 'SpecTrail-Change').map(field => field.value);
+/** @typedef {{number:number,state:string,mergeCommit:string|null,base:{repositoryId:string,branch:string},head:{repositoryId:string|null,branch:string},body?:string,marker?:ReturnType<typeof prMarker>}} ChangePullRequest */
+/** Exact PR association; commit messages are never association metadata.
+ * @template {ChangePullRequest} T @param {T[]} prs
+ * @param {{repositoryId:string,integrationBranch:string,id:string,branch:string}} identity
+ * @returns {T[]}
+ */
+export function changePullRequests(prs, {repositoryId, integrationBranch, id, branch}) {
+  return prs.filter(pr => {
+    const marker = pr.marker ?? prMarker(pr.body ?? '');
+    return pr.base.repositoryId === repositoryId && pr.head.repositoryId === repositoryId &&
+      pr.base.branch === integrationBranch && pr.head.branch === branch &&
+      marker.kind === 'change' && marker.id === id;
+  });
+}
+
+/** @typedef {{status:'found', commit:string} | {status:'missing'|'invalid'|'unavailable',message:string,candidates?:string[]}} IntegrationEvidence */
+/** Resolve already-associated PRs independently of diff availability.
+ * @param {(before:string,after:string)=>Promise<boolean>} ancestor
+ * @param {string|null} tip @param {Array<{state:string,mergeCommit:string|null}>} prs
+ * @returns {Promise<IntegrationEvidence>}
+ */
+export async function integrationEvidence(ancestor, tip, prs) {
+  const merged = prs.filter(pr => pr.state === 'merged');
+  if (!merged.length) return {status:'missing',message:'暂无已合并的关联 PR'};
+  if (merged.length !== 1) return {status:'invalid',message:'存在多个已合并的关联 Change PR，无法唯一确定交付。',candidates:merged.flatMap(pr => pr.mergeCommit ? [pr.mergeCommit] : [])};
+  const commit = merged[0].mergeCommit;
+  if (!sha(tip) || !sha(commit)) return {status:'unavailable',message:'PR 合并提交或集成版本尚不可读取。'};
+  try {
+    if (await ancestor(commit, tip)) return {status:'found',commit};
+    return {status:'unavailable',message:'PR 已合并，但合并提交尚未进入当前集成版本。',candidates:[commit]};
+  } catch {
+    return {status:'unavailable',message:'PR 合并提交的 Git 历史暂不可读取。',candidates:[commit]};
+  }
 }
 
 function commits(output) {
   const parts = output.toString().split('\0');
   if (parts.pop().trim()) throw Error('Incomplete commit metadata');
-  if (parts.length % 5) throw Error('Invalid commit metadata');
+  if (parts.length % 4) throw Error('Invalid commit metadata');
   const result = [];
-  for (let i = 0; i < parts.length; i += 5) {
+  for (let i = 0; i < parts.length; i += 4) {
     const commit = parts[i].trim(), parents = parts[i + 1].split(' ').filter(Boolean);
     if (!sha(commit) || !parents.every(sha)) throw Error('Invalid commit identity');
-    result.push({commit, parents, committedAt:parts[i + 2], title:parts[i + 3], message:parts[i + 4]});
+    result.push({commit, parents, committedAt:parts[i + 2], title:parts[i + 3]});
   }
   return result;
 }
@@ -46,8 +77,6 @@ function validator(run) {
   return async (meta, id) => {
     const invalid = (message) => ({status: /** @type {const} */('invalid'), message, candidates:[meta.commit]});
     if (meta.parents.length !== 2) return invalid('合入差异需要恰有两个父提交的合并提交。');
-    const markers = changeTrailers(meta.message);
-    if (markers.length !== 1 || markers[0] !== id) return invalid('合入提交的 Change 标记必须唯一且合法。');
     try {
       const [base, source] = meta.parents;
       const own = (await catalog(meta.commit)).filter(entry => entry.id === id && entry.archived);
@@ -73,35 +102,11 @@ export async function inspectIntegration(run, commit, id) {
   } catch { return {status:'unavailable',message:'合入提交暂不可读取。',candidates:[commit]}; }
 }
 
-/** @param {GitRun} run @param {string} tip @returns {Promise<IntegrationIndex>} */
+/** PR collection must be supplied by the caller; Git alone cannot discover integrations.
+ * @param {GitRun} run @param {string} tip @returns {Promise<IntegrationIndex>}
+ */
 export async function scanIntegrations(run, tip) {
-  /** @type {IntegrationIndex} */
-  const index = {version:INTEGRATION_VERSION,tip,complete:false,records:{},issues:[]};
-  const groups = new Map(), validate = validator(run);
-  try {
-    if (!sha(tip)) throw Error('Invalid collaboration commit');
-    if ((await run(['rev-parse','--is-shallow-repository'])).toString().trim() !== 'false') throw Error('Shallow history');
-    for (let offset = 0; ; offset += 256) {
-      const batch = commits(await run(['log','--merges','--max-count=256',`--skip=${offset}`,`--format=${format}`,tip,'--']));
-      for (const meta of batch) {
-        const markers = changeTrailers(meta.message);
-        if (markers.some(id => !validChangeId(id))) index.issues.push(`${meta.commit}: Change 标记包含非法 id。`);
-        for (const id of new Set(markers.filter(validChangeId))) {
-          const list = groups.get(id) ?? []; list.push(meta); groups.set(id, list);
-        }
-      }
-      if (batch.length < 256) break;
-    }
-    for (const [id, list] of groups) {
-      const result = list.length > 1
-        ? {status: /** @type {const} */('invalid'), message:'集成历史中存在多个带同一 Change 标记的合并提交，差异无法唯一定位。', candidates:list.map(meta => meta.commit)}
-        : await validate(list[0], id);
-      // IDs may be valid object prototype names (e.g. constructor).
-      Object.defineProperty(index.records,id,{value:result,enumerable:true,writable:true,configurable:true});
-    }
-    index.complete = true;
-  } catch { index.message = '集成分支历史读取未完成，请获取完整历史后重试。'; }
-  return index;
+  return {version:INTEGRATION_VERSION,tip,complete:false,records:{},issues:[],message:'合入索引等待 PR 记录核实。'};
 }
 
 /** @param {IntegrationIndex} index @param {string} id @returns {IntegrationResult} */

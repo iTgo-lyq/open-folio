@@ -53,10 +53,12 @@ export async function integrationFixture(id = "example") {
       "--no-ff",
       branch,
       "-m",
-      `Merge Change ${id} into develop\n\nSpecTrail-Change: ${id}`,
+      `Merge pull request #1 from ${branch}`,
     ]);
     f.git(["push", "origin", "develop"]);
-    return f.git(["rev-parse", "HEAD"]);
+    const commit = f.git(["rev-parse", "HEAD"]);
+    f.recordMerge(id, branch, commit);
+    return commit;
   };
   return {
     ...f,

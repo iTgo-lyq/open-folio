@@ -8,7 +8,8 @@ import { recordsAt } from '../../scripts/repository.mjs';
 import { validateChange, validateWorkflow } from '../../scripts/state-schema.mjs';
 import { closedRecord, validBranchName } from '../../scripts/routing.mjs';
 import { prMarker } from '../../scripts/pr-markers.mjs';
-import { integrationFor, scanIntegrations } from '../../scripts/integration-records.mjs';
+import { changePullRequests, integrationEvidence } from '../../scripts/integration-records.mjs';
+import { githubPullRequests } from '../../scripts/github-prs.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const sha = value => typeof value === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(value);
@@ -25,7 +26,7 @@ function archive(records, id) {
 }
 
 /** Read only the PR's fixed Git objects; never fetch, execute project code or change state. */
-export async function checkPullRequest(git, event) {
+export async function checkPullRequest(git, event, readPullRequests = githubPullRequests) {
   const pr = event?.pull_request;
   assert(pr && sha(pr.head?.sha) && sha(pr.base?.sha) &&
     validBranchName(pr.head?.ref) && validBranchName(pr.base?.ref), 'Invalid PR source or target');
@@ -58,14 +59,20 @@ export async function checkPullRequest(git, event) {
   assert(pr.base.ref === config.releaseBranch, 'PR target does not match a configured delivery branch');
   assert(marker.kind === 'release', 'Release PR requires trailing SpecTrail-Version and SpecTrail-Includes markers');
   const integrationTip = git(['rev-parse', '--verify', `refs/remotes/origin/${config.integrationBranch}^{commit}`]);
-  const index = await scanIntegrations(async args => git(args), integrationTip);
+  const {repositoryId,pullRequests} = await readPullRequests({git},config.integrationBranch);
+  assert(repositoryId === String(event.repository.id), 'PR collection repository does not match the event');
   for (const id of marker.includes) {
     const record = archive(records, id);
-    const integration = integrationFor(index, id);
+    const prs = changePullRequests(pullRequests,{repositoryId,integrationBranch:config.integrationBranch,id,branch:record.state.branch});
+    const integration = await integrationEvidence(async (before,after) => {
+      try { git(['merge-base','--is-ancestor',before,after]); return true; }
+      catch (error) { if (error.status === 1) return false; throw error; }
+    },integrationTip,prs);
     assert(integration.status === 'found', `Change ${id}: release requires verified integration history`);
     assert(git(['merge-base', integration.commit, pr.head.sha]) === integration.commit,
       `Change ${id}: integrated delivery is not in the release candidate`);
-    assert(record.directory === integration.archivePath &&
+    const delivered = archive(recordsAt({git}, integration.commit), id);
+    assert(record.directory === delivered.directory &&
       git(['rev-parse', `${pr.head.sha}:${record.directory}`]) ===
       git(['rev-parse', `${integration.commit}:${record.directory}`]),
     `Change ${id}: release candidate modified its integrated archive`);

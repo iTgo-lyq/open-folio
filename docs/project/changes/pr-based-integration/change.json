@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "以 PR 记录统一 CLI 与发布检查的集成证据",
-      "status": "doing"
+      "status": "done",
+      "verification": "28项PR及CLI发布回归、27项自包含测试、类型检查通过；真实已删来源PR25核实通过。",
+      "commitTitle": "pr-based-integration T1: verify integration from PR records"
     },
     "T2": {
       "title": "使工作台状态与差异共同使用 PR 记录并完成整体验证",

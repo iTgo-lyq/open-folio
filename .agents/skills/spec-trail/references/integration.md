@@ -14,23 +14,25 @@ SpecTrail-Change: example
 node .agents/skills/spec-trail/scripts/integration.mjs preflight --change example
 ```
 
-预检只定向获取引用并检查，输出源 SHA、目标和合并消息。通过后将已有 Draft 转为可审阅；缺失时补建。未归档不得合入，已接入的归档 CI 须通过。按已有授权普通 merge，并传入预期源 SHA；合并消息末尾保留同一标记。源或目标推进后重新预检并核对 CI 与受影响验证。只允许 squash/rebase 或无法保留消息时报告受阻，不回退直推。
+预检只定向获取引用并检查，输出源 SHA、目标和 PR 合入核实结果。通过后将已有 Draft 转为可审阅；缺失时补建。未归档不得合入，已接入的归档 CI 须通过。按已有授权普通 merge，并传入预期源 SHA；关联标记仅放在 PR 正文，允许平台生成默认合并消息。源或目标推进后重新预检并核对 CI 与受影响验证。只允许 squash/rebase 时报告受阻，不回退直推。
 
-合入响应未知、排队或受理时先查平台 PR 状态与远端 Git，不能据此宣称成功。verify 独立检查当前本地/远端来源 tip 是否均已纳入远端集成历史，不依赖 Change 标记、第一父位置或差异索引：
+合入响应未知、排队或受理时先查平台 PR 状态与远端 Git，不能据此宣称成功。verify 按同仓库、登记来源、集成目标和 PR 正文唯一标记关联已合并 PR，核实其合并提交属于固定远端集成历史；同时检查当前本地/远端来源 tip 是否均已纳入，不依赖合并消息、第一父位置或差异索引：
 
 ```bash
 node .agents/skills/spec-trail/scripts/integration.mjs verify --change example
 ```
 
-verify 返回 integrationBranch、tip、source（branch / remote / local）、sourceIncluded 与 sourceAbsent。sourceIncluded=true 表示当前来源提交已纳入；false 时命令失败并保留来源。来源引用均已删除时 sourceAbsent=true、sourceIncluded=null，表示已无来源可比较，不代替平台 PR 的合入事实。
+verify 返回 integration（PR 合并提交）、integrationBranch、tip、source（branch / remote / local）、sourceIncluded 与 sourceAbsent。sourceIncluded=true 表示当前来源提交已纳入；false 时命令失败并保留来源。来源引用均已删除时 sourceAbsent=true、sourceIncluded=null，表示已无来源可比较，仍可通过平台 PR 核实原合入事实。
 
-工作台通过普通 Git 合并历史及唯一 Change 标记定位 M，差异固定为 M^1 到 M；该定位失败或存在歧义只影响差异展示。已合并 PR 的合并提交属于目标历史时，合入事实仍成立。归档完整性在合入前 CI 检查，合入后不重演归档交付校验。
+工作台、CLI 与发布检查统一通过 PR 记录定位 M，提交消息不作为关联依据，差异固定为 M^1 到 M；双亲结构或归档目录无法读取时仅差异不可用；多个已合并 PR 则属于正式交付歧义，不能任选。已合并 PR 的合并提交属于目标历史时，合入事实仍成立。归档完整性在合入前 CI 检查，合入后不重演归档交付校验。
+
+本地 PR 核实使用已登录的 `gh` 读取 origin 对应仓库，需 Pull requests: read 权限；发布 CI 使用只读 GITHUB_TOKEN。平台失败或分页不完整时明确报告待核实，不退回 Git 消息标记。OpenFolio 复用现有批量 PR 缓存；即使 Git tip 不变，PR 关联修改也触发重新计算。
 
 ## 返修
 
-归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `change.mjs rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。命令刷新集中入口并检查来源是否已纳入目标，移回文档并恢复原型路径；已完成任务保留，关闭记录清除。重新交付前复查远端与源 SHA。
+归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `change.mjs rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。命令刷新集中入口、核实 PR 尚未合并并检查来源是否已纳入目标，移回文档并恢复原型路径；已完成任务保留，关闭记录清除。重新交付前复查远端与源 SHA。
 
-已集成、路由冲突、无标记合入或历史不可读均不自动恢复；本地锁不能阻止远端并发合并。已集成后的修正建立新 Change。
+已集成、路由冲突、来源已纳入目标、PR 记录或历史不可读均不自动恢复；本地锁不能阻止远端并发合并。已集成后的修正建立新 Change。
 
 ## 清理
 
