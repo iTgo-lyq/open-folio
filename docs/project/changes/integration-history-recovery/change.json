@@ -13,10 +13,19 @@
       "source": "继续吧"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "同步合并后持续识别并验证原始交付",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "修复",
     "流程"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案与执行计划已准备，等待确认后实施。"
+  }
 }
