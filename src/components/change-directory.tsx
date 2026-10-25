@@ -46,8 +46,13 @@ import {
   sortDirectoryChanges,
 } from "@/lib/change-directory";
 import { useSavedScroll, useWorkspace } from "./context";
+import { ChangeViewManager, ChangeViewActions } from "./change-view-manager";
 import { useChangeViews } from "./change-views-context";
-import { queryToUrl } from "@/lib/change-views";
+import {
+  queryToUrl,
+  sameQuery,
+  defaultRepositoryViews,
+} from "@/lib/change-views";
 import { usePersonal } from "./personal-context";
 import { useMediaQuery } from "./use-media";
 import { Empty } from "./document";
@@ -176,14 +181,29 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   const scroll = useSavedScroll(
     `${projectId}.changes.${query.scope}.${board ? "board" : "list"}`,
   );
+  const mine = views.record?.views.find((v) => v.id === "mine");
+  const intrinsicMine =
+    q.changeView === "mine" &&
+    !!mine &&
+    sameQuery(mine.query, defaultRepositoryViews().views[0].query);
+  const systemState = q.changeView?.startsWith("system:")
+    ? q.changeView.slice(7)
+    : !q.changeView && query.scope !== "mixed"
+      ? query.scope
+      : undefined;
+  const intrinsicState = intrinsicMine ? "active" : systemState;
+  const visibleStates = query.states.filter(
+    (state) => state !== intrinsicState,
+  );
+  const showSelf = query.creatorSelf && !intrinsicMine;
   const clear = () =>
     nav({
       types: null,
       noTypes: null,
       urgency: null,
       creator: null,
-      creatorSelf: null,
-      states: "[]",
+      creatorSelf: intrinsicMine ? "1" : null,
+      states: JSON.stringify(intrinsicState ? [intrinsicState] : []),
     });
   const toggle = (
     key: "types" | "creator" | "urgency" | "states",
@@ -225,16 +245,14 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
     Number(query.labels.noTypes) +
     query.urgencies.length +
     query.creators.length +
-    Number(query.creatorSelf) +
-    (query.scope === "mixed" ? query.states.length : 0);
+    Number(showSelf) +
+    visibleStates.length;
   const chips = [
-    ...(query.scope === "mixed"
-      ? query.states.map((v) => ({
-          key: "states" as const,
-          value: v,
-          label: DIRECTORY_LABELS[v],
-        }))
-      : []),
+    ...visibleStates.map((v) => ({
+      key: "states" as const,
+      value: v,
+      label: DIRECTORY_LABELS[v],
+    })),
     ...query.labels.types.map((v) => ({
       key: "types" as const,
       value: v,
@@ -469,6 +487,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         </header>
         <div className={styles.toolbar}>
           <Tabs
+            className={styles.viewTabs}
             value={
               query.issues
                 ? "issues"
@@ -538,6 +557,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                 ))}
             </TabsList>
           </Tabs>
+          <ChangeViewManager />
           <span className={styles.spacer} />
           <Menu>
             <MenuTrigger asChild>
@@ -692,6 +712,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
             </MenuContent>
           </Menu>
         </div>
+        <ChangeViewActions />
         {views.error && (
           <div role="status">
             {views.error}
@@ -702,7 +723,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         )}
         {!!filterCount && (
           <div className={styles.chips} aria-label="已选筛选">
-            {query.creatorSelf && (
+            {showSelf && (
               <button
                 aria-label="移除筛选 创建者：我"
                 onClick={() => nav({ creatorSelf: null })}
@@ -751,7 +772,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         {!visible.length ? (
           <Empty
             title={
-              filterCount > Number(query.creatorSelf)
+              filterCount > Number(showSelf)
                 ? "没有符合条件的 Change"
                 : query.issues
                   ? "目前没有来源异常"
@@ -760,6 +781,18 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                     : `暂无${SCOPES.find(([scope]) => scope === query.scope)?.[1] ?? "符合条件"}的 Change`
             }
           >
+            {query.creatorSelf && (
+              <>
+                <p>
+                  仅可识别的平台作者自动归入“我的”，其他记录可用固定创建者筛选查看。
+                </p>
+                <Button
+                  onClick={() => views.select({ kind: "system", id: "active" })}
+                >
+                  查看进行中
+                </Button>
+              </>
+            )}
             {filterCount > 0 && <Button onClick={clear}>清除筛选</Button>}
           </Empty>
         ) : board ? (
@@ -830,7 +863,9 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                     ? "交付"
                     : query.scope === "cancelled"
                       ? "状态"
-                      : "阶段"}
+                      : query.scope === "mixed"
+                        ? "阶段 / 交付"
+                        : "阶段"}
               </span>
               <span>
                 {query.issues
@@ -839,7 +874,9 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                     ? "归档"
                     : query.scope === "cancelled"
                       ? "取消"
-                      : "任务"}
+                      : query.scope === "mixed"
+                        ? "任务 / 结束"
+                        : "任务"}
               </span>
               <span>创建者</span>
               <span>创建</span>

@@ -78,7 +78,11 @@ export default function Changes() {
     <ChangeReading
       onBack={() => {
         previous.current = q.c;
+        const { c: _detail, ...directoryContext } = q;
         nav({
+          ...(!hasDirectoryQuery(directoryContext)
+            ? { ...queryToUrl(systemQuery()), changeView: "system:active" }
+            : {}),
           c: null,
           ct: null,
           doc: null,

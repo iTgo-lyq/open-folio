@@ -406,3 +406,15 @@
   height: auto;
   line-height: 1.4;
 }
+.viewTabs {
+  overflow-x: auto;
+  flex: 0 1 auto;
+  scrollbar-width: thin;
+}
+.viewTabs [role="tablist"] {
+  max-width: none;
+}
+.toolbar > :global(.of-ui-button),
+.toolbar > :global(.of-ui-icon-button) {
+  flex-shrink: 0;
+}

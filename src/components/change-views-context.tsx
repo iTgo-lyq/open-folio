@@ -17,6 +17,7 @@ import {
   selectedQuery,
   selectionKey,
   validSelection,
+  systemQuery,
   type RepositoryViews,
   type SavedChangeView,
   type SelectedView,
@@ -56,6 +57,7 @@ function ScopedViews({ children }: { children: ReactNode }) {
   latest.current = { q, record, nav };
   const selectedPending = useRef<SelectedView | undefined>(undefined);
   const selecting = useRef(false);
+  const selectionVersion = useRef(0);
   useEffect(() => {
     controller.current = new AbortController();
     return () => {
@@ -88,15 +90,19 @@ function ScopedViews({ children }: { children: ReactNode }) {
   );
   const apply = useCallback(
     (next: RepositoryViews) => {
+      const previous = latest.current.record;
+      if (previous && previous.revision > next.revision) return previous;
       latest.current.record = next;
       cache.set(key, next);
       setRecord(next);
+      return next;
     },
     [cache, key],
   );
   const reload = useCallback(async () => {
     if (!enabled) return;
     const version = ++sequence.current;
+    const selectionAtRead = selectionVersion.current;
     try {
       let next = await api<RepositoryViews | null>(readUrl("change-views"), {
         signal: controller.current!.signal,
@@ -109,7 +115,13 @@ function ScopedViews({ children }: { children: ReactNode }) {
       if (version !== sequence.current || controller.current?.signal.aborted)
         return;
       const previous = latest.current.record;
-      apply(next);
+      if (
+        previous &&
+        (selectionAtRead !== selectionVersion.current || selecting.current)
+      )
+        next = { ...next, selected: previous.selected };
+      const applied = apply(next);
+      if (applied !== next) return applied;
       setError("");
       if (previous && previous.revision !== next.revision)
         notice("视图已更新，重新选择视图可应用最新条件。");
@@ -164,9 +176,13 @@ function ScopedViews({ children }: { children: ReactNode }) {
     );
   }, [enabled, record, q, nav]);
   const select = (selected: SelectedView, replace = false) => {
-    const query = record && selectedQuery(record, selected);
+    const query =
+      selected.kind === "system"
+        ? systemQuery(selected.id)
+        : record && selectedQuery(record, selected);
     if (!query) return;
     nav({ ...queryToUrl(query), changeView: selectionKey(selected) }, replace);
+    selectionVersion.current++;
     selectedPending.current = selected;
     if (selecting.current) return;
     selecting.current = true;
@@ -175,6 +191,14 @@ function ScopedViews({ children }: { children: ReactNode }) {
         while (selectedPending.current && !controller.current?.signal.aborted) {
           const target = selectedPending.current;
           selectedPending.current = undefined;
+          if (!latest.current.record) {
+            const initial = await api<RepositoryViews>(
+              readUrl("change-views"),
+              { method: "POST", signal: controller.current!.signal },
+            );
+            if (controller.current?.signal.aborted) return;
+            apply(initial);
+          }
           const next = await api<RepositoryViews>(readUrl("change-views"), {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -206,6 +230,7 @@ function ScopedViews({ children }: { children: ReactNode }) {
     selectAfterSave,
   ) => {
     sequence.current++;
+    const navigationAtSave = window.location.search;
     const next = await api<RepositoryViews>(readUrl("change-views"), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -221,9 +246,13 @@ function ScopedViews({ children }: { children: ReactNode }) {
       current &&
       latest.current.record?.views.some((v) => v.id === current && !v.hidden) &&
       !next.views.some((v) => v.id === current && !v.hidden);
-    apply(next);
+    const applied = apply(next);
     setError("");
-    if (selectAfterSave || removed) {
+    if (applied !== next) return applied;
+    if (
+      (selectAfterSave && window.location.search === navigationAtSave) ||
+      removed
+    ) {
       const selected = selectAfterSave
         ? { kind: "personal" as const, id: selectAfterSave }
         : validSelection(next.views, { kind: "personal", id: current! });
