@@ -114,8 +114,12 @@ test("delivery groups include archived Changes, combine labels and expose PRs wi
   await page.reload();
   await expect(details.getByText("已发布", { exact: true })).toBeVisible();
   await backToChanges(page);
+  await expect(row).toHaveCount(0);
+  await page.getByRole("tab", { name: /^已归档/ }).click();
   await expect(row).toBeVisible();
-  await expect(page.getByRole("heading", { name: /^已发布/ })).toBeVisible();
+  await expect(
+    changeRow(page, group.title).getByText("已发布", { exact: true }),
+  ).toBeVisible();
 });
 
 test("delivery history, stale diagnostics and draft links stay readable on desktop and narrow screens", async ({

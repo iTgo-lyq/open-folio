@@ -5,6 +5,8 @@ import { readConfig, limitsFor } from "./config.ts";
 import { AppError } from "./errors.ts";
 import {
   sessionCookie,
+  requestRevision,
+  readPersonalBody,
   requirePersonalOrigin,
   personalJson,
   personalError,
@@ -21,7 +23,8 @@ export async function repositoryResponse(
   limits?: Limits,
 ) {
   try {
-    if (request.method === "POST") requirePersonalOrigin(request);
+    if (["POST", "PUT", "PATCH"].includes(request.method))
+      requirePersonalOrigin(request);
     const url = new URL(request.url),
       q = url.searchParams;
     const connectionId = q.get("connectionId");
@@ -50,6 +53,23 @@ export async function repositoryResponse(
       key,
       async (ctx) => {
         const { store, project: p } = ctx;
+        if (segments.length === 1 && segments[0] === "change-views") {
+          const writing = !["GET", "HEAD"].includes(request.method);
+          const body = ["PUT", "PATCH"].includes(request.method)
+            ? await readPersonalBody(request, 72 * 1024)
+            : undefined;
+          return personalJson(
+            await service.sessions.changeViews(
+              sessionCookie(request),
+              key,
+              ctx.lease,
+              request.method,
+              body,
+              writing ? requestRevision(request) : undefined,
+            ),
+          );
+        }
+
         const snapshot = q.get("snapshot") ?? undefined;
         if (
           segments.length === 1 &&

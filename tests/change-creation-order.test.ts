@@ -110,7 +110,10 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
       snap.changes.map(({ id, creator }) => ({ id, creator })),
       [
         { id: "merge-new", creator: { name: "Linus" } },
-        { id: "a-new", creator: { name: "Grace", login: "grace-h" } },
+        {
+          id: "a-new",
+          creator: { name: "Grace", login: "grace-h", subjectId: "12345" },
+        },
         { id: "z-old", creator: { name: "Ada" } },
       ],
     );
@@ -118,6 +121,7 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
     assert.deepEqual(projectChange(snap, "a-new", "fixture").change.creator, {
       name: "Grace",
       login: "grace-h",
+      subjectId: "12345",
     });
     const warm = await f.store.refresh(f.project, DEFAULT_LIMITS);
     assert.deepEqual(
@@ -140,7 +144,7 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
 test("creator keeps the Git name and only derives a login from GitHub noreply addresses", () => {
   assert.deepEqual(
     changeCreator("Grace Hopper", "12345+grace-h@users.noreply.github.com"),
-    { name: "Grace Hopper", login: "grace-h" },
+    { name: "Grace Hopper", login: "grace-h", subjectId: "12345" },
   );
   assert.deepEqual(changeCreator("", "octocat@users.noreply.github.com"), {
     name: "octocat",

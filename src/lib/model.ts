@@ -197,7 +197,11 @@ export type Relation = {
   diagnostics: string[];
 };
 /** Change 首次提交的作者：显示名，GitHub 隐私邮箱可识别时附登录名；不含邮箱。 */
-export type ChangeCreator = { name: string; login?: string };
+export type ChangeCreator = {
+  name: string;
+  login?: string;
+  subjectId?: string;
+};
 export type ChangeGroup = {
   /** First Git commit time, absent when history cannot establish it. */
   createdAt?: string;
