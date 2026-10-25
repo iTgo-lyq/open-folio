@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "同步合并后持续识别并验证原始交付",
-      "status": "doing"
+      "status": "done",
+      "verification": "项目344项与自包含27项测试、类型格式检查及生产构建通过；独立评审问题修复并复验通过。",
+      "commitTitle": "integration-history-recovery T1: separate source inclusion from diff lookup"
     }
   },
   "closure": {},

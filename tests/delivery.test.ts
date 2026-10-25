@@ -182,6 +182,51 @@ test("cold base catalog survives deleted sources; release inclusion also require
   );
 });
 
+test("verified merged PR facts survive missing, ambiguous or unreadable diff indexes", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const merge = f.merge();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const r = remote();
+  r.set([{ ...pr(), state: "merged", mergeCommit: merge }]);
+  for (const record of [
+    undefined,
+    { status: "invalid" as const, message: "Ambiguous diff" },
+    { status: "unavailable" as const, message: "Unreadable diff" },
+  ]) {
+    const result = await collectDelivery({
+      changes: snapshot.changes,
+      integrations: {
+        ...snapshot.integrations,
+        records: record ? { example: record } : {},
+      },
+      integrationBranch: "develop",
+      releaseSource: snapshot.releaseSource!,
+      reader: r.reader,
+      signal: new AbortController().signal,
+      ancestor: async (before, after) =>
+        f.git(["merge-base", before, after]) === before,
+    });
+    assert.equal(result.deliveryByChange.example.stage, "pendingRelease");
+    assert.equal(result.deliveryByChange.example.changePrs[0].state, "merged");
+    assert.match(
+      result.deliveryByChange.example.diagnostics.join(),
+      /差异暂不可用/,
+    );
+  }
+  r.set([{ ...pr(), state: "merged", mergeCommit: oid("f") }]);
+  const unknown = await collectDelivery({
+    changes: snapshot.changes,
+    integrations: { ...snapshot.integrations, records: {} },
+    integrationBranch: "develop",
+    releaseSource: snapshot.releaseSource!,
+    reader: r.reader,
+    signal: new AbortController().signal,
+    ancestor: async () => false,
+  });
+  assert.equal(unknown.deliveryByChange.example.stage, "unknown");
+});
+
 test("draft work, ambiguous matches, invalid M and incomplete pagination retain distinct facts", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);

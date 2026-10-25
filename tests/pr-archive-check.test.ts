@@ -83,6 +83,35 @@ test("PR archive check accepts its completed archive and leaves inherited planni
   }
 });
 
+test("archive prototype containment is checked before merge", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  await f.put(
+    `${f.archivePath}/change.json`,
+    JSON.stringify({
+      ...f.record,
+      previews: [
+        {
+          id: "page",
+          title: "Shared page",
+          kind: "page",
+          devices: ["pc-web"],
+          artifact: {
+            type: "git",
+            path: "prototype/preview/page",
+            sourceCommit: f.source,
+          },
+        },
+      ],
+    }),
+  );
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f)),
+    /inside the archive subtree/,
+  );
+});
+
 test("unarchived and reworked Changes fail even in Draft, then pass after archive is restored", async () => {
   const f = await integrationFixture();
   try {

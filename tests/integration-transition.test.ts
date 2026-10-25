@@ -163,12 +163,9 @@ syncBuiltinESMExports();
   ]);
   f.git(["push", "origin", "develop"]);
   const result = await verify(repository(f.author), id);
-  assert.equal(result.integration.status, "found");
+  assert.equal(result.sourceIncluded, true);
   assert.match(
-    f.git([
-      "show",
-      `${result.integration.commit}:prototype/preview/page/index.html`,
-    ]),
+    f.git(["show", `${result.tip}:prototype/preview/page/index.html`]),
     /CONCURRENT OTHER DELIVERY/,
   );
   await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -265,7 +262,7 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   f.git(["push", "origin", "develop"]);
   const repo = repository(f.author),
     delivery = await verify(repo, id),
-    merge = delivery.integration.commit;
+    merge = delivery.tip;
   f.git(["merge", "--ff-only", "origin/develop"]);
   const cleaned = await cleanup(repo, id, {
     idleWorktree: worktree,

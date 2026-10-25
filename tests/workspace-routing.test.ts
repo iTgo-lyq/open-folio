@@ -595,14 +595,10 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
       { encoding: "utf8" },
     ),
   );
-  assert.equal(output.integration.status, "found");
+  assert.equal(output.sourceIncluded, true);
   assert.ok(
-    !at(
-      f.repo,
-      "diff",
-      "--name-only",
-      output.integration.base,
-      output.integration.commit,
-    ).includes(child.closure.archive.path),
+    !at(f.repo, "diff", "--name-only", `${output.tip}^1`, output.tip).includes(
+      child.closure.archive.path,
+    ),
   );
 });

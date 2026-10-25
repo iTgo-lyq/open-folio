@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 import {
   scanIntegrations,
@@ -11,7 +12,7 @@ import { SnapshotStore } from "../src/server/store.ts";
 import { GitReader } from "../src/server/git.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 
-test("integrations reject Git prototypes outside the immutable archive subtree", async (t) => {
+test("diff location does not repeat archive policy checks after merge", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   await f.put(
@@ -37,7 +38,7 @@ test("integrations reject Git prototypes outside the immutable archive subtree",
   f.commit();
   assert.equal(
     (await inspectIntegration(f.run, f.merge(), f.id)).status,
-    "invalid",
+    "found",
   );
 });
 
@@ -74,7 +75,7 @@ test("a forced merge preserves a unique delivery after source deletion and a fre
   );
 });
 
-test("title/prose mentions and second-parent markers do not associate a delivery; duplicate first-parent markers do", async (t) => {
+test("ordinary commit markers and prose do not replace or invalidate the unique merge diff", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   f.git([
@@ -105,12 +106,12 @@ test("title/prose mentions and second-parent markers do not associate a delivery
   ]);
   f.git(["push", "origin", "develop"]);
   index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "invalid");
+  assert.equal(integrationFor(index, f.id).status, "found");
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  assert.equal(integrationFor(snapshot.integrations, f.id).status, "invalid");
+  assert.equal(integrationFor(snapshot.integrations, f.id).status, "found");
 });
 
-test("changed archived bytes, invalid parent shape and multiple newly archived Changes are rejected", async (t) => {
+test("diff location needs merge parents but leaves archive content and introduction policy to CI", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   assert.equal(
@@ -126,8 +127,7 @@ test("changed archived bytes, invalid parent shape and multiple newly archived C
     f.git(["rev-parse", "HEAD"]),
     f.id,
   );
-  assert.equal(result.status, "invalid");
-  assert.match(result.message, /修改/);
+  assert.equal(result.status, "found");
 
   f.git(["checkout", f.branch]);
   const extra = completedChange("extra", f.branch);
@@ -145,8 +145,7 @@ test("changed archived bytes, invalid parent shape and multiple newly archived C
     "Merge\n\nSpecTrail-Change: example",
   ]);
   result = await inspectIntegration(f.run, f.git(["rev-parse", "HEAD"]), f.id);
-  assert.equal(result.status, "invalid");
-  assert.match(result.message, /首次引入/);
+  assert.equal(result.status, "found");
 });
 
 test("failed or shallow history is unavailable, and one unreadable archive does not mask another missing id", async (t) => {
@@ -164,7 +163,7 @@ test("failed or shallow history is unavailable, and one unreadable archive does 
   }, merge);
   assert.equal(integrationFor(broken, "unknown").status, "unavailable");
   const missingObject = await scanIntegrations(async (args) => {
-    if (args[0] === "cat-file") throw Error("missing object");
+    if (args[0] === "ls-tree") throw Error("missing object");
     return f.run(args);
   }, merge);
   assert.equal(missingObject.complete, true);
@@ -172,7 +171,7 @@ test("failed or shallow history is unavailable, and one unreadable archive does 
   assert.equal(integrationFor(missingObject, "unknown").status, "missing");
 });
 
-test("duplicate trailer fields and invalid archived state diagnose the candidate without relying on branch existence", async (t) => {
+test("duplicate trailers remain ambiguous while archived state is checked by readers and CI", async (t) => {
   const f = await integrationFixture("constructor");
   t.after(f.cleanup);
   f.merge();
@@ -194,7 +193,7 @@ test("duplicate trailer fields and invalid archived state diagnose the candidate
   f.git(["add", "."]);
   f.git(["commit", "--amend", "--no-edit"]);
   index = await scanIntegrations(f.run, f.git(["rev-parse", "HEAD"]));
-  assert.equal(integrationFor(index, f.id).status, "invalid");
+  assert.equal(integrationFor(index, f.id).status, "found");
 });
 
 test("a transient candidate read failure is retried even if the collaboration tip is unchanged", async (t) => {
@@ -206,8 +205,9 @@ test("a transient candidate read failure is retried even if the collaboration ti
     override async run(args: string[], signal?: AbortSignal, limit?: number) {
       if (
         fail &&
-        args[0] === "rev-parse" &&
-        args.includes(`${merge}:${f.archivePath}`)
+        args[0] === "ls-tree" &&
+        args.includes(merge) &&
+        args.includes("docs/project/archive/")
       )
         throw Error("Transient object read failure");
       return super.run(args, signal, limit);
@@ -225,4 +225,48 @@ test("a transient candidate read failure is retried even if the collaboration ti
   assert.equal(integrationFor(after.integrations, f.id).status, "found");
   assert.notEqual(after.id, before.id);
   assert.deepEqual(after.branches, before.branches);
+});
+
+test("ordinary Git history finds the original merge after concurrent synchronization and rebuilds an old same-tip index", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const merge = f.merge();
+  f.git(["checkout", "-b", "local-planning", f.base]);
+  await f.put("planning.txt", "Local discussion\n");
+  f.commit(false);
+  f.git(["merge", "--no-ff", merge, "-m", "Sync remote develop"]);
+  const sync = f.git(["rev-parse", "HEAD"]);
+  f.git(["push", "origin", "HEAD:refs/heads/develop"]);
+  assert.ok(
+    !f.git(["rev-list", "--first-parent", sync]).split("\n").includes(merge),
+  );
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const record = integrationFor(snapshot.integrations, f.id);
+  assert.equal(record.status, "found");
+  if (record.status !== "found") return;
+  assert.equal(record.commit, merge);
+  assert.equal(record.base, f.base);
+  const old = structuredClone(snapshot);
+  old.integrations = { ...old.integrations, version: 1, records: {} };
+  const reader = new GitReader(
+    join(f.store.directory(), "git"),
+    f.remote,
+    "file",
+  );
+  const data = await reader.collect(
+    DEFAULT_LIMITS,
+    AbortSignal.timeout(DEFAULT_LIMITS.refreshMs),
+    "develop",
+    {
+      snapshot: old,
+      readBlob: (blob) => readFile(join(f.store.directory(), "blobs", blob)),
+    },
+  );
+  assert.equal(data.integrations.tip, old.integrations.tip);
+  assert.equal(data.integrations.version, 2);
+  assert.equal(integrationFor(data.integrations, f.id).status, "found");
+  const summary = await (
+    await f.store.integration(f.project, f.id, snapshot.id)
+  ).summary();
+  assert.equal(summary.record.status, "found");
 });
