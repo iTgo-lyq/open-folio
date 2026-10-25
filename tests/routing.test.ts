@@ -82,12 +82,20 @@ test("workflow version 3 routing is shared and legacy configurations are rejecte
     { ...workflow, schemaVersion: 1 },
     { schemaVersion: 1, releaseBranch: "main" },
     { ...workflow, extra: true },
+    { ...workflow, checkForUpdates: true },
+    { ...workflow, checkForUpdates: false },
+    { ...workflow, checkForUpdates: null },
+    { ...workflow, checkForUpdates: "false" },
   ];
   for (const sample of samples) {
     assert.equal(
       workflowSchema.safeParse(sample).success,
       validateWorkflow(sample).length === 0,
       JSON.stringify(sample),
+    );
+    assert.equal(
+      workflowCoreSchema.safeParse(sample).success,
+      validateWorkflow(sample).length === 0,
     );
   }
   for (const legacy of [

@@ -3920,10 +3920,10 @@ img.auth-mark {
 .managed-view-label strong { font-size:14px; font-weight:550; overflow-wrap:anywhere; }
 .managed-view-label small { font-size:11px; color:var(--ink-3); overflow-wrap:anywhere; }
 .managed-view.is-hidden .managed-view-label { opacity:.65; }
-.view-grip { cursor:grab; color:var(--ink-3); }
+.view-grip { cursor:grab; color:var(--ink-3); touch-action:none; }
+.managed-view.view-dragging { opacity:.55; }
+.managed-view.view-drop-target { box-shadow:inset 0 2px 0 var(--accent); }
 .view-row-actions { display:flex; gap:2px; }
-.view-order-actions { display:none; margin-left:auto; }
-.managed-view:focus-within .view-order-actions { display:flex; }
 .view-manager-footer { display:flex; align-items:center; gap:8px; border-top:1px solid var(--line); padding:12px; flex-shrink:0; }
 .view-manager-footer .muted { font-size:11px; max-width:190px; }
 .view-manager-footer .btn.ghost { color:var(--accent-ink); }
@@ -3944,7 +3944,6 @@ img.auth-mark {
   .views-toolbar { gap:4px; }
   .view-tab-bar { gap:4px; }
   .view-dirty-bar .grow { display:none; }
-  .view-order-actions { display:flex; }
   .pop.views-manager { max-height:calc(100dvh - 96px); top:48px!important; left:12px!important; width:calc(100vw - 24px); }
   .managed-view { gap:4px; }
   .managed-view-label small { font-size:10px; }
@@ -3953,9 +3952,3 @@ img.auth-mark {
   .view-manager-footer .muted { flex-basis:100%; max-width:none; }
   .view-editor-body { padding-inline:14px; }
 }
-/* 排序辅助按钮不改变行内布局，避免聚焦时移动编辑/删除的点击目标。 */
-.managed-view { position:relative; padding-bottom:32px; }
-.view-order-actions { display:flex; position:absolute; right:6px; bottom:0; visibility:hidden; }
-.managed-view:hover .view-order-actions,.managed-view:focus-within .view-order-actions { visibility:visible; }
-.view-order-actions .ibtn { height:26px; }
-@media (max-width:760px) { .view-order-actions { visibility:visible; } }

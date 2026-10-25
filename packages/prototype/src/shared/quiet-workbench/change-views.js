@@ -87,21 +87,49 @@ function openViewManager(anchor, keepDraft = false) {
 A["manage-views"] = el => openViewManager(el);
 function renderViewManager() {
   if (viewEditor) return renderViewEditor();
-  return `<div class="views-manager-heading"><strong>管理视图</strong><span class="muted">仅自己可见</span></div><ul class="managed-views" aria-label="个人视图排序">${managerDraft.map((v,i) => `<li class="managed-view ${v.visible ? '' : 'is-hidden'}" data-view-row="${esc(v.id)}"><button class="ibtn view-grip" draggable="true" data-view-drag="${esc(v.id)}" data-key="grip:${esc(v.id)}" aria-label="拖拽排序 ${esc(v.name)}" title="拖动排序，或用 Alt + 上下方向键移动">${icon("grip")}</button><div class="managed-view-label"><strong>${esc(v.name)}</strong><small>${esc(summaryConfig(v.config))}${v.visible ? '' : ' · 已隐藏'}</small></div><div class="view-row-actions">${ibtn(v.visible ? `隐藏 ${v.name}` : `显示 ${v.name}`, "view-visibility", v.visible ? "eye" : "eyeOff", {arg:v.id, tip:false})}${ibtn(`编辑 ${v.name}`,"edit-managed-view","pencil",{arg:v.id,tip:false})}${ibtn(`删除 ${v.name}`,"delete-managed-view","trash",{arg:v.id,tip:false})}</div><div class="view-order-actions">${ibtn(`上移 ${v.name}`,"move-managed-view","up",{arg:`${i}:-1`,disabled:i===0,tip:false})}${ibtn(`下移 ${v.name}`,"move-managed-view","down",{arg:`${i}:1`,disabled:i===managerDraft.length-1,tip:false})}</div></li>`).join("") || '<li class="view-manager-empty">还没有个人视图，添加一个常用组合。</li>'}</ul>${managerError ? `<p class="view-save-error" role="alert">${esc(managerError)}</p>` : ''}<div class="view-manager-footer">${btn("添加视图","add-managed-view",{icon:"plus",kind:"ghost",key:"add-managed-view"})}<span class="grow"></span>${btn("取消","cancel-view-manager")}${btn(managerError ? "重试保存" : "确认","confirm-view-manager",{kind:"primary"})}</div>`;
+  return `<div class="views-manager-heading"><strong>管理视图</strong><span class="muted">仅自己可见</span></div><ul class="managed-views" aria-label="个人视图排序">${managerDraft.map(v => `<li class="managed-view ${v.visible ? '' : 'is-hidden'}" data-view-row="${esc(v.id)}"><button class="ibtn view-grip" draggable="true" data-view-drag="${esc(v.id)}" data-key="grip:${esc(v.id)}" aria-label="拖拽排序 ${esc(v.name)}" title="拖动排序，或用 Alt + 上下方向键移动">${icon("grip")}</button><div class="managed-view-label"><strong>${esc(v.name)}</strong><small>${esc(summaryConfig(v.config))}${v.visible ? '' : ' · 已隐藏'}</small></div><div class="view-row-actions">${ibtn(v.visible ? `隐藏 ${v.name}` : `显示 ${v.name}`, "view-visibility", v.visible ? "eye" : "eyeOff", {arg:v.id, tip:false})}${ibtn(`编辑 ${v.name}`,"edit-managed-view","pencil",{arg:v.id,tip:false})}${ibtn(`删除 ${v.name}`,"delete-managed-view","trash",{arg:v.id,tip:false})}</div></li>`).join("") || '<li class="view-manager-empty">还没有个人视图，添加一个常用组合。</li>'}</ul>${managerError ? `<p class="view-save-error" role="alert">${esc(managerError)}</p>` : ''}<div class="view-manager-footer">${btn("添加视图","add-managed-view",{icon:"plus",kind:"ghost",key:"add-managed-view"})}<span class="grow"></span>${btn("取消","cancel-view-manager")}${btn(managerError ? "重试保存" : "确认","confirm-view-manager",{kind:"primary"})}</div>`;
 }
 A["view-visibility"] = el => { const v = managerDraft.find(v => v.id === el.dataset.arg); v.visible = !v.visible; refreshPop(); };
 A["delete-managed-view"] = el => { managerDraft = managerDraft.filter(v => v.id !== el.dataset.arg); refreshPop(); };
 function moveManagedView(from,to) {
-  if (to < 0 || to >= managerDraft.length || from === to) return;
+  if (!managerDraft || from < 0 || to < 0 || to >= managerDraft.length || from === to) return;
   const [v] = managerDraft.splice(from,1); managerDraft.splice(to,0,v); refreshPop();
   toast(`已将“${v.name}”移到第 ${to+1} 位，确认后保存`);
 }
-A["move-managed-view"] = el => { const [i,d] = el.dataset.arg.split(":").map(Number); moveManagedView(i,i+d); };
 let draggedViewId;
 document.addEventListener("dragstart",e => { const h=e.target.closest("[data-view-drag]"); if(h) { draggedViewId=h.dataset.viewDrag; e.dataTransfer.setData("text/plain",draggedViewId); e.dataTransfer.effectAllowed="move"; } });
 document.addEventListener("dragover",e => { if(draggedViewId && e.target.closest("[data-view-row]")) e.preventDefault(); });
 document.addEventListener("drop",e => { const row=e.target.closest("[data-view-row]"); if(row && draggedViewId) { e.preventDefault(); moveManagedView(managerDraft.findIndex(v => v.id===draggedViewId),managerDraft.findIndex(v => v.id===row.dataset.viewRow)); draggedViewId=null; } });
 document.addEventListener("dragend",() => { draggedViewId=null; });
+// 触屏从拖拽柄启动排序，行内其他区域继续用于滚动和操作。
+let touchViewDrag = null;
+function clearTouchViewDrag() {
+  touchViewDrag = null;
+  document.querySelectorAll(".view-drop-target,.view-dragging").forEach(row => row.classList.remove("view-drop-target","view-dragging"));
+}
+document.addEventListener("pointerdown",e => {
+  const h=e.target.closest("[data-view-drag]");
+  if (!h || e.pointerType === "mouse" || !managerDraft) return;
+  touchViewDrag={id:h.dataset.viewDrag,pointerId:e.pointerId,y:e.clientY,target:null};
+  h.setPointerCapture(e.pointerId);
+});
+document.addEventListener("pointermove",e => {
+  const drag=touchViewDrag;
+  if (!drag || e.pointerId !== drag.pointerId || Math.abs(e.clientY-drag.y)<5) return;
+  const row=document.elementFromPoint(e.clientX,e.clientY)?.closest("[data-view-row]");
+  drag.target=row?.dataset.viewRow || null;
+  document.querySelectorAll("[data-view-row]").forEach(r => {
+    r.classList.toggle("view-dragging",r.dataset.viewRow===drag.id);
+    r.classList.toggle("view-drop-target",r.dataset.viewRow===drag.target && drag.target!==drag.id);
+  });
+});
+document.addEventListener("pointerup",e => {
+  const drag=touchViewDrag;
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  clearTouchViewDrag();
+  if (drag.target && managerDraft) moveManagedView(managerDraft.findIndex(v=>v.id===drag.id),managerDraft.findIndex(v=>v.id===drag.target));
+});
+document.addEventListener("pointercancel",clearTouchViewDrag);
 document.addEventListener("keydown",e => { const h=e.target.closest("[data-view-drag]"); if(h && e.altKey && ["ArrowUp","ArrowDown"].includes(e.key)) { e.preventDefault(); const i=managerDraft.findIndex(v => v.id===h.dataset.viewDrag); moveManagedView(i,i+(e.key==="ArrowUp"?-1:1)); } });
 A["cancel-view-manager"] = () => { closePop(); managerDraft=null; viewEditor=null; };
 A["confirm-view-manager"] = () => {
