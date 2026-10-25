@@ -2,11 +2,13 @@
 
 当前原型清单只维护七组 `quiet-*` 设计，设计依据见 [DESIGN.md](DESIGN.md)。源码入 Git，`npm run build --workspace prototype` 输出各自的自包含 `dist/<id>/index.html`；构建不会上传或改动清单，dist 不提交。过时入口已从当前源码和总览移除；历史 Change 固定引用及已发布字节继续保留。
 
+新建页面也沿用当前品牌图标：构建器会为未声明 favicon 的 HTML head 自动内联 `src/assets/openfolio-icon.svg`，已有自定义 favicon 保持原声明。通用 SpecTrail 初始化模板不绑定 OpenFolio 品牌。
+
 ## 工作台新设计（七组入口）
 
 `quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 分别对应我的仓库与侧栏、Specs 阅读、Changes 列表与详情、原型总览与画布、账号与 Token、匿名公开原型、Change 分享阅读。源码位于 `src/shared/quiet-workbench/`，按模块拆为多个脚本，由各入口 HTML 内联。
 
-所有仓库、人员、时间和工程材料均为虚构，状态只在内存中。顶部评审细条可切换页面、场景（加载、失败、离线、无权限、登录过期及各页面特有状态）与主题；右侧“评审设置”可切换强调色（陶土为方案，墨色与上一版蓝色作对照）、预览网站与应用图标并演示减少动态效果，均不属于产品。标志与图标源文件为 `src/assets/openfolio-mark.svg`、`openfolio-icon.svg`。示例账号 `lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`。hash 可直达，例如 `#/changes/offline-map-regions/technical?theme=dark`、`#/changes?side=collapsed`、`#/changes?accent=ink`、`#/share/offline-map-regions?scene=sync-failed`。点击 Logo 或按 ⌘\ / Ctrl+\ 收起侧栏为悬浮胶囊。
+所有仓库、人员、时间和工程材料均为虚构，状态只在内存中。顶部评审细条可切换页面、场景（加载、失败、离线、无权限、登录过期及各页面特有状态）与主题；右侧“评审设置”可切换强调色（陶土为方案，墨色与上一版蓝色作对照）、预览网站与应用图标并演示减少动态效果，均不属于产品。标志与图标源文件为 `src/assets/openfolio-mark.svg`、`openfolio-icon.svg`；所有评审强调色均使用新版矢量标志，七个入口的 favicon 内联同一应用图标。示例账号 `lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`。hash 可直达，例如 `#/changes/offline-map-regions/technical?theme=dark`、`#/changes?side=collapsed`、`#/changes?accent=ink`、`#/share/offline-map-regions?scene=sync-failed`。点击 Logo 或按 ⌘\ / Ctrl+\ 收起侧栏为悬浮胶囊。
 
 验证：先 `npm run build --workspace prototype`，再 `node packages/prototype/verify-quiet-workbench.mjs`。检查使用仅授予 `allow-scripts` 的 iframe 与项目 CSP，覆盖七个入口 × 两套主题 × 四档宽度及主要交互；结果和截图输出到 Git 忽略的 `artifacts/quiet-workbench/`。正式卡片截图继续使用本包 screenshot 命令。
 

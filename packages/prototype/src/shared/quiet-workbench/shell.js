@@ -69,7 +69,7 @@ A["review-settings"] = (el) =>
   openPop(
     el,
     () => {
-      const tile = S.accent === "blue" ? LEGACY_MARK : APP_ICON;
+      const tile = APP_ICON;
       return `<div class="pop-pad review-pop"><div class="pop-title">评审设置</div><div class="pop-sub">强调色</div><span class="seg sm accent-seg" role="radiogroup" aria-label="强调色">${ACCENTS.map(([k, l]) => `<button role="radio" aria-checked="${S.accent === k}" data-action="set-accent" data-arg="${k}" data-key="accent:${k}">${l}</button>`).join("")}</span><p class="menu-note">陶土为本次方案；墨色与蓝色（上一版）只作对照。</p><div class="pop-sub">标志与网站图标</div><div class="icon-preview"><span class="tab-mock" aria-hidden="true"><img src="${tile}" alt="">OpenFolio</span><span class="tab-mock dark" aria-hidden="true"><img src="${tile}" alt="">OpenFolio</span><img class="app-icon" src="${tile}" alt="应用图标"></div><div class="pop-sub">动效</div>${switchRow("减少动态效果", "toggle-motion", S.motion === "reduce")}<p class="menu-note">系统开启“减少动态效果”时自动生效；这里只用于评审。</p></div>`;
     },
     { align: "end", label: "评审设置" },

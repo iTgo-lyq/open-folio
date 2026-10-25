@@ -30,7 +30,13 @@ let count = 0;
 for (const file of await readdir(join(root, 'src/pages'))) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*\.html$/.test(file)) continue;
   const output = join(root, 'dist', file.slice(0, -5));
-  const html = await expand(join(root, 'src/pages', file));
+  let html = await expand(join(root, 'src/pages', file));
+  // 新建入口未指定网站图标时，沿用本项目的当前品牌图标。
+  const head = html.match(/<head\b[^>]*>[\s\S]*?<\/head\s*>/i)?.[0] ?? '';
+  if (!/<link\b[^>]*\srel\s*=\s*(?:"(?:shortcut\s+)?icon"|'(?:shortcut\s+)?icon'|icon(?=[\s/>]))/i.test(head)) {
+    const icon = (await read(join(root, 'src/assets/openfolio-icon.svg'))).toString('base64');
+    html = html.replace(/<\/head\s*>/i, `<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml;base64,${icon}" />\n</head>`);
+  }
   await mkdir(output, { recursive: true });
   const actual = await realpath(output);
   if (relative(root, actual).startsWith('..')) throw Error('输出目录不能越过原型包');

@@ -469,7 +469,8 @@ await check("评审栏切换强调色并保留在链接中", async () => {
   assert.equal(await frame.evaluate(() => document.documentElement.dataset.accent), "ink");
   assert.match(await frame.evaluate(() => location.hash), /accent=ink/);
   await $('[data-key="accent:blue"]').click();
-  assert.equal(await count(".logo img.mark"), 1);
+  assert.equal(await count(".logo svg.mark"), 1);
+  assert.equal(await count("img.mark"), 0);
   await $('[data-key="accent:clay"]').click();
   assert.doesNotMatch(await frame.evaluate(() => location.hash), /accent=/);
   await page.keyboard.press("Escape");

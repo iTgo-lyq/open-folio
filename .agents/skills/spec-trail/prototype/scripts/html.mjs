@@ -5,7 +5,10 @@ export function htmlIssues(html) {
   const markup = html.replace(/<!--[\s\S]*?-->/g, "");
   const tags = markup.replace(/(<script\b[^>]*>)[\s\S]*?<\/script\s*>/gi, "$1</script>").match(/<[a-z][^>]*>/gi) ?? [];
   for (const tag of tags) {
-    if (/^<(?:base|iframe|object|embed|link)\b/i.test(tag)) issues.push("不支持外部样式、base 或嵌入文档；请离线内联");
+    const inlineIcon = /^<link\b/i.test(tag)
+      && /\srel\s*=\s*(?:"icon"|'icon'|icon(?=\s|\/?>))/i.test(tag)
+      && /\shref\s*=\s*(?:"data:image\/|'data:image\/|data:image\/)/i.test(tag);
+    if (/^<(?:base|iframe|object|embed|link)\b/i.test(tag) && !inlineIcon) issues.push("不支持外部样式、base 或嵌入文档；请离线内联");
     for (const m of tag.matchAll(/\b(src|srcset|href|poster|action|formaction)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)) {
       const v = (m[2] ?? m[3] ?? m[4]).trim();
       if (/^<script\b/i.test(tag) || !(v.startsWith("#") || /^data:/i.test(v))) issues.push(`资源 ${m[1]} 必须内联或为 data URL`);
