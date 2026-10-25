@@ -53,6 +53,16 @@ Change 使用可选 `types: string[]` 描述工作内容，支持自由命名和
 
 medium 及以上 Change 涉及数据结构、时序流程等明显变化时，建议按变更模块分别评估配图，在相关需求或技术方案中说明。差异较大的模块分别说明，不以“已有配图”代替判断；图型与数量按需，简单内容不强制配图，small 按需。图片存入文档旁的 assets 目录，以相对链接引用。
 
+## 发布版本与更新检查
+
+SpecTrail 分发物在 skill 根目录携带 `version.json`，版本格式为 `major.minor.patch`。现有发布同步以已提交的 skill 内容生成首版 `0.1.0`，后续内容变化仅递增补丁号；内容未变或重复发布不增加版本。版本与内容在同一分发提交交付，保留分发 LICENSE 和其他 skill，不回写源分支或另建版本计数器。已有版本非法时停止发布，失败重试以最后成功推送的版本为准。
+
+`change.mjs` 是唯一更新检查入口，在状态操作成功且释放锁后检查，并保持原 JSON 字段、流程记录与退出码。show 同样检查；help、dry-run、无效参数和原操作失败不检查。目标项目 workflow v3 的可选布尔字段 `checkForUpdates` 省略或 true 为开启，false 为关闭；关闭后不读取检查缓存、不联网或展示缓存提醒。项目从当前目录或 --repo 定位，skill 与 OpenFolio 的严格配置校验共同接受该字段，旧配置无需迁移。
+
+本地版本从实际执行的 skill 安装读取，最新版仅从公开分发仓库的 `skills/spec-trail/version.json` 获取，无需 Token，不发送项目地址、路径或正文。请求与响应体共用 3 秒超时，响应最多 16 KiB；检查结果在 Git common-dir 的 `spec-trail/update-check.json` 缓存 24 小时。worktree 共享结果但分别读取项目开关，每次比较实际安装版本，缓存失败不影响状态操作。
+
+确认有新版时在 JSON 外层追加 `skillUpdate`，包含 available 状态、当前版本、最新版本与说明；已是最新时省略字段。缺少安装版本或检查失败时提示 unknown，不将未知当成新版或已是最新，不使用过期结论。旧安装需先手动更新一次以取得检查逻辑与版本文件，源目录开发副本无版本时不联网猜测。该能力只提醒，不下载、替换或安装 skill。
+
 ## 命令与责任
 
 主 skill 自带 scripts/change.mjs，使用 Node.js 内置模块，无第三方依赖。命令覆盖创建、修改展示标题与标签、阶段确认、任务登记/执行/阻塞/完成、等待与恢复、返工、关闭四步、取消及原型关联。修改标题和标签保留 Change id 与已有流程记录。具体调用参见仓库 [.agents 状态命令说明](../../../../.agents/skills/spec-trail/references/state-commands.md)。

@@ -3,7 +3,7 @@
   "id": "skill-auto-update",
   "title": "SpecTrail 版本标识与更新检查",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/skill-auto-update",
   "confirmations": {
@@ -42,14 +42,27 @@
       "result": "passed",
       "at": "2026-10-23T19:54:25.206Z",
       "summary": "全量325项、自包含15项、setup12项及类型格式构建通过，隔离上下文独立评审无可操作问题。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T04:26:34.570Z",
+      "summary": "用户要求“合入吧”，接受当前已验证交付并授权合入 develop。",
+      "source": "合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T04:27:08.884Z",
+      "summary": "同步 change-workflow 的发布版本、单入口更新检查、项目开关与输出契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T04:27:10.696Z",
+      "summary": "验收后归档版本标识与更新检查交付，准备合入 develop。",
+      "path": "docs/project/archive/2026-10-25-skill-auto-update"
     }
   },
   "types": [
     "新功能",
     "工程"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与独立评审已完成，待用户验收后归档并交付 develop。"
-  }
+  ]
 }
