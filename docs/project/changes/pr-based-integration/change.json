@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "pr-based-integration",
+  "title": "统一依据 PR 识别 Change 集成",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "develop",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-25T05:27:10.843Z",
+      "summary": "依据PR记录统一核实Change集成并识别平台默认合并消息",
+      "source": "请调整 OpenFolio / SpecTrail 的 Change 集成识别：统一以 PR 记录为依据，不再依赖合并提交消息中的标记，避免平台生成默认合并消息时漏识别已合入的 Change。新建独立 Change，保留现有 Change。"
+    }
+  },
+  "tasks": {},
+  "closure": {},
+  "dependsOn": [
+    "integration-history-recovery"
+  ],
+  "types": [
+    "修复",
+    "流程"
+  ]
+}
