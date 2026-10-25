@@ -4,7 +4,7 @@
   "title": "减少 GitHub 重复请求与历史 PR 扫描",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/reduce-github-requests",
   "confirmations": {
     "requirement": {
@@ -37,9 +37,19 @@
       "commitTitle": "reduce-github-requests T2: share actual GitHub cooldowns and propagate errors"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T02:10:47.061Z",
+      "summary": "331 项测试、类型检查、构建和浏览器验证通过；独立评审完整差异，R1 修复复验通过。"
+    }
+  },
   "types": [
     "性能",
     "修复"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与验证已推送，等待人工验收后归档、合入 develop 并更新开发机服务。"
+  }
 }
