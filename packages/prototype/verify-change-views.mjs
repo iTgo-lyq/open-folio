@@ -40,6 +40,7 @@ try {
       await open(`/changes?theme=${theme}&scene=views-saved`,w,h);
       assert.deepEqual(await overflow(),[]);
       await action('manage-views'); await page.waitForTimeout(180); assert.deepEqual(await overflow(),[]);
+      assert.equal(await el('[data-action="move-managed-view"],.view-order-actions').count(),0);
       await page.screenshot({path:`${output}/manager-${theme}-${w}.png`});
       await action('add-managed-view'); assert.deepEqual(await overflow(),[]);
       assert.equal(await el('[data-view-field="states"]').count(),4);
@@ -97,7 +98,7 @@ try {
     await toggleFilter('creators:@me'); await action('manage-views'); await action('edit-managed-view','mine');
     assert.equal(await el('[data-view-field="creators"][value="@me"]').isChecked(),true);
   });
-  await check('排序、显隐、删除及键盘/触屏替代，确认才生效',async()=>{
+  await check('拖动排序、显隐、删除及键盘操作，确认才生效',async()=>{
     await open('/changes?scene=views-saved');
     const tabIds=()=>el('.view-tabs [role="tab"]').evaluateAll(tabs=>tabs.map(t=>t.dataset.arg));
     const systemTabs=['system:active','system:completed','system:archived','system:cancelled'];
@@ -120,6 +121,24 @@ try {
     await action('manage-views');
     await el('[data-view-drag="shipped"]').dragTo(el('[data-view-row="high"]'));
     assert.equal(await el('[data-view-row]').first().getAttribute('data-view-row'),'shipped');
+  });
+  await check('手机拖拽柄排序，取消丢弃、确认生效',async()=>{
+    await open('/changes?scene=views-saved',390,844); await action('manage-views');
+    const cdp=await page.context().newCDPSession(page);
+    const drag=async()=>{
+      const source=await el('[data-view-drag="shipped"]').boundingBox();
+      const target=await el('[data-view-row="mine"]').boundingBox();
+      const x=source.x+source.width/2,y=source.y+source.height/2,end=target.y+target.height/2;
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+      for(let step=1;step<=8;step++) await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y+(end-y)*step/8}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      assert.equal(await el('[data-view-row]').first().getAttribute('data-view-row'),'shipped');
+    };
+    await drag(); await action('cancel-view-manager');
+    await action('manage-views'); assert.equal(await el('[data-view-row]').first().getAttribute('data-view-row'),'mine');
+    await drag(); await action('confirm-view-manager');
+    assert.deepEqual(await el('.view-tabs [role="tab"]').evaluateAll(t=>t.map(x=>x.dataset.arg)),['system:active','system:completed','system:archived','system:cancelled','shipped','mine','high']);
+    await cdp.detach();
   });
   await check('取消为零隐藏快捷入口，状态选项保留；已完成与已归档互斥',async()=>{
     await open('/changes?scene=views-no-cancelled'); assert.equal(await el('.view-tabs [data-arg="system:cancelled"]').count(),0);
