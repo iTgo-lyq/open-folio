@@ -4,17 +4,19 @@
   "title": "并发同步后保留有效合入识别",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-25T04:47:11.177Z",
+      "summary": "并发同步后持续识别有效合入并保留归档校验与来源清理保护",
+      "source": "继续吧"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
     "修复",
     "流程"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "确认并发同步后的合入识别修复需求，再推进技术方案。"
-  }
+  ]
 }
