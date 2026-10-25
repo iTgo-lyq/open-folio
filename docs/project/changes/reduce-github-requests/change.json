@@ -4,9 +4,15 @@
   "title": "减少 GitHub 重复请求与历史 PR 扫描",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
-  "branch": "develop",
-  "confirmations": {},
+  "stage": "technical",
+  "branch": "codex/reduce-github-requests",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-23T19:46:32.542Z",
+      "summary": "以查询去重和历史缓存减少常规请求，统一冷却且限流明确报错。",
+      "source": "需求确认，继续推进技术方案，重点从查询算法和缓存复用上减少请求，保持简单，不要增加额外兜底。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
