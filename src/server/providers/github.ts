@@ -19,6 +19,8 @@ import {
   type PullRequestPage,
 } from "./types.ts";
 
+import { GitHubCooldown, type CooldownOptions } from "./github-cooldown.ts";
+
 const api = "https://api.github.com";
 export const githubApiVersion = "2026-03-10";
 // PR reads need merge_commit_sha, removed in 2026-03-10. This version is supported through 2028-03-10.
@@ -145,8 +147,10 @@ export class GitHubProvider implements RepositoryProvider {
   readonly id = "github";
   readonly pullRequestCacheVersion = githubPullApiVersion;
   #fetch: typeof fetch;
-  constructor(fetcher: typeof fetch = fetch) {
+  #cooldown: GitHubCooldown;
+  constructor(fetcher: typeof fetch = fetch, cooldown: CooldownOptions = {}) {
     this.#fetch = fetcher;
+    this.#cooldown = new GitHubCooldown(cooldown);
   }
   parseRepositoryUrl(input: string) {
     return { fullName: githubRepositoryName(input) };
@@ -163,14 +167,17 @@ export class GitHubProvider implements RepositoryProvider {
   }
   async #request(
     path: string,
-    secret: SecretHandle,
-    signal: AbortSignal,
+    ctx: Pick<ProviderContext, "secret" | "signal"> & {
+      identity?: ProviderIdentity;
+    },
     purpose = "read",
     etag?: string,
   ) {
+    const { secret, signal, identity } = ctx;
     const url = new URL(path, api);
     if (url.origin !== api || url.username || url.password || url.hash)
       throw dataError();
+    this.#cooldown.check(identity);
     let response: Response;
     try {
       response = await secret.use((token) =>
@@ -197,24 +204,12 @@ export class GitHubProvider implements RepositoryProvider {
     if (response.status === 304 && etag)
       return { value: undefined, headers: response.headers, notModified: true };
     if (!response.ok) {
-      await response.body?.cancel();
+      await this.#cooldown.reject(response, identity);
       if (response.status === 401)
         throw new ProviderError(
           "TOKEN_INVALID",
           "GitHub 连接已失效，请更新 token。",
           401,
-        );
-      const retry = response.headers.get("retry-after");
-      if (
-        response.status === 429 ||
-        (response.status === 403 &&
-          (retry || response.headers.get("x-ratelimit-remaining") === "0"))
-      )
-        throw new ProviderError(
-          "RATE_LIMITED",
-          "GitHub 暂时限制了请求，请稍后重试。",
-          429,
-          retry && /^\d{1,7}$/.test(retry) ? retry : "60",
         );
       if ([403, 404].includes(response.status))
         throw new ProviderError(
@@ -338,8 +333,7 @@ export class GitHubProvider implements RepositoryProvider {
     }
     const { value, headers, notModified } = await this.#request(
       `${path}?${params}`,
-      ctx.secret,
-      ctx.signal,
+      ctx,
       "pulls",
       etag,
     );
@@ -370,8 +364,7 @@ export class GitHubProvider implements RepositoryProvider {
     if (!Number.isSafeInteger(number) || number <= 0) throw dataError();
     const { value } = await this.#request(
       `/repos/${repo.fullName}/pulls/${number}`,
-      ctx.secret,
-      ctx.signal,
+      ctx,
       "pulls",
     );
     return this.#pull(value, repo);
@@ -379,8 +372,14 @@ export class GitHubProvider implements RepositoryProvider {
   async authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
+    identity?: ProviderIdentity,
   ): Promise<ProviderIdentity> {
-    const { value } = await this.#request("/user", secret, signal);
+    if (identity) this.#context({ secret, signal, identity });
+    const { value } = await this.#request("/user", {
+      secret,
+      signal,
+      identity,
+    });
     const u = parsed(
       z.object({
         id,
@@ -401,12 +400,7 @@ export class GitHubProvider implements RepositoryProvider {
     this.#context(ctx);
     const page = cursor || firstPage;
     const number = pageNumber(page);
-    const { value, headers } = await this.#request(
-      page,
-      ctx.secret,
-      ctx.signal,
-      "list",
-    );
+    const { value, headers } = await this.#request(page, ctx, "list");
     if (!Array.isArray(value) || value.length > 100) throw dataError();
     const nextLinks = [
       ...(headers.get("link") || "").matchAll(/<([^>]+)>;\s*rel="next"/g),
@@ -428,9 +422,7 @@ export class GitHubProvider implements RepositoryProvider {
     this.#context(ctx);
     const path = parsed(fullName, selector.fullName);
     try {
-      const r = normalize(
-        (await this.#request(`/repos/${path}`, ctx.secret, ctx.signal)).value,
-      );
+      const r = normalize((await this.#request(`/repos/${path}`, ctx)).value);
       if (!selector.repositoryId || r.repositoryId === selector.repositoryId)
         return r;
     } catch (e) {
@@ -489,8 +481,7 @@ export class GitHubProvider implements RepositoryProvider {
         (
           await this.#request(
             `/repos/${repo.fullName}/git/matching-refs/heads/${encodeURIComponent(branch)}`,
-            ctx.secret,
-            ctx.signal,
+            ctx,
           )
         ).value,
       );
@@ -522,13 +513,8 @@ export class GitHubProvider implements RepositoryProvider {
     if (!commit) return { kind: "branch-missing" };
     const root = parsed(
       commitSchema,
-      (
-        await this.#request(
-          `/repos/${current.fullName}/commits/${commit}`,
-          ctx.secret,
-          ctx.signal,
-        )
-      ).value,
+      (await this.#request(`/repos/${current.fullName}/commits/${commit}`, ctx))
+        .value,
     );
     if (root.sha !== commit) throw dataError();
     let tree = root.commit.tree.sha;
@@ -542,8 +528,7 @@ export class GitHubProvider implements RepositoryProvider {
         (
           await this.#request(
             `/repos/${current.fullName}/git/trees/${tree}`,
-            ctx.secret,
-            ctx.signal,
+            ctx,
           )
         ).value,
       );
@@ -572,8 +557,7 @@ export class GitHubProvider implements RepositoryProvider {
           (
             await this.#request(
               `/repos/${current.fullName}/git/blobs/${entry.sha}`,
-              ctx.secret,
-              ctx.signal,
+              ctx,
             )
           ).value,
         );

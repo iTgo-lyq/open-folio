@@ -26,6 +26,7 @@ const message = (error: unknown) => {
   if (
     error instanceof AppError &&
     [
+      "RATE_LIMITED",
       "TOKEN_INVALID",
       "READ_DENIED",
       "OPERATION_CANCELLED",

@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "统一冷却与限流错误传递",
-      "status": "todo"
+      "status": "done",
+      "verification": "最终 331 项测试、类型检查、构建及浏览器验证通过，独立评审 R1 已修复并复验。",
+      "commitTitle": "reduce-github-requests T2: share actual GitHub cooldowns and propagate errors"
     }
   },
   "closure": {},

@@ -97,6 +97,7 @@ export interface RepositoryProvider {
   authenticate(
     secret: SecretHandle,
     signal: AbortSignal,
+    knownIdentity?: ProviderIdentity,
   ): Promise<ProviderIdentity & { gitUsername?: string }>;
   listRepositories(
     context: ProviderContext,

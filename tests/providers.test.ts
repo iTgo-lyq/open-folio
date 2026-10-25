@@ -39,22 +39,25 @@ const pageUrl = (n: number) =>
   `https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&per_page=100&page=${n}`;
 function mock(responses: Record<string, unknown | Response>) {
   const requests: URL[] = [];
-  const provider = new GitHubProvider(async (input, init) => {
-    const u = new URL(String(input));
-    requests.push(u);
-    assert.equal(u.origin, "https://api.github.com");
-    assert.equal(init?.redirect, "error");
-    assert.equal(init?.cache, "no-store");
-    const h = new Headers(init?.headers);
-    assert.equal(h.get("authorization"), "Bearer test-user-token");
-    assert.equal(
-      h.get("X-GitHub-Api-Version"),
-      /\/pulls(?:\/|$)/.test(u.pathname) ? "2022-11-28" : githubApiVersion,
-    );
-    const value = responses[u.pathname + u.search] ?? responses[u.pathname];
-    assert.notEqual(value, undefined, `Unexpected request ${u.pathname}`);
-    return value instanceof Response ? value : Response.json(value);
-  });
+  const provider = new GitHubProvider(
+    async (input, init) => {
+      const u = new URL(String(input));
+      requests.push(u);
+      assert.equal(u.origin, "https://api.github.com");
+      assert.equal(init?.redirect, "error");
+      assert.equal(init?.cache, "no-store");
+      const h = new Headers(init?.headers);
+      assert.equal(h.get("authorization"), "Bearer test-user-token");
+      assert.equal(
+        h.get("X-GitHub-Api-Version"),
+        /\/pulls(?:\/|$)/.test(u.pathname) ? "2022-11-28" : githubApiVersion,
+      );
+      const value = responses[u.pathname + u.search] ?? responses[u.pathname];
+      assert.notEqual(value, undefined, `Unexpected request ${u.pathname}`);
+      return value instanceof Response ? value : Response.json(value);
+    },
+    { deadlines: new Map() },
+  );
   return { provider, requests };
 }
 async function repo(provider: GitHubProvider) {

@@ -715,9 +715,26 @@ export class PersonalSessions {
     const initial = await this.lock(async () => {
       const state = await this.load();
       await this.prune(state);
-      return this.require(state, cookie, expectedRevision);
+      const session = this.require(state, cookie, expectedRevision);
+      const fingerprint = credentialFingerprint(
+        (await this.keys(false)).identity,
+        session.accountId,
+        providerId,
+        provider.describeConnection().instance,
+        secret,
+      );
+      const existing = state.workspaces.find(
+        (w) =>
+          w.accountId === session.accountId &&
+          w.credentialFingerprint === fingerprint,
+      );
+      return { ...session, knownIdentity: existing?.identity };
     });
-    const authenticated = await provider.authenticate(secret, signal);
+    const authenticated = await provider.authenticate(
+      secret,
+      signal,
+      initial.knownIdentity,
+    );
     const { gitUsername, ...identity } = this.providerIdentity(
       authenticated,
       providerId,
@@ -834,7 +851,11 @@ export class PersonalSessions {
       };
     });
     const provider = this.registry.get(initial.w.providerId),
-      authenticated = await provider.authenticate(initial.secret, signal);
+      authenticated = await provider.authenticate(
+        initial.secret,
+        signal,
+        initial.w.identity,
+      );
     const { gitUsername, ...identity } = this.providerIdentity(
       authenticated,
       initial.w.providerId,

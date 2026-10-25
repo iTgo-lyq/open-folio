@@ -252,7 +252,11 @@ export class Discovery {
       lease.context.identity.providerId,
     );
     const actual = await provider
-      .authenticate(lease.context.secret, lease.context.signal)
+      .authenticate(
+        lease.context.secret,
+        lease.context.signal,
+        lease.context.identity,
+      )
       .catch((error) => {
         repositoryPermissions(this.sessions).reject(lease, undefined, error);
         throw error;

@@ -337,3 +337,35 @@ test("delivery request count depends on base pages, not the number or history of
   });
   assert.equal(r.calls.length, 1);
 });
+
+test("rate limiting stops a refresh immediately and preserves snapshot, complete cache and success timestamps", async (t) => {
+  const { readFile } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const r = remote();
+  const context = {
+    signal: new AbortController().signal,
+    delivery: r.reader,
+    beforePublish: async () => {},
+  };
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
+  const cachePath = join(f.store.directory(), "pull-requests.json");
+  const checkedPath = join(f.store.directory(), "last-checked.json");
+  const beforeCache = await readFile(cachePath, "utf8");
+  const beforeChecked = await readFile(checkedPath, "utf8");
+  r.calls.length = 0;
+  r.fail(new ProviderError("RATE_LIMITED", "GitHub rate limited", 429, "90"));
+  await assert.rejects(f.store.refresh(f.project, DEFAULT_LIMITS, context), {
+    code: "RATE_LIMITED",
+    retryAfter: "90",
+  });
+  assert.equal(r.calls.length, 1);
+  assert.equal((await f.store.snapshot(f.project)).id, snapshot.id);
+  assert.equal(await readFile(cachePath, "utf8"), beforeCache);
+  assert.equal(await readFile(checkedPath, "utf8"), beforeChecked);
+  assert.match((await f.store.summary(f.project)).lastError!, /rate limited/);
+  r.fail();
+  await f.store.refresh(f.project, DEFAULT_LIMITS, context);
+  assert.equal((await f.store.summary(f.project)).lastError, undefined);
+});

@@ -1,8 +1,10 @@
 export class ApiError extends Error {
   code: string;
-  constructor(code: string, message: string) {
+  retryAfter?: string;
+  constructor(code: string, message: string, retryAfter?: string) {
     super(message);
     this.code = code;
+    this.retryAfter = retryAfter;
   }
 }
 let personalRevision: number | undefined;
@@ -95,6 +97,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(
       data.error?.code ?? "FAILED",
       data.error?.message ?? "读取失败，请重试。",
+      data.error?.retryAfter,
     );
   }
   return data;
