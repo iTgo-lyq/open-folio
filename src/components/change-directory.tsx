@@ -46,6 +46,8 @@ import {
   sortDirectoryChanges,
 } from "@/lib/change-directory";
 import { useSavedScroll, useWorkspace } from "./context";
+import { useChangeViews } from "./change-views-context";
+import { queryToUrl } from "@/lib/change-views";
 import { usePersonal } from "./personal-context";
 import { useMediaQuery } from "./use-media";
 import { Empty } from "./document";
@@ -154,6 +156,7 @@ function Series({
 export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   const { data, q, nav, projectId } = useWorkspace();
   const identity = usePersonal()?.connection?.identity;
+  const views = useChangeViews();
   const all = data!.changes;
   const query = useMemo(() => readDirectoryQuery(q), [q]);
   const mobile = useMediaQuery("(max-width: 760px)");
@@ -466,14 +469,20 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
         </header>
         <div className={styles.toolbar}>
           <Tabs
-            value={query.issues ? "issues" : query.scope}
-            onValueChange={(scope) =>
-              nav({
-                scope: scope === "active" ? null : scope,
-                states: JSON.stringify([scope]),
-                issues: null,
-                c: null,
-              })
+            value={
+              query.issues
+                ? "issues"
+                : (q.changeView ?? `system:${query.scope}`)
+            }
+            onValueChange={(value) =>
+              views.select(
+                value.startsWith("system:")
+                  ? {
+                      kind: "system",
+                      id: value.slice(7) as (typeof DIRECTORY_STATES)[number],
+                    }
+                  : { kind: "personal", id: value },
+              )
             }
           >
             <TabsList aria-label="Change 状态">
@@ -488,7 +497,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                     ),
                   ),
               ).map(([scope, label]) => (
-                <TabsTrigger key={scope} value={scope}>
+                <TabsTrigger key={scope} value={`system:${scope}`}>
                   {label}
                   <span className={styles.count}>
                     {
@@ -503,6 +512,30 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                   </span>
                 </TabsTrigger>
               ))}
+              {views.record?.views
+                .filter((v) => !v.hidden)
+                .map((view) => (
+                  <TabsTrigger key={view.id} value={view.id}>
+                    {view.name}
+                    <span className={styles.count}>
+                      {
+                        filterDirectoryChanges(
+                          all,
+                          readDirectoryQuery(
+                            Object.fromEntries(
+                              Object.entries(queryToUrl(view.query)).filter(
+                                (entry): entry is [string, string] =>
+                                  entry[1] !== null,
+                              ),
+                            ),
+                          ),
+                          data?.deliveryByChange,
+                          identity,
+                        ).length
+                      }
+                    </span>
+                  </TabsTrigger>
+                ))}
             </TabsList>
           </Tabs>
           <span className={styles.spacer} />
@@ -659,6 +692,14 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
             </MenuContent>
           </Menu>
         </div>
+        {views.error && (
+          <div role="status">
+            {views.error}
+            <Button size="sm" onClick={() => void views.reload()}>
+              重试
+            </Button>
+          </div>
+        )}
         {!!filterCount && (
           <div className={styles.chips} aria-label="已选筛选">
             {query.creatorSelf && (

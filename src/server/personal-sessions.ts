@@ -1,3 +1,11 @@
+import {
+  repositoryViewsSchema,
+  defaultRepositoryViews,
+  validSelection,
+  saveViewsSchema,
+  selectViewSchema,
+  type RepositoryViews,
+} from "../lib/change-views.ts";
 import { validBranchName } from "../lib/collaboration.ts";
 import "server-only";
 import {
@@ -107,6 +115,9 @@ export const workspaceSchema = z
   .strict();
 export const accountSchema = z
   .object({
+    changeViewsByRepository: z
+      .record(z.string(), repositoryViewsSchema)
+      .optional(),
     id: z.string().uuid(),
     username: z.string().min(1).max(128),
     usernameKey: z.string().min(1).max(1024),
@@ -1036,6 +1047,102 @@ export class PersonalSessions {
         if (!set.size && registry.get(key) === set) registry.delete(key);
       },
     };
+  }
+  async changeViews(
+    cookie: string,
+    key: string,
+    lease: WorkspaceLease,
+    method: string,
+    input?: unknown,
+    expectedRevision?: number,
+  ) {
+    const parsed =
+      method === "PUT"
+        ? saveViewsSchema.safeParse(input)
+        : method === "PATCH"
+          ? selectViewSchema.safeParse(input)
+          : undefined;
+    if (parsed && !parsed.success)
+      throw new AppError(
+        "INVALID_PARAMETER",
+        parsed.error.issues[0]?.message ?? "视图配置不合法。",
+        400,
+      );
+    return this.lock(async () => {
+      await lease.assertCurrent();
+      const state = await this.load();
+      const session = this.require(state, cookie, expectedRevision);
+      if (
+        session.accountId !== lease.accountId ||
+        session.workspaceId !== lease.workspaceId
+      )
+        throw denied();
+      const account = state.accounts.find((a) => a.id === session.accountId)!;
+      const existing = account.changeViewsByRepository?.[key];
+      if (method === "GET" || method === "HEAD") return existing ?? null;
+      let next: RepositoryViews;
+      if (method === "POST") {
+        if (existing) return existing;
+        next = defaultRepositoryViews();
+      } else {
+        if (!existing)
+          throw new AppError(
+            "VIEW_CONFLICT",
+            "视图配置已改变，请重新加载。",
+            409,
+          );
+        next = structuredClone(existing);
+        if (method === "PUT") {
+          const body = saveViewsSchema.parse(input);
+          if (body.expectedRevision !== existing.revision)
+            throw new AppError(
+              "VIEW_CONFLICT",
+              "视图已在其他页面更新，请重新加载或复制当前草稿。",
+              409,
+            );
+          if (
+            body.selectAfterSave &&
+            (existing.views.some((v) => v.id === body.selectAfterSave) ||
+              !body.views.some(
+                (v) => v.id === body.selectAfterSave && !v.hidden,
+              ))
+          )
+            throw new AppError(
+              "INVALID_PARAMETER",
+              "只能选择本次新增且可见的视图。",
+              400,
+            );
+          next.views = body.views;
+          next.revision++;
+          next.selected = validSelection(
+            next.views,
+            body.selectAfterSave
+              ? { kind: "personal", id: body.selectAfterSave }
+              : existing.selected,
+          );
+        } else if (method === "PATCH") {
+          next.selected = validSelection(
+            next.views,
+            selectViewSchema.parse(input).selected,
+          );
+        } else
+          throw new AppError("METHOD_NOT_ALLOWED", "不支持此视图操作。", 405);
+      }
+      const checked = repositoryViewsSchema.safeParse(next);
+      if (!checked.success)
+        throw new AppError(
+          "INVALID_PARAMETER",
+          checked.error.issues[0]?.message ?? "视图配置不合法。",
+          400,
+        );
+      account.changeViewsByRepository = {
+        ...account.changeViewsByRepository,
+        [key]: checked.data,
+      };
+      lease.context.signal.throwIfAborted();
+      await this.save(state);
+      return checked.data;
+    });
   }
   async updatePreferences(
     cookie: string,

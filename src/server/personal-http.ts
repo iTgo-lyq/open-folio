@@ -110,7 +110,7 @@ export async function renewPersonalResponse(
   // server-side so a delayed read cannot overwrite a newer login Cookie.
   return response;
 }
-export async function readPersonalBody(request: Request) {
+export async function readPersonalBody(request: Request, maxBytes = 16 * 1024) {
   if (
     request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !==
     "application/json"
@@ -125,7 +125,7 @@ export async function readPersonalBody(request: Request) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.length;
-      if (size > 16 * 1024)
+      if (size > maxBytes)
         throw new AppError("BODY_TOO_LARGE", "请求内容过长。", 413);
       chunks.push(value);
     }

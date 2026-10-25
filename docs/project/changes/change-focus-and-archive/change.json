@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "保存并恢复账号级视图",
-      "status": "todo"
+      "status": "done",
+      "verification": "类型检查、7 项存储与兼容测试、2 项视图浏览器及 2 项目录回归通过",
+      "commitTitle": "change-focus-and-archive T2: persist account repository views"
     },
     "T3": {
       "title": "交付视图管理与完整交互",

@@ -2,6 +2,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useWorkspace } from "./context";
 import { ChangeDirectory } from "./change-directory";
+import { useChangeViews } from "./change-views-context";
+import { hasDirectoryQuery, queryToUrl, systemQuery } from "@/lib/change-views";
+import { Button } from "@open-folio/ui";
+import { Empty } from "./document";
 import { ChangeReading } from "./change-reading";
 import {
   readDirectoryQuery,
@@ -11,6 +15,7 @@ import {
 import { legacyChangesPatch } from "@/lib/legacy-query";
 export default function Changes() {
   const { q, nav, data, projectId } = useWorkspace();
+  const views = useChangeViews();
   const cancelled = data?.changes.filter((g) =>
     matchesDirectoryScope(g, "cancelled"),
   ).length;
@@ -28,7 +33,7 @@ export default function Changes() {
       (!q.changeView || q.changeView === "system:cancelled") &&
       readDirectoryQuery(q).scope === "cancelled"
     )
-      nav({ scope: "active", states: '["active"]' }, true);
+      nav({ ...queryToUrl(systemQuery()), changeView: "system:active" }, true);
   }, [cancelled, projectId, q, nav]);
   const query = useMemo(() => readDirectoryQuery(q), [q]);
   useEffect(() => {
@@ -61,6 +66,14 @@ export default function Changes() {
     );
     return () => cancelAnimationFrame(frame);
   }, [q.c]);
+  if (!hasDirectoryQuery(q) && !views.record)
+    return (
+      <Empty title={views.error || "正在恢复视图…"}>
+        {views.error && (
+          <Button onClick={() => void views.reload()}>重试</Button>
+        )}
+      </Empty>
+    );
   return q.c ? (
     <ChangeReading
       onBack={() => {

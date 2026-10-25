@@ -62,7 +62,7 @@ test("processing groups expose real creators and creation order independently of
   await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
   );
-  await page.goto(`/?${repositoryQuery}&m=changes`);
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=active`);
   for (const name of ["等待确认", "受阻", "推进中"])
     await expect(page.getByRole("region", { name, exact: true })).toBeVisible();
   await expect(
@@ -127,8 +127,20 @@ test("published records move to archive and zero cancelled hides only the tab", 
     return change;
   });
   data.deliveryByChange = {
-    "archive-0": { stage: "pendingRelease", changePrs: [] },
-    "archive-1": { stage: "releaseMerged", changePrs: [] },
+    "archive-0": {
+      stage: "pendingRelease",
+      changePrs: [],
+      releasePrs: [],
+      diagnostics: [],
+      stale: false,
+    },
+    "archive-1": {
+      stage: "releaseMerged",
+      changePrs: [],
+      releasePrs: [],
+      diagnostics: [],
+      stale: false,
+    },
   } as Snapshot["deliveryByChange"];
   await page.route("**/api/repositories/*/workbench*", (route) =>
     route.fulfill({ json: data }),
