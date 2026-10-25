@@ -4,7 +4,7 @@
   "title": "Changes 动态视图与已发布归档",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-focus-and-archive",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "change-focus-and-archive T3: finish views and regression review"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T05:16:56.152Z",
+      "summary": "独立评审及本次实现验证通过；两项既有窄屏布局失败已在develop复现并记录"
+    }
+  },
   "types": [
     "体验",
     "新功能"
@@ -96,5 +102,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与评审已推送，等待用户验收后归档集成"
+  }
 }
