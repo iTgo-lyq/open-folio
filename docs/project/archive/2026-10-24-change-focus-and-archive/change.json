@@ -3,7 +3,7 @@
   "id": "change-focus-and-archive",
   "title": "Changes 动态视图与已发布归档",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/change-focus-and-archive",
   "confirmations": {
@@ -48,6 +48,23 @@
       "result": "passed",
       "at": "2026-10-25T05:16:56.152Z",
       "summary": "独立评审及本次实现验证通过；两项既有窄屏布局失败已在develop复现并记录"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T05:18:58.134Z",
+      "summary": "用户确认当前实现并授权合入develop",
+      "source": "用户：合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T05:19:00.364Z",
+      "summary": "同步Change状态分类、个人动态视图及账号持久化契约"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T05:19:02.592Z",
+      "summary": "用户验收后归档动态视图与已发布分类实现",
+      "path": "docs/project/archive/2026-10-24-change-focus-and-archive"
     }
   },
   "types": [
@@ -102,9 +119,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与评审已推送，等待用户验收后归档集成"
-  }
+  ]
 }
