@@ -48,6 +48,7 @@ const repoSchema = z.object({
   full_name: fullName,
   name,
   default_branch: z.string().min(1).max(255).nullable().optional(),
+  archived: z.boolean().optional(),
 });
 const commitSchema = z.object({
   sha,
@@ -83,6 +84,7 @@ function normalize(value: unknown): RepositoryIdentity {
     webUrl: `https://github.com/${r.full_name}`,
     cloneUrl: `https://github.com/${r.full_name}.git`,
     defaultBranch: r.default_branch ?? null,
+    archived: r.archived ?? false,
   };
 }
 export function githubRepositoryName(input: string): string {

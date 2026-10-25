@@ -66,6 +66,10 @@ const storedPreferencesSchema = z
       .optional(),
     module: z.enum(["specs", "changes", "prototypes"]).optional(),
     railCollapsed: z.boolean().optional(),
+    untrackedRepositories: z
+      .record(z.string().regex(/^[a-f0-9]{64}$/), repositoryPreference.strict())
+      .refine((v) => Object.keys(v).length <= 1000)
+      .optional(),
   })
   .strict();
 export const preferencesSchema = storedPreferencesSchema.extend({
@@ -989,13 +993,23 @@ export class PersonalSessions {
   async repositoryBindings() {
     const state = await this.load();
     return state.workspaces.map(
-      ({ id, accountId, providerId, instanceId }) => ({
+      ({ id, accountId, providerId, instanceId, preferences }) => ({
         workspaceId: id,
         accountId,
         providerId,
         instanceId,
+        untrackedRepositories: preferences.untrackedRepositories ?? {},
       }),
     );
+  }
+  async repositoryPreferences(lease: WorkspaceLease) {
+    await lease.assertCurrent();
+    const state = await this.load();
+    const workspace = state.workspaces.find(
+      (w) => w.id === lease.workspaceId && w.accountId === lease.accountId,
+    );
+    if (!workspace) throw denied();
+    return publicPreferences(workspace.preferences);
   }
   // Internal credential ownership, used only after server-side scope authorization.
   async credentialLease(

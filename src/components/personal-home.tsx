@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   ChevronRight,
   GitBranch,
+  MoreHorizontal,
   KeyRound,
   Plus,
   RefreshCw,
@@ -12,6 +13,11 @@ import {
   Avatar,
   Badge,
   Button,
+  IconButton,
+  Menu,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
   EmptyState,
   Popover,
   PopoverContent,
@@ -32,6 +38,59 @@ export function PersonalHome() {
   );
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState(false);
+  const [trackingBusy, setTrackingBusy] = useState(false);
+  const untracked =
+    p.session?.workspace?.preferences.untrackedRepositories ?? {};
+  const visible = p.items;
+  const track = async (
+    key: string,
+    repository: (typeof untracked)[string],
+    enabled: boolean,
+  ) => {
+    setFailure("");
+    setTrackingBusy(true);
+    try {
+      const next = { ...untracked };
+      if (enabled) delete next[key];
+      else
+        next[key] = {
+          providerId: repository.providerId,
+          instanceId: repository.instanceId,
+          repositoryId: repository.repositoryId,
+          fullName: repository.fullName,
+        };
+      const recent = p.session?.workspace?.preferences.repository;
+      await p.updatePreferences({
+        untrackedRepositories: next,
+        ...(!enabled && recent?.repositoryId === repository.repositoryId
+          ? { repository: null }
+          : {}),
+      });
+      if (enabled) await p.rediscover();
+      p.reloadDirectory();
+    } catch (e) {
+      setFailure((e as Error).message);
+    } finally {
+      setTrackingBusy(false);
+    }
+  };
+  const trackingMenu = (item: DiscoveredRepository) => (
+    <Menu>
+      <MenuTrigger asChild>
+        <IconButton
+          aria-label={`${item.repository.fullName} 的更多操作`}
+          disabled={trackingBusy}
+        >
+          <MoreHorizontal />
+        </IconButton>
+      </MenuTrigger>
+      <MenuContent align="end" aria-label="仓库操作">
+        <MenuItem onSelect={() => void track(item.key, item.repository, false)}>
+          不再追踪
+        </MenuItem>
+      </MenuContent>
+    </Menu>
+  );
   const discover = async () => {
     setFailure("");
     setBusy(true);
@@ -44,8 +103,8 @@ export function PersonalHome() {
     }
   };
   const hasBindings = !!p.session?.connections.length;
-  const ready = p.items.filter((i) => i.state === "ready");
-  const issues = p.items.filter((i) => i.state !== "ready");
+  const ready = visible.filter((i) => i.state === "ready");
+  const issues = visible.filter((i) => i.state !== "ready");
   const name = (item: DiscoveredRepository) => item.repository.displayName;
   return (
     <div className={styles.page}>
@@ -167,7 +226,7 @@ export function PersonalHome() {
             )}
             <ul className={styles.repoList} aria-label="可阅读的仓库">
               {ready.map((item) => (
-                <li key={item.key}>
+                <li key={item.key} className={styles.repoEntry}>
                   <a
                     className={styles.repoRow}
                     href={`?${new URLSearchParams({ repo: item.key, m: "specs", provider: item.repository.providerId, instance: item.repository.instanceId, repositoryId: item.repository.repositoryId, fullName: item.repository.fullName, integrationBranch: item.integrationBranch })}`}
@@ -197,10 +256,11 @@ export function PersonalHome() {
                       aria-hidden="true"
                     />
                   </a>
+                  {trackingMenu(item)}
                 </li>
               ))}
             </ul>
-            {!p.items.length && (
+            {!visible.length && (
               <EmptyState
                 title={
                   p.listing
@@ -237,6 +297,29 @@ export function PersonalHome() {
                 重新发现
               </Button>
             </div>
+            {!!Object.keys(untracked).length && (
+              <details className={styles.issueGroup}>
+                <summary>已停止追踪（{Object.keys(untracked).length}）</summary>
+                <p>
+                  此选择仅影响当前 Token
+                  工作台。恢复追踪后会重新检查仓库，已归档的仓库仍会隐藏。
+                </p>
+                <ul className={styles.repoList} aria-label="已停止追踪的仓库">
+                  {Object.entries(untracked).map(([key, repository]) => (
+                    <li className={styles.repoRow} key={key}>
+                      <span className={styles.grow}>{repository.fullName}</span>
+                      <Button
+                        size="sm"
+                        loading={trackingBusy}
+                        onClick={() => void track(key, repository, true)}
+                      >
+                        恢复追踪
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             {!!issues.length && (
               <section
                 className={styles.issueGroup}
@@ -259,6 +342,7 @@ export function PersonalHome() {
                       <Button size="sm" onClick={() => setChecking(item)}>
                         重新检查
                       </Button>
+                      {trackingMenu(item)}
                     </li>
                   ))}
                 </ul>

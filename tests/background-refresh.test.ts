@@ -97,6 +97,45 @@ test("idle scanning waits five minutes; page activity speeds up only its binding
     f.worker.stop();
   }
 });
+test("background scanning skips archived and manually untracked repositories", async () => {
+  const f = schedulerFixture();
+  try {
+    const known = f.repos.discoveries.knownRepositories.bind(
+      f.repos.discoveries,
+    );
+    f.repos.discoveries.knownRepositories = async (workspace) =>
+      (await known(workspace)).map((r) => ({
+        ...r,
+        repository: { ...r.repository, archived: workspace === "one" },
+      }));
+    f.repos.sessions.repositoryBindings = async () =>
+      f.bindings.map((b) => ({
+        ...b,
+        providerId: "sample",
+        instanceId: "sample.test",
+        untrackedRepositories: Object.fromEntries(
+          b.workspaceId === "two"
+            ? [
+                [
+                  "repository",
+                  {
+                    providerId: "sample",
+                    instanceId: "sample.test",
+                    repositoryId: "repository",
+                    fullName: "sample/repository",
+                  },
+                ],
+              ]
+            : [],
+        ),
+      }));
+    await f.worker.scan();
+    assert.deepEqual(f.calls, []);
+    assert.deepEqual(f.errors, []);
+  } finally {
+    f.worker.stop();
+  }
+});
 
 test("scans bound concurrency, merge overlapping rounds and stop queued work", async () => {
   const f = schedulerFixture();

@@ -57,6 +57,15 @@
   text-decoration: none;
   transition: background 0.12s;
 }
+.repoEntry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.repoEntry > a {
+  flex: 1;
+  min-width: 0;
+}
 a.repoRow:hover {
   background: var(--of-fill-hover);
   color: var(--of-text);

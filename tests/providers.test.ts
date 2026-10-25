@@ -37,6 +37,19 @@ const context: ProviderContext = {
 };
 const pageUrl = (n: number) =>
   `https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&per_page=100&page=${n}`;
+test("GitHub preserves archive status from listing and repository resolution", async () => {
+  const { provider } = mock({
+    [new URL(pageUrl(1)).pathname + new URL(pageUrl(1)).search]: [
+      { ...source, archived: true },
+    ],
+    "/repos/demo/work": { ...source, archived: true },
+  });
+  assert.equal(
+    (await provider.listRepositories(context, null)).items[0].archived,
+    true,
+  );
+  assert.equal((await repo(provider)).archived, true);
+});
 function mock(responses: Record<string, unknown | Response>) {
   const requests: URL[] = [];
   const provider = new GitHubProvider(

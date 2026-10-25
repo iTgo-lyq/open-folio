@@ -67,6 +67,7 @@ const repoSchema = z.object({
   webUrl: z.string(),
   cloneUrl: z.string(),
   defaultBranch: z.string().nullable(),
+  archived: z.boolean().optional(),
 });
 export const discoveryJobSchema = z.object({
   sourceVersion: z.literal(3),
@@ -290,6 +291,12 @@ export class Discovery {
       repository,
       integrationBranch,
     };
+    if (repository.archived)
+      return {
+        ...source,
+        state: "not-integrated",
+        message: "仓库已归档，已停止追踪。",
+      };
     const probe = await provider.probeWorkflow(
       context,
       repository,
@@ -463,6 +470,10 @@ export class Discovery {
           job.started = true;
           await this.write(lease, job);
         }
+        const preferences = await this.sessions.repositoryPreferences(lease);
+        job.pending = job.pending.filter(
+          (r) => !preferences.untrackedRepositories?.[repositoryKey(r)],
+        );
         const batch = job.pending.slice(0, 4);
         let pause: unknown;
         await Promise.all(
@@ -560,7 +571,14 @@ export class Discovery {
     try {
       const permissions = repositoryPermissions(this.sessions),
         job = await this.read(lease),
-        all = job ? found(job) : [];
+        preferences = await this.sessions.repositoryPreferences(lease),
+        all = job
+          ? found(job).filter(
+              (r) =>
+                !r.repository.archived &&
+                !preferences.untrackedRepositories?.[r.key],
+            )
+          : [];
       let unavailable = 0;
       const verification = await Promise.allSettled(
         all.slice(offset, offset + 20).map((item) =>
@@ -573,6 +591,7 @@ export class Discovery {
                 item.repository,
                 { integrationBranch: item.integrationBranch },
               );
+              if (repository.archived) return null;
               return { ...item, repository };
             } catch (e) {
               if (

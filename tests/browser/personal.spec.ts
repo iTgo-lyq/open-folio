@@ -28,6 +28,48 @@ async function bind(page: Page, token = "token-a") {
   await page.getByLabel("GitHub Token", { exact: true }).fill(token);
   await page.getByRole("button", { name: "验证并添加", exact: true }).click();
 }
+test("stop tracking persists through reload and rediscovery and can be restored", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await register(page);
+  await bind(page);
+  const repositories = page.getByRole("list", { name: "可阅读的仓库" });
+  await expect(repositories.getByRole("link")).toHaveCount(1);
+  await page.getByRole("button", { name: "acme/fixture 的更多操作" }).click();
+  await page.getByRole("menuitem", { name: "不再追踪" }).click();
+  await expect(repositories.getByRole("link")).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: "重新发现", exact: true }).click();
+  await expect(repositories.getByRole("link")).toHaveCount(0);
+  await page.getByText("已停止追踪（1）", { exact: true }).click();
+  await expect(
+    page.getByRole("list", { name: "已停止追踪的仓库" }),
+  ).toContainText("acme/fixture");
+  await page.getByRole("button", { name: "恢复追踪", exact: true }).click();
+  await expect(repositories.getByRole("link")).toHaveCount(1);
+  await expect(page.getByText("已停止追踪（1）", { exact: true })).toHaveCount(
+    0,
+  );
+});
+test("platform archived repositories disappear and unarchiving restores discovery", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await register(page);
+  await bind(page);
+  const repositories = page.getByRole("list", { name: "可阅读的仓库" });
+  await expect(repositories.getByRole("link")).toHaveCount(1);
+  await page.request.post("/_fixture/control", { data: { archived: true } });
+  await page.getByRole("button", { name: "重新发现", exact: true }).click();
+  await expect(repositories.getByRole("link")).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "需要处理的仓库" })).toHaveCount(
+    0,
+  );
+  await page.request.post("/_fixture/control", { data: { archived: false } });
+  await page.getByRole("button", { name: "重新发现", exact: true }).click();
+  await expect(repositories.getByRole("link")).toHaveCount(1);
+});
 test("self registration, first Token, repository reading and browser reopen", async ({
   page,
 }) => {

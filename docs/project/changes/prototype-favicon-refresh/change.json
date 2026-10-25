@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-favicon-refresh",
+  "title": "统一原型页面与评审预览图标",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "codex/prototype-favicon-refresh",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一七组原型图标并发布验证",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "修复"
+  ]
+}

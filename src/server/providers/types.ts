@@ -38,6 +38,7 @@ export interface RepositoryIdentity {
   webUrl: string;
   cloneUrl: string;
   defaultBranch: string | null;
+  archived?: boolean;
 }
 export interface ProviderContext {
   identity: ProviderIdentity;
