@@ -3,8 +3,9 @@
   "id": "unified-public-repository",
   "title": "统一公开仓库与 SpecTrail 分发",
   "size": "small",
-  "status": "active",
-  "stage": "execution",
+  "deliveryOverride": "releaseMerged",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/unified-public-repository",
   "confirmations": {},
   "tasks": {
@@ -14,7 +15,30 @@
       "verification": "技能与站点测试33项、交付与本人识别测试7项、TypeScript、20个响应式尺寸及真实匿名安装通过；新库历史与旧身份扫描通过，旧库归档、介绍站线上部署及长期服务真实登录清理验证通过"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-25T06:34:52.170Z",
+      "summary": "Agent 自查并复核独立调查意见，历史扫描、匿名安装、站点线上部署及工作台真实登录与清理均通过，无未解决验收项"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T06:34:53.614Z",
+      "summary": "Agent 自验收：逐项核对迁移范围、干净历史、统一分发和服务证据，均已满足",
+      "source": "small Change 默认自验收；用户已确认沿用仓库名并保留清理后的提交历史"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T06:34:55.034Z",
+      "summary": "更新 change-workflow 的技能分发约束，保留 product-introduction 当前能力与同仓库发布说明"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T06:34:56.444Z",
+      "summary": "仓库与统一分发迁移已验证，按用户时区归档并纳入共同发布基线",
+      "path": "docs/project/archive/2026-10-24-unified-public-repository"
+    }
+  },
   "types": [
     "工程",
     "安全"
