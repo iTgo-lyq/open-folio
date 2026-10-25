@@ -3,7 +3,7 @@
   "id": "reduce-github-requests",
   "title": "减少 GitHub 重复请求与历史 PR 扫描",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/reduce-github-requests",
   "confirmations": {
@@ -42,14 +42,27 @@
       "result": "passed",
       "at": "2026-10-25T02:10:47.061Z",
       "summary": "331 项测试、类型检查、构建和浏览器验证通过；独立评审完整差异，R1 修复复验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-25T04:36:58.230Z",
+      "summary": "用户验收当前优化并授权合入 develop、更新开发机服务。",
+      "source": "合入吧（回应已实现内容、验证证据及合入 develop 并更新服务的确认）"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-25T04:37:00.025Z",
+      "summary": "同步 Change 追踪的批量 PR 与页面缓存契约、访问能力的限流错误与共享冷却边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-25T04:37:01.840Z",
+      "summary": "人工验收后归档，336 项集成回归及类型检查通过，独立评审问题均已解决。",
+      "path": "docs/project/archive/2026-10-24-reduce-github-requests"
     }
   },
   "types": [
     "性能",
     "修复"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与验证已推送，等待人工验收后归档、合入 develop 并更新开发机服务。"
-  }
+  ]
 }
