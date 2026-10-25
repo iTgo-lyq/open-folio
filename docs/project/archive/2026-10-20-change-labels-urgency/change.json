@@ -6,6 +6,7 @@
   "status": "completed",
   "stage": "close",
   "branch": "codex/change-labels-urgency",
+  "deliveryOverride": "releaseMerged",
   "confirmations": {
     "requirement": {
       "at": "2026-10-20T09:21:52.893Z",
