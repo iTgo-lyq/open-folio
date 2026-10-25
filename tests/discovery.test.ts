@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { personalFixture } from "./personal-fixture.ts";
 import { Discovery } from "../src/server/discovery.ts";
+import { PersonalSessions } from "../src/server/personal-sessions.ts";
 import {
   repositoryPermissions,
   PERMISSION_CHECK_MS,
@@ -448,4 +449,101 @@ test("workflow version and selected branch must match without redirecting to the
     ).state,
     "attention",
   );
+});
+
+test("archived repositories are not probed and cached archives disappear on metadata revalidation", async () => {
+  const f = await personalFixture();
+  try {
+    const c = await f.connect();
+    const archived = f.repositories[0];
+    archived.archived = true;
+    const probe = f.provider.probeWorkflow;
+    f.provider.probeWorkflow = async (...args) => {
+      assert.notEqual(args[1].repositoryId, archived.repositoryId);
+      return probe(...args);
+    };
+    await f.discovery.start(c.cookie, c.connection.id);
+    await f.discovery.wait(c.cookie, c.connection.id);
+    assert.ok(
+      !(await f.discovery.list(c.cookie, c.connection.id)).items.some(
+        (r) => r.key === repositoryKey(archived),
+      ),
+    );
+    archived.archived = false;
+    f.provider.probeWorkflow = probe;
+    await f.discovery.check(c.cookie, c.connection.id, archived.webUrl);
+    repositoryPermissions(f.sessions).now = () =>
+      Date.now() + PERMISSION_CHECK_MS;
+    assert.ok(
+      (await f.discovery.list(c.cookie, c.connection.id)).items.some(
+        (r) => r.key === repositoryKey(archived),
+      ),
+    );
+    archived.archived = true;
+    repositoryPermissions(f.sessions).now = () =>
+      Date.now() + 2 * PERMISSION_CHECK_MS;
+    const page = await f.discovery.list(c.cookie, c.connection.id);
+    assert.ok(!page.items.some((r) => r.key === repositoryKey(archived)));
+    assert.equal(page.unavailable, 0);
+  } finally {
+    await f.cleanup();
+  }
+});
+test("manual exclusion survives rediscovery, logout and restart, is workspace-scoped, and can be restored", async () => {
+  const f = await personalFixture();
+  try {
+    const c = await f.connect(),
+      other = await f.connect("", "second"),
+      r = f.repositories[0],
+      key = repositoryKey(r);
+    const { providerId, instanceId, repositoryId, fullName } = r;
+    await f.sessions.updatePreferences(c.cookie, {
+      untrackedRepositories: {
+        [key]: { providerId, instanceId, repositoryId, fullName },
+      },
+    });
+    for (const owner of [c, other]) {
+      await f.discovery.start(owner.cookie, owner.connection.id);
+      await f.discovery.wait(owner.cookie, owner.connection.id);
+    }
+    assert.ok(
+      !(await f.discovery.list(c.cookie, c.connection.id)).items.some(
+        (r) => r.key === key,
+      ),
+    );
+    assert.ok(
+      (await f.discovery.list(other.cookie, other.connection.id)).items.some(
+        (r) => r.key === key,
+      ),
+    );
+    const fresh = new PersonalSessions(
+      join(f.root, "sessions"),
+      f.registry,
+      join(f.root, "key"),
+    );
+    assert.equal(
+      (await fresh.get(c.cookie)).workspace?.preferences
+        .untrackedRepositories?.[key].fullName,
+      fullName,
+    );
+    await f.sessions.remove(c.cookie);
+    const reopened = await f.connect("", "first");
+    assert.equal(
+      reopened.session.workspace?.preferences.untrackedRepositories?.[key]
+        .fullName,
+      fullName,
+    );
+    await f.sessions.updatePreferences(reopened.cookie, {
+      untrackedRepositories: {},
+    });
+    await f.discovery.start(reopened.cookie, reopened.connection.id);
+    await f.discovery.wait(reopened.cookie, reopened.connection.id);
+    assert.ok(
+      (
+        await f.discovery.list(reopened.cookie, reopened.connection.id)
+      ).items.some((r) => r.key === key),
+    );
+  } finally {
+    await f.cleanup();
+  }
 });

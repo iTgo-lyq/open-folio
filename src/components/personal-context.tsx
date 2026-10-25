@@ -340,7 +340,11 @@ export function PersonalProvider({ children }: { children: React.ReactNode }) {
         connection,
         updatePreferences,
         reloadSession,
-        items,
+        items: items.filter(
+          (item) =>
+            !item.repository.archived &&
+            !session?.workspace?.preferences.untrackedRepositories?.[item.key],
+        ),
         discovery,
         directoryError,
         listing,

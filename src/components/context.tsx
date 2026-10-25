@@ -152,6 +152,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         const key = Array.from(new Uint8Array(bytes), (b) =>
           b.toString(16).padStart(2, "0"),
         ).join("");
+        if (preferences.untrackedRepositories?.[key]) return;
         nav(
           {
             repo: key,
@@ -173,6 +174,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const savedPosition = useRef("");
   useEffect(() => {
     const r = data?.repository;
+    if (
+      personal.session?.workspace?.preferences.untrackedRepositories?.[
+        projectId
+      ] ||
+      r?.archived
+    )
+      return;
     if (!r || !["specs", "changes", "prototypes"].includes(q.m)) return;
     const signature = JSON.stringify([
       connection?.id,
