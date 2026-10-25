@@ -4,19 +4,29 @@
   "title": "并发同步后保留有效合入识别",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/integration-history-recovery",
   "confirmations": {
     "requirement": {
-      "at": "2026-10-25T04:47:11.177Z",
-      "summary": "并发同步后持续识别有效合入并保留归档校验与来源清理保护",
+      "at": "2026-10-25T05:05:06.508Z",
+      "summary": "合入事实与差异展示及来源清理解耦并保留防误删检查",
+      "source": "继续吧"
+    },
+    "technical": {
+      "at": "2026-10-25T05:05:08.315Z",
+      "summary": "使用Git祖先关系确认纳入并以普通合并历史定位差异",
+      "source": "继续吧"
+    },
+    "plan": {
+      "at": "2026-10-25T05:05:10.761Z",
+      "summary": "交付独立合入确认与简化差异定位并回归删除保护",
       "source": "继续吧"
     }
   },
   "tasks": {
     "T1": {
       "title": "同步合并后持续识别并验证原始交付",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
@@ -24,8 +34,9 @@
     "修复",
     "流程"
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "技术方案与执行计划已准备，等待确认后实施。"
+  "rework": {
+    "at": "2026-10-25T05:03:29.336Z",
+    "reason": "用户要求去掉过度的合入格式门禁，将差异定位与来源清理解耦。",
+    "approach": "以 Git 祖先关系确认代码纳入，保留防误删检查，归档完整性放在合入前 CI。"
   }
 }
