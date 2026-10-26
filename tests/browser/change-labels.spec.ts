@@ -88,7 +88,7 @@ test("labels filter with OR and AND, preserve URL navigation and default to norm
   await expect.poll(() => titles(page)).toEqual(["历史记录", "体验调整"]);
   await changeLinks(page).first().click();
   await expect(page.getByRole("region", { name: "类型与紧急程度" })).toHaveText(
-    "无类型标签普通",
+    "无类型标签",
   );
   await backToChanges(page);
   await expect(changeLinks(page).first()).toBeFocused();
