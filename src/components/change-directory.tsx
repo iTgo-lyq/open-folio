@@ -71,6 +71,16 @@ const deliveryLabels = {
   releaseMerged: "已发布",
   unknown: "交付待核实",
 };
+function SizeLabel({ change }: { change: ChangeGroup }) {
+  const size = primaryRecord(change)?.state?.size;
+  if (!size) return <span aria-label="规模未知">—</span>;
+  const label = `规模：${size}`;
+  return (
+    <Badge title={label} aria-label={label}>
+      {{ small: "S", medium: "M", large: "L", xlarge: "XL" }[size]}
+    </Badge>
+  );
+}
 function Progress({
   change,
   all,
@@ -436,6 +446,14 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
             )}
           </div>
         </div>
+        <a
+          className={styles.size}
+          href={href(change.id)}
+          onClick={(event) => open(event, change.id)}
+          aria-label={`查看 ${change.title} 的规模：${state?.size ?? "未知"}`}
+        >
+          <SizeLabel change={change} />
+        </a>
         <span className={styles.stage}>
           {query.issues ? (
             "来源异常"
@@ -853,7 +871,10 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
                             {urgency(change)}
                             {change.title}
                           </span>
-                          <span className={styles.meta}>{labels(change)}</span>
+                          <span className={styles.meta}>
+                            <SizeLabel change={change} />
+                            {labels(change)}
+                          </span>
                           {summary(change) && (
                             <span className={styles.wait}>
                               {summary(change)}
@@ -878,6 +899,7 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
           <div className={styles.table} role="region" aria-label="Change 列表">
             <div className={styles.tableHead} aria-hidden="true">
               <span>Change</span>
+              <span>规模</span>
               <span>
                 {query.issues
                   ? "问题"

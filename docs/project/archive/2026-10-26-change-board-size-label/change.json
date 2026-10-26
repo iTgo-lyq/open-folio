@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "change-board-size-label",
+  "title": "Changes 展示规模列与标签",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/change-board-size-label",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补充 Change 规模展示并验证响应式布局",
+      "status": "done",
+      "verification": "类型检查、格式检查、10 项单测、生产构建和 CDP 浏览器七档宽度及规模/紧急程度边界验证通过"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-26T06:57:38.553Z",
+      "summary": "Agent 自查通过；生产构建、类型检查、10 项单测和 CDP 浏览器七档宽度及边界验证通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-26T06:57:40.115Z",
+      "summary": "Agent 自验收：规模列、看板标签、普通紧急程度隐藏及窄屏布局符合需求",
+      "source": "Small Change 默认自验收；实际浏览器和构建证据见 execution.md"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-26T06:58:05.132Z",
+      "summary": "同步 Change 列表规模列、看板规模标签与详情紧急程度展示语义"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-26T06:58:06.490Z",
+      "summary": "规模展示和详情紧急程度优化已自验收并同步 Specs",
+      "path": "docs/project/archive/2026-10-26-change-board-size-label"
+    }
+  },
+  "followUpOf": "frontend-style-interaction-refactor",
+  "types": [
+    "体验"
+  ]
+}
