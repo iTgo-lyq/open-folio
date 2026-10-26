@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "补充 Change 规模展示并验证响应式布局",
-      "status": "doing"
+      "status": "done",
+      "verification": "类型检查、格式检查、10 项单测、生产构建和 CDP 浏览器七档宽度及规模/紧急程度边界验证通过"
     }
   },
   "closure": {},

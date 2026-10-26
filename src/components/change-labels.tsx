@@ -31,7 +31,7 @@ export function ChangeLabels({
       {detail && !types.length && (
         <span className={materialClass("muted")}>无类型标签</span>
       )}
-      {(detail || urgency !== "normal") && (
+      {urgency !== "normal" && (
         <Badge
           className={materialClass("change-urgency")}
           tone={tones[urgency]}

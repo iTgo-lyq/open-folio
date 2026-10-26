@@ -70,7 +70,7 @@
 .tableHead,
 .row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 78px 62px 110px 50px;
+  grid-template-columns: minmax(220px, 1fr) 44px 78px 62px 110px 50px;
   align-items: center;
   gap: 12px;
 }
@@ -180,6 +180,14 @@
 .stage {
   color: var(--of-text-2);
   font-size: 12px;
+}
+.size {
+  position: relative;
+  z-index: 2;
+  width: fit-content;
+  color: var(--of-text-3);
+  font-size: 12px;
+  text-decoration: none;
 }
 .progress {
   display: inline-flex;
@@ -329,7 +337,7 @@
 @media (max-width: 1279px) {
   .tableHead,
   .row {
-    grid-template-columns: minmax(180px, 1fr) 70px 55px 80px;
+    grid-template-columns: minmax(180px, 1fr) 40px 70px 55px 80px;
     gap: 10px;
   }
   .date {
@@ -342,12 +350,12 @@
 @media (max-width: 1023px) {
   .tableHead,
   .row {
-    grid-template-columns: minmax(180px, 1fr) 65px 55px;
+    grid-template-columns: minmax(180px, 1fr) 40px 65px 55px;
   }
   .who {
     display: none;
   }
-  .tableHead > span:nth-child(4) {
+  .tableHead > span:nth-child(5) {
     display: none;
   }
 }
@@ -361,7 +369,7 @@
     display: none;
   }
   .row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 28px 64px;
     gap: 7px;
     padding: 12px var(--row-inset);
   }
@@ -388,6 +396,7 @@
   .meta code {
     font-size: 10.5px;
   }
+  .size,
   .progress {
     align-self: start;
     padding-top: 2px;
