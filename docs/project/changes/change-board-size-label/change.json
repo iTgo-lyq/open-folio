@@ -5,7 +5,7 @@
   "size": "small",
   "status": "active",
   "stage": "requirement",
-  "branch": "develop",
+  "branch": "codex/change-board-size-label",
   "confirmations": {},
   "tasks": {
     "T1": {
