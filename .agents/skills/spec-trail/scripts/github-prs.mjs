@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { changePullRequests, integrationEvidence } from './integration-records.mjs';
 import { prMarker } from './pr-markers.mjs';
+import { deliveryTarget } from './repository.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const sha = value => typeof value === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(value);
@@ -54,11 +55,32 @@ export async function githubPullRequests(repo, base, request = args => execFileS
   return {repositoryId:String(repository.id),pullRequests};
 }
 
-export async function changeIntegration(repo, catalog, id, branch, read = githubPullRequests) {
-  const {repositoryId,pullRequests} = await read(repo,catalog.branch);
-  const prs = changePullRequests(pullRequests,{repositoryId,integrationBranch:catalog.branch,id,branch});
-  return integrationEvidence(async (before,after) => {
+export async function changeDelivery(repo, catalog, id, branch, read = githubPullRequests) {
+  const state = catalog.entries.find(row => row.id === id)?.state;
+  const central = await read(repo,catalog.branch);
+  const direct = changePullRequests(central.pullRequests,{repositoryId:central.repositoryId,integrationBranch:catalog.branch,id,branch});
+  let target = {branch:catalog.branch, readBranch:catalog.branch, commit:catalog.commit, ref:catalog.ref};
+  let prs = direct;
+  if (state?.parent) {
+    const parent = catalog.entries.find(row => row.id === state.parent)?.state;
+    // Historical children may already have shipped before the parent was handed off.
+    if (!(parent?.branch === catalog.branch && direct.some(pr => pr.state === 'merged'))) {
+      target = deliveryTarget(repo,catalog,state,{refresh:true});
+      const collection = await read(repo,target.branch);
+      assert(collection.repositoryId === central.repositoryId, 'Parent PR repository does not match');
+      const nested = changePullRequests(collection.pullRequests,{repositoryId:central.repositoryId,integrationBranch:target.branch,id,branch});
+      prs = [...direct.filter(pr => pr.state === 'merged'), ...nested];
+      if (direct.some(pr => pr.state === 'merged') && !nested.some(pr => pr.state === 'merged'))
+        target = {branch:catalog.branch, readBranch:catalog.branch, commit:catalog.commit, ref:catalog.ref};
+    }
+  }
+  const integration = await integrationEvidence(async (before,after) => {
     try { repo.git(['merge-base','--is-ancestor',before,after]); return true; }
     catch (error) { if (error.status === 1) return false; throw error; }
-  },catalog.commit,prs);
+  },target.commit,prs);
+  return {target,integration};
+}
+
+export async function changeIntegration(repo, catalog, id, branch, read = githubPullRequests) {
+  return (await changeDelivery(repo,catalog,id,branch,read)).integration;
 }

@@ -178,7 +178,10 @@ export class IntegrationReader {
     const record = this.record();
     const summary: IntegrationSummary = {
       record,
-      integrationBranch: this.snapshot.integrationBranch,
+      integrationBranch:
+        record.status === "found"
+          ? (record.targetBranch ?? this.snapshot.integrationBranch)
+          : this.snapshot.integrationBranch,
     };
     if (record.status !== "found") return summary;
     const entries = await this.entries(record);

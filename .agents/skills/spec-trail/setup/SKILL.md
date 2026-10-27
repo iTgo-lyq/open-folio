@@ -85,7 +85,7 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 
 ## 推荐接入 PR CI
 
-首次接入推荐配置归档 CI：
+首次接入推荐配置归档 CI，覆盖项目集成、发布及动态父分支目标，不按分支名前缀猜测归属：
 
 1. 接入模板：将 [GitHub workflow](assets/github-pr-archive.yml) 复制到 `.github/workflows/spec-trail-pr.yml`，按 workflow.json 设置两个目标分支；已有等效检查则复用。
 2. 配置必需检查：在两个目标分支要求 `SpecTrail archive` 通过，保留原有保护和规划登记直推的授权例外。

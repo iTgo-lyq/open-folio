@@ -7,7 +7,9 @@ import {
   writeFileSync,
   renameSync,
   rmSync,
+  mkdtempSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { isDeepStrictEqual, parseArgs } from "node:util";
 import { randomUUID } from "node:crypto";
@@ -19,6 +21,7 @@ import {
   revision,
   remoteBranch,
   fetchBranch,
+  deliveryTarget,
 } from "./repository.mjs";
 import { closedRecord, validBranchName } from "./routing.mjs";
 import { validateChange } from "./state-schema.mjs";
@@ -157,7 +160,8 @@ function ready(repo, catalog, record, note, refresh) {
       `Dependency ${id} is not closed`,
     );
     try {
-      repo.git(["merge-base", "--is-ancestor", source.commit, catalog.commit]);
+      const target = state.parent ? deliveryTarget(repo,catalog,state,{refresh}) : catalog;
+      repo.git(["merge-base", "--is-ancestor", source.commit, target.commit]);
     } catch {
       assert(
         note?.trim(),
@@ -230,6 +234,58 @@ function syncPlanningWorktree(repo, branch, commit) {
   }
 }
 
+function handoffChild(repo, catalog, record, branch, path, options) {
+  const target = deliveryTarget(repo, catalog, record.state, {refresh: !options['dry-run']});
+  assert(target.parent.status === 'active', 'The parent must be active before child handoff');
+  assert(branch !== target.branch, 'A child needs its own work branch');
+  if (options['dry-run']) {
+    assert(remoteBranch(repo, target.branch) === target.commit, 'Fetch the parent branch before dry-run');
+    return {command:'handoff', dryRun:true, id:record.id, branch, worktree:path,
+      sourceCommit:target.commit, targetBranch:target.branch,
+      publishOrder:[branch, catalog.branch], note:'Only the planning registration is published to the integration branch'};
+  }
+  const remote = remoteBranch(repo, branch);
+  if (remote) fetchBranch(repo, branch);
+  const candidate = revision(repo, `refs/heads/${branch}`) ?? (remote && revision(repo, `refs/remotes/origin/${branch}`));
+  const existing = ownedWorktree(repo, branch);
+  assert(!existing || clean(existing.path), 'Child worktree has unsaved changes; inspect before retrying');
+  let registration;
+  if (candidate) {
+    // A failed publication leaves the two-parent preparation merge as its recovery record.
+    const parents = repo.git(['show','-s','--format=%P',candidate]).split(' ');
+    assert(parents.length === 2, 'Prepared child contains unexpected commits; inspect before retrying');
+    registration = parents[1];
+    assert(prepared(repo, catalog, record.id, branch, registration), 'Invalid child registration');
+    assert(parents[0] === target.commit, 'Parent baseline changed during child handoff; inspect the prepared child before retrying');
+    const expected = repo.git(['merge-tree','--write-tree',...parents]).split('\n')[0];
+    assert(repo.git(['rev-parse',`${candidate}^{tree}`]) === expected, 'Prepared child has additional changes; inspect before retrying');
+  } else {
+    const temporary = mkdtempSync(join(tmpdir(), 'spec-trail-registration-'));
+    const checkout = join(temporary, 'checkout');
+    try {
+      repo.git(['worktree','add','--detach',checkout,catalog.commit]);
+      writeFileSync(join(checkout, record.path), json({...record.state, branch}));
+      at(checkout,['commit','--only','-m',`${record.id}: register child work branch`,'--',record.path]);
+      registration = at(checkout,['rev-parse','HEAD']);
+    } finally {
+      if (existsSync(checkout)) repo.git(['worktree','remove',checkout]);
+      rmSync(temporary, {recursive:true,force:true});
+    }
+  }
+  // Registration is an independent commit on the central baseline, never the child tip.
+  const tree = prepareWorktree(repo, branch, path, candidate ?? target.commit);
+  if (!candidate) at(tree.path,['merge','--no-ff','--no-edit',registration]);
+  const commit = at(tree.path,['rev-parse','HEAD']);
+  at(tree.path,['push','origin',`HEAD:refs/heads/${branch}`]);
+  assert(remoteBranch(repo, branch) === commit, 'Published child changed before central registration');
+  repo.git(['push','origin',`${registration}:refs/heads/${catalog.branch}`]);
+  const verified = collaborationCatalog(repo, {refresh:true});
+  assert(verified.routes.find(row => row.id === record.id)?.branch === branch, 'Central child registration changed');
+  return {command:'handoff', phase:'registered', id:record.id, branch, commit,
+    targetBranch:target.branch, entryCommit:verified.commit, worktree:tree.path, reused:tree.reused,
+    planningWorkspace:syncPlanningWorktree(repo,catalog.branch,verified.commit)};
+}
+
 function handoff(repo, id, options) {
   let catalog = collaborationCatalog(repo, { refresh: !options["dry-run"] });
   if (options["dry-run"])
@@ -298,6 +354,7 @@ function handoff(repo, id, options) {
     options["availability-note"],
     !options["dry-run"],
   );
+  if (record.state.parent) return handoffChild(repo, catalog, record, branch, path, options);
   const remote = remoteBranch(repo, branch);
   if (remote && !options["dry-run"]) fetchBranch(repo, branch);
   const local = revision(repo, `refs/heads/${branch}`);

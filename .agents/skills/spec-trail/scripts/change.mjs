@@ -31,6 +31,7 @@ import {
   repository,
   collaborationCatalog,
   routedRecord,
+  deliveryTarget,
 } from "./repository.mjs";
 
 const commands = {
@@ -329,8 +330,11 @@ async function main() {
       assert(!existsSync(liveDir), "The active Change directory already exists");
       assert(closedRecord(state, relative(root, dirname(file))), "Only valid completed archives can be restored");
       assert(!catalog.routes.some(route => route.id === id && route.kind === "archive"), "Integrated archives are read-only");
+      const delivered = routedRecord(repo, catalog, id, {refresh: true});
+      assert(!delivered.archived || delivered.branch === state.branch, "Integrated archives are read-only");
+      const target = deliveryTarget(repo, catalog, state, {refresh: true});
       let included = false;
-      try { git(["merge-base", "--is-ancestor", "HEAD", catalog.commit]); included = true; }
+      try { git(["merge-base", "--is-ancestor", "HEAD", target.commit]); included = true; }
       catch (error) { if (error.status !== 1) throw error; }
       assert(!included, "Source commits are already included in the integration branch");
       const integration = await changeIntegration(repo, catalog, id, state.branch);
@@ -400,7 +404,7 @@ async function main() {
         "Another Change is already executing/closing on this branch",
       );
     const availability = [];
-    const dependency = (target, allowCancelled = false) => {
+    const dependency = async (target, allowCancelled = false) => {
       const routed = routedRecord(repo, catalog, target, {
         refresh: !opts["dry-run"],
       });
@@ -441,9 +445,16 @@ async function main() {
         isDeepStrictEqual(remoteState, source),
         `Dependency/child ${target} has unpushed or divergent state; fetch origin and inspect`,
       );
+      if (allowCancelled) assert(source.parent === state.id, `Child ${target} does not belong to this parent`);
       if (source.status !== "cancelled") {
+        let deliveryCommit = remote;
+        if (source.parent && routed.branch !== catalog.branch) {
+          const evidence = await changeIntegration(repo, catalog, target, source.branch);
+          assert(evidence.status === 'found', `Child ${target} requires verified parent PR integration`);
+          deliveryCommit = evidence.commit;
+        }
         try {
-          git(["merge-base", "--is-ancestor", remote, "HEAD"]);
+          git(["merge-base", "--is-ancestor", deliveryCommit, "HEAD"]);
         } catch {
           assert(
             opts["availability-note"]?.trim(),
@@ -451,17 +462,17 @@ async function main() {
           );
           availability.push({
             change: target,
-            sourceCommit: git(["rev-parse", remote]),
+            sourceCommit: git(["rev-parse", deliveryCommit]),
             targetCommit: git(["rev-parse", "HEAD"]),
             evidence: opts["availability-note"],
           });
         }
       }
     };
-    const completeTasks = () => {
+    const completeTasks = async () => {
       if (state.size === "xlarge") {
         assert(state.children?.length, "xlarge requires child Changes");
-        for (const child of state.children) dependency(child, true);
+        for (const child of state.children) await dependency(child, true);
       } else
         assert(
           Object.keys(state.tasks).length &&
@@ -964,7 +975,7 @@ async function main() {
             Object.keys(state.tasks).length,
             "Define tasks before execution",
           );
-        for (const target of state.dependsOn || []) dependency(target);
+        for (const target of state.dependsOn || []) await dependency(target);
         state.stage = "execution";
         break;
       case "wait":
@@ -1012,7 +1023,7 @@ async function main() {
         unblocked();
         requireDocs();
         requireConfirmations();
-        completeTasks();
+        await completeTasks();
         requireTaskOrder();
         assert(
           ["passed", "failed"].includes(need("result")),
@@ -1024,7 +1035,7 @@ async function main() {
       case "accept":
         requireStage("close");
         unblocked();
-        completeTasks();
+        await completeTasks();
         requireTaskOrder();
         assert(
           ["user", "agent"].includes(need("mode")),
@@ -1050,7 +1061,7 @@ async function main() {
         assert(branch !== config.integrationBranch, "Handoff to an independent closing branch before archiving; this also applies to xlarge parents");
         requireStage("close");
         unblocked();
-        completeTasks();
+        await completeTasks();
         requireTaskOrder();
         const date = need("date");
         assert(

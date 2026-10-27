@@ -1,11 +1,11 @@
 import { prMarker } from './pr-markers.mjs';
 import { changeLocation } from './routing.mjs';
 
-export const INTEGRATION_VERSION = 3;
+export const INTEGRATION_VERSION = 4;
 export const validChangeId = (id) => typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
 const sha = (value) => /^[a-f0-9]{40,64}$/.test(value);
 const format = '%H%x00%P%x00%cI%x00%s%x00';
-/** @typedef {{status:'found', commit:string, base:string, source:string, archivePath:string, title:string, committedAt:string}} IntegrationRecord */
+/** @typedef {{status:'found', targetBranch?:string, commit:string, base:string, source:string, archivePath:string, title:string, committedAt:string}} IntegrationRecord */
 /** @typedef {IntegrationRecord | {status:'missing'|'invalid'|'unavailable', message:string, candidates?:string[]}} IntegrationResult */
 /** @typedef {{version:number, tip:string|null, complete:boolean, records:Record<string,IntegrationResult>, issues:string[], message?:string}} IntegrationIndex */
 /** @typedef {(args:string[]) => Promise<Buffer|string>} GitRun */
@@ -23,6 +23,18 @@ export function changePullRequests(prs, {repositoryId, integrationBranch, id, br
       pr.base.branch === integrationBranch && pr.head.branch === branch &&
       marker.kind === 'change' && marker.id === id;
   });
+}
+
+/** Include old direct deliveries only when they really merged; new child PRs target the parent.
+ * @template {ChangePullRequest} T @param {T[]} prs
+ * @param {{repositoryId:string,integrationBranch:string,parentBranch?:string,id:string,branch:string}} identity
+ * @returns {T[]}
+ */
+export function deliveryPullRequests(prs, identity) {
+  const direct = changePullRequests(prs, identity);
+  if (!identity.parentBranch || identity.parentBranch === identity.integrationBranch) return direct;
+  return [...direct.filter(pr => pr.state === 'merged'),
+    ...changePullRequests(prs, {...identity,integrationBranch:identity.parentBranch})];
 }
 
 /** @typedef {{status:'found', commit:string} | {status:'missing'|'invalid'|'unavailable',message:string,candidates?:string[]}} IntegrationEvidence */

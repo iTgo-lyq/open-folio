@@ -9,7 +9,7 @@ import type {
 import { AppError } from "./errors.ts";
 import {
   INTEGRATION_VERSION,
-  changePullRequests,
+  deliveryPullRequests,
   integrationEvidence,
   type IntegrationResult,
 } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
@@ -18,11 +18,13 @@ import {
   type DeliveryReader,
   type CatalogItem,
 } from "./pull-requests.ts";
+import { parentBranch } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 export type { DeliveryReader } from "./pull-requests.ts";
 
 type Input = {
   changes: ChangeGroup[];
   integrationTip: string | null;
+  branchTips?: Record<string, string>;
   readIntegration: (commit: string, id: string) => Promise<IntegrationResult>;
   integrationBranch: string | null;
   releaseSource: ReleaseSource;
@@ -54,13 +56,46 @@ const message = (error: unknown) => {
 export async function collectDelivery(input: Input) {
   const { reader, signal, releaseSource } = input;
   const cache = input.cache ?? new PullRequestCache();
+  const primary = (group: ChangeGroup) =>
+    group.candidates.find((c) => c.key === group.primary);
+  const byId = new Map(
+    input.changes.map((group) => [group.id, primary(group)]),
+  );
+  const targets = new Map<string, { branch?: string; error?: string }>();
+  for (const group of input.changes) {
+    const state = primary(group)?.state;
+    if (!state?.parent) continue;
+    const parent = byId.get(state.parent)?.state;
+    try {
+      // Old children already delivered directly retain their historical PR base.
+      const branch =
+        parent?.branch === input.integrationBranch &&
+        parent?.children?.includes(state.id)
+          ? input.integrationBranch!
+          : parentBranch(
+              state,
+              parent,
+              input.integrationBranch,
+              releaseSource.branch,
+            );
+      targets.set(group.id, { branch });
+    } catch {
+      targets.set(group.id, { error: "父 Change 关系或开发分支尚不可核实。" });
+    }
+  }
+  const changeBases = [
+    ...new Set(
+      [
+        input.integrationBranch,
+        ...[...targets.values()].map((t) => t.branch),
+      ].filter((base): base is string => !!base),
+    ),
+  ];
   if (reader)
-    cache.retain(
-      reader,
-      [input.integrationBranch, releaseSource.branch].filter(
-        (base): base is string => !!base,
-      ),
-    );
+    cache.retain(reader, [
+      ...changeBases,
+      ...(releaseSource.branch ? [releaseSource.branch] : []),
+    ]);
   const changeIndex = new Map<string, CatalogItem[]>();
   const releaseIndex = new Map<string, PullRequest[]>();
   const add = <T>(index: Map<string, T[]>, key: string, pr: T) => {
@@ -68,10 +103,11 @@ export async function collectDelivery(input: Input) {
     items.push(pr);
     index.set(key, items);
   };
+  const baseErrors = new Map<string, string>();
   let changeError: string | undefined;
   let releaseError: string | undefined;
   for (const [kind, base] of [
-    ["change", input.integrationBranch],
+    ...changeBases.map((base) => ["change", base] as const),
     ["release", releaseSource.branch],
   ] as const) {
     let errorMessage: string | undefined;
@@ -90,10 +126,13 @@ export async function collectDelivery(input: Input) {
         errorMessage = message(error);
       }
     } else errorMessage = "PR 信息未接通，交付结果待核实。";
-    if (kind === "change") changeError = errorMessage;
-    else releaseError = errorMessage;
+    if (kind === "change") {
+      if (errorMessage && base) baseErrors.set(base, errorMessage);
+      if (base === input.integrationBranch) changeError = errorMessage;
+    } else releaseError = errorMessage;
   }
 
+  if (!input.integrationBranch) changeError = "集成分支尚未配置。";
   const integrations: IntegrationIndex = {
     version: INTEGRATION_VERSION,
     tip: input.integrationTip,
@@ -113,20 +152,26 @@ export async function collectDelivery(input: Input) {
       const prior = input.previous?.[group.id];
       const candidate = group.candidates.find((c) => c.key === group.primary);
       const branch = candidate?.state?.branch;
+      const target = targets.get(group.id);
+      const localError =
+        changeError ??
+        target?.error ??
+        (target?.branch ? baseErrors.get(target.branch) : undefined);
       const diagnostics: string[] = [];
       let changePrsStale = false;
       const releasePrsStale = !!releaseError;
       let changePrs: PullRequest[] = [];
-      if (changeError) {
-        diagnostics.push(changeError);
+      if (localError) {
+        diagnostics.push(localError);
         changePrsStale = true;
         changePrs = prior?.changePrs ?? [];
       } else if (branch) {
-        changePrs = changePullRequests(changeIndex.get(group.id) ?? [], {
+        changePrs = deliveryPullRequests(changeIndex.get(group.id) ?? [], {
           repositoryId: reader!.repositoryId,
           integrationBranch: input.integrationBranch!,
           id: group.id,
           branch,
+          parentBranch: target?.branch,
         }).map(({ marker: _marker, ...pr }) => pr);
       } else {
         diagnostics.push("Change 来源或 PR 读取能力尚未就绪。");
@@ -145,20 +190,30 @@ export async function collectDelivery(input: Input) {
         diagnostics.push(
           "存在多个待合入 PR，无法确定当前交付，请核对关联标记。",
         );
+      const merged = changePrs.filter((p) => p.state === "merged");
+      const targetBranch =
+        merged.length === 1
+          ? merged[0].base.branch
+          : (target?.branch ?? input.integrationBranch);
+      const targetTip =
+        targetBranch === input.integrationBranch
+          ? input.integrationTip
+          : (input.branchTips?.[targetBranch!] ??
+            (candidate?.archived && candidate.branch === input.integrationBranch
+              ? input.integrationTip
+              : null));
       const evidence = changePrsStale
         ? {
             status: "unavailable" as const,
-            message: changeError ?? "Change 来源或 PR 读取能力尚未就绪。",
+            message: localError ?? "Change 来源或 PR 读取能力尚未就绪。",
           }
-        : await integrationEvidence(
-            input.ancestor,
-            input.integrationTip,
-            changePrs,
-          );
-      const integration =
+        : await integrationEvidence(input.ancestor, targetTip, changePrs);
+      let integration =
         evidence.status === "found"
           ? await input.readIntegration(evidence.commit, group.id)
           : evidence;
+      if (integration.status === "found" && targetBranch)
+        integration = { ...integration, targetBranch };
       Object.defineProperty(integrations.records, group.id, {
         value: integration,
         enumerable: true,
@@ -170,6 +225,20 @@ export async function collectDelivery(input: Input) {
         diagnostics.push(
           "PR 合入已核实，合入差异暂不可用。" + integration.message,
         );
+      let inProject = targetBranch === input.integrationBranch;
+      let projectError: string | undefined;
+      if (integratedCommit && !inProject) {
+        try {
+          if (!input.integrationTip) throw Error("No project tip");
+          inProject = await input.ancestor(
+            integratedCommit,
+            input.integrationTip,
+          );
+        } catch {
+          projectError = "子项已合入父分支，项目集成历史暂不可核实。";
+          complete = false;
+        }
+      }
       let stage: Delivery["stage"];
       // candidate.branch is the read source; state.branch retains historical ownership.
       if (
@@ -179,6 +248,11 @@ export async function collectDelivery(input: Input) {
         candidate.state?.deliveryOverride === "releaseMerged"
       ) {
         stage = "releaseMerged";
+      } else if (integratedCommit && !inProject) {
+        stage = projectError ? "unknown" : "pendingIntegration";
+        diagnostics.push(
+          projectError ?? `已合入父分支 ${targetBranch}，等待父项整体集成。`,
+        );
       } else if (integratedCommit) {
         stage = "pendingRelease";
         if (releaseSource.message) diagnostics.push(releaseSource.message);

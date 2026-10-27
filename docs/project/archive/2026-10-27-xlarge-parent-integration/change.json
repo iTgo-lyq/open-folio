@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "xlarge-parent-integration",
+  "title": "让子 Change 先集成到 xlarge 父分支",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/xlarge-parent-integration",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-27T09:06:43.788Z",
+      "summary": "子项先合入父分支，父项整体集成并统一命令与读取规则。",
+      "source": "继续推进吧，记得 skill 相关的变更要保持精要"
+    },
+    "technical": {
+      "at": "2026-10-27T09:13:22.061Z",
+      "summary": "复用父子关系统一目标与来源，按真实 PR 核实分层交付。",
+      "source": "继续吧"
+    },
+    "plan": {
+      "at": "2026-10-27T09:13:23.630Z",
+      "summary": "依次交付父子路由、合入清理及工作台发布核实。",
+      "source": "继续吧"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "子项从父分支移交并可靠读取交付材料",
+      "status": "done",
+      "verification": "工作区与路由回归19项、新增父子场景2项通过；tsc通过"
+    },
+    "T2": {
+      "title": "贯通父子 PR 合入、依赖关闭与安全清理",
+      "status": "done",
+      "verification": "分层交付等组合回归51项通过，最新PR与父子回归16项通过；评审两项已修复"
+    },
+    "T3": {
+      "title": "对齐工作台与发布核实并完成流程回归",
+      "status": "done",
+      "verification": "父子回归5项、类型检查、构建及CDP浏览器冒烟通过；独立评审无遗留问题"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-27T09:43:40.846Z",
+      "summary": "358项全量回归、类型构建和浏览器验证通过；独立Agent评审无遗留问题"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-27T09:51:11.589Z",
+      "summary": "用户认可当前交付并授权归档合入",
+      "source": "归档合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-27T09:51:50.936Z",
+      "summary": "同步分层移交合入、依赖清理及工作台来源差异与发布判定"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-27T09:51:52.408Z",
+      "summary": "父子分层集成通过验证和用户验收，归档交付",
+      "path": "docs/project/archive/2026-10-27-xlarge-parent-integration"
+    }
+  },
+  "types": [
+    "流程",
+    "修复"
+  ]
+}

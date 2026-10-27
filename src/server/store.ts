@@ -256,6 +256,9 @@ export class SnapshotStore {
       const delivery = await collectDelivery({
         changes,
         integrationTip: data.integrations.tip,
+        branchTips: Object.fromEntries(
+          data.branches.map((b) => [b.name, b.commit]),
+        ),
         readIntegration: (commit, id) => {
           const prior =
             previous?.integrations?.version === INTEGRATION_VERSION
