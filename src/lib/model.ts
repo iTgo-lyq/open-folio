@@ -236,6 +236,8 @@ export type CurrentPrototype = {
 export type ChangeRoute = {
   id: string;
   entryPath: string;
+  parent?: string;
+  ownerBranch?: string;
   branch: string | null;
   kind: "planning" | "target" | "archive" | "invalid";
   errors: string[];

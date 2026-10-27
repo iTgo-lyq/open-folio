@@ -5,11 +5,11 @@ import { join, resolve } from 'node:path';
 import { hostname } from 'node:os';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { repository, collaborationCatalog, recordsAt, revision, remoteBranch, fetchBranch } from './repository.mjs';
+import { repository, collaborationCatalog, routedRecord, deliveryTarget, recordsAt, revision, remoteBranch, fetchBranch } from './repository.mjs';
 import { closedRecord, validBranchName } from './routing.mjs';
 import { validateChange } from './state-schema.mjs';
 import { validChangeId } from './integration-records.mjs';
-import { changeIntegration, githubPullRequests } from './github-prs.mjs';
+import { changeDelivery, githubPullRequests } from './github-prs.mjs';
 import { entryPath } from '../prototype/scripts/contract.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
@@ -84,15 +84,15 @@ function localSource(repo, branch) {
 }
 
 // Source inclusion and diff availability are independent facts.
-function inclusion(repo, catalog, id) {
+function inclusion(repo, catalog, id, target = catalog) {
   const {branch} = sourceIdentity(catalog,id);
   const remote = remoteBranch(repo,branch);
   if (remote) assert(fetchBranch(repo,branch) === remote, 'Remote source tip changed; retry verification');
   const local = localSource(repo,branch);
   const tips = [...new Set([remote,local].filter(Boolean))];
-  return {remoteVerified:true,integrationBranch:catalog.branch,tip:catalog.commit,
+  return {remoteVerified:true,integrationBranch:target.branch,projectIntegrationBranch:catalog.branch,tip:target.commit,
     source:{branch,remote,local},sourceAbsent:tips.length === 0,
-    sourceIncluded:tips.length ? tips.every(tip => ancestor(repo,tip,catalog.commit)) : null};
+    sourceIncluded:tips.length ? tips.every(tip => ancestor(repo,tip,target.commit)) : null};
 }
 
 function source(repo, catalog, id) {
@@ -117,21 +117,23 @@ export async function preflight(repo, id, readPullRequests = githubPullRequests)
   assert(validChangeId(id), 'Invalid Change id');
   const catalog = collaborationCatalog(repo, {refresh:true});
   const {branch,route} = sourceIdentity(catalog,id);
-  const integration = await changeIntegration(repo,catalog,id,branch,readPullRequests);
+  const {integration,target} = await changeDelivery(repo,catalog,id,branch,readPullRequests);
   assert(!['invalid','unavailable'].includes(integration.status), integration.message);
-  if (route.kind === 'archive' || integration.status === 'found') return {...inclusion(repo,catalog,id),integration};
-  const result = {integrationBranch:catalog.branch,tip:catalog.commit,integration};
+  if (route.kind === 'archive' || integration.status === 'found') return {...inclusion(repo,catalog,id,target),integration};
+  assert(!target.parent || target.parent.status === 'active', 'The parent must be active to receive a child delivery');
+  const result = {integrationBranch:target.branch,projectIntegrationBranch:catalog.branch,tip:target.commit,integration};
   const delivery = source(repo,catalog,id);
   assert(remoteBranch(repo,delivery.branch) === delivery.commit, 'Push the archived source before preparing its PR');
-  return {...result,source:delivery,sourceIncluded:ancestor(repo,delivery.commit,catalog.commit)};
+  return {...result,source:delivery,sourceIncluded:ancestor(repo,delivery.commit,target.commit)};
 }
 
 /** Verify the PR delivery and current source inclusion independently of diff availability. */
 export async function verify(repo, id, readPullRequests = githubPullRequests) {
   assert(validChangeId(id), 'Invalid Change id');
   const catalog = collaborationCatalog(repo, {refresh:true});
-  const result = inclusion(repo,catalog,id);
-  const integration = await changeIntegration(repo,catalog,id,result.source.branch,readPullRequests);
+  const {branch} = sourceIdentity(catalog,id);
+  const {integration,target} = await changeDelivery(repo,catalog,id,branch,readPullRequests);
+  const result = inclusion(repo,catalog,id,target);
   if (integration.status !== 'found') throw Error(`No verified Change PR integration: ${integration.message}`);
   assert(result.sourceIncluded !== false, 'Remote integration branch does not contain all current source commits; retain the source');
   return {...result,integration};
@@ -167,15 +169,18 @@ export async function cleanup(repo, id, options = {}) {
   assert(validChangeId(id), 'Invalid Change id');
   return withRepositoryLock(repo, async () => {
     const catalog = collaborationCatalog(repo, {refresh:true});
-    const {route,branch} = sourceIdentity(catalog,id);
-    const result = {...inclusion(repo,catalog,id),cleanup:{
+    const {route,branch,record} = sourceIdentity(catalog,id);
+    const target = route.kind === 'archive' ? catalog : deliveryTarget(repo,catalog,record.state,{refresh:true});
+    const result = {...inclusion(repo,catalog,id,target),cleanup:{
       remote:{status:'retained',reason:'Preflight not complete'},worktree:{status:'retained',reason:'Preflight not complete'},branch:{status:'retained',reason:'Preflight not complete'},
     }};
     let remote, local, tree;
     const precheck = () => {
-      assert(route.kind === 'archive', 'Complete the Change archive on the integration branch before cleanup');
+      const delivered = routedRecord(repo,catalog,id,{refresh:true});
+      assert(delivered.archived && !delivered.errors.length && delivered.commit === target.commit,
+        'Complete the Change archive on its integration target before cleanup');
       assert(typeof options.verifiedCommit === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(options.verifiedCommit) &&
-        ancestor(repo,options.verifiedCommit,catalog.commit), 'Validate project delivery/service and artifacts, then pass --verified-commit <included delivery commit>');
+        ancestor(repo,options.verifiedCommit,target.commit), 'Validate project delivery/service and artifacts, then pass --verified-commit <included delivery commit>');
       dependencies(catalog,branch,id);
       tree = treeReady(repo,branch,options.idleWorktree);
       remote = result.source.remote;

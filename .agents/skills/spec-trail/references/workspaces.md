@@ -25,7 +25,7 @@ node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example --
 node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
 ```
 
-默认工作分支 `change/<id>`，路径为主工作区同级的 `<项目名>-worktrees/<id>`；可用 `--branch`、`--path` 覆盖。已有登记和 Git worktree 优先复用。命令只在目标 worktree 内修改现有 change.json 的 branch，创建一个两端共享的登记提交，先推送目标，再正常快进推送集成分支；不替换目录、不添加指针文件或日志、不复制执行状态。它不授予阶段确认、不进入 execution。执行仍检查全部确认与依赖；需人工核对依赖交付时先记录证据，再传 `--availability-note`。
+默认工作分支 `change/<id>`，路径为主工作区同级的 `<项目名>-worktrees/<id>`；可用 `--branch`、`--path` 覆盖。已有登记和 Git worktree 优先复用。普通 Change 创建共享登记提交；子项从已移交且 active 的父分支建立，再合入仅改自身 branch 的集中登记提交。先推送工作分支，再向集成分支推送登记提交，子项 tip 不得作为集中登记推送。失败保留现场与提交供重试，不镜像执行状态。它不授予阶段确认、不进入 execution。执行仍检查全部确认与依赖；需人工核对依赖交付时先记录证据，再传 `--availability-note`。
 
 移交后在目标工作区编写 Plan，完成推送即按[PR 流程](integration.md)创建或复用 Draft，不等待计划确认。small 先提交推送真实执行状态再创建 Draft，不做空提交。
 
@@ -51,4 +51,4 @@ locate 只读本地跟踪引用，明确输出 freshness；它不是实时远端
 
 客户端支持准确指定已有 worktree 时，优先复用已有执行会话，否则创建绑定它的新会话；交接只传路径、id、分支与从持久化记录恢复的步骤。若当前工具不暴露准确绑定/创建能力，向用户提供工作区路径和输出的续接提示，人工打开后核验实际 cwd、common-dir、分支和未推送差异。不能把子 agent、shell cd、创建 worktree 或模拟客户端调用当作已迁移当前会话。
 
-工作分支交付前同步集成分支并验证，归档后按[集成与清理](./integration.md)通过已有 PR 合入并核实远端，再清理来源。xlarge 父项沿用工作分支关闭，不在集成分支直接归档。已集成的完整 completed 归档直接从集成分支读取，保留历史 branch；删除工作分支或 worktree 不影响该历史入口。发布分支发布只按用户主动要求执行，见主 skill 的合码规则。
+工作分支交付前同步实际交付目标并验证，归档后按[集成与清理](./integration.md)通过已有 PR 合入并核实远端，再清理来源。xlarge 父项沿用工作分支关闭，不在集成分支直接归档。子项已合入父分支后从父归档读取；整体集成后从集中归档读取，保留历史 branch；删除工作分支或 worktree 不影响该历史入口。发布分支发布只按用户主动要求执行，见主 skill 的合码规则。
