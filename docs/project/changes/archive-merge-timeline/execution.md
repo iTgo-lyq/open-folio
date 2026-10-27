@@ -22,6 +22,17 @@ GitHub provider 和 PR 缓存保留真实 mergedAt，provider 映射版本更新
 
 本地截图在 Git 忽略的 `artifacts/archive-timeline-{light,dark}-{1440,390,320}.png`，常驻 Chrome 截图为 `artifacts/archive-timeline-shared-chrome.png`，数据为明确的虚构仓库与交付记录。
 
+## T2 消除归档时间线的重复计数
+
+用户在 Merlin 真实数据预览中反馈“重复展示 1 个 Change。其他没什么问题”。日期保留总数，仅同日多批次显示各批次数量，避免单批次与日期重复。
+
+- `npx prettier --check src/components/archive-timeline.tsx`、`git diff --check` 通过。
+- 通过 `service:update` 在任务 worktree 停服、构建、启动，生产构建及内置 TypeScript 检查通过；预览运行提交 `2fcf15b`。
+- 使用常驻 Chrome CDP 的独立测试 context，通过 `withSmokeSession` 登录真实账号：3 个有日期分组各有 1 个批次，日期均显示“1 个 Change”、批次不再重复显示；时间未知组保留 78 项总数；展开收起正常，无横向溢出。测试 context 已关闭，包装器确认退出清理成功。
+- 首次真实预览检查的仓库名称定位命中了隐藏元素而超时；包装器完成退出清理。改用明确归档链接后通过，不将首次失败计作通过。
+
 ## 交付边界
 
-目前供用户验收工作分支实现。尚未执行用户验收、Specs 同步、归档、合入 develop 或更新长期服务；按 SpecTrail medium 的人工验收要求，确认后继续这些步骤。真实账号的 `withSmokeSession` 冒烟在集成后服务更新时执行，本轮不将模拟浏览器验证声称为真实账号冒烟。
+Merlin 现有地址临时运行任务分支预览，复用常驻数据、配置与密钥；主工作区服务已停止，保持数据目录仅单实例占用。结束预览时先停止 `openfolio-archive-preview`，再启动或更新主工作区服务。
+
+用户已确认除计数重复外其余界面没有问题，本次修正已更新预览。尚未执行 Specs 同步、归档或合入 develop；原始验证证据仍适用于未改动范围。

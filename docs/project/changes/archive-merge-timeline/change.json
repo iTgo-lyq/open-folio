@@ -4,7 +4,7 @@
   "title": "按合入时间浏览归档 Change",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/archive-merge-timeline",
   "confirmations": {
     "requirement": {
@@ -32,10 +32,18 @@
     },
     "T2": {
       "title": "消除归档时间线的重复计数",
-      "status": "doing"
+      "status": "done",
+      "verification": "Prettier及生产构建通过；真实账号浏览器确认3个单批次日期只显示一次计数、未知时间总数保留，展开收起及退出清理正常",
+      "commitTitle": "fix: avoid duplicate counts for single archive batches"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-27T10:12:56.917Z",
+      "summary": "原实现验证继续有效；重复计数修正经生产构建与真实账号浏览器冒烟通过"
+    }
+  },
   "types": [
     "体验"
   ],
@@ -59,5 +67,9 @@
     "at": "2026-10-27T10:11:40.057Z",
     "reason": "用户验收指出日期与单批次重复显示 Change 数量，其他无问题",
     "approach": "日期保留总数，仅同日多批次显示各批次数量，更新预览复验"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "其余界面已获认可，重复计数已修正并更新预览，待最终验收及合入授权"
   }
 }
