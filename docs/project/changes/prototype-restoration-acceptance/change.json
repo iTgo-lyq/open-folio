@@ -5,7 +5,7 @@
   "size": "small",
   "status": "active",
   "stage": "requirement",
-  "branch": "develop",
+  "branch": "codex/prototype-restoration-acceptance",
   "confirmations": {},
   "tasks": {
     "T1": {
