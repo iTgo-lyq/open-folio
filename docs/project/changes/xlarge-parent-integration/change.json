@@ -36,7 +36,8 @@
     },
     "T3": {
       "title": "对齐工作台与发布核实并完成流程回归",
-      "status": "todo"
+      "status": "done",
+      "verification": "父子回归5项、类型检查、构建及CDP浏览器冒烟通过；独立评审无遗留问题"
     }
   },
   "closure": {},

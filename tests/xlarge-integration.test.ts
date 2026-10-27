@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { xlargeFixture } from "./xlarge-fixture.ts";
+import { IntegrationReader } from "../src/server/integration.ts";
+import { GitReader } from "../src/server/git.ts";
+import { ProviderError } from "../src/server/providers/types.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 
 test("child handoff separates central registration and parent code; parent archive survives child deletion", async (t) => {
@@ -99,6 +102,46 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
   await check(f.child, "child", "feature/whole");
   await assert.rejects(check(f.child, "child", "develop"), /parent|target/);
   const first = f.mergeChild();
+  const nested = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(nested.deliveryByChange?.child.stage, "pendingIntegration");
+  assert.match(
+    nested.deliveryByChange!.child.diagnostics.join(),
+    /已合入父分支.*等待父项/,
+  );
+  assert.equal(nested.integrations.records.child.status, "found");
+  if (nested.integrations.records.child.status === "found")
+    assert.equal(nested.integrations.records.child.commit, first);
+  const diff = new IntegrationReader(
+    new GitReader(f.author, f.remote, "file"),
+    nested,
+    "child",
+  );
+  assert.equal((await diff.summary()).integrationBranch, "feature/whole");
+  assert.ok(
+    (await diff.files()).files.some(
+      (file) => file.path === "child-feature.txt",
+    ),
+  );
+  assert.ok(
+    !(await diff.files()).files.some(
+      (file) => file.path === "parent-feature.txt",
+    ),
+  );
+  const failed = await f.store.refresh(f.project, DEFAULT_LIMITS, {
+    ...f.context,
+    delivery: {
+      ...f.delivery,
+      list: async (query, cursor, signal) => {
+        if (query.base === "feature/whole")
+          throw new ProviderError("PR_READ_DENIED", "Parent PRs denied", 403);
+        return f.delivery.list(query, cursor, signal);
+      },
+    },
+  });
+  assert.equal(failed.deliveryByChange?.child.stage, "unknown");
+  assert.equal(failed.deliveryByChange?.parent.changePrsStale, false);
+  assert.equal(failed.integrations.complete, true);
+
   assert.equal(
     (await verify(repository(f.author), "child", f.readPullRequests))
       .integration.commit,
@@ -256,14 +299,100 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     f.cli("change", f.author, "child", "show", [], 0, env).branch,
     "develop",
   );
+  const integrated = await f.store.refresh(
+    f.project,
+    DEFAULT_LIMITS,
+    f.context,
+  );
+  assert.equal(integrated.deliveryByChange?.child.stage, "pendingRelease");
+  assert.equal(integrated.deliveryByChange?.parent.stage, "pendingRelease");
+  const own = integrated.integrations.records.child;
+  assert.equal(own.status, "found");
+  if (own.status === "found") assert.equal(own.commit, first);
+  const whole = new IntegrationReader(
+    new GitReader(f.author, f.remote, "file"),
+    integrated,
+    "parent",
+  );
+  assert.ok(
+    (await whole.files()).files.some(
+      (file) => file.path === "parent-feature.txt",
+    ),
+  );
+  assert.ok(
+    (await whole.files()).files.some(
+      (file) => file.path === "child-feature.txt",
+    ),
+  );
+  const releaseEvent = event(f.author, "parent", "main");
+  releaseEvent.pull_request.body =
+    "Release\n\nSpecTrail-Version: 1.0\nSpecTrail-Includes: parent\nSpecTrail-Includes: child\nSpecTrail-Includes: second";
+  assert.equal(
+    (
+      await checkPullRequest(
+        (args: string[]) => f.at(f.author, ...args),
+        releaseEvent,
+        f.readPullRequests,
+      )
+    ).kind,
+    "release",
+  );
+  f.git(["checkout", "main"]);
+  f.git(["merge", "--no-ff", "develop", "-m", "Release family"]);
+  f.git(["push", "origin", "HEAD"]);
+  const release = f.recordMerge("release", "develop");
+  release.base.branch = "main";
+  release.body =
+    "Release\n\nSpecTrail-Version: 1.0\nSpecTrail-Includes: parent";
+  const parentOnly = await f.store.refresh(
+    f.project,
+    DEFAULT_LIMITS,
+    f.context,
+  );
+  assert.equal(parentOnly.deliveryByChange?.parent.stage, "releaseMerged");
+  assert.equal(parentOnly.deliveryByChange?.child.stage, "pendingRelease");
+  release.body =
+    "Release\n\nSpecTrail-Version: 1.0\nSpecTrail-Includes: parent\nSpecTrail-Includes: child\nSpecTrail-Includes: second";
+  const released = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(released.deliveryByChange?.child.stage, "releaseMerged");
 });
 
-test('interrupted child handoff refuses a changed parent baseline on retry', async t => {
-  const f=await xlargeFixture(); t.after(f.cleanup);
-  const hook=join(f.remote,'hooks/pre-receive');
-  await writeFile(hook,'#!/bin/sh\nwhile read old new ref; do\n if [ "$ref" = "refs/heads/develop" ]; then exit 1; fi\ndone\n',{mode:0o755});
-  f.handoff([],1);
-  await writeFile(hook,'#!/bin/sh\nexit 0\n',{mode:0o755});
-  await f.putAt(f.parent,'new-parent.txt','Changed baseline\n'); f.commitAt(f.parent);
-  assert.match(f.handoff([],1),/Parent baseline changed/);
+test("interrupted child handoff refuses a changed parent baseline on retry", async (t) => {
+  const f = await xlargeFixture();
+  t.after(f.cleanup);
+  const hook = join(f.remote, "hooks/pre-receive");
+  await writeFile(
+    hook,
+    '#!/bin/sh\nwhile read old new ref; do\n if [ "$ref" = "refs/heads/develop" ]; then exit 1; fi\ndone\n',
+    { mode: 0o755 },
+  );
+  f.handoff([], 1);
+  await writeFile(hook, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  await f.putAt(f.parent, "new-parent.txt", "Changed baseline\n");
+  f.commitAt(f.parent);
+  assert.match(f.handoff([], 1), /Parent baseline changed/);
+});
+
+test("custom integration branch preserves the parent target and rejects cancelled or mismatched parents", async (t) => {
+  const f = await xlargeFixture("staging");
+  t.after(f.cleanup);
+  const path = join(f.parent, "docs/project/changes/parent/change.json");
+  const original = JSON.parse(await readFile(path, "utf8"));
+  await writeFile(path, JSON.stringify({ ...original, children: ["second"] }));
+  f.commitAt(f.parent);
+  assert.match(f.handoff([], 1), /parent|relationship/);
+  await writeFile(
+    path,
+    JSON.stringify({
+      ...original,
+      status: "cancelled",
+      cancellation: { at: "2026-10-27T00:00:00.000Z", reason: "Fixture" },
+    }),
+  );
+  f.commitAt(f.parent);
+  assert.match(f.handoff([], 1), /active|cancelled/);
+  await writeFile(path, JSON.stringify(original));
+  f.commitAt(f.parent);
+  assert.equal(f.handoff().targetBranch, "feature/whole");
+  assert.throws(() => f.git(["show", "origin/staging:parent-feature.txt"]));
 });

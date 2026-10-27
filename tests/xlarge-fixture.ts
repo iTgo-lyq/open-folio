@@ -5,8 +5,14 @@ import assert from "node:assert/strict";
 import { fixture } from "./fixture.ts";
 import { completedChange } from "./integration-fixture.ts";
 
-export async function xlargeFixture() {
+export async function xlargeFixture(integrationBranch = "develop") {
   const f = await fixture();
+  if (integrationBranch !== "develop") {
+    f.git(["branch", "-m", "develop", integrationBranch]);
+    f.git(["push", "-u", "origin", integrationBranch]);
+    f.git(["push", "origin", "--delete", "develop"]);
+    f.project.integrationBranch = integrationBranch;
+  }
   const parent = join(f.root, "parent"),
     child = join(f.root, "child");
   const at = (cwd: string, ...args: string[]) => f.git(args, cwd);
@@ -53,7 +59,7 @@ export async function xlargeFixture() {
     "docs/project/workflow.json",
     JSON.stringify({
       schemaVersion: 3,
-      integrationBranch: "develop",
+      integrationBranch,
       releaseBranch: "main",
       checkForUpdates: false,
     }),
@@ -65,7 +71,7 @@ export async function xlargeFixture() {
     size: "small",
     status: "active",
     stage: "requirement",
-    branch: "develop",
+    branch: integrationBranch,
     confirmations: {},
     tasks: { T1: { title: "Deliver", status: "todo" } },
     closure: {},

@@ -1,11 +1,11 @@
 import { prMarker } from './pr-markers.mjs';
 import { changeLocation } from './routing.mjs';
 
-export const INTEGRATION_VERSION = 3;
+export const INTEGRATION_VERSION = 4;
 export const validChangeId = (id) => typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
 const sha = (value) => /^[a-f0-9]{40,64}$/.test(value);
 const format = '%H%x00%P%x00%cI%x00%s%x00';
-/** @typedef {{status:'found', commit:string, base:string, source:string, archivePath:string, title:string, committedAt:string}} IntegrationRecord */
+/** @typedef {{status:'found', targetBranch?:string, commit:string, base:string, source:string, archivePath:string, title:string, committedAt:string}} IntegrationRecord */
 /** @typedef {IntegrationRecord | {status:'missing'|'invalid'|'unavailable', message:string, candidates?:string[]}} IntegrationResult */
 /** @typedef {{version:number, tip:string|null, complete:boolean, records:Record<string,IntegrationResult>, issues:string[], message?:string}} IntegrationIndex */
 /** @typedef {(args:string[]) => Promise<Buffer|string>} GitRun */
