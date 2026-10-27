@@ -4,12 +4,7 @@ import { Badge, type BadgeTone } from "@open-folio/ui";
 import { ArrowUpRight } from "lucide-react";
 import type { Delivery, PullRequest } from "@/lib/model";
 import { useWorkspace } from "./context";
-const labels = {
-  pendingIntegration: "待集成",
-  pendingRelease: "待发布",
-  releaseMerged: "已发布",
-  unknown: "交付待核实",
-};
+import { DELIVERY_LABELS as labels } from "@/lib/delivery-labels";
 const tones: Record<keyof typeof labels, BadgeTone> = {
   pendingIntegration: "info",
   pendingRelease: "accent",

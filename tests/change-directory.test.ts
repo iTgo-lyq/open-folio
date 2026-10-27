@@ -185,7 +185,7 @@ test("completed records group by delivery without treating an invalid archive as
       delivery,
     ).map((g) => [g.name, g.items.map((i) => i.id)]),
     [
-      ["待发布", ["integrated"]],
+      ["待合入", ["integrated"]],
       ["交付待核实", ["unknown"]],
     ],
   );
