@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-restoration-acceptance",
+  "title": "开发后的原型还原验收指引",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "核对还原验收指引并补齐交付证据",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "文档"
+  ]
+}
