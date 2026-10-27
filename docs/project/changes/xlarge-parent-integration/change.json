@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/xlarge-parent-integration",
   "confirmations": {
     "requirement": {
       "at": "2026-10-27T09:06:43.788Z",
