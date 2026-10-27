@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-restoration-acceptance",
+  "title": "开发后的原型还原验收指引",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/prototype-restoration-acceptance",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "核对还原验收指引并补齐交付证据",
+      "status": "done",
+      "verification": "五类要求及流程入口自查通过；技能包与 a0939c8 相同，复用格式、54 个引用及 12 项测试证据，补录见 Execution。",
+      "commitTitle": "prototype-restoration-acceptance T1: verify guidance and record delivery evidence"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-27T07:01:36.840Z",
+      "summary": "Agent 自查五类要求、入口和交付证据通过；技能包未变，既有测试仍有效。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-27T07:01:38.540Z",
+      "summary": "用户收到交付内容与验证结果后要求合入 main，沿用当前交付验收。",
+      "source": "用户原话：合入到 main 吧"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-27T07:01:40.024Z",
+      "summary": "仅技能验收指引及交付记录，OpenFolio 产品能力与长期契约未变。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-27T07:01:41.486Z",
+      "summary": "补齐原型还原验收指引的真实验证和用户验收记录。",
+      "path": "docs/project/archive/2026-10-27-prototype-restoration-acceptance"
+    }
+  },
+  "types": [
+    "文档"
+  ]
+}
