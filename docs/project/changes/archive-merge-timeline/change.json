@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "archive-merge-timeline",
+  "title": "按合入时间浏览归档 Change",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "codex/archive-merge-timeline",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-27T09:43:33.550Z",
+      "summary": "归档按真实合入日期与批次展示，统一简短交付标签",
+      "source": "用户认可归档时间线方向和待集成、待合入、已合入文案：行，就这样子吧；随后选择不单独画原型，沿用现有样式实现。"
+    }
+  },
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "体验"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "归档页按合入日期和 PR 批次展示时间线，并调整交付文案，是否按此方向推进？",
+      "recommendation": "使用真实合入时间组织时间线，将已发布改为已合入，待发布改为待合入。",
+      "answer": "认可时间线方向，采用待集成、待合入、已合入的简短文案。",
+      "source": "用户认为合入主分支太长；在建议待集成 → 待合入 → 已合入后回复：行，就这样子吧。"
+    },
+    "Q2": {
+      "round": 2,
+      "question": "这次只调整已归档列表，需要先看可交互原型吗？",
+      "recommendation": "不单独画原型，沿用现有样式实现。",
+      "answer": "不单独画原型，沿用现有样式实现。",
+      "source": "用户选择：不单独画原型，沿用现有样式实现（推荐）。"
+    }
+  }
+}
