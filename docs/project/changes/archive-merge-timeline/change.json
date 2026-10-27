@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/archive-merge-timeline",
   "confirmations": {
     "requirement": {
       "at": "2026-10-27T09:43:33.550Z",
