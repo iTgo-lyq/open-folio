@@ -12,12 +12,14 @@ function Batch({
   returnTo,
   expansion,
   expansionKey,
+  showCount,
 }: {
   batch: ArchiveBatch;
   render: (change: ChangeGroup) => ReactNode;
   returnTo?: string | null;
   expansion: Set<string>;
   expansionKey: string;
+  showCount: boolean;
 }) {
   const [expanded, setExpanded] = useState(
     () =>
@@ -58,7 +60,7 @@ function Batch({
               hour12: false,
             })}
           </time>
-          <span>{items.length} 个 Change</span>
+          {showCount && <span>{items.length} 个 Change</span>}
         </header>
       )}
       <ul id={id} className={styles.items}>
@@ -118,6 +120,7 @@ export function ArchiveTimeline({
               <Batch
                 key={batch.key}
                 batch={batch}
+                showCount={day.batches.length > 1}
                 render={render}
                 returnTo={returnTo}
                 expansion={expansion}
