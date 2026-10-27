@@ -4,19 +4,29 @@
   "title": "让子 Change 先集成到 xlarge 父分支",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/xlarge-parent-integration",
   "confirmations": {
     "requirement": {
       "at": "2026-10-27T09:06:43.788Z",
       "summary": "子项先合入父分支，父项整体集成并统一命令与读取规则。",
       "source": "继续推进吧，记得 skill 相关的变更要保持精要"
+    },
+    "technical": {
+      "at": "2026-10-27T09:13:22.061Z",
+      "summary": "复用父子关系统一目标与来源，按真实 PR 核实分层交付。",
+      "source": "继续吧"
+    },
+    "plan": {
+      "at": "2026-10-27T09:13:23.630Z",
+      "summary": "依次交付父子路由、合入清理及工作台发布核实。",
+      "source": "继续吧"
     }
   },
   "tasks": {
     "T1": {
       "title": "子项从父分支移交并可靠读取交付材料",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "贯通父子 PR 合入、依赖关闭与安全清理",
@@ -31,9 +41,5 @@
   "types": [
     "流程",
     "修复"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "确认共享父子路由方案及三项串行交付计划"
-  }
+  ]
 }
