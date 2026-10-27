@@ -4,7 +4,7 @@
   "title": "按合入时间浏览归档 Change",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/archive-merge-timeline",
   "confirmations": {
     "requirement": {
@@ -31,7 +31,13 @@
       "commitTitle": "archive-merge-timeline T1: show archived Changes by verified merge batches"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-27T10:02:45.442Z",
+      "summary": "46项单元测试、生产构建和相关浏览器回归通过；独立subagent评审两项导航问题已修复并复核，父子交付组合复核通过"
+    }
+  },
   "types": [
     "体验"
   ],
@@ -50,5 +56,9 @@
       "answer": "不单独画原型，沿用现有样式实现。",
       "source": "用户选择：不单独画原型，沿用现有样式实现（推荐）。"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与验证已推送，待用户验收界面并授权合入 develop 后更新常驻服务"
   }
 }
