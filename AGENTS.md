@@ -30,7 +30,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## SpecTrail 分发
 
-`.agents/skills/spec-trail/` 是技能的唯一源码与公开安装入口，与 OpenFolio 在同一仓库维护，不再向独立仓库同步。技能内容及根目录的 `version.json` 一起提交，保留技能包的 MIT `LICENSE`。安装说明见 [SpecTrail](docs/spec-trail.md)，介绍站源码在 `website/`。
+`.agents/skills/spec-trail/` 是技能的唯一源码与公开安装入口，与 OpenFolio 在同一仓库维护，不再向独立仓库同步。技能内容及根目录的 `version.json` 一起提交，保留技能包的 MIT `LICENSE`。 OpenFolio 与 SpecTrail 对外发布使用同一版本号：根 `package.json`、`package-lock.json` 的应用版本与 `.agents/skills/spec-trail/version.json` 保持一致，发布 PR 使用该版本。安装说明见 [SpecTrail](docs/spec-trail.md)，介绍站源码在 `website/`。
 
 ## 前端开发
 
