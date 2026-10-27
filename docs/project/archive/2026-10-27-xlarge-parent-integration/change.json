@@ -3,7 +3,7 @@
   "id": "xlarge-parent-integration",
   "title": "让子 Change 先集成到 xlarge 父分支",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/xlarge-parent-integration",
   "confirmations": {
@@ -45,14 +45,27 @@
       "result": "passed",
       "at": "2026-10-27T09:43:40.846Z",
       "summary": "358项全量回归、类型构建和浏览器验证通过；独立Agent评审无遗留问题"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-27T09:51:11.589Z",
+      "summary": "用户认可当前交付并授权归档合入",
+      "source": "归档合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-27T09:51:50.936Z",
+      "summary": "同步分层移交合入、依赖清理及工作台来源差异与发布判定"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-27T09:51:52.408Z",
+      "summary": "父子分层集成通过验证和用户验收，归档交付",
+      "path": "docs/project/archive/2026-10-27-xlarge-parent-integration"
     }
   },
   "types": [
     "流程",
     "修复"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现及独立评审完成，等待用户验收后归档并集成"
-  }
+  ]
 }
