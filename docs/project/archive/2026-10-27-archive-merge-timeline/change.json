@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "archive-merge-timeline",
+  "title": "按合入时间浏览归档 Change",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/archive-merge-timeline",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-27T09:43:33.550Z",
+      "summary": "归档按真实合入日期与批次展示，统一简短交付标签",
+      "source": "用户认可归档时间线方向和待集成、待合入、已合入文案：行，就这样子吧；随后选择不单独画原型，沿用现有样式实现。"
+    },
+    "technical": {
+      "at": "2026-10-27T09:46:13.996Z",
+      "summary": "复用合入证据补齐真实时间，以日期和批次组织归档",
+      "source": "用户在技术方案与计划确认请求后回复：继续吧。"
+    },
+    "plan": {
+      "at": "2026-10-27T09:46:15.393Z",
+      "summary": "端到端交付合入时间线与统一文案并验证交互",
+      "source": "用户在技术方案与计划确认请求后回复：继续吧。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "支持按真实合入批次浏览归档 Change",
+      "status": "done",
+      "verification": "同步最新 develop 后46项单元测试、生产构建及归档/目录浏览器3项通过；另7项视图、2项阅读回归通过；三宽度明暗主题及共享Chrome验证通过，独立评审问题已修复复核",
+      "commitTitle": "archive-merge-timeline T1: show archived Changes by verified merge batches"
+    },
+    "T2": {
+      "title": "消除归档时间线的重复计数",
+      "status": "done",
+      "verification": "Prettier及生产构建通过；真实账号浏览器确认3个单批次日期只显示一次计数、未知时间总数保留，展开收起及退出清理正常",
+      "commitTitle": "fix: avoid duplicate counts for single archive batches"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-27T10:12:56.917Z",
+      "summary": "原实现验证继续有效；重复计数修正经生产构建与真实账号浏览器冒烟通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-27T10:37:51.146Z",
+      "summary": "用户验收真实预览及计数修正，确认归档并合入",
+      "source": "用户：行了归档合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-27T10:37:52.607Z",
+      "summary": "同步Change追踪的合入时间线、计数去重、导航、证据与交付文案"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-27T10:37:54.003Z",
+      "summary": "人工验收通过，同步Specs并归档，授权通过PR合入develop",
+      "path": "docs/project/archive/2026-10-27-archive-merge-timeline"
+    }
+  },
+  "types": [
+    "体验"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "归档页按合入日期和 PR 批次展示时间线，并调整交付文案，是否按此方向推进？",
+      "recommendation": "使用真实合入时间组织时间线，将已发布改为已合入，待发布改为待合入。",
+      "answer": "认可时间线方向，采用待集成、待合入、已合入的简短文案。",
+      "source": "用户认为合入主分支太长；在建议待集成 → 待合入 → 已合入后回复：行，就这样子吧。"
+    },
+    "Q2": {
+      "round": 2,
+      "question": "这次只调整已归档列表，需要先看可交互原型吗？",
+      "recommendation": "不单独画原型，沿用现有样式实现。",
+      "answer": "不单独画原型，沿用现有样式实现。",
+      "source": "用户选择：不单独画原型，沿用现有样式实现（推荐）。"
+    }
+  },
+  "rework": {
+    "at": "2026-10-27T10:11:40.057Z",
+    "reason": "用户验收指出日期与单批次重复显示 Change 数量，其他无问题",
+    "approach": "日期保留总数，仅同日多批次显示各批次数量，更新预览复验"
+  }
+}

@@ -1,0 +1,140 @@
+.timeline {
+  padding-top: 12px;
+}
+.day {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 20px;
+}
+.date {
+  padding: 7px 0 28px;
+}
+.date h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--of-text);
+}
+.date > span {
+  font-size: 11.5px;
+  color: var(--of-text-3);
+}
+.batches {
+  position: relative;
+  min-width: 0;
+  border-left: 1px solid var(--of-border);
+  padding: 0 0 28px 24px;
+}
+.batches::before {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  left: -4px;
+  top: 12px;
+  border-radius: 50%;
+  background: var(--of-text-3);
+  box-shadow: 0 0 0 4px var(--of-bg-surface);
+}
+.day:first-child .batches::before {
+  background: var(--of-accent);
+}
+.day:last-child .batches {
+  border-color: transparent;
+}
+.batch + .batch {
+  margin-top: 20px;
+}
+.batchHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 32px;
+  padding: 0 10px 10px;
+  border-bottom: 0.5px solid var(--of-border);
+  color: var(--of-text-3);
+  font-size: 11.5px;
+}
+.batchHeading > svg {
+  color: var(--of-success);
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.batchHeading h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--of-text);
+  overflow-wrap: anywhere;
+}
+.batchHeading code {
+  font: 11.5px var(--of-font-mono);
+  color: var(--of-text-2);
+  overflow-wrap: anywhere;
+}
+.batchHeading a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--of-text-2);
+  text-decoration: none;
+}
+.batchHeading a:hover {
+  color: var(--of-accent-text);
+  text-decoration: underline;
+}
+.batchHeading a svg {
+  width: 12px;
+  height: 12px;
+}
+.batchHeading a:focus-visible {
+  outline: 2px solid var(--of-accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.batchHeading time {
+  font-variant-numeric: tabular-nums;
+}
+.batchHeading > span {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.items {
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.expand {
+  margin: 4px 0 0 2px;
+  color: var(--of-text-2);
+}
+@media (max-width: 760px) {
+  .timeline {
+    padding-top: 6px;
+  }
+  .day {
+    display: block;
+  }
+  .date {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 0 0 12px;
+  }
+  .date h2 {
+    margin: 0;
+  }
+  .batches {
+    margin-left: 3px;
+    padding-left: 12px;
+    padding-bottom: 28px;
+  }
+  .batchHeading {
+    gap: 6px 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}

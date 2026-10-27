@@ -497,6 +497,7 @@ test("PR reads normalize trusted links, merged facts, pagination and local permi
   assert.equal(page.nextCursor, "2");
   assert(!page.notModified);
   assert.equal(page.items[0].mergeCommit, null);
+  assert.equal(page.items[0].mergedAt, null);
   assert.equal(
     requests.at(-1)?.searchParams.get("head"),
     "demo:change/example",
@@ -514,6 +515,7 @@ test("PR reads normalize trusted links, merged facts, pagination and local permi
   assert(!byCommit.notModified);
   assert.equal(byCommit.items[0].number, 3);
   assert.equal(byCommit.items[0].mergeCommit, oid("c"));
+  assert.equal(byCommit.items[0].mergedAt, "2026-10-21T00:00:00Z");
   assert.equal(byCommit.nextCursor, null);
   for (const status of [403, 404, 401, 429]) {
     const denied = mock({

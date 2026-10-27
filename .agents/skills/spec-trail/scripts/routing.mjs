@@ -68,7 +68,30 @@ export function closedRecord(state, directory) {
   );
 }
 
-/** @typedef {{ id: string, entryPath: string, branch: string|null, kind: 'planning'|'target'|'archive'|'invalid', errors: string[] }} ChangeRoute */
+/** Resolve ownership, never infer a parent from a branch name. */
+export function parentBranch(child, parent, integrationBranch, releaseBranch) {
+  if (!child?.parent) return integrationBranch;
+  if (!parent || parent.id !== child.parent || parent.id === child.id ||
+      parent.size !== 'xlarge' || parent.parent || child.size === 'xlarge' ||
+      !parent.children?.includes(child.id) || !validBranchName(parent.branch) ||
+      [integrationBranch, releaseBranch, child.branch].includes(parent.branch))
+    throw Error(`Child ${child.id}: invalid parent relationship or parent not handed off`);
+  return parent.branch;
+}
+
+/** A parent archive takes precedence even while the child's source still exists. */
+export function parentArchive(records, child, parent) {
+  const own = records.filter(row => row.id === child.id);
+  if (!own.some(row => row.archived)) return null;
+  const record = own[0];
+  if (own.length !== 1 || record.error || record.state?.id !== child.id ||
+      record.state?.branch !== child.branch || record.state?.parent !== parent.id ||
+      !parent.children?.includes(child.id) || !closedRecord(record.state, record.directory))
+    throw Error(`Child ${child.id}: invalid archive on parent branch`);
+  return record;
+}
+
+/** @typedef {{ id: string, entryPath: string, branch: string|null, kind: 'planning'|'target'|'archive'|'invalid', parent?: string, ownerBranch?: string, errors: string[] }} ChangeRoute */
 /**
  * Read only identity/ownership from live entries; their other fields may be stale.
  * @param {{path: string, state: any, error?: string}[]} entries
@@ -120,6 +143,7 @@ export function routeCatalog(
       return {
         id,
         entryPath: entry.path,
+        ...(state?.parent ? {parent: state.parent} : {}),
         branch: errors.length
           ? null
           : kind === "archive"

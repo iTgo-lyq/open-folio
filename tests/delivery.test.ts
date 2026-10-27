@@ -64,6 +64,79 @@ function remote() {
   };
 }
 
+test("archive batches select the earliest dated verified release, including overrides without inventing evidence", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const m = f.merge();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const r = remote();
+  const releases = [
+    {
+      ...pr(8, true),
+      state: "merged" as const,
+      mergeCommit: oid("8"),
+      mergedAt: "2026-10-27T08:00:00Z",
+    },
+    {
+      ...pr(7, true),
+      state: "merged" as const,
+      mergeCommit: oid("7"),
+      mergedAt: "2026-10-26T08:00:00Z",
+    },
+    {
+      ...pr(6, true),
+      state: "merged" as const,
+      mergeCommit: oid("6"),
+      mergedAt: "2026-10-25T08:00:00Z",
+    },
+    { ...pr(5, true), state: "merged" as const, mergeCommit: oid("5") },
+  ];
+  const changePr = { ...pr(), state: "merged" as const, mergeCommit: m };
+  r.set([changePr, ...releases]);
+  const input = {
+    changes: snapshot.changes,
+    integrationTip: snapshot.integrations.tip,
+    integrationBranch: "develop",
+    releaseSource: { branch: "main", commit: oid("a") },
+    readIntegration: (commit: string, id: string) =>
+      inspectIntegration(f.run, commit, id),
+    reader: r.reader,
+    signal: new AbortController().signal,
+    ancestor: async (before: string) => before !== oid("6"),
+  };
+  const first = await collectDelivery(input);
+  assert.equal(first.deliveryByChange.example.releaseMergedPrNumber, 7);
+  const record = input.changes[0].candidates.find(
+    (c) => c.key === input.changes[0].primary,
+  )!;
+  record.state!.deliveryOverride = "releaseMerged";
+  assert.equal(
+    (await collectDelivery(input)).deliveryByChange.example
+      .releaseMergedPrNumber,
+    7,
+  );
+  r.set(releases);
+  const missing = await collectDelivery(input);
+  assert.equal(missing.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(
+    missing.deliveryByChange.example.releaseMergedPrNumber,
+    undefined,
+  );
+  r.set([changePr, { ...releases[0], mergedAt: undefined }]);
+  const undated = await collectDelivery(input);
+  assert.equal(undated.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(
+    undated.deliveryByChange.example.releaseMergedPrNumber,
+    undefined,
+  );
+  r.fail(new ProviderError("PR_READ_DENIED", "unavailable", 403));
+  const stale = await collectDelivery({
+    ...input,
+    previous: first.deliveryByChange,
+  });
+  assert.equal(stale.deliveryByChange.example.releaseMergedPrNumber, undefined);
+});
+
 test("PR-only refreshes update snapshots, preserve close/reopen history and recheck publication permission", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);

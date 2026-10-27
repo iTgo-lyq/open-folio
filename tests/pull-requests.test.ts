@@ -23,7 +23,7 @@ const raw = (number: number, base = "develop", marked = true) => ({
   draft: false,
   base: { ref: base, sha: oid("a"), repo: { id: 12 } },
   head: { ref: `change/item-${number}`, sha: oid("b"), repo: { id: 12 } },
-  merged_at: null,
+  merged_at: null as string | null,
   merge_commit_sha: null,
   updated_at: "2026-10-24T00:00:00Z",
 });
@@ -124,12 +124,14 @@ test("one base query is shared; disk pages reuse 304 without bodies and preserve
   const d = await disk(t),
     r = remote();
   r.collections.develop = [raw(1), raw(2)];
+  r.collections.develop[0].merged_at = "2026-10-23T12:30:00Z";
   const cache = await d.load();
   const results = await Promise.all(
     Array.from({ length: 74 }, () => cache.query(r.reader, "develop", signal)),
   );
   assert.equal(r.calls.length, 1);
   assert.equal(results[0][1].marker.kind, "change");
+  assert.equal(results[0][0].mergedAt, "2026-10-23T12:30:00Z");
   await cache.query(r.reader, "main", signal);
   assert.equal(r.calls.length, 2);
   await d.save(cache);
@@ -174,6 +176,24 @@ test("all pages are revalidated beyond ten pages, including old PR edits and rem
     JSON.parse(await readFile(d.path, "utf8")).queries[0].pages.length,
     1,
   );
+});
+
+test("old cached PRs remain readable and mapping-version refresh fetches merge time without old ETags", async (t) => {
+  const d = await disk(t),
+    r = remote();
+  r.collections.develop = [raw(1)];
+  r.collections.develop[0].merged_at = "2026-10-23T12:30:00Z";
+  const oldReader = { ...r.reader, cacheKey: "old-mapping-version" };
+  const first = new PullRequestCache();
+  await first.query(oldReader, "develop", signal);
+  const legacy = JSON.parse(first.serialize());
+  delete legacy.queries[0].pages[0].items[0].mergedAt;
+  await writeFile(d.path, JSON.stringify(legacy));
+  const warm = await d.load();
+  warm.retain(r.reader, ["develop"]);
+  const result = await warm.query(r.reader, "develop", signal);
+  assert.equal(r.calls.at(-1)?.etag, null);
+  assert.equal(result[0].mergedAt, "2026-10-23T12:30:00Z");
 });
 
 test("raw full pages and 304 without Link still discover a new tail; unmarked and foreign PRs are excluded", async (t) => {

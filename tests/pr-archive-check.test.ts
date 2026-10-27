@@ -377,3 +377,14 @@ test("CLI reads PR JSON as data and propagates failed archive checks", async () 
     await f.cleanup();
   }
 });
+
+test('historical direct child delivery can release while its parent is still active', async t => {
+  const f = await integrationFixture(); t.after(f.cleanup);
+  await f.put(`${f.archivePath}/change.json`,JSON.stringify({...f.record,parent:'parent'}));
+  await f.put('docs/project/changes/parent/change.json',JSON.stringify({
+    schemaVersion:1,id:'parent',title:'Parent',size:'xlarge',branch:'develop',status:'active',stage:'requirement',
+    confirmations:{},tasks:{},closure:{},children:[f.id]
+  }));
+  f.commit(); f.merge();
+  assert.equal((await checkPullRequest(f.git,event(f,'main',releaseBody))).kind,'release');
+});

@@ -147,7 +147,7 @@ function pageNumber(input: string): number {
 }
 export class GitHubProvider implements RepositoryProvider {
   readonly id = "github";
-  readonly pullRequestCacheVersion = githubPullApiVersion;
+  readonly pullRequestCacheVersion = `${githubPullApiVersion}:merged-at-v1`;
   #fetch: typeof fetch;
   #cooldown: GitHubCooldown;
   constructor(fetcher: typeof fetch = fetch, cooldown: CooldownOptions = {}) {
@@ -309,6 +309,7 @@ export class GitHubProvider implements RepositoryProvider {
         commit: p.head.sha,
       },
       mergeCommit: p.merged_at ? p.merge_commit_sha : null,
+      mergedAt: p.merged_at,
       updatedAt: p.updated_at,
     };
   }

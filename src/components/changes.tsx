@@ -55,15 +55,17 @@ export default function Changes() {
     if (Object.keys(patch).length) nav(patch, true);
   }, [q, query, nav]);
   const previous = useRef<string | null>(null);
+  const archiveExpansion = useRef(new Set<string>());
   useEffect(() => {
     if (q.c || !previous.current) return;
-    const frame = requestAnimationFrame(() =>
-      document
-        .querySelector<HTMLElement>(
-          `[data-change-id="${CSS.escape(previous.current!)}"]`,
-        )
-        ?.focus({ preventScroll: true }),
-    );
+    const frame = requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(
+        `[data-change-id="${CSS.escape(previous.current!)}"]`,
+      );
+      target?.focus({ preventScroll: true });
+      if (readDirectoryQuery(q).scope === "archived")
+        target?.scrollIntoView({ block: "nearest" });
+    });
     return () => cancelAnimationFrame(frame);
   }, [q.c]);
   if (!hasDirectoryQuery(q) && !views.record)
@@ -98,6 +100,8 @@ export default function Changes() {
     />
   ) : (
     <ChangeDirectory
+      archiveExpansion={archiveExpansion.current}
+      returnTo={previous.current}
       onOpen={(id) => {
         previous.current = id;
       }}

@@ -10,6 +10,7 @@ import {
   matchesLabels,
   URGENCY_LABELS,
 } from "./change-labels.ts";
+import { DELIVERY_LABELS } from "./delivery-labels.ts";
 
 export const DIRECTORY_STATES = [
   "active",
@@ -215,9 +216,9 @@ export function groupDirectoryChanges(
   if (query.scope === "completed")
     return (
       [
-        ["pendingIntegration", "待集成"],
-        ["pendingRelease", "待发布"],
-        ["unknown", "交付待核实"],
+        ["pendingIntegration", DELIVERY_LABELS.pendingIntegration],
+        ["pendingRelease", DELIVERY_LABELS.pendingRelease],
+        ["unknown", DELIVERY_LABELS.unknown],
       ] as const
     )
       .map(([stage, name]) =>

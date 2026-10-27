@@ -58,6 +58,8 @@ import { useMediaQuery } from "./use-media";
 import { Empty } from "./document";
 import page from "./personal.module.css";
 import styles from "./change-directory.module.css";
+import { ArchiveTimeline } from "./archive-timeline";
+import { DELIVERY_LABELS as deliveryLabels } from "@/lib/delivery-labels";
 
 const SCOPES = [
   ["active", "进行中"],
@@ -65,12 +67,6 @@ const SCOPES = [
   ["archived", "已归档"],
   ["cancelled", "已取消"],
 ] as const;
-const deliveryLabels = {
-  pendingIntegration: "待集成",
-  pendingRelease: "待发布",
-  releaseMerged: "已发布",
-  unknown: "交付待核实",
-};
 function SizeLabel({ change }: { change: ChangeGroup }) {
   const size = primaryRecord(change)?.state?.size;
   if (!size) return <span aria-label="规模未知">—</span>;
@@ -168,7 +164,15 @@ function Series({
     ),
   );
 }
-export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
+export function ChangeDirectory({
+  onOpen,
+  returnTo,
+  archiveExpansion,
+}: {
+  onOpen?: (id: string) => void;
+  returnTo?: string | null;
+  archiveExpansion: Set<string>;
+}) {
   const { data, q, nav, projectId } = useWorkspace();
   const identity = usePersonal()?.connection?.identity;
   const views = useChangeViews();
@@ -195,10 +199,11 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
   }, [q.changeView, q.scope, views.record?.revision]);
   const all = data!.changes;
   const query = useMemo(() => readDirectoryQuery(q), [q]);
+  const timeline = query.scope === "archived" && !query.issues;
   const mobile = useMediaQuery("(max-width: 760px)");
   const visible = sortDirectoryChanges(
     filterDirectoryChanges(all, query, data?.deliveryByChange, identity),
-    query.labels.sortByUrgency,
+    !timeline && query.labels.sortByUrgency,
   );
   const groups = groupDirectoryChanges(visible, query, data?.deliveryByChange);
   const board =
@@ -697,60 +702,62 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
               )}
             </MenuContent>
           </Menu>
-          <Menu>
-            <MenuTrigger asChild>
-              <Button variant="ghost" aria-label="显示">
-                <Settings2 />
-                <span className={styles.toolLabel}>显示</span>
-              </Button>
-            </MenuTrigger>
-            <MenuContent aria-label="显示" align="end">
-              <MenuLabel>视图</MenuLabel>
-              <MenuRadioGroup
-                value={query.view}
-                onValueChange={(view) =>
-                  nav({ view: view === "list" ? null : view })
-                }
-              >
-                <MenuRadioItem value="list">列表</MenuRadioItem>
-                <MenuRadioItem
-                  value="board"
-                  disabled={query.scope !== "active" || query.issues}
+          {!timeline && (
+            <Menu>
+              <MenuTrigger asChild>
+                <Button variant="ghost" aria-label="显示">
+                  <Settings2 />
+                  <span className={styles.toolLabel}>显示</span>
+                </Button>
+              </MenuTrigger>
+              <MenuContent aria-label="显示" align="end">
+                <MenuLabel>视图</MenuLabel>
+                <MenuRadioGroup
+                  value={query.view}
+                  onValueChange={(view) =>
+                    nav({ view: view === "list" ? null : view })
+                  }
                 >
-                  看板
-                </MenuRadioItem>
-              </MenuRadioGroup>
-              <MenuSeparator />
-              <MenuLabel>分组</MenuLabel>
-              <MenuRadioGroup
-                value={query.group}
-                onValueChange={(group) =>
-                  nav({ group: group === "status" ? null : group })
-                }
-              >
-                {[
-                  ["status", "处理状态"],
-                  ["stage", "阶段"],
-                  ["none", "不分组"],
-                ].map(([value, label]) => (
-                  <MenuRadioItem key={value} value={value}>
-                    {label}
+                  <MenuRadioItem value="list">列表</MenuRadioItem>
+                  <MenuRadioItem
+                    value="board"
+                    disabled={query.scope !== "active" || query.issues}
+                  >
+                    看板
                   </MenuRadioItem>
-                ))}
-              </MenuRadioGroup>
-              <MenuSeparator />
-              <MenuLabel>排序</MenuLabel>
-              <MenuRadioGroup
-                value={query.labels.sortByUrgency ? "urgency" : "created"}
-                onValueChange={(sort) =>
-                  nav({ sort: sort === "created" ? null : sort })
-                }
-              >
-                <MenuRadioItem value="created">最新创建</MenuRadioItem>
-                <MenuRadioItem value="urgency">紧急程度优先</MenuRadioItem>
-              </MenuRadioGroup>
-            </MenuContent>
-          </Menu>
+                </MenuRadioGroup>
+                <MenuSeparator />
+                <MenuLabel>分组</MenuLabel>
+                <MenuRadioGroup
+                  value={query.group}
+                  onValueChange={(group) =>
+                    nav({ group: group === "status" ? null : group })
+                  }
+                >
+                  {[
+                    ["status", "处理状态"],
+                    ["stage", "阶段"],
+                    ["none", "不分组"],
+                  ].map(([value, label]) => (
+                    <MenuRadioItem key={value} value={value}>
+                      {label}
+                    </MenuRadioItem>
+                  ))}
+                </MenuRadioGroup>
+                <MenuSeparator />
+                <MenuLabel>排序</MenuLabel>
+                <MenuRadioGroup
+                  value={query.labels.sortByUrgency ? "urgency" : "created"}
+                  onValueChange={(sort) =>
+                    nav({ sort: sort === "created" ? null : sort })
+                  }
+                >
+                  <MenuRadioItem value="created">最新创建</MenuRadioItem>
+                  <MenuRadioItem value="urgency">紧急程度优先</MenuRadioItem>
+                </MenuRadioGroup>
+              </MenuContent>
+            </Menu>
+          )}
         </div>
         <ChangeViewActions />
         {views.error && (
@@ -835,6 +842,45 @@ export function ChangeDirectory({ onOpen }: { onOpen?: (id: string) => void }) {
             )}
             {filterCount > 0 && <Button onClick={clear}>清除筛选</Button>}
           </Empty>
+        ) : timeline ? (
+          <ArchiveTimeline
+            key={projectId}
+            projectId={projectId}
+            expansion={archiveExpansion}
+            changes={visible}
+            delivery={data?.deliveryByChange}
+            returnTo={returnTo}
+            render={(change) => (
+              <div className={`${styles.row} ${styles.archiveRow}`}>
+                <div className={styles.mainCell}>
+                  <a
+                    className={styles.titleLink}
+                    href={href(change.id)}
+                    onClick={(event) => open(event, change.id)}
+                    data-change-id={change.id}
+                    aria-label={`打开 ${change.title}`}
+                  >
+                    <span className={styles.title}>
+                      {urgency(change)}
+                      {change.title}
+                    </span>
+                  </a>
+                  <div className={styles.meta}>
+                    <SizeLabel change={change} />
+                    {labels(change)}
+                  </div>
+                </div>
+                <span className={styles.who}>
+                  {creatorName(change) && (
+                    <>
+                      <Avatar name={creatorName(change)} />
+                      <span>{creatorName(change)}</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          />
         ) : board ? (
           <div
             className={styles.board}

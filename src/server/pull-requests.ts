@@ -42,6 +42,7 @@ const item = z.object({
   base: ref.extend({ repositoryId: z.string().min(1) }),
   head: ref,
   mergeCommit: sha.nullable(),
+  mergedAt: z.string().datetime({ offset: true }).nullable().optional(),
   updatedAt: z.string().datetime({ offset: true }),
   marker,
 });

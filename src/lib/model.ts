@@ -236,6 +236,8 @@ export type CurrentPrototype = {
 export type ChangeRoute = {
   id: string;
   entryPath: string;
+  parent?: string;
+  ownerBranch?: string;
   branch: string | null;
   kind: "planning" | "target" | "archive" | "invalid";
   errors: string[];
@@ -249,6 +251,7 @@ export type PullRequest = {
   base: { repositoryId: string; branch: string; commit: string };
   head: { repositoryId: string | null; branch: string; commit: string };
   mergeCommit: string | null;
+  mergedAt?: string | null;
   updatedAt: string;
   version?: string;
 };
@@ -256,6 +259,8 @@ export type Delivery = {
   stage?: "pendingIntegration" | "pendingRelease" | "releaseMerged" | "unknown";
   changePrs: PullRequest[];
   releasePrs: PullRequest[];
+  /** Earliest dated release PR verified against both release and integration history. */
+  releaseMergedPrNumber?: number;
   diagnostics: string[];
   stale: boolean;
   changePrsStale?: boolean;

@@ -2,7 +2,7 @@
 
 常规状态修改使用 `node .agents/skills/spec-trail/scripts/change.mjs <命令> --change <id>`，规划在集成分支运行，移交后在登记的工作分支运行。Node.js 20+，仅使用内置模块，无需安装依赖。`--repo <仓库>` 可显式指定工作区；`--dry-run` 只输出拟写状态，不修改文档。`show` 按 ID 读取活动或归档 Change 的元数据，查找范围遵循[主 skill](../SKILL.md#入口与通用约束)。
 
-脚本写入现有 `change.json`，不会替用户确认、运行测试、验证 Markdown 正文含义或自动提交/推送。摘要和来源由 Agent 根据真实证据填写；调用成功仅代表本地状态更新。任务默认按编号数值递增串行；Plan 可用显式执行顺序表覆盖，存在但无效时拒绝推进。顺序解析和前置链校验由共享 `scripts/task-order.mjs` 执行，正文任务定义和实际交付仍由 Agent 核对。依赖读取本地及 `origin` 跟踪分支，调用前按主 skill fetch；缺少已推送关闭记录时拒绝执行；若因 squash 等原因无法从祖先关系证明交付已集成，先核对所需代码/验证并写入 Execution，再用 `--availability-note '具体集成依据'` 继续。execute 及 xlarge 的 verify/accept/archive 接受该参数，输出前置主分支与当前 HEAD 的提交身份和依据，不把人工核对冒充祖先证明。
+脚本写入现有 `change.json`，不会替用户确认、运行测试、验证 Markdown 正文含义或自动提交/推送。摘要和来源由 Agent 根据真实证据填写；调用成功仅代表本地状态更新。任务默认按编号数值递增串行；Plan 可用显式执行顺序表覆盖，存在但无效时拒绝推进。顺序解析和前置链校验由共享 `scripts/task-order.mjs` 执行，正文任务定义和实际交付仍由 Agent 核对。依赖读取本地及 `origin` 跟踪分支，调用前按主 skill fetch；缺少已推送关闭记录时拒绝执行；父项关闭与子项依赖另核实实际 PR 交付，人工说明不能替代合入事实；若因 squash 等原因无法从祖先关系证明交付已集成，先核对所需代码/验证并写入 Execution，再用 `--availability-note '具体集成依据'` 继续。execute 及 xlarge 的 verify/accept/archive 接受该参数，输出前置主分支与当前 HEAD 的提交身份和依据，不把人工核对冒充祖先证明。
 
 | 命令 | 参数与语义 |
 | --- | --- |

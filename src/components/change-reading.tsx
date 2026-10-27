@@ -24,6 +24,7 @@ import {
   groupDirectoryChanges,
 } from "@/lib/change-directory";
 import { matchingFollowUps } from "@/lib/follow-ups";
+import { archiveTimeline } from "@/lib/archive-timeline";
 import { STAGES } from "@/lib/model";
 import { useDocument, useWorkspace } from "./context";
 import { Reader } from "./reader";
@@ -91,6 +92,7 @@ export function ChangeReading({
     });
   const identity = usePersonal()?.connection?.identity;
   const query = readDirectoryQuery(q);
+  const timeline = query.scope === "archived" && !query.issues;
   const visible = sortDirectoryChanges(
     filterDirectoryChanges(
       data?.changes ?? [],
@@ -98,7 +100,7 @@ export function ChangeReading({
       data?.deliveryByChange,
       identity,
     ),
-    query.labels.sortByUrgency,
+    !timeline && query.labels.sortByUrgency,
   );
   const bins =
     query.view === "board" &&
@@ -111,11 +113,15 @@ export function ChangeReading({
           ),
         }))
       : groupDirectoryChanges(visible, query, data?.deliveryByChange);
-  const ordered = bins.flatMap((bin) =>
-    [
-      ...matchingFollowUps(data?.changes ?? [], bin.items).visible.values(),
-    ].flat(),
-  );
+  const ordered = timeline
+    ? archiveTimeline(visible, data?.deliveryByChange).flatMap((day) =>
+        day.batches.flatMap((batch) => batch.items),
+      )
+    : bins.flatMap((bin) =>
+        [
+          ...matchingFollowUps(data?.changes ?? [], bin.items).visible.values(),
+        ].flat(),
+      );
   const position = ordered.findIndex((change) => change.id === g?.id);
   const step = (offset: number) => {
     const target = ordered[position + offset];

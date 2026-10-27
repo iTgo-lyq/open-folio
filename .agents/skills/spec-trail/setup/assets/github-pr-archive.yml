@@ -2,8 +2,7 @@ name: SpecTrail PR
 
 on:
   pull_request:
-    # Match integrationBranch and releaseBranch in docs/project/workflow.json.
-    branches: [develop, main]
+    # Include registered parent branches; check-pr resolves delivery targets.
     types: [opened, synchronize, reopened, edited, ready_for_review]
 
 permissions:

@@ -424,6 +424,14 @@
   flex: 0 1 auto;
   scrollbar-width: thin;
 }
+.archiveRow {
+  grid-template-columns: minmax(0, 1fr) 110px;
+}
+@media (max-width: 1023px) {
+  .archiveRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .viewTabs [role="tablist"] {
   max-width: none;
 }
