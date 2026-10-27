@@ -240,15 +240,14 @@ export async function collectDelivery(input: Input) {
         }
       }
       let stage: Delivery["stage"];
+      let datedRelease: PullRequest | undefined;
       // candidate.branch is the read source; state.branch retains historical ownership.
-      if (
+      const overridden =
         candidate?.validCompleted &&
         candidate.archived &&
         candidate.branch === input.integrationBranch &&
-        candidate.state?.deliveryOverride === "releaseMerged"
-      ) {
-        stage = "releaseMerged";
-      } else if (integratedCommit && !inProject) {
+        candidate.state?.deliveryOverride === "releaseMerged";
+      if (integratedCommit && !inProject) {
         stage = projectError ? "unknown" : "pendingIntegration";
         diagnostics.push(
           projectError ?? `已合入父分支 ${targetBranch}，等待父项整体集成。`,
@@ -263,9 +262,19 @@ export async function collectDelivery(input: Input) {
               p.mergeCommit &&
               (await input.ancestor(p.mergeCommit, releaseSource.commit)) &&
               (await input.ancestor(integratedCommit, p.mergeCommit))
-            )
+            ) {
               stage = "releaseMerged";
-            else {
+              if (
+                p.mergedAt &&
+                Number.isFinite(Date.parse(p.mergedAt)) &&
+                (!datedRelease ||
+                  Date.parse(p.mergedAt) < Date.parse(datedRelease.mergedAt!) ||
+                  (Date.parse(p.mergedAt) ===
+                    Date.parse(datedRelease.mergedAt!) &&
+                    p.number < datedRelease.number))
+              )
+                datedRelease = p;
+            } else {
               diagnostics.push(
                 `发布 PR #${p.number} 已合入，Git 结果仍待核实。`,
               );
@@ -290,12 +299,14 @@ export async function collectDelivery(input: Input) {
       if (stage === "pendingIntegration" && (changePrsStale || changeConflict))
         stage = "unknown";
       if (stage === "pendingRelease" && releaseConflict) stage = "unknown";
+      if (overridden) stage = "releaseMerged";
       const stale = changePrsStale || releasePrsStale;
       if (stale) complete = false;
       deliveryByChange[group.id] = {
         ...(stage ? { stage } : {}),
         changePrs: changePrs.sort((a, b) => b.number - a.number),
         releasePrs: releasePrs.sort((a, b) => b.number - a.number),
+        ...(datedRelease ? { releaseMergedPrNumber: datedRelease.number } : {}),
         diagnostics: [...new Set(diagnostics)],
         stale,
         changePrsStale,

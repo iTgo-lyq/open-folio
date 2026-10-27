@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "支持按真实合入批次浏览归档 Change",
-      "status": "doing"
+      "status": "done",
+      "verification": "同步最新 develop 后46项单元测试、生产构建及归档/目录浏览器3项通过；另7项视图、2项阅读回归通过；三宽度明暗主题及共享Chrome验证通过，独立评审问题已修复复核",
+      "commitTitle": "archive-merge-timeline T1: show archived Changes by verified merge batches"
     }
   },
   "closure": {},
