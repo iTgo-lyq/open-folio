@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "xlarge-parent-integration",
+  "title": "让子 Change 先集成到 xlarge 父分支",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "流程",
+    "修复"
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "确认父子分支集成、交付核实与读取适配的完整需求范围"
+  }
+}
