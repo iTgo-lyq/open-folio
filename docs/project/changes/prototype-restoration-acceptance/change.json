@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "核对还原验收指引并补齐交付证据",
-      "status": "doing"
+      "status": "done",
+      "verification": "五类要求及流程入口自查通过；技能包与 a0939c8 相同，复用格式、54 个引用及 12 项测试证据，补录见 Execution。",
+      "commitTitle": "prototype-restoration-acceptance T1: verify guidance and record delivery evidence"
     }
   },
   "closure": {},
