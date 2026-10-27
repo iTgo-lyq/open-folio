@@ -4,19 +4,29 @@
   "title": "按合入时间浏览归档 Change",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/archive-merge-timeline",
   "confirmations": {
     "requirement": {
       "at": "2026-10-27T09:43:33.550Z",
       "summary": "归档按真实合入日期与批次展示，统一简短交付标签",
       "source": "用户认可归档时间线方向和待集成、待合入、已合入文案：行，就这样子吧；随后选择不单独画原型，沿用现有样式实现。"
+    },
+    "technical": {
+      "at": "2026-10-27T09:46:13.996Z",
+      "summary": "复用合入证据补齐真实时间，以日期和批次组织归档",
+      "source": "用户在技术方案与计划确认请求后回复：继续吧。"
+    },
+    "plan": {
+      "at": "2026-10-27T09:46:15.393Z",
+      "summary": "端到端交付合入时间线与统一文案并验证交互",
+      "source": "用户在技术方案与计划确认请求后回复：继续吧。"
     }
   },
   "tasks": {
     "T1": {
       "title": "支持按真实合入批次浏览归档 Change",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
@@ -38,9 +48,5 @@
       "answer": "不单独画原型，沿用现有样式实现。",
       "source": "用户选择：不单独画原型，沿用现有样式实现（推荐）。"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "技术方案和计划已准备，待共同确认后实施"
   }
 }
