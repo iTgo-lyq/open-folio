@@ -25,6 +25,18 @@ export function changePullRequests(prs, {repositoryId, integrationBranch, id, br
   });
 }
 
+/** Include old direct deliveries only when they really merged; new child PRs target the parent.
+ * @template {ChangePullRequest} T @param {T[]} prs
+ * @param {{repositoryId:string,integrationBranch:string,parentBranch?:string,id:string,branch:string}} identity
+ * @returns {T[]}
+ */
+export function deliveryPullRequests(prs, identity) {
+  const direct = changePullRequests(prs, identity);
+  if (!identity.parentBranch || identity.parentBranch === identity.integrationBranch) return direct;
+  return [...direct.filter(pr => pr.state === 'merged'),
+    ...changePullRequests(prs, {...identity,integrationBranch:identity.parentBranch})];
+}
+
 /** @typedef {{status:'found', commit:string} | {status:'missing'|'invalid'|'unavailable',message:string,candidates?:string[]}} IntegrationEvidence */
 /** Resolve already-associated PRs independently of diff availability.
  * @param {(before:string,after:string)=>Promise<boolean>} ancestor

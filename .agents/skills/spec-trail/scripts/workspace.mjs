@@ -160,7 +160,8 @@ function ready(repo, catalog, record, note, refresh) {
       `Dependency ${id} is not closed`,
     );
     try {
-      repo.git(["merge-base", "--is-ancestor", source.commit, catalog.commit]);
+      const target = state.parent ? deliveryTarget(repo,catalog,state,{refresh}) : catalog;
+      repo.git(["merge-base", "--is-ancestor", source.commit, target.commit]);
     } catch {
       assert(
         note?.trim(),
@@ -255,7 +256,7 @@ function handoffChild(repo, catalog, record, branch, path, options) {
     assert(parents.length === 2, 'Prepared child contains unexpected commits; inspect before retrying');
     registration = parents[1];
     assert(prepared(repo, catalog, record.id, branch, registration), 'Invalid child registration');
-    repo.git(['merge-base','--is-ancestor',parents[0],target.commit]);
+    assert(parents[0] === target.commit, 'Parent baseline changed during child handoff; inspect the prepared child before retrying');
     const expected = repo.git(['merge-tree','--write-tree',...parents]).split('\n')[0];
     assert(repo.git(['rev-parse',`${candidate}^{tree}`]) === expected, 'Prepared child has additional changes; inspect before retrying');
   } else {
