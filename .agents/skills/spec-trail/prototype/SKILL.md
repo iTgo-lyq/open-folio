@@ -1,6 +1,6 @@
 ---
 name: spec-trail-prototype
-description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜底，维护项目当前入口与 Change 固定版本引用。
+description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜底，维护项目当前入口与 Change 固定版本引用，验收开发后的原型还原。
 ---
 
 # SpecTrail Prototype
@@ -45,6 +45,12 @@ setup 不安装框架，不覆盖已有文件；采用现有工程时提供 pack
 ### 原型验收
 
 只要绘制或更新了原型，无论 Change 规模，都必须提供预览并由用户明确验收通过，才能开始对应实现。
+
+### 开发后的原型还原验收
+
+有用户确认原型的 UI 实现，在相关任务验证及关闭整体验证时检查还原。以用户确认的固定版本原型及其源码为基准，用户后续明确决策优先，记录已批准的有意调整。
+
+验收时读取[还原验收指引](./references/implementation-review.md)，在相同条件下核对视觉细节与交互过程，结合浏览器表现及源码闭环差异；未验证项不计为通过。沿用项目组件库、工具和主流程验收，已有证据仍适用时复用。
 
 ## 当前清单
 
