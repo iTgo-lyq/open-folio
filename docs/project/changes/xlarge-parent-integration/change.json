@@ -13,10 +13,27 @@
       "source": "继续推进吧，记得 skill 相关的变更要保持精要"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "子项从父分支移交并可靠读取交付材料",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "贯通父子 PR 合入、依赖关闭与安全清理",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "对齐工作台与发布核实并完成流程回归",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "流程",
     "修复"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "确认共享父子路由方案及三项串行交付计划"
+  }
 }
