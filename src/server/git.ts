@@ -24,18 +24,20 @@ import type {
 import { inspectMarkdown } from "../lib/markdown.ts";
 import { AppError } from "./errors.ts";
 import { isSvgImage } from "./svg.ts";
-import { workflowCoreSchema } from "./schema.ts";
+import { changeSchema, workflowCoreSchema } from "./schema.ts";
 import {
   routeCatalog,
   changeLocation,
   validBranchName,
+  parentBranch,
+  parentArchive,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([9, limits]));
+  hash(JSON.stringify([10, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -716,23 +718,109 @@ export class GitReader {
         "指定来源数量超过配置限制，已保留上次快照。",
       );
     const refs = await exact(targets.map((name) => `refs/heads/${name}`));
-    for (const name of targets) {
-      const targetRoutes = routes.filter((r) => r.branch === name);
-      const target = await source(name, refs.get(`refs/heads/${name}`));
-      if (!target) {
-        targetRoutes.forEach((r) =>
-          r.errors.push(
-            `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
-          ),
+    const parentIds = new Set(
+      routes
+        .filter((r) => r.kind === "target")
+        .map((r) => r.parent)
+        .filter(Boolean),
+    );
+    const parentNames = new Set(
+      routes
+        .filter((r) => parentIds.has(r.id) && r.kind === "target")
+        .map((r) => r.branch!),
+    );
+    const loadTargets = async (names: string[], parents = false) => {
+      for (const name of names) {
+        const targetRoutes = routes.filter(
+          (r) => r.branch === name && !r.errors.length,
         );
-        continue;
+        if (!targetRoutes.length) continue;
+        const target = await source(name, refs.get(`refs/heads/${name}`));
+        if (!target) {
+          targetRoutes.forEach((r) =>
+            r.errors.push(
+              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
+            ),
+          );
+          continue;
+        }
+        const ids = targetRoutes.map((r) => r.id);
+        if (parents)
+          ids.push(
+            ...routes
+              .filter((r) => r.parent && ids.includes(r.parent))
+              .map((r) => r.id),
+          );
+        await collectSource(
+          target,
+          ["docs/project/changes/", "docs/project/archive/"],
+          ids,
+        );
       }
-      await collectSource(
-        target,
-        ["docs/project/changes/", "docs/project/archive/"],
-        targetRoutes.map((r) => r.id),
-      );
+    };
+    await loadTargets([...parentNames], true);
+    const sourceRecords = (name: string) =>
+      documents.flatMap((d) => {
+        const location = changeLocation(d.path);
+        if (d.branch !== name || !location) return [];
+        try {
+          return [
+            {
+              ...location,
+              path: d.path,
+              state: readJson(name, d.path),
+              error: undefined as string | undefined,
+            },
+          ];
+        } catch {
+          return [
+            {
+              ...location,
+              path: d.path,
+              state: null,
+              error: "来源 JSON 不可读",
+            },
+          ];
+        }
+      });
+    for (const route of routes.filter(
+      (r) => r.kind === "target" && r.parent && !r.errors.length,
+    )) {
+      try {
+        const parentRoute = routes.find((r) => r.id === route.parent);
+        if (
+          !parentRoute?.branch ||
+          parentRoute.parent ||
+          parentRoute.errors.length
+        )
+          throw Error("父 Change 来源不可读或存在嵌套关系。");
+        const parentRows = sourceRecords(parentRoute.branch).filter(
+          (r) => r.id === route.parent,
+        );
+        if (parentRows.length !== 1) throw Error("父 Change 来源不唯一。");
+        const parent = changeSchema.parse(parentRows[0].state);
+        const child = sourceRecords(integrationBranch).find(
+          (r) => r.id === route.id,
+        )!.state;
+        parentBranch(child, parent, integrationBranch, workflow.releaseBranch);
+        const archive = parentArchive(
+          sourceRecords(parentRoute.branch),
+          child,
+          parent,
+        );
+        if (archive) {
+          changeSchema.parse(archive.state);
+          route.ownerBranch = route.branch!;
+          route.branch = parentRoute.branch;
+          route.kind = "archive";
+        }
+      } catch (error) {
+        route.errors.push(
+          error instanceof Error ? error.message : "父 Change 归档无法读取。",
+        );
+      }
     }
+    await loadTargets(targets.filter((name) => !parentNames.has(name)));
     // Recheck only the selected collaboration source and its routing.
     const finalCollabCommit = (
       await exact([`refs/heads/${integrationBranch}`])

@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
-import { changeLocation, routeCatalog, validBranchName } from "./routing.mjs";
+import { changeLocation, routeCatalog, validBranchName, parentBranch, parentArchive } from "./routing.mjs";
 
 export function repository(cwd = ".") {
   const git = (args) =>
@@ -145,6 +145,14 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
   if (!route)
     throw Error(`Change ${id} is not registered on ${catalog.branch}`);
   if (route.errors.length) throw Error(`${id}: ${route.errors.join("; ")}`);
+  if (route.kind === 'target' && route.parent) {
+    const entry = catalog.entries.find(row => row.id === id);
+    const target = deliveryTarget(repo, catalog, entry.state, {refresh});
+    const record = parentArchive(recordsAt(repo, target.commit, id), entry.state, target.parent);
+    if (record) return {...record, branch: target.readBranch, commit: target.commit,
+      sourceRef: target.ref, entryPath: route.entryPath, entryCommit: catalog.commit,
+      errors: validateChange(record.state), freshness: catalog.freshness};
+  }
   if (refresh && route.branch !== catalog.branch)
     fetchBranch(repo, route.branch);
   const ref =
@@ -181,4 +189,17 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
     errors: validateChange(record.state),
     freshness: refresh ? "remote-checked" : catalog.freshness,
   };
+}
+
+/** The PR base remains the historical parent branch after its ref is deleted. */
+export function deliveryTarget(repo, catalog, state, {refresh = false} = {}) {
+  if (!state.parent) return {branch: catalog.branch, readBranch: catalog.branch,
+    commit: catalog.commit, ref: catalog.ref};
+  const parentEntry = catalog.entries.find(row => row.id === state.parent);
+  if (!parentEntry || parentEntry.state?.parent)
+    throw Error(`Child ${state.id}: parent is missing or nested`);
+  const record = routedRecord(repo, catalog, state.parent, {refresh});
+  if (record.errors.length) throw Error(record.errors.join('; '));
+  const branch = parentBranch(state, record.state, catalog.branch, catalog.config.releaseBranch);
+  return {branch, readBranch: record.branch, commit: record.commit, ref: record.sourceRef, parent: record.state};
 }

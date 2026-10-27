@@ -26,7 +26,8 @@
   "tasks": {
     "T1": {
       "title": "子项从父分支移交并可靠读取交付材料",
-      "status": "doing"
+      "status": "done",
+      "verification": "工作区与路由回归19项、新增父子场景2项通过；tsc通过"
     },
     "T2": {
       "title": "贯通父子 PR 合入、依赖关闭与安全清理",
