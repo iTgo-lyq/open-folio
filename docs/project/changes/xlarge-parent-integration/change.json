@@ -4,7 +4,7 @@
   "title": "让子 Change 先集成到 xlarge 父分支",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/xlarge-parent-integration",
   "confirmations": {
     "requirement": {
@@ -40,9 +40,19 @@
       "verification": "父子回归5项、类型检查、构建及CDP浏览器冒烟通过；独立评审无遗留问题"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-27T09:43:40.846Z",
+      "summary": "358项全量回归、类型构建和浏览器验证通过；独立Agent评审无遗留问题"
+    }
+  },
   "types": [
     "流程",
     "修复"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现及独立评审完成，等待用户验收后归档并集成"
+  }
 }
