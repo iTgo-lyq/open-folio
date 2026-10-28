@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-submodule-support",
+  "title": "读取子模块中的固定版本原型",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "新功能",
+    "适配"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "是否按 medium Change 启动：由主仓库指定提交的 gitlink 锁定子仓库原型，适配清单、预览、发布登记及历史校验，并明确报告无权限或版本缺失？",
+      "recommendation": "按此范围启动，保留主仓库管理 SpecTrail 和 Change，协同调整原型来源及发布追溯契约。",
+      "answer": "按此范围启动",
+      "source": "用户在当前会话选择：按此范围启动（推荐）"
+    }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "需求正文已整理，等待确认目标、范围与验收后进入技术方案。"
+  }
+}
