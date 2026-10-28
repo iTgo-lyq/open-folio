@@ -13,7 +13,20 @@
       "source": "用户：确认这份需求，继续整理技术方案和计划。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "按固定父提交读取子模块当前原型",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "保持子模块 Change 原型与历史来源固定",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "完成子模块原型两库发布、恢复与校验",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "新功能",
@@ -27,5 +40,9 @@
       "answer": "按此范围启动",
       "source": "用户在当前会话选择：按此范围启动（推荐）"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "技术方案和串行计划已整理，等待一起确认后开始实现。"
   }
 }
