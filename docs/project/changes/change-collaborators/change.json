@@ -4,7 +4,7 @@
   "title": "Change 协作者与默认展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-collaborators",
   "confirmations": {
     "requirement": {
@@ -40,7 +40,13 @@
       "verification": "371 项单测、18 项定向单测、生产构建、类型检查与真实工作台8组冒烟通过；R1独立复核通过，格式基线警告已记录"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T08:45:23.669Z",
+      "summary": "371项单测、13项相关浏览器回归、生产构建与真实工作台8组冒烟通过；独立评审R1已修复，既有格式警告单列记录"
+    }
+  },
   "types": [
     "体验"
   ],
@@ -76,5 +82,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现与独立评审已完成，验收版复用常驻入口，等待用户实际验收"
+  }
 }
