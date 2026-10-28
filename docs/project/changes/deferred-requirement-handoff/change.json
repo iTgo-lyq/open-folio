@@ -4,9 +4,15 @@
   "title": "区分需求暂缓与实际分支移交",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-28T06:53:28.315Z",
+      "summary": "暂缓需求独立展示并按真实分支和工作区归属判定移交",
+      "source": "用户确认：确认需求，继续技术方案与计划"
+    }
+  },
   "tasks": {},
   "closure": {},
   "followUpOf": "transferred-change-commit-guard",
@@ -14,9 +20,5 @@
   "types": [
     "修复",
     "流程"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待确认需求暂缓展示、真实移交判定及各入口一致性的完整范围与验收"
-  }
+  ]
 }
