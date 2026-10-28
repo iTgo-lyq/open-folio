@@ -3,7 +3,7 @@
   "id": "change-collaborators",
   "title": "Change 协作者与默认展示",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/change-collaborators",
   "confirmations": {
@@ -50,6 +50,23 @@
       "result": "passed",
       "at": "2026-10-28T08:55:05.068Z",
       "summary": "复用既有全量单测与回归；T4生产构建、类型检查、真实姓名8组字形边界与交互验证通过，独立局部评审通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T08:58:01.464Z",
+      "summary": "用户验收文字截断修复后的协作者展示，要求归档并合入 develop 和 main",
+      "source": "用户：好了，归档合入吧。并且合入 main"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T08:58:04.949Z",
+      "summary": "同步 Change 追踪中的协作者来源、名单交互、列配置与归档时间线行为"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T08:58:08.533Z",
+      "summary": "协作者展示及文字截断修复经用户验收，完成 Specs 同步后归档",
+      "path": "docs/project/archive/2026-10-28-change-collaborators"
     }
   },
   "types": [
@@ -92,9 +109,5 @@
     "at": "2026-10-28T08:52:24.592Z",
     "reason": "用户验收发现协作者单人姓名垂直截断",
     "approach": "调整姓名行高并以真实截图核对字形上下边界，更新验收服务"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "文字截断已修复并更新验收入口，等待用户实际验收"
   }
 }
