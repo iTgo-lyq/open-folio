@@ -3,7 +3,7 @@
   "id": "prototype-submodule-support",
   "title": "读取子模块中的固定版本原型",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/prototype-submodule-support",
   "confirmations": {
@@ -54,6 +54,23 @@
       "result": "passed",
       "at": "2026-10-28T18:57:01.306Z",
       "summary": "397项完整测试、39项skill与17项最终回归通过；类型/构建/Chrome通过，独立评审问题全部修复；真实私有远端授权和托管未实测。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T19:01:59.358Z",
+      "summary": "用户验收通过并要求同步Specs、归档、集成和正式发布",
+      "source": "用户：验收通过，继续同步 Specs、归档并合入 develop，更新常驻服务。合入 main 吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T19:02:03.480Z",
+      "summary": "同步原型预览Spec的子模块固定来源、前端发布与父单次关联、权限及历史校验契约"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T19:02:07.262Z",
+      "summary": "前端先发布、父仓库单次关联的固定子模块原型已验收并同步Specs",
+      "path": "docs/project/archive/2026-10-28-prototype-submodule-support"
     }
   },
   "types": [
@@ -73,9 +90,5 @@
     "at": "2026-10-28T18:38:53.525Z",
     "reason": "用户要求前端独立发布并提交清单，主仓库只在最后一次更新gitlink并关联Change",
     "approach": "分离前端发布与主仓库关联，增加带仓库身份的来源引用，保留旧引用读取兼容；追加T4完成返修"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "T4前端先发布与主仓库单次关联已验证，等待用户验收后再同步Specs、归档及合入。"
   }
 }
