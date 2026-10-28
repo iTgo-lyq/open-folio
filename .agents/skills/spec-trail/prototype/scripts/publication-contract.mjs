@@ -15,7 +15,7 @@ function exact(value, keys, required = keys) {
   );
 }
 export const requestIdentity = (r) =>
-  sha(JSON.stringify([r.repository, r.sourceCommit, r.digest, r.entries]));
+  sha(JSON.stringify([r.repository, r.sourceCommit, r.digest, r.entries,...(Object.hasOwn(r,'packagePath')?[r.packagePath]:[])]));
 export function validateRequest(r) {
   exact(r, [
     "schemaVersion",
@@ -25,7 +25,9 @@ export function validateRequest(r) {
     "digest",
     "entries",
     "requestId",
-  ]);
+    'packagePath',
+  ],['schemaVersion','repository','sourceCommit','artifactDirectory','digest','entries','requestId']);
+  if(Object.hasOwn(r,'packagePath'))fail(r.packagePath===''||safePath(r.packagePath),'Invalid source package path');
   fail(
     r.schemaVersion === 1 &&
       hostedUrl(r.repository) &&
@@ -33,6 +35,7 @@ export function validateRequest(r) {
       commitHash(r.sourceCommit),
     "Invalid repository/source identity",
   );
+  if(Object.hasOwn(r,'packagePath'))fail(new URL(r.repository).protocol==='https:','Source repository must use HTTPS');
   fail(
     typeof r.artifactDirectory === "string" &&
       r.artifactDirectory.length > 0 &&
@@ -119,18 +122,20 @@ export function validateResult(request, result) {
       "Duplicate or unknown result entry",
     );
     seen.add(e.id);
-    const artifact = resultArtifact(result, e);
+    const artifact = resultArtifact(result, e, request);
     fail(
       !validateArtifact(artifact).length,
       validateArtifact(artifact).join("; "),
     );
   }
 }
-export const resultArtifact = (result, e) => ({
+/** @param {any} [request] */
+export const resultArtifact = (result, e, request = undefined) => ({
   type: "hosted",
   version: result.version,
   url: e.url,
   sourceCommit: result.sourceCommit,
   digest: result.digest,
   ...(e.thumbnails ? { thumbnails: e.thumbnails } : {}),
+  ...(request && Object.hasOwn(request,'packagePath')?{source:{repository:request.repository,packagePath:request.packagePath}}:{}),
 });

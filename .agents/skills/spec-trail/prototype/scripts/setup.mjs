@@ -22,6 +22,7 @@ import {
   validateManifest,
 } from "./contract.mjs";
 import { htmlIssues } from "./html.mjs";
+import { localPackage } from './local-source.mjs';
 const args = process.argv.slice(2),
   options = {};
 for (let i = 0; i < args.length; i++) {
@@ -126,6 +127,9 @@ try {
         throw Error("Package ancestors must be regular directories");
     }
     const pkg = join(root, location);
+    const source=localPackage(root,execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),location);
+    if(source.mount && !(await exists(join(pkg,'package.json')))?.isFile())
+      throw Error('Submodule package must already exist; initialize the recorded gitlink and reuse its frontend package before enabling');
     let design = options["--design"];
     if (design) {
       const actual = await realpath(resolve(root, design));
@@ -248,7 +252,7 @@ try {
         "Provide prototype.json and host build/publish instructions, or self-contained Git previews, then run --enable.",
       );
     const rootPackage = join(root, "package.json");
-    if (await exists(join(root, "pnpm-workspace.yaml"))) {
+    if (!source.mount && await exists(join(root, "pnpm-workspace.yaml"))) {
       const yaml = await readFile(join(root, "pnpm-workspace.yaml"), "utf8");
       // Read only the top-level packages list; preserve the rest of the YAML verbatim.
       const block =
@@ -283,7 +287,7 @@ try {
         throw Error(
           "Existing pnpm workspace preserved: include this package and remove any matching exclusion, then retry --enable.",
         );
-    } else if (await exists(rootPackage)) {
+    } else if (!source.mount && await exists(rootPackage)) {
       const value = await json(rootPackage);
       const entries = Array.isArray(value.workspaces)
         ? value.workspaces

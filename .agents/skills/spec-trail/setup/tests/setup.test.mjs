@@ -27,6 +27,8 @@ const resourcePaths = [
   "scripts/state-schema.mjs",
   "scripts/routing.mjs",
   "prototype/scripts/contract.mjs",
+  'prototype/scripts/source.mjs',
+  'prototype/scripts/local-source.mjs',
 ];
 const checkCommand =
   'node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/setup/scripts/pre-commit.js"';
@@ -686,7 +688,7 @@ test("setup reports missing resources and invalid configuration without repairin
   assert.equal(
     missing.resources.filter((resource) => resource.status === "not_ready")
       .length,
-    4,
+    resourcePaths.length,
   );
   assert.deepEqual(s.snapshot(repo), before);
   s.provision(repo);

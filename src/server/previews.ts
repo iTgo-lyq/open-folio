@@ -19,6 +19,14 @@ import { closedRecord } from "../../.agents/skills/spec-trail/scripts/routing.mj
 import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
+import { resolvePackage } from "./prototype-source.ts";
+import {
+  inPackage,
+  withinPackage,
+  treeRows,
+  sameRepository,
+} from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
+import { validateManifest } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
   const branch = data.integrationBranch;
   const doc = data.documents.find(
@@ -57,6 +65,7 @@ export function prototypePolicy(data: Collected): Snapshot["prototype"] {
 }
 const revisionPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
 type TreeEntry = {
+  reader?: GitReader;
   mode: string;
   kind: string;
   blob: string;
@@ -69,12 +78,38 @@ export async function tree(
   path: string,
   signal: AbortSignal,
 ): Promise<TreeEntry[]> {
-  const raw = (
+  let raw = (
     await reader.run(
       ["ls-tree", "-rlz", "--full-tree", revision, "--", path],
       signal,
     )
   ).toString();
+  let owner = reader,
+    mount = "";
+  if (!raw || /160000 commit /.test(raw)) {
+    const resolved = await resolvePackage(
+      reader,
+      revision,
+      path.replace(/\/$/, ""),
+      signal,
+    );
+    if (resolved.mount) {
+      owner = resolved.reader;
+      mount = resolved.mount;
+      raw = (
+        await owner.run(
+          [
+            "ls-tree",
+            "-rlz",
+            "--full-tree",
+            resolved.revision,
+            ...(resolved.packagePath ? ["--", resolved.packagePath] : []),
+          ],
+          signal,
+        )
+      ).toString();
+    }
+  }
   return raw
     .split("\0")
     .filter(Boolean)
@@ -86,7 +121,8 @@ export async function tree(
         kind,
         blob,
         bytes: Number(size),
-        path: row.slice(tab + 1),
+        path: mount ? `${mount}/${row.slice(tab + 1)}` : row.slice(tab + 1),
+        ...(owner !== reader ? { reader: owner } : {}),
       };
     });
 }
@@ -108,7 +144,7 @@ export async function body(
     );
   if (!Number.isSafeInteger(file.bytes) || file.bytes > limit)
     throw new AppError("PREVIEW_SIZE", "原型文件超过当前服务大小限制。", 413);
-  const buffer = await reader.run(
+  const buffer = await (file.reader ?? reader).run(
     ["cat-file", "blob", file.blob],
     signal,
     limit + 1024,
@@ -334,13 +370,31 @@ export async function resolveEntries(
     descriptor: { ...descriptor, message, failed: true },
     html: undefined,
   });
+  const needsPackage = rawEntries.some(
+    (entry: any) =>
+      entry?.artifact?.type === "git" &&
+      !(
+        changeDirectory &&
+        entry.artifact.path?.startsWith(`${changeDirectory}/previews/`)
+      ),
+  );
+  let packageFiles: TreeEntry[] = [],
+    packageError: string | undefined;
+  if (needsPackage)
+    try {
+      packageFiles = await tree(
+        reader,
+        revision,
+        `${configuration.packagePath}/preview/`,
+        signal,
+      );
+    } catch (error) {
+      signal.throwIfAborted();
+      packageError =
+        error instanceof AppError ? error.message : "子模块原型产物不可读。";
+    }
   const files = [
-    ...(await tree(
-      reader,
-      revision,
-      `${configuration.packagePath}/preview/`,
-      signal,
-    )),
+    ...packageFiles,
     ...(changeDirectory
       ? await tree(reader, revision, `${changeDirectory}/previews/`, signal)
       : []),
@@ -389,19 +443,163 @@ export async function resolveEntries(
       available: false,
     };
     descriptor.entries.push(info);
+    if (entry.artifact) {
+      try {
+        const commit = entry.artifact.sourceCommit;
+        const provenance = entry.artifact.source;
+        let resolved;
+        if (provenance) {
+          const mount = provenance.submodulePath ?? "";
+          const path = inPackage(mount, provenance.packagePath);
+          const binding = provenance.bindingCommit ?? revision;
+          if (!(await reader.ancestor(binding, revision, signal)))
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "原型父仓库映射基线不属于交付历史。",
+              422,
+            );
+          const owner = path
+            ? await resolvePackage(reader, binding, path, signal, false)
+            : {
+                reader,
+                revision,
+                mount: "",
+                source: {
+                  revision,
+                  links: [],
+                  packagePath: provenance.packagePath,
+                },
+              };
+          const repository =
+            owner.source.links.at(-1)?.repository ?? reader.url;
+          if (
+            owner.mount !== mount ||
+            !sameRepository(repository, provenance.repository)
+          )
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "原型源码仓库或挂载路径与固定 gitlink 不匹配。",
+              422,
+            );
+          const catalog = provenance.catalogCommit ?? owner.revision;
+          await owner.reader.ensureCommit(catalog, signal);
+          if (!(await owner.reader.ancestor(commit, catalog, signal)))
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "原型源码提交不属于该子模块清单版本的历史。",
+              422,
+            );
+          resolved = {
+            ...owner,
+            revision: commit,
+            packagePath: provenance.packagePath,
+            source: {
+              ...owner.source,
+              revision: binding,
+              packagePath: provenance.packagePath,
+              links: owner.source.links.map((link, index, links) =>
+                index === links.length - 1 ? { ...link, commit } : link,
+              ),
+            },
+          };
+        } else {
+          if (
+            (await reader.run(["cat-file", "-t", commit], signal))
+              .toString()
+              .trim() !== "commit" ||
+            !(await reader.ancestor(commit, revision, signal))
+          )
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "源码基线不属于该固定版本的交付历史。",
+              422,
+            );
+          const modules = await reader.run(
+            ["ls-tree", "-z", commit, "--", ".gitmodules"],
+            signal,
+          );
+          if (modules.length) {
+            const historical = await readPrototypeConfiguration(
+              reader,
+              commit,
+              limits,
+              signal,
+            );
+            const original = await resolvePackage(
+              reader,
+              commit,
+              historical.packagePath!,
+              signal,
+              false,
+            );
+            if (original.source.links.length) resolved = original;
+          }
+        }
+        info.sourceAvailable = true;
+        if (resolved) {
+          info.source = resolved.source;
+          const path = inPackage(resolved.packagePath, "prototype.json");
+          const manifest = JSON.parse(
+            await body(
+              resolved.reader,
+              (
+                await tree(resolved.reader, resolved.revision, path, signal)
+              ).find((file) => file.path === path),
+              limits.jsonBytes,
+              signal,
+            ),
+          );
+          if (validateManifest(manifest).length)
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "构建基线中的原型清单不合法。",
+              422,
+            );
+          const item = manifest.entries.find(
+            (item: any) => item.id === entry.id,
+          );
+          if (!item || !withinPackage(item.sourcePath, resolved.packagePath))
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "构建基线缺少对应的原型源码入口。",
+              422,
+            );
+          const files = treeRows(
+            (
+              await resolved.reader.run(
+                ["ls-tree", "-lz", resolved.revision, "--", item.sourcePath],
+                signal,
+              )
+            ).toString(),
+          );
+          if (
+            !files.some(
+              (file) =>
+                file.path === item.sourcePath &&
+                ["100644", "100755"].includes(file.mode) &&
+                file.kind === "blob",
+            )
+          )
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "子模块固定版本中的原型源码缺失或不是常规文件。",
+              422,
+            );
+        }
+      } catch (error) {
+        signal.throwIfAborted();
+        info.sourceAvailable = false;
+        info.sourceMessage =
+          error instanceof AppError
+            ? error.message
+            : "源码提交已不可用，无法追溯。";
+      }
+    }
     if (entry.artifact?.type === "hosted") {
       const artifact = entry.artifact;
       info.available = true;
       info.url = artifact.url;
       info.thumbnails = artifact.thumbnails;
-      try {
-        info.sourceAvailable =
-          (await reader.run(["cat-file", "-t", artifact.sourceCommit], signal))
-            .toString()
-            .trim() === "commit";
-      } catch {
-        info.sourceAvailable = false;
-      }
       continue;
     }
     const path = entryPath(entry, configuration, changeDirectory),
@@ -409,6 +607,14 @@ export async function resolveEntries(
     if (!path) {
       info.message =
         "入口路径不属于默认分支当前配置的原型包或该 Change 的快照目录。";
+      continue;
+    }
+    if (
+      !file &&
+      packageError &&
+      !path.startsWith(`${changeDirectory}/previews/`)
+    ) {
+      info.message = packageError;
       continue;
     }
     try {

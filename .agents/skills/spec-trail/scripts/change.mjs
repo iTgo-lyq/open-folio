@@ -23,6 +23,7 @@ import {
   validateUrgency,
 } from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
+import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
 import { closedRecord } from "./routing.mjs";
 import { changeIntegration } from "./github-prs.mjs";
@@ -1112,9 +1113,10 @@ async function main() {
           for (const p of previews) {
             if (p.artifact) {
               assert(
-                git(["cat-file", "-t", p.artifact.sourceCommit]) === "commit",
+                p.artifact.source || git(["cat-file", "-t", p.artifact.sourceCommit]) === "commit",
                 "Unknown source commit",
               );
+              verifyPrototypeSource(root,p.artifact.sourceCommit,p.id,p.artifact.source,{index:!state.previews?.some(old=>isDeepStrictEqual(old,p))});
               if (p.artifact.type === "hosted") continue;
             }
             const path = entryPath(

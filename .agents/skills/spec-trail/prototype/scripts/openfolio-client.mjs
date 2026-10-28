@@ -48,15 +48,20 @@ export async function discoverUpload(base) {
   return endpoint(base, info.uploadPath.slice(1));
 }
 
-export async function uploadToOpenFolio(root, { requestPath, resultPath, change }) {
+/** @param {{requestPath:string,resultPath:string,change?:string,uploadUrl?:string,openfolioUrl?:string}} options */
+export async function uploadToOpenFolio(root, options) {
+  const { requestPath, resultPath, change, uploadUrl, openfolioUrl }=options;
   if (!requestPath || !resultPath) throw Error("Provide --request and --result paths; keep them outside the repository");
-  const workflow = read(checkedPath(root, "docs/project/workflow.json"));
-  if (validateWorkflow(workflow).length || workflow.prototype?.status !== "enabled" || workflow.prototype.hosting?.provider !== "openfolio")
-    throw Error("Choose enabled OpenFolio hosting in workflow.json before uploading");
   const request = read(requestPath);
   validateRequest(request);
+  const standalone=Object.hasOwn(request,'packagePath');
+  const workflow=standalone?{openfolioUrl:openfolioUrl??process.env.OPENFOLIO_URL,prototype:{hosting:{uploadUrl:uploadUrl??process.env.OPENFOLIO_UPLOAD_URL}}}:read(checkedPath(root,'docs/project/workflow.json'));
+  if(standalone){
+    if(!serviceUrl(workflow.openfolioUrl)||!serviceUrl(workflow.prototype.hosting.uploadUrl))throw Error('Provide --openfolio-url and --upload-url (or OPENFOLIO_URL/OPENFOLIO_UPLOAD_URL) for frontend publishing');
+    if(change)throw Error('Associate the committed publication from the parent repository');
+  }else if(validateWorkflow(workflow).length||workflow.prototype?.status!=='enabled'||workflow.prototype.hosting?.provider!=='openfolio')throw Error('Choose enabled OpenFolio hosting in workflow.json before uploading');
   const directory = relative(root, request.artifactDirectory).split("\\").join("/");
-  const prepared = prepare(root, directory, request.entries, request.repository);
+  const prepared = prepare(root, directory, request.entries, request.repository,request.packagePath);
   if (prepared.requestId !== request.requestId) throw Error("Sources or artifact changed after prepare; prepare a new request");
   const { files } = artifactDigest(prepared.artifactDirectory);
   const inventory = files.map((path) => ({ path, size: statSync(checkedPath(root, `${directory}/${path}`)).size }));

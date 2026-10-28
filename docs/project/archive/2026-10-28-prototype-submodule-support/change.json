@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-submodule-support",
+  "title": "读取子模块中的固定版本原型",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/prototype-submodule-support",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-28T18:39:51.152Z",
+      "summary": "前端先发布并提交清单后主仓库单次更新gitlink和Change关联",
+      "source": "用户：按这个流程调整当前 Change：前端先完成原型发布和清单提交，主仓库最后只更新一次 gitlink 并关联 Change，skill 说明保持精简。"
+    },
+    "technical": {
+      "at": "2026-10-28T18:39:58.998Z",
+      "summary": "以带仓库身份的固定来源分离前端发布和父仓库关联并兼容旧引用",
+      "source": "用户指定采用前端先发布、父仓库最后一次关联的已讨论方案；新增字段为该方案的实现选择。"
+    },
+    "plan": {
+      "at": "2026-10-28T18:40:02.755Z",
+      "summary": "保留T1至T3原交付证据并以T4完成新发布顺序及兼容回归",
+      "source": "用户：按这个流程调整当前 Change；在当前 Change 中追加返修任务实施。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "按固定父提交读取子模块当前原型",
+      "status": "done",
+      "verification": "typecheck 通过，原型/仓库/权限组合24项及扩展子模块6项通过；真实Git对象验证版本固定、嵌套路径及权限拒绝。",
+      "commitTitle": "prototype-submodule-support T1: read prototypes at pinned gitlinks"
+    },
+    "T2": {
+      "title": "保持子模块 Change 原型与历史来源固定",
+      "status": "done",
+      "verification": "typecheck及21项历史/预览/公开回归通过；hosted和Git固定到M，来源分支删除及子权限撤销后保留主仓库产物并报告源码不可追溯。",
+      "commitTitle": "prototype-submodule-support T2: preserve Change artifacts and trace submodule sources"
+    },
+    "T3": {
+      "title": "完成子模块原型两库发布、恢复与校验",
+      "status": "done",
+      "verification": "完整389项与skill/setup39项通过，typecheck/生产构建/Chrome冒烟通过，独立评审三项问题修复复验通过；两库发布、恢复、index及语义归档闭环已验证。",
+      "commitTitle": "prototype-submodule-support T3: publish and validate prototypes across repositories"
+    },
+    "T4": {
+      "title": "前端独立发布并由主仓库单次关联",
+      "status": "done",
+      "verification": "完整397项、skill/setup39项、最终来源发布17项、typecheck、构建与共享Chrome检查通过；独立评审问题全部修复复验，真实远端授权/托管未实测。",
+      "commitTitle": "prototype-submodule-support T4: publish frontend first and associate once in parent"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T18:57:01.306Z",
+      "summary": "397项完整测试、39项skill与17项最终回归通过；类型/构建/Chrome通过，独立评审问题全部修复；真实私有远端授权和托管未实测。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T19:01:59.358Z",
+      "summary": "用户验收通过并要求同步Specs、归档、集成和正式发布",
+      "source": "用户：验收通过，继续同步 Specs、归档并合入 develop，更新常驻服务。合入 main 吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T19:02:03.480Z",
+      "summary": "同步原型预览Spec的子模块固定来源、前端发布与父单次关联、权限及历史校验契约"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T19:02:07.262Z",
+      "summary": "前端先发布、父仓库单次关联的固定子模块原型已验收并同步Specs",
+      "path": "docs/project/archive/2026-10-28-prototype-submodule-support"
+    }
+  },
+  "types": [
+    "新功能",
+    "适配"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "是否按 medium Change 启动：由主仓库指定提交的 gitlink 锁定子仓库原型，适配清单、预览、发布登记及历史校验，并明确报告无权限或版本缺失？",
+      "recommendation": "按此范围启动，保留主仓库管理 SpecTrail 和 Change，协同调整原型来源及发布追溯契约。",
+      "answer": "按此范围启动",
+      "source": "用户在当前会话选择：按此范围启动（推荐）"
+    }
+  },
+  "rework": {
+    "at": "2026-10-28T18:38:53.525Z",
+    "reason": "用户要求前端独立发布并提交清单，主仓库只在最后一次更新gitlink并关联Change",
+    "approach": "分离前端发布与主仓库关联，增加带仓库身份的来源引用，保留旧引用读取兼容；追加T4完成返修"
+  }
+}

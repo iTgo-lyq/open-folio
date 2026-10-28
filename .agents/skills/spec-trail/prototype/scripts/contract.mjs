@@ -98,8 +98,8 @@ export function validateArtifact(value, path = "/artifact") {
     !fields(
       value,
       hosted
-        ? ["type", "version", "url", "sourceCommit", "digest", "thumbnails"]
-        : ["type", "path", "sourceCommit"],
+        ? ["type", "version", "url", "sourceCommit", "digest", "thumbnails", "source"]
+        : ["type", "path", "sourceCommit", "source"],
       hosted
         ? ["type", "version", "url", "sourceCommit", "digest"]
         : ["type", "path", "sourceCommit"],
@@ -112,6 +112,15 @@ export function validateArtifact(value, path = "/artifact") {
     errors.push(`${path}/type: expected hosted or git`);
   if (!commitHash(value.sourceCommit))
     errors.push(`${path}/sourceCommit: requires a full Git commit`);
+  if (Object.hasOwn(value, 'source')) {
+    const s=value.source, at=`${path}/source`;
+    if(fields(s,['repository','packagePath','submodulePath','catalogCommit','bindingCommit'],['repository','packagePath'],at,errors)) {
+      if(!serviceUrl(s.repository)||new URL(s.repository).protocol!=='https:')errors.push(`${at}/repository: requires a credential-free HTTPS repository`);
+      if(s.packagePath!==''&&!packagePath(s.packagePath))errors.push(`${at}/packagePath: requires a safe package path or empty root`);
+      if(Object.hasOwn(s,'submodulePath')&&!safePath(s.submodulePath))errors.push(`${at}/submodulePath: requires a safe mounted path`);
+      if(['submodulePath','catalogCommit','bindingCommit'].some(k=>Object.hasOwn(s,k))&&!(safePath(s.submodulePath)&&commitHash(s.catalogCommit)&&commitHash(s.bindingCommit)))errors.push(`${at}: mounted sources require fixed catalog and parent binding commits`);
+    }
+  }
   if (hosted) {
     if (
       !nonempty(value.version) ||
@@ -290,6 +299,6 @@ export function entryPath(preview, config, changeDirectory) {
   return null;
 }
 export function currentPreview(entry) {
-  const { sourcePath, description, ...preview } = entry;
+  const { sourcePath, description, source, ...preview } = entry;
   return preview;
 }

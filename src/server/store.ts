@@ -34,6 +34,7 @@ import {
   readCurrentPrototype,
   resolveCurrentPreview,
 } from "./prototypes.ts";
+import { checkPrototypeSource } from "./prototype-source.ts";
 
 const snapshotPattern = /^[a-f0-9-]{36}$/;
 type RefreshContext = {
@@ -146,6 +147,25 @@ export class SnapshotStore {
         s.fingerprint !== this.fingerprint()
       )
         throw new Error();
+      if (s.currentPrototype.source?.links.length) {
+        try {
+          await checkPrototypeSource(
+            this.readerFactory(join(dir, "git"), p),
+            s.currentPrototype.source,
+            AbortSignal.timeout(30_000),
+          );
+        } catch (error) {
+          s.currentPrototype = {
+            ...s.currentPrototype,
+            entries: [],
+            issues: [],
+            message:
+              error instanceof AppError
+                ? error.message
+                : "子模块原型来源不可读。",
+          };
+        }
+      }
       return s;
     } catch {
       throw new AppError(

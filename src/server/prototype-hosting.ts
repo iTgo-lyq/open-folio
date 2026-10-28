@@ -29,6 +29,7 @@ type Publication = {
     requestId: string;
     repository: string;
     sourceCommit: string;
+    packagePath?: string;
     artifactDirectory: string;
     digest: string;
     entries: { id: string; entryPath: string; hash?: string }[];
