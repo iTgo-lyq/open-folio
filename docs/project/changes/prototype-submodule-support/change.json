@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/prototype-submodule-support",
   "confirmations": {
     "requirement": {
       "at": "2026-10-28T17:23:59.505Z",
