@@ -4,9 +4,15 @@
   "title": "读取子模块中的固定版本原型",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-28T17:23:59.505Z",
+      "summary": "主仓库锁定子模块原型版本并统一关联追溯与发布校验",
+      "source": "用户：确认这份需求，继续整理技术方案和计划。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
@@ -21,9 +27,5 @@
       "answer": "按此范围启动",
       "source": "用户在当前会话选择：按此范围启动（推荐）"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "需求正文已整理，等待确认目标、范围与验收后进入技术方案。"
   }
 }
