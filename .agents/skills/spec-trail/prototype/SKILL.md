@@ -72,10 +72,10 @@ id 稳定且项目内唯一；名称可改。component 在 devices 和 1–4096 
 ### 子模块中的原型包
 
 - `packagePath` 相对主仓库，可指向子模块根目录或内部包，如 `frontend/packages/prototype`；清单的 `sourcePath`、Git `artifact.path` 相对子仓库根目录。复用前端工程，子仓库无需另接入 SpecTrail。
-- 命令从主仓库执行，`directory`、发布请求的 `repository` 和 `sourceCommit` 仍属于主仓库。按该提交的 `.gitmodules`/gitlink 固定子版本，不随子分支变化；无权限或缺少版本时报告原因，不回退最新分支。
-- 先提交/推送子源码及父 gitlink，再以匹配且干净的检出构建发布。登记后先提交/推送子清单及产物，再提交/推送父 gitlink、Change 和快照；嵌套子模块从内向外处理。工具不代为提交两库。
+- 前端先提交干净源码 A，再构建发布、登记并提交/推送清单 B。下文发布命令指定 `--repo 前端目录 --package packages/prototype`（根包用 `.`），directory/repository 属于前端；OpenFolio 上传另传 `--openfolio-url`、`--upload-url` 或 `OPENFOLIO_URL`/`OPENFOLIO_UPLOAD_URL`。前端登记不传 `--change`。
+- 主仓库执行 `publish.mjs associate --repo 主仓库目录 --change change-id [--entry id]`，读取已提交 B，只写 Change 及 Git 快照；最后一次提交/推送 gitlink B、Change 和快照。嵌套模块先从内向外提交。新 artifact.source 记录仓库/包路径，sourceCommit 为 A；旧引用仍按父基线读取。历史按固定 gitlink 追溯，不随子分支变化，无权限或缺版本明确提示。工具不代提交。
 
-恢复沿用下文 `recover`；子模块模式还会核对参与仓库的 HEAD，遇到后续提交或切换版本时停止。
+发布登记与关联分别使用所在仓库的 `recover`，不跨库联合写入。
 
 先提交源码，以干净提交运行项目正常构建；自建适配器的存储凭据由宿主环境注入。准备协议请求：
 

@@ -681,7 +681,11 @@ function PrototypeDetailBody({
         </div>
         <div>
           <dt>
-            {item.source?.links.length ? "构建基线提交（主仓库）" : "源码提交"}
+            {item.artifact?.source
+              ? "源码提交（原型仓库）"
+              : item.source?.links.length
+                ? "构建基线提交（主仓库）"
+                : "源码提交"}
           </dt>
           <dd>
             <code>{item.artifact?.sourceCommit ?? "尚未发布产物"}</code>
@@ -746,6 +750,8 @@ function prototypeChanges(
         other &&
         preview.id === item.id &&
         other.sourceCommit === artifact.sourceCommit &&
+        other.source?.repository === artifact.source?.repository &&
+        other.source?.packagePath === artifact.source?.packagePath &&
         (other.type === "hosted" && artifact.type === "hosted"
           ? other.version === artifact.version
           : other.type === "git" &&

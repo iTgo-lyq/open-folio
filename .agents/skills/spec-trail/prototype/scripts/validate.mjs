@@ -9,8 +9,10 @@ import { parseArgs } from "node:util";
 import {
   validatePrototype,
   validateManifest,
+  validatePreviews,
   currentPreview,
   entryPath,
+  safePath,
 } from "./contract.mjs";
 import { git, checkedPath } from "./publishing.mjs";
 import { htmlIssues, sandboxCsp } from "./html.mjs";
@@ -21,21 +23,27 @@ try {
   const { values: o } = parseArgs({
     options: {
       repo: { type: "string" },
+      package: { type: "string" },
       browser: { type: "boolean" },
       playwright: { type: "string" },
     },
     strict: true,
   });
   const root = await realpath(resolve(o.repo ?? ".")),
-    cfg = JSON.parse(
+    standalone = o.package !== undefined,
+    packagePath = o.package === "." ? "" : o.package,
+    cfg = standalone ? {status:"enabled",packagePath} : JSON.parse(
       await readFile(checkedPath(root, "docs/project/workflow.json"), "utf8"),
     ).prototype;
-  if (validatePrototype(cfg).length || cfg.status !== "enabled")
+  if ((standalone ? packagePath !== "" && !safePath(packagePath) : validatePrototype(cfg).length) || cfg.status !== "enabled")
     throw Error("原型配置未启用或不合法");
   const source=localPackage(root,git(root,['rev-parse','HEAD']),cfg.packagePath);
-  if(source.mount)assertCheckout(source,true);
+  if(source.mount||standalone)assertCheckout({...source,standalone},true);
+  const resolveEntry = (entry) => standalone
+    ? !validatePreviews([entry]).length && entry.artifact.type === "git" && entry.artifact.path.startsWith(inPackage(cfg.packagePath,"preview")+"/") ? entry.artifact.path+"/index.html" : null
+    : entryPath(entry,cfg);
   const entries = [],
-    manifestPath = checkedPath(root, cfg.packagePath + "/prototype.json");
+    manifestPath = checkedPath(root, inPackage(cfg.packagePath, "prototype.json"));
   if (existsSync(manifestPath)) {
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")),
       issues = validateManifest(manifest);
@@ -44,18 +52,18 @@ try {
       if (entry.artifact) entries.push(currentPreview({...entry,...(source.mount&&entry.artifact.type==='git'?{artifact:{...entry.artifact,path:inPackage(source.mount,entry.artifact.path)}}:{})}));
   }
   // Check explicit Git build output before registration as well.
-  const preview = checkedPath(root, cfg.packagePath + "/preview");
+  const preview = checkedPath(root, inPackage(cfg.packagePath, "preview"));
   if (existsSync(preview))
     for (const name of await readdir(preview)) {
       const item = {
         id: name,
         title: name,
-        artifact: { type: "git", path: `${cfg.packagePath}/preview/${name}`, sourceCommit: git(root, ["rev-parse", "HEAD"]) },
+        artifact: { type: "git", path: inPackage(cfg.packagePath, `preview/${name}`), sourceCommit: git(root, ["rev-parse", "HEAD"]) },
         kind: "page",
         devices: ["pc-web"],
       };
       if (
-        entryPath(item, cfg) &&
+        resolveEntry(item) &&
         !entries.some((e) => e.id === name) &&
         existsSync(checkedPath(root, item.artifact.path + "/index.html"))
       )
@@ -63,7 +71,7 @@ try {
     }
   for (const entry of entries) {
     if (entry.artifact?.type === "hosted") continue;
-    const path = entryPath(entry, cfg);
+    const path = resolveEntry(entry);
     if (!path) throw Error("非法 Git 入口路径");
     const full = checkedPath(root, path),
       stat = await lstat(full);

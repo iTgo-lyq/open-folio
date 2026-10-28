@@ -97,16 +97,29 @@ export type PrototypeConfig = {
 };
 export type Device = "pc-web" | "ipad" | "mobile";
 export type PreviewThumbnail = { device?: Device; url: string };
+export type ArtifactSource = {
+  repository: string;
+  packagePath: string;
+  submodulePath?: string;
+  catalogCommit?: string;
+  bindingCommit?: string;
+};
 export type PreviewArtifact =
   | {
       type: "hosted";
       version: string;
       url: string;
       sourceCommit: string;
+      source?: ArtifactSource;
       digest: string;
       thumbnails?: PreviewThumbnail[];
     }
-  | { type: "git"; path: string; sourceCommit: string };
+  | {
+      type: "git";
+      path: string;
+      sourceCommit: string;
+      source?: ArtifactSource;
+    };
 export type PreviewEntry = {
   id: string;
   title: string;

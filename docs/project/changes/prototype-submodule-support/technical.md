@@ -21,8 +21,8 @@ artifact 保留 sourceCommit，新增可选 source 对象：
 ```
 
 - source 缺失：旧语义，sourceCommit 属于主仓库，沿该父提交追溯；不改写历史记录。
-- source 存在：sourceCommit 属于声明的原型仓库；packagePath 相对该仓库，根目录用空字符串。父仓库关联时补 source.submodulePath，固定所属挂载路径；当前清单读取时由实际 gitlink 路径补齐，不信任子清单自报的父路径。
-- 校验必须先按固定父版本或暂存 gitlink 定位允许的仓库，核对源仓库身份，再检查 A 为清单所在提交 B 的祖先，并从 A 的原型包读取对应源码。不把 A 当父对象，不按 artifact 的任意地址直接发送凭据。
+- source 存在：sourceCommit 属于声明的原型仓库；packagePath 相对该仓库，根目录用空字符串。父仓库关联时补 submodulePath、catalogCommit=B 和 bindingCommit=关联前已有父 HEAD Q：Q 固定原仓库映射，B 固定已提交清单；Q 必须属于交付历史，A 必须是 B 的祖先。当前清单读取时从本次固定 P/B 合成这些字段，覆盖子清单自报的父信息。
+- 校验必须先按固定 Q 的 .gitmodules/gitlink 定位允许的仓库，核对源仓库身份后读取 B，再检查 A 为清单所在提交 B 的祖先，并从 A 的原型包读取对应源码。不把 A 当父对象，不按 artifact 的任意地址直接发送凭据。关联也复查父当前清单及活动/归档 Change 的已知固定 URL，冲突不写入。
 - 发布请求沿用 schemaVersion 1，新增可选 packagePath 选择独立包模式；repository/sourceCommit 在此模式为前端仓库/A。requestId 将显式 packagePath 纳入身份，旧请求缺省时算法和已有产物标识不变；成功结果格式不变。新来源信息由经验证请求写入 artifact。
 
 这是新增可选来源范围，旧配置、请求、artifact 和归档继续可读，无强制迁移。新引用需要支持该字段的工具；不让旧 sourceCommit 静默改含义。
@@ -41,7 +41,7 @@ prepare 指定 --repo 前端仓库、--package 原型包（根目录用 .），d
 
 新增 associate --repo 主仓库 --change id [--entry id]。按主仓库配置、已登记/暂存 .gitmodules 与实际前端检出定位所属包，读取干净且已提交的 B；这一步允许父 HEAD 的 gitlink 仍指旧版本。校验固定来源身份、A/B 历史关系及入口，复制显示信息和固定引用到 Change，Git HTML 从 B 复制到主仓库 Change 快照。
 
-关联只锁定和写入主仓库，子清单保持不变。完成后将父 gitlink B、Change 和快照一起暂存、校验、提交 P。若前端继续变更，重新关联对应已提交版本；不存在跨库回滚或隐式提交。源码和产物发布失败不会创建关联，关联失败也不重新发布前端产物。
+关联只锁定和写入主仓库，子清单保持不变。子模块映射须已按正常接入步骤提交到 Q；发布不要求提前更新 gitlink 到 A/B。新单库事务仍记录所属仓库 HEAD，恢复遇后续提交停止。完成后将父 gitlink B、Change 和快照一起暂存、校验、提交 P。若前端继续变更，重新关联对应已提交版本；不存在跨库回滚或隐式提交。源码和产物发布失败不会创建关联，关联失败也不重新发布前端产物。
 
 ## 读取、权限与历史
 
@@ -49,7 +49,7 @@ prepare 指定 --repo 前端仓库、--package 原型包（根目录用 .），d
 
 子仓库权限仍由当前连接独立检查，缓存/旧快照不能绕过拒绝；新公开版本发布前即时复验，已公开产物匿名读取不访问仓库。主仓库已有的 hosted 引用和 Git 快照可在子源码失效时继续读取，但 sourceAvailable=false 并明确原因。源仓库不匹配、A 不在 B 历史或对象不可用时不取最新分支兜底。
 
-hook 按父 index 读取 .gitmodules/gitlink B，校验新来源在正确仓库；不要求父 index 已经有新提交。previews-set、归档 preflight 同样支持新旧来源，仍不在 hook 内联网。Git 快照继续位于父 Change/归档目录；标准 archive CI 不注入私有子仓库凭据，也不把父结构通过当作子源码可用证明。
+hook 对新/修改关联按父 index 读取 .gitmodules/gitlink B，要求实际清单版本等于 catalogCommit，校验新来源在正确仓库；不要求父 index 已经有新提交。previews-set、归档 preflight 同样支持新旧来源，仍不在 hook 内联网。Git 快照继续位于父 Change/归档目录；标准 archive CI 不注入私有子仓库凭据，也不把父结构通过当作子源码可用证明。
 
 ## 验证与交付
 

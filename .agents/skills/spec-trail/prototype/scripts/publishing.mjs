@@ -32,7 +32,8 @@ import {
   validateWorkflow,
 } from "../../scripts/state-schema.mjs";
 import { htmlIssues } from "./html.mjs";
-import { localPackage, sourceManifest, assertSourceEntry, assertCheckout } from './local-source.mjs';
+import { localPackage, sourceManifest, packageManifest, assertSourceEntry, assertCheckout, verifyOwnerSource, verifyPrototypeSource } from './local-source.mjs';
+import { moduleUrl, treeRows } from './source.mjs';
 import { inPackage, withinPackage } from './source.mjs';
 const fail = (condition, message) => {
   if (!condition) throw Error(message);
@@ -90,17 +91,22 @@ export function artifactDigest(directory) {
   fail(files.length > 0, "Artifact is empty");
   return { digest: `sha256:${h.digest("hex")}`, files };
 }
-function configuration(root) {
-  const workflow = JSON.parse(
+function configuration(root, packagePath = undefined) {
+  const standalone=packagePath!==undefined;
+  if(packagePath==='.')packagePath='';
+  fail(!standalone||packagePath===''||safePath(packagePath),'Invalid prototype package path');
+  const workflow = standalone? {prototype:{status:'enabled',packagePath}} : JSON.parse(
     readFileSync(checkedPath(root, "docs/project/workflow.json"), "utf8"),
   );
   fail(
-    !validateWorkflow(workflow).length &&
+    (standalone || !validateWorkflow(workflow).length) &&
       workflow.prototype?.status === "enabled",
     "Prototype collaboration must be enabled",
   );
-  const source = localPackage(root, git(root,['rev-parse','HEAD']), workflow.prototype.packagePath);
-  const path = workflow.prototype.packagePath + "/prototype.json",
+  const source = localPackage(root, git(root,['rev-parse','HEAD']), standalone?'':workflow.prototype.packagePath);
+  fail(!source.mount,'Publish in the frontend repository with --package, then associate the committed catalog in the parent');
+  if(standalone)source.packagePath=packagePath;
+  const path = inPackage(workflow.prototype.packagePath, 'prototype.json'),
     manifest = JSON.parse(readFileSync(checkedPath(root, path), "utf8"));
   fail(
     !validateManifest(manifest).length,
@@ -111,12 +117,13 @@ function configuration(root) {
       withinPackage(e.sourcePath, source.packagePath),
       "Source must stay in the prototype package",
     );
-  return { workflow, path, manifest, source };
+  return { workflow, path, manifest, source, standalone };
 }
-export function prepare(root, directory, entries, repository) {
+/** @param {string | undefined} [packagePath] */
+export function prepare(root, directory, entries, repository, packagePath = undefined) {
   root = realpathSync(root);
-  const { manifest } = configuration(root);
-  const source = sourceManifest(root, git(root,['rev-parse','HEAD']));
+  const config=configuration(root,packagePath),{manifest}=config;
+  const source = config.standalone?packageManifest(root,git(root,['rev-parse','HEAD']),config.source.packagePath):sourceManifest(root, git(root,['rev-parse','HEAD']));
   assertCheckout(source);
   fail(
     !git(root, ["status", "--porcelain", "--untracked-files=normal"]),
@@ -132,6 +139,7 @@ export function prepare(root, directory, entries, repository) {
     digest,
     entries: [...entries].sort((a, b) => a.id.localeCompare(b.id)),
     requestId: "",
+    ...(config.standalone?{packagePath:config.source.packagePath}:{}),
   };
   request.requestId = requestIdentity(request);
   validateRequest(request);
@@ -216,7 +224,7 @@ export function recover(root) {
     rmSync(journal);
   });
 }
-export function transaction(root, files, participants = []) {
+export function transaction(root, files, participants = [{root}]) {
   const { journal } = paths(root);
   fail(
     !existsSync(journal),
@@ -287,25 +295,28 @@ function changeRecord(root, id, branch) {
   );
   return { path, state };
 }
-/** @param {string} root @param {{request?: any, result?: any, change?: string, gitEntry?: string}} options */
-export function register(root, { request, result, change, gitEntry }) {
+/** @param {string} root @param {{request?: any, result?: any, change?: string, gitEntry?: string, packagePath?: string, repository?: string}} options */
+export function register(root, { request, result, change, gitEntry, packagePath, repository }) {
   root = realpathSync(root);
-  const prepared = configuration(root);
-  return withLocks(prepared.source.roots.map(owner=>owner.root), () => {
+  packagePath=packagePath??request?.packagePath;
+  const prepared = configuration(root,packagePath);
+  fail(!prepared.standalone||!change,'Publish the frontend catalog first; use associate in the parent to attach a Change');
+  return withLock(root, () => {
     fail(
       !existsSync(paths(root).journal),
       "Recover the unfinished prototype transaction first",
     );
-    const { workflow, path, manifest, source: currentSource } = configuration(root),
-      branch = git(root, ["symbolic-ref", "--short", "HEAD"]);
+    const { workflow, path, manifest, source: currentSource, standalone } = configuration(root,packagePath);
+    let branch;
+    try{branch=git(root,['symbolic-ref','--short','HEAD']);}catch{fail(standalone,'Use an attached Change branch');}
     fail(JSON.stringify(prepared.source.roots)===JSON.stringify(currentSource.roots),'Prototype repository changed before registration; retry without overwriting edits');
     fail(
-      workflow.releaseBranch !== branch,
+      standalone || workflow.releaseBranch !== branch,
       "Register on a working branch, not a protected branch",
     );
     // A cancelled record freezes its branch, even for a current-only publication.
-    const activeDir = checkedPath(root, "docs/project/changes");
-    if (existsSync(activeDir))
+    const activeDir = standalone ? undefined : checkedPath(root, "docs/project/changes");
+    if (!standalone && existsSync(activeDir))
       for (const id of readdirSync(activeDir)) {
         const p = checkedPath(root, `docs/project/changes/${id}/change.json`);
         if (existsSync(p)) {
@@ -324,12 +335,12 @@ export function register(root, { request, result, change, gitEntry }) {
       fail(entry, "Unknown current entry");
       const sourceCommit = git(root, ["rev-parse", "HEAD"]);
       assertSource(root, sourceCommit);
-      const source=sourceManifest(root,sourceCommit);
+      const source=standalone?packageManifest(root,sourceCommit,currentSource.packagePath):sourceManifest(root,sourceCommit);
       const original=assertSourceEntry(source,entry.id);
       fail(original.sourcePath===entry.sourcePath,'Source path changed since publication baseline; commit it and update the parent gitlink first');
-      if(source.mount)assertCheckout(source,true);
+      if(standalone)assertCheckout(source,true);
       fail(
-        source.mount || !git(root, [
+        standalone || !git(root, [
           "status",
           "--porcelain",
           "--",
@@ -344,6 +355,7 @@ export function register(root, { request, result, change, gitEntry }) {
         type: "git",
         path: inPackage(currentSource.packagePath, `preview/${entry.id}`),
         sourceCommit,
+        ...(standalone?{source:{repository:moduleUrl(repository??git(root,['remote','get-url','origin']),''),packagePath:currentSource.packagePath}}:{}),
       };
       const full = checkedPath(currentSource.source, artifact.path + "/index.html");
       fail(
@@ -369,9 +381,9 @@ export function register(root, { request, result, change, gitEntry }) {
     } else {
       validateResult(request, result);
       assertSource(root, request.sourceCommit);
-      const source=sourceManifest(root,request.sourceCommit);
-      if(source.mount) {
-        fail(source.mount===currentSource.mount && source.packagePath===currentSource.packagePath,'Prototype package changed since publication');
+      const source=standalone?packageManifest(root,request.sourceCommit,currentSource.packagePath):sourceManifest(root,request.sourceCommit);
+      if(standalone) {
+        fail(request.packagePath===currentSource.packagePath,'Prototype package changed since publication');
         assertCheckout(source,true);
       }
       const relativeDirectory = relative(
@@ -385,7 +397,7 @@ export function register(root, { request, result, change, gitEntry }) {
       );
       // Inspect all known historical references to reject known immutable URL collisions.
       const known = manifest.entries.map((e) => e.artifact);
-      for (const folder of ["changes", "archive"]) {
+      for (const folder of standalone?[]:["changes", "archive"]) {
         const dir = checkedPath(root, `docs/project/${folder}`);
         if (!existsSync(dir)) continue;
         for (const name of readdirSync(dir)) {
@@ -404,7 +416,7 @@ export function register(root, { request, result, change, gitEntry }) {
         fail(entry, "Unknown current entry");
         const original=assertSourceEntry(source,e.id);
         fail(original.sourcePath===entry.sourcePath,'Source path changed since publication');
-        const artifact = resultArtifact(result, e);
+        const artifact = resultArtifact(result, e, request);
         for (const old of known)
           if (old?.type === "hosted" && old.url === artifact.url)
             fail(
@@ -434,7 +446,61 @@ export function register(root, { request, result, change, gitEntry }) {
       files.push({ path: target.path, body: json(target.state) });
     }
     files.push({ path, body: json(manifest) });
-    transaction(root, files, currentSource.mount ? currentSource.roots : []);
+    transaction(root, files);
+    return updates;
+  });
+}
+/** @param {{change:string,entry?:string}} options */
+export function associate(root,options){
+  const {change,entry:id}=options;
+  root=realpathSync(root);
+  return withLock(root,()=>{
+    fail(!existsSync(paths(root).journal),'Recover the unfinished prototype transaction first');
+    const workflow=JSON.parse(readFileSync(checkedPath(root,'docs/project/workflow.json'),'utf8'));
+    fail(!validateWorkflow(workflow).length&&workflow.prototype?.status==='enabled','Prototype collaboration must be enabled');
+    const target=changeRecord(root,change,git(root,['symbolic-ref','--short','HEAD']));
+    const owner=localPackage(root,git(root,['rev-parse','HEAD']),workflow.prototype.packagePath,{index:true,worktree:true});
+    fail(owner.mount,'Association requires a submodule prototype package');
+    for(const repository of owner.roots.slice(1))fail(!git(repository.root,['status','--porcelain','--untracked-files=normal']),'Commit the frontend catalog and sources before association');
+    const manifest=packageManifest(owner.source,owner.revision,owner.packagePath).manifest;
+    const known=sourceManifest(root,git(root,['rev-parse','HEAD'])).manifest.entries.map(entry=>entry.artifact);
+    for(const folder of ['changes','archive']){
+      const directory=checkedPath(root,`docs/project/${folder}`);
+      if(!existsSync(directory))continue;
+      for(const name of readdirSync(directory)){
+        const file=checkedPath(root,`docs/project/${folder}/${name}/change.json`);
+        if(existsSync(file))for(const entry of JSON.parse(readFileSync(file,'utf8')).previews??[])known.push(entry.artifact);
+      }
+    }
+    const selected=manifest.entries.filter(entry=>entry.artifact&&(!id||id===entry.id));
+    fail(selected.length,'No published prototype entry selected');
+    const updates=[],files=[];
+    for(const entry of selected){
+      const preview=currentPreview(entry),artifact=preview.artifact;
+      if(artifact.type==='hosted')for(const old of known)if(old?.type==='hosted'&&old.url===artifact.url)fail(old.digest===artifact.digest&&old.version===artifact.version,'Cannot overwrite a known immutable URL');
+      fail(withinPackage(entry.sourcePath,owner.packagePath),'Source must stay in the prototype package');
+      if(artifact.source){
+        verifyOwnerSource(owner,artifact.sourceCommit,entry.id,artifact.source);
+        const bindingCommit=git(root,['rev-parse','HEAD']);
+        const binding=localPackage(root,bindingCommit,workflow.prototype.packagePath);
+        fail(binding.mount===owner.mount&&binding.packagePath===owner.packagePath&&binding.links.at(-1)?.repository===owner.links.at(-1)?.repository,'Commit the submodule mapping as part of initial setup before associating a publication');
+        artifact.source={repository:artifact.source.repository,packagePath:artifact.source.packagePath,submodulePath:owner.mount,catalogCommit:owner.revision,bindingCommit};
+      }else verifyPrototypeSource(root,artifact.sourceCommit,entry.id);
+      if(artifact.type==='git'){
+        fail(artifact.path.startsWith(inPackage(owner.packagePath,'preview')+'/'),'Git artifact must stay in the prototype preview directory');
+        const path=artifact.path+'/index.html',row=treeRows(git(owner.source,['ls-tree','-lz',owner.revision,'--',path]))[0];
+        fail(row?.path===path&&['100644','100755'].includes(row.mode)&&row.bytes<=10*1024*1024,'Missing regular fixed Git HTML');
+        const html=execFileSync('git',['-C',owner.source,'cat-file','blob',row.oid],{stdio:['ignore','pipe','pipe'],maxBuffer:10*1024*1024+1024});
+        fail(!htmlIssues(new TextDecoder('utf-8',{fatal:true}).decode(html)).length,'Git fallback must be self-contained HTML');
+        artifact.path=`docs/project/changes/${change}/previews/${entry.id}`;
+        files.push({path:artifact.path+'/index.html',body:html});
+      }
+      updates.push(preview);
+    }
+    target.state.previews=[...(target.state.previews??[]).filter(p=>!updates.some(entry=>entry.id===p.id)),...updates];
+    fail(!validateChange(target.state).length,'Invalid Change association');
+    files.push({path:target.path,body:json(target.state)});
+    transaction(root,files);
     return updates;
   });
 }

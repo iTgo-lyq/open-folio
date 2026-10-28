@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "前端独立发布并由主仓库单次关联",
-      "status": "doing"
+      "status": "done",
+      "verification": "完整397项、skill/setup39项、最终来源发布17项、typecheck、构建与共享Chrome检查通过；独立评审问题全部修复复验，真实远端授权/托管未实测。",
+      "commitTitle": "prototype-submodule-support T4: publish frontend first and associate once in parent"
     }
   },
   "closure": {},

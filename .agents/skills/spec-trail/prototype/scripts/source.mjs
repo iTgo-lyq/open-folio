@@ -6,7 +6,8 @@ const require = (value, message) => {
 export const withinPackage = (path, directory) =>
   safePath(path) && (!directory || path.startsWith(directory + "/"));
 export const inPackage = (directory, path) =>
-  directory ? `${directory}/${path}` : path;
+  directory && path ? `${directory}/${path}` : directory || path;
+export const sameRepository = (a,b) => moduleUrl(a,'').replace(/\.git$/,'')===moduleUrl(b,'').replace(/\.git$/,'');
 export function moduleUrl(value, parent) {
   require(typeof value === "string" &&
     value &&
@@ -44,7 +45,7 @@ export function treeRows(raw) {
       return { mode, kind, oid, bytes: Number(size), path: row.slice(tab + 1) };
     });
 }
-export function moduleAddress(raw, path) {
+export function moduleMapping(raw, path) {
   const groups = new Map();
   for (const record of String(raw).split("\0").filter(Boolean)) {
     const newline = record.indexOf("\n"),
@@ -52,7 +53,7 @@ export function moduleAddress(raw, path) {
       value = record.slice(newline + 1);
     const match = /^submodule\.(.+)\.(path|url)$/.exec(key);
     require(match && newline > 0, ".gitmodules 格式不合法");
-    const group = groups.get(match[1]) ?? {};
+    const group = groups.get(match[1]) ?? {name:match[1]};
     require(!Object.hasOwn(group, match[2]), ".gitmodules 存在重复配置");
     group[match[2]] = value;
     groups.set(match[1], group);
@@ -60,8 +61,9 @@ export function moduleAddress(raw, path) {
   const matches = [...groups.values()].filter((group) => group.path === path);
   require(matches.length === 1 &&
     matches[0].url, `子模块 ${path} 缺少唯一有效的 .gitmodules 地址`);
-  return matches[0].url;
+  return matches[0];
 }
+export const moduleAddress = (raw,path) => moduleMapping(raw,path).url;
 /** @returns {Generator<any, any, any>} */
 export function* packageSource(source, revision, path, repository) {
   require(commitHash(revision) && safePath(path), "原型来源版本或路径不合法");
@@ -115,11 +117,12 @@ export function* packageSource(source, revision, path, repository) {
         "^submodule\\..*\\.(path|url)$",
       ],
     };
-    const url = moduleUrl(moduleAddress(raw, prefix), repository);
+    const mapping=moduleMapping(raw,prefix);
+    const url = moduleUrl(mapping.url, repository);
     mount = inPackage(mount, prefix);
     const link = { path: mount, repository: url, commit: row.oid };
     links.push(link);
-    source = yield { enter: link, source, localPath: prefix };
+    source = yield { enter: link, source, localPath: prefix, moduleName:mapping.name };
     repository = url;
     revision = row.oid;
     prefix = "";

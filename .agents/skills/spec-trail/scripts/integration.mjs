@@ -58,8 +58,8 @@ function sourceBranch(catalog, branch) {
 
 function previewObjects(repo, record, commit, configuration) {
   for (const preview of record.state.previews ?? []) {
-    assert(revision(repo, preview.artifact.sourceCommit), `Prototype source object is unavailable: ${preview.id}`);
-    verifyPrototypeSource(repo.root,preview.artifact.sourceCommit,preview.id);
+    if(!preview.artifact.source)assert(revision(repo, preview.artifact.sourceCommit), `Prototype source object is unavailable: ${preview.id}`);
+    verifyPrototypeSource(repo.root,preview.artifact.sourceCommit,preview.id,preview.artifact.source,{revision:commit});
     if (preview.artifact.type === 'git') {
       const path = entryPath(preview,configuration,record.directory);
       assert(path?.startsWith(record.directory + '/previews/'), `Prototype path is outside the archived snapshot: ${preview.id}`);

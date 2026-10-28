@@ -7,7 +7,7 @@ async function main() {
   const { validateChange, validateWorkflow } = await import(
     "../../scripts/state-schema.mjs"
   );
-  const {localPackage,gitObject,verifyPrototypeSource}=await import('../../prototype/scripts/local-source.mjs');
+  const {localPackage,gitObject,verifyPrototypeSource,verifyOwnerSource}=await import('../../prototype/scripts/local-source.mjs');
   const {inPackage,withinPackage,treeRows,moduleAddress}=await import('../../prototype/scripts/source.mjs');
   // Dynamic import works in both CommonJS and ESM projects.
   const { execFileSync } = await import("node:child_process");
@@ -180,7 +180,7 @@ async function main() {
         if (preview.artifact) {
           try {
             if (
-              git(["cat-file", "-t", preview.artifact.sourceCommit]).trim() !==
+              !preview.artifact.source && git(["cat-file", "-t", preview.artifact.sourceCommit]).trim() !==
               "commit"
             )
               throw Error();
@@ -188,7 +188,7 @@ async function main() {
             errors.push(`/previews/${i}/sourceCommit: unknown source commit`);
           }
           if(changed && !previous?.some(old=>isDeepStrictEqual(old,preview)))try{
-            verifyPrototypeSource(process.cwd(),preview.artifact.sourceCommit,preview.id);
+            verifyPrototypeSource(process.cwd(),preview.artifact.sourceCommit,preview.id,preview.artifact.source,{index:true});
           }catch(error){errors.push(`/previews/${i}/source: ${error.message}`);}
           if (preview.artifact.type === "hosted") continue;
         }
@@ -254,7 +254,8 @@ async function main() {
             if(!row||row.path!==entry.sourcePath||!['100644','100755'].includes(row.mode))issues.push(`Missing committed source: ${entry.sourcePath}`);
           }
           if(entry.artifact){
-            verifyPrototypeSource(process.cwd(),entry.artifact.sourceCommit,entry.id);
+            if(entry.artifact.source)verifyOwnerSource(source,entry.artifact.sourceCommit,entry.id,entry.artifact.source);
+            else verifyPrototypeSource(process.cwd(),entry.artifact.sourceCommit,entry.id,undefined,{index:true});
             if(entry.artifact.type==='git'){
               if(!entry.artifact.path.startsWith(inPackage(source.packagePath,'preview')+'/'))issues.push('Current Git entry must stay in prototype preview');
               const row=treeRows(gitObject(source.source,['ls-tree','-lz',source.revision,'--',entry.artifact.path+'/index.html']))[0];

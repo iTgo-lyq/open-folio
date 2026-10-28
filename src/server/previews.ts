@@ -24,6 +24,7 @@ import {
   inPackage,
   withinPackage,
   treeRows,
+  sameRepository,
 } from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
 import { validateManifest } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
@@ -445,98 +446,145 @@ export async function resolveEntries(
     if (entry.artifact) {
       try {
         const commit = entry.artifact.sourceCommit;
-        if (
-          (await reader.run(["cat-file", "-t", commit], signal))
-            .toString()
-            .trim() !== "commit" ||
-          !(await reader.ancestor(commit, revision, signal))
-        )
-          throw new AppError(
-            "PROTOTYPE_SOURCE",
-            "源码基线不属于该固定版本的交付历史。",
-            422,
-          );
-        // Existing ordinary artifacts may predate prototype configuration.
-        info.sourceAvailable = true;
-        let historical;
-        const modules = await reader.run(
-          ["ls-tree", "-z", commit, "--", ".gitmodules"],
-          signal,
-        );
-        if (modules.length) {
-          historical = await readPrototypeConfiguration(
-            reader,
-            commit,
-            limits,
-            signal,
-          );
-        }
-        if (historical) {
-          const resolved = await resolvePackage(
-            reader,
-            commit,
-            historical.packagePath!,
-            signal,
-            false,
-          );
-          if (resolved.source.links.length) {
-            info.source = resolved.source;
-            const manifestPath = inPackage(
-              resolved.packagePath,
-              "prototype.json",
+        const provenance = entry.artifact.source;
+        let resolved;
+        if (provenance) {
+          const mount = provenance.submodulePath ?? "";
+          const path = inPackage(mount, provenance.packagePath);
+          const binding = provenance.bindingCommit ?? revision;
+          if (!(await reader.ancestor(binding, revision, signal)))
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "原型父仓库映射基线不属于交付历史。",
+              422,
             );
-            const manifest = JSON.parse(
-              await body(
-                resolved.reader,
-                (
-                  await tree(
-                    resolved.reader,
-                    resolved.revision,
-                    manifestPath,
-                    signal,
-                  )
-                ).find((f) => f.path === manifestPath),
-                limits.jsonBytes,
-                signal,
+          const owner = path
+            ? await resolvePackage(reader, binding, path, signal, false)
+            : {
+                reader,
+                revision,
+                mount: "",
+                source: {
+                  revision,
+                  links: [],
+                  packagePath: provenance.packagePath,
+                },
+              };
+          const repository =
+            owner.source.links.at(-1)?.repository ?? reader.url;
+          if (
+            owner.mount !== mount ||
+            !sameRepository(repository, provenance.repository)
+          )
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "原型源码仓库或挂载路径与固定 gitlink 不匹配。",
+              422,
+            );
+          const catalog = provenance.catalogCommit ?? owner.revision;
+          await owner.reader.ensureCommit(catalog, signal);
+          if (!(await owner.reader.ancestor(commit, catalog, signal)))
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "原型源码提交不属于该子模块清单版本的历史。",
+              422,
+            );
+          resolved = {
+            ...owner,
+            revision: commit,
+            packagePath: provenance.packagePath,
+            source: {
+              ...owner.source,
+              revision: binding,
+              packagePath: provenance.packagePath,
+              links: owner.source.links.map((link, index, links) =>
+                index === links.length - 1 ? { ...link, commit } : link,
               ),
+            },
+          };
+        } else {
+          if (
+            (await reader.run(["cat-file", "-t", commit], signal))
+              .toString()
+              .trim() !== "commit" ||
+            !(await reader.ancestor(commit, revision, signal))
+          )
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "源码基线不属于该固定版本的交付历史。",
+              422,
             );
-            if (validateManifest(manifest).length)
-              throw new AppError(
-                "PROTOTYPE_SOURCE",
-                "构建基线中的原型清单不合法。",
-                422,
-              );
-            const item = manifest.entries.find(
-              (item: any) => item.id === entry.id,
+          const modules = await reader.run(
+            ["ls-tree", "-z", commit, "--", ".gitmodules"],
+            signal,
+          );
+          if (modules.length) {
+            const historical = await readPrototypeConfiguration(
+              reader,
+              commit,
+              limits,
+              signal,
             );
-            if (!item || !withinPackage(item.sourcePath, resolved.packagePath))
-              throw new AppError(
-                "PROTOTYPE_SOURCE",
-                "构建基线缺少对应的原型源码入口。",
-                422,
-              );
-            const files = treeRows(
-              (
-                await resolved.reader.run(
-                  ["ls-tree", "-lz", resolved.revision, "--", item.sourcePath],
-                  signal,
-                )
-              ).toString(),
+            const original = await resolvePackage(
+              reader,
+              commit,
+              historical.packagePath!,
+              signal,
+              false,
             );
-            if (
-              !files.some(
-                (f) =>
-                  f.path === item.sourcePath &&
-                  ["100644", "100755"].includes(f.mode) &&
-                  f.kind === "blob",
-              )
-            )
-              throw new AppError(
-                "PROTOTYPE_SOURCE",
-                "子模块固定版本中的原型源码缺失或不是常规文件。",
-                422,
-              );
+            if (original.source.links.length) resolved = original;
           }
+        }
+        info.sourceAvailable = true;
+        if (resolved) {
+          info.source = resolved.source;
+          const path = inPackage(resolved.packagePath, "prototype.json");
+          const manifest = JSON.parse(
+            await body(
+              resolved.reader,
+              (
+                await tree(resolved.reader, resolved.revision, path, signal)
+              ).find((file) => file.path === path),
+              limits.jsonBytes,
+              signal,
+            ),
+          );
+          if (validateManifest(manifest).length)
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "构建基线中的原型清单不合法。",
+              422,
+            );
+          const item = manifest.entries.find(
+            (item: any) => item.id === entry.id,
+          );
+          if (!item || !withinPackage(item.sourcePath, resolved.packagePath))
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "构建基线缺少对应的原型源码入口。",
+              422,
+            );
+          const files = treeRows(
+            (
+              await resolved.reader.run(
+                ["ls-tree", "-lz", resolved.revision, "--", item.sourcePath],
+                signal,
+              )
+            ).toString(),
+          );
+          if (
+            !files.some(
+              (file) =>
+                file.path === item.sourcePath &&
+                ["100644", "100755"].includes(file.mode) &&
+                file.kind === "blob",
+            )
+          )
+            throw new AppError(
+              "PROTOTYPE_SOURCE",
+              "子模块固定版本中的原型源码缺失或不是常规文件。",
+              422,
+            );
         }
       } catch (error) {
         signal.throwIfAborted();

@@ -1113,10 +1113,10 @@ async function main() {
           for (const p of previews) {
             if (p.artifact) {
               assert(
-                git(["cat-file", "-t", p.artifact.sourceCommit]) === "commit",
+                p.artifact.source || git(["cat-file", "-t", p.artifact.sourceCommit]) === "commit",
                 "Unknown source commit",
               );
-              verifyPrototypeSource(root,p.artifact.sourceCommit,p.id);
+              verifyPrototypeSource(root,p.artifact.sourceCommit,p.id,p.artifact.source,{index:!state.previews?.some(old=>isDeepStrictEqual(old,p))});
               if (p.artifact.type === "hosted") continue;
             }
             const path = entryPath(

@@ -328,3 +328,28 @@ test("streamed chunks, cancellation, revocation and disk failures release upload
   await writeFile(join(f.root, "prototype-artifacts"), "not a directory");
   assert.equal((await send("rotated-key", p.body)).status, 503);
 });
+
+test("frontend package scope is accepted by hosting and separates otherwise identical publications", async (t) => {
+  const f = await setup(t),
+    p = payload();
+  const versions = new Set<string>();
+  for (const packagePath of ["", "packages/prototype"]) {
+    const request = { ...p.request, packagePath };
+    request.requestId = requestIdentity(request);
+    const bytes = Buffer.concat([
+      encodeUploadHeader(request, p.files),
+      ...p.files.map((file) => Buffer.from(p.content[file.path])),
+    ]);
+    const response = await send(f.key, bytes);
+    assert.equal(response.status, 200, await response.clone().text());
+    const result = await response.json();
+    versions.add(result.version);
+    assert.equal(result.sourceCommit, request.sourceCommit);
+    assert.equal(
+      await (await asset(result.version)).text(),
+      p.content["index.html"],
+    );
+  }
+  assert.equal(versions.size, 2);
+  assert.ok(!versions.has(p.request.requestId));
+});

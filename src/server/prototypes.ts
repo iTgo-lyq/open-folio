@@ -144,14 +144,35 @@ export async function readCurrentPrototype(
           continue;
         }
       }
+      const artifact = entry.artifact
+        ? {
+            ...entry.artifact,
+            ...(entry.artifact.source
+              ? {
+                  source: {
+                    repository: entry.artifact.source.repository,
+                    packagePath: entry.artifact.source.packagePath,
+                    ...(resolved.mount
+                      ? {
+                          submodulePath: resolved.mount,
+                          catalogCommit: resolved.revision,
+                          bindingCommit: revision,
+                        }
+                      : {}),
+                  },
+                }
+              : {}),
+          }
+        : undefined;
       base.entries.push({
         ...entry,
+        ...(artifact ? { artifact } : {}),
         ...(base.source ? { source: base.source } : {}),
         sourcePath: inPackage(resolved.mount, entry.sourcePath),
         ...(entry.artifact?.type === "git" && resolved.mount
           ? {
               artifact: {
-                ...entry.artifact,
+                ...artifact,
                 path: inPackage(resolved.mount, entry.artifact.path),
               },
             }

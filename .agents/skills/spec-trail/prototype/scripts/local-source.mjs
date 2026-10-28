@@ -6,8 +6,9 @@ import {
   inPackage,
   withinPackage,
   treeRows,
+  sameRepository,
 } from "./source.mjs";
-import { validateManifest } from "./contract.mjs";
+import { validateManifest, safePath } from "./contract.mjs";
 export const gitObject = (root, args, keepIndex = false) => {
   const env = { ...process.env };
   if (!keepIndex) delete env.GIT_INDEX_FILE;
@@ -21,9 +22,19 @@ export const gitObject = (root, args, keepIndex = false) => {
 const assert = (value, message) => {
   if (!value) throw Error(message);
 };
-export function localPackage(root, revision, path, { index = false } = {}) {
+function childDirectory(root,path){
+  let at=root;
+  for(const part of path.split('/')){
+    at=join(at,part);
+    assert(existsSync(at)&&lstatSync(at).isDirectory()&&!lstatSync(at).isSymbolicLink(),`子模块 ${path} 尚未初始化`);
+  }
+  assert(realpathSync(gitObject(at,['rev-parse','--show-toplevel']))===realpathSync(at),`子模块 ${path} 未初始化为独立仓库`);
+  return at;
+}
+export function localPackage(root, revision, path, { index = false, worktree = false, historical = false } = {}) {
   root = realpathSync(root);
   const roots = [{ root, commit: revision, path: "" }];
+  if(path==='')return {source:root,revision,packagePath:'',mount:'',links:[],roots};
   let repository = "";
   try {
     repository = gitObject(root, ["remote", "get-url", "origin"]);
@@ -34,21 +45,12 @@ export function localPackage(root, revision, path, { index = false } = {}) {
     const op = step.value;
     let value;
     if (op.enter) {
-      let at = op.source;
-      for (const part of op.localPath.split("/")) {
-        at = join(at, part);
-        assert(
-          existsSync(at) &&
-            lstatSync(at).isDirectory() &&
-            !lstatSync(at).isSymbolicLink(),
-          `子模块 ${op.enter.path} 尚未初始化；请获取主仓库记录的版本 ${op.enter.commit}`,
-        );
+      let at;
+      if(historical&&safePath(op.moduleName)){
+        const directory=resolve(op.source,gitObject(op.source,['rev-parse','--git-path',`modules/${op.moduleName}`]));
+        if(existsSync(directory)&&lstatSync(directory).isDirectory()&&!lstatSync(directory).isSymbolicLink())at=directory;
       }
-      assert(
-        realpathSync(gitObject(at, ["rev-parse", "--show-toplevel"])) ===
-          realpathSync(at),
-        `子模块 ${op.enter.path} 未初始化为独立仓库`,
-      );
+      at??=childDirectory(op.source,op.localPath);
       try {
         assert(
           gitObject(at, ["cat-file", "-t", op.enter.commit]) === "commit",
@@ -92,9 +94,32 @@ export function localPackage(root, revision, path, { index = false } = {}) {
         value = gitObject(root, args, true);
       }
     } else value = gitObject(op.source, op.args);
+    if(worktree && op.args?.[0]==='ls-tree')value=treeRows(value).map(row=>{
+      if(row.mode==='160000')row.oid=gitObject(childDirectory(op.source,row.path),['rev-parse','HEAD']);
+      return `${row.mode} ${row.kind} ${row.oid} ${Number.isFinite(row.bytes)?row.bytes:'-'}\t${row.path}\0`;
+    }).join('');
     step = steps.next(value);
   }
   return { ...step.value, roots };
+}
+export function packageManifest(root,commit,packagePath){
+  const source=localPackage(root,commit,'');
+  source.packagePath=packagePath;
+  const path=inPackage(packagePath,'prototype.json'),row=treeRows(gitObject(root,['ls-tree','-lz',commit,'--',path]))[0];
+  assert(row?.path===path&&['100644','100755'].includes(row.mode)&&row.bytes<=256*1024,'Manifest must be a committed regular JSON file within size limits');
+  const manifest=JSON.parse(gitObject(root,['show',`${commit}:${path}`]));
+  assert(!validateManifest(manifest).length,'固定来源的原型清单不合法');
+  return {...source,manifest,standalone:true};
+}
+export function verifyOwnerSource(owner,commit,id,provenance){
+  assert(owner.packagePath===provenance.packagePath,'原型源码包路径与清单不匹配');
+  const repository=owner.links.at(-1)?.repository??gitObject(owner.source,['remote','get-url','origin']);
+  assert(sameRepository(repository,provenance.repository),'原型源码仓库身份与子模块不匹配');
+  try{gitObject(owner.source,['merge-base','--is-ancestor',commit,owner.revision]);}
+  catch{throw Error('原型源码提交不属于该子模块清单版本的历史');}
+  const source=packageManifest(owner.source,commit,provenance.packagePath);
+  assertSourceEntry(source,id);
+  return source;
 }
 export function sourceManifest(root, commit) {
   assert(
@@ -148,7 +173,7 @@ export function assertCheckout(source, generated = false) {
     const head = gitObject(owner.root, ["rev-parse", "HEAD"]);
     const excludes = [];
     if (generated) {
-      if (i === 0) excludes.push("docs/project");
+      if (i === 0 && !source.standalone) excludes.push("docs/project");
       if (i === source.roots.length - 1) {
         const manifest =
           source.manifest ??
@@ -229,7 +254,25 @@ export function assertCheckout(source, generated = false) {
       );
   }
 }
-export function verifyPrototypeSource(root, commit, id) {
+export function verifyPrototypeSource(root, commit, id, provenance = undefined, options = {}) {
+  if(provenance){
+    const revision=options.revision??gitObject(root,['rev-parse','HEAD']);
+    const path=inPackage(provenance.submodulePath??'',provenance.packagePath);
+    const binding=provenance.bindingCommit??revision;
+    try{gitObject(root,['merge-base','--is-ancestor',binding,revision]);}
+    catch{throw Error('原型父仓库映射基线不属于交付历史');}
+    const owner=localPackage(root,binding,path,{historical:true});
+    assert(owner.mount===(provenance.submodulePath??''),'原型来源挂载路径与 gitlink 不匹配');
+    if(provenance.catalogCommit){
+      assert(gitObject(owner.source,['cat-file','-t',provenance.catalogCommit])==='commit','原型清单版本不可用');
+      owner.revision=provenance.catalogCommit;
+    }
+    if(options.index){
+      const staged=localPackage(root,revision,path,{index:true});
+      assert(staged.mount===owner.mount&&staged.revision===owner.revision&&sameRepository(staged.links.at(-1)?.repository??gitObject(root,['remote','get-url','origin']),provenance.repository),'暂存 gitlink 与已关联的原型清单版本不匹配；请将 gitlink 与 Change 一起暂存');
+    }
+    return verifyOwnerSource(owner,commit,id,provenance);
+  }
   assert(
     gitObject(root, ["cat-file", "-t", commit]) === "commit",
     "Unknown source commit",

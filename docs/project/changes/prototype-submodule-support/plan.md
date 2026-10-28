@@ -52,7 +52,7 @@
 
 - 可选来源对象明确 repository/packagePath，sourceCommit 在新模式属于前端，旧引用仍按父基线读取；新请求身份包含包路径，旧 requestId 不变。
 - --package 模式在无 workflow 的前端仓库准备、上传、登记并提交清单；父仓库零预提交。移除新流程的跨库联合写入，保留旧日志恢复兼容。
-- associate 导入已提交 B 的固定引用和适用 Git 快照，核对来源与 A/B 历史，只写主仓库；父仓库最后一次提交 gitlink、Change 与快照。
+- associate 导入已提交 B 的固定引用和适用 Git 快照，记录已有父映射 Q 与清单 B，核对来源与 A/B 历史，只写主仓库；父仓库最后一次提交 gitlink、Change 与快照。
 - 读取、权限、index/hook、previews-set、归档与 preflight 支持新旧来源；skill 说明保持精简。
 
 验收：真实父子 Git 仓库中前端先完成 hosted/Git 发布及清单提交，期间父 HEAD 不变；最终仅一次父提交完成关联。根目录、嵌套路径、失败恢复及普通目录/旧引用均可用，身份不符、非祖先和脏源码拒绝。主仓库关联不写子清单，历史在父/子后续提交后保持固定。
