@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "change-collaborators",
+  "title": "Change 协作者与默认展示",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "体验"
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "先交付多人协作者原型，等待用户审阅后确定正式实现范围"
+  }
+}
