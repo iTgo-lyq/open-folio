@@ -4,19 +4,29 @@
   "title": "Change 协作者与默认展示",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/change-collaborators",
   "confirmations": {
     "requirement": {
       "at": "2026-10-28T08:22:24.194Z",
       "summary": "协作者按已确认原型展示，创建者置顶且独立列默认隐藏",
       "source": "用户：看着没问题，继续吧"
+    },
+    "technical": {
+      "at": "2026-10-28T08:26:06.672Z",
+      "summary": "从材料提交历史批量识别协作者，兼容视图并复用原型交互",
+      "source": "用户：确认，按此实施"
+    },
+    "plan": {
+      "at": "2026-10-28T08:26:10.325Z",
+      "summary": "先交付协作者数据及配置兼容，再完成界面与原型还原验证",
+      "source": "用户：确认，按此实施"
     }
   },
   "tasks": {
     "T1": {
       "title": "识别协作者并兼容个人视图配置",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "实现协作者展示并验证原型还原",
@@ -59,9 +69,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "原型已确认；技术方案和串行交付计划已准备，待合并确认后实施"
-  }
+  ]
 }
