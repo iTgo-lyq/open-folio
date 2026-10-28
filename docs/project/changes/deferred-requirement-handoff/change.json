@@ -14,5 +14,9 @@
   "types": [
     "修复",
     "流程"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待确认需求暂缓展示、真实移交判定及各入口一致性的完整范围与验收"
+  }
 }
