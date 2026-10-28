@@ -4,7 +4,7 @@
   "title": "读取子模块中的固定版本原型",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/prototype-submodule-support",
   "confirmations": {
     "requirement": {
@@ -49,7 +49,13 @@
       "commitTitle": "prototype-submodule-support T4: publish frontend first and associate once in parent"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T18:57:01.306Z",
+      "summary": "397项完整测试、39项skill与17项最终回归通过；类型/构建/Chrome通过，独立评审问题全部修复；真实私有远端授权和托管未实测。"
+    }
+  },
   "types": [
     "新功能",
     "适配"
@@ -67,5 +73,9 @@
     "at": "2026-10-28T18:38:53.525Z",
     "reason": "用户要求前端独立发布并提交清单，主仓库只在最后一次更新gitlink并关联Change",
     "approach": "分离前端发布与主仓库关联，增加带仓库身份的来源引用，保留旧引用读取兼容；追加T4完成返修"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "T4前端先发布与主仓库单次关联已验证，等待用户验收后再同步Specs、归档及合入。"
   }
 }
