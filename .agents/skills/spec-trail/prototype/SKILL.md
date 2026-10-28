@@ -71,17 +71,11 @@ id 稳定且项目内唯一；名称可改。component 在 devices 和 1–4096 
 
 ### 子模块中的原型包
 
-主仓库继续管理 workflow、Change 和归档，packagePath 可以是已提交的子模块根目录或内部路径，例如 `frontend/packages/prototype`。子仓库不用另接入 SpecTrail；采用其现有 package.json、AGENTS、DESIGN 和 prototype.json，不向父仓库包管理器添加子模块 workspace。先初始化主仓库记录的子模块版本，再运行 setup；工具不自动切分支、更新子模块或覆盖现有工程。
+- `packagePath` 相对主仓库，可指向子模块根目录或内部包，如 `frontend/packages/prototype`；清单的 `sourcePath`、Git `artifact.path` 相对子仓库根目录。复用前端工程，子仓库无需另接入 SpecTrail。
+- 命令从主仓库执行，`directory`、发布请求的 `repository` 和 `sourceCommit` 仍属于主仓库。按该提交的 `.gitmodules`/gitlink 固定子版本，不随子分支变化；无权限或缺少版本时报告原因，不回退最新分支。
+- 先提交/推送子源码及父 gitlink，再以匹配且干净的检出构建发布。登记后先提交/推送子清单及产物，再提交/推送父 gitlink、Change 和快照；嵌套子模块从内向外处理。工具不代为提交两库。
 
-子仓库清单的 sourcePath 和 Git artifact.path **相对子仓库根目录**，示例分别为 `packages/prototype/src/orders.tsx`、`packages/prototype/preview/orders`；包在子模块根目录时用 `src/orders.tsx`、`preview/orders`。普通目录原型仍相对主仓库根目录。OpenFolio 将这些入口映射到主项目展示，逐层读取固定提交中的 .gitmodules/gitlink，包含配置路径经过的嵌套子模块；不读取子仓库分支头。无权限、映射无效或指定版本不可用时明确提示，不回退最新分支。
-
-发布命令仍从主仓库执行或使用 `--repo <主仓库>`，directory 也相对主仓库，例如 `frontend/packages/prototype/dist`。sourceCommit 始终是主仓库构建基线 P；子仓库源码 commit 由 P 的 gitlink 确定。发布请求中的 repository 也填写主仓库地址，不将子仓库 SHA 填入 sourceCommit。
-
-提交顺序：先提交/推送子仓库源码 A，再提交父 gitlink 得到 P；确认实际检出均符合 P 且源码/依赖干净后构建、prepare、上传和 register。登记会改子仓库清单和主仓库 Change，Git 模式同时在主仓库保存 Change HTML 快照。随后先提交/推送子仓库清单及适用产物得到 A1，再把父 gitlink A1、Change 和快照一起提交/推送 D。嵌套子模块从内向外提交。当前清单来自 D/A1，源码仍追溯 P/A。工具不自动提交或推送任何子仓库，也不承诺跨库提交原子性。
-
-本地多文件登记使用参与仓库的锁和主仓库事务日志；recover 遇到后续文件编辑、仓库新提交或子模块切换版本时停止，不覆盖它们。上传成功但登记失败时保留 request/result，修复后重试 register；登记已提交到子仓库但父提交尚未完成时继续提交父 gitlink/Change，不重写子仓库历史。失效锁仍按下文核实 owner 后清理，不能因日志存在就直接删锁。
-
-hook 只读父 index 的配置和 gitlink，并从本地子对象库验证对应版本，不联网、不用子 HEAD 替代暂存版本。对象缺失须先获取确切版本。preflight 对子模块构建来源检查实际对象；归档 Git HTML 仍在父仓库 Change 快照内。标准 archive CI 没有私有子仓库凭据，只证明父归档结构有效；完整源码验证由有权限的本地发布/preflight 和 OpenFolio 读取完成。hosted 或主仓库 Git 快照仍可读但子源码不可用时，保留产物并明确报告不可追溯；已公开版本保持独立保留。
+恢复沿用下文 `recover`；子模块模式还会核对参与仓库的 HEAD，遇到后续提交或切换版本时停止。
 
 先提交源码，以干净提交运行项目正常构建；自建适配器的存储凭据由宿主环境注入。准备协议请求：
 
