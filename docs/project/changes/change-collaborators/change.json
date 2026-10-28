@@ -4,7 +4,7 @@
   "title": "Change 协作者与默认展示",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/change-collaborators",
   "confirmations": {
     "requirement": {
@@ -45,7 +45,13 @@
       "verification": "生产构建及类型检查通过；真实工作台浅深主题四档宽度共8组字形边界、截图、交互与会话清理通过；独立局部复核通过"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T08:55:05.068Z",
+      "summary": "复用既有全量单测与回归；T4生产构建、类型检查、真实姓名8组字形边界与交互验证通过，独立局部评审通过"
+    }
+  },
   "types": [
     "体验"
   ],
@@ -86,5 +92,9 @@
     "at": "2026-10-28T08:52:24.592Z",
     "reason": "用户验收发现协作者单人姓名垂直截断",
     "approach": "调整姓名行高并以真实截图核对字形上下边界，更新验收服务"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "文字截断已修复并更新验收入口，等待用户实际验收"
   }
 }
