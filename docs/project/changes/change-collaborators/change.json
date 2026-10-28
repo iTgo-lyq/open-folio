@@ -4,18 +4,20 @@
   "title": "Change 协作者与默认展示",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-28T08:22:24.194Z",
+      "summary": "协作者按已确认原型展示，创建者置顶且独立列默认隐藏",
+      "source": "用户：看着没问题，继续吧"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
     "体验"
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "先交付多人协作者原型，等待用户审阅后确定正式实现范围"
-  },
   "previews": [
     {
       "id": "quiet-changes",
