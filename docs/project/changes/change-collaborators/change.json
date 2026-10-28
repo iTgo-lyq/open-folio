@@ -13,7 +13,16 @@
       "source": "用户：看着没问题，继续吧"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "识别协作者并兼容个人视图配置",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "实现协作者展示并验证原型还原",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "体验"
@@ -50,5 +59,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "原型已确认；技术方案和串行交付计划已准备，待合并确认后实施"
+  }
 }
