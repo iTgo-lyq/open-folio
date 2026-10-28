@@ -7,6 +7,7 @@ import {
   Settings2,
   TriangleAlert,
   X,
+  CirclePause,
 } from "lucide-react";
 import {
   Avatar,
@@ -126,6 +127,12 @@ function Progress({
         }).length
       : tasks.filter((t) => t.status === "done").length;
   const blocked = tasks.some((t) => t.status === "blocked");
+  if (!total)
+    return (
+      <span className={styles.progress} title="暂未安排任务">
+        —
+      </span>
+    );
   return (
     <span
       className={styles.progress}
@@ -477,6 +484,9 @@ export function ChangeDirectory({
                   ) || undefined
                 }
               >
+                {state?.waitingFor?.kind === "pause" && (
+                  <CirclePause aria-hidden="true" />
+                )}
                 {summary(change)}
               </span>
             )}
@@ -972,11 +982,22 @@ export function ChangeDirectory({
                                   ?.kind === "pause" || undefined
                               }
                             >
+                              {primaryRecord(change)?.state?.waitingFor
+                                ?.kind === "pause" && (
+                                <CirclePause aria-hidden="true" />
+                              )}
                               {summary(change)}
                             </span>
                           )}
                           <span className={styles.cardFoot}>
-                            <Progress change={change} all={all} />
+                            {primaryRecord(change)?.state?.size === "xlarge" ||
+                            Object.keys(
+                              primaryRecord(change)?.state?.tasks ?? {},
+                            ).length > 0 ? (
+                              <Progress change={change} all={all} />
+                            ) : (
+                              <span />
+                            )}
                             {creatorName(change) && (
                               <Avatar name={creatorName(change)} />
                             )}

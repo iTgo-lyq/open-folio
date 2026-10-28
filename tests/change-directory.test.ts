@@ -161,6 +161,10 @@ test("processing groups keep deferred requirements separate from blockers and no
     ).length,
     1,
   );
+  delete paused.candidates[0].state!.waitingFor;
+  assert.equal(processingStatus(paused), "blocked");
+  paused.candidates[0].state!.tasks = {};
+  assert.equal(processingStatus(paused), "moving");
 });
 test("creation and urgency ordering are deterministic and do not mutate the source", () => {
   const low = change("low", { urgency: "low" }, "2026-10-21T00:00:00Z");

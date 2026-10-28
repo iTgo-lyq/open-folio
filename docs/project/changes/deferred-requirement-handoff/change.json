@@ -32,7 +32,13 @@
     },
     "T2": {
       "title": "暂缓在工作台独立呈现并完成场景验证",
-      "status": "doing"
+      "status": "done",
+      "verification": "全量单测 365 项及浏览器回归 17 项通过；空任务定向复验通过，Astra 复查阶段列与暂缓图标还原通过，最终构建随 T3 复验",
+      "commitTitle": "deferred-requirement-handoff T2: verify deferred UI and stage alignment"
+    },
+    "T3": {
+      "title": "修复独立评审发现的来源丢失与父子预填边界",
+      "status": "todo"
     }
   },
   "closure": {},

@@ -180,6 +180,12 @@
 .wait[data-paused] {
   color: var(--of-text-3);
 }
+.wait svg {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
 .stageProgress {
   display: inline-flex;
   align-items: center;
