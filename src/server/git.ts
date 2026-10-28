@@ -31,13 +31,16 @@ import {
   validBranchName,
   parentBranch,
   parentArchive,
+  sourceOwnership,
+  resolvePlanningRoute,
+  planningRecord,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([10, limits]));
+  hash(JSON.stringify([11, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -736,14 +739,6 @@ export class GitReader {
         );
         if (!targetRoutes.length) continue;
         const target = await source(name, refs.get(`refs/heads/${name}`));
-        if (!target) {
-          targetRoutes.forEach((r) =>
-            r.errors.push(
-              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
-            ),
-          );
-          continue;
-        }
         const ids = targetRoutes.map((r) => r.id);
         if (parents)
           ids.push(
@@ -751,14 +746,52 @@ export class GitReader {
               .filter((r) => r.parent && ids.includes(r.parent))
               .map((r) => r.id),
           );
-        await collectSource(
-          target,
-          ["docs/project/changes/", "docs/project/archive/"],
-          ids,
-        );
+        if (target)
+          await collectSource(
+            target,
+            ["docs/project/changes/", "docs/project/archive/"],
+            ids,
+          );
+        for (const route of targetRoutes) {
+          const previousGroup = previous?.changes.find(
+            (group) => group.id === route.id,
+          );
+          const wasOwned = previousGroup?.candidates.some(
+            (candidate) =>
+              candidate.key === previousGroup.primary &&
+              candidate.branch === name &&
+              candidate.owner === name,
+          );
+          const ownership = sourceOwnership(
+            sourceRecords(name),
+            route.id,
+            name,
+          );
+          const entry = sourceRecords(integrationBranch).find(
+            (row) => row.id === route.id,
+          );
+          if (!target && wasOwned) {
+            route.errors.push(
+              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
+            );
+            continue;
+          }
+          const resolved = resolvePlanningRoute(
+            route,
+            entry?.state,
+            ownership,
+            integrationBranch,
+          );
+          Object.assign(route, resolved);
+          if (route.kind === "planning")
+            await collectSource(collab, ["docs/project/changes/"], [route.id]);
+          else if (!target)
+            route.errors.push(
+              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
+            );
+        }
       }
     };
-    await loadTargets([...parentNames], true);
     const sourceRecords = (name: string) =>
       documents.flatMap((d) => {
         const location = changeLocation(d.path);
@@ -783,11 +816,21 @@ export class GitReader {
           ];
         }
       });
+    await loadTargets([...parentNames], true);
     for (const route of routes.filter(
       (r) => r.kind === "target" && r.parent && !r.errors.length,
     )) {
       try {
         const parentRoute = routes.find((r) => r.id === route.parent);
+        const centralChild = sourceRecords(integrationBranch).find(
+          (row) => row.id === route.id,
+        )?.state;
+        if (
+          parentRoute?.kind === "planning" &&
+          planningRecord(centralChild) &&
+          !refs.has(`refs/heads/${route.branch}`)
+        )
+          continue;
         if (
           !parentRoute?.branch ||
           parentRoute.parent ||

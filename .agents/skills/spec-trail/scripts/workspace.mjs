@@ -23,7 +23,7 @@ import {
   fetchBranch,
   deliveryTarget,
 } from "./repository.mjs";
-import { closedRecord, validBranchName } from "./routing.mjs";
+import { closedRecord, validBranchName, planningRecord } from "./routing.mjs";
 import { validateChange } from "./state-schema.mjs";
 import { parseTaskOrder } from "./task-order.mjs";
 
@@ -205,7 +205,8 @@ function prepared(repo, catalog, id, branch, commit) {
     .filter(Boolean);
   assert(
     registered
-      ? paths.length === 1 && paths[0] === original.path
+      ? (paths.length === 1 && paths[0] === original.path) ||
+        (original.state.branch === branch && paths.length === 0)
       : paths.length === 0,
     "Unregistered target contains changes beyond branch registration; inspect it instead of overwriting",
   );
@@ -264,8 +265,10 @@ function handoffChild(repo, catalog, record, branch, path, options) {
     const checkout = join(temporary, 'checkout');
     try {
       repo.git(['worktree','add','--detach',checkout,catalog.commit]);
-      writeFileSync(join(checkout, record.path), json({...record.state, branch}));
-      at(checkout,['commit','--only','-m',`${record.id}: register child work branch`,'--',record.path]);
+      if (record.state.branch !== branch) {
+        writeFileSync(join(checkout, record.path), json({...record.state, branch}));
+        at(checkout,['commit','--only','-m',`${record.id}: register child work branch`,'--',record.path]);
+      }
       registration = at(checkout,['rev-parse','HEAD']);
     } finally {
       if (existsSync(checkout)) repo.git(['worktree','remove',checkout]);
@@ -293,16 +296,20 @@ function handoff(repo, id, options) {
       remoteBranch(repo, catalog.branch) === catalog.commit,
       "Fetch the collaboration branch before dry-run",
     );
-  let record = routedRecord(repo, catalog, id, {
-    refresh: !options["dry-run"],
-  });
+  const central = catalog.entries.find(entry => entry.id === id);
+  // Explicit handoff can recover a predeclared, unpublished target. prepared()
+  // still checks its entire planning tree before any publication or reuse.
+  let record = central && planningRecord(central.state) && central.state.branch !== catalog.branch &&
+    !remoteBranch(repo, central.state.branch)
+    ? {...central, branch: catalog.branch, commit: catalog.commit, errors: validateChange(central.state)}
+    : routedRecord(repo, catalog, id, {refresh: !options['dry-run']});
   assert(
     !record.errors.length &&
       !record.archived &&
       record.state.status === "active",
     "Only an active live Change can be handed off",
   );
-  const branch = options.branch ?? `change/${id}`,
+  const branch = options.branch ?? (record.state.branch !== catalog.branch ? record.state.branch : `change/${id}`),
     path = resolve(options.path ?? defaultPath(repo, id));
   assert(
     validBranchName(branch) &&
@@ -396,7 +403,7 @@ function handoff(repo, id, options) {
     };
 
   const tree = prepareWorktree(repo, branch, path, candidate ?? catalog.commit);
-  if (!registered) {
+  if (!registered && record.state.branch !== branch) {
     const file = join(tree.path, record.path),
       original = readFileSync(file, "utf8");
     assert(
@@ -428,7 +435,8 @@ function handoff(repo, id, options) {
       current && !current.errors.length,
       "The collaboration entry disappeared or became invalid",
     );
-    if (current.branch !== latest.branch) {
+    if (current.branch !== latest.branch &&
+        !(record.state.branch === branch && current.branch === branch && !remoteBranch(repo, branch))) {
       assert(
         current.branch === branch,
         `Another handoff registered ${current.branch}; the prepared branch was left untouched`,
@@ -499,7 +507,8 @@ function handoff(repo, id, options) {
 function locate(repo, id, refresh = false) {
   const catalog = collaborationCatalog(repo, { refresh });
   const record = routedRecord(repo, catalog, id, { refresh });
-  const tree = worktrees(repo).find((item) => item.branch === record.branch);
+  const planning = catalog.routes.find(route => route.id === id)?.kind === 'planning';
+  const tree = !planning && worktrees(repo).find((item) => item.branch === record.branch);
   const diagnostics = [...record.errors];
   let localCommit = revision(repo, `refs/heads/${record.branch}`),
     dirty = null,
@@ -538,6 +547,7 @@ function locate(repo, id, refresh = false) {
     recordPath: record.path,
     freshness: record.freshness,
     worktree: tree?.path ?? null,
+    ...(planning ? {planningWorkspace: worktrees(repo).find(item => item.branch === catalog.branch)?.path ?? null} : {}),
     localCommit,
     ahead,
     behind,
@@ -552,8 +562,8 @@ function locate(repo, id, refresh = false) {
     },
     session: {
       binding: "unverified",
-      action: tree ? "continue-or-open" : "prepare-worktree",
-      prompt: `继续 Change ${id}。在 ${tree?.path ?? defaultPath(repo, id)} 打开或复用绑定该工作区的会话，先核对实际 cwd、仓库 common-dir 和分支 ${record.branch}；从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文。比较本地与 ${record.commit} 的差异后按未完成任务继续。创建工作区或 shell cd 不代表会话已绑定。`,
+      action: planning ? 'continue-planning' : tree ? "continue-or-open" : "prepare-worktree",
+      prompt: planning ? `继续在 ${catalog.branch} 澄清 Change ${id}；当前尚未实际移交，保留暂缓意图。明确启动后使用 handoff，不自动创建执行工作区。` : `继续 Change ${id}。在 ${tree?.path ?? defaultPath(repo, id)} 打开或复用绑定该工作区的会话，先核对实际 cwd、仓库 common-dir 和分支 ${record.branch}；从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文。比较本地与 ${record.commit} 的差异后按未完成任务继续。创建工作区或 shell cd 不代表会话已绑定。`,
     },
   };
 }

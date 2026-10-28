@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
-import { changeLocation, routeCatalog, validBranchName, parentBranch, parentArchive } from "./routing.mjs";
+import { changeLocation, routeCatalog, validBranchName, parentBranch, parentArchive, sourceOwnership, resolvePlanningRoute, planningRecord } from "./routing.mjs";
 
 export function repository(cwd = ".") {
   const git = (args) =>
@@ -145,7 +145,11 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
   if (!route)
     throw Error(`Change ${id} is not registered on ${catalog.branch}`);
   if (route.errors.length) throw Error(`${id}: ${route.errors.join("; ")}`);
-  if (route.kind === 'target' && route.parent) {
+  const parentEntry = catalog.entries.find(row => row.id === route.parent);
+  const centralEntry = catalog.entries.find(row => row.id === id);
+  const unstartedChild = parentEntry?.state?.branch === catalog.branch &&
+    planningRecord(parentEntry.state) && planningRecord(centralEntry?.state);
+  if (route.kind === 'target' && route.parent && !unstartedChild) {
     const entry = catalog.entries.find(row => row.id === id);
     const target = deliveryTarget(repo, catalog, entry.state, {refresh});
     const record = parentArchive(recordsAt(repo, target.commit, id), entry.state, target.parent);
@@ -153,12 +157,33 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
       sourceRef: target.ref, entryPath: route.entryPath, entryCommit: catalog.commit,
       errors: validateChange(record.state), freshness: catalog.freshness};
   }
-  if (refresh && route.branch !== catalog.branch)
-    fetchBranch(repo, route.branch);
+  if (route.kind === 'target') {
+    const declared = route.branch;
+    const local = revision(repo, `refs/heads/${declared}`);
+    const tracking = revision(repo, `refs/remotes/origin/${declared}`);
+    const localOwnership = sourceOwnership(local ? recordsAt(repo, local, id) : [], id, declared);
+    const knownOwnership = sourceOwnership(tracking ? recordsAt(repo, tracking, id) : [], id, declared);
+    let ownership = localOwnership === 'owned' || knownOwnership === 'owned' ? 'owned' :
+      localOwnership === 'invalid' || knownOwnership === 'invalid' ? 'invalid' : 'unclaimed';
+    if (refresh) {
+      const advertised = remoteBranch(repo, declared);
+      if (advertised) {
+        const commit = fetchBranch(repo, declared);
+        ownership = sourceOwnership(recordsAt(repo, commit, id), id, declared);
+        if (ownership === 'unclaimed' && localOwnership !== 'unclaimed') ownership = localOwnership;
+      } else if (ownership !== 'unclaimed') {
+        throw Error(`Remote branch is missing: ${declared}; preserve the known source instead of using its central copy`);
+      }
+    }
+    if (ownership === 'invalid') throw Error(`Invalid Change source on ${declared}; inspect it before continuing`);
+    const entry = catalog.entries.find(row => row.id === id);
+    Object.assign(route, resolvePlanningRoute(route, entry?.state, ownership, catalog.branch));
+  } else if (refresh && route.branch !== catalog.branch) fetchBranch(repo, route.branch);
   const ref =
     route.branch === catalog.branch
       ? catalog.ref
-      : `refs/remotes/origin/${route.branch}`;
+      : revision(repo, `refs/remotes/origin/${route.branch}`)
+        ? `refs/remotes/origin/${route.branch}` : `refs/heads/${route.branch}`;
   const commit =
     route.branch === catalog.branch ? catalog.commit : revision(repo, ref);
   if (!commit)
@@ -174,7 +199,8 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
   if (record.error) throw Error(record.error);
   if (
     record.state?.id !== id ||
-    (route.kind !== "archive" && record.state?.branch !== route.branch)
+    (route.kind !== "archive" && record.state?.branch !== route.branch &&
+      !(route.kind === 'planning' && record.state?.branch === route.ownerBranch))
   )
     throw Error(
       `The target record for ${id} does not match its registered identity/branch`,
@@ -200,6 +226,8 @@ export function deliveryTarget(repo, catalog, state, {refresh = false} = {}) {
     throw Error(`Child ${state.id}: parent is missing or nested`);
   const record = routedRecord(repo, catalog, state.parent, {refresh});
   if (record.errors.length) throw Error(record.errors.join('; '));
+  if (!record.archived && record.branch === catalog.branch)
+    throw Error(`Child ${state.id}: parent has not actually been handed off`);
   const branch = parentBranch(state, record.state, catalog.branch, catalog.config.releaseBranch);
   return {branch, readBranch: record.branch, commit: record.commit, ref: record.sourceRef, parent: record.state};
 }

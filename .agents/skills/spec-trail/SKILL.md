@@ -11,6 +11,8 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 
 用户派发任务时，先检查分支、工作区和相关 Change：
 
+用户明确要求“只记录需求、短期不启动”时，只保存已知目标、范围、未决问题，并用 `wait --kind pause` 记录暂缓原因或恢复条件。可保留空任务，不自动生成 Plan、创建工作分支/worktree/Draft PR 或进入实施。暂缓期间可继续补充需求和澄清，不能因补充材料自动 resume；用户明确恢复后再按现有确认与移交规则推进。暂缓不是任务受阻，不用 task-block 表达。
+
 - **无需创建 Change**：纯问答、讨论、只读调查或评审；局部、无歧义的拼写、注释、格式等机械修正，或纠正、补录既有事实的文档描述。后两类必须不改变产品行为、既定要求、架构、共享契约、数据迁移、权限安全或难回退的外部状态。
 - **讨论中先行交付**：讨论现有 Change 时，用户提出先实现相关内容、其余方案继续讨论，主动询问是否拆为独立 Change，并简述范围与依赖；已有明确拆分授权时不重复询问。确认后按[创建与规模](#创建与规模)建立新 Change，调整原 Change 范围；仅有实际交付依赖时按[依赖规则](#change-之间的依赖)登记 `dependsOn`，不因执行先后而声明依赖。
 - **复用已有 Change**：目标被现有 `active` Change 覆盖时询问用户是否复用。
@@ -27,6 +29,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 - 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 工作区名默认使用 id；已有登记优先复用，用户明确指定路径时沿用，不为统一命名搬动已有工作区。项目的构建和长期服务位置遵循项目约定，SpecTrail 不要求另建服务 checkout。
 - 新 worktree 缺少 `.env` 或 `.env.local` 时，先到主工作区查找并按需复用；测试实例使用独立端口和数据目录。
 - 工作分支只推进所属 Change；继承的其他记录按集中入口读取。只有所属分支更新完整状态，集中分支仅登记工作分支；任务分支仍可用 `task/<id>/T<n>`，只提交实现和证据。普通 Change 不在集成分支进入实现，xlarge 父项在所属工作分支集成子项并关闭。
+- branch 预填名称不证明已移交。CLI、定位与工作台按命名分支中的所属 Change 核实来源；没有实际来源且仍为有效规划时，保留集成分支的澄清入口。已观察到的来源丢失、读取失败或身份冲突明确报告，不静默回退。hook 只核对本地可读的分支/跟踪证据，不查询网络。
 - 开始实现前定向同步集成分支与所需工作分支，核对实际 cwd、分支和仓库身份。创建 worktree 或 shell cd 不等于会话绑定；客户端不能准确自动绑定时输出路径和续接提示，由用户打开目标工作区后核验。优先继续已有执行会话；同一 worktree 的多个写入会话需协调。
 - 调查和规划可并行；实现边界独立时可使用分支或 worktree。共享行为、Spec、契约、迁移或核心文件重叠时串行协调，small 也不例外。
 
@@ -156,7 +159,7 @@ interface ChangeState {
   deliveryOverride?: "releaseMerged"; // 仅集成分支有效归档可覆盖交付标签；缺省自动判定
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
-  branch: string; // 规划时为集成分支；移交后指向实际工作分支，默认 change/<id>
+  branch: string; // 新规划优先填集成分支；允许预填目标名，实际归属另核实；移交默认 change/<id>
   clarifications?: Record<`Q${number}`, Clarification>; // 实际问过的问题，编号递增且不复用
   previews?: PreviewEntry[]; // 可省略；记录本次固定交付；项目当前清单位于原型包 prototype.json
   dependsOn?: string[]; // 前置 Change id，去重；全部满足后执行，xlarge 父 Change 不填

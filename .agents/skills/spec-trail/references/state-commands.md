@@ -31,6 +31,8 @@
 
 ## 更新提醒
 
+仅记录需求时可以保留空任务并设置 `wait --kind pause`；澄清与标签更新保留暂缓，明确恢复后再 resume。branch 仅预填目标而没有实际所属来源时，状态命令仍可在集成分支记录有效规划；execute 仍需真实移交。联网命令区分目标尚未创建、已知来源丢失和查询失败，不以陈旧跟踪记录冒充当前远端。
+
 只有 `change.mjs` 在成功操作或 show 结束后检查 skill 新版。默认开启，可在目标项目 `docs/project/workflow.json` 设置 `"checkForUpdates": false` 关闭；关闭后不读取检查缓存、不联网、不显示提醒。此字段需使用支持它的 skill 与 OpenFolio 读取器，旧配置不必修改。
 
 有新版时 JSON 外层追加 `skillUpdate`，包含 `status: "available"`、`currentVersion`、`latestVersion` 与 `message`；已是最新时省略字段。安装缺少版本或检查异常时返回 `status: "unknown"`，不改变原操作、state 或退出码。旧安装需从 OpenFolio 仓库重新安装一次，取得检查代码及随源码提交的 version.json；缺少版本文件时不会联网猜测。

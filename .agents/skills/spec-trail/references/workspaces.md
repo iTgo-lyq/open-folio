@@ -31,7 +31,7 @@ node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
 
 普通 Change 在集成分支不能进入 execution；移交后须在目标会话核验，获所需确认后运行 execute。xlarge 父项在工作分支聚合。状态命令拒绝改写其他分支所属的继承记录；show 使用集中入口，只有在所属分支才展示未推送的本地状态。
 
-已接入 pre-commit 的仓库还会拒绝在集成分支普通提交已移交 active Change 的目录修改，包括正文、状态、增删和重命名。判断以 HEAD 中的 branch 登记为准，集中副本仍为规划阶段也生效；报错提示所属分支与已登记 worktree。首次移交登记及不涉及 Change 文档的提交继续放行。此检查在提交时生效，不能阻止误写文件或识别未同步文档的实现修改；发现误写时保留现场，核对归属后迁往正确工作区，不清空其他会话的修改。
+已接入 pre-commit 的仓库会以 HEAD 登记和本地命名/跟踪分支中的实际所属记录为依据，拒绝在集成分支普通提交已移交 active Change 的目录修改，包括正文、状态、增删和重命名。仅预填名称、没有实际所属记录且仍为有效规划时放行；集中副本仍为规划阶段不能否定真实移交。报错提示所属分支与已登记 worktree。首次移交登记及不涉及 Change 文档的提交继续放行。hook 不联网，本地跟踪记录不证明实时远端仍存在。检查在提交时生效，不能阻止误写文件或识别未同步文档的实现修改；发现误写时保留现场，核对归属后迁往正确工作区，不清空其他会话的修改。
 
 handoff 可重复调用。目标推送失败，集中入口保持原状；登记推送失败，目标保留登记提交供重试。相同 Change 的规划已变化、其他分支已取得登记、目标有额外提交或无关脏文件时保留现场并报错，不覆盖它们。允许重试因提交校验失败留下的、仅含预期 branch 修改的现场。并发不同 Change 的集中更新通过正常 Git 合并/快进重试协调；同一仓库使用既有状态操作锁，跨克隆依赖远端非快进检查。同一 worktree 的多个写入会话仍需协调。
 
@@ -48,6 +48,8 @@ node .agents/skills/spec-trail/scripts/workspace.mjs prepare --change example
 ```
 
 locate 只读本地跟踪引用，明确输出 freshness；它不是实时远端查询。prepare 定向 fetch 集成分支与登记的工作分支，缺失远端时拒绝使用残留跟踪引用；新克隆可从登记分支建立 worktree，已有工作区的未提交文件、领先提交、分叉均保留，不自动 reset/rebase。归档与取消记录可定位但不准备写入工作区。失效的 Git worktree 登记需先检查，不自动 prune。
+
+预填分支名但没有实际所属来源的有效规划仍从集成分支读取，locate 输出 planningWorkspace 和 continue-planning，不把主工作区称为执行 worktree；prepare 提示先显式 handoff。handoff 沿用预填名称，避免无变化的登记提交。仅记录需求或用户暂缓时不主动执行 handoff。若已观察到实际目标后远端消失，或查询失败、来源损坏，报告问题并保留现场，不将旧集中副本恢复为可写规划。
 
 输出包括集中入口/目标记录路径与提交、实际当前 cwd/分支、目标 worktree、ahead/behind、dirty、诊断和续接提示。会话始终标为 binding unverified：通用脚本不能验证宿主会话绑定。
 

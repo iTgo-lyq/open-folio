@@ -362,7 +362,8 @@ export async function indexChanges(
         !c.diagnostics.some((d) => d.code === "DIRECTORY_ID") &&
         (route.kind === "archive"
           ? c.archived && c.validCompleted
-          : c.owner === c.branch),
+          : c.owner === c.branch ||
+            (route.kind === "planning" && c.owner === route.ownerBranch)),
     );
     if (
       !route.errors.length &&

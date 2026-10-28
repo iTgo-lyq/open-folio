@@ -94,7 +94,7 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 ## 校验范围
 
 - 状态结构只检查暂存区中本次新增、修改的 `docs/project/workflow.json`、`docs/project/changes/<id>/change.json` 和 `docs/project/archive/<date>-<id>/change.json`。重命名按目标文件检查，删除和未改动的历史文件不作结构检查。
-- 集成分支的普通提交若涉及 `docs/project/changes/<id>/` 下任何文件（含新增、删除及重命名来源），且 HEAD 中该 Change 为 active、branch 已登记到独立工作分支，则拒绝整个提交，提示登记分支及本地已登记 worktree；无本地工作区时提示 locate 命令。归属与集成分支配置以 HEAD 为准，不依赖集中副本的 stage，也不因同次改写或删除 change.json 放行。未移交规划、首次移交登记、工作/任务分支及正常合并继续沿原有校验；不涉及 Change 文档的提交不作实现归属推断。
+- 集成分支的普通提交若涉及 `docs/project/changes/<id>/` 下任何文件（含新增、删除及重命名来源），以 HEAD 中的 active Change 和本地命名/跟踪分支的实际所属记录判定移交；有归属证据时拒绝整个提交，提示分支及已登记 worktree。仅预填名称、目标没有所属记录且集中记录仍为有效规划时放行。实际目标仍在需求阶段也不能集中修改；同次改写或删除 change.json 不绕过检查。未移交规划、首次移交登记、工作/任务分支及正常合并继续沿原有校验；不涉及 Change 文档的提交不作实现归属推断。hook 不联网，缓存跟踪记录不冒充实时远端验证。
 - 共享主 skill 的 `scripts/state-schema.mjs`，按主 skill 的 TypeScript 声明检查必需字段、类型、枚举、非空文本、带时区的有效时间、任务编号、未知字段及数组重复项，包含 `dependsOn`。
 - 只保留明确的字段关联：`blocked` 任务需要 `reason`，`cancelled` Change 需要 `cancellation`。
 - workflow 只接受 schemaVersion 3，必填合法且不同的 integrationBranch / releaseBranch。Change 记录的 schemaVersion 仍为 1，与 workflow 版本独立。

@@ -4,7 +4,7 @@
   "title": "区分需求暂缓与实际分支移交",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/deferred-requirement-handoff",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "未实际移交的需求可持续记录，已移交需求保持正确归属",
-      "status": "todo"
+      "status": "done",
+      "verification": "24 项真实 hook/Setup、53 项路由与生命周期回归及预填子项移交用例通过；类型、版本一致性和 diff 检查通过，证据见 execution.md",
+      "commitTitle": "deferred-requirement-handoff T1: resolve actual source before routing"
     },
     "T2": {
       "title": "暂缓在工作台独立呈现并完成场景验证",
