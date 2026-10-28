@@ -29,13 +29,25 @@ artifact 区分两种交付：
 
 Change 的 previews 保留自己的入口标题、类型、适配及固定 artifact；项目当前清单与 Change 可引用同一次发布。当前清单后续更新不改变 Change 的固定交付，已归档记录只读。源码提交可用于追溯构建来源。
 
-发布工具 prepare 生成包含仓库、源码提交、目录、内容摘要、入口及 requestId 的请求。宿主负责构建、上传和结果，成功结果回传对应 requestId/sourceCommit/digest、固定版本及各入口 URL；失败结果包含 code、message 和 retryable。宿主完整上传后原子发布，重复请求返回同版本，旧版本内容不可覆盖，历史引用版本由宿主负责保留。
+发布工具 prepare 生成包含仓库、源码提交、目录、内容摘要、入口及 requestId 的请求。独立原型包模式另含 packagePath 并纳入请求身份；缺省时保持既有请求身份算法。宿主负责构建、上传和结果，成功结果回传对应 requestId/sourceCommit/digest、固定版本及各入口 URL；失败结果包含 code、message 和 retryable。宿主完整上传后原子发布，重复请求返回同版本，旧版本内容不可覆盖，历史引用版本由宿主负责保留。
 
-OpenFolio 方式由内置 upload 命令读取 workflow 地址，上传产物、校验并保存结果，再登记引用；上传成功但本地登记失败可使用保存的 request/result 重试 register。自建托管继续由项目适配器完成上传。新建 hosted 包默认输出 dist，可指定其他产物目录；已有包保留原构建命令。
+OpenFolio 方式由内置 upload 命令读取 workflow 地址，独立前端模式从显式参数或环境读取服务与上传地址，上传产物、校验并保存结果，再登记引用；上传成功但本地登记失败可使用保存的 request/result 重试 register。自建托管继续由项目适配器完成上传。新建 hosted 包默认输出 dist，可指定其他产物目录；已有包保留原构建命令。
 
 register 校验成功结果后更新当前清单及可选 Change 引用；发布失败保留旧引用，不自动转为 Git 兜底。共享仓库锁、事务日志和原文比对保护多文件登记，recover 遇到后续用户编辑会停止；异常退出遗留锁须核实持有进程已结束后处理。协议、调用和恢复细节见[原型协作 skill](../../../../../.agents/skills/spec-trail/prototype/SKILL.md)。
 
 预览引用使用无凭据、无 query 的 HTTP/HTTPS，可包含 hash 路由；不包含临时签名 URL、上传密钥或令牌。专用上传地址作为上传凭据保存在 workflow，可提交供仓库成员使用，不复制到 artifact、截图地址或成功日志。staged hook 校验暂存配置、引用及 Git 产物；静态校验不能代替浏览器交互验证。
+
+## 子模块来源与前端发布
+
+主仓库管理 SpecTrail、Change 和归档，prototype.packagePath 可指向已记录的 Git submodule 根目录或内部包，也支持沿配置路径经过嵌套 gitlink。清单的 sourcePath 和 Git artifact.path 相对所属子仓库根目录。主项目按固定父提交中的 .gitmodules 与逐层 gitlink 读取清单、源码及 Git 产物，不使用子分支最新提交或本地检出替代固定版本。接入复用前端工程、组件及构建，不向父包管理器登记子模块 workspace，子仓库无需另接入 SpecTrail。
+
+前端以 --package 独立提交干净源码 A、构建发布并登记，再提交/推送清单 B；根包用空包路径表示，命令使用 `.`。前端无需 workflow，不提前更新主仓库 gitlink，登记只写前端。主仓库 associate 读取已提交且干净的 B，关联固定引用并复制适用的 Git HTML 到 Change；最后一次父提交 P 同时更新 gitlink B、Change 与快照。嵌套子模块从内向外提交，工具不自动提交或推送。子模块映射须已按接入步骤提交，关联不回写子清单。
+
+新 artifact 的可选 source 记录 repository、packagePath，sourceCommit 属于前端源码 A。主仓库关联另补 submodulePath、catalogCommit=B 与 bindingCommit=关联前已有父提交 Q；当前清单的父绑定字段由实际固定 P/B 合成，不采信子清单自报的挂载信息。Q 必须属于父交付历史，先按 Q 的映射确定允许的仓库，再核对身份、A 为 B 的祖先及 A 的入口源码。没有 source 的旧引用继续将 sourceCommit 解释为父构建基线，不改写历史。目录迁移或分支变化后仍沿固定绑定追溯。
+
+新/修改关联的暂存校验要求父 index 中的最终 gitlink 等于 B，不因源码 A 未变而省略清单提交；已保留的历史引用不强绑当前 gitlink。关联检查父当前清单及活动/归档 Change 的已知固定 URL，不接受同地址不同摘要或版本。前端登记和主关联分别持锁、恢复，日志记录所属仓库 HEAD，遇后续编辑或提交停止；既有跨库日志仍可恢复。
+
+子仓库沿当前连接独立检查访问权限，父仓库可读不代表子仓库可读，缓存及历史快照不能绕过拒绝。不把凭据发送到任意来源地址；配置缺失或非法、仓库不存在或无权限、固定版本或文件不可用分别明确提示，不回退最新分支。子源码不可读时，主仓库已保存的 Git 快照及 hosted 引用仍可阅读，并标记源码不可追溯；新公开版本准备即时复验实际子依赖，已公开版本匿名读取不访问仓库。
 
 ## OpenFolio 内置静态托管
 

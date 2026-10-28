@@ -36,6 +36,8 @@ npx skills update spec-trail -p -y
 
 ## 环境要求
 
+原型包可放在 Git submodule，前端先独立发布并提交清单，无需另接入 SpecTrail；主仓库最后一次提交 gitlink 与 Change 关联，并固定追溯前端源码。命令、恢复与校验见[原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
+
 - Git。
 - Node.js 20+ 用于状态命令和接入校验；使用原型功能时需要 Node.js 24+，建议统一使用 Node.js 24 或更新版本。
 - 能读取本地 Skill 文件、运行命令并操作 Git 的编码 Agent。

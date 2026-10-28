@@ -680,7 +680,13 @@ function PrototypeDetailBody({
           </dd>
         </div>
         <div>
-          <dt>源码提交</dt>
+          <dt>
+            {item.artifact?.source
+              ? "源码提交（原型仓库）"
+              : item.source?.links.length
+                ? "构建基线提交（主仓库）"
+                : "源码提交"}
+          </dt>
           <dd>
             <code>{item.artifact?.sourceCommit ?? "尚未发布产物"}</code>
           </dd>
@@ -691,6 +697,16 @@ function PrototypeDetailBody({
             <code>{revision}</code>
           </dd>
         </div>
+        {item.source?.links.map((link) => (
+          <div key={link.path}>
+            <dt>清单子模块 {link.path}</dt>
+            <dd>
+              <code>
+                {link.repository} · {link.commit}
+              </code>
+            </dd>
+          </div>
+        ))}
         <div>
           <dt>预览产物</dt>
           <dd>
@@ -734,6 +750,8 @@ function prototypeChanges(
         other &&
         preview.id === item.id &&
         other.sourceCommit === artifact.sourceCommit &&
+        other.source?.repository === artifact.source?.repository &&
+        other.source?.packagePath === artifact.source?.packagePath &&
         (other.type === "hosted" && artifact.type === "hosted"
           ? other.version === artifact.version
           : other.type === "git" &&

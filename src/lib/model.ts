@@ -97,16 +97,29 @@ export type PrototypeConfig = {
 };
 export type Device = "pc-web" | "ipad" | "mobile";
 export type PreviewThumbnail = { device?: Device; url: string };
+export type ArtifactSource = {
+  repository: string;
+  packagePath: string;
+  submodulePath?: string;
+  catalogCommit?: string;
+  bindingCommit?: string;
+};
 export type PreviewArtifact =
   | {
       type: "hosted";
       version: string;
       url: string;
       sourceCommit: string;
+      source?: ArtifactSource;
       digest: string;
       thumbnails?: PreviewThumbnail[];
     }
-  | { type: "git"; path: string; sourceCommit: string };
+  | {
+      type: "git";
+      path: string;
+      sourceCommit: string;
+      source?: ArtifactSource;
+    };
 export type PreviewEntry = {
   id: string;
   title: string;
@@ -223,10 +236,17 @@ export type ChangeGroup = {
   relations: Relation[];
 };
 export type CurrentPrototypeEntry = PreviewEntry & {
+  source?: PrototypeSource;
   sourcePath: string;
   description?: string;
 };
+export type PrototypeSource = {
+  revision: string;
+  packagePath: string;
+  links: { path: string; repository: string; commit: string }[];
+};
 export type CurrentPrototype = {
+  source?: PrototypeSource;
   manifestBytes?: number;
   configuration?: PrototypeConfig;
   revision: string | null;
@@ -363,5 +383,7 @@ export type PreviewDescriptor = {
     url?: string;
     thumbnails?: PreviewThumbnail[];
     sourceAvailable?: boolean;
+    source?: PrototypeSource;
+    sourceMessage?: string;
   })[];
 };

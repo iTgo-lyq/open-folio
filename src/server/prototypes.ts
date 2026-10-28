@@ -19,6 +19,11 @@ import {
   currentPreview,
 } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 import { AppError } from "./errors.ts";
+import { resolvePackage } from "./prototype-source.ts";
+import {
+  inPackage,
+  withinPackage,
+} from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
 
 export async function readCurrentPrototype(
   reader: GitReader,
@@ -35,16 +40,50 @@ export async function readCurrentPrototype(
   if (!revision)
     return { ...base, message: "项目没有集成分支，无法读取当前页面。" };
   try {
-    const configuration = await readPrototypeConfiguration(
+    let configuration = await readPrototypeConfiguration(
       reader,
       configurationRevision,
       limits,
       signal,
     );
+    if (configurationRevision !== revision) {
+      let historical;
+      try {
+        historical = await readPrototypeConfiguration(
+          reader,
+          revision,
+          limits,
+          signal,
+        );
+      } catch {
+        signal.throwIfAborted();
+      }
+      if (historical) {
+        const original = await resolvePackage(
+          reader,
+          revision,
+          historical.packagePath!,
+          signal,
+        );
+        if (original.source.links.length) configuration = historical;
+      }
+    }
     base.packagePath = configuration.packagePath;
     base.configuration = configuration;
-    const path = `${configuration.packagePath}/prototype.json`;
-    const entries = await tree(reader, revision, path, signal);
+    const resolved = await resolvePackage(
+      reader,
+      revision,
+      configuration.packagePath!,
+      signal,
+    );
+    if (resolved.source.links.length) base.source = resolved.source;
+    const path = inPackage(resolved.packagePath, "prototype.json");
+    const entries = await tree(
+      resolved.reader,
+      resolved.revision,
+      path,
+      signal,
+    );
     if (!entries.length)
       return {
         ...base,
@@ -54,7 +93,7 @@ export async function readCurrentPrototype(
     base.manifestBytes = entries.find((f) => f.path === path)?.bytes;
     const manifest = JSON.parse(
       await body(
-        reader,
+        resolved.reader,
         entries.find((f) => f.path === path),
         Math.min(limits.jsonBytes, limits.totalBytes),
         signal,
@@ -78,14 +117,67 @@ export async function readCurrentPrototype(
       if (
         validateManifest({ schemaVersion: 1, entries: [entry] }).length ||
         seen.get(entry?.id) !== 1 ||
-        !entry.sourcePath.startsWith(`${configuration.packagePath}/`)
+        !withinPackage(entry.sourcePath, resolved.packagePath)
       ) {
         base.issues.push(
           `第 ${index + 1} 项字段不合法、id 重复或源码不在原型包内。`,
         );
         continue;
       }
-      base.entries.push(entry as CurrentPrototypeEntry);
+      if (resolved.mount) {
+        const files = await tree(
+          resolved.reader,
+          resolved.revision,
+          entry.sourcePath,
+          signal,
+        );
+        if (
+          !files.some(
+            (file) =>
+              file.path === entry.sourcePath &&
+              ["100644", "100755"].includes(file.mode),
+          )
+        ) {
+          base.issues.push(
+            `第 ${index + 1} 项源码 ${resolved.mount}/${entry.sourcePath} 缺失或不是常规文件。`,
+          );
+          continue;
+        }
+      }
+      const artifact = entry.artifact
+        ? {
+            ...entry.artifact,
+            ...(entry.artifact.source
+              ? {
+                  source: {
+                    repository: entry.artifact.source.repository,
+                    packagePath: entry.artifact.source.packagePath,
+                    ...(resolved.mount
+                      ? {
+                          submodulePath: resolved.mount,
+                          catalogCommit: resolved.revision,
+                          bindingCommit: revision,
+                        }
+                      : {}),
+                  },
+                }
+              : {}),
+          }
+        : undefined;
+      base.entries.push({
+        ...entry,
+        ...(artifact ? { artifact } : {}),
+        ...(base.source ? { source: base.source } : {}),
+        sourcePath: inPackage(resolved.mount, entry.sourcePath),
+        ...(entry.artifact?.type === "git" && resolved.mount
+          ? {
+              artifact: {
+                ...artifact,
+                path: inPackage(resolved.mount, entry.artifact.path),
+              },
+            }
+          : {}),
+      } as CurrentPrototypeEntry);
     }
     return base;
   } catch (e) {
