@@ -151,6 +151,7 @@ test("processing groups expose real creators and creation order independently of
       change.id = change.primary = id;
       change.title = title;
       change.creator = { name: i === 1 ? "mei" : "lin" };
+      change.collaborators = [change.creator];
       change.createdAt = `2026-10-${20 + i}T00:00:00.000Z`;
       change.diagnostics = [];
       change.relations = [];

@@ -47,6 +47,7 @@ test("archive timeline groups merge days and batches, filters, expands and resto
     change.title = record.title = title;
     change.createdAt = `2026-10-${20 + i}T00:00:00Z`;
     change.creator = { name: i % 2 ? "lin" : "mei" };
+    change.collaborators = [change.creator];
     change.diagnostics = record.diagnostics = [];
     record.validCompleted = true;
     record.state = {
@@ -99,7 +100,13 @@ test("archive timeline groups merge days and batches, filters, expands and resto
   await expect(day).toContainText("6 个 Change");
   await expect(
     page.getByRole("button", { name: "显示", exact: true }),
-  ).toHaveCount(0);
+  ).toBeVisible();
+  await page.getByRole("button", { name: "显示", exact: true }).click();
+  await expect(
+    page.getByRole("menuitemcheckbox", { name: "创建者", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("menuitemradio")).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(
     page.getByRole("region", { name: "合入时间未知", exact: true }),
   ).toContainText("历史交付补记");
@@ -135,7 +142,9 @@ test("archive timeline groups merge days and batches, filters, expands and resto
   await page.keyboard.press("Escape");
   await expect(day).toContainText("3 个 Change");
   await expect(batch.getByRole("link", { name: /^打开 / })).toHaveCount(2);
-  await expect(batch.getByRole("button")).toHaveCount(0);
+  await expect(
+    batch.getByRole("button", { name: /展开其余|收起/ }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "清除筛选", exact: true }).click();
   await page.goto(`/?${repositoryQuery}&m=changes&scope=archived`);
   await writeFile(
