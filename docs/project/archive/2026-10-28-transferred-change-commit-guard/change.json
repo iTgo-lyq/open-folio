@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "transferred-change-commit-guard",
+  "title": "阻止在集成分支提交已移交 Change 的文档修改",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/transferred-change-commit-guard",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实现并验证已移交 Change 的集成分支提交拦截",
+      "status": "done",
+      "verification": "Setup/hook 23 项、工作区及父子集成回归 20 项、版本测试 2 项全部通过；检查真实提交拒绝及放行、HEAD/暂存区保留，证据见 execution.md",
+      "commitTitle": "transferred-change-commit-guard T1: reject central edits after handoff"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T06:29:36.946Z",
+      "summary": "Agent 自查完整差异并核对需求验收；真实 hook 与工作区回归等 45 项测试通过，暂存区及失败现场保留，无遗留问题"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T06:29:48.192Z",
+      "summary": "Agent 自验收通过：已移交目录误提交拒绝，规划与首次移交、工作分支、正常合并及部分提交按约定放行",
+      "source": "按 small 默认自验收规则，逐项核对 requirement.md 与 execution.md 中 45 项通过测试及现场保留证据"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T06:29:58.184Z",
+      "summary": "同步 change-workflow 的本地提交归属检查、放行范围及部分提交语义"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T06:29:59.614Z",
+      "summary": "45 项测试及 small 自验收通过，提交归属检查与 Specs 已同步",
+      "path": "docs/project/archive/2026-10-28-transferred-change-commit-guard"
+    }
+  },
+  "types": [
+    "工程",
+    "流程"
+  ]
+}
