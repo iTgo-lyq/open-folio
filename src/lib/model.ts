@@ -341,7 +341,7 @@ export const TASK_LABELS = {
 export const WAIT_LABELS = {
   confirmation: "等待确认",
   dependency: "等待依赖",
-  pause: "已暂停",
+  pause: "暂缓",
 };
 export const primaryRecord = (g: ChangeGroup) =>
   g.candidates.find((c) => c.key === g.primary) ?? null;

@@ -4,7 +4,7 @@ let managerDraft = null, viewEditor = null, managerError = "", failViewSaveOnce 
 ICONS.pencil = '<path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/>';
 ICONS.grip = '<circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/>';
 ICONS.eyeOff = '<path d="m3 3 18 18M10.5 10.5a2 2 0 0 0 3 3M9 5c5-1 9 2 12 7a16 16 0 0 1-3 4M6 6a17 17 0 0 0-4 6c4 7 10 9 16 5"/>';
-function defaultViewConfig() { return { states: ["active"], types: [], urgency: [], creators: [], view: "list", group: "status", sort: "created" }; }
+function defaultViewConfig() { return { states: ["active"], types: [], urgency: [], creators: [], view: "list", group: "status", sort: "created", showCreator: false }; }
 function directoryStatus(c) { return c.status === "completed" && c.delivery?.stage === "releaseMerged" ? "archived" : c.status; }
 function viewRecords() { return changesOf().filter(c => S.scene !== "empty" && (S.scene !== "views-no-cancelled" || c.status !== "cancelled")); }
 function matchesViewStates(c, states = []) { return c.status !== "unknown" && (!states.length || states.includes(directoryStatus(c))); }
@@ -18,6 +18,11 @@ function ensureChangeViews() {
     S.viewsRepo = S.repo;
     const v = viewStore().views.find(v => v.id === viewStore().selected);
     loadViewConfig(v?.config || { ...defaultViewConfig(), states: [viewStore().selected.split(":")[1] || "active"] });
+  }
+  if (S.scene === "deferred" && !viewStore().deferredShown) {
+    viewStore().deferredShown = true;
+    viewStore().selected = "system:active";
+    loadViewConfig(defaultViewConfig());
   }
   if (S.scene === "views-saved" && !viewStore().examplesAdded) {
     viewStore().examplesAdded = true;

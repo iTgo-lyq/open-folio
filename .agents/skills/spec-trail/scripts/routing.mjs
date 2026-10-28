@@ -91,6 +91,34 @@ export function parentArchive(records, child, parent) {
   return record;
 }
 
+/** A declared target is still planning until a matching source actually exists. */
+export function planningRecord(state) {
+  return state?.status === 'active' && ['requirement', 'technical'].includes(state.stage) &&
+    state.tasks && typeof state.tasks === 'object' && !Array.isArray(state.tasks) &&
+    Object.values(state.tasks).every(task => task?.status === 'todo') &&
+    state.closure && Object.keys(state.closure).length === 0;
+}
+
+/** Inspect only the selected Change; unrelated/inherited records do not own it. */
+export function sourceOwnership(records, id, branch) {
+  const own = records.filter(row => row.id === id);
+  if (!own.length) return 'unclaimed';
+  if (own.length !== 1 || own[0].error || own[0].state?.id !== id ||
+      !validBranchName(own[0].state?.branch) ||
+      !['active', 'completed', 'cancelled'].includes(own[0].state?.status)) return 'invalid';
+  const record = own[0];
+  if (record.state.branch !== branch) return 'unclaimed';
+  if (record.archived && !closedRecord(record.state, record.directory)) return 'invalid';
+  return 'owned';
+}
+
+/** Ref availability is supplied by the caller: this rule never performs I/O. */
+export function resolvePlanningRoute(route, state, ownership, integrationBranch) {
+  if (route.kind !== 'target' || route.errors.length || ownership !== 'unclaimed' ||
+      !planningRecord(state)) return route;
+  return {...route, kind: 'planning', ownerBranch: route.branch, branch: integrationBranch};
+}
+
 /** @typedef {{ id: string, entryPath: string, branch: string|null, kind: 'planning'|'target'|'archive'|'invalid', parent?: string, ownerBranch?: string, errors: string[] }} ChangeRoute */
 /**
  * Read only identity/ownership from live entries; their other fields may be stale.

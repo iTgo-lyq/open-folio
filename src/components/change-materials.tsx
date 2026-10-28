@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Circle,
   Clock3,
+  CirclePause,
   FileText,
   GitBranch,
   Network,
@@ -672,7 +673,11 @@ function TaskDetails({ c }: { c: ChangeCandidate }) {
         ))}
       </ol>
       {!entries.length && (
-        <p className={materialClass("muted")}>尚未登记实现任务。</p>
+        <p className={materialClass("muted")}>
+          {s.waitingFor?.kind === "pause"
+            ? "需求已记录，暂未安排任务。明确恢复推进后，再继续确认与规划。"
+            : "尚未登记实现任务。"}
+        </p>
       )}
       <SectionTitle>执行顺序</SectionTitle>
       <TaskDependencies c={c} />
@@ -845,11 +850,22 @@ function Overview({
     <>
       <Diagnostics items={quality(g)} />
       {s?.waitingFor && (
-        <div className={materialClass("waiting-card")}>
-          <Clock3 size={17} />
+        <div
+          className={materialClass(
+            `waiting-card ${s.waitingFor.kind === "pause" ? "paused" : ""}`,
+          )}
+        >
+          {s.waitingFor.kind === "pause" ? (
+            <CirclePause size={17} />
+          ) : (
+            <Clock3 size={17} />
+          )}
           <div>
             <strong>{WAIT_LABELS[s.waitingFor.kind]}</strong>
             <p>{s.waitingFor.summary}</p>
+            {s.waitingFor.kind === "pause" && (
+              <p>可继续补充需求，明确恢复后再推进。</p>
+            )}
           </div>
         </div>
       )}

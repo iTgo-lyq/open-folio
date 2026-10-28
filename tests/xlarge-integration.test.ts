@@ -8,6 +8,24 @@ import { GitReader } from "../src/server/git.ts";
 import { ProviderError } from "../src/server/providers/types.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 
+test("a predeclared child publishes from its actual parent without an empty registration commit", async (t) => {
+  const f = await xlargeFixture();
+  t.after(f.cleanup);
+  const path = "docs/project/changes/child/change.json";
+  const original = JSON.parse(await readFile(join(f.author, path), "utf8"));
+  await f.put(path, JSON.stringify({ ...original, branch: "feature/part" }));
+  const central = f.commit();
+  const result = f.handoff();
+  assert.equal(result.targetBranch, "feature/whole");
+  assert.equal(result.entryCommit, central);
+  assert.equal(f.at(f.author, "rev-parse", "HEAD"), central);
+  assert.equal(
+    await readFile(join(f.child, "parent-feature.txt"), "utf8"),
+    "Only in parent\n",
+  );
+  assert.equal(f.handoff().commit, result.commit);
+});
+
 test("child handoff separates central registration and parent code; parent archive survives child deletion", async (t) => {
   const f = await xlargeFixture();
   t.after(f.cleanup);

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "deferred-requirement-handoff",
+  "title": "区分需求暂缓与实际分支移交",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/deferred-requirement-handoff",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-28T07:10:56.498Z",
+      "summary": "暂缓独立展示与真实移交判定并对齐阶段列原型",
+      "source": "用户：可以，还有你这个阶段列的 UI 挺好的，现在线上没对齐，可以对齐一下。"
+    },
+    "technical": {
+      "at": "2026-10-28T07:10:57.915Z",
+      "summary": "共享真实来源判定并按已验收原型还原暂缓与阶段列",
+      "source": "用户对原型、技术方案与计划的确认：可以；另明确要求对齐阶段列 UI"
+    },
+    "plan": {
+      "at": "2026-10-28T07:10:59.281Z",
+      "summary": "先统一真实来源路由再还原暂缓及阶段列并验证",
+      "source": "用户确认原型、方案和计划：可以；本轮补充的阶段列还原纳入 T2"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "未实际移交的需求可持续记录，已移交需求保持正确归属",
+      "status": "done",
+      "verification": "24 项真实 hook/Setup、53 项路由与生命周期回归及预填子项移交用例通过；类型、版本一致性和 diff 检查通过，证据见 execution.md",
+      "commitTitle": "deferred-requirement-handoff T1: resolve actual source before routing"
+    },
+    "T2": {
+      "title": "暂缓在工作台独立呈现并完成场景验证",
+      "status": "done",
+      "verification": "全量单测 365 项及浏览器回归 17 项通过；空任务定向复验通过，Astra 复查阶段列与暂缓图标还原通过，最终构建随 T3 复验",
+      "commitTitle": "deferred-requirement-handoff T2: verify deferred UI and stage alignment"
+    },
+    "T3": {
+      "title": "修复独立评审发现的来源丢失与父子预填边界",
+      "status": "done",
+      "verification": "全量单测367项、真实hook24项通过；来源与父子回归及循环诊断复验通过，独立评审R1至R4全部关闭；类型检查和构建通过",
+      "commitTitle": "deferred-requirement-handoff T3: preserve source loss and resolve parent planning"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T08:00:38.065Z",
+      "summary": "独立子Agent评审和Astra原型复验通过；367项单测、24项hook、32项来源及父子回归、17项浏览器回归、类型检查和最终构建通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T08:03:04.052Z",
+      "summary": "用户验收通过，授权归档并合入 develop",
+      "source": "用户：验收通过，归档并合入 develop"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T08:04:04.545Z",
+      "summary": "同步 change-workflow、project-knowledge 及 change-tracking 的暂缓、真实归属、hook 和阶段分组行为"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T08:04:08.324Z",
+      "summary": "用户验收通过，完成暂缓需求与实际移交优化及阶段视图对齐",
+      "path": "docs/project/archive/2026-10-28-deferred-requirement-handoff"
+    }
+  },
+  "followUpOf": "transferred-change-commit-guard",
+  "followUpTitle": "Change 规划与工作区归属",
+  "types": [
+    "修复",
+    "流程"
+  ],
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "Changes · 动态视图与已发布归档",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/index.html#/changes?scene=deferred",
+        "sourceCommit": "36f3c473b6862ba83613469c25bf3e900c54b2c6",
+        "digest": "sha256:41a00a40bd9913b734cb2f83bf0e883a19162b409f6b10087bc1aba984d8ab43",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/mobile.png"
+          }
+        ]
+      }
+    }
+  ],
+  "rework": {
+    "at": "2026-10-28T07:10:55.062Z",
+    "reason": "用户确认原型、方案和计划，并补充要求对齐正式阶段列 UI",
+    "approach": "在原 T2 范围补充阶段列及阶段看板原型还原，沿用户本次明确授权重新记录确认"
+  }
+}

@@ -7,6 +7,7 @@ import {
   Settings2,
   TriangleAlert,
   X,
+  CirclePause,
 } from "lucide-react";
 import {
   Avatar,
@@ -77,6 +78,29 @@ function SizeLabel({ change }: { change: ChangeGroup }) {
     </Badge>
   );
 }
+function StageProgress({ change }: { change: ChangeGroup }) {
+  const state = primaryRecord(change)?.state;
+  if (!state) return null;
+  const current = STAGES.indexOf(state.stage);
+  return (
+    <span
+      className={styles.stageProgress}
+      data-stage-progress={state.stage}
+      aria-label={`阶段：${STAGE_LABELS[state.stage]}，第 ${current + 1} / ${STAGES.length} 阶段`}
+    >
+      <span className={styles.stageDots} aria-hidden="true">
+        {STAGES.map((stage, index) => (
+          <i
+            key={stage}
+            data-past={index < current || undefined}
+            data-current={index === current || undefined}
+          />
+        ))}
+      </span>
+      <span>{STAGE_LABELS[state.stage]}</span>
+    </span>
+  );
+}
 function Progress({
   change,
   all,
@@ -103,6 +127,12 @@ function Progress({
         }).length
       : tasks.filter((t) => t.status === "done").length;
   const blocked = tasks.some((t) => t.status === "blocked");
+  if (!total)
+    return (
+      <span className={styles.progress} title="暂未安排任务">
+        —
+      </span>
+    );
   return (
     <span
       className={styles.progress}
@@ -205,12 +235,17 @@ export function ChangeDirectory({
     filterDirectoryChanges(all, query, data?.deliveryByChange, identity),
     !timeline && query.labels.sortByUrgency,
   );
-  const groups = groupDirectoryChanges(visible, query, data?.deliveryByChange);
   const board =
     query.view === "board" &&
     query.scope === "active" &&
     !query.issues &&
     !mobile;
+  const groups = groupDirectoryChanges(
+    visible,
+    query,
+    data?.deliveryByChange,
+    board,
+  );
   const issues = all.filter(
     (g) => changeDiagnostics(g).length || !primaryRecord(g)?.state,
   );
@@ -334,6 +369,8 @@ export function ChangeDirectory({
           .join("；") || "无法确定流程状态"
       );
     if (state?.status === "cancelled") return state.cancellation?.reason;
+    if (state?.waitingFor?.kind === "pause")
+      return `暂缓 · ${state.waitingFor.summary}`;
     return (
       state?.waitingFor?.summary ??
       Object.values(state?.tasks ?? {}).find(
@@ -440,15 +477,30 @@ export function ChangeDirectory({
             {summary(change) && (
               <span
                 className={styles.wait}
+                data-paused={state?.waitingFor?.kind === "pause" || undefined}
                 data-blocked={
                   Object.values(state?.tasks ?? {}).some(
                     (t) => t.status === "blocked",
                   ) || undefined
                 }
               >
+                {state?.waitingFor?.kind === "pause" && (
+                  <CirclePause aria-hidden="true" />
+                )}
                 {summary(change)}
               </span>
             )}
+            {state?.waitingFor?.kind === "pause" &&
+              Object.values(state.tasks).find((t) => t.status === "blocked")
+                ?.reason && (
+                <span className={styles.wait} data-blocked>
+                  {
+                    Object.values(state.tasks).find(
+                      (t) => t.status === "blocked",
+                    )?.reason
+                  }
+                </span>
+              )}
           </div>
         </div>
         <a
@@ -477,7 +529,7 @@ export function ChangeDirectory({
           ) : rowScope === "cancelled" ? (
             "已取消"
           ) : state ? (
-            STAGE_LABELS[state.stage]
+            <StageProgress change={change} />
           ) : (
             "来源异常"
           )}
@@ -884,21 +936,22 @@ export function ChangeDirectory({
         ) : board ? (
           <div
             className={styles.board}
+            style={{
+              gridTemplateColumns: `repeat(${groups.length}, minmax(180px, 1fr))`,
+            }}
             role="region"
-            aria-label="按阶段看板（只读）"
+            aria-label={`${query.group === "status" ? "按处理状态" : query.group === "stage" ? "按阶段" : "不分组"}看板（只读）`}
           >
-            {STAGES.map((stage) => {
-              const items = visible.filter(
-                (g) => primaryRecord(g)?.state?.stage === stage,
-              );
+            {groups.map(({ name, items }) => {
+              const label = name || "全部 Change";
               return (
                 <section
                   className={styles.column}
-                  key={stage}
-                  aria-label={STAGE_LABELS[stage]}
+                  key={label}
+                  aria-label={label}
                 >
                   <h2>
-                    {STAGE_LABELS[stage]}
+                    {label}
                     <span>{items.length}</span>
                   </h2>
                   <ul>
@@ -922,12 +975,29 @@ export function ChangeDirectory({
                             {labels(change)}
                           </span>
                           {summary(change) && (
-                            <span className={styles.wait}>
+                            <span
+                              className={styles.wait}
+                              data-paused={
+                                primaryRecord(change)?.state?.waitingFor
+                                  ?.kind === "pause" || undefined
+                              }
+                            >
+                              {primaryRecord(change)?.state?.waitingFor
+                                ?.kind === "pause" && (
+                                <CirclePause aria-hidden="true" />
+                              )}
                               {summary(change)}
                             </span>
                           )}
                           <span className={styles.cardFoot}>
-                            <Progress change={change} all={all} />
+                            {primaryRecord(change)?.state?.size === "xlarge" ||
+                            Object.keys(
+                              primaryRecord(change)?.state?.tasks ?? {},
+                            ).length > 0 ? (
+                              <Progress change={change} all={all} />
+                            ) : (
+                              <span />
+                            )}
                             {creatorName(change) && (
                               <Avatar name={creatorName(change)} />
                             )}

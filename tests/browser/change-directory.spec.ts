@@ -7,6 +7,132 @@ import {
   openChangeFilters,
 } from "./connected";
 import { primaryRecord, type Snapshot } from "../../src/lib/model";
+
+test("deferred requirements and stage dots match the accepted list, board and detail prototype", async ({
+  page,
+  request,
+  personal,
+}, testInfo) => {
+  test.setTimeout(90000);
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const original = data.changes.find(
+    (change) => change.id === "document-reader",
+  )!;
+  data.changes = ["待确认的需求", "受阻的实现", "正在推进", "暂缓的需求"].map(
+    (title, index) => {
+      const change = structuredClone(original),
+        record = primaryRecord(change)!;
+      change.id = index === 3 ? "document-reader" : `deferred-ui-${index}`;
+      change.title = record.title = title;
+      change.diagnostics = [];
+      change.relations = [];
+      record.state = {
+        ...record.state!,
+        id: change.id,
+        title,
+        status: "active",
+        stage:
+          index === 1 ? "execution" : index === 2 ? "technical" : "requirement",
+        tasks: {},
+        closure: {},
+      };
+      record.diagnostics = [];
+      delete record.state.waitingFor;
+      if (index === 0)
+        record.state.waitingFor = {
+          kind: "confirmation",
+          summary: "等待确认范围",
+        };
+      if (index === 1)
+        record.state.tasks = {
+          T1: {
+            title: "等待接口",
+            status: "blocked",
+            reason: "真实接口受阻原因",
+          },
+        };
+      if (index === 3)
+        record.state.waitingFor = {
+          kind: "pause",
+          summary: "只记录，短期不启动",
+        };
+      return change;
+    },
+  );
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  for (const theme of ["light", "dark"] as const)
+    for (const [width, height] of [
+      [1440, 1000],
+      [834, 1194],
+      [390, 844],
+      [320, 720],
+    ]) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.setViewportSize({ width, height });
+      await page.goto(
+        `/?${repositoryQuery}&m=changes&scope=active&changeView=system:active&creatorSelf=0`,
+      );
+      const paused = page.getByRole("region", { name: "暂缓", exact: true });
+      await expect(paused).toContainText("只记录，短期不启动");
+      await expect(paused.locator("[data-paused] svg")).toHaveCount(1);
+      await expect(paused.getByTitle("暂未安排任务")).toHaveText("—");
+      const stage = paused.locator('[data-stage-progress="requirement"]');
+      await expect(stage.locator("i")).toHaveCount(5);
+      await expect(stage.locator("i[data-current]")).toHaveCount(1);
+      await expect(stage).toHaveAttribute(
+        "aria-label",
+        "阶段：需求，第 1 / 5 阶段",
+      );
+      await expect(
+        page.getByRole("region", { name: "受阻", exact: true }),
+      ).toContainText("真实接口受阻原因");
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      if (width === 1440)
+        await page.screenshot({
+          path: testInfo.outputPath(`list-${theme}.png`),
+          fullPage: true,
+        });
+      if (width >= 834) {
+        await changeDisplay(page, "看板");
+        await expect(
+          page.getByRole("region", { name: "按处理状态看板（只读）" }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("region", { name: "暂缓", exact: true }),
+        ).toContainText("暂缓的需求");
+        await changeDisplay(page, "阶段");
+        const board = page.getByRole("region", { name: "按阶段看板（只读）" });
+        await expect(board.locator(":scope > section")).toHaveCount(5);
+        if (width === 1440)
+          await page.screenshot({
+            path: testInfo.outputPath(`stage-board-${theme}.png`),
+            fullPage: true,
+          });
+        await changeDisplay(page, "列表");
+      } else await expect(stage).toBeHidden();
+    }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=document-reader&ct=overview&changeView=system:active`,
+  );
+  await expect(
+    page.getByText("可继续补充需求，明确恢复后再推进。"),
+  ).toBeVisible();
+  await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader&ct=tasks`);
+  await expect(
+    page.getByText(
+      "需求已记录，暂未安排任务。明确恢复推进后，再继续确认与规划。",
+    ),
+  ).toBeVisible();
+});
 test("processing groups expose real creators and creation order independently of urgency", async ({
   page,
   request,

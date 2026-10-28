@@ -1,4 +1,16 @@
-// ③ Changes：一行工具栏（范围 + 筛选 + 显示），按“等待确认 / 受阻 / 推进中”分组。
+// 协作者展示原型：创建者固定第一，其他人员为虚构推进参与者。
+function collaboratorsOf(c) { return [...new Set([c.creator, ...(c.collaborators || [])])]; }
+function collaboratorsCell(c) {
+  const people = collaboratorsOf(c);
+  return `<button class="collaborators-trigger" data-action="show-collaborators" data-arg="${c.id}" data-key="collaborators:${c.id}" aria-haspopup="dialog" aria-label="查看 ${people.length} 位协作者，创建者 ${esc(person(c.creator).name)}"><span class="collaborator-avatars">${people.slice(0, 3).map(p => avatar(p, "sm")).join("")}</span>${people.length > 3 ? `<span class="collaborator-more">+${people.length - 3}</span>` : people.length === 1 ? `<span class="collaborator-name">${esc(person(c.creator).name)}</span>` : ""}</button>`;
+}
+A["show-collaborators"] = el => {
+  const c = changesOf().find(c => c.id === el.dataset.arg), people = collaboratorsOf(c);
+  openPop(el, () => `<div class="collaborators-pop"><div class="collaborators-heading"><strong>协作者 <span class="count">${people.length}</span></strong>${ibtn("关闭协作者", "close-collaborators", "x", {tip:false})}</div><p class="collaborators-note">创建者排第一，其余为参与推进的成员</p><ul class="collaborators-list">${people.map((p, i) => `<li>${avatar(p, "sm")}<span class="grow"><strong>${esc(person(p).name)}</strong><small>@${esc(person(p).login)}</small></span><span class="collaborator-role">${i === 0 ? "创建者" : "参与推进"}</span></li>`).join("")}</ul></div>`, {label:"协作者", align:"end"});
+};
+A["close-collaborators"] = () => closePop();
+A["toggle-creator-column"] = () => { S.changes.showCreator = !S.changes.showCreator; render(); refreshPop(); };
+// ③ Changes：一行工具栏（范围 + 筛选 + 显示），按“等待确认 / 受阻 / 推进中 / 暂缓”分组。
 const stageIndex = (c) => STAGES.findIndex(([k]) => k === c.stage);
 const stageName = (c) => (c.stage === "close" && c.status === "active" ? "验收" : STAGES.find(([k]) => k === c.stage)?.[1] || "—");
 function stageDots(c) {
@@ -9,7 +21,9 @@ function stageDots(c) {
 }
 const blockedTasks = (c) => c.tasks.filter((t) => t.status === "blocked");
 const doneTasks = (c) => c.tasks.filter((t) => t.status === "done");
+const waitingLabel = (c) => ({ confirmation: "等待确认", dependency: "等待依赖", pause: "暂缓" })[c.waiting?.kind] || "等待";
 function attention(c) {
+  if (c.waiting?.kind === "pause") return "paused";
   if (c.waiting?.kind === "confirmation") return "confirm";
   if (blockedTasks(c).length || c.waiting) return "blocked";
   return "moving";
@@ -18,6 +32,7 @@ function statusText(c) {
   if (c.status === "completed") return `${c.delivery?.stage === "releaseMerged" ? "已归档" : "已完成"} · ${c.archived}`;
   if (c.status === "cancelled") return `已取消 · ${c.cancelled}`;
   if (c.status === "unknown") return "记录无法完整读取";
+  if (c.waiting?.kind === "pause") return `${stageName(c)} · 暂缓`;
   if (c.waiting?.kind === "confirmation") return `${stageName(c)} · 等待确认`;
   if (c.waiting?.kind === "dependency") return `${stageName(c)} · 等待依赖`;
   if (blockedTasks(c).length) return `${stageName(c)} · ${blockedTasks(c).length} 个任务受阻`;
@@ -80,7 +95,7 @@ function groupsFor(list, scope) {
   const g = S.changes.group;
   if (g === "none") return [["", list]];
   if (scope === "active" && g === "status")
-    return [["confirm", "等待确认"], ["blocked", "受阻"], ["moving", "推进中"]].map(([k, l]) => [l, list.filter((c) => attention(c) === k)]);
+    return [["confirm", "等待确认"], ["blocked", "受阻"], ["moving", "推进中"], ["paused", "暂缓"]].map(([k, l]) => [l, list.filter((c) => attention(c) === k)]);
   if (scope === "active" && g === "stage") return STAGES.map(([k, l]) => [k === "close" ? "验收" : l, list.filter((c) => c.stage === k)]);
   if (scope === "mixed") return SCOPES.flatMap(([key, label]) => {
     const items = list.filter(c => inScope(c, key));
@@ -98,15 +113,15 @@ function changeTable(list, scope) {
       : scope === "issues" ? `<span class="cell-a issue-text clamp">${esc(c.issue)}</span><span class="cell-b"></span>`
       : `<span class="cell-a stage-cell">${stageDots(c)}<span>${scope === "mixed" ? (SCOPES.find(([k]) => k === directoryStatus(c))?.[1] || "—") : stageName(c)}</span></span><span class="cell-b">${taskCell(c)}</span>`;
     const parent = c.followUpOf ? changeById(c.followUpOf) : null;
-    return `<li><a class="change-row" href="#/changes/${c.id}" data-action="open-change" data-arg="${c.id}" data-key="row:${c.id}"><span class="cell-main"><span class="row-title">${urgencyFlag(c)}<span class="title-text">${esc(c.title)}</span></span><span class="row-meta"><code>${c.id}</code>${labelTags(c)}${parent ? `<span class="follow">${icon("followup")}延续“${esc(parent.groupTitle || parent.title)}”</span>` : ""}${scope === "active" ? deliveryTag(c) : ""}${c.waiting && scope === "active" ? `<span class="wait-text">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}${esc(c.waiting.summary)}</span>` : ""}${blockedTasks(c).length && scope === "active" ? `<span class="wait-text bad">${icon("blocked")}${esc(blockedTasks(c)[0].reason)}</span>` : ""}</span></span>${second}<span class="cell-who">${avatar(c.creator, "sm")}<span>${esc(person(c.creator).name)}</span></span><span class="cell-date">${dateLabel(c.created)}</span></a></li>`;
+    return `<li><div class="change-row"><a class="cell-main" href="#/changes/${c.id}" data-action="open-change" data-arg="${c.id}" data-key="row:${c.id}"><span class="row-title">${urgencyFlag(c)}<span class="title-text">${esc(c.title)}</span></span><span class="row-meta"><code>${c.id}</code>${labelTags(c)}${parent ? `<span class="follow">${icon("followup")}延续“${esc(parent.groupTitle || parent.title)}”</span>` : ""}${scope === "active" ? deliveryTag(c) : ""}${c.waiting && scope === "active" ? `<span class="wait-text ${c.waiting.kind === "pause" ? "paused" : ""}">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}${c.waiting.kind === "pause" ? "暂缓 · " : ""}${esc(c.waiting.summary)}</span>` : ""}${blockedTasks(c).length && scope === "active" ? `<span class="wait-text bad">${icon("blocked")}${esc(blockedTasks(c)[0].reason)}</span>` : ""}</span></a>${second}<span class="cell-who">${collaboratorsCell(c)}</span>${S.changes.showCreator ? `<span class="cell-creator">${esc(person(c.creator).name)}</span>` : ""}<span class="cell-date">${dateLabel(c.created)}</span></div></li>`;
   };
   const groups = groupsFor(list, scope).filter(([, items]) => items.length);
-  return `<div class="table" role="region" aria-label="Change 列表"><div class="table-head" aria-hidden="true"><span class="cell-main">Change</span><span class="cell-a">${cols[0]}</span><span class="cell-b">${cols[1]}</span><span class="cell-who">创建者</span><span class="cell-date">创建</span></div>${groups.map(([label, items]) => `${label ? `<h2 class="group-h">${label}<span class="count">${items.length}</span></h2>` : ""}<ul class="rows" role="list">${items.map(row).join("")}</ul>`).join("")}</div>`;
+  return `<div class="table ${S.changes.showCreator ? "with-creator" : ""}" role="region" aria-label="Change 列表"><div class="table-head" aria-hidden="true"><span class="cell-main">Change</span><span class="cell-a">${cols[0]}</span><span class="cell-b">${cols[1]}</span><span class="cell-who">协作者</span>${S.changes.showCreator ? `<span class="cell-creator">创建者</span>` : ""}<span class="cell-date">创建</span></div>${groups.map(([label, items]) => `${label ? `<h2 class="group-h">${label}<span class="count">${items.length}</span></h2>` : ""}<ul class="rows" role="list">${items.map(row).join("")}</ul>`).join("")}</div>`;
 }
 function changeBoard(list) {
-  return `<div class="board" role="region" aria-label="按阶段看板（只读）">${STAGES.map(([k, l]) => {
-    const items = list.filter((c) => c.stage === k);
-    return `<section class="board-col" aria-label="${k === "close" ? "验收" : l}"><h2 class="board-h">${k === "close" ? "验收" : l}<span class="count">${items.length}</span></h2>${items.map((c) => `<a class="card" href="#/changes/${c.id}" data-action="open-change" data-arg="${c.id}" data-key="card:${c.id}"><span class="row-title">${urgencyFlag(c)}<span class="title-text">${esc(c.title)}</span></span><span class="row-meta">${labelTags(c)}</span>${c.waiting ? `<span class="wait-text">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}${c.waiting.kind === "confirmation" ? "等待确认" : "等待依赖"}</span>` : ""}<span class="card-foot">${c.tasks.length ? taskCell(c) : ""}<span class="grow"></span>${avatar(c.creator, "sm")}</span></a>`).join("") || `<p class="board-empty">没有 Change</p>`}</section>`;
+  return `<div class="board" style="grid-template-columns:repeat(${groupsFor(list, "active").length},minmax(180px,1fr))" role="region" aria-label="${S.changes.group === "status" ? "按处理状态" : S.changes.group === "stage" ? "按阶段" : "不分组"}看板（只读）">${groupsFor(list, "active").map(([label, items]) => {
+    const l = label || "全部 Change";
+    return `<section class="board-col" aria-label="${l}"><h2 class="board-h">${l}<span class="count">${items.length}</span></h2>${items.map((c) => `<div class="card"><a href="#/changes/${c.id}" data-action="open-change" data-arg="${c.id}" data-key="card:${c.id}" class="row-title">${urgencyFlag(c)}<span class="title-text">${esc(c.title)}</span></a><span class="row-meta">${labelTags(c)}</span>${c.waiting ? `<span class="wait-text ${c.waiting.kind === "pause" ? "paused" : ""}">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}${waitingLabel(c)}${c.waiting.kind === "pause" ? ` · ${esc(c.waiting.summary)}` : ""}</span>` : ""}<span class="card-foot">${c.tasks.length ? taskCell(c) : ""}<span class="grow"></span>${collaboratorsCell(c)}</span></div>`).join("") || `<p class="board-empty">没有 Change</p>`}</section>`;
   }).join("")}</div>`;
 }
 A["scope"] = (el) => {
@@ -157,7 +172,7 @@ A["display-menu"] = (el) =>
     const f = S.changes,
       active = f.scope === "active" && !f.issues;
     const radio = (key, value, label) => `<button class="menu-item" role="menuitemradio" aria-checked="${f[key] === value}" data-action="set-display" data-arg="${key}:${value}" data-key="d:${key}:${value}"><span class="check-box round">${f[key] === value ? "<i></i>" : ""}</span><span class="grow">${label}</span></button>`;
-    return `<div class="menu" role="menu" aria-label="显示">${active && !mobile() ? `<div class="menu-row"><span class="grow">视图</span><span class="seg sm" role="radiogroup" aria-label="视图">${[["list", "列表", "list"], ["board", "看板", "board"]].map(([k, l, g]) => `<button role="radio" aria-checked="${f.view === k}" data-action="set-display" data-arg="view:${k}" data-key="v:${k}">${icon(g)}<span>${l}</span></button>`).join("")}</span></div><div class="menu-sep"></div>` : ""}${active && f.view === "list" ? `<div class="menu-label">分组</div>${radio("group", "status", "按处理状态")}${radio("group", "stage", "按阶段")}${radio("group", "none", "不分组")}<div class="menu-sep"></div>` : ""}<div class="menu-label">排序</div>${radio("sort", "created", "最新创建")}${radio("sort", "urgency", "紧急程度优先")}</div>`;
+    return `<div class="menu" role="menu" aria-label="显示">${active && !mobile() ? `<div class="menu-row"><span class="grow">视图</span><span class="seg sm" role="radiogroup" aria-label="视图">${[["list", "列表", "list"], ["board", "看板", "board"]].map(([k, l, g]) => `<button role="radio" aria-checked="${f.view === k}" data-action="set-display" data-arg="view:${k}" data-key="v:${k}">${icon(g)}<span>${l}</span></button>`).join("")}</span></div><div class="menu-sep"></div>` : ""}${active ? `<div class="menu-label">分组</div>${radio("group", "status", "按处理状态")}${radio("group", "stage", "按阶段")}${radio("group", "none", "不分组")}<div class="menu-sep"></div>` : ""}<div class="menu-label">排序</div>${radio("sort", "created", "最新创建")}${radio("sort", "urgency", "紧急程度优先")}<div class="menu-sep"></div><div class="menu-label">显示列</div><button class="menu-item" role="menuitemcheckbox" aria-checked="${!!f.showCreator}" data-action="toggle-creator-column" data-key="toggle-creator-column"><span class="check-box">${f.showCreator ? icon("check") : ""}</span><span class="grow">创建者</span></button></div>`;
   }, { label: "显示", align: "end" });
 A["set-display"] = (el) => {
   const [k, v] = el.dataset.arg.split(":");
@@ -280,7 +295,7 @@ function materialBody(c, m, shared) {
   if (m.id === "review" && !m.ok) return { html: `<p class="muted">还没有评审记录。large Change 会在关闭前完成独立评审。</p>`, toc: [] };
   if (m.id === "tasks") {
     const groups = c.tasks;
-    if (!groups.length) return { html: `<p class="muted">${c.stage === "requirement" || c.stage === "technical" || c.stage === "plan" ? "计划确认后会在这里列出任务。" : "没有实现任务。"}</p>`, toc: [] };
+    if (!groups.length) return { html: `<p class="muted">${c.waiting?.kind === "pause" ? "需求已记录，暂未安排任务。明确恢复推进后，再继续确认与规划。" : c.stage === "requirement" || c.stage === "technical" || c.stage === "plan" ? "计划确认后会在这里列出任务。" : "没有实现任务。"}</p>`, toc: [] };
     const label = { done: "完成", doing: "进行中", todo: "未开始", blocked: "受阻" };
     return {
       html: `<p class="sub">${groups.length} 个任务 · ${doneTasks(c).length} 个完成${blockedTasks(c).length ? ` · ${blockedTasks(c).length} 个受阻` : ""}</p><ol class="task-list" role="list">${groups.map((t) => `<li class="task ${t.status}"><span class="task-icon" title="${label[t.status]}">${icon(t.status)}</span><div class="stack grow"><span class="task-title"><span class="task-id">${t.id}</span>${esc(t.title)}</span><small>${label[t.status]}${t.verification ? ` · ${esc(t.verification)}` : ""}${t.reason ? ` · ${esc(t.reason)}` : ""}</small></div></li>`).join("")}</ol>`,
@@ -306,7 +321,7 @@ function materialBody(c, m, shared) {
 function overviewBody(c, shared) {
   const toc = [];
   let html = "";
-  if (c.waiting) html += `<div class="callout warn">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}<p><strong>${c.waiting.kind === "confirmation" ? "等待确认" : c.waiting.kind === "dependency" ? "等待依赖" : "暂停"}</strong> · ${esc(c.waiting.since)}<br>${esc(c.waiting.summary)}</p></div>`;
+  if (c.waiting) html += `<div class="callout ${c.waiting.kind === "pause" ? "" : "warn"}">${icon(c.waiting.kind === "confirmation" ? "clock" : "pause")}<p><strong>${waitingLabel(c)}</strong> · ${esc(c.waiting.since)}<br>${esc(c.waiting.summary)}${c.waiting.kind === "pause" ? '<br><span class="muted">可继续补充需求，明确恢复后再推进。</span>' : ""}</p></div>`;
   if (blockedTasks(c).length) html += `<div class="callout bad">${icon("blocked")}<p><strong>${blockedTasks(c)[0].id} 受阻</strong><br>${esc(blockedTasks(c)[0].reason)}</p></div>`;
   if (c.status === "cancelled") html += `<div class="callout">${icon("info")}<p><strong>已于 ${c.cancelled} 取消</strong><br>${esc(c.cancelReason)}</p></div>`;
   if (c.tasks.length) {

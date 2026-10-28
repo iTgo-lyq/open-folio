@@ -10,6 +10,7 @@ async function main() {
   // Dynamic import works in both CommonJS and ESM projects.
   const { execFileSync } = await import("node:child_process");
   const { isDeepStrictEqual } = await import("node:util");
+  const { changeLocation, sourceOwnership, planningRecord } = await import("../../scripts/routing.mjs");
   const git = (args) =>
     execFileSync("git", args, {
       encoding: "utf8",
@@ -108,6 +109,25 @@ async function main() {
         owner.branch === committedWorkflow.releaseBranch
       )
         continue;
+      const ownership = [];
+      for (const ref of [`refs/heads/${owner.branch}`, `refs/remotes/origin/${owner.branch}`]) {
+        try { git(['rev-parse', '--verify', `${ref}^{commit}`]); } catch { continue; }
+        const records = git(['ls-tree', '-rz', '--full-tree', ref, '--',
+          `docs/project/changes/${id}/`, 'docs/project/archive/'])
+          .split('\0').flatMap(row => {
+            const file = row.slice(row.indexOf('\t') + 1), location = changeLocation(file);
+            if (location?.id !== id) return [];
+            const state = readState(`${ref}:${file}`);
+            return [{...location, state, ...(!state ? {error: 'Invalid source JSON'} : {})}];
+          });
+        ownership.push(sourceOwnership(records, id, owner.branch));
+      }
+      if (planningRecord(owner) && !ownership.some(value => value !== 'unclaimed')) continue;
+      if (ownership.includes('invalid')) {
+        console.error(`${path}: Cannot verify the Change source on ${owner.branch}; inspect its invalid records before committing.`);
+        failed = true;
+        continue;
+      }
       let location;
       let worktree;
       for (const field of git(["worktree", "list", "--porcelain", "-z"]).split(

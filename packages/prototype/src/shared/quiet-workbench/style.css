@@ -3952,3 +3952,37 @@ img.auth-mark {
   .view-manager-footer .muted { flex-basis:100%; max-width:none; }
   .view-editor-body { padding-inline:14px; }
 }
+
+/* A recorded, deferred requirement is neutral rather than an alert. */
+.wait-text.paused .i { color: var(--ink-2); }
+
+/* 协作者：固定宽度收拢头像，完整名单在独立弹层阅读。 */
+.collaborators-trigger { display:inline-flex; align-items:center; gap:5px; min-height:32px; padding:2px; border-radius:8px; max-width:100%; color:var(--ink-2); }
+.collaborators-trigger:hover { background:var(--hover); }
+.collaborator-avatars { display:flex; align-items:center; padding-left:0; }
+.collaborator-avatars .av + .av { margin-left:-8px; }
+.collaborator-avatars .av { border:2px solid var(--surface, #fff); box-sizing:content-box; }
+.collaborator-more { font-size:11px; font-weight:600; min-width:22px; }
+.collaborator-name { font-size:12px; white-space:nowrap; }
+.collaborators-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.collaborators-pop { width:288px; max-width:calc(100vw - 40px); padding:12px; }
+.collaborators-note { font-size:12px; color:var(--ink-3); margin:4px 0 12px; }
+.collaborators-list { list-style:none; margin:0; padding:0; max-height:296px; overflow-y:auto; overscroll-behavior:contain; }
+.collaborators-list li { display:flex; align-items:center; gap:10px; padding:9px 2px; border-top:0.5px solid var(--line); }
+.collaborators-list strong { display:block; font-size:13px; font-weight:500; }
+.collaborators-list small { display:block; color:var(--ink-3); font-size:11px; }
+.collaborator-role { font-size:11px; color:var(--ink-2); white-space:nowrap; }
+.table.with-creator .table-head, .table.with-creator .change-row { grid-template-columns:minmax(0,1fr) 110px 60px 104px 64px 64px; gap:12px; }
+.cell-creator { font-size:12px; color:var(--ink-2); }
+@media (min-width:761px) and (max-width:1100px) {
+  .table-head, .change-row { grid-template-columns:minmax(0,1fr) 100px 52px 104px; gap:12px; }
+  .table-head .cell-who { font-size:12px; }
+  .table.with-creator .table-head, .table.with-creator .change-row { grid-template-columns:minmax(0,1fr) 90px 48px 104px 60px; }
+}
+@media (max-width:760px) {
+  .change-row, .table.with-creator .change-row { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"main main" "a b" "who who" "creator creator"; }
+  .change-row .cell-who { display:flex; align-items:center; gap:8px; }
+  .change-row .cell-who::before { content:"协作者"; color:var(--ink-3); font-size:11px; }
+  .change-row .cell-creator { grid-area:creator; }
+  .change-row .cell-creator::before { content:"创建者 "; color:var(--ink-3); }
+}

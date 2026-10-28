@@ -69,8 +69,8 @@
     },
     {
       "id": "quiet-changes",
-      "title": "Changes · 动态视图与已发布归档",
-      "description": "默认我的，横向视图 tab 与齿轮管理；状态多选、继承当前筛选显示、排序显隐和取消/确认，已发布独立归档。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
+      "title": "Changes · 协作者与动态视图",
+      "description": "协作者头像组与完整名单，创建者固定第一、独立列默认隐藏；包含 1/2/4/12 人示例，保留动态视图与归档。浅色 / 深色，桌面 / 平板 / 手机；仅虚构数据。",
       "sourcePath": "packages/prototype/src/pages/quiet-changes.html",
       "kind": "page",
       "devices": [
@@ -80,22 +80,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5/index.html",
-        "sourceCommit": "8c007a894b80f4230245cc88361c9afda8a86106",
-        "digest": "sha256:219be786b149b324d17054885a5b0f6dcf0c6f5a93fc65b0778f983250bfb6c1",
+        "version": "b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/index.html#/changes",
+        "sourceCommit": "2889d65638585642a5326d83b4b98034961b2730",
+        "digest": "sha256:4c9195152a1127a2b79cf546d19b12d5100ccaf458b9d25e6b31c7ac9b975524",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/22bf63f58e9f0cab55a16d3afc261503dea82690755c6f020ffeac95bf298ea5/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/mobile.png"
           }
         ]
       }

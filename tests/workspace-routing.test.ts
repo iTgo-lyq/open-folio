@@ -160,6 +160,118 @@ test("planning stays on develop; shared registration is idempotent and routes st
   );
   assert.equal(at(f.remote, "rev-parse", "main"), main);
 });
+
+test("predeclared targets stay writable planning until explicit handoff publishes their own source", (t) => {
+  const f = fixture(t);
+  f.planning();
+  const path = "docs/project/changes/sample/change.json";
+  const initial = JSON.parse(readFileSync(join(f.repo, path), "utf8"));
+  f.put(
+    path,
+    JSON.stringify({
+      ...initial,
+      branch: "feature/future",
+      tasks: {},
+      waitingFor: { kind: "pause", summary: "Record only" },
+    }),
+  );
+  f.commit();
+  assert.equal(f.state("show").state.branch, "feature/future");
+  assert.equal(f.workspace("locate").branch, "develop");
+  assert.equal(f.workspace("locate").worktree, null);
+  assert.equal(f.workspace("locate").planningWorkspace, f.repo);
+  f.state("clarification-ask", [
+    "--round",
+    "1",
+    "--text",
+    "Scope?",
+    "--recommendation",
+    "Keep it focused",
+  ]);
+  f.state("retitle", ["--title", "Still a deferred requirement"]);
+  const updated = JSON.parse(readFileSync(join(f.repo, path), "utf8"));
+  assert.equal(updated.waitingFor.kind, "pause");
+  assert.equal(updated.branch, "feature/future");
+  assert(!existsSync(f.work));
+  assert.match(f.workspace("prepare", [], 1), /handoff/);
+  assert.match(f.handoff(1), /pause|waiting condition/);
+  f.state("resume");
+  f.state("task-add", ["--title", "Implement after resuming"]);
+  f.commit();
+  const before = at(f.repo, "rev-parse", "HEAD");
+  const result = f.handoff();
+  assert.equal(result.branch, "feature/future");
+  assert.equal(at(f.work, "rev-parse", "HEAD"), before); // No empty registration commit.
+  assert.equal(at(f.remote, "rev-parse", "feature/future"), before);
+  assert.match(
+    f.state("retitle", ["--title", "Wrong writer"], 1),
+    /inherited entries/,
+  );
+});
+test("predeclared parent and child allow central clarification but require real parent handoff before child execution", (t) => {
+  const f = fixture(t);
+  f.state(
+    "create",
+    ["--title", "Whole", "--size", "xlarge", "--children", "sample"],
+    0,
+    "whole",
+  );
+  f.state("create", [
+    "--title",
+    "Part",
+    "--size",
+    "small",
+    "--parent",
+    "whole",
+  ]);
+  for (const id of ["whole", "sample"]) {
+    const path = `docs/project/changes/${id}/change.json`;
+    const state = JSON.parse(readFileSync(join(f.repo, path), "utf8"));
+    f.put(
+      path,
+      JSON.stringify({
+        ...state,
+        branch: `feature/${id}`,
+        waitingFor: { kind: "pause", summary: "Record only" },
+      }),
+    );
+    f.put(`docs/project/changes/${id}/requirement.md`, `# ${id}`);
+  }
+  f.commit();
+  assert.equal(f.state("show").state.branch, "feature/sample");
+  assert.equal(f.workspace("locate").branch, "develop");
+  assert.equal(f.workspace("locate").worktree, null);
+  f.state("clarification-ask", [
+    "--round",
+    "1",
+    "--text",
+    "Scope?",
+    "--recommendation",
+    "Keep it focused",
+  ]);
+  f.state("retitle", ["--title", "Still planning the child"]);
+  const state = JSON.parse(
+    readFileSync(
+      join(f.repo, "docs/project/changes/sample/change.json"),
+      "utf8",
+    ),
+  );
+  assert.equal(state.waitingFor.kind, "pause");
+  assert.equal(state.title, "Still planning the child");
+  f.state("resume");
+  f.state("task-add", ["--title", "Implement after parent handoff"]);
+  f.commit();
+  assert.match(f.handoff(1), /parent has not actually been handed off/);
+  assert(!existsSync(f.work));
+  assert.equal(at(f.repo, "show-ref", "--heads").includes("feature/"), false);
+  // Malformed cyclic parents retain a clear diagnostic before recursion.
+  const parentPath = "docs/project/changes/whole/change.json";
+  const parent = JSON.parse(readFileSync(join(f.repo, parentPath), "utf8"));
+  f.put(parentPath, JSON.stringify({ ...parent, parent: "sample" }));
+  f.commit();
+  assert.match(f.state("show", [], 1), /parent is missing or nested/);
+  assert.match(f.workspace("locate", [], 1), /parent is missing or nested/);
+});
 for (const size of ["medium", "large", "xlarge"]) {
   test(`${size} hands off before Plan and keeps execution confirmation gates`, (t) => {
     const f = fixture(t);
