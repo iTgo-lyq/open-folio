@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "修复独立评审发现的来源丢失与父子预填边界",
-      "status": "todo"
+      "status": "done",
+      "verification": "全量单测367项、真实hook24项通过；来源与父子回归及循环诊断复验通过，独立评审R1至R4全部关闭；类型检查和构建通过",
+      "commitTitle": "deferred-requirement-handoff T3: preserve source loss and resolve parent planning"
     }
   },
   "closure": {},

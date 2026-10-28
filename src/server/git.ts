@@ -732,6 +732,65 @@ export class GitReader {
         .filter((r) => parentIds.has(r.id) && r.kind === "target")
         .map((r) => r.branch!),
     );
+    const catalogAt = async (commit: string, entries: boolean, id?: string) => {
+      const rows = (
+        await this.run(
+          [
+            "ls-tree",
+            "-rlz",
+            "--full-tree",
+            commit,
+            "--",
+            "docs/project/workflow.json",
+            ...(entries
+              ? ["docs/project/changes/", "docs/project/archive/"]
+              : []),
+          ],
+          signal,
+        )
+      )
+        .toString()
+        .split("\0");
+      let config: unknown;
+      const records: { path: string; state: unknown; error?: string }[] = [];
+      for (const row of rows) {
+        const tab = row.indexOf("\t");
+        if (tab < 0) continue;
+        const path = row.slice(tab + 1),
+          isConfig = path === "docs/project/workflow.json";
+        const location = changeLocation(path);
+        if (!isConfig && (!location || (id && location.id !== id))) continue;
+        if (id && isConfig) continue;
+        const [mode, kind, blob, size] = row.slice(0, tab).trim().split(/\s+/);
+        let state: unknown = null,
+          error;
+        try {
+          if (
+            kind !== "blob" ||
+            !["100644", "100755"].includes(mode) ||
+            !Number.isSafeInteger(Number(size)) ||
+            Number(size) > limits.jsonBytes
+          )
+            throw Error();
+          const cached = blobs.get(blob);
+          state = JSON.parse(
+            new TextDecoder("utf-8", { fatal: true }).decode(
+              cached ??
+                (await this.run(
+                  ["cat-file", "blob", blob],
+                  signal,
+                  limits.jsonBytes + 1024,
+                )),
+            ),
+          );
+        } catch {
+          error = "入口 JSON 不可读。";
+        }
+        if (isConfig) config = state;
+        else records.push({ path, state, ...(error ? { error } : {}) });
+      }
+      return { config, records };
+    };
     const loadTargets = async (names: string[], parents = false) => {
       for (const name of names) {
         const targetRoutes = routes.filter(
@@ -752,6 +811,28 @@ export class GitReader {
             ["docs/project/changes/", "docs/project/archive/"],
             ids,
           );
+        // Residual tracking metadata is evidence of prior ownership only. It is
+        // never collected or served as a current source after remote deletion.
+        const trackingRef = `refs/remotes/origin/${name}`;
+        const trackingCommit = target
+          ? undefined
+          : (
+              await this.run(
+                [
+                  "for-each-ref",
+                  "--format=%(objectname)%09%(refname)",
+                  trackingRef,
+                ],
+                signal,
+              )
+            )
+              .toString()
+              .trim()
+              .split("\n")
+              .flatMap((row) => {
+                const [commit, ref] = row.split("\t");
+                return ref === trackingRef ? [commit] : [];
+              })[0];
         for (const route of targetRoutes) {
           const previousGroup = previous?.changes.find(
             (group) => group.id === route.id,
@@ -770,7 +851,19 @@ export class GitReader {
           const entry = sourceRecords(integrationBranch).find(
             (row) => row.id === route.id,
           );
-          if (!target && wasOwned) {
+          const historicalOwnership = trackingCommit
+            ? sourceOwnership(
+                (await catalogAt(trackingCommit, true, route.id)).records.map(
+                  (row) => ({
+                    ...changeLocation(row.path)!,
+                    ...row,
+                  }),
+                ),
+                route.id,
+                name,
+              )
+            : "unclaimed";
+          if (!target && (wasOwned || historicalOwnership !== "unclaimed")) {
             route.errors.push(
               `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
             );
@@ -869,63 +962,6 @@ export class GitReader {
       await exact([`refs/heads/${integrationBranch}`])
     ).get(`refs/heads/${integrationBranch}`);
     let changed = !finalCollabCommit;
-    const catalogAt = async (commit: string, entries: boolean) => {
-      const rows = (
-        await this.run(
-          [
-            "ls-tree",
-            "-rlz",
-            "--full-tree",
-            commit,
-            "--",
-            "docs/project/workflow.json",
-            ...(entries
-              ? ["docs/project/changes/", "docs/project/archive/"]
-              : []),
-          ],
-          signal,
-        )
-      )
-        .toString()
-        .split("\0");
-      let config: unknown;
-      const records: { path: string; state: unknown; error?: string }[] = [];
-      for (const row of rows) {
-        const tab = row.indexOf("\t");
-        if (tab < 0) continue;
-        const path = row.slice(tab + 1),
-          isConfig = path === "docs/project/workflow.json";
-        if (!isConfig && !changeLocation(path)) continue;
-        const [mode, kind, blob, size] = row.slice(0, tab).trim().split(/\s+/);
-        let state: unknown = null,
-          error;
-        try {
-          if (
-            kind !== "blob" ||
-            !["100644", "100755"].includes(mode) ||
-            !Number.isSafeInteger(Number(size)) ||
-            Number(size) > limits.jsonBytes
-          )
-            throw Error();
-          const cached = blobs.get(blob);
-          state = JSON.parse(
-            new TextDecoder("utf-8", { fatal: true }).decode(
-              cached ??
-                (await this.run(
-                  ["cat-file", "blob", blob],
-                  signal,
-                  limits.jsonBytes + 1024,
-                )),
-            ),
-          );
-        } catch {
-          error = "入口 JSON 不可读。";
-        }
-        if (isConfig) config = state;
-        else records.push({ path, state, ...(error ? { error } : {}) });
-      }
-      return { config, records };
-    };
     if (!changed && finalCollabCommit !== collab.commit) {
       const commit = await fetchRef(
         `refs/heads/${collab.name}`,

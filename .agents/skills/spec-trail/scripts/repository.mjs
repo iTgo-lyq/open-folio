@@ -145,10 +145,17 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
   if (!route)
     throw Error(`Change ${id} is not registered on ${catalog.branch}`);
   if (route.errors.length) throw Error(`${id}: ${route.errors.join("; ")}`);
-  const parentEntry = catalog.entries.find(row => row.id === route.parent);
   const centralEntry = catalog.entries.find(row => row.id === id);
-  const unstartedChild = parentEntry?.state?.branch === catalog.branch &&
-    planningRecord(parentEntry.state) && planningRecord(centralEntry?.state);
+  let unstartedChild = false;
+  if (route.kind === 'target' && route.parent) {
+    const parentEntry = catalog.entries.find(row => row.id === route.parent);
+    if (!parentEntry || parentEntry.state?.parent)
+      throw Error(`Child ${id}: parent is missing or nested`);
+    const parent = routedRecord(repo, catalog, route.parent, {refresh});
+    if (parent.errors.length) throw Error(parent.errors.join('; '));
+    unstartedChild = !parent.archived && parent.branch === catalog.branch &&
+      planningRecord(parent.state) && planningRecord(centralEntry?.state);
+  }
   if (route.kind === 'target' && route.parent && !unstartedChild) {
     const entry = catalog.entries.find(row => row.id === id);
     const target = deliveryTarget(repo, catalog, entry.state, {refresh});
