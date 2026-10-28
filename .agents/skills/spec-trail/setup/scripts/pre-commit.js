@@ -73,6 +73,59 @@ async function main() {
   try {
     branch = git(["symbolic-ref", "--quiet", "--short", "HEAD"]).trim();
   } catch {}
+  const committedWorkflow =
+    readState("HEAD:docs/project/workflow.json") ?? workflow;
+  let merging = false;
+  try {
+    git(["rev-parse", "--verify", "--quiet", "MERGE_HEAD"]);
+    merging = true;
+  } catch {}
+  if (branch === committedWorkflow?.integrationBranch && !merging) {
+    const changedIds = new Set(
+      git([
+        "diff",
+        "--cached",
+        "--name-only",
+        "--no-renames",
+        "-z",
+        "--",
+        "docs/project/changes/",
+      ])
+        .split("\0")
+        .map((path) => /^docs\/project\/changes\/([^/]+)\//.exec(path)?.[1])
+        .filter(Boolean),
+    );
+    for (const id of changedIds) {
+      const path = `docs/project/changes/${id}/change.json`;
+      // Central copies keep their planning stage after handoff. Read ownership
+      // before this commit, including when it deletes or rewrites change.json.
+      const owner = readState(`HEAD:${path}`);
+      if (
+        owner?.status !== "active" ||
+        typeof owner.branch !== "string" ||
+        !owner.branch ||
+        owner.branch === branch ||
+        owner.branch === committedWorkflow.releaseBranch
+      )
+        continue;
+      let location;
+      let worktree;
+      for (const field of git(["worktree", "list", "--porcelain", "-z"]).split(
+        "\0",
+      )) {
+        if (field.startsWith("worktree ")) worktree = field.slice(9);
+        if (field === `branch refs/heads/${owner.branch}`) location = worktree;
+      }
+      console.error(
+        `${path}: Change ${id} was handed off to ${owner.branch}; ` +
+          `cannot commit its documents on integration branch ${branch}. ` +
+          (location
+            ? `Continue in worktree ${location}.`
+            : `Locate its worktree with workspace.mjs locate --change ${id}.`),
+      );
+      failed = true;
+    }
+  }
   for (const [path] of indexed) {
     if (!/^docs\/project\/changes\/[^/]+\/change\.json$/.test(path)) continue;
     const value = readState(`:${path}`);
