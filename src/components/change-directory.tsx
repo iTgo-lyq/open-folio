@@ -60,6 +60,7 @@ import { Empty } from "./document";
 import page from "./personal.module.css";
 import styles from "./change-directory.module.css";
 import { ArchiveTimeline } from "./archive-timeline";
+import { ChangeCollaborators } from "./change-collaborators";
 import { DELIVERY_LABELS as deliveryLabels } from "@/lib/delivery-labels";
 
 const SCOPES = [
@@ -453,7 +454,10 @@ export function ChangeDirectory({
           : state?.closure.archive?.at,
       deliveryStage = data?.deliveryByChange?.[change.id]?.stage ?? "unknown";
     return (
-      <div className={styles.row}>
+      <div
+        className={styles.row}
+        data-show-creator={query.showCreator || undefined}
+      >
         <div className={styles.mainCell}>
           <a
             className={styles.titleLink}
@@ -553,15 +557,11 @@ export function ChangeDirectory({
           <Progress change={change} all={all} />
         )}
         <span className={styles.who}>
-          {creator ? (
-            <>
-              <Avatar name={creator} />
-              <span>{creator}</span>
-            </>
-          ) : (
-            "—"
-          )}
+          <ChangeCollaborators change={change} />
         </span>
+        {query.showCreator && (
+          <span className={styles.creator}>{creator || "—"}</span>
+        )}
         <time
           className={styles.date}
           dateTime={change.createdAt}
@@ -754,62 +754,74 @@ export function ChangeDirectory({
               )}
             </MenuContent>
           </Menu>
-          {!timeline && (
-            <Menu>
-              <MenuTrigger asChild>
-                <Button variant="ghost" aria-label="显示">
-                  <Settings2 />
-                  <span className={styles.toolLabel}>显示</span>
-                </Button>
-              </MenuTrigger>
-              <MenuContent aria-label="显示" align="end">
-                <MenuLabel>视图</MenuLabel>
-                <MenuRadioGroup
-                  value={query.view}
-                  onValueChange={(view) =>
-                    nav({ view: view === "list" ? null : view })
-                  }
-                >
-                  <MenuRadioItem value="list">列表</MenuRadioItem>
-                  <MenuRadioItem
-                    value="board"
-                    disabled={query.scope !== "active" || query.issues}
+          <Menu>
+            <MenuTrigger asChild>
+              <Button variant="ghost" aria-label="显示">
+                <Settings2 />
+                <span className={styles.toolLabel}>显示</span>
+              </Button>
+            </MenuTrigger>
+            <MenuContent aria-label="显示" align="end">
+              {!timeline && (
+                <>
+                  <MenuLabel>视图</MenuLabel>
+                  <MenuRadioGroup
+                    value={query.view}
+                    onValueChange={(view) =>
+                      nav({ view: view === "list" ? null : view })
+                    }
                   >
-                    看板
-                  </MenuRadioItem>
-                </MenuRadioGroup>
-                <MenuSeparator />
-                <MenuLabel>分组</MenuLabel>
-                <MenuRadioGroup
-                  value={query.group}
-                  onValueChange={(group) =>
-                    nav({ group: group === "status" ? null : group })
-                  }
-                >
-                  {[
-                    ["status", "处理状态"],
-                    ["stage", "阶段"],
-                    ["none", "不分组"],
-                  ].map(([value, label]) => (
-                    <MenuRadioItem key={value} value={value}>
-                      {label}
+                    <MenuRadioItem value="list">列表</MenuRadioItem>
+                    <MenuRadioItem
+                      value="board"
+                      disabled={query.scope !== "active" || query.issues}
+                    >
+                      看板
                     </MenuRadioItem>
-                  ))}
-                </MenuRadioGroup>
-                <MenuSeparator />
-                <MenuLabel>排序</MenuLabel>
-                <MenuRadioGroup
-                  value={query.labels.sortByUrgency ? "urgency" : "created"}
-                  onValueChange={(sort) =>
-                    nav({ sort: sort === "created" ? null : sort })
-                  }
-                >
-                  <MenuRadioItem value="created">最新创建</MenuRadioItem>
-                  <MenuRadioItem value="urgency">紧急程度优先</MenuRadioItem>
-                </MenuRadioGroup>
-              </MenuContent>
-            </Menu>
-          )}
+                  </MenuRadioGroup>
+                  <MenuSeparator />
+                  <MenuLabel>分组</MenuLabel>
+                  <MenuRadioGroup
+                    value={query.group}
+                    onValueChange={(group) =>
+                      nav({ group: group === "status" ? null : group })
+                    }
+                  >
+                    {[
+                      ["status", "处理状态"],
+                      ["stage", "阶段"],
+                      ["none", "不分组"],
+                    ].map(([value, label]) => (
+                      <MenuRadioItem key={value} value={value}>
+                        {label}
+                      </MenuRadioItem>
+                    ))}
+                  </MenuRadioGroup>
+                  <MenuSeparator />
+                  <MenuLabel>排序</MenuLabel>
+                  <MenuRadioGroup
+                    value={query.labels.sortByUrgency ? "urgency" : "created"}
+                    onValueChange={(sort) =>
+                      nav({ sort: sort === "created" ? null : sort })
+                    }
+                  >
+                    <MenuRadioItem value="created">最新创建</MenuRadioItem>
+                    <MenuRadioItem value="urgency">紧急程度优先</MenuRadioItem>
+                  </MenuRadioGroup>
+                  <MenuSeparator />
+                </>
+              )}
+              <MenuLabel>显示列</MenuLabel>
+              <MenuCheckboxItem
+                checked={query.showCreator}
+                onCheckedChange={(checked) =>
+                  nav({ showCreator: checked ? "1" : null })
+                }
+              >
+                创建者
+              </MenuCheckboxItem>
+            </MenuContent>
+          </Menu>
         </div>
         <ChangeViewActions />
         {views.error && (
@@ -903,7 +915,10 @@ export function ChangeDirectory({
             delivery={data?.deliveryByChange}
             returnTo={returnTo}
             render={(change) => (
-              <div className={`${styles.row} ${styles.archiveRow}`}>
+              <div
+                className={`${styles.row} ${styles.archiveRow}`}
+                data-show-creator={query.showCreator || undefined}
+              >
                 <div className={styles.mainCell}>
                   <a
                     className={styles.titleLink}
@@ -923,13 +938,13 @@ export function ChangeDirectory({
                   </div>
                 </div>
                 <span className={styles.who}>
-                  {creatorName(change) && (
-                    <>
-                      <Avatar name={creatorName(change)} />
-                      <span>{creatorName(change)}</span>
-                    </>
-                  )}
+                  <ChangeCollaborators change={change} />
                 </span>
+                {query.showCreator && (
+                  <span className={styles.creator}>
+                    {creatorName(change) || "—"}
+                  </span>
+                )}
               </div>
             )}
           />
@@ -959,37 +974,39 @@ export function ChangeDirectory({
                       all={all}
                       changes={items}
                       render={(change) => (
-                        <a
-                          className={styles.card}
-                          href={href(change.id)}
-                          onClick={(event) => open(event, change.id)}
-                          data-change-id={change.id}
-                          aria-label={`打开 ${change.title}`}
-                        >
-                          <span className={styles.title}>
-                            {urgency(change)}
-                            {change.title}
-                          </span>
-                          <span className={styles.meta}>
-                            <SizeLabel change={change} />
-                            {labels(change)}
-                          </span>
-                          {summary(change) && (
-                            <span
-                              className={styles.wait}
-                              data-paused={
-                                primaryRecord(change)?.state?.waitingFor
-                                  ?.kind === "pause" || undefined
-                              }
-                            >
-                              {primaryRecord(change)?.state?.waitingFor
-                                ?.kind === "pause" && (
-                                <CirclePause aria-hidden="true" />
-                              )}
-                              {summary(change)}
+                        <div className={styles.card}>
+                          <a
+                            className={styles.cardLink}
+                            href={href(change.id)}
+                            onClick={(event) => open(event, change.id)}
+                            data-change-id={change.id}
+                            aria-label={`打开 ${change.title}`}
+                          >
+                            <span className={styles.title}>
+                              {urgency(change)}
+                              {change.title}
                             </span>
-                          )}
-                          <span className={styles.cardFoot}>
+                            <span className={styles.meta}>
+                              <SizeLabel change={change} />
+                              {labels(change)}
+                            </span>
+                            {summary(change) && (
+                              <span
+                                className={styles.wait}
+                                data-paused={
+                                  primaryRecord(change)?.state?.waitingFor
+                                    ?.kind === "pause" || undefined
+                                }
+                              >
+                                {primaryRecord(change)?.state?.waitingFor
+                                  ?.kind === "pause" && (
+                                  <CirclePause aria-hidden="true" />
+                                )}
+                                {summary(change)}
+                              </span>
+                            )}
+                          </a>
+                          <div className={styles.cardFoot}>
                             {primaryRecord(change)?.state?.size === "xlarge" ||
                             Object.keys(
                               primaryRecord(change)?.state?.tasks ?? {},
@@ -998,11 +1015,14 @@ export function ChangeDirectory({
                             ) : (
                               <span />
                             )}
-                            {creatorName(change) && (
-                              <Avatar name={creatorName(change)} />
-                            )}
-                          </span>
-                        </a>
+                            <ChangeCollaborators change={change} />
+                          </div>
+                          {query.showCreator && (
+                            <span className={styles.creator}>
+                              创建者 {creatorName(change) || "—"}
+                            </span>
+                          )}
+                        </div>
                       )}
                     />
                   </ul>
@@ -1013,7 +1033,11 @@ export function ChangeDirectory({
           </div>
         ) : (
           <div className={styles.table} role="region" aria-label="Change 列表">
-            <div className={styles.tableHead} aria-hidden="true">
+            <div
+              className={styles.tableHead}
+              data-show-creator={query.showCreator || undefined}
+              aria-hidden="true"
+            >
               <span>Change</span>
               <span>规模</span>
               <span>
@@ -1038,7 +1062,10 @@ export function ChangeDirectory({
                         ? "任务 / 结束"
                         : "任务"}
               </span>
-              <span>创建者</span>
+              <span className={styles.whoHeading}>协作者</span>
+              {query.showCreator && (
+                <span className={styles.creator}>创建者</span>
+              )}
               <span>创建</span>
             </div>
             {groups.map((group) => (

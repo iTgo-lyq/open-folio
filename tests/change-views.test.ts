@@ -20,6 +20,7 @@ test("view queries round trip explicit all states and display preferences with s
     states: [],
     display: "board" as const,
     types: ["功能", "修复"],
+    showCreator: true,
   };
   const url = Object.fromEntries(
     Object.entries(queryToUrl(query)).filter(
@@ -53,6 +54,21 @@ test("view queries round trip explicit all states and display preferences with s
     }).success,
     false,
   );
+});
+
+test("legacy view queries default to a hidden creator column while preserving other preferences", () => {
+  const query = {
+    ...defaultRepositoryViews().views[0].query,
+    display: "board" as const,
+  };
+  const { showCreator: _unused, ...legacy } = query;
+  assert.deepEqual(savedChangeQuerySchema.parse(legacy), {
+    ...query,
+    showCreator: false,
+  });
+  assert.equal(queryFromUrl({ showCreator: "1" }).showCreator, true);
+  assert.equal(queryFromUrl({ showCreator: "invalid" }).showCreator, false);
+  assert.equal(sameQuery(query, { ...query, showCreator: true }), false);
 });
 
 test("account views initialize once, share across devices and tokens, isolate accounts/repos and enforce CAS", async (t) => {
@@ -89,7 +105,12 @@ test("account views initialize once, share across devices and tokens, isolate ac
   ]);
   assert.deepEqual(first, second);
   assert.equal(first!.views.length, 1);
-  const extra = { ...first!.views[0], id: randomUUID(), name: "交付" };
+  const extra = {
+    ...first!.views[0],
+    id: randomUUID(),
+    name: "交付",
+    query: { ...first!.views[0].query, showCreator: true },
+  };
   await call(b.cookie, "PATCH", {
     selected: { kind: "system", id: "archived" },
   });
@@ -99,6 +120,7 @@ test("account views initialize once, share across devices and tokens, isolate ac
   });
   assert.deepEqual(saved!.selected, { kind: "system", id: "archived" });
   assert.equal(saved!.revision, 2);
+  assert.equal(saved!.views[1].query.showCreator, true);
   await assert.rejects(
     call(b.cookie, "PUT", { expectedRevision: 1, views: [] }),
     { code: "VIEW_CONFLICT" },

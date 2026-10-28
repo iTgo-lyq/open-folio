@@ -142,7 +142,10 @@ function semantics(c: ChangeCandidate, data: Collected) {
 }
 export async function indexChanges(
   data: Collected,
-  reader: Pick<GitReader, "ancestor" | "changeCreations">,
+  reader: Pick<
+    GitReader,
+    "ancestor" | "changeCreations" | "changeParticipants"
+  >,
   signal?: AbortSignal,
 ): Promise<ChangeGroup[]> {
   const groups = new Map<string, ChangeGroup>(
@@ -535,12 +538,35 @@ export async function indexChanges(
     data.branches.map((branch) => branch.commit),
     signal,
   );
+  const participants = await reader.changeParticipants(
+    new Map(
+      [...groups.values()].map((group) => [
+        group.id,
+        [
+          ...new Set(
+            [
+              data.branches.find(
+                (branch) => branch.name === data.integrationBranch,
+              )?.commit,
+              primaryRecord(group)?.commit,
+            ].filter((commit): commit is string => !!commit),
+          ),
+        ],
+      ]),
+    ),
+    signal,
+  );
   for (const group of groups.values()) {
     const created = creations.get(group.id);
-    if (!created) continue;
-    group.createdAt = new Date(created.time).toISOString();
-    const creator = changeCreator(created.author.name, created.author.email);
-    if (creator) group.creator = creator;
+    if (created) {
+      group.createdAt = new Date(created.time).toISOString();
+      const creator = changeCreator(created.author.name, created.author.email);
+      if (creator) group.creator = creator;
+    }
+    group.collaborators = changeCollaborators(
+      created,
+      participants.get(group.id) ?? [],
+    );
   }
   return [...groups.values()].sort(compareChangeCreation);
 }
@@ -560,6 +586,55 @@ export function changeCreator(
   return login
     ? { name: display, login, ...(subjectId ? { subjectId } : {}) }
     : { name: display };
+}
+
+type MaterialAuthor = { time: number; author: { name: string; email: string } };
+export function changeCollaborators(
+  created: MaterialAuthor | undefined,
+  participants: MaterialAuthor[],
+): ChangeCreator[] {
+  const rows = (created ? [created, ...participants] : participants).flatMap(
+    (row) => {
+      const member = changeCreator(row.author.name, row.author.email);
+      return member ? [{ ...row, member }] : [];
+    },
+  );
+  // A legacy noreply login can join its unique numeric identity. Conflicting
+  // numeric IDs sharing a login must remain distinct.
+  const subjects = new Map<string, Set<string>>();
+  for (const { member } of rows)
+    if (member.login && member.subjectId) {
+      const login = member.login.toLowerCase();
+      const ids = subjects.get(login) ?? new Set<string>();
+      ids.add(member.subjectId);
+      subjects.set(login, ids);
+    }
+  const identityKey = (row: (typeof rows)[number]) => {
+    const login = row.member.login?.toLowerCase();
+    const ids = login ? subjects.get(login) : undefined;
+    const subject =
+      row.member.subjectId ?? (ids?.size === 1 ? [...ids][0] : undefined);
+    return subject
+      ? `id:${subject}`
+      : login
+        ? `login:${login}`
+        : row.author.email.trim()
+          ? `email:${row.author.email.trim().toLowerCase()}`
+          : `name:${row.member.name}`;
+  };
+  const first =
+    created && changeCreator(created.author.name, created.author.email)
+      ? rows[0]
+      : undefined;
+  const ordered = [...rows].sort(
+    (a, b) => a.time - b.time || identityKey(a).localeCompare(identityKey(b)),
+  );
+  const result = new Map<string, ChangeCreator>();
+  for (const row of [...(first ? [first] : []), ...ordered]) {
+    const key = identityKey(row);
+    if (!result.has(key)) result.set(key, row.member);
+  }
+  return [...result.values()];
 }
 
 export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {

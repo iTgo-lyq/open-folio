@@ -40,7 +40,7 @@ const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([11, limits]));
+  hash(JSON.stringify([12, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -1041,6 +1041,66 @@ export class GitReader {
       if (!prior || time < prior.time) created.set(match[1], { time, author });
     }
     return created;
+  }
+  // Batch by source tip, restricting each Change to its own readable history.
+  // Merge-only operators are not authors; underlying ordinary commits remain.
+  async changeParticipants(
+    sources: ReadonlyMap<string, string[]>,
+    signal?: AbortSignal,
+  ) {
+    const authors = new Map<
+      string,
+      Map<string, { time: number; author: { name: string; email: string } }>
+    >();
+    const tips = new Map<string, Set<string>>();
+    for (const [id, commits] of sources)
+      for (const commit of commits) {
+        const ids = tips.get(commit) ?? new Set<string>();
+        ids.add(id);
+        tips.set(commit, ids);
+      }
+    for (const [commit, ids] of tips) {
+      const history = await this.run(
+        [
+          "log",
+          "--full-history",
+          "--no-merges",
+          "--no-renames",
+          "-z",
+          "--format=%x00%H%x00%ct%x00%an%x00%ae%x00",
+          "--name-only",
+          commit,
+          "--",
+          "docs/project/changes",
+          "docs/project/archive",
+        ],
+        signal,
+      );
+      for (const section of history
+        .toString()
+        .split(/\0(?=[a-f0-9]{40,64}\0)/)
+        .slice(1)) {
+        const [, seconds, name, email, ...paths] = section.split("\0");
+        const time = Number(seconds) * 1000;
+        if (!Number.isFinite(time)) continue;
+        for (const path of paths) {
+          const match =
+            /^docs\/project\/(?:changes\/|archive\/\d{4}-\d{2}-\d{2}-)([a-z0-9]+(?:-[a-z0-9]+)*)\/.+/.exec(
+              path.replace(/^\n/, ""),
+            );
+          if (!match || !ids.has(match[1])) continue;
+          const members = authors.get(match[1]) ?? new Map();
+          authors.set(match[1], members);
+          const key = email.trim().toLowerCase() || name.trim();
+          const prior = members.get(key);
+          if (!prior || time < prior.time)
+            members.set(key, { time, author: { name, email } });
+        }
+      }
+    }
+    return new Map(
+      [...authors].map(([id, members]) => [id, [...members.values()]]),
+    );
   }
   async ancestor(base: string, tip: string, signal?: AbortSignal) {
     try {

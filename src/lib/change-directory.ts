@@ -103,6 +103,7 @@ export function readDirectoryQuery(q: Record<string, string>) {
       : "status") as "status" | "stage" | "none",
     view: q.view === "board" ? ("board" as const) : ("list" as const),
     issues: q.issues === "1",
+    showCreator: q.showCreator === "1",
   };
 }
 export function directoryQueryParams(query: DirectoryQuery) {
@@ -119,6 +120,7 @@ export function directoryQueryParams(query: DirectoryQuery) {
         : (query.urgencies[0] ?? null),
     creator: query.creators.length ? JSON.stringify(query.creators) : null,
     sort: query.labels.sortByUrgency ? "urgency" : null,
+    showCreator: query.showCreator ? "1" : null,
   };
 }
 export function matchesDirectoryScope(
