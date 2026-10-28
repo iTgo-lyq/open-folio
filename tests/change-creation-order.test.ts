@@ -258,3 +258,60 @@ test("creator keeps the Git name and only derives a login from GitHub noreply ad
   );
   assert.equal(changeCreator("  ", "nobody@example.com"), undefined);
 });
+
+test("unmerged unrelated branch edits cannot leak collaborators into a Change or its share", async () => {
+  const f = await fixture();
+  try {
+    await f.register({ alpha: "develop", beta: "change/beta" });
+    f.git(["checkout", "-b", "change/beta"]);
+    await f.put(
+      "docs/project/changes/alpha/requirement.md",
+      "# Not yet in alpha's source\n",
+    );
+    await f.put("docs/project/changes/beta/requirement.md", "# Beta work\n");
+    f.git(["add", "."]);
+    f.git([
+      "-c",
+      "user.name=Beta Worker",
+      "-c",
+      "user.email=beta@example.com",
+      "commit",
+      "-m",
+      "work",
+    ]);
+    f.git(["push", "origin", "change/beta"]);
+    let snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "alpha")!.collaborators,
+      [{ name: "Fixture" }],
+    );
+    assert.deepEqual(
+      projectChange(snap, "alpha", "fixture").change.collaborators,
+      [{ name: "Fixture" }],
+    );
+    assert.deepEqual(snap.changes.find((g) => g.id === "beta")!.collaborators, [
+      { name: "Fixture" },
+      { name: "Beta Worker" },
+    ]);
+    f.git(["checkout", "develop"]);
+    f.git([
+      "-c",
+      "user.name=Merger",
+      "-c",
+      "user.email=merger@example.com",
+      "merge",
+      "--no-ff",
+      "change/beta",
+      "-m",
+      "integrate",
+    ]);
+    f.git(["push", "origin", "develop"]);
+    snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "alpha")!.collaborators,
+      [{ name: "Fixture" }, { name: "Beta Worker" }],
+    );
+  } finally {
+    await f.cleanup();
+  }
+});

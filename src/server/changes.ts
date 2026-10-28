@@ -539,7 +539,21 @@ export async function indexChanges(
     signal,
   );
   const participants = await reader.changeParticipants(
-    data.branches.map((branch) => branch.commit),
+    new Map(
+      [...groups.values()].map((group) => [
+        group.id,
+        [
+          ...new Set(
+            [
+              data.branches.find(
+                (branch) => branch.name === data.integrationBranch,
+              )?.commit,
+              primaryRecord(group)?.commit,
+            ].filter((commit): commit is string => !!commit),
+          ),
+        ],
+      ]),
+    ),
     signal,
   );
   for (const group of groups.values()) {
