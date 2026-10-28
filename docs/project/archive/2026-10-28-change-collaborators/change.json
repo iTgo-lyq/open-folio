@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "change-collaborators",
+  "title": "Change 协作者与默认展示",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/change-collaborators",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-28T08:22:24.194Z",
+      "summary": "协作者按已确认原型展示，创建者置顶且独立列默认隐藏",
+      "source": "用户：看着没问题，继续吧"
+    },
+    "technical": {
+      "at": "2026-10-28T08:26:06.672Z",
+      "summary": "从材料提交历史批量识别协作者，兼容视图并复用原型交互",
+      "source": "用户：确认，按此实施"
+    },
+    "plan": {
+      "at": "2026-10-28T08:26:10.325Z",
+      "summary": "先交付协作者数据及配置兼容，再完成界面与原型还原验证",
+      "source": "用户：确认，按此实施"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "识别协作者并兼容个人视图配置",
+      "status": "done",
+      "verification": "17 项相关测试及类型检查通过，验证真实 Git 历史、身份去重、分享及旧视图兼容"
+    },
+    "T2": {
+      "title": "实现协作者展示并验证原型还原",
+      "status": "done",
+      "verification": "370 项单测、13 项相关浏览器场景、类型检查及生产构建通过，原型局部还原核对完成；来源边界评审问题由 T3 修正"
+    },
+    "T3": {
+      "title": "修正 T1 的协作者来源隔离",
+      "status": "done",
+      "verification": "371 项单测、18 项定向单测、生产构建、类型检查与真实工作台8组冒烟通过；R1独立复核通过，格式基线警告已记录"
+    },
+    "T4": {
+      "title": "修复单人协作者姓名的垂直截断",
+      "status": "done",
+      "verification": "生产构建及类型检查通过；真实工作台浅深主题四档宽度共8组字形边界、截图、交互与会话清理通过；独立局部复核通过"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T08:55:05.068Z",
+      "summary": "复用既有全量单测与回归；T4生产构建、类型检查、真实姓名8组字形边界与交互验证通过，独立局部评审通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T08:58:01.464Z",
+      "summary": "用户验收文字截断修复后的协作者展示，要求归档并合入 develop 和 main",
+      "source": "用户：好了，归档合入吧。并且合入 main"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T08:58:04.949Z",
+      "summary": "同步 Change 追踪中的协作者来源、名单交互、列配置与归档时间线行为"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T08:58:08.533Z",
+      "summary": "协作者展示及文字截断修复经用户验收，完成 Specs 同步后归档",
+      "path": "docs/project/archive/2026-10-28-change-collaborators"
+    }
+  },
+  "types": [
+    "体验"
+  ],
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "Changes · 协作者与动态视图",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/index.html#/changes",
+        "sourceCommit": "2889d65638585642a5326d83b4b98034961b2730",
+        "digest": "sha256:4c9195152a1127a2b79cf546d19b12d5100ccaf458b9d25e6b31c7ac9b975524",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/mobile.png"
+          }
+        ]
+      }
+    }
+  ],
+  "rework": {
+    "at": "2026-10-28T08:52:24.592Z",
+    "reason": "用户验收发现协作者单人姓名垂直截断",
+    "approach": "调整姓名行高并以真实截图核对字形上下边界，更新验收服务"
+  }
+}

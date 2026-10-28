@@ -104,6 +104,7 @@ test("directory query keeps single urgency links, normalizes invalid fields and 
     urgency: null,
     creator: null,
     sort: null,
+    showCreator: null,
   });
   assert.equal(invalid.scope, "active");
   assert.equal(invalid.group, "status");

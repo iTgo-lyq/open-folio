@@ -32,6 +32,7 @@ export const savedChangeQuerySchema = z
     display: z.enum(["list", "board"]),
     group: z.enum(["status", "stage", "none"]),
     sort: z.enum(["created", "urgency"]),
+    showCreator: z.boolean().default(false),
   })
   .strict();
 const viewId = z.union([z.literal("mine"), z.string().uuid()]);
@@ -106,6 +107,7 @@ export const systemQuery = (
   display: "list",
   group: "status",
   sort: "created",
+  showCreator: false,
 });
 export function defaultRepositoryViews(): RepositoryViews {
   const query = systemQuery();
@@ -145,6 +147,7 @@ export function queryFromUrl(q: Record<string, string>): SavedChangeQuery {
     display: parsed.view,
     group: parsed.group,
     sort: parsed.labels.sortByUrgency ? "urgency" : "created",
+    showCreator: parsed.showCreator,
   };
 }
 export function queryToUrl(
@@ -163,6 +166,7 @@ export function queryToUrl(
     view: query.display === "board" ? "board" : null,
     group: query.group === "status" ? null : query.group,
     sort: query.sort === "urgency" ? "urgency" : null,
+    showCreator: query.showCreator ? "1" : null,
     issues: null,
   };
 }
@@ -178,6 +182,7 @@ export const hasDirectoryQuery = (q: Record<string, string>) =>
     "view",
     "group",
     "sort",
+    "showCreator",
     "issues",
     "changeView",
     "c",

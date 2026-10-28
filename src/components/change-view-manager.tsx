@@ -212,6 +212,19 @@ function QueryEditor({
           </select>
         </label>
       </div>
+      <fieldset>
+        <legend>显示列</legend>
+        <label>
+          <input
+            type="checkbox"
+            checked={query.showCreator}
+            onChange={(event) =>
+              update({ ...query, showCreator: event.target.checked })
+            }
+          />
+          创建者
+        </label>
+      </fieldset>
       {query.display === "board" && (
         <p className={styles.hint}>
           看板仅在桌面且只选进行中时展示，其余情况使用列表，保留此偏好。

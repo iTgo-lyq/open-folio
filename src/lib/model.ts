@@ -207,6 +207,8 @@ export type ChangeGroup = {
   createdAt?: string;
   /** Author of that first commit, absent with createdAt. */
   creator?: ChangeCreator;
+  /** Material commit authors, with the known creator first; never includes email. */
+  collaborators?: ChangeCreator[];
   source?: {
     entryBranch: string;
     entryPath: string;

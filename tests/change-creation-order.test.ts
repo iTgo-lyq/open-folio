@@ -5,7 +5,11 @@ import { rename } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, type ChangeGroup } from "../src/lib/model.ts";
-import { changeCreator, compareChangeCreation } from "../src/server/changes.ts";
+import {
+  changeCreator,
+  changeCollaborators,
+  compareChangeCreation,
+} from "../src/server/changes.ts";
 import { projectChange } from "../src/server/shared-change.ts";
 
 const record = (id: string) =>
@@ -89,6 +93,10 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
       record("z-old").replace('"title":"z-old"', '"title":"edited"'),
     );
     commit("2026-04-01T00:00:00Z", ["Editor", "editor@example.com"]);
+    await f.put("docs/project/changes/z-old/requirement.md", "# 推进材料\n");
+    commit("2026-04-02T00:00:00Z", ["Editor", "EDITOR@example.com"]);
+    await f.put("unrelated-code.ts", "export {};\n");
+    commit("2026-04-03T00:00:00Z", ["Unrelated", "other@example.com"]);
     await f.put(
       "docs/project/archive/2026-05-01-z-old/requirement.md",
       "# Archived",
@@ -118,12 +126,28 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
       ],
     );
     assert.doesNotMatch(JSON.stringify(snap.changes), /@example|noreply/);
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "z-old")!.collaborators,
+      [{ name: "Ada" }, { name: "Editor" }, { name: "Archivist" }],
+    );
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "merge-new")!.collaborators,
+      [{ name: "Linus" }],
+    );
+    assert.deepEqual(
+      projectChange(snap, "a-new", "fixture").change.collaborators,
+      snap.changes.find((g) => g.id === "a-new")!.collaborators,
+    );
     assert.deepEqual(projectChange(snap, "a-new", "fixture").change.creator, {
       name: "Grace",
       login: "grace-h",
       subjectId: "12345",
     });
     const warm = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.deepEqual(
+      warm.changes.map((g) => g.collaborators),
+      snap.changes.map((g) => g.collaborators),
+    );
     assert.deepEqual(
       warm.changes.map(({ id, createdAt, creator }) => ({
         id,
@@ -135,6 +159,83 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
         createdAt,
         creator,
       })),
+    );
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test("collaborators keep creator first, resolve noreply aliases and retain distinct same-name identities", () => {
+  const author = (name: string, email: string, time: number) => ({
+    time,
+    author: { name, email },
+  });
+  const creator = author("Creator", "7+old-name@users.noreply.github.com", 100);
+  assert.deepEqual(
+    changeCollaborators(creator, [
+      author("Renamed", "7+new-name@users.noreply.github.com", 200),
+      author("Legacy", "new-name@users.noreply.github.com", 300),
+      author("Other", "other@example.com", 50),
+      author("Same", "one@example.com", 400),
+      author("Same", "two@example.com", 500),
+    ]),
+    [
+      { name: "Creator", login: "old-name", subjectId: "7" },
+      { name: "Other" },
+      { name: "Same" },
+      { name: "Same" },
+    ],
+  );
+  assert.deepEqual(
+    changeCollaborators(undefined, [author(" ", "x@example.com", 1)]),
+    [],
+  );
+});
+
+test("participants include a routed work branch and exclude the merge operator", async () => {
+  const f = await fixture();
+  try {
+    const commit = (name: string) => {
+      f.git(["add", "."]);
+      f.git([
+        "-c",
+        `user.name=${name}`,
+        "-c",
+        `user.email=${name}@example.com`,
+        "commit",
+        "-m",
+        name,
+      ]);
+    };
+    await f.put(
+      "docs/project/changes/shared/change.json",
+      record("shared").replace(
+        '"branch":"develop"',
+        '"branch":"change/shared"',
+      ),
+    );
+    commit("Creator");
+    f.git(["checkout", "-b", "change/shared"]);
+    await f.put("docs/project/changes/shared/requirement.md", "# 协作\n");
+    commit("Worker");
+    f.git(["push", "origin", "change/shared"]);
+    f.git(["checkout", "develop"]);
+    f.git([
+      "-c",
+      "user.name=Merger",
+      "-c",
+      "user.email=merger@example.com",
+      "merge",
+      "--no-ff",
+      "change/shared",
+      "-m",
+      "merge",
+    ]);
+    f.git(["push", "origin", "develop"]);
+    const snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "shared")!.collaborators,
+      [{ name: "Creator" }, { name: "Worker" }],
     );
   } finally {
     await f.cleanup();
@@ -156,4 +257,61 @@ test("creator keeps the Git name and only derives a login from GitHub noreply ad
     { name: "Mallory" },
   );
   assert.equal(changeCreator("  ", "nobody@example.com"), undefined);
+});
+
+test("unmerged unrelated branch edits cannot leak collaborators into a Change or its share", async () => {
+  const f = await fixture();
+  try {
+    await f.register({ alpha: "develop", beta: "change/beta" });
+    f.git(["checkout", "-b", "change/beta"]);
+    await f.put(
+      "docs/project/changes/alpha/requirement.md",
+      "# Not yet in alpha's source\n",
+    );
+    await f.put("docs/project/changes/beta/requirement.md", "# Beta work\n");
+    f.git(["add", "."]);
+    f.git([
+      "-c",
+      "user.name=Beta Worker",
+      "-c",
+      "user.email=beta@example.com",
+      "commit",
+      "-m",
+      "work",
+    ]);
+    f.git(["push", "origin", "change/beta"]);
+    let snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "alpha")!.collaborators,
+      [{ name: "Fixture" }],
+    );
+    assert.deepEqual(
+      projectChange(snap, "alpha", "fixture").change.collaborators,
+      [{ name: "Fixture" }],
+    );
+    assert.deepEqual(snap.changes.find((g) => g.id === "beta")!.collaborators, [
+      { name: "Fixture" },
+      { name: "Beta Worker" },
+    ]);
+    f.git(["checkout", "develop"]);
+    f.git([
+      "-c",
+      "user.name=Merger",
+      "-c",
+      "user.email=merger@example.com",
+      "merge",
+      "--no-ff",
+      "change/beta",
+      "-m",
+      "integrate",
+    ]);
+    f.git(["push", "origin", "develop"]);
+    snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.deepEqual(
+      snap.changes.find((g) => g.id === "alpha")!.collaborators,
+      [{ name: "Fixture" }, { name: "Beta Worker" }],
+    );
+  } finally {
+    await f.cleanup();
+  }
 });
