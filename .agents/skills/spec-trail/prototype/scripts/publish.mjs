@@ -47,6 +47,7 @@ try {
     console.log(
       "Registered locally. Commit and push references; main changes only after merge.",
     );
+    console.log('For submodule packages, commit and push the child catalog/output first, then stage and commit the parent gitlink, Change and snapshots. Registration does not commit either repository.');
   } else if (command === "recover") {
     recover(root);
     console.log("Restored references from the interrupted transaction.");

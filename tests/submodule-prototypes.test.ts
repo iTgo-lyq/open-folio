@@ -6,6 +6,10 @@ import { personalFixture } from "./personal-fixture.ts";
 import { Repositories } from "../src/server/repositories.ts";
 import { GitReader } from "../src/server/git.ts";
 import { repositoryKey } from "../src/server/providers/types.ts";
+import {
+  repositoryPermissions,
+  PERMISSION_CHECK_MS,
+} from "../src/server/repository-permissions.ts";
 import { join } from "node:path";
 import {
   moduleUrl,
@@ -170,6 +174,8 @@ test("repository service authorizes child independently and blocks cached child 
   assert.equal((catalog as { items: unknown[] }).items.length, 1);
   assert.ok(transports.includes(child.cloneUrl));
   f.controls.deny.add(child.repositoryId);
+  repositoryPermissions(f.sessions).now = () =>
+    Date.now() + PERMISSION_CHECK_MS;
   const blocked = await read((ctx) => ctx.store.prototypes(ctx.project));
   assert.equal((blocked as { items: unknown[] }).items.length, 0);
   assert.match((blocked as { message: string }).message, /无权/);
@@ -192,6 +198,10 @@ test("repository service authorizes child independently and blocks cached child 
 });
 test("module addresses normalize Git-relative and SSH forms while rejecting credentials, helpers and duplicate mappings", () => {
   const base = "https://github.com/team/main.git";
+  assert.equal(
+    moduleUrl("../frontend.git", "git@github.com:team/main.git"),
+    "https://github.com/team/frontend.git",
+  );
   for (const address of [
     "../frontend.git",
     "git@github.com:team/frontend.git",

@@ -7,6 +7,54 @@ import {
   openSyncStatus,
 } from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
+test("submodule detail distinguishes the parent build baseline from the child catalog commit", async ({
+  page,
+}) => {
+  await page.route(
+    /\/api\/repositories\/[^/]+\/prototypes(?:\?|$)/,
+    async (route) => {
+      const response = await route.fetch(),
+        catalog = await response.json();
+      const item = catalog.items.find(
+        (item: { id: string }) => item.id === "orders",
+      );
+      item.source = {
+        revision: catalog.revision,
+        packagePath: "packages/prototype",
+        links: [
+          {
+            path: "frontend",
+            repository: "https://github.com/team/frontend.git",
+            commit: "a".repeat(40),
+          },
+        ],
+      };
+      item.sourcePath = `frontend/${item.sourcePath}`;
+      await route.fulfill({ response, json: catalog });
+    },
+  );
+  await page.goto(path + "&pdetail=orders");
+  const details = page.getByRole("dialog");
+  await expect(
+    details.getByText("构建基线提交（主仓库）", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    details.getByText("清单子模块 frontend", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    details.getByText(
+      "https://github.com/team/frontend.git · " + "a".repeat(40),
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    details.getByText("frontend/packages/prototype/src/orders.tsx", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await details.getByRole("button", { name: "进入预览", exact: true }).click();
+  await expect(page.locator('iframe[title="原型：订单列表"]')).toBeVisible();
+});
 test("published hosted cards load the registered screenshot for every declared device", async ({
   page,
   request,

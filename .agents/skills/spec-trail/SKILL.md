@@ -7,7 +7,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 
 ## 入口与通用约束
 
-一个项目使用一个 Git 仓库，工程文档统一放在根目录 `docs/project/`；多应用、服务或共享包建议采用 monorepo，同仓库 worktree 共用本约定。
+一个项目使用一个主 Git 仓库，工程文档统一放在根目录 `docs/project/`；多应用、服务或共享包建议采用 monorepo，同仓库 worktree 共用本约定。原型包可位于主仓库固定记录的 Git submodule，沿父提交的 gitlink 读取，子仓库无需另行接入 SpecTrail；路径、发布和追溯规则见[原型子 skill](./prototype/SKILL.md#子模块中的原型包)。
 
 用户派发任务时，先检查分支、工作区和相关 Change：
 

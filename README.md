@@ -158,6 +158,8 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 ## 原型与内置托管
 
+`prototype.packagePath` 支持已提交的子模块根目录或内部原型包，例如 `frontend/packages/prototype`。主项目按所选父提交的 `.gitmodules` 和 gitlink 读取固定子版本，子仓库分支推进不改变旧原型；SpecTrail/Change 仍放在主仓库。子仓库清单路径相对子仓库根目录，`artifact.sourceCommit` 仍记录主仓库构建基线；发布后先提交子清单，再提交父 gitlink 与 Change。子仓库权限独立检查，缓存不能绕过拒绝；固定对象不可用明确提示，不回退最新分支。详细步骤见[子模块原型发布](.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
+
 当前原型总览读取所选集成分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 归档后以带 `SpecTrail-Change: <id>` 的双亲合并提交保存交付边界；“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。原始分支与工作区可在远端核实后安全清理，不再创建保留标签。旧归档缺少有效关联时，diff 和原型留空，正文仍可读。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 
 通过 [SpecTrail 原型 skill](.agents/skills/spec-trail/prototype/SKILL.md) 维护源码、mock 和构建。产物可选 OpenFolio 内置托管、外部托管或 Git 自包含 HTML；服务不安装仓库依赖、不执行仓库构建。

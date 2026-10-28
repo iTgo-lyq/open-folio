@@ -42,6 +42,7 @@ export class Repositories {
   readonly sessions: PersonalSessions;
   readonly discoveries: Discovery;
   readonly readerFactory: ReaderFactory;
+  private childRepositories = new Map<string, RepositoryIdentity>();
   constructor(
     root: string,
     sessions: PersonalSessions,
@@ -192,16 +193,17 @@ export class Repositories {
             ) => {
               try {
                 const target = provider.parseRepositoryUrl(url);
-                const child = await provider.resolveRepository(
-                  owner.context,
-                  target,
-                );
+                const urlKey = `${owner.workspaceId}/${url}`;
+                const child =
+                  this.childRepositories.get(urlKey) ??
+                  (await provider.resolveRepository(owner.context, target));
                 const childKey = repositoryKey(child);
                 await permissions.checkWorkspace(owner, childKey, child, {
                   force,
                   integrationBranch: child.defaultBranch ?? undefined,
                   workspaceOwned: owner !== lease,
                 });
+                this.childRepositories.set(urlKey, child);
                 const childReader = this.readerFactory(
                   join(cache, "submodules", childKey),
                   await provider.gitTransport(owner.context, child),

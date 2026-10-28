@@ -459,15 +459,17 @@ export async function resolveEntries(
         // Existing ordinary artifacts may predate prototype configuration.
         info.sourceAvailable = true;
         let historical;
-        try {
+        const modules = await reader.run(
+          ["ls-tree", "-z", commit, "--", ".gitmodules"],
+          signal,
+        );
+        if (modules.length) {
           historical = await readPrototypeConfiguration(
             reader,
             commit,
             limits,
             signal,
           );
-        } catch {
-          signal.throwIfAborted();
         }
         if (historical) {
           const resolved = await resolvePackage(

@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "完成子模块原型两库发布、恢复与校验",
-      "status": "todo"
+      "status": "done",
+      "verification": "完整389项与skill/setup39项通过，typecheck/生产构建/Chrome冒烟通过，独立评审三项问题修复复验通过；两库发布、恢复、index及语义归档闭环已验证。",
+      "commitTitle": "prototype-submodule-support T3: publish and validate prototypes across repositories"
     }
   },
   "closure": {},

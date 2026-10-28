@@ -11,6 +11,7 @@ import { validateChange } from './state-schema.mjs';
 import { validChangeId } from './integration-records.mjs';
 import { changeDelivery, githubPullRequests } from './github-prs.mjs';
 import { entryPath } from '../prototype/scripts/contract.mjs';
+import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const at = (path, args) => execFileSync('git', ['-C', path, '--literal-pathspecs', ...args], {
@@ -58,6 +59,7 @@ function sourceBranch(catalog, branch) {
 function previewObjects(repo, record, commit, configuration) {
   for (const preview of record.state.previews ?? []) {
     assert(revision(repo, preview.artifact.sourceCommit), `Prototype source object is unavailable: ${preview.id}`);
+    verifyPrototypeSource(repo.root,preview.artifact.sourceCommit,preview.id);
     if (preview.artifact.type === 'git') {
       const path = entryPath(preview,configuration,record.directory);
       assert(path?.startsWith(record.directory + '/previews/'), `Prototype path is outside the archived snapshot: ${preview.id}`);

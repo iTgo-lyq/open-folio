@@ -9,6 +9,8 @@ const validatorPath = `${skillPath}/setup/scripts/pre-commit.js`;
 const schemaPath = `${skillPath}/scripts/state-schema.mjs`;
 const routingPath = `${skillPath}/scripts/routing.mjs`;
 const contractPath = `${skillPath}/prototype/scripts/contract.mjs`;
+const sourcePath = `${skillPath}/prototype/scripts/source.mjs`;
+const localSourcePath = `${skillPath}/prototype/scripts/local-source.mjs`;
 const workflowPath = "docs/project/workflow.json";
 const command = `node "$(git rev-parse --show-toplevel)/${validatorPath}"`;
 
@@ -27,7 +29,7 @@ try {
     throw Error("Choose a repository with a working tree.");
   const root = git(["rev-parse", "--show-toplevel"]);
   const issues = [];
-  const resources = [validatorPath, schemaPath, routingPath, contractPath].map(
+  const resources = [validatorPath, schemaPath, routingPath, contractPath, sourcePath, localSourcePath].map(
     (path) => {
       try {
         if (!statSync(join(root, path)).isFile()) throw Error("must be a file");
@@ -59,6 +61,8 @@ try {
     [schemaPath, ["validateWorkflow", "validateChange"]],
     [routingPath, ["validBranchName", "routeCatalog"]],
     [contractPath, ["entryPath", "validatePrototype", "validatePreviews"]],
+    [sourcePath, ['packageSource','withinPackage']],
+    [localSourcePath, ['localPackage','verifyPrototypeSource']],
   ]) {
     const resource = resources.find((resource) => resource.path === path);
     if (resource.status !== "ready") continue;

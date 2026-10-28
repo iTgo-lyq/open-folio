@@ -147,6 +147,7 @@ async function main() {
   }).trimEnd();
   const result = await checkPullRequest(git, JSON.parse(readFileSync(eventPath, 'utf8')));
   process.stdout.write(JSON.stringify(result) + '\n');
+  process.stderr.write('Prototype source verification: not executed by archive CI; private submodule objects require authorized local publication/preflight or OpenFolio reads.\n');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)

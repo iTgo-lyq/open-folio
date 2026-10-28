@@ -14,6 +14,8 @@ import {
 } from "./contract.mjs";
 import { git, checkedPath } from "./publishing.mjs";
 import { htmlIssues, sandboxCsp } from "./html.mjs";
+import { localPackage, assertCheckout } from './local-source.mjs';
+import { inPackage } from './source.mjs';
 let browser, server;
 try {
   const { values: o } = parseArgs({
@@ -30,6 +32,8 @@ try {
     ).prototype;
   if (validatePrototype(cfg).length || cfg.status !== "enabled")
     throw Error("原型配置未启用或不合法");
+  const source=localPackage(root,git(root,['rev-parse','HEAD']),cfg.packagePath);
+  if(source.mount)assertCheckout(source,true);
   const entries = [],
     manifestPath = checkedPath(root, cfg.packagePath + "/prototype.json");
   if (existsSync(manifestPath)) {
@@ -37,7 +41,7 @@ try {
       issues = validateManifest(manifest);
     if (issues.length) throw Error(issues.join("; "));
     for (const entry of manifest.entries)
-      if (entry.artifact) entries.push(currentPreview(entry));
+      if (entry.artifact) entries.push(currentPreview({...entry,...(source.mount&&entry.artifact.type==='git'?{artifact:{...entry.artifact,path:inPackage(source.mount,entry.artifact.path)}}:{})}));
   }
   // Check explicit Git build output before registration as well.
   const preview = checkedPath(root, cfg.packagePath + "/preview");
