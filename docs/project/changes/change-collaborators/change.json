@@ -4,7 +4,7 @@
   "title": "Change 协作者与默认展示",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/change-collaborators",
   "confirmations": {
     "requirement": {
@@ -38,15 +38,13 @@
       "title": "修正 T1 的协作者来源隔离",
       "status": "done",
       "verification": "371 项单测、18 项定向单测、生产构建、类型检查与真实工作台8组冒烟通过；R1独立复核通过，格式基线警告已记录"
+    },
+    "T4": {
+      "title": "修复单人协作者姓名的垂直截断",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-10-28T08:45:23.669Z",
-      "summary": "371项单测、13项相关浏览器回归、生产构建与真实工作台8组冒烟通过；独立评审R1已修复，既有格式警告单列记录"
-    }
-  },
+  "closure": {},
   "types": [
     "体验"
   ],
@@ -83,8 +81,9 @@
       }
     }
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现与独立评审已完成，验收版复用常驻入口，等待用户实际验收"
+  "rework": {
+    "at": "2026-10-28T08:52:24.592Z",
+    "reason": "用户验收发现协作者单人姓名垂直截断",
+    "approach": "调整姓名行高并以真实截图核对字形上下边界，更新验收服务"
   }
 }
