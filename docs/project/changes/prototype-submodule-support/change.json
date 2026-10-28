@@ -4,19 +4,29 @@
   "title": "读取子模块中的固定版本原型",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/prototype-submodule-support",
   "confirmations": {
     "requirement": {
       "at": "2026-10-28T17:23:59.505Z",
       "summary": "主仓库锁定子模块原型版本并统一关联追溯与发布校验",
       "source": "用户：确认这份需求，继续整理技术方案和计划。"
+    },
+    "technical": {
+      "at": "2026-10-28T17:34:36.347Z",
+      "summary": "通过父提交解析子模块固定来源并复用发布协议与恢复机制",
+      "source": "用户：确认技术方案和计划，按 T1 → T2 → T3 开始实施。"
+    },
+    "plan": {
+      "at": "2026-10-28T17:34:40.603Z",
+      "summary": "依次实现当前读取、历史固定及两库发布恢复与校验",
+      "source": "用户：确认技术方案和计划，按 T1 → T2 → T3 开始实施。"
     }
   },
   "tasks": {
     "T1": {
       "title": "按固定父提交读取子模块当前原型",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "保持子模块 Change 原型与历史来源固定",
@@ -40,9 +50,5 @@
       "answer": "按此范围启动",
       "source": "用户在当前会话选择：按此范围启动（推荐）"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "技术方案和串行计划已整理，等待一起确认后开始实现。"
   }
 }
