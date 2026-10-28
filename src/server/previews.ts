@@ -20,6 +20,12 @@ import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/con
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
 import { resolvePackage } from "./prototype-source.ts";
+import {
+  inPackage,
+  withinPackage,
+  treeRows,
+} from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
+import { validateManifest } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
   const branch = data.integrationBranch;
   const doc = data.documents.find(
@@ -363,13 +369,31 @@ export async function resolveEntries(
     descriptor: { ...descriptor, message, failed: true },
     html: undefined,
   });
+  const needsPackage = rawEntries.some(
+    (entry: any) =>
+      entry?.artifact?.type === "git" &&
+      !(
+        changeDirectory &&
+        entry.artifact.path?.startsWith(`${changeDirectory}/previews/`)
+      ),
+  );
+  let packageFiles: TreeEntry[] = [],
+    packageError: string | undefined;
+  if (needsPackage)
+    try {
+      packageFiles = await tree(
+        reader,
+        revision,
+        `${configuration.packagePath}/preview/`,
+        signal,
+      );
+    } catch (error) {
+      signal.throwIfAborted();
+      packageError =
+        error instanceof AppError ? error.message : "子模块原型产物不可读。";
+    }
   const files = [
-    ...(await tree(
-      reader,
-      revision,
-      `${configuration.packagePath}/preview/`,
-      signal,
-    )),
+    ...packageFiles,
     ...(changeDirectory
       ? await tree(reader, revision, `${changeDirectory}/previews/`, signal)
       : []),
@@ -418,19 +442,114 @@ export async function resolveEntries(
       available: false,
     };
     descriptor.entries.push(info);
+    if (entry.artifact) {
+      try {
+        const commit = entry.artifact.sourceCommit;
+        if (
+          (await reader.run(["cat-file", "-t", commit], signal))
+            .toString()
+            .trim() !== "commit" ||
+          !(await reader.ancestor(commit, revision, signal))
+        )
+          throw new AppError(
+            "PROTOTYPE_SOURCE",
+            "源码基线不属于该固定版本的交付历史。",
+            422,
+          );
+        // Existing ordinary artifacts may predate prototype configuration.
+        info.sourceAvailable = true;
+        let historical;
+        try {
+          historical = await readPrototypeConfiguration(
+            reader,
+            commit,
+            limits,
+            signal,
+          );
+        } catch {
+          signal.throwIfAborted();
+        }
+        if (historical) {
+          const resolved = await resolvePackage(
+            reader,
+            commit,
+            historical.packagePath!,
+            signal,
+            false,
+          );
+          if (resolved.source.links.length) {
+            info.source = resolved.source;
+            const manifestPath = inPackage(
+              resolved.packagePath,
+              "prototype.json",
+            );
+            const manifest = JSON.parse(
+              await body(
+                resolved.reader,
+                (
+                  await tree(
+                    resolved.reader,
+                    resolved.revision,
+                    manifestPath,
+                    signal,
+                  )
+                ).find((f) => f.path === manifestPath),
+                limits.jsonBytes,
+                signal,
+              ),
+            );
+            if (validateManifest(manifest).length)
+              throw new AppError(
+                "PROTOTYPE_SOURCE",
+                "构建基线中的原型清单不合法。",
+                422,
+              );
+            const item = manifest.entries.find(
+              (item: any) => item.id === entry.id,
+            );
+            if (!item || !withinPackage(item.sourcePath, resolved.packagePath))
+              throw new AppError(
+                "PROTOTYPE_SOURCE",
+                "构建基线缺少对应的原型源码入口。",
+                422,
+              );
+            const files = treeRows(
+              (
+                await resolved.reader.run(
+                  ["ls-tree", "-lz", resolved.revision, "--", item.sourcePath],
+                  signal,
+                )
+              ).toString(),
+            );
+            if (
+              !files.some(
+                (f) =>
+                  f.path === item.sourcePath &&
+                  ["100644", "100755"].includes(f.mode) &&
+                  f.kind === "blob",
+              )
+            )
+              throw new AppError(
+                "PROTOTYPE_SOURCE",
+                "子模块固定版本中的原型源码缺失或不是常规文件。",
+                422,
+              );
+          }
+        }
+      } catch (error) {
+        signal.throwIfAborted();
+        info.sourceAvailable = false;
+        info.sourceMessage =
+          error instanceof AppError
+            ? error.message
+            : "源码提交已不可用，无法追溯。";
+      }
+    }
     if (entry.artifact?.type === "hosted") {
       const artifact = entry.artifact;
       info.available = true;
       info.url = artifact.url;
       info.thumbnails = artifact.thumbnails;
-      try {
-        info.sourceAvailable =
-          (await reader.run(["cat-file", "-t", artifact.sourceCommit], signal))
-            .toString()
-            .trim() === "commit";
-      } catch {
-        info.sourceAvailable = false;
-      }
       continue;
     }
     const path = entryPath(entry, configuration, changeDirectory),
@@ -438,6 +557,14 @@ export async function resolveEntries(
     if (!path) {
       info.message =
         "入口路径不属于默认分支当前配置的原型包或该 Change 的快照目录。";
+      continue;
+    }
+    if (
+      !file &&
+      packageError &&
+      !path.startsWith(`${changeDirectory}/previews/`)
+    ) {
+      info.message = packageError;
       continue;
     }
     try {

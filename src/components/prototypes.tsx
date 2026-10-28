@@ -680,7 +680,9 @@ function PrototypeDetailBody({
           </dd>
         </div>
         <div>
-          <dt>源码提交</dt>
+          <dt>
+            {item.source?.links.length ? "构建基线提交（主仓库）" : "源码提交"}
+          </dt>
           <dd>
             <code>{item.artifact?.sourceCommit ?? "尚未发布产物"}</code>
           </dd>
@@ -693,7 +695,7 @@ function PrototypeDetailBody({
         </div>
         {item.source?.links.map((link) => (
           <div key={link.path}>
-            <dt>子模块 {link.path}</dt>
+            <dt>清单子模块 {link.path}</dt>
             <dd>
               <code>
                 {link.repository} · {link.commit}

@@ -370,5 +370,7 @@ export type PreviewDescriptor = {
     url?: string;
     thumbnails?: PreviewThumbnail[];
     sourceAvailable?: boolean;
+    source?: PrototypeSource;
+    sourceMessage?: string;
   })[];
 };

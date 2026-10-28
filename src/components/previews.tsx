@@ -662,6 +662,12 @@ export function ChangePreviews({
                 ? entry.artifact.path
                 : ""}
             {" · "}适配范围由项目声明，画布缩放不改变布局尺寸。
+            {entry?.sourceMessage && ` · ${entry.sourceMessage}`}
+            {entry?.source?.links
+              .map(
+                (link) => ` · 子模块 ${link.path} ${link.commit.slice(0, 12)}`,
+              )
+              .join("")}
           </p>
         </>
       )}

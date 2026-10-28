@@ -91,6 +91,7 @@ export class GitReader {
     path: string,
     signal: AbortSignal,
     force?: boolean,
+    required?: boolean,
   ) => Promise<GitReader>;
   async openSubmodule(
     url: string,
@@ -98,6 +99,7 @@ export class GitReader {
     path: string,
     signal: AbortSignal,
     force = false,
+    required = true,
   ) {
     if (!this.submodule)
       throw new AppError(
@@ -105,7 +107,7 @@ export class GitReader {
         `子模块 ${path} 未配置可用的仓库读取连接。`,
         403,
       );
-    return this.submodule(url, commit, path, signal, force);
+    return this.submodule(url, commit, path, signal, force, required);
   }
   private initialization?: Promise<void>;
   async initialize(signal: AbortSignal) {

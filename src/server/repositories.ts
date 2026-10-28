@@ -188,6 +188,7 @@ export class Repositories {
               path,
               signal,
               force = false,
+              required = true,
             ) => {
               try {
                 const target = provider.parseRepositoryUrl(url);
@@ -217,7 +218,7 @@ export class Repositories {
                     422,
                   );
                 }
-                dependencies.set(childKey, child);
+                if (required) dependencies.set(childKey, child);
                 return childReader;
               } catch (error) {
                 if (

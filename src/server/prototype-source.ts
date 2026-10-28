@@ -7,6 +7,7 @@ export async function resolvePackage(
   revision: string,
   path: string,
   signal: AbortSignal,
+  required = true,
 ) {
   try {
     const steps = packageSource(reader, revision, path, reader.url);
@@ -19,6 +20,8 @@ export async function resolvePackage(
             op.enter.commit,
             op.enter.path,
             signal,
+            false,
+            required,
           )
         : (
             await (op.source as GitReader).run(op.args, signal, 512 * 1024)
