@@ -25,3 +25,9 @@
 真实截图位于 `artifacts/collaborators-real/`。验收入口临时使用本工作分支的 `.next`，tmux 为 `openfolio-collaborators-review`，端口 11117，复用 `/home/tiger/.local/share/open-folio-public`；主工作区服务已停止，同一数据目录只有一个实例。用户验收后须先集成、在主工作区构建新实现，再恢复 `openfolio-public-preview`，避免启动不支持新视图字段的旧构建。
 
 全部本次改动文件的 Prettier 检查通过。全仓 `npm run format:check` 仍报告未改动的 `tests/pr-archive-check.test.ts` 既有格式警告；该文件与当前 origin/develop 无差异，此项未冒充通过。原型还原未解决项无，独立评审问题已关闭；保留正式产品其他布局属于已提交 Technical 的范围约定。
+
+## T4：修复单人协作者姓名的垂直截断
+
+用户验收截图中的 `iTgo-lyq` 可在真实工作台复现：姓名继承基础按钮的单位行高 1，12px 字号对应 12px 内容盒；Chrome 测得实际字形高 13px、字体边界 17px，配合横向省略所需的 `overflow: hidden` 导致上下裁切。仅为姓名设置行高 1.5，将内容盒增至 18px，保留字号、布局与横向省略。
+
+以干净提交 `d3892c6` 更新同一验收服务，生产构建与类型检查成功；常驻 Chrome CDP 使用专用 `withSmokeSession` 会话验证浅深主题 × 1440/834/390/320px。每种条件均测得姓名内容盒 18px，完整容纳 17px 字体边界；真实 `iTgo-lyq` 修复前后截图对照确认字母上下完整，点击名单、Escape 焦点恢复及无横向溢出均通过，测试退出清理通过。截图及测量位于 `artifacts/collaborators-text/`。本次样式文件 Prettier 检查通过；独立 reviewer 局部复核通过，不影响 20px 头像、32px 触发区域或多人头像组。用户反馈 R2 已解决，等待实际验收。
