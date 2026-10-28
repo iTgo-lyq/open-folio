@@ -29,5 +29,38 @@
   "types": [
     "修复",
     "流程"
+  ],
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "Changes · 动态视图与已发布归档",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/index.html#/changes?scene=deferred",
+        "sourceCommit": "36f3c473b6862ba83613469c25bf3e900c54b2c6",
+        "digest": "sha256:41a00a40bd9913b734cb2f83bf0e883a19162b409f6b10087bc1aba984d8ab43",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/mobile.png"
+          }
+        ]
+      }
+    }
   ]
 }
