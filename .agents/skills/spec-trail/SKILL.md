@@ -25,6 +25,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 ### 分支与协作
 
 - 集成分支由 `workflow.json.integrationBranch` 指定，推荐名称为 `develop`，不限制项目自定义名称，承担集中讨论与持续交付。主工作区使用项目实际配置的集成分支，不随 Change 或任务切换分支；Change 关闭后默认通过 PR 交付到这里。`releaseBranch` 为正式版本基线，仅在用户要求正式发布时提交发布 PR。移交前的规划和分支登记继续直接提交集成分支。
+- 在主工作区回应涉及现状的任何询问前，先检查远端协作分支更新并安全快进本地分支；无法安全同步时保留现场并说明，不以过期内容下结论。
 - 新 Change 在集成分支整理需求与技术方案，branch 指向自身。编写 Plan 前从最新交付目标（子项为父分支，其余为集成分支）移交到独立工作分支（默认 `change/<id>`）、worktree 和会话，集中 change.json.branch 登记目标；Plan 写完推送后[创建或复用 Draft PR](references/integration.md)。small 无 Plan，在实施前移交并创建 Draft。保留集中规划目录，不镜像执行状态。
 - 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 工作区名默认使用 id；已有登记优先复用，用户明确指定路径时沿用，不为统一命名搬动已有工作区。项目的构建和长期服务位置遵循项目约定，SpecTrail 不要求另建服务 checkout。
 - 新 worktree 缺少 `.env` 或 `.env.local` 时，先到主工作区查找并按需复用；测试实例使用独立端口和数据目录。
