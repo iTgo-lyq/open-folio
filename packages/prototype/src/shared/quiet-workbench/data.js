@@ -122,6 +122,12 @@ tiles(z, x, y, ref_count, path)</code></pre>` },
     ],
   },
 };
+CHANGE_DOCS["templates-from-history"] = { requirement: [
+  { id: "goal", h: "目标", html: "<p>把一次满意的旅行保存为模板，下次规划相似行程时可以复用日程和地点。</p>" },
+  { id: "scope", h: "已知范围", html: "<p>从已结束的行程生成模板，生成前可调整名称。费用与同行者暂不复制。</p>" },
+  { id: "deferred", h: "暂缓说明", html: "<p>当前只记录需求，离线地图上线后再讨论是否启动。期间可以继续澄清；明确恢复后再进入后续确认与规划。</p>" },
+  { id: "questions", h: "未决问题", html: "<p>是否支持合并多次历史行程，留待后续澄清。</p>" },
+] };
 const CHANGES = {
   atlas: [
     { id: "timezone-drift-fix", title: "修复跨时区行程的日程错位", size: "small", status: "active", stage: "execution", creator: "zhou", created: "2026-10-21", labels: ["修复"], urgency: "urgent", related: ["trips/editor"], branch: "change/timezone-drift-fix",
@@ -149,7 +155,9 @@ const CHANGES = {
       waiting: { kind: "confirmation", summary: "实现已验证，等待验收", since: "10 月 21 日" },
       tasks: [{ id: "T1", title: "按天合并通知", status: "done", verification: "单元测试与 Android 真机通过" }],
       delivery: { stage: "pendingIntegration", changePrs: [{ n: 131, title: "通知按天合并为摘要", state: "open", head: "change/notification-digest", base: "develop" }], releasePrs: [] } },
-    { id: "templates-from-history", title: "从历史行程生成模板", size: "medium", status: "active", stage: "requirement", creator: "xu", created: "2026-10-08", labels: ["新功能"], urgency: "low", related: ["trips/templates"], branch: "develop", followUpOf: "trip-templates", tasks: [] },
+    { id: "templates-from-history", title: "从历史行程生成模板", size: "medium", status: "active", stage: "requirement", creator: "xu", created: "2026-10-08", labels: ["新功能"], urgency: "low", related: ["trips/templates"], branch: "develop", followUpOf: "trip-templates", tasks: [],
+      waiting: { kind: "pause", summary: "先记录需求，离线地图上线后再讨论是否启动。", since: "10 月 22 日" },
+      clarifications: [{ q: "Q1", round: 1, text: "生成模板时保留哪些内容？", rec: "先保留日程与地点，费用和同行者按需添加。", answer: "保留日程和地点，其他内容之后再讨论。" }, { q: "Q2", round: 2, text: "是否支持合并多次历史行程？", rec: "首版先从单次行程生成。" }] },
     { id: "budget-alerts", title: "预算超支提醒", size: "small", status: "unknown", issue: "change.json 校验失败：stage 不能为 “review”", creator: "zhou", created: "2026-10-16", labels: [], related: [], branch: "change/budget-alerts", tasks: [] },
     { id: "expense-export", title: "费用导出为 CSV", size: "small", status: "completed", stage: "close", creator: "zhou", created: "2026-10-02", archived: "10 月 15 日", labels: ["新功能"], related: ["expenses/export"], branch: "change/expense-export",
       tasks: [{ id: "T1", title: "导出 CSV", status: "done", verification: "Excel、Numbers 打开正确" }],

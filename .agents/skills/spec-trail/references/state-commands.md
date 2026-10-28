@@ -29,6 +29,8 @@
 | `cancel` | `--reason`；保留阶段、任务、正文和代码，写取消原因并清除等待，分支冻结。 |
 | `previews-set` | `--file /临时/entries.json`；文件只含 PreviewEntry 数组，替换关联而保留其他状态。新增/更新要求 enabled，hosted 校验引用与源码提交，Git 来源要求对应输出文件存在，停用后仍允许删除旧关联。 |
 
+仅记录需求时可以保留空任务并设置 `wait --kind pause`；澄清与标签更新保留暂缓，明确恢复后再 resume。branch 仅预填目标而没有实际所属来源时，状态命令仍可在集成分支记录有效规划；execute 仍需真实移交。联网命令区分目标尚未创建、已知来源丢失和查询失败，不以陈旧跟踪记录冒充当前远端。
+
 ## 更新提醒
 
 只有 `change.mjs` 在成功操作或 show 结束后检查 skill 新版。默认开启，可在目标项目 `docs/project/workflow.json` 设置 `"checkForUpdates": false` 关闭；关闭后不读取检查缓存、不联网、不显示提醒。此字段需使用支持它的 skill 与 OpenFolio 读取器，旧配置不必修改。

@@ -18,6 +18,92 @@ const change = (id: string, branch: string) => ({
   closure: {},
 });
 
+test("predeclared absent and inherited targets retain readable deferred planning; real published ownership wins", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.register({ future: "feature/future" });
+  f.git(["checkout", "develop"]);
+  const path = "docs/project/changes/future/change.json";
+  const state = {
+    ...change("future", "feature/future"),
+    stage: "requirement",
+    tasks: {},
+    waitingFor: { kind: "pause", summary: "Record only" },
+  };
+  await f.put(path, JSON.stringify(state));
+  await f.put(
+    "docs/project/changes/future/requirement.md",
+    "# Deferred requirement",
+  );
+  f.commit();
+  let snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  let candidate = primaryRecord(
+    snapshot.changes.find((g) => g.id === "future")!,
+  );
+  assert.equal(candidate?.branch, "develop");
+  assert.equal(candidate?.state?.waitingFor?.kind, "pause");
+  f.git(["checkout", "-b", "feature/future"]);
+  await f.put(path, JSON.stringify({ ...state, branch: "develop" }));
+  f.commit();
+  snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.equal(
+    primaryRecord(snapshot.changes.find((g) => g.id === "future")!)?.branch,
+    "develop",
+  );
+  await f.put(path, JSON.stringify({ ...state, title: "Owned requirement" }));
+  f.commit();
+  snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  candidate = primaryRecord(snapshot.changes.find((g) => g.id === "future")!);
+  assert.equal(candidate?.branch, "feature/future");
+  assert.equal(candidate?.state?.stage, "requirement");
+  f.git(["push", "origin", "--delete", "feature/future"]);
+  // Missing-source protection survives repeated refreshes and a store restart.
+  for (const store of [f.store, f.store, f.makeStore()]) {
+    snapshot = await store.refresh(f.project, DEFAULT_LIMITS);
+    assert.equal(
+      snapshot.changes.find((g) => g.id === "future")?.primary,
+      null,
+    );
+    assert.match(
+      snapshot.changes.find((g) => g.id === "future")!.diagnostics[0].message,
+      /不存在/,
+    );
+    assert(
+      !snapshot.branches.some((branch) => branch.name === "feature/future"),
+    );
+  }
+});
+
+test("predeclared parent and child remain central planning while both targets are absent", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.register({ whole: "feature/whole", part: "feature/part" });
+  f.git(["checkout", "develop"]);
+  for (const [id, extra] of [
+    ["whole", { size: "xlarge", children: ["part"] }],
+    ["part", { parent: "whole" }],
+  ] as const) {
+    await f.put(
+      `docs/project/changes/${id}/change.json`,
+      JSON.stringify({
+        ...change(id, `feature/${id}`),
+        ...extra,
+        stage: "requirement",
+        tasks: {},
+        waitingFor: { kind: "pause", summary: "Record only" },
+      }),
+    );
+    await f.put(`docs/project/changes/${id}/requirement.md`, `# ${id}`);
+  }
+  f.commit();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (const id of ["whole", "part"]) {
+    const candidate = primaryRecord(snapshot.changes.find((g) => g.id === id)!);
+    assert.equal(candidate?.branch, "develop");
+    assert.equal(candidate?.state?.waitingFor?.kind, "pause");
+  }
+});
+
 test("only registered sources are fetched, stale central status is ignored, and each source stays at one commit", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);

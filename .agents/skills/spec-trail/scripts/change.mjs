@@ -187,13 +187,15 @@ async function main() {
     local: repo.branch === repo.config.integrationBranch,
   });
   const route = catalog?.routes.find((entry) => entry.id === id);
+  if (route?.kind === 'target') routedRecord(repo, catalog, id, {refresh: command !== 'show' && !opts['dry-run']});
   const matches = records().filter((r) => r.state.id === id);
   if (command === "show") {
     let output;
     if (route?.errors.length) throw Error(route.errors.join("; "));
     const local =
       (!route || (route.kind !== "archive" && route.branch === repo.branch)) &&
-      matches.filter((r) => r.state.branch === repo.branch);
+      matches.filter((r) => r.state.branch === repo.branch ||
+        (route?.kind === 'planning' && route.branch === repo.branch && r.state.branch === route.ownerBranch));
     if (
       local &&
       local.length === 1 &&
@@ -323,7 +325,7 @@ async function main() {
       `Invalid input Change: ${validateChange(state).join("; ")}`,
     );
     assert(
-      state.branch === branch,
+      state.branch === branch || (route?.kind === 'planning' && route.branch === branch && state.branch === route.ownerBranch),
       `Switch to the Change branch ${state.branch}`,
     );
     if (restoring) {

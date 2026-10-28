@@ -31,13 +31,16 @@ import {
   validBranchName,
   parentBranch,
   parentArchive,
+  sourceOwnership,
+  resolvePlanningRoute,
+  planningRecord,
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([10, limits]));
+  hash(JSON.stringify([11, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -729,6 +732,65 @@ export class GitReader {
         .filter((r) => parentIds.has(r.id) && r.kind === "target")
         .map((r) => r.branch!),
     );
+    const catalogAt = async (commit: string, entries: boolean, id?: string) => {
+      const rows = (
+        await this.run(
+          [
+            "ls-tree",
+            "-rlz",
+            "--full-tree",
+            commit,
+            "--",
+            "docs/project/workflow.json",
+            ...(entries
+              ? ["docs/project/changes/", "docs/project/archive/"]
+              : []),
+          ],
+          signal,
+        )
+      )
+        .toString()
+        .split("\0");
+      let config: unknown;
+      const records: { path: string; state: unknown; error?: string }[] = [];
+      for (const row of rows) {
+        const tab = row.indexOf("\t");
+        if (tab < 0) continue;
+        const path = row.slice(tab + 1),
+          isConfig = path === "docs/project/workflow.json";
+        const location = changeLocation(path);
+        if (!isConfig && (!location || (id && location.id !== id))) continue;
+        if (id && isConfig) continue;
+        const [mode, kind, blob, size] = row.slice(0, tab).trim().split(/\s+/);
+        let state: unknown = null,
+          error;
+        try {
+          if (
+            kind !== "blob" ||
+            !["100644", "100755"].includes(mode) ||
+            !Number.isSafeInteger(Number(size)) ||
+            Number(size) > limits.jsonBytes
+          )
+            throw Error();
+          const cached = blobs.get(blob);
+          state = JSON.parse(
+            new TextDecoder("utf-8", { fatal: true }).decode(
+              cached ??
+                (await this.run(
+                  ["cat-file", "blob", blob],
+                  signal,
+                  limits.jsonBytes + 1024,
+                )),
+            ),
+          );
+        } catch {
+          error = "入口 JSON 不可读。";
+        }
+        if (isConfig) config = state;
+        else records.push({ path, state, ...(error ? { error } : {}) });
+      }
+      return { config, records };
+    };
     const loadTargets = async (names: string[], parents = false) => {
       for (const name of names) {
         const targetRoutes = routes.filter(
@@ -736,14 +798,6 @@ export class GitReader {
         );
         if (!targetRoutes.length) continue;
         const target = await source(name, refs.get(`refs/heads/${name}`));
-        if (!target) {
-          targetRoutes.forEach((r) =>
-            r.errors.push(
-              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
-            ),
-          );
-          continue;
-        }
         const ids = targetRoutes.map((r) => r.id);
         if (parents)
           ids.push(
@@ -751,14 +805,86 @@ export class GitReader {
               .filter((r) => r.parent && ids.includes(r.parent))
               .map((r) => r.id),
           );
-        await collectSource(
-          target,
-          ["docs/project/changes/", "docs/project/archive/"],
-          ids,
-        );
+        if (target)
+          await collectSource(
+            target,
+            ["docs/project/changes/", "docs/project/archive/"],
+            ids,
+          );
+        // Residual tracking metadata is evidence of prior ownership only. It is
+        // never collected or served as a current source after remote deletion.
+        const trackingRef = `refs/remotes/origin/${name}`;
+        const trackingCommit = target
+          ? undefined
+          : (
+              await this.run(
+                [
+                  "for-each-ref",
+                  "--format=%(objectname)%09%(refname)",
+                  trackingRef,
+                ],
+                signal,
+              )
+            )
+              .toString()
+              .trim()
+              .split("\n")
+              .flatMap((row) => {
+                const [commit, ref] = row.split("\t");
+                return ref === trackingRef ? [commit] : [];
+              })[0];
+        for (const route of targetRoutes) {
+          const previousGroup = previous?.changes.find(
+            (group) => group.id === route.id,
+          );
+          const wasOwned = previousGroup?.candidates.some(
+            (candidate) =>
+              candidate.key === previousGroup.primary &&
+              candidate.branch === name &&
+              candidate.owner === name,
+          );
+          const ownership = sourceOwnership(
+            sourceRecords(name),
+            route.id,
+            name,
+          );
+          const entry = sourceRecords(integrationBranch).find(
+            (row) => row.id === route.id,
+          );
+          const historicalOwnership = trackingCommit
+            ? sourceOwnership(
+                (await catalogAt(trackingCommit, true, route.id)).records.map(
+                  (row) => ({
+                    ...changeLocation(row.path)!,
+                    ...row,
+                  }),
+                ),
+                route.id,
+                name,
+              )
+            : "unclaimed";
+          if (!target && (wasOwned || historicalOwnership !== "unclaimed")) {
+            route.errors.push(
+              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
+            );
+            continue;
+          }
+          const resolved = resolvePlanningRoute(
+            route,
+            entry?.state,
+            ownership,
+            integrationBranch,
+          );
+          Object.assign(route, resolved);
+          if (route.kind === "planning")
+            await collectSource(collab, ["docs/project/changes/"], [route.id]);
+          else if (!target)
+            route.errors.push(
+              `登记的远端工作分支 ${name} 不存在；不采用集中旧副本。`,
+            );
+        }
       }
     };
-    await loadTargets([...parentNames], true);
     const sourceRecords = (name: string) =>
       documents.flatMap((d) => {
         const location = changeLocation(d.path);
@@ -783,11 +909,21 @@ export class GitReader {
           ];
         }
       });
+    await loadTargets([...parentNames], true);
     for (const route of routes.filter(
       (r) => r.kind === "target" && r.parent && !r.errors.length,
     )) {
       try {
         const parentRoute = routes.find((r) => r.id === route.parent);
+        const centralChild = sourceRecords(integrationBranch).find(
+          (row) => row.id === route.id,
+        )?.state;
+        if (
+          parentRoute?.kind === "planning" &&
+          planningRecord(centralChild) &&
+          !refs.has(`refs/heads/${route.branch}`)
+        )
+          continue;
         if (
           !parentRoute?.branch ||
           parentRoute.parent ||
@@ -826,63 +962,6 @@ export class GitReader {
       await exact([`refs/heads/${integrationBranch}`])
     ).get(`refs/heads/${integrationBranch}`);
     let changed = !finalCollabCommit;
-    const catalogAt = async (commit: string, entries: boolean) => {
-      const rows = (
-        await this.run(
-          [
-            "ls-tree",
-            "-rlz",
-            "--full-tree",
-            commit,
-            "--",
-            "docs/project/workflow.json",
-            ...(entries
-              ? ["docs/project/changes/", "docs/project/archive/"]
-              : []),
-          ],
-          signal,
-        )
-      )
-        .toString()
-        .split("\0");
-      let config: unknown;
-      const records: { path: string; state: unknown; error?: string }[] = [];
-      for (const row of rows) {
-        const tab = row.indexOf("\t");
-        if (tab < 0) continue;
-        const path = row.slice(tab + 1),
-          isConfig = path === "docs/project/workflow.json";
-        if (!isConfig && !changeLocation(path)) continue;
-        const [mode, kind, blob, size] = row.slice(0, tab).trim().split(/\s+/);
-        let state: unknown = null,
-          error;
-        try {
-          if (
-            kind !== "blob" ||
-            !["100644", "100755"].includes(mode) ||
-            !Number.isSafeInteger(Number(size)) ||
-            Number(size) > limits.jsonBytes
-          )
-            throw Error();
-          const cached = blobs.get(blob);
-          state = JSON.parse(
-            new TextDecoder("utf-8", { fatal: true }).decode(
-              cached ??
-                (await this.run(
-                  ["cat-file", "blob", blob],
-                  signal,
-                  limits.jsonBytes + 1024,
-                )),
-            ),
-          );
-        } catch {
-          error = "入口 JSON 不可读。";
-        }
-        if (isConfig) config = state;
-        else records.push({ path, state, ...(error ? { error } : {}) });
-      }
-      return { config, records };
-    };
     if (!changed && finalCollabCommit !== collab.commit) {
       const commit = await fetchRef(
         `refs/heads/${collab.name}`,

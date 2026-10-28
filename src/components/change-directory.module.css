@@ -70,7 +70,7 @@
 .tableHead,
 .row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 44px 78px 62px 110px 50px;
+  grid-template-columns: minmax(220px, 1fr) 44px 104px 62px 110px 50px;
   align-items: center;
   gap: 12px;
 }
@@ -176,6 +176,41 @@
 }
 .wait[data-blocked] {
   color: var(--of-danger);
+}
+.wait[data-paused] {
+  color: var(--of-text-3);
+}
+.wait svg {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+.stageProgress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.stageDots {
+  display: inline-flex;
+  gap: 3px;
+  flex: none;
+}
+.stageDots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--of-bg-subtle);
+  box-shadow: inset 0 0 0 0.5px var(--of-border-strong);
+}
+.stageDots i[data-past] {
+  background: var(--of-text-3);
+  box-shadow: none;
+}
+.stageDots i[data-current] {
+  background: var(--of-accent);
+  box-shadow: 0 0 0 2px var(--of-fill-selected);
 }
 .stage {
   color: var(--of-text-2);
@@ -337,7 +372,7 @@
 @media (max-width: 1279px) {
   .tableHead,
   .row {
-    grid-template-columns: minmax(180px, 1fr) 40px 70px 55px 80px;
+    grid-template-columns: minmax(180px, 1fr) 40px 104px 55px 80px;
     gap: 10px;
   }
   .date {
@@ -350,7 +385,7 @@
 @media (max-width: 1023px) {
   .tableHead,
   .row {
-    grid-template-columns: minmax(180px, 1fr) 40px 65px 55px;
+    grid-template-columns: minmax(180px, 1fr) 40px 104px 55px;
   }
   .who {
     display: none;

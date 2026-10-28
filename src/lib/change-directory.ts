@@ -175,15 +175,18 @@ export function processingStatus(group: ChangeGroup) {
   const state = primaryRecord(group)?.state;
   return state?.waitingFor?.kind === "confirmation"
     ? "confirmation"
-    : Object.values(state?.tasks ?? {}).some((t) => t.status === "blocked") ||
-        state?.waitingFor
-      ? "blocked"
-      : "moving";
+    : state?.waitingFor?.kind === "pause"
+      ? "paused"
+      : Object.values(state?.tasks ?? {}).some((t) => t.status === "blocked") ||
+          state?.waitingFor
+        ? "blocked"
+        : "moving";
 }
 export function groupDirectoryChanges(
   groups: ChangeGroup[],
   query: DirectoryQuery,
   delivery: Record<string, Delivery> = {},
+  includeEmpty = false,
 ): { name: string; items: ChangeGroup[] }[] {
   const make = (name: string, items: ChangeGroup[]) => ({ name, items });
   if (
@@ -234,12 +237,13 @@ export function groupDirectoryChanges(
         STAGE_LABELS[stage],
         groups.filter((g) => primaryRecord(g)?.state?.stage === stage),
       ),
-    ).filter((g) => g.items.length);
+    ).filter((g) => includeEmpty || g.items.length);
   return (
     [
       ["confirmation", "等待确认"],
       ["blocked", "受阻"],
       ["moving", "推进中"],
+      ["paused", "暂缓"],
     ] as const
   )
     .map(([status, name]) =>
@@ -248,5 +252,5 @@ export function groupDirectoryChanges(
         groups.filter((g) => processingStatus(g) === status),
       ),
     )
-    .filter((g) => g.items.length);
+    .filter((g) => includeEmpty || g.items.length);
 }

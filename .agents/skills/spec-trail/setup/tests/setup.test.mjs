@@ -280,6 +280,22 @@ for (const edit of [
   });
 }
 
+test('predeclared names and inherited refs allow planning; observed remote ownership still blocks', t => {
+  const f = handedOffChange(t), {repo,directory} = f;
+  const owned = f.git(repo,['rev-parse','HEAD']).trim();
+  f.git(repo,['worktree','remove',f.work]);
+  f.git(repo,['branch','-D',f.state.branch]);
+  f.write(repo,`${directory}/requirement.md`,'# Continue recording\n');
+  f.git(repo,['add',directory]);f.git(repo,['commit','-m','Only a name is not a handoff']);
+  f.git(repo,['branch',f.state.branch,`${owned}^`]);
+  f.write(repo,`${directory}/requirement.md`,'# Inherited source is not a handoff\n');
+  f.git(repo,['add',directory]);f.git(repo,['commit','-m','Inherited planning ref remains writable']);
+  f.git(repo,['update-ref',`refs/remotes/origin/${f.state.branch}`,owned]);
+  f.write(repo,`${directory}/requirement.md`,'# Actual remote source must be respected\n');
+  f.git(repo,['add',directory]);
+  assert.match(f.git(repo,['commit','-m','Reject known remote ownership'],1),/handed off/);
+});
+
 test("guard uses configured integration branch and gives locate guidance without a local worktree", (t) => {
   const f = handedOffChange(t, "collaboration");
   f.git(f.repo, ["worktree", "remove", f.work]);

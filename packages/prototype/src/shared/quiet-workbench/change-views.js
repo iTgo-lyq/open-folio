@@ -19,6 +19,11 @@ function ensureChangeViews() {
     const v = viewStore().views.find(v => v.id === viewStore().selected);
     loadViewConfig(v?.config || { ...defaultViewConfig(), states: [viewStore().selected.split(":")[1] || "active"] });
   }
+  if (S.scene === "deferred" && !viewStore().deferredShown) {
+    viewStore().deferredShown = true;
+    viewStore().selected = "system:active";
+    loadViewConfig(defaultViewConfig());
+  }
   if (S.scene === "views-saved" && !viewStore().examplesAdded) {
     viewStore().examplesAdded = true;
     viewStore().views.push({ id: "high", name: "高优先级", visible: true, config: { ...defaultViewConfig(), urgency: ["urgent", "high"] } }, { id: "shipped", name: "已发布功能", visible: true, config: { ...defaultViewConfig(), states: ["archived"], types: ["新功能"] } });

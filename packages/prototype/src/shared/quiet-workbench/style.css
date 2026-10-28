@@ -3952,3 +3952,6 @@ img.auth-mark {
   .view-manager-footer .muted { flex-basis:100%; max-width:none; }
   .view-editor-body { padding-inline:14px; }
 }
+
+/* A recorded, deferred requirement is neutral rather than an alert. */
+.wait-text.paused .i { color: var(--ink-2); }

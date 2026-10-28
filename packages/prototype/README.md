@@ -85,3 +85,9 @@ npm run screenshot --workspace prototype -- --entry dist/quiet-home/index.html -
 `quiet-changes` 已更新为默认“我的”、个人视图 tab、管理齿轮和状态多选。进入管理面板可添加（继承当前筛选/显示）、编辑、排序、显隐与删除；编辑完成后需在管理面板统一确认。主列表临时调整支持恢复、显式保存或另存。评审场景可切换已有个人视图、取消数量 0 和保存失败（首次失败、重试成功）。所有配置仅在内存中，页面重开恢复示例，不连接真实账号。
 
 验证 `npm run build --workspace prototype && node packages/prototype/verify-change-views.mjs`。只发布此入口时，用 `dist/quiet-changes` 作为产物目录，入口清单为 `[{"id":"quiet-changes","entryPath":"index.html"}]`；保留其他六组已有固定引用。
+
+## 暂缓需求预览
+
+`quiet-changes/index.html#/changes?scene=deferred` 展示全部进行中 Change，包含“从历史行程生成模板”的暂缓示例。列表按处理状态单独分组；在“显示”中切换看板，保留处理状态分组，也可切换按阶段。点击示例查看暂缓原因、恢复条件与澄清记录；任务为空，后续材料未产生。详情直达 `#/changes/templates-from-history`。
+
+验证：构建后运行 `node packages/prototype/verify-deferred-requirement.mjs`，复用常驻 Chrome CDP，仅创建并关闭本次标签页；覆盖浅深主题和桌面、平板、手机、320px，截图与检查结果位于 `artifacts/deferred-requirement/`。
