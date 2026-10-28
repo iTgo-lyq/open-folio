@@ -3,7 +3,7 @@
   "id": "deferred-requirement-handoff",
   "title": "区分需求暂缓与实际分支移交",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/deferred-requirement-handoff",
   "confirmations": {
@@ -48,6 +48,23 @@
       "result": "passed",
       "at": "2026-10-28T08:00:38.065Z",
       "summary": "独立子Agent评审和Astra原型复验通过；367项单测、24项hook、32项来源及父子回归、17项浏览器回归、类型检查和最终构建通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-28T08:03:04.052Z",
+      "summary": "用户验收通过，授权归档并合入 develop",
+      "source": "用户：验收通过，归档并合入 develop"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-28T08:04:04.545Z",
+      "summary": "同步 change-workflow、project-knowledge 及 change-tracking 的暂缓、真实归属、hook 和阶段分组行为"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-28T08:04:08.324Z",
+      "summary": "用户验收通过，完成暂缓需求与实际移交优化及阶段视图对齐",
+      "path": "docs/project/archive/2026-10-28-deferred-requirement-handoff"
     }
   },
   "followUpOf": "transferred-change-commit-guard",
@@ -93,9 +110,5 @@
     "at": "2026-10-28T07:10:55.062Z",
     "reason": "用户确认原型、方案和计划，并补充要求对齐正式阶段列 UI",
     "approach": "在原 T2 范围补充阶段列及阶段看板原型还原，沿用户本次明确授权重新记录确认"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收当前实现及归档合入 develop 授权"
   }
 }
