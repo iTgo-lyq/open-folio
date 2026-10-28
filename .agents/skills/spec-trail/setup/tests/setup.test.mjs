@@ -202,6 +202,195 @@ function sandbox(t) {
   };
 }
 
+function handedOffChange(t, integrationBranch = "develop") {
+  const s = sandbox(t),
+    repo = s.makeRepo("central checkout");
+  s.prepare(repo);
+  s.git(repo, [
+    "switch",
+    ...(integrationBranch === "develop" ? [] : ["-c"]),
+    integrationBranch,
+  ]);
+  s.write(repo, "docs/project/workflow.json", {
+    ...validWorkflow,
+    integrationBranch,
+  });
+  const directory = "docs/project/changes/feature";
+  const path = `${directory}/change.json`;
+  const state = {
+    schemaVersion: 1,
+    id: "feature",
+    title: "Test feature",
+    size: "small",
+    status: "active",
+    stage: "requirement",
+    branch: integrationBranch,
+    confirmations: {},
+    tasks: {},
+    closure: {},
+  };
+  s.write(repo, path, state);
+  s.write(repo, `${directory}/requirement.md`, "# Original requirement\n");
+  s.write(repo, "note.txt", "Original implementation\n");
+  s.commit(repo);
+  // The first handoff is allowed because HEAD still owns the planning record.
+  state.branch = "change/feature";
+  s.write(repo, path, state);
+  s.git(repo, ["add", path]);
+  s.git(repo, ["commit", "--only", "-m", "Register work branch", "--", path]);
+  const work = join(s.base, "任务 worktree");
+  s.git(repo, ["worktree", "add", "-b", state.branch, work]);
+  return { ...s, repo, directory, path, state, work };
+}
+
+for (const edit of [
+  "body",
+  "new file",
+  "delete body",
+  "delete state",
+  "rename directory",
+  "state",
+  "branch",
+]) {
+  test(`integration branch rejects handed-off Change edits: ${edit}`, (t) => {
+    const f = handedOffChange(t),
+      { repo, directory, path } = f;
+    const head = f.git(repo, ["rev-parse", "HEAD"]);
+    if (edit === "body")
+      f.write(repo, `${directory}/requirement.md`, "# Wrong workspace\n");
+    if (edit === "new file")
+      f.write(repo, `${directory}/execution.md`, "Wrong workspace\n");
+    if (edit === "delete body")
+      f.git(repo, ["rm", `${directory}/requirement.md`]);
+    if (edit === "delete state") f.git(repo, ["rm", path]);
+    if (edit === "rename directory")
+      f.git(repo, ["mv", directory, `${directory}-renamed`]);
+    if (edit === "state")
+      f.write(repo, path, { ...f.state, title: "Wrong workspace" });
+    if (edit === "branch")
+      f.write(repo, path, { ...f.state, branch: "develop" });
+    f.git(repo, ["add", "-A"]);
+    const staged = f.git(repo, ["diff", "--cached"]);
+    const output = f.git(repo, ["commit", "-m", "Reject wrong workspace"], 1);
+    assert.match(output, /Change feature was handed off to change\/feature/);
+    assert.match(output, /integration branch develop/);
+    assert.ok(output.includes(f.work), output);
+    assert.equal(f.git(repo, ["rev-parse", "HEAD"]), head);
+    assert.equal(f.git(repo, ["diff", "--cached"]), staged);
+  });
+}
+
+test("guard uses configured integration branch and gives locate guidance without a local worktree", (t) => {
+  const f = handedOffChange(t, "collaboration");
+  f.git(f.repo, ["worktree", "remove", f.work]);
+  f.write(f.repo, `${f.directory}/requirement.md`, "# Wrong workspace\n");
+  f.git(f.repo, ["add", f.directory]);
+  const output = f.git(
+    f.repo,
+    ["commit", "-m", "Reject on custom integration branch"],
+    1,
+  );
+  assert.match(output, /integration branch collaboration/);
+  assert.match(output, /workspace\.mjs locate --change feature/);
+});
+
+test("partial and implementation-only commits exclude unrelated staged or unstaged Change edits", (t) => {
+  const f = handedOffChange(t),
+    { repo, directory } = f;
+  f.write(repo, `${directory}/requirement.md`, "# Unstaged Change edit\n");
+  f.write(repo, "note.txt", "Implementation without staged documents\n");
+  f.git(repo, ["add", "note.txt"]);
+  f.git(repo, ["commit", "-m", "Implementation-only commit remains allowed"]);
+  f.git(repo, ["add", directory]);
+  f.write(repo, "note.txt", "Partial implementation commit\n");
+  f.git(repo, [
+    "commit",
+    "--only",
+    "-m",
+    "Exclude staged Change edit",
+    "--",
+    "note.txt",
+  ]);
+  assert.match(
+    f.git(repo, ["show", `HEAD:${directory}/requirement.md`]),
+    /Original requirement/,
+  );
+  f.git(repo, ["commit", "-m", "Remaining Change edit is still rejected"], 1);
+});
+
+test("untransferred planning and owned work/task branches remain writable", (t) => {
+  const f = handedOffChange(t),
+    { repo, directory } = f;
+  f.write(repo, "docs/project/changes/other/change.json", {
+    ...f.state,
+    id: "other",
+    branch: "develop",
+  });
+  f.git(repo, ["add", "docs/project/changes/other"]);
+  f.git(repo, ["commit", "-m", "Create unrelated planning Change"]);
+  f.write(
+    repo,
+    "docs/project/changes/other/requirement.md",
+    "# Continue planning\n",
+  );
+  f.git(repo, ["add", "docs/project/changes/other"]);
+  f.git(repo, [
+    "commit",
+    "-m",
+    "Continue planning despite an inherited handed-off Change",
+  ]);
+  f.write(f.work, `${directory}/requirement.md`, "# Owned worktree\n");
+  f.git(f.work, ["add", directory]);
+  f.git(f.work, ["commit", "-m", "Work branch can edit its Change"]);
+  f.git(f.work, ["switch", "-c", "task/feature/T1"]);
+  f.write(f.work, `${directory}/execution.md`, "Task progress\n");
+  f.git(f.work, ["add", directory]);
+  f.git(f.work, ["commit", "-m", "Task branch remains writable"]);
+});
+
+test("detached child registration and normal merge commits retain their existing checks", (t) => {
+  const f = handedOffChange(t),
+    { repo, directory } = f;
+  const childPath = "docs/project/changes/child/change.json";
+  f.write(repo, childPath, {
+    ...f.state,
+    id: "child",
+    parent: "feature",
+    branch: "develop",
+  });
+  f.git(repo, ["add", childPath]);
+  f.git(repo, ["commit", "-m", "Plan child"]);
+  const detached = join(f.base, "detached registration");
+  f.git(repo, ["worktree", "add", "--detach", detached]);
+  f.write(detached, childPath, {
+    ...f.state,
+    id: "child",
+    parent: "feature",
+    branch: "change/child",
+  });
+  f.git(detached, [
+    "commit",
+    "--only",
+    "-m",
+    "Register child branch",
+    "--",
+    childPath,
+  ]);
+  f.write(f.work, `${directory}/requirement.md`, "# Delivered work\n");
+  f.git(f.work, ["add", directory]);
+  f.git(f.work, ["commit", "-m", "Prepare delivery"]);
+  f.git(repo, ["merge", "--no-ff", "--no-commit", "change/feature"]);
+  f.write(repo, "docs/project/workflow.json", invalidWorkflow);
+  f.git(repo, ["add", "docs/project/workflow.json"]);
+  assert.match(
+    f.git(repo, ["commit", "-m", "Merge still validates structure"], 1),
+    /\/releaseBranch/,
+  );
+  f.write(repo, "docs/project/workflow.json", validWorkflow);
+  f.git(repo, ["add", "docs/project/workflow.json"]);
+  f.git(repo, ["commit", "-m", "Normal merge remains allowed"]);
+});
+
 test("business-owned hook validates clone, worktree and partial commits without dependencies", (t) => {
   const s = sandbox(t);
   const repo = s.makeRepo("original project's checkout");

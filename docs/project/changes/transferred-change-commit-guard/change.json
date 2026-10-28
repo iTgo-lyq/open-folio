@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "实现并验证已移交 Change 的集成分支提交拦截",
-      "status": "doing"
+      "status": "done",
+      "verification": "Setup/hook 23 项、工作区及父子集成回归 20 项、版本测试 2 项全部通过；检查真实提交拒绝及放行、HEAD/暂存区保留，证据见 execution.md",
+      "commitTitle": "transferred-change-commit-guard T1: reject central edits after handoff"
     }
   },
   "closure": {},
