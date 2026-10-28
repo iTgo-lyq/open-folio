@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "deferred-requirement-handoff",
+  "title": "区分需求暂缓与实际分支移交",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "followUpOf": "transferred-change-commit-guard",
+  "followUpTitle": "Change 规划与工作区归属",
+  "types": [
+    "修复",
+    "流程"
+  ]
+}
