@@ -4,7 +4,7 @@
   "title": "读取子模块中的固定版本原型",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/prototype-submodule-support",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "prototype-submodule-support T3: publish and validate prototypes across repositories"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-28T18:14:43.178Z",
+      "summary": "上下文隔离独立评审及三项修复复验通过，389项应用与39项技能测试、类型检查、生产构建和共享Chrome冒烟通过；真实私有远端授权未实测。"
+    }
+  },
   "types": [
     "新功能",
     "适配"
@@ -56,5 +62,9 @@
       "answer": "按此范围启动",
       "source": "用户在当前会话选择：按此范围启动（推荐）"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "T1至T3完成并通过整体验证，等待用户验收后同步Specs、归档并按授权合入develop。"
   }
 }
