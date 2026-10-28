@@ -80,22 +80,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/index.html#/changes?scene=deferred",
-        "sourceCommit": "36f3c473b6862ba83613469c25bf3e900c54b2c6",
-        "digest": "sha256:41a00a40bd9913b734cb2f83bf0e883a19162b409f6b10087bc1aba984d8ab43",
+        "version": "b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/index.html#/changes",
+        "sourceCommit": "2889d65638585642a5326d83b4b98034961b2730",
+        "digest": "sha256:4c9195152a1127a2b79cf546d19b12d5100ccaf458b9d25e6b31c7ac9b975524",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/74a2e0139e90c9d66e2a82ed88a44f5d2d56fc993a1931d6d8549196736ce143/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/b79cf450d5503cbe00a9726c0515559e985bfc0c32e3c75683b857a014e478aa/mobile.png"
           }
         ]
       }
