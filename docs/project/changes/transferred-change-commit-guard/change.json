@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "transferred-change-commit-guard",
+  "title": "阻止在集成分支提交已移交 Change 的文档修改",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实现并验证已移交 Change 的集成分支提交拦截",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "工程",
+    "流程"
+  ]
+}
