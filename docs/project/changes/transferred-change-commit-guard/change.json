@@ -4,13 +4,13 @@
   "title": "阻止在集成分支提交已移交 Change 的文档修改",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/transferred-change-commit-guard",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "实现并验证已移交 Change 的集成分支提交拦截",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
