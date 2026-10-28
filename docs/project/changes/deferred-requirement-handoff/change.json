@@ -13,7 +13,16 @@
       "source": "用户确认：确认需求，继续技术方案与计划"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "未实际移交的需求可持续记录，已移交需求保持正确归属",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "暂缓在工作台独立呈现并完成场景验证",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "followUpOf": "transferred-change-commit-guard",
   "followUpTitle": "Change 规划与工作区归属",
