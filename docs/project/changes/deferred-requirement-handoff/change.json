@@ -62,5 +62,9 @@
         ]
       }
     }
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收 Astra 暂缓原型，并确认真实来源判定方案与两步实施计划"
+  }
 }
