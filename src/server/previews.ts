@@ -19,6 +19,7 @@ import { closedRecord } from "../../.agents/skills/spec-trail/scripts/routing.mj
 import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";
+import { resolvePackage } from "./prototype-source.ts";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
   const branch = data.integrationBranch;
   const doc = data.documents.find(
@@ -57,6 +58,7 @@ export function prototypePolicy(data: Collected): Snapshot["prototype"] {
 }
 const revisionPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
 type TreeEntry = {
+  reader?: GitReader;
   mode: string;
   kind: string;
   blob: string;
@@ -69,12 +71,38 @@ export async function tree(
   path: string,
   signal: AbortSignal,
 ): Promise<TreeEntry[]> {
-  const raw = (
+  let raw = (
     await reader.run(
       ["ls-tree", "-rlz", "--full-tree", revision, "--", path],
       signal,
     )
   ).toString();
+  let owner = reader,
+    mount = "";
+  if (!raw || /160000 commit /.test(raw)) {
+    const resolved = await resolvePackage(
+      reader,
+      revision,
+      path.replace(/\/$/, ""),
+      signal,
+    );
+    if (resolved.mount) {
+      owner = resolved.reader;
+      mount = resolved.mount;
+      raw = (
+        await owner.run(
+          [
+            "ls-tree",
+            "-rlz",
+            "--full-tree",
+            resolved.revision,
+            ...(resolved.packagePath ? ["--", resolved.packagePath] : []),
+          ],
+          signal,
+        )
+      ).toString();
+    }
+  }
   return raw
     .split("\0")
     .filter(Boolean)
@@ -86,7 +114,8 @@ export async function tree(
         kind,
         blob,
         bytes: Number(size),
-        path: row.slice(tab + 1),
+        path: mount ? `${mount}/${row.slice(tab + 1)}` : row.slice(tab + 1),
+        ...(owner !== reader ? { reader: owner } : {}),
       };
     });
 }
@@ -108,7 +137,7 @@ export async function body(
     );
   if (!Number.isSafeInteger(file.bytes) || file.bytes > limit)
     throw new AppError("PREVIEW_SIZE", "原型文件超过当前服务大小限制。", 413);
-  const buffer = await reader.run(
+  const buffer = await (file.reader ?? reader).run(
     ["cat-file", "blob", file.blob],
     signal,
     limit + 1024,

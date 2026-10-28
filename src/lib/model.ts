@@ -223,10 +223,17 @@ export type ChangeGroup = {
   relations: Relation[];
 };
 export type CurrentPrototypeEntry = PreviewEntry & {
+  source?: PrototypeSource;
   sourcePath: string;
   description?: string;
 };
+export type PrototypeSource = {
+  revision: string;
+  packagePath: string;
+  links: { path: string; repository: string; commit: string }[];
+};
 export type CurrentPrototype = {
+  source?: PrototypeSource;
   manifestBytes?: number;
   configuration?: PrototypeConfig;
   revision: string | null;

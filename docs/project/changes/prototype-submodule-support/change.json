@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "按固定父提交读取子模块当前原型",
-      "status": "doing"
+      "status": "done",
+      "verification": "typecheck 通过，原型/仓库/权限组合24项及扩展子模块6项通过；真实Git对象验证版本固定、嵌套路径及权限拒绝。",
+      "commitTitle": "prototype-submodule-support T1: read prototypes at pinned gitlinks"
     },
     "T2": {
       "title": "保持子模块 Change 原型与历史来源固定",

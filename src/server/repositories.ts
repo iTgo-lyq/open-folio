@@ -19,6 +19,7 @@ import {
   type RepositoryIdentity,
   type RepositorySelector,
   type GitTransport,
+  repositoryKey,
 } from "./providers/types.ts";
 import type { ProjectConfig, Limits } from "../lib/model.ts";
 export interface ReadContext {
@@ -170,6 +171,7 @@ export class Repositories {
       };
       await lease.assertCurrent();
       const cache = join(this.root, lease.workspaceId);
+      const dependencies = new Map<string, RepositoryIdentity>();
       const makeStore = async (owner: WorkspaceLease) => {
         const transport = await provider.gitTransport(
           owner.context,
@@ -180,6 +182,61 @@ export class Repositories {
           (dir) => {
             const reader = this.readerFactory(dir, transport);
             reader.signal = owner.context.signal;
+            const openSubmodule: NonNullable<GitReader["submodule"]> = async (
+              url,
+              commit,
+              path,
+              signal,
+              force = false,
+            ) => {
+              try {
+                const target = provider.parseRepositoryUrl(url);
+                const child = await provider.resolveRepository(
+                  owner.context,
+                  target,
+                );
+                const childKey = repositoryKey(child);
+                await permissions.checkWorkspace(owner, childKey, child, {
+                  force,
+                  integrationBranch: child.defaultBranch ?? undefined,
+                  workspaceOwned: owner !== lease,
+                });
+                const childReader = this.readerFactory(
+                  join(cache, "submodules", childKey),
+                  await provider.gitTransport(owner.context, child),
+                );
+                childReader.signal = owner.context.signal;
+                childReader.submodule = openSubmodule;
+                try {
+                  await childReader.ensureCommit(commit, signal);
+                } catch {
+                  signal.throwIfAborted();
+                  throw new AppError(
+                    "SUBMODULE_VERSION",
+                    `子模块 ${path} 的指定版本 ${commit} 不可获取，请检查历史保留及版本权限。`,
+                    422,
+                  );
+                }
+                dependencies.set(childKey, child);
+                return childReader;
+              } catch (error) {
+                if (
+                  error instanceof AppError &&
+                  [
+                    "TOKEN_INVALID",
+                    "IDENTITY_CHANGED",
+                    "SUBMODULE_VERSION",
+                  ].includes(error.code)
+                )
+                  throw error;
+                throw new AppError(
+                  "SUBMODULE_READ_DENIED",
+                  `子模块 ${path} 不存在、当前账号无权访问，或仓库地址不受此连接支持。`,
+                  403,
+                );
+              }
+            };
+            reader.submodule = openSubmodule;
             return reader;
           },
           hash(JSON.stringify([key, integrationBranch])),
@@ -197,7 +254,14 @@ export class Repositories {
         repository,
         project,
         store,
-        assertRead,
+        assertRead: async (force = false) => {
+          await assertRead(force);
+          for (const [childKey, child] of dependencies)
+            await permissions.checkWorkspace(lease, childKey, child, {
+              force,
+              integrationBranch: child.defaultBranch ?? undefined,
+            });
+        },
         refresh: async (limits, automatic = false) => {
           await assertTracked(lease);
           const locks = (state.folioRefreshes ??= new Map());
@@ -269,6 +333,8 @@ export class Repositories {
       const result = await operation(context);
       await lease.assertCurrent();
       permissions.assertAllowed(lease, key);
+      for (const childKey of dependencies.keys())
+        permissions.assertAllowed(lease, childKey);
       return result;
     } catch (error) {
       permissions.reject(lease, key, error);

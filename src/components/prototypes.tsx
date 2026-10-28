@@ -691,6 +691,16 @@ function PrototypeDetailBody({
             <code>{revision}</code>
           </dd>
         </div>
+        {item.source?.links.map((link) => (
+          <div key={link.path}>
+            <dt>子模块 {link.path}</dt>
+            <dd>
+              <code>
+                {link.repository} · {link.commit}
+              </code>
+            </dd>
+          </div>
+        ))}
         <div>
           <dt>预览产物</dt>
           <dd>

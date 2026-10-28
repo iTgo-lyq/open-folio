@@ -37,10 +37,11 @@ import {
 } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
 import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 const exec = promisify(execFile);
+const submoduleReads = new Map<string, Promise<void>>();
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([12, limits]));
+  hash(JSON.stringify([13, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -84,6 +85,88 @@ export class GitReader {
   protocol: "https" | "file";
   private transport?: GitTransport;
   signal?: AbortSignal;
+  submodule?: (
+    url: string,
+    commit: string,
+    path: string,
+    signal: AbortSignal,
+    force?: boolean,
+  ) => Promise<GitReader>;
+  async openSubmodule(
+    url: string,
+    commit: string,
+    path: string,
+    signal: AbortSignal,
+    force = false,
+  ) {
+    if (!this.submodule)
+      throw new AppError(
+        "SUBMODULE_UNAVAILABLE",
+        `子模块 ${path} 未配置可用的仓库读取连接。`,
+        403,
+      );
+    return this.submodule(url, commit, path, signal, force);
+  }
+  private initialization?: Promise<void>;
+  async initialize(signal: AbortSignal) {
+    if (!this.initialization)
+      this.initialization = (async () => {
+        await mkdir(this.directory, { recursive: true, mode: 0o700 });
+        try {
+          await access(join(this.directory, "HEAD"));
+        } catch {
+          await this.run(["init", "--bare", "."], signal);
+          await writeFile(join(this.directory, "config"), this.config(), {
+            mode: 0o600,
+          });
+        }
+      })().catch((error) => {
+        this.initialization = undefined;
+        throw error;
+      });
+    await this.initialization;
+  }
+  async ensureCommit(commit: string, signal: AbortSignal) {
+    if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(commit))
+      throw new AppError("SUBMODULE_VERSION", "子模块版本不是固定提交。", 422);
+    const previous = submoduleReads.get(this.directory);
+    const next = (async () => {
+      await previous?.catch(() => {});
+      signal.throwIfAborted();
+      await this.initialize(signal);
+      try {
+        if (
+          (await this.run(["cat-file", "-t", commit], signal))
+            .toString()
+            .trim() === "commit"
+        )
+          return;
+      } catch {
+        signal.throwIfAborted();
+      }
+      await this.run(
+        ["fetch", "--no-tags", "--no-recurse-submodules", "origin", commit],
+        signal,
+      );
+      if (
+        (await this.run(["cat-file", "-t", commit], signal))
+          .toString()
+          .trim() !== "commit"
+      )
+        throw new AppError(
+          "SUBMODULE_VERSION",
+          "子模块指定对象不是提交。",
+          422,
+        );
+    })();
+    submoduleReads.set(this.directory, next);
+    try {
+      await next;
+    } finally {
+      if (submoduleReads.get(this.directory) === next)
+        submoduleReads.delete(this.directory);
+    }
+  }
   constructor(
     directory: string,
     source: string | GitTransport,

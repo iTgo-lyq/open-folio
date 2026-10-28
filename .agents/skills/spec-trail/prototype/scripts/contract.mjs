@@ -290,6 +290,6 @@ export function entryPath(preview, config, changeDirectory) {
   return null;
 }
 export function currentPreview(entry) {
-  const { sourcePath, description, ...preview } = entry;
+  const { sourcePath, description, source, ...preview } = entry;
   return preview;
 }
