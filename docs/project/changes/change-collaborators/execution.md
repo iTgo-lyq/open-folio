@@ -19,3 +19,9 @@
 每个 Change 的参与历史限制为集成来源及正式材料来源 tip，按 tip 分组批量读取并过滤关联 id。新增回归验证无关 beta 分支的 alpha 修改不会污染 alpha 工作台或分享，beta 本身仍显示推进者，合入后 alpha 才正确继承成员。
 
 18 项相关单测与类型检查通过；独立 reviewer 复核 R1 并独立运行 6 项真实 Git 测试通过。同步并合并了协作分支的新版本与流程文案，保留其 0.1.8 版本，无版本回退。
+
+最终全量单测 371 项通过。以干净源码提交 `df55e04` 执行 `service:update`，生产构建与 TypeScript 检查成功。真实工作台通过 `withSmokeSession` 登录，刷新仓库后核对协作者字段、创建者顺序及成员字段白名单；复用常驻 Chrome CDP，以独立测试 Cookie 上下文验证浅深主题 × 四档宽度、名单真实点击与 Escape 焦点恢复、列开关及无横向溢出，通过。初次临时脚本在关闭动画完成前同步读取焦点导致断言失败，按现有浏览器回归方式等待焦点恢复后通过；未改产品逻辑或强制点击。包装器退出并复查匿名、无可见绑定通过，账号绑定保留。
+
+真实截图位于 `artifacts/collaborators-real/`。验收入口临时使用本工作分支的 `.next`，tmux 为 `openfolio-collaborators-review`，端口 11117，复用 `/home/tiger/.local/share/open-folio-public`；主工作区服务已停止，同一数据目录只有一个实例。用户验收后须先集成、在主工作区构建新实现，再恢复 `openfolio-public-preview`，避免启动不支持新视图字段的旧构建。
+
+全部本次改动文件的 Prettier 检查通过。全仓 `npm run format:check` 仍报告未改动的 `tests/pr-archive-check.test.ts` 既有格式警告；该文件与当前 origin/develop 无差异，此项未冒充通过。原型还原未解决项无，独立评审问题已关闭；保留正式产品其他布局属于已提交 Technical 的范围约定。
