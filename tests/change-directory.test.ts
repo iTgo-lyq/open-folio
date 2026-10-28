@@ -109,7 +109,7 @@ test("directory query keeps single urgency links, normalizes invalid fields and 
   assert.equal(invalid.group, "status");
   assert.equal(invalid.view, "list");
 });
-test("processing groups prioritize confirmation, then blocked tasks and other waits, then normal progress", () => {
+test("processing groups keep deferred requirements separate from blockers and normal progress", () => {
   const blocked = {
     title: "task",
     status: "blocked" as const,
@@ -121,10 +121,12 @@ test("processing groups prioritize confirmation, then blocked tasks and other wa
   });
   const paused = change("paused", {
     waitingFor: { kind: "pause", summary: "暂停" },
+    tasks: { T1: blocked },
   });
   const taskBlocked = change("blocked", { tasks: { T1: blocked } });
   const moving = change("moving");
   assert.equal(processingStatus(confirming), "confirmation");
+  assert.equal(processingStatus(paused), "paused");
   const groups = groupDirectoryChanges(
     [moving, paused, confirming, taskBlocked],
     readDirectoryQuery({}),
@@ -133,9 +135,24 @@ test("processing groups prioritize confirmation, then blocked tasks and other wa
     groups.map((g) => [g.name, g.items.map((i) => i.id)]),
     [
       ["等待确认", ["confirming"]],
-      ["受阻", ["paused", "blocked"]],
+      ["受阻", ["blocked"]],
       ["推进中", ["moving"]],
+      ["暂缓", ["paused"]],
     ],
+  );
+  assert.equal(paused.candidates[0].state?.tasks.T1.reason, "接口未就绪");
+  assert.equal(
+    groupDirectoryChanges(
+      [paused],
+      readDirectoryQuery({ group: "stage" }),
+      {},
+      true,
+    ).length,
+    5,
+  );
+  assert.equal(
+    groupDirectoryChanges([paused], readDirectoryQuery({}), {}, true).length,
+    4,
   );
   assert.equal(
     groupDirectoryChanges(

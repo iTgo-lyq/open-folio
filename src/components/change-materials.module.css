@@ -98,6 +98,10 @@
   background: var(--of-bg-subtle);
   color: var(--of-text-2);
 }
+.waiting-card.paused {
+  background: var(--of-bg-subtle);
+  color: var(--of-text-2);
+}
 .archive-outcome {
   background: var(--of-success-soft);
   color: var(--of-success);
