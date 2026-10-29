@@ -10,12 +10,23 @@
   "tasks": {
     "T1": {
       "title": "优化差异阅读信息层级并修复两栏高度及窄屏布局",
-      "status": "doing"
+      "status": "done",
+      "verification": "10 项浏览器回归通过；类型、生产构建、格式检查通过；常驻 CDP 以真实归档数据完成五宽度双主题、两栏等高与换行验证。",
+      "commitTitle": "integration-readability T1: align diff panes and improve reading controls"
     }
   },
   "closure": {},
   "types": [
     "体验",
     "修复"
-  ]
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "是否压缩合入信息和文件路径、强化选中状态、改善差异滚动与长行阅读，并适配窄屏？",
+      "recommendation": "保持现有风格，优化合入差异阅读局部界面。",
+      "answer": "按上述方向优化，并修复左右区域高度不一致。",
+      "source": "优化吧，还有左右区域的高度不一致的bug也修复一下。"
+    }
+  }
 }
