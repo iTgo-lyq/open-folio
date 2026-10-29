@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "commit-history-hygiene",
+  "title": "归档前提交整理与平台 squash 防护",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "流程",
+    "文档"
+  ]
+}
