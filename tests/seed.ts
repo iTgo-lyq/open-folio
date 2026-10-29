@@ -310,6 +310,10 @@ export async function seed() {
         "# 技术方案\n\n## 数据来源\n\n从已推送提交建立一致的文档快照。",
       );
     if (record.id === "document-reader") {
+      await f.put(
+        `${dir}/research.md`,
+        "# 阅读体验调查\n\n附加 Markdown 文档可以通过材料链接直接阅读。",
+      );
       await symlink("missing-review.md", join(f.author, dir, "review.md"));
       await f.put(
         `${dir}/assets/diagram.png`,

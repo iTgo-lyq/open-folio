@@ -97,14 +97,48 @@ test("document links map to stable materials across workbench and anonymous read
   assert.equal(currentMaterial(items, { ct: "previews" }).id, "prototypes");
   assert.equal(currentMaterial(items, { ct: "invalid" }).id, "overview");
 });
+test("existing extra Markdown documents open through current and legacy links", () => {
+  for (const file of ["research.md", "assets/research.md"]) {
+    const extra = {
+      ...documents[2],
+      path: `${directory}/${file}`,
+    };
+    const items = changeMaterials(group(), [
+      ...documents.filter((document) => document.id !== extra.id),
+      extra,
+    ]);
+    const queries: Record<string, string>[] = [
+      { ct: `file:${file}` },
+      { doc: extra.id, ct: "overview" },
+      { document: file, ct: "documents" },
+      { document: file, ct: "file:deleted.md" },
+    ];
+    for (const query of queries) {
+      const material = currentMaterial(items, query);
+      assert.equal(material.id, `file:${file}`);
+      assert.equal(material.document, extra);
+      assert.equal(material.missing, undefined);
+    }
+  }
+});
 test("removed extra documents remain explicit missing targets instead of opening other material", () => {
-  const items = changeMaterials(group(), documents);
-  assert.equal(
-    currentMaterial(items, { document: "deleted.md" }).missing,
-    true,
+  const items = changeMaterials(
+    group(),
+    documents.filter((document) => document.id !== "research"),
   );
-  assert.equal(
-    currentMaterial(items, { ct: "file:assets/old.md" }).file,
-    "assets/old.md",
-  );
+  for (const file of ["research.md", "assets/research.md"]) {
+    const queries: Record<string, string>[] = [
+      { document: file },
+      { document: file, ct: "documents" },
+      { document: file, ct: "requirement" },
+      { ct: `file:${file}` },
+    ];
+    for (const query of queries) {
+      const material = currentMaterial(items, query);
+      assert.equal(material.id, `file:${file}`);
+      assert.equal(material.file, file);
+      assert.equal(material.missing, true);
+      assert.equal(material.document, undefined);
+    }
+  }
 });
