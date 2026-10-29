@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "supplemental-change-collaborators",
+  "title": "补充 Change 协作者配置",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/supplemental-change-collaborators",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实现补充协作者配置与合并展示",
+      "status": "done",
+      "verification": "58 项定向测试通过，最终成员合并回归、类型检查、生产构建与独立 HTTP 冒烟通过，详见 execution.md",
+      "commitTitle": "feat: supplement Change collaborators without overriding Git members"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T06:37:58.868Z",
+      "summary": "Agent 自查全量差异；58 项定向测试、最终身份合并回归、类型检查、生产构建及独立 HTTP 冒烟均通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T06:38:02.297Z",
+      "summary": "Agent 自验收：逐项核对补充名单、保留 Git 历史成员、身份去重、清空、正式来源、诊断和分享，均有通过证据",
+      "source": "requirement.md 与 execution.md；small 默认 Agent 自验收"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T06:38:55.219Z",
+      "summary": "同步 project-knowledge/change-tracking 的协作者补充配置、Git 名单保留、CLI 和非法配置读取规则"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T06:38:58.781Z",
+      "summary": "补充协作者配置已实现并自验收，验证和 Specs 完整归档",
+      "path": "docs/project/archive/2026-10-29-supplemental-change-collaborators"
+    }
+  },
+  "followUpOf": "change-collaborators",
+  "followUpTitle": "Change 协作者识别与配置",
+  "types": [
+    "新功能"
+  ]
+}

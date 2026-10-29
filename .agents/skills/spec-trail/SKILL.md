@@ -157,6 +157,7 @@ interface ChangeState {
   size: "small" | "medium" | "large" | "xlarge";
   types?: string[]; // 自由多选类型；非空单行、无首尾空白、去重，省略或 [] 为无标签
   urgency?: "urgent" | "high" | "normal" | "low"; // 紧急/高/普通/低；省略等同普通
+  collaborators?: { name: string; login?: string; subjectId?: string }[]; // 补充协作者，与 Git 识别名单合并，不覆盖历史成员
   deliveryOverride?: "releaseMerged"; // 仅集成分支有效归档可覆盖交付标签；缺省自动判定
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
@@ -232,6 +233,8 @@ interface ChangeState {
 4. 将已有目标、范围、方向、未决问题及外部材料写入 `requirement.md`，继续需求整理。
 
 类型用简短词概括实际工作，可多选，优先复用项目已有同义词；推荐「新功能、修复、体验、性能、重构、安全、适配、文档、测试、工程、流程、数据」，不限于这些词，用户指定名称沿用。紧急程度按用户安排填写，无特别安排时省略；不从类型或规模推断，不回填历史。创建时可填，活动 Change 用 `labels` 更新，参数见[状态命令](./references/state-commands.md)。
+
+Git 材料历史未覆盖实际参与者时，可用 `collaborators` 补充协作者；显示名 `name` 为无首尾空白的非空单行文字，可选 `login` 为 GitHub 登录名、`subjectId` 为正整数字符串形式的 GitHub 身份。只填已知事实，不推测平台身份、不写邮箱。工作台将其追加到自动识别名单并按身份去重，保留历史成员显示信息和创建者优先顺序；清空配置只移除补充成员。创建时可传 `--collaborators`，活动 Change 用 `collaborators --members` 更新；不回写归档或取消记录。
 
 ### Change 之间的依赖
 

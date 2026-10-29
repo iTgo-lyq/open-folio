@@ -12,6 +12,7 @@ import type { GitReader } from "./git.ts";
 import {
   branchName,
   changeSchema,
+  collaboratorsSchema,
   deliveryOverrideSchema,
   followUpTitleSchema,
   identity,
@@ -214,6 +215,12 @@ export async function indexChanges(
       const core = { ...object };
       const warnings: Diagnostic[] = [];
       for (const [key, schema, code, message] of [
+        [
+          "collaborators",
+          collaboratorsSchema,
+          "COLLABORATORS_INVALID",
+          "补充协作者格式不合法，已忽略配置并保留 Git 识别的成员。",
+        ],
         [
           "deliveryOverride",
           deliveryOverrideSchema,
@@ -566,6 +573,7 @@ export async function indexChanges(
     group.collaborators = changeCollaborators(
       created,
       participants.get(group.id) ?? [],
+      primaryRecord(group)?.state?.collaborators ?? [],
     );
   }
   return [...groups.values()].sort(compareChangeCreation);
@@ -592,6 +600,7 @@ type MaterialAuthor = { time: number; author: { name: string; email: string } };
 export function changeCollaborators(
   created: MaterialAuthor | undefined,
   participants: MaterialAuthor[],
+  configured: ChangeCreator[] = [],
 ): ChangeCreator[] {
   const rows = (created ? [created, ...participants] : participants).flatMap(
     (row) => {
@@ -599,16 +608,24 @@ export function changeCollaborators(
       return member ? [{ ...row, member }] : [];
     },
   );
+  const additions = configured.map((member) => ({
+    time: 0,
+    author: { name: member.name, email: "" },
+    member,
+  }));
   // A legacy noreply login can join its unique numeric identity. Conflicting
   // numeric IDs sharing a login must remain distinct.
   const subjects = new Map<string, Set<string>>();
-  for (const { member } of rows)
-    if (member.login && member.subjectId) {
-      const login = member.login.toLowerCase();
-      const ids = subjects.get(login) ?? new Set<string>();
-      ids.add(member.subjectId);
-      subjects.set(login, ids);
-    }
+  const rememberSubjects = (members: ChangeCreator[]) => {
+    for (const member of members)
+      if (member.login && member.subjectId) {
+        const login = member.login.toLowerCase();
+        const ids = subjects.get(login) ?? new Set<string>();
+        ids.add(member.subjectId);
+        subjects.set(login, ids);
+      }
+  };
+  rememberSubjects(rows.map((row) => row.member));
   const identityKey = (row: (typeof rows)[number]) => {
     const login = row.member.login?.toLowerCase();
     const ids = login ? subjects.get(login) : undefined;
@@ -629,12 +646,24 @@ export function changeCollaborators(
   const ordered = [...rows].sort(
     (a, b) => a.time - b.time || identityKey(a).localeCompare(identityKey(b)),
   );
-  const result = new Map<string, ChangeCreator>();
+  const result = new Map<string, (typeof rows)[number]>();
   for (const row of [...(first ? [first] : []), ...ordered]) {
     const key = identityKey(row);
-    if (!result.has(key)) result.set(key, row.member);
+    if (!result.has(key)) result.set(key, row);
   }
-  return [...result.values()];
+  // Configuration may resolve aliases for additions, but must never collapse
+  // or reorder the established Git member list.
+  const combined = [...result.values()];
+  rememberSubjects(configured);
+  const known = new Set(combined.map(identityKey));
+  for (const row of additions) {
+    const key = identityKey(row);
+    if (!known.has(key)) {
+      known.add(key);
+      combined.push(row);
+    }
+  }
+  return combined.map((row) => row.member);
 }
 
 export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {

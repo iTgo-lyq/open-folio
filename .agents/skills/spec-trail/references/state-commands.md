@@ -6,8 +6,9 @@
 
 | 命令 | 参数与语义 |
 | --- | --- |
-| `create` | `--title --size`；可选 `--types '["修复","安全"]' --urgency urgent/high/normal/low`（语义同 labels）、`--depends-on id,id`、`--parent id`、`--children id,id`、`--follow-up-of id`。首次命名延续组另传 `--group-title`，存入后继的 followUpTitle，后续通常省略并继承组名。在配置的集成分支建立 requirement 状态，不生成正文、不创建或切换 Git 分支、不覆盖已有目录；延续前序必须为已推送的有效归档。 |
+| `create` | `--title --size`；可选 `--types '["修复","安全"]' --urgency urgent/high/normal/low`（语义同 labels）、`--collaborators '[{"name":"显示名","login":"github-login"}]'`（语义同 collaborators）、`--depends-on id,id`、`--parent id`、`--children id,id`、`--follow-up-of id`。首次命名延续组另传 `--group-title`，存入后继的 followUpTitle，后续通常省略并继承组名。在配置的集成分支建立 requirement 状态，不生成正文、不创建或切换 Git 分支、不覆盖已有目录；延续前序必须为已推送的有效归档。 |
 | `labels` | 至少传 `--types <JSON字符串数组>` 或 `--urgency urgent/high/normal/low`；仅更新传入项，类型 trim 后按顺序去重，拒绝空白、换行及非字符串。`--types '[]'` 清空类型，`--urgency normal` 删除字段并恢复普通；只改活动 Change 的标签，不改变流程记录。 |
+| `collaborators` | `--members <JSON成员数组>`；设置活动 Change 的补充名单，每项必填 `name`，可选 GitHub `login`、`subjectId`。`name` 必须是无首尾空白的非空单行文字，`subjectId` 为正整数字符串；拒绝邮箱及其他字段。更新只替换配置补充名单，工作台始终与 Git 识别成员合并去重，不覆盖历史成员；`--members '[]'` 删除配置补充项，保留 Git 识别结果和流程状态。 |
 | `follow-up` | `--target id/none`，可选 `--group-title`；为 active Change 设置直接前序或移除关联，沿前序链拒绝未归档、缺失、自指与循环。移除或更换前序时清除自身旧组名声明；无关联不可命名，显式名称不得与前序已有声明冲突。关联前读取整组名称，分叉同样沿用。不影响执行依赖、任务及确认，归档记录仍只读。 |
 | `retitle` | `--title`；仅修改活动 Change 的展示标题，保留 id、阶段、任务与确认；需在所属分支运行。 |
 | `confirm` | `--phase requirement/technical/plan/merge --summary --source`。summary 写阶段内容，优先 20–40 字符，最多 60 个 Unicode 码点、单句且不换行；source 写实际确认依据。需求确认进入 technical，large 技术确认进入 plan；执行另用 execute。medium/xlarge 技术与计划同次获确认时连续记录两次。merge 可附 `--source-commit --target-commit --base-commit`。 |

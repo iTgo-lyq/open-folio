@@ -241,6 +241,51 @@ test("normal creates no stored urgency and cancelled labels remain read-only", (
   assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
+test("collaborator commands create, replace and clear only supplemental configuration atomically", (t) => {
+  const f = fixture(t);
+  const members = [{ name: "协作者", login: "contributor", subjectId: "123" }];
+  f.create("small", "sample", ["--collaborators", JSON.stringify(members)]);
+  assert.deepEqual(f.state().collaborators, members);
+  const { collaborators: _members, ...workflow } = f.state();
+  const before = readFileSync(f.path(), "utf8");
+  f.run("collaborators", ["--members", "[]", "--dry-run"]);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  for (const options of [
+    [],
+    ["--members", "{broken"],
+    ["--members", "null"],
+    ["--members", '[{"name":" "}]'],
+    ["--members", '[{"name":"Member","email":"private@example.com"}]'],
+  ]) {
+    f.run("collaborators", options, 1);
+    assert.equal(readFileSync(f.path(), "utf8"), before);
+  }
+  f.run("collaborators", ["--members", '[{"name":"另一位"}]']);
+  assert.deepEqual(f.state().collaborators, [{ name: "另一位" }]);
+  f.run("collaborators", ["--members", "[]"]);
+  assert.deepEqual(f.state(), workflow);
+  f.begin();
+  f.run("collaborators", ["--members", JSON.stringify(members)]);
+  assert.equal(f.state().tasks.T1.status, "doing");
+  f.done();
+  f.commit();
+  f.verify();
+  f.accept();
+  const archived = f.archive().path;
+  const frozen = readFileSync(join(f.root, archived), "utf8");
+  f.run("collaborators", ["--members", "[]"], 1);
+  assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
+});
+
+test("collaborator updates keep cancelled Changes read-only", (t) => {
+  const f = fixture(t);
+  f.create();
+  f.run("cancel", ["--reason", "取消"]);
+  const before = readFileSync(f.path(), "utf8");
+  f.run("collaborators", ["--members", '[{"name":"Member"}]'], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+});
+
 test("follow-up registration requires a published closed predecessor and stays independent of dependencies", (t) => {
   const f = fixture(t);
   const closed = (

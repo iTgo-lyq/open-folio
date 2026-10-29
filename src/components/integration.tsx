@@ -2,7 +2,7 @@
 import { materialClass } from "./material-styles";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
-import { ArrowLeft, Copy, GitMerge, X } from "lucide-react";
+import { ArrowLeft, Copy, GitMerge, WrapText, X } from "lucide-react";
 import { Button, IconButton } from "@open-folio/ui";
 import type {
   IntegrationSummary,
@@ -47,6 +47,7 @@ export function ChangeIntegration({ id }: { id: string }) {
   }>({ key: "" });
   const moreController = useRef<AbortController | null>(null);
   const [copyValue, setCopyValue] = useState("");
+  const [wrapLines, setWrapLines] = useState(false);
   const copyInput = useRef<HTMLTextAreaElement>(null);
   const diffPanel = useRef<HTMLDivElement>(null),
     list = useRef<HTMLElement>(null);
@@ -216,19 +217,19 @@ export function ChangeIntegration({ id }: { id: string }) {
           <Button
             variant="text"
             title={record.commit}
+            aria-label={`复制合入提交 ${record.commit.slice(0, 10)}`}
             onClick={() => void copy(record.commit)}
           >
             <Copy size={12} />
             <code>{record.commit.slice(0, 10)}</code>
           </Button>
-          <span>只读 · 固定合入版本</span>
+          <span>固定版本 · 只读</span>
           {summary.stats && (
             <span className={materialClass("integration-total")}>
-              {summary.stats.total} 个文件 · 文本{" "}
+              <strong>{summary.stats.total} 个文件</strong>
               <span className={materialClass("diff-added")}>
                 +{summary.stats.added}
-              </span>{" "}
-              /{" "}
+              </span>
               <span className={materialClass("diff-removed")}>
                 −{summary.stats.removed}
               </span>
@@ -256,6 +257,7 @@ export function ChangeIntegration({ id }: { id: string }) {
               key={file.id}
               data-file={file.id}
               className={materialClass("diff-file-item")}
+              title={file.path}
               aria-current={file.id === selected}
               onClick={() => choose(file.id)}
             >
@@ -320,27 +322,43 @@ export function ChangeIntegration({ id }: { id: string }) {
               <ArrowLeft size={14} />
               文件
             </Button>
-            <div>
-              <code>
-                {file?.path ??
+            <div className={materialClass("diff-file-summary")}>
+              <strong>
+                {file?.path.split("/").at(-1) ??
                   (selected ? "读取文件…" : "本次合入没有文件变化")}
-              </code>
+              </strong>
               {file && (
-                <p>
-                  {file.oldPath
-                    ? `原路径：${file.oldPath}`
-                    : statuses[file.status]}
-                  {file.oldMode !== file.newMode &&
-                    ` · ${file.oldMode} → ${file.newMode}`}
-                </p>
+                <>
+                  <code className={materialClass("diff-path")}>
+                    {file.path}
+                  </code>
+                  <p>
+                    {statuses[file.status] ?? file.status}
+                    {kinds[file.kind] && ` · ${kinds[file.kind]}`}
+                    {file.oldPath && ` · 原路径：${file.oldPath}`}
+                    {file.oldMode !== file.newMode &&
+                      ` · ${file.oldMode} → ${file.newMode}`}
+                  </p>
+                </>
               )}
             </div>
+          </div>
+          <div className={materialClass("diff-tools")}>
             <Button
               variant="text"
-              className={materialClass("diff-command")}
+              aria-pressed={wrapLines}
+              onClick={() => setWrapLines((value) => !value)}
+            >
+              <WrapText size={14} />
+              自动换行
+            </Button>
+            <Button
+              variant="text"
+              aria-label="复制 Git 比较命令"
               onClick={() => void copy(summary.command!)}
             >
-              复制 Git 比较命令
+              <Copy size={13} />
+              Git 比较命令
             </Button>
           </div>
           <div
@@ -349,6 +367,7 @@ export function ChangeIntegration({ id }: { id: string }) {
             ref={diffPanel}
             tabIndex={0}
             aria-label="统一差异"
+            data-wrap={wrapLines}
           >
             {diff.key === fileKey && diff.error ? (
               <Empty title="文件差异读取失败">
@@ -367,6 +386,12 @@ export function ChangeIntegration({ id }: { id: string }) {
                   className={materialClass("diff-table")}
                   aria-label={`${fileDiff.file.path} 的统一差异`}
                 >
+                  <colgroup>
+                    <col className={materialClass("line-no")} />
+                    <col className={materialClass("line-no")} />
+                    <col className={materialClass("sign")} />
+                    <col />
+                  </colgroup>
                   <tbody>
                     {fileDiff.lines.map((line, index) => (
                       <tr

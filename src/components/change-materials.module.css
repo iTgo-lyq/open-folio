@@ -511,6 +511,11 @@
   min-width: 0;
 }
 .integration-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
   font-size: 12px;
   color: var(--of-text-2);
   overflow-wrap: anywhere;
@@ -525,17 +530,21 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px 12px;
 }
 .integration-record-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--of-text-3);
+  color: var(--of-success);
 }
 .integration-total {
-  color: var(--of-text-3);
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--of-text-2);
+  font-variant-numeric: tabular-nums;
 }
 .diff-added {
   color: var(--of-success);
@@ -545,50 +554,88 @@
 }
 .diff-layout {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  min-height: 480px;
-  box-shadow: inset 0 0 0 0.5px var(--of-border-strong);
+  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: clamp(360px, 68dvh, 760px);
+  border: 1px solid var(--of-border);
   border-radius: 12px;
   overflow: hidden;
 }
 .diff-files {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   background: var(--of-bg-subtle);
   border-right: 0.5px solid var(--of-border);
   overflow: auto;
-  max-height: 70dvh;
+  overscroll-behavior: contain;
 }
 .diff-file-heading {
-  color: var(--of-text-3);
-  padding: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  background: var(--of-bg-subtle);
+  border-bottom: 1px solid var(--of-border);
+  color: var(--of-text-2);
+  padding: 12px 14px;
   font-size: 12px;
+}
+.diff-file-heading > span {
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--of-fill-selected);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 .diff-file-item {
   display: block;
-  width: 100%;
+  flex: none;
+  width: calc(100% - 12px);
+  margin: 3px 6px;
   border: 0;
   border-radius: 7px;
   background: none;
-  padding: 10px 12px;
+  padding: 9px 10px;
   color: var(--of-text-2);
   text-align: left;
   font: 12px var(--of-font-ui);
   cursor: pointer;
 }
+.diff-file-item:hover {
+  background: var(--of-fill-hover);
+}
 .diff-file-item[aria-current="true"] {
   color: var(--of-accent-text);
-  background: var(--of-fill-selected);
+  background: var(--of-accent-soft);
+  box-shadow: inset 3px 0 var(--of-accent);
+}
+.diff-file-item:focus-visible,
+.diff-content:focus-visible {
+  outline: 2px solid var(--of-accent);
+  outline-offset: -2px;
 }
 .diff-file-name {
   display: block;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--of-font-mono);
+  font-weight: 500;
 }
 .diff-file-directory {
   display: block;
   color: var(--of-text-3);
   font-size: 11px;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: 3px;
 }
 .diff-file-status {
@@ -601,8 +648,11 @@
   margin-top: 4px;
 }
 .diff-file-footnote {
+  flex: none;
   color: var(--of-text-3);
-  padding: 12px;
+  margin: auto 14px 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--of-border);
   font-size: 11px;
 }
 .diff-more,
@@ -618,41 +668,73 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--of-bg-surface);
 }
 .diff-heading {
   display: flex;
-  flex-wrap: wrap;
+  flex: none;
   gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  border-bottom: 0.5px solid var(--of-border);
+  align-items: flex-start;
+  padding: 12px 14px;
   color: var(--of-text-2);
   font-size: 12px;
 }
-.diff-heading strong {
-  overflow-wrap: anywhere;
+.diff-file-summary {
+  min-width: 0;
   flex: 1;
+  overflow-wrap: anywhere;
+}
+.diff-heading strong {
+  display: block;
+  color: var(--of-text);
+  font: 600 13px/1.5 var(--of-font-mono);
+}
+.diff-path {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+}
+.diff-file-summary p {
+  margin: 5px 0 0;
+  color: var(--of-text-3);
+  font-size: 11px;
 }
 .diff-back {
   display: none;
 }
-.diff-command {
+.diff-tools {
   display: flex;
+  flex: none;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  padding: 10px 12px;
-  color: var(--of-text-3);
+  padding: 6px 10px;
+  border-block: 1px solid var(--of-border);
+  background: var(--of-bg-subtle);
+}
+.diff-tools > button {
+  min-height: 30px;
+  padding: 5px 7px;
   font-size: 12px;
+}
+.diff-tools > button[aria-pressed="true"] {
+  background: var(--of-accent-soft);
+  color: var(--of-accent-text);
 }
 .diff-content {
   overflow: auto;
-  max-height: 70dvh;
+  flex: 1;
+  min-height: 0;
   min-width: 0;
+  overscroll-behavior: contain;
 }
 .diff-table {
   width: 100%;
   border-collapse: collapse;
-  font: 11.5px/1.7 var(--of-font-mono);
+  font: 12px/1.8 var(--of-font-mono);
   white-space: pre;
 }
 .diff-table td {
@@ -660,13 +742,28 @@
   vertical-align: top;
 }
 .line-no {
-  width: 34px;
+  width: 7ch;
   color: var(--of-text-3);
   text-align: right;
   user-select: none;
 }
 .sign {
-  width: 16px;
+  width: 3ch;
+  text-align: center;
+  user-select: none;
+}
+.diff-content[data-wrap="true"] .diff-table {
+  table-layout: fixed;
+}
+.diff-content[data-wrap="true"] td:last-child {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.add .sign {
+  color: var(--of-success);
+}
+.remove .sign {
+  color: var(--of-danger);
 }
 .add {
   background: var(--of-success-soft);
@@ -678,6 +775,11 @@
 .note {
   color: var(--of-text-3);
   background: var(--of-bg-subtle);
+}
+.diff-table .hunk td,
+.diff-table .note td {
+  padding: 5px 12px;
+  font-size: 11px;
 }
 .diff-loading {
   padding: 20px;
@@ -726,6 +828,18 @@
   }
   .diff-back {
     display: inline-flex;
+    flex: none;
+    padding: 4px;
+    min-height: 28px;
+  }
+  .diff-files {
+    border-right: 0;
+  }
+  .diff-heading {
+    flex-wrap: wrap;
+  }
+  .diff-file-summary {
+    flex-basis: 100%;
   }
 }
 @media (max-width: 760px) {

@@ -25,6 +25,12 @@ test("integrated diff survives source deletion and supports file links, history,
   await expect(
     drawer.getByRole("cell", { name: "新行号", exact: true }).last(),
   ).toHaveText("2");
+  const files = drawer.getByRole("navigation", { name: "合入文件" });
+  const panel = drawer.getByRole("region", { name: "文件差异", exact: true });
+  const filesBox = (await files.boundingBox())!;
+  const panelBox = (await panel.boundingBox())!;
+  expect(Math.abs(filesBox.y - panelBox.y)).toBeLessThan(1);
+  expect(Math.abs(filesBox.height - panelBox.height)).toBeLessThan(1);
   await page.screenshot({ path: "artifacts/integration-desktop.png" });
   const linked = page.url();
   await page.reload();
@@ -35,6 +41,7 @@ test("integrated diff survives source deletion and supports file links, history,
   await expect(
     drawer.getByText("二进制文件，无法展示文本差异。", { exact: true }),
   ).toBeVisible();
+  expect((await panel.boundingBox())!.height).toBe(filesBox.height);
   await page.goBack();
   await expect(drawer.getByRole("table")).toContainText(
     "export const delivered = true;",
@@ -96,6 +103,87 @@ test("integrated diff survives source deletion and supports file links, history,
   await expect(drawer.getByRole("table")).toContainText(
     "export const delivered = true;",
   );
+});
+
+test("diff panes stay aligned while long lines wrap and contents scroll independently", async ({
+  page,
+}) => {
+  const longLine = `export const description = "${"可阅读的长行内容 ".repeat(40)}";`;
+  await page.route(
+    "**/changes/integration-demo/integration/files/*?*",
+    async (route) => {
+      const response = await route.fetch();
+      const diff = await response.json();
+      await route.fulfill({
+        response,
+        json: {
+          ...diff,
+          kind: "text",
+          lines: Array.from({ length: 120 }, (_, index) => ({
+            kind: "add",
+            text: longLine,
+            new: index + 1,
+          })),
+        },
+      });
+    },
+  );
+  await page.goto(route);
+  const files = page.getByRole("navigation", { name: "合入文件" });
+  const panel = page.getByRole("region", { name: "文件差异", exact: true });
+  const content = page.getByRole("region", { name: "统一差异", exact: true });
+  const wrap = panel.getByRole("button", { name: "自动换行" });
+  await expect(page.getByRole("table")).toContainText(longLine);
+  for (const width of [1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate((theme) => {
+        document.documentElement.dataset.theme = theme;
+      }, theme);
+      const filesBox = (await files.boundingBox())!;
+      expect((await panel.boundingBox())!.height).toBe(filesBox.height);
+      const toolbarY = (await wrap.boundingBox())!.y;
+      await content.evaluate((el) => {
+        el.scrollTop = 200;
+        el.scrollLeft = 200;
+      });
+      expect(await content.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+      expect(await content.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+      expect(await files.evaluate((el) => el.scrollTop)).toBe(0);
+      expect((await wrap.boundingBox())!.y).toBe(toolbarY);
+      await wrap.click();
+      await expect(wrap).toHaveAttribute("aria-pressed", "true");
+      expect(
+        await content.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+      ).toBe(true);
+      await expect(page.getByRole("table")).toContainText(longLine);
+      await wrap.click();
+      await expect(wrap).toHaveAttribute("aria-pressed", "false");
+    }
+  }
+  for (const width of [834, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(route);
+    await files.getByRole("button", { name: /integration-example.ts/ }).click();
+    await expect(content.getByRole("table")).toBeVisible();
+    await wrap.click();
+    expect(
+      await content.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+    ).toBe(true);
+    expect(
+      await page
+        .getByRole("main")
+        .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+    await expect(
+      panel.getByRole("button", { name: "复制 Git 比较命令" }),
+    ).toBeInViewport();
+    await page.screenshot({ path: `artifacts/integration-wrap-${width}.png` });
+    await panel.getByRole("button", { name: "文件", exact: true }).click();
+    await expect(
+      files.getByRole("button", { name: /integration-example.ts/ }),
+    ).toBeFocused();
+  }
 });
 
 test("integration failures retry; old archives remain empty and stale responses cannot cross Changes", async ({
