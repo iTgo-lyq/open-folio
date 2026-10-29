@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "commit-history-hygiene",
+  "title": "归档前提交整理与平台 squash 防护",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/commit-history-hygiene",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补齐归档前提交整理和接入、PR/MR squash 检查规范",
+      "status": "done",
+      "verification": "主/Setup skill 校验、2 项版本测试、版本及链接锚点、JSON 格式与 diff 检查通过；Agent 自查六类规则场景，无脚本或应用逻辑改动",
+      "commitTitle": "commit-history-hygiene T1: document history cleanup and squash checks"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T11:22:59.998Z",
+      "summary": "Agent 自查全部差异及六类规则场景；主/Setup skill 校验、版本测试、版本与锚点核对、格式及 diff 检查通过；无应用逻辑改动"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T11:23:22.482Z",
+      "summary": "Agent 自验收：两项规范及追踪修复、平台合并检查的边界均与 Requirement 对应，验证通过，无未解决验收项",
+      "source": "Agent 对照 requirement.md 验收 1–4 和 execution.md 的实际检查及六类场景完成自验收"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T11:23:53.158Z",
+      "summary": "同步 change-workflow 的提交整理与接入、代操作 PR/MR 合并方式检查规则，保留普通 merge 交付协议"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T11:23:57.721Z",
+      "summary": "两项规范完成 Agent 自验收与验证，Specs 已同步；提交历史无噪声待压缩，保留有效检查点",
+      "path": "docs/project/archive/2026-10-29-commit-history-hygiene"
+    }
+  },
+  "types": [
+    "流程",
+    "文档"
+  ]
+}
