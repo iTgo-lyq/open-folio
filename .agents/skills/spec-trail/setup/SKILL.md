@@ -25,6 +25,8 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 { "schemaVersion": 3, "integrationBranch": "develop", "releaseBranch": "main" }
 ```
 
+首次接入须明确提醒：**不要开启自动 squash；Change 和发布 PR/MR 均须普通 merge。** 按[合并方式检查](../references/integration.md#合并方式检查)核对平台默认、强制及自动合并策略，无法核实时报告限制，合并前解决；后续代操作时复查。
+
 ## 准备检查
 
 1. 核对上述配置与分支准备。没有 remote 时说明登记的是本地约定，尚无共享入口或服务端保护。
