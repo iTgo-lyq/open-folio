@@ -25,7 +25,7 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 { "schemaVersion": 3, "integrationBranch": "develop", "releaseBranch": "main" }
 ```
 
-首次接入须明确提醒用户：**不要开启自动 squash（压缩提交）；Change 和正式发布的 PR/MR 均使用普通 merge 保留历史。** 核对仓库与目标分支的默认/强制合并策略，以及自动合并、合并队列的实际方式；平台提供 squash 选项不等于已经启用。默认勾选或自动使用 squash 时取消本次选项；只有 squash/rebase 可用或设置无法核实时，报告限制并在合并前解决，不擅自改动全局规则。后续代操作时按[合并方式检查](../references/integration.md#合并方式检查)复查。
+首次接入须明确提醒：**不要开启自动 squash；Change 和发布 PR/MR 均须普通 merge。** 按[合并方式检查](../references/integration.md#合并方式检查)核对平台默认、强制及自动合并策略，无法核实时报告限制，合并前解决；后续代操作时复查。
 
 ## 准备检查
 
