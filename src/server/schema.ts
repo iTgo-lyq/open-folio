@@ -9,6 +9,7 @@ import {
   validateClarifications,
   validateTypes,
   validateUrgency,
+  validateCollaborators,
 } from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
 import {
   validBranchName,
@@ -39,6 +40,12 @@ export const typesSchema = z.custom<string[]>(
 export const urgencySchema = z.custom<NonNullable<ChangeState["urgency"]>>(
   (value) => !validateUrgency(value).length,
   "紧急程度必须为 urgent、high、normal 或 low",
+);
+export const collaboratorsSchema = z.custom<
+  NonNullable<ChangeState["collaborators"]>
+>(
+  (value) => !validateCollaborators(value).length,
+  "补充协作者必须是包含显示名及可选 GitHub 身份的成员数组",
 );
 export const branchName = z
   .string()
@@ -102,6 +109,7 @@ export const changeSchema = z
     size: z.enum(["small", "medium", "large", "xlarge"]),
     types: typesSchema.optional(),
     urgency: urgencySchema.optional(),
+    collaborators: collaboratorsSchema.optional(),
     deliveryOverride: deliveryOverrideSchema.optional(),
     status: z.enum(["active", "completed", "cancelled"]),
     stage: z.enum(["requirement", "technical", "plan", "execution", "close"]),

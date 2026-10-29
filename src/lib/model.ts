@@ -143,6 +143,8 @@ export type ChangeState = {
   size: "small" | "medium" | "large" | "xlarge";
   types?: string[];
   urgency?: "urgent" | "high" | "normal" | "low";
+  /** Explicit additions to the Git-derived collaborator list. */
+  collaborators?: ChangeCreator[];
   deliveryOverride?: "releaseMerged";
   status: "active" | "completed" | "cancelled";
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
@@ -220,7 +222,7 @@ export type ChangeGroup = {
   createdAt?: string;
   /** Author of that first commit, absent with createdAt. */
   creator?: ChangeCreator;
-  /** Material commit authors, with the known creator first; never includes email. */
+  /** Material authors plus configured additions, with the known creator first; no email. */
   collaborators?: ChangeCreator[];
   source?: {
     entryBranch: string;

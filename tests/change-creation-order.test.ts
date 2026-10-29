@@ -4,7 +4,11 @@ import { execFileSync } from "node:child_process";
 import { rename } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
-import { DEFAULT_LIMITS, type ChangeGroup } from "../src/lib/model.ts";
+import {
+  DEFAULT_LIMITS,
+  primaryRecord,
+  type ChangeGroup,
+} from "../src/lib/model.ts";
 import {
   changeCreator,
   changeCollaborators,
@@ -188,6 +192,98 @@ test("collaborators keep creator first, resolve noreply aliases and retain disti
   );
   assert.deepEqual(
     changeCollaborators(undefined, [author(" ", "x@example.com", 1)]),
+    [],
+  );
+});
+
+test("configured collaborators supplement Git members without replacing their names or order", () => {
+  const creator = {
+    time: 100,
+    author: { name: "Creator", email: "7+creator@users.noreply.github.com" },
+  };
+  const participant = {
+    time: 50,
+    author: { name: "Worker", email: "8+worker@users.noreply.github.com" },
+  };
+  const additions = [
+    { name: "Rename creator", login: "CREATOR" },
+    { name: "Rename worker", login: "new-worker", subjectId: "8" },
+    { name: "Zed", login: "zed" },
+    { name: "Amy", login: "amy" },
+    { name: "Duplicate Zed", login: "ZED" },
+    { name: "Worker", login: "different-worker", subjectId: "9" },
+  ];
+  assert.deepEqual(changeCollaborators(creator, [participant], additions), [
+    { name: "Creator", login: "creator", subjectId: "7" },
+    { name: "Worker", login: "worker", subjectId: "8" },
+    additions[2],
+    additions[3],
+    additions[5],
+  ]);
+  assert.deepEqual(
+    changeCollaborators(creator, [participant], []),
+    changeCollaborators(creator, [participant]),
+  );
+  assert.deepEqual(
+    changeCollaborators(undefined, [], additions.slice(2, 4)),
+    additions.slice(2, 4),
+  );
+  // Conflicting numeric identities sharing a login remain separate.
+  assert.equal(
+    changeCollaborators(
+      creator,
+      [],
+      [{ name: "Other creator", login: "creator", subjectId: "99" }],
+    ).length,
+    2,
+  );
+  const legacyCreator = {
+    ...creator,
+    author: { name: "Legacy", email: "legacy@users.noreply.github.com" },
+  };
+  assert.deepEqual(
+    changeCollaborators(
+      legacyCreator,
+      [participant],
+      [{ name: "Manual alias", login: "legacy", subjectId: "8" }],
+    ),
+    changeCollaborators(legacyCreator, [participant]),
+  );
+});
+
+test("routed configured members reach workbench and share, refresh on edits and clear without removing Git authors", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.register({ supplemented: "change/supplemented" });
+  const path = "docs/project/changes/supplemented/change.json";
+  const state = {
+    ...JSON.parse(record("supplemented")),
+    branch: "change/supplemented",
+    collaborators: [{ name: "Stale central member" }],
+  };
+  await f.put(path, JSON.stringify(state));
+  f.commit();
+  f.git(["checkout", "-b", "change/supplemented"]);
+  state.collaborators = [{ name: "Configured member" }];
+  await f.put(path, JSON.stringify(state));
+  f.commit();
+  let snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const members = [{ name: "Fixture" }, { name: "Configured member" }];
+  assert.deepEqual(snapshot.changes[0].collaborators, members);
+  assert.deepEqual(
+    projectChange(snapshot, "supplemented", "fixture").change.collaborators,
+    members,
+  );
+  assert.equal(snapshot.changes[0].creator?.name, "Fixture");
+  const warm = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.deepEqual(warm.changes[0].collaborators, members);
+  state.collaborators = [];
+  await f.put(path, JSON.stringify(state));
+  f.commit();
+  snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.deepEqual(snapshot.changes[0].collaborators, [{ name: "Fixture" }]);
+  assert.deepEqual(
+    primaryRecord(snapshot.changes[0])!.state!.collaborators,
     [],
   );
 });

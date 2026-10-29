@@ -88,6 +88,32 @@ export const validateUrgency = (value) => {
   return errors;
 };
 
+const collaborators = list(object(
+  {
+    name: (value, path, errors) => {
+      if (
+        typeof value !== "string" || !value.length ||
+        value.trim() !== value || /[\r\n\u2028\u2029]/.test(value)
+      )
+        report(errors, path, "must be a trimmed, non-empty single-line name");
+    },
+    login: stringRule(
+      /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i,
+      "must be a GitHub login",
+    ),
+    subjectId: stringRule(
+      /^[1-9][0-9]*$/,
+      "must be a positive numeric GitHub id string",
+    ),
+  },
+  ["name"],
+));
+export const validateCollaborators = (value) => {
+  const errors = [];
+  collaborators(value, "/collaborators", errors);
+  return errors;
+};
+
 function timestamp(value, path, errors) {
   const parts =
     typeof value === "string" &&
@@ -237,6 +263,7 @@ const changeFields = object(
     size: oneOf("small", "medium", "large", "xlarge"),
     types,
     urgency,
+    collaborators,
     deliveryOverride: oneOf("releaseMerged"),
     status: oneOf("active", "completed", "cancelled"),
     stage: oneOf("requirement", "technical", "plan", "execution", "close"),
