@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "extra-document-reading",
+  "title": "修复 Change 附加 Markdown 文档误报缺失",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/extra-document-reading",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "恢复附加 Markdown 文档阅读并验证缺失与旧链接行为",
+      "status": "done",
+      "verification": "36 项相关单元测试、2 项工作台与匿名阅读浏览器回归、typecheck、build、Prettier 与 diff 检查通过；证据见 execution.md",
+      "commitTitle": "extra-document-reading T1: fix supplemental Markdown material selection"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T10:04:00.343Z",
+      "summary": "Agent 自查通过；36 项相关单元测试、工作台及匿名阅读 2 项浏览器回归、类型检查与生产构建均通过，旧链接及真实缺失行为保持兼容。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T10:04:03.886Z",
+      "summary": "Agent 自验收：现有根目录及嵌套附加文档可打开，删除文件的新旧链接明确报缺失，工作台及匿名阅读回归通过。",
+      "source": "对照 requirement.md 逐项核对；验证证据见 execution.md。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-29T10:04:07.431Z",
+      "summary": "恢复既有附加文档阅读行为的局部缺陷修复，未改变产品契约或长期架构，无需修改 Specs。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T10:04:11.059Z",
+      "summary": "附加 Markdown 材料优先匹配修复完成，兼容与缺失回归通过，交付可审阅 PR。",
+      "path": "docs/project/archive/2026-10-29-extra-document-reading"
+    }
+  },
+  "types": [
+    "修复"
+  ]
+}
