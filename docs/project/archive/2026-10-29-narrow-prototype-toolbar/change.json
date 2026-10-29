@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "narrow-prototype-toolbar",
+  "title": "修复窄屏原型工具栏溢出",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/narrow-prototype-toolbar",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复原型工具栏窄屏布局并验证真实点击",
+      "status": "done",
+      "verification": "14 项原型交互和 2 项布局/公开链接回归通过；浅深色五宽度检查、类型、生产构建、格式检查通过，临时测试端口已恢复。",
+      "commitTitle": "narrow-prototype-toolbar T1: keep viewport controls in a separate row on narrow screens"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T04:27:50.186Z",
+      "summary": "Agent 自查局部布局差异；14 项原型回归、2 项布局及链接回归通过，浅深色五宽度和按钮几何检查通过，类型与生产构建通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T04:27:54.779Z",
+      "summary": "Agent 自验收：320px 工具栏无溢出重叠，全部操作保留可点击，视口操作行不遮挡画布，宽屏及公开预览回归通过。",
+      "source": "用户要求修复已复现的 320px 工具栏溢出；small 默认自验收。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-29T04:27:58.795Z",
+      "summary": "恢复既有窄屏可用性，沿用原型预览设备与画布能力，无新增长期契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T04:28:02.723Z",
+      "summary": "窄屏原型工具栏布局修复已验证并自验收。",
+      "path": "docs/project/archive/2026-10-29-narrow-prototype-toolbar"
+    }
+  },
+  "types": [
+    "修复"
+  ]
+}
