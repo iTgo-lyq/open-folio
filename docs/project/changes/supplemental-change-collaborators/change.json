@@ -4,13 +4,13 @@
   "title": "补充 Change 协作者配置",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/supplemental-change-collaborators",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "实现补充协作者配置与合并展示",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
