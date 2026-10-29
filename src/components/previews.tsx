@@ -55,6 +55,7 @@ export function ChangePreviews({
 }) {
   const { projectId, data, q, nav, notice, readUrl, sharing } = useWorkspace();
   const mobile = useMediaQuery("(max-width: 760px)");
+  const narrowToolbar = useMediaQuery("(max-width: 420px)");
   const requestKey = `${projectId}:${change?.id ?? ""}:${data?.id}:${q.revision ?? ""}`;
   const [response, setResponse] = useState<{
     key: string;
@@ -444,7 +445,7 @@ export function ChangePreviews({
             >
               <List />
             </IconButton>
-            {controls}
+            {!narrowToolbar && controls}
             <PublicLinkPopover
               url={publication.url}
               error={publication.error}
@@ -461,6 +462,15 @@ export function ChangePreviews({
               <Info />
             </IconButton>
           </ToolbarSlot>
+          {narrowToolbar && (
+            <div
+              className={styles["viewport-tools"]}
+              role="group"
+              aria-label="原型视口操作"
+            >
+              {controls}
+            </div>
+          )}
           <Sheet open={directoryOpen} onOpenChange={setDirectoryOpen}>
             <SheetContent
               side="left"

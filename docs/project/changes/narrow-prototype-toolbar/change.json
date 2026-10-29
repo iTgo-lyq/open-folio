@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "修复原型工具栏窄屏布局并验证真实点击",
-      "status": "doing"
+      "status": "done",
+      "verification": "14 项原型交互和 2 项布局/公开链接回归通过；浅深色五宽度检查、类型、生产构建、格式检查通过，临时测试端口已恢复。",
+      "commitTitle": "narrow-prototype-toolbar T1: keep viewport controls in a separate row on narrow screens"
     }
   },
   "closure": {},
