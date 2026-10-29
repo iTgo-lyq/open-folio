@@ -3,8 +3,8 @@
   "id": "prototype-workspace-check",
   "title": "需求确认后移交独立工作区",
   "size": "small",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/prototype-workspace-check",
   "confirmations": {},
   "tasks": {
@@ -19,7 +19,30 @@
       "verification": "工作区路由 18 项、父子集成 6 项、版本 2 项通过；状态命令 21 项通过，依赖用例修正断言后定向复验通过。skill、版本一致性、格式及 diff 检查通过。"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T08:53:48.094Z",
+      "summary": "Agent 自查：需求就绪后移交、未确认及暂缓拦截、执行前置检查和父子集成均通过相关回归，规则已精简同步。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T08:53:51.620Z",
+      "summary": "Agent 自验收：需求确认后统一移交，small 沿用确认规则，执行和关闭检查有效。",
+      "source": "核对用户最新指示、实际 diff、18 项工作区路由、22 项状态命令、6 项父子集成及 2 项版本用例结果。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T08:54:13.392Z",
+      "summary": "同步 change-workflow 的需求后移交、原型工作区及命令前置条件。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T08:54:16.951Z",
+      "summary": "需求确认后统一移交的规则、脚本与相关回归已验证，自验收并同步 Specs。",
+      "path": "docs/project/archive/2026-10-29-prototype-workspace-check"
+    }
+  },
   "types": [
     "流程"
   ],
