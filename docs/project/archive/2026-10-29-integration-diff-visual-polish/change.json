@@ -3,17 +3,42 @@
   "id": "integration-diff-visual-polish",
   "title": "统一合入变更阅读界面视觉",
   "size": "small",
-  "status": "active",
-  "stage": "requirement",
+  "status": "completed",
+  "stage": "close",
   "branch": "change/integration-diff-visual-polish",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一合入阅读的头部、文件列表、差异面板与代码区视觉",
-      "status": "todo"
+      "status": "done",
+      "verification": "10 项浏览器回归、类型、格式及生产构建通过；真实归档桌面浅深色和手机截图已获用户认可，长路径表头换行差异已明确接受。",
+      "commitTitle": "integration-diff-visual-polish: verify and record user acceptance"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T07:32:57.763Z",
+      "summary": "Agent 自查：10 项浏览器回归与类型/格式/生产构建通过；真实内容截图覆盖桌面浅深色及手机，用户已接受长路径表头换行表现。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T07:33:01.248Z",
+      "summary": "用户依据新版桌面与手机截图接受当前效果并要求归档，随后明确要求合入开发与发布分支。",
+      "source": "没问题，归档吧；合入 dev 和 main"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-29T07:33:04.998Z",
+      "summary": "本次只统一合入阅读视觉，现有只读、路径、换行、滚动及导航能力与长期契约保持有效，无需新增规格。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T07:33:08.577Z",
+      "summary": "视觉优化已验证并经用户验收，按要求归档交付。",
+      "path": "docs/project/archive/2026-10-29-integration-diff-visual-polish"
+    }
+  },
   "followUpOf": "integration-readability",
   "followUpTitle": "合入变更阅读体验",
   "types": [
