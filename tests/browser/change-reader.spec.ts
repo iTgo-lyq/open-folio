@@ -7,7 +7,51 @@ import {
   backToChanges,
   openMaterial,
   readingLink,
+  origin,
 } from "./connected";
+
+for (const reader of ["workbench", "share"]) {
+  test(`${reader} opens extra Markdown links and keeps missing file targets explicit`, async ({
+    page,
+    browser,
+  }) => {
+    const anonymous =
+      reader === "share" ? await browser.newContext({ baseURL: origin }) : null;
+    try {
+      const target = anonymous ? await anonymous.newPage() : page;
+      const base =
+        reader === "share"
+          ? `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change: "document-reader", integrationBranch: "develop" })}`
+          : `/?${repositoryQuery}&m=changes&c=document-reader`;
+      for (const query of ["ct=file%3Aresearch.md", "document=research.md"]) {
+        await target.goto(`${base}&${query}`);
+        await expect(
+          target.getByRole("heading", { name: "阅读体验调查", exact: true }),
+        ).toBeVisible();
+        await expect(
+          target.getByRole("heading", { name: "文件缺失", exact: true }),
+        ).toHaveCount(0);
+      }
+      for (const query of [
+        "ct=file%3Aremoved.md",
+        "ct=documents&document=removed.md",
+      ]) {
+        await target.goto(`${base}&${query}`);
+        await expect(
+          target.getByRole("heading", { name: "文件缺失", exact: true }),
+        ).toBeVisible();
+        await expect(
+          target.getByRole("alert").filter({ hasText: "文件缺失" }),
+        ).toContainText("removed.md");
+        await expect(
+          target.getByRole("heading", { name: "阅读体验调查", exact: true }),
+        ).toHaveCount(0);
+      }
+    } finally {
+      await anonymous?.close();
+    }
+  });
+}
 
 test("adjacent Changes follow the filtered directory order and return to the current row", async ({
   page,

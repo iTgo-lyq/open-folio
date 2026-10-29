@@ -97,6 +97,15 @@ export function currentMaterial(
       (query.document && item.file === query.document),
   );
   if (oldDocument) return oldDocument;
+  const key = query.document
+    ? `file:${query.document}`
+    : query.ct === "previews"
+      ? "prototypes"
+      : query.ct === "documents"
+        ? "requirement"
+        : query.ct;
+  const material = items.find((item) => item.id === key);
+  if (material) return material;
   const missingFile =
     query.document ??
     (query.ct?.startsWith("file:") ? query.ct.slice(5) : undefined);
@@ -108,13 +117,7 @@ export function currentMaterial(
       file: missingFile,
       missing: true,
     };
-  const key =
-    query.ct === "previews"
-      ? "prototypes"
-      : query.ct === "documents"
-        ? "requirement"
-        : query.ct;
-  return items.find((item) => item.id === key) ?? items[0];
+  return items[0];
 }
 
 export function documentReadingTarget(
