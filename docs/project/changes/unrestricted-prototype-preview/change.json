@@ -4,13 +4,13 @@
   "title": "放开原型预览能力限制",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/unrestricted-prototype-preview",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "放开原型交互能力并验证各预览入口",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
