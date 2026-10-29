@@ -1,3 +1,4 @@
+import { verifyPrototypeCapabilities } from "./prototype-capabilities";
 import {
   test,
   expect,
@@ -112,10 +113,8 @@ test("copying a direct link opens the anonymous reader without private APIs", as
         .frameLocator("iframe")
         .getByRole("heading", { name: "订单列表原型" }),
     ).toBeVisible();
-    await expect(viewer.locator("iframe")).toHaveAttribute(
-      "sandbox",
-      "allow-scripts",
-    );
+    await expect(viewer.locator("iframe")).not.toHaveAttribute("sandbox");
+    await verifyPrototypeCapabilities(viewer, viewer.frameLocator("iframe"));
     await viewer
       .frameLocator("iframe")
       .getByRole("button", { name: "0", exact: true })

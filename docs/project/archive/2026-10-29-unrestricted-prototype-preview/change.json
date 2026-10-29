@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "unrestricted-prototype-preview",
+  "title": "放开原型预览能力限制",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/unrestricted-prototype-preview",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "放开原型交互能力并验证各预览入口",
+      "status": "done",
+      "verification": "39 项相关单测、35 项浏览器回归、类型检查、生产构建及格式检查通过；320px 工具栏溢出在未修改 develop 同样复现，详见 execution.md。",
+      "commitTitle": "unrestricted-prototype-preview T1: remove prototype capability restrictions"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T04:07:07.352Z",
+      "summary": "Agent 自查完整差异；39 项相关单测、35 项浏览器回归、类型及生产构建通过，既有 320px 布局失败已在 develop 复现并记录。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T04:07:10.861Z",
+      "summary": "Agent 自验收：各预览入口的确认框及其他浏览器能力正常，脚本异常仍可报告，固定产物与权限校验保持有效。",
+      "source": "small 默认自验收；用户明确要求原型 iframe 能力完全放开。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T04:07:39.169Z",
+      "summary": "同步 project-knowledge/prototype-preview：交互容器及原型资源不额外限制浏览器能力，保留正常浏览器规则和后台截图边界。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T04:07:42.710Z",
+      "summary": "原型能力限制已移除并自验收，相关测试与既有布局问题证据完整。",
+      "path": "docs/project/archive/2026-10-29-unrestricted-prototype-preview"
+    }
+  },
+  "types": [
+    "修复"
+  ]
+}

@@ -1,3 +1,4 @@
+import { verifyPrototypeCapabilities } from "./prototype-capabilities";
 import { test, expect, repositoryQuery } from "./connected";
 async function prepare(
   request: import("@playwright/test").APIRequestContext,
@@ -14,7 +15,7 @@ async function prepare(
   expect(response.ok()).toBe(true);
   return (await response.json()).publication;
 }
-test("anonymous preview serves only listed immutable assets with sandbox headers and no CORS", async ({
+test("anonymous preview serves only listed immutable assets without restrictive headers or CORS", async ({
   request,
   personal,
   browser,
@@ -27,15 +28,12 @@ test("anonymous preview serves only listed immutable assets with sandbox headers
     const url = `/api/public-previews/${meta.id}/index.html`;
     const res = await anonymous.request.get(url);
     expect(res.ok()).toBe(true);
-    expect(res.headers()["content-security-policy"]).toContain(
-      "sandbox allow-scripts;",
-    );
-    expect(res.headers()["content-security-policy"]).not.toContain(
-      "allow-same-origin",
-    );
-    expect(res.headers()["content-security-policy"]).toContain(
-      "connect-src 'none'",
-    );
+    for (const header of [
+      "content-security-policy",
+      "permissions-policy",
+      "x-frame-options",
+    ])
+      expect(res.headers()[header]).toBeUndefined();
     expect(res.headers()["access-control-allow-origin"]).toBeUndefined();
     expect(res.headers()["cache-control"]).toContain("public");
     expect((await anonymous.request.head(url)).status()).toBe(200);
@@ -55,7 +53,7 @@ test("anonymous preview serves only listed immutable assets with sandbox headers
     await anonymous.close();
   }
 });
-test("opaque iframe interaction cannot reach host storage, DOM or engineering API", async ({
+test("prototype iframe supports storage, same-origin DOM and network access", async ({
   page,
   request,
   personal,
@@ -89,7 +87,8 @@ test("opaque iframe interaction cannot reach host storage, DOM or engineering AP
     } catch {}
     return out;
   });
-  expect(result).toEqual({ storage: false, dom: false, api: false });
+  expect(result).toEqual({ storage: true, dom: true, api: true });
+  await verifyPrototypeCapabilities(page, frame);
 });
 test("public assets survive removing the publisher connection and never prepare an unknown version", async ({
   request,

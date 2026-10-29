@@ -90,10 +90,7 @@ test("fixed Git publications survive publisher removal, disconnected providers a
         assert.equal(response.status, 200);
         if (method === "HEAD") assert.equal(await response.text(), "");
         if (path === "index.html")
-          assert.match(
-            response.headers.get("content-security-policy")!,
-            /sandbox allow-scripts/,
-          );
+          assert.equal(response.headers.get("content-security-policy"), null);
       }
     assert.equal(t.f.controls.gitCalls, before);
     assert.equal(

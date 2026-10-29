@@ -160,8 +160,5 @@ test("public link preparation retries and copy denial selects the stable URL", a
   await expect(
     page.getByRole("button", { name: "公开链接", exact: true }),
   ).toBeFocused();
-  await expect(page.locator("iframe")).toHaveAttribute(
-    "sandbox",
-    "allow-scripts",
-  );
+  await expect(page.locator("iframe")).not.toHaveAttribute("sandbox");
 });

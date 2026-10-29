@@ -61,7 +61,8 @@ export async function hostedServer(root: string) {
               } as Record<string, string>
             )[extname(relative)] ?? "application/octet-stream",
           "Access-Control-Allow-Origin": "*",
-          "Content-Security-Policy": "frame-ancestors http://127.0.0.1:10682",
+          "Content-Security-Policy":
+            "frame-ancestors 'self' http://127.0.0.1:10682",
           "Referrer-Policy": "no-referrer",
         });
         res.end(bytes);

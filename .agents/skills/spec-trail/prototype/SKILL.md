@@ -102,7 +102,7 @@ OpenFolio 上传失败可原请求重试；上传成功但本地登记失败时�
 
 ## 嵌入与验证
 
-原型使用 HTTP/HTTPS，无来源白名单或不同源要求。iframe 保留 `sandbox="allow-scripts"`，不授予 allow-same-origin。ESM、动态模块和字体等静态资源需允许无 Cookie 的 CORS（如 Access-Control-Allow-Origin:*），资源用相对路径，路由用 hash/memory。宿主允许嵌入并配置 CSP；OpenFolio 不代理第三方登录、下载或转发凭据。
+原型使用 HTTP/HTTPS，无来源白名单或不同源要求。OpenFolio 的交互预览不设置 iframe sandbox，不附加限制能力的 CSP 或 Permissions-Policy，并向跨域原型委派浏览器支持的权限功能。确认框、存储、网络、表单、弹窗、下载、嵌套页面和 Worker 遵循浏览器正常行为；安全上下文、同源规则、用户授权及第三方宿主策略由浏览器执行。资源用相对路径，宿主需允许嵌入；跨域资源按浏览器规则配置 CORS。OpenFolio 不代理第三方登录或转发凭据。
 
 宿主可使用 [就绪桥接](./scripts/bridge.mjs) 回复工作台的 ready/error 握手。工作台分别处理页面加载和应用就绪，页面加载完成后不因缺少可选握手而持续提示未就绪。
 
@@ -115,7 +115,7 @@ node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
 
 ## Git 兜底
 
-显式采用 Git 兜底时，宿主生成 `<packagePath>/preview/<id>/index.html` 自包含 UTF-8 HTML，脚本/CSS/mock 内联，图片字体用 data URL；不允许外链资源、存储或真实业务请求。普通 Vite dist 不是单文件兜底，框架内联构建由宿主维护。
+显式采用 Git 兜底时，宿主生成 `<packagePath>/preview/<id>/index.html` 自包含 UTF-8 HTML，脚本/CSS/mock 内联，图片字体用 data URL；构建产物不引用外链资源；运行时浏览器能力与托管原型一致。普通 Vite dist 不是单文件兜底，框架内联构建由宿主维护。
 
 ```bash
 node .agents/skills/spec-trail/prototype/scripts/publish.mjs register --git-entry orders --change change-id
