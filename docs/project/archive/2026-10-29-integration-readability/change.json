@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-readability",
+  "title": "优化合入变更阅读布局",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/integration-readability",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "优化差异阅读信息层级并修复两栏高度及窄屏布局",
+      "status": "done",
+      "verification": "10 项浏览器回归通过；类型、生产构建、格式检查通过；常驻 CDP 以真实归档数据完成五宽度双主题、两栏等高与换行验证。",
+      "commitTitle": "integration-readability T1: align diff panes and improve reading controls"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T06:56:35.621Z",
+      "summary": "Agent 自查：10 项浏览器回归及类型/格式/生产构建通过，真实归档五宽度双主题的两栏高度、换行和无溢出验证通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T06:56:39.214Z",
+      "summary": "Agent 自验收：两栏底边对齐，独立滚动、路径层级、选中态和长行换行符合需求，窄屏导航与既有操作通过。",
+      "source": "small 默认自验收；用户确认优化方向并明确要求修复左右区域高度。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T06:56:55.190Z",
+      "summary": "同步 change-tracking 的等高独立滚动、完整路径与自动换行阅读行为。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T06:56:58.999Z",
+      "summary": "合入阅读优化与两栏高度修复已验证并由 Agent 自验收，完成规格同步。",
+      "path": "docs/project/archive/2026-10-29-integration-readability"
+    }
+  },
+  "types": [
+    "体验",
+    "修复"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "是否压缩合入信息和文件路径、强化选中状态、改善差异滚动与长行阅读，并适配窄屏？",
+      "recommendation": "保持现有风格，优化合入差异阅读局部界面。",
+      "answer": "按上述方向优化，并修复左右区域高度不一致。",
+      "source": "优化吧，还有左右区域的高度不一致的bug也修复一下。"
+    }
+  }
+}
