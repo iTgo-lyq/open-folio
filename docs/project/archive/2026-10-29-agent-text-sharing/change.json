@@ -3,7 +3,7 @@
   "id": "agent-text-sharing",
   "title": "为跨系统协作提供 Agent 文本分享链接",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "codex/agent-text-sharing",
   "confirmations": {
@@ -36,13 +36,26 @@
       "result": "passed",
       "at": "2026-10-29T04:28:57.021Z",
       "summary": "范围内34项接口及授权回归、8项分享浏览器回归、类型与生产构建、生产路由冒烟及独立评审通过；范围外导航观察见Execution"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T05:05:10.569Z",
+      "summary": "用户验收通过并要求归档合入 develop 后更新常驻服务",
+      "source": "可以，验收通过，归档合入 develop，并更新常驻服务。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T05:06:03.260Z",
+      "summary": "同步个人访问与分享的 Agent 文本契约及 Change 分享复制入口行为"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T05:06:07.528Z",
+      "summary": "用户验收通过，完成文本分享契约与复制入口 Specs 同步后归档",
+      "path": "docs/project/archive/2026-10-29-agent-text-sharing"
     }
   },
   "types": [
     "新功能"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现、验证与独立评审已完成，等待用户验收后归档集成并更新常驻服务"
-  }
+  ]
 }
