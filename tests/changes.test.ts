@@ -185,11 +185,54 @@ test("optional labels share strict validation while old records remain unchanged
   }
 });
 
+test("supplemental collaborator configuration has the same strict contract in hooks and workbench", () => {
+  for (const collaborators of [
+    [],
+    [{ name: "参与者" }],
+    [{ name: "Known", login: "known-login", subjectId: "123" }],
+    [{ name: "Number only", subjectId: "123" }],
+  ]) {
+    const sample = { ...state("members"), collaborators };
+    assert.deepEqual(validateChange(sample), []);
+    assert.deepEqual(changeSchema.parse(sample), sample);
+  }
+  for (const collaborators of [
+    null,
+    {},
+    "Member",
+    [null],
+    ["Member"],
+    [{}],
+    [{ name: "" }],
+    [{ name: " " }],
+    [{ name: " Name" }],
+    [{ name: "Name\n" }],
+    [{ name: "Name\u2028line" }],
+    [{ name: "Name", login: "bad/login" }],
+    [{ name: "Name", login: "" }],
+    [{ name: "Name", subjectId: 123 }],
+    [{ name: "Name", subjectId: "01" }],
+    [{ name: "Name", subjectId: "0" }],
+    [{ name: "Name", email: "private@example.com" }],
+  ]) {
+    const sample = { ...state("members"), collaborators };
+    assert(validateChange(sample).length, JSON.stringify(sample));
+    assert(!changeSchema.safeParse(sample).success, JSON.stringify(sample));
+  }
+});
+
 test("invalid label fields are isolated without revoking completion or dependencies", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   for (const [id, patch] of [
-    ["prior", { types: ["修复", "自定义"], urgency: "invalid" }],
+    [
+      "prior",
+      {
+        types: ["修复", "自定义"],
+        urgency: "invalid",
+        collaborators: [{ name: "Invalid", email: "private@example.com" }],
+      },
+    ],
     ["consumer", { dependsOn: ["prior"], types: [" "], urgency: "high" }],
     ["legacy", {}],
   ] as const) {
@@ -203,6 +246,17 @@ test("invalid label fields are isolated without revoking completion or dependenc
   const group = snapshot.changes.find((g) => g.id === "consumer")!;
   const consumer = primaryRecord(group)!;
   assert(prior.validCompleted && consumer.validCompleted);
+  assert.equal(prior.state!.collaborators, undefined);
+  assert.deepEqual(
+    snapshot.changes.find((g) => g.id === "prior")!.collaborators,
+    [{ name: "Fixture" }],
+  );
+  assert(
+    prior.diagnostics.some(
+      (d) => d.code === "COLLABORATORS_INVALID" && d.severity === "warning",
+    ),
+  );
+  assert.doesNotMatch(JSON.stringify(prior.state), /private@example/);
   assert.deepEqual(prior.state!.types, ["修复", "自定义"]);
   assert.equal(prior.state!.urgency, undefined);
   assert.equal(consumer.state!.types, undefined);

@@ -21,6 +21,7 @@ import {
   validateWorkflow,
   validateTypes,
   validateUrgency,
+  validateCollaborators,
 } from "./state-schema.mjs";
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
@@ -46,8 +47,10 @@ const commands = {
     "group-title",
     "types",
     "urgency",
+    "collaborators",
   ],
   labels: ["types", "urgency"],
+  collaborators: ["members"],
   "follow-up": ["target", "group-title"],
   show: [],
   retitle: ["title"],
@@ -710,6 +713,13 @@ async function main() {
         else state.urgency = opts.urgency;
       }
     };
+    const setCollaborators = (input) => {
+      const members = JSON.parse(input);
+      const errors = validateCollaborators(members);
+      assert(!errors.length, errors.join("; "));
+      if (members.length) state.collaborators = members;
+      else delete state.collaborators;
+    };
     switch (command) {
       case "create":
         assert(
@@ -718,6 +728,10 @@ async function main() {
         );
         if (state.followUpOf) setFollowUp(state.followUpOf);
         setLabels();
+        if (opts.collaborators !== undefined) setCollaborators(opts.collaborators);
+        break;
+      case "collaborators":
+        setCollaborators(need("members"));
         break;
       case "labels":
         assert(

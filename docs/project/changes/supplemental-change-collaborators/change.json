@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "实现补充协作者配置与合并展示",
-      "status": "doing"
+      "status": "done",
+      "verification": "58 项定向测试通过，最终成员合并回归、类型检查、生产构建与独立 HTTP 冒烟通过，详见 execution.md",
+      "commitTitle": "feat: supplement Change collaborators without overriding Git members"
     }
   },
   "closure": {},
