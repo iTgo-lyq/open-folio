@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "agent-text-sharing",
+  "title": "为跨系统协作提供 Agent 文本分享链接",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "develop",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-29T04:10:09.817Z",
+      "summary": "提供单 Change 的完整 Markdown 分享及网页和 Agent 双复制入口",
+      "source": "用户：可以，建个 Change，按这个方案实现 Agent 文本分享链接。但是复制入口的文案和样式你启动 astra subagent 让他来做。"
+    }
+  },
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "新功能"
+  ]
+}
