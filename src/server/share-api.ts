@@ -10,7 +10,6 @@ import { diagnosticHtml } from "./public-previews.ts";
 import { ThumbnailCache } from "./thumbnail-cache.ts";
 import { previewViewport } from "../lib/preview-viewport.ts";
 import type { Device, Limits, PreviewDescriptor } from "../lib/model.ts";
-import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { noteRepositoryActivity } from "./background-refresh.ts";
 
 const headers = {
@@ -238,7 +237,6 @@ export async function sharedResponse(
               value = new Response(diagnosticHtml(html!), {
                 headers: {
                   "Content-Type": "text/html; charset=utf-8",
-                  "Content-Security-Policy": sandboxCsp,
                 },
               });
             } else {

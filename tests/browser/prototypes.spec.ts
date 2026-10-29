@@ -467,10 +467,7 @@ test("loaded hosted pages need no ready bridge and explicit errors survive page 
     frame.getByRole("button", { name: "已添加 0 次" }),
   ).toBeVisible();
   await expect(panel.locator("[data-preview-host-status]")).toHaveCount(0);
-  await expect(panel.locator("iframe")).toHaveAttribute(
-    "sandbox",
-    "allow-scripts",
-  );
+  await expect(panel.locator("iframe")).not.toHaveAttribute("sandbox");
 });
 
 test("card captions open details and full-size images while covers enter the canvas", async ({

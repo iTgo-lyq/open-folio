@@ -1,5 +1,6 @@
 "use client";
 import { usePublication } from "./publication";
+import { PrototypeFrame } from "./prototype-frame";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Monitor,
@@ -202,7 +203,8 @@ export function ChangePreviews({
     const report = (event: MessageEvent) => {
       if (
         event.source !== frame.current?.contentWindow ||
-        event.origin !== "null" ||
+        !url ||
+        event.origin !== new URL(url, window.location.href).origin ||
         event.data?.type !== "openfolio-preview-error" ||
         event.data.load !== load
       )
@@ -216,7 +218,7 @@ export function ChangePreviews({
     };
     window.addEventListener("message", report);
     return () => window.removeEventListener("message", report);
-  }, [load]);
+  }, [load, url]);
   useEffect(() => {
     setHostStatus("pending");
     if (!hosted || !load) return;
@@ -594,14 +596,12 @@ export function ChangePreviews({
                   height: size.height * scale,
                 }}
               >
-                <iframe
+                <PrototypeFrame
                   ref={frame}
                   key={load}
                   title={`原型：${entry.title}`}
                   src={url}
                   onLoad={() => setLoaded(load)}
-                  sandbox="allow-scripts"
-                  allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
                   referrerPolicy="no-referrer"
                   width={size.width}
                   height={size.height}

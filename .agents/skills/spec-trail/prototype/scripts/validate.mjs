@@ -15,7 +15,8 @@ import {
   safePath,
 } from "./contract.mjs";
 import { git, checkedPath } from "./publishing.mjs";
-import { htmlIssues, sandboxCsp } from "./html.mjs";
+import { htmlIssues } from "./html.mjs";
+import { prototypePermissions } from "./permissions.mjs";
 import { localPackage, assertCheckout } from './local-source.mjs';
 import { inPackage } from './source.mjs';
 let browser, server;
@@ -100,12 +101,11 @@ try {
       response.setHeader("Content-Type", "text/html; charset=utf-8");
       if (request.url === "/") {
         response.end(
-          `<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" src="${current.artifact?.type === "hosted" ? current.artifact.url.replaceAll("&", "&amp;").replaceAll('"', "&quot;") : "/preview"}"></iframe>`,
+          `<iframe referrerpolicy="no-referrer" data-src="${current.artifact?.type === "hosted" ? current.artifact.url.replaceAll("&", "&amp;").replaceAll('"', "&quot;") : "/preview"}"></iframe><script>const frame = document.querySelector('iframe'); frame.allow = (${prototypePermissions.toString()})(document); frame.src = frame.dataset.src;</script>`,
         );
         return;
       }
       if (request.url === "/preview" && current.html) {
-        response.setHeader("Content-Security-Policy", sandboxCsp);
         response.end(current.html);
         return;
       }
@@ -117,27 +117,12 @@ try {
       current = entry;
       const page = await browser.newPage(),
         errors = [];
-      const hosted =
-        entry.artifact?.type === "hosted"
-          ? new URL(entry.artifact.url).origin
-          : null;
       page.on("pageerror", (e) => errors.push(e.message));
       page.on("console", (m) => {
         if (m.type() === "error") errors.push(m.text());
       });
       page.on("response", (r) => {
         if (r.status() >= 400) errors.push(`HTTP ${r.status()}`);
-      });
-      await page.route("**/*", (route) => {
-        const url = route.request().url();
-        if (
-          url === origin + "/" ||
-          (!hosted && url === origin + "/preview") ||
-          (hosted && new URL(url).origin === hosted)
-        )
-          return route.continue();
-        errors.push("Unexpected external resource");
-        return route.abort();
       });
       await page.goto(origin);
       await page.frameLocator("iframe").locator("body").waitFor();
@@ -147,7 +132,7 @@ try {
     }
   }
   console.log(
-    `Validated ${entries.length} entry(s)${o.browser ? " in Chromium sandbox" : " (metadata/static checks only)"}. Host interactions and retention still require verification.`,
+    `Validated ${entries.length} entry(s)${o.browser ? " in Chromium" : " (metadata/static checks only)"}. Host interactions and retention still require verification.`,
   );
 } catch (e) {
   console.error(`Prototype validation: ${e.message}`);

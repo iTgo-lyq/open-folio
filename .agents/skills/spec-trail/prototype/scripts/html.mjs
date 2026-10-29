@@ -1,4 +1,4 @@
-// A quick export check, not a security boundary. CSP and the browser check enforce runtime isolation.
+// A single-file packaging check, not a restriction on interactive browser capabilities.
 export function htmlIssues(html) {
   const issues = [];
   if (!/<!doctype\s+html\b|<html\b/i.test(html)) issues.push("缺少 HTML 文档声明");
@@ -18,4 +18,5 @@ export function htmlIssues(html) {
   }
   return [...new Set(issues)];
 }
+// Used only by the isolated background thumbnail renderer.
 export const sandboxCsp = "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";

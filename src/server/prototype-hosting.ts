@@ -325,8 +325,6 @@ const assetHeaders = {
   "Access-Control-Allow-Origin": "*",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
-  "Content-Security-Policy":
-    "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' http: https:; style-src 'unsafe-inline' http: https:; img-src data: blob: http: https:; font-src data: http: https:; media-src blob: http: https:; connect-src http: https:; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; frame-ancestors *",
 };
 export async function hostedAsset(
   request: Request,

@@ -11,7 +11,7 @@ import {
 } from "../../.agents/skills/spec-trail/prototype/scripts/upload-protocol.mjs";
 import { requestIdentity } from "../../.agents/skills/spec-trail/prototype/scripts/publication-contract.mjs";
 
-test("built-in public assets load modules, styles and images on same and other origins while isolating the workbench", async ({
+test("built-in public assets load modules, styles and images on same and other origins without capability restrictions", async ({
   page,
   request,
   browser,
@@ -79,8 +79,9 @@ test("built-in public assets load modules, styles and images on same and other o
     const response = await publicContext.request.get(url);
     expect(response.status()).toBe(200);
     expect(response.headers()["x-frame-options"]).toBeUndefined();
+    expect(response.headers()["content-security-policy"]).toBeUndefined();
     expect(response.headers()["access-control-allow-origin"]).toBe("*");
-    const html = `<iframe title="hosted" sandbox="allow-scripts" src="${url}"></iframe>`;
+    const html = `<iframe title="hosted" src="${url}"></iframe>`;
     await page.route("**/hosting-check", (route) =>
       route.fulfill({ contentType: "text/html", body: html }),
     );
@@ -111,7 +112,7 @@ test("built-in public assets load modules, styles and images on same and other o
             return false;
           }
         }),
-      ).toBe(false);
+      ).toBe(origin === baseURL);
       expect(
         await child.evaluate(() => {
           try {
@@ -120,7 +121,7 @@ test("built-in public assets load modules, styles and images on same and other o
             return "isolated";
           }
         }),
-      ).toBe("isolated");
+      ).not.toBe("isolated");
       expect(
         await child.evaluate(async () => {
           try {
@@ -130,7 +131,7 @@ test("built-in public assets load modules, styles and images on same and other o
             return "blocked";
           }
         }),
-      ).toBe("blocked");
+      ).toBe("exposed");
     }
     const anonymous = await publicContext.newPage();
     await anonymous.goto(url);
@@ -145,7 +146,7 @@ test("built-in public assets load modules, styles and images on same and other o
           return "isolated";
         }
       }),
-    ).toBe("isolated");
+    ).not.toBe("isolated");
   } finally {
     await publicContext.close();
   }

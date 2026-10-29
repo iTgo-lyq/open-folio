@@ -142,10 +142,7 @@ test("only admins discover the stable private upload address; holders publish pu
   assert.equal(first.status, 200);
   assert.equal(await first.text(), p.content["index.html"]);
   assert.equal(first.headers.get("access-control-allow-origin"), "*");
-  assert.match(
-    first.headers.get("content-security-policy")!,
-    /sandbox allow-scripts/,
-  );
+  assert.equal(first.headers.get("content-security-policy"), null);
   assert.match(first.headers.get("cache-control")!, /public.*immutable/);
   assert.equal(
     (await asset(p.request.requestId, "index.html", "HEAD")).headers.get(

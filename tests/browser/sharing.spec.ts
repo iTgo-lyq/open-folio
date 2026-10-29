@@ -1,3 +1,4 @@
+import { verifyPrototypeCapabilities } from "./prototype-capabilities";
 import {
   copyPublicPreviewLink,
   test,
@@ -51,7 +52,7 @@ test("engineering share links use each collaborator's connection and restore the
     await collaborator.close();
   }
 });
-test("a prepared prototype opens anonymously after logout and keeps its sandbox and screenshots", async ({
+test("a prepared prototype opens anonymously after logout and keeps its browser capabilities and screenshots", async ({
   page,
   context,
   browser,
@@ -89,10 +90,8 @@ test("a prepared prototype opens anonymously after logout and keeps its sandbox 
         .frameLocator("iframe")
         .getByRole("heading", { name: "订单列表原型" }),
     ).toBeVisible();
-    await expect(viewer.locator("iframe")).toHaveAttribute(
-      "sandbox",
-      "allow-scripts",
-    );
+    await expect(viewer.locator("iframe")).not.toHaveAttribute("sandbox");
+    await verifyPrototypeCapabilities(viewer, viewer.frameLocator("iframe"));
     await viewer
       .frameLocator("iframe")
       .getByRole("button", { name: "0", exact: true })
