@@ -16,9 +16,9 @@ workspace/
 
 ## 规划与移交
 
-在集成分支用 `change.mjs` 整理需求与技术，移交后在所属分支继续 Plan、确认和任务。默认以 `git commit --only -m '<说明>' -- docs/project/changes/<id>` 限定提交范围，再普通推送，避免夹带其他会话的暂存内容。小补充的 amend 与回退按[主 skill](../SKILL.md#同阶段讨论的小补充)执行。普通推送非快进时保留现场，在独立工作区整合远端；除恢复本次 amend 外，不为推送切换或重置主工作区。分支移交始终使用普通提交和推送。
+在集成分支用 `change.mjs` 整理需求，移交后在所属工作区推进原型、技术方案、Plan 和实现。默认以 `git commit --only -m '<说明>' -- docs/project/changes/<id>` 限定提交范围，再普通推送，避免夹带其他会话的暂存内容。小补充的 amend 与回退按[主 skill](../SKILL.md#同阶段讨论的小补充)执行。普通推送非快进时保留现场，在独立工作区整合远端；除恢复本次 amend 外，不为推送切换或重置主工作区。分支移交始终使用普通提交和推送。
 
-编写 Plan 前移交：需求已确认、Technical 已准备并推送；large 还需技术确认。无需先有 Plan、任务或已交付依赖，xlarge 也无需等待子项关闭。small 无 Plan，沿用需求、任务和依赖就绪后移交。
+需求文档提交并按规模确认后移交，small 沿用现有确认规则。不等待技术方案、Plan、任务或依赖交付，显式暂缓仍阻止移交；执行与关闭继续检查原有前置条件。
 
 ```bash
 node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example --dry-run

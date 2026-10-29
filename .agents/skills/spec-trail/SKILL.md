@@ -26,7 +26,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 
 - 集成分支由 `workflow.json.integrationBranch` 指定，推荐名称为 `develop`，不限制项目自定义名称，承担集中讨论与持续交付。主工作区使用项目实际配置的集成分支，不随 Change 或任务切换分支；Change 关闭后默认通过 PR 交付到这里。`releaseBranch` 为正式版本基线，仅在用户要求正式发布时提交发布 PR。移交前的规划和分支登记继续直接提交集成分支。
 - 在主工作区回应涉及现状的任何询问前，先检查远端协作分支更新并安全快进本地分支；无法安全同步时保留现场并说明，不以过期内容下结论。
-- 新 Change 在集成分支整理需求与技术方案，branch 指向自身。编写 Plan 前从最新交付目标（子项为父分支，其余为集成分支）移交到独立工作分支（默认 `change/<id>`）、worktree 和会话，集中 change.json.branch 登记目标；Plan 写完推送后[创建或复用 Draft PR](references/integration.md)。small 无 Plan，在实施前移交并创建 Draft。保留集中规划目录，不镜像执行状态。
+- 新 Change 在集成分支整理需求，branch 指向自身。需求文档提交并按规模确认后，从最新交付目标（子项为父分支，其余为集成分支）移交到独立工作分支（默认 `change/<id>`）、worktree 和会话，集中 change.json.branch 登记目标。原型、技术方案、Plan 和实现均在所属工作区推进；small 沿用现有确认规则。Draft PR 按[集成流程](references/integration.md)创建，保留集中需求目录，不镜像执行状态。
 - 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 工作区名默认使用 id；已有登记优先复用，用户明确指定路径时沿用，不为统一命名搬动已有工作区。项目的构建和长期服务位置遵循项目约定，SpecTrail 不要求另建服务 checkout。
 - 新 worktree 缺少 `.env` 或 `.env.local` 时，先到主工作区查找并按需复用；测试实例使用独立端口和数据目录。
 - 工作分支只推进所属 Change；继承的其他记录按集中入口读取。只有所属分支更新完整状态，集中分支仅登记工作分支；任务分支仍可用 `task/<id>/T<n>`，只提交实现和证据。普通 Change 不在集成分支进入实现，xlarge 父项在所属工作分支集成子项并关闭。
@@ -229,7 +229,7 @@ interface ChangeState {
 
 1. 按字段约定生成 `id`，核对本地 Change、分支与该 ID 的归档元数据，避免重名。id 表达用户结果，不用纯日期或模糊名称，创建后不变；`title` 可调整。
 2. 核对已配置的集成分支与主工作区，先在此规划；不在创建时切换主工作区。
-3. 在集成分支运行 `create` 建立目录与初始 JSON，branch 指向集成分支；脚本生成 `active` / `requirement` 和空流程记录。编写 Plan 前移交，small 在实施前移交。
+3. 在集成分支运行 `create` 建立目录与初始 JSON，branch 指向集成分支；脚本生成 `active` / `requirement` 和空流程记录。需求文档提交并按规模确认后移交。
 4. 将已有目标、范围、方向、未决问题及外部材料写入 `requirement.md`，继续需求整理。
 
 类型用简短词概括实际工作，可多选，优先复用项目已有同义词；推荐「新功能、修复、体验、性能、重构、安全、适配、文档、测试、工程、流程、数据」，不限于这些词，用户指定名称沿用。紧急程度按用户安排填写，无特别安排时省略；不从类型或规模推断，不回填历史。创建时可填，活动 Change 用 `labels` 更新，参数见[状态命令](./references/state-commands.md)。
@@ -260,7 +260,7 @@ active Change 可用 `follow-up --target none` 移除关联，同时清除自身
 
 父 Change 只维护整体目标、架构、共享契约与拆分，不承担产品实现。Plan 列每个子 Change 的 id、目标、边界、依赖、执行顺序和预估规模；JSON 用 `children` 关联，不设实现任务。实际前置依赖由相关子 Change 在 `dependsOn` 声明，父 Plan 汇总，不在父 JSON 声明或向子 Change 自动继承。
 
-父项在编写 Plan 前移交到独立工作分支。子项在集成分支规划，用 `parent` 关联并引用父文档；分别从父分支移交，按 small / medium / large 独立推进、验收、归档，再通过 PR 合入父分支，不再向下拆分。集中登记只记录归属，不带入父项实现，操作见[工作区命令](references/workspaces.md)。
+父项在需求确认后移交到独立工作分支。子项在集成分支整理需求，用 `parent` 关联并引用父文档；需求就绪后分别从父分支移交，按 small / medium / large 独立推进、验收、归档，再通过 PR 合入父分支，不再向下拆分。集中登记只记录归属，不带入父项实现，操作见[工作区命令](references/workspaces.md)。
 
 子状态只写自身 JSON；调整拆分同步父 Plan 与 `children`，整体目标或架构变化回到父项相应阶段。全部子项完成或取消，已完成交付在父分支核实并通过整体验收后，父项携所属子项归档整体合入集成分支。子项合入父分支即结束原 Change，后续修正使用后继 Change。旧规则下已直接集成的子项按真实 PR/Git 证据保留，不改写历史。
 
@@ -278,8 +278,8 @@ active Change 可用 `follow-up --target none` 移除关联，同时清除自身
 
 | 当前阶段 | 完成条件与后续更新 |
 | --- | --- |
-| requirement，small | 创建前确认的方向未变，需求、方案要点、验收及任务已写入并推送；直接进入 execution，不记录需求、技术、计划确认 |
-| requirement，其余规模 | 用户确认完整目标、范围和验收；记录 `confirmations.requirement`，进入 technical |
+| requirement，small | 创建前确认的方向未变，需求、方案要点及验收已写入并推送后移交；任务就绪后进入 execution，不记录需求、技术、计划确认 |
+| requirement，其余规模 | 用户确认完整目标、范围和验收；记录 `confirmations.requirement`，进入 technical，推送后移交 |
 | technical，medium / xlarge | Technical 与 Plan 一起确认，xlarge 的 Plan 为子 Change 拆分；同时记录 `technical`、`plan` 确认，进入 execution，不单独进入 plan |
 | technical，large | 用户确认方案与必要契约；记录 `confirmations.technical`，进入 plan |
 | plan，large | 用户确认整体计划；记录 `confirmations.plan`，进入 execution，无需逐任务审批 |

@@ -4,7 +4,7 @@
   "title": "需求确认后移交独立工作区",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/prototype-workspace-check",
   "confirmations": {},
   "tasks": {
@@ -15,7 +15,8 @@
     },
     "T2": {
       "title": "统一需求确认后的移交规则、脚本及回归验证",
-      "status": "todo"
+      "status": "done",
+      "verification": "工作区路由 18 项、父子集成 6 项、版本 2 项通过；状态命令 21 项通过，依赖用例修正断言后定向复验通过。skill、版本一致性、格式及 diff 检查通过。"
     }
   },
   "closure": {},

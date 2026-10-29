@@ -9,9 +9,9 @@ description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜
 
 ## 接入与设计
 
-读取 AGENTS、设计规范、现有组件及 `workflow.json.prototype`，默认基线为项目实际配置并已推送的集成分支，develop 只是推荐名称。OpenFolio 直接使用接入时指定的集成分支读取原型策略与清单，不依赖默认分支或发布分支。未选择时按需询问；disabled 不重复建议；pending 修复接入；enabled 复用已有包。
+读取 AGENTS、设计规范、现有组件及 `workflow.json.prototype`。OpenFolio 直接使用接入时指定的集成分支读取原型策略与清单，不依赖默认分支或发布分支。未选择时按需询问；disabled 不重复建议；pending 修复接入；enabled 复用已有包。
 
-绘制或更新前核对原型工作区关联的进行中 Change 及并发修改风险；有风险时说明重叠范围，待用户选择沿用最新源码或在独立工作区迭代。基于线上原型时，以发布记录的 `sourceCommit` 为源码基线，保留他人修改。
+需求确认并移交后，在所属 Change 的独立工作区绘制或更新原型，small 沿用主流程确认规则。绘制前核对其他进行中 Change 的修改范围，有重叠时先协调公共修改、依赖和合入顺序。
 
 原型已启用时，按 UI 影响范围处理，不以 Change 规模代替判断：
 

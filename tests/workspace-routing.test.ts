@@ -272,12 +272,12 @@ test("predeclared parent and child allow central clarification but require real 
   assert.match(f.state("show", [], 1), /parent is missing or nested/);
   assert.match(f.workspace("locate", [], 1), /parent is missing or nested/);
 });
-for (const size of ["medium", "large", "xlarge"]) {
-  test(`${size} hands off before Plan and keeps execution confirmation gates`, (t) => {
+for (const size of ["small", "medium", "large", "xlarge"]) {
+  test(`${size} hands off after requirements and keeps execution gates`, (t) => {
     const f = fixture(t);
     f.state("create", [
       "--title",
-      "Plan in work branch",
+      "Continue in work branch",
       "--size",
       size,
       ...(size === "xlarge" ? ["--children", "child"] : []),
@@ -289,10 +289,12 @@ for (const size of ["medium", "large", "xlarge"]) {
         0,
         "child",
       );
-    for (const name of ["requirement", "technical"])
-      f.put(`docs/project/changes/sample/${name}.md`, `# ${name}\n`);
     f.commit();
-    f.handoff(1);
+    assert.match(f.handoff(1), /Missing regular file: .*requirement.md/);
+    f.put("docs/project/changes/sample/requirement.md", "# Requirement\n");
+    f.commit();
+    if (size !== "small")
+      assert.match(f.handoff(1), /Missing requirement confirmation/);
     assert(!existsSync(f.work));
     const confirm = (phase: string, cwd = f.repo) =>
       f.state(
@@ -302,18 +304,22 @@ for (const size of ["medium", "large", "xlarge"]) {
         "sample",
         cwd,
       );
-    confirm("requirement");
+    if (size !== "small") confirm("requirement");
+    f.state("wait", ["--kind", "pause", "--summary", "Explicit pause"]);
     f.commit();
-    if (size === "large") {
-      assert.match(f.handoff(1), /Missing technical confirmation/);
-      confirm("technical");
-      f.commit();
-    }
+    assert.match(f.handoff(1), /Resolve the pause/);
+    assert(!existsSync(f.work));
+    assert(!at(f.repo, "show-ref", "--heads").includes("change/sample"));
+    f.state("resume");
+    f.commit();
     const before = at(f.repo, "rev-parse", "HEAD");
     f.workspace("handoff", ["--path", f.work, "--dry-run"]);
     assert(!existsSync(f.work));
     assert.equal(at(f.repo, "rev-parse", "HEAD"), before);
     f.handoff();
+    assert(
+      !existsSync(join(f.work, "docs/project/changes/sample/technical.md")),
+    );
     assert(!existsSync(join(f.work, "docs/project/changes/sample/plan.md")));
     assert.deepEqual(f.state("show", [], 0, "sample", f.work).state.tasks, {});
     assert.equal(
@@ -322,20 +328,45 @@ for (const size of ["medium", "large", "xlarge"]) {
     );
     assert.match(
       f.state("execute", [], 1, "sample", f.work),
-      /Missing plan.md/,
+      size === "small"
+        ? /Define tasks before execution/
+        : /Missing technical.md/,
     );
-    f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
+    if (size !== "small") {
+      f.put(
+        "docs/project/changes/sample/technical.md",
+        "# Technical\n",
+        f.work,
+      );
+      assert.match(
+        f.state("execute", [], 1, "sample", f.work),
+        /Missing plan.md/,
+      );
+      f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
+    }
     if (size !== "xlarge")
       f.state("task-add", ["--title", "Implement"], 0, "sample", f.work);
-    assert.match(
-      f.state("execute", [], 1, "sample", f.work),
-      /Missing .* confirmation/,
-    );
-    if (size !== "large") confirm("technical", f.work);
-    confirm("plan", f.work);
+    if (size !== "small") {
+      assert.match(
+        f.state("execute", [], 1, "sample", f.work),
+        /Missing technical confirmation/,
+      );
+      confirm("technical", f.work);
+      assert.match(
+        f.state("execute", [], 1, "sample", f.work),
+        /Missing plan confirmation/,
+      );
+      confirm("plan", f.work);
+    }
     f.commit(f.work);
+    assert(
+      !existsSync(join(f.repo, "docs/project/changes/sample/technical.md")),
+    );
     assert(!existsSync(join(f.repo, "docs/project/changes/sample/plan.md")));
-    assert.equal(f.state("show").state.confirmations.plan.summary, "Scope");
+    if (size === "small")
+      assert.deepEqual(f.state("show").state.confirmations, {});
+    else
+      assert.equal(f.state("show").state.confirmations.plan.summary, "Scope");
     f.state("execute", [], 0, "sample", f.work);
     if (size === "xlarge")
       assert.match(
@@ -350,7 +381,7 @@ for (const size of ["medium", "large", "xlarge"]) {
       );
   });
 }
-test("Plan handoff permits pending delivery dependencies but execution still checks them", (t) => {
+test("requirement handoff permits pending delivery dependencies but execution still checks them", (t) => {
   const f = fixture(t);
   f.planning("upstream");
   f.state("create", [
@@ -361,8 +392,7 @@ test("Plan handoff permits pending delivery dependencies but execution still che
     "--depends-on",
     "upstream",
   ]);
-  for (const name of ["requirement", "technical"])
-    f.put(`docs/project/changes/sample/${name}.md`, `# ${name}\n`);
+  f.put("docs/project/changes/sample/requirement.md", "# Requirement\n");
   f.state("confirm", [
     "--phase",
     "requirement",
@@ -371,12 +401,14 @@ test("Plan handoff permits pending delivery dependencies but execution still che
     "--source",
     "Fixture",
   ]);
-  f.state("wait", ["--kind", "pause", "--summary", "Explicit pause"]);
-  f.commit();
-  assert.match(f.handoff(1), /Resolve the pause/);
-  f.state("resume");
+  f.state("wait", ["--kind", "dependency", "--summary", "Wait for upstream"]);
   f.commit();
   f.handoff();
+  assert.equal(
+    f.state("show", [], 0, "sample", f.work).state.waitingFor.kind,
+    "dependency",
+  );
+  f.put("docs/project/changes/sample/technical.md", "# Technical\n", f.work);
   f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
   f.state("task-add", ["--title", "Implement"], 0, "sample", f.work);
   for (const phase of ["technical", "plan"])
@@ -388,6 +420,11 @@ test("Plan handoff permits pending delivery dependencies but execution still che
       f.work,
     );
   f.commit(f.work);
+  assert.match(
+    f.state("execute", [], 1, "sample", f.work),
+    /waiting condition/,
+  );
+  f.state("resume", [], 0, "sample", f.work);
   assert.match(f.state("execute", [], 1, "sample", f.work), /closed|archived/);
 });
 test("target push failure and registration refusal preserve public routing and retry safely", (t) => {

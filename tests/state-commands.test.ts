@@ -1061,10 +1061,14 @@ test("execution requires a published archived dependency already integrated in t
   assert.match(f.run("execute", [], 1, "next"), /not closed/);
   assert.equal(f.state("next").stage, "requirement");
   f.at(upstream, "push", "origin", "HEAD");
-  assert.match(f.handoff(1, "next"), /has not been integrated/);
-  f.git("merge", "--no-edit", "change/sample");
-  f.git("push", "origin", "develop");
   f.handoff(0, "next");
+  assert.match(
+    f.run("execute", [], 1, "next"),
+    /Cannot establish sample by ancestry/,
+  );
+  assert.equal(f.state("next").stage, "requirement");
+  f.git("merge", "--no-edit", "change/sample");
+  f.git("push", "origin", "HEAD");
   f.run("execute", [], 0, "next");
   assert.equal(f.state("next").stage, "execution");
 });
