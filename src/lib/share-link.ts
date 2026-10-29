@@ -18,6 +18,16 @@ export function sharePath(target: ShareTarget) {
   return `/share?${shareParams(target)}`;
 }
 
+export function agentSharePath(
+  target: ShareTarget,
+  options: { document?: string; snapshot?: string } = {},
+) {
+  const params = shareParams(target);
+  if (options.document !== undefined) params.set("document", options.document);
+  if (options.snapshot !== undefined) params.set("snapshot", options.snapshot);
+  return `/share/agent?${params}`;
+}
+
 export function sharedReadUrl(target: ShareTarget, path: string) {
   const [name, query] = path.split("?");
   const params = new URLSearchParams(query);

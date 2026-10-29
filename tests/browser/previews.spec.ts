@@ -1,3 +1,4 @@
+import { verifyPrototypeCapabilities } from "./prototype-capabilities";
 import {
   test,
   expect,
@@ -137,7 +138,7 @@ test("narrow screens keep component dimensions and unsupported links recover to 
   ).toBeVisible();
 });
 
-test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted URLs never get HEAD or load query", async ({
+test("host-built React chunks and shared UI run with browser capabilities; fixed hosted URLs never get HEAD or load query", async ({
   page,
 }) => {
   await page.clock.install();
@@ -158,7 +159,13 @@ test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted 
   await expect(page.getByText("页面已就绪", { exact: true })).toBeVisible();
   await expect(
     page.locator('iframe[title="原型：托管 React"]'),
-  ).toHaveAttribute("sandbox", "allow-scripts");
+  ).not.toHaveAttribute("sandbox");
+  await expect(page.locator("iframe")).toHaveAttribute("allow", /camera \*/);
+  await expect(page.locator("iframe")).toHaveAttribute(
+    "allow",
+    /microphone \*/,
+  );
+  await verifyPrototypeCapabilities(page, frame);
   expect(requests.some((r) => r.url.endsWith(".js"))).toBe(true);
   expect(
     requests.every((r) => r.method === "GET" && !r.url.includes("load=")),
@@ -181,10 +188,10 @@ test("host-built React chunks and shared UI run in opaque sandbox; fixed hosted 
   );
 });
 
-test("published Git prototypes still report script and CSP errors to the owning canvas", async ({
+test("published Git prototypes allow requests and still report script errors to the owning canvas", async ({
   page,
 }) => {
-  for (const code of ["runtime", "network"]) {
+  for (const code of ["network", "runtime"]) {
     await page.goto(path + "&preview=orders");
     const frame = page.frameLocator('iframe[title="原型：订单列表"]');
     await expect(frame.getByRole("heading")).toBeVisible();
@@ -193,15 +200,24 @@ test("published Git prototypes still report script and CSP errors to the owning 
         setTimeout(() => {
           throw Error("fixture runtime fault");
         }, 0);
-      else void fetch("https://example.invalid/blocked").catch(() => {});
+      else
+        return fetch(location.href).then((response) => {
+          if (!response.ok) throw Error("Preview request failed");
+        });
     }, code);
-    await expect(
-      page.getByText(
-        code === "runtime"
-          ? "原型脚本发生错误，请在原型包中检查并重新导出。"
-          : "原型仍依赖外部资源或不支持的能力，请重新导出自包含 HTML。",
-        { exact: true },
-      ),
-    ).toBeVisible();
+    const error = page.getByText(
+      "原型脚本发生错误，请在原型包中检查并重新导出。",
+      { exact: true },
+    );
+    if (code === "runtime") await expect(error).toBeVisible();
+    else {
+      await expect(error).toHaveCount(0);
+      await expect(
+        page.getByText(
+          "原型仍依赖外部资源或不支持的能力，请重新导出自包含 HTML。",
+          { exact: true },
+        ),
+      ).toHaveCount(0);
+    }
   }
 });

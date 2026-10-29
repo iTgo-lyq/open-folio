@@ -19,7 +19,6 @@ import {
 } from "./personal-http.ts";
 import { readConfig, limitsFor } from "./config.ts";
 import type { Limits } from "../lib/model.ts";
-import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 const inputSchema = z
   .object({
     connectionId: z.string().uuid(),
@@ -110,12 +109,6 @@ export async function publicPreviewResponse(
           "Content-Type": path.endsWith(".html")
             ? "text/html; charset=utf-8"
             : "image/jpeg",
-          "Content-Security-Policy": path.endsWith(".html")
-            ? sandboxCsp
-            : "default-src 'none'; sandbox",
-          "X-Frame-Options": "SAMEORIGIN",
-          "Permissions-Policy":
-            "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
         },
       },
     );

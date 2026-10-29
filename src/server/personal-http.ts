@@ -24,7 +24,7 @@ export function requestRevision(request: Request) {
     throw new AppError("INVALID_PARAMETER", "身份版本参数不合法。", 400);
   return Number(value);
 }
-export function requirePersonalOrigin(request: Request) {
+export function requestOrigin(request: Request) {
   const url = new URL(request.url);
   const secure =
     url.protocol === "https:" ||
@@ -44,9 +44,12 @@ export function requirePersonalOrigin(request: Request) {
     !["localhost", "127.0.0.1", "[::1]"].includes(external.hostname)
   )
     throw new AppError("HTTPS_REQUIRED", "远程连接需要 HTTPS。", 400);
+  return external.origin;
+}
+export function requirePersonalOrigin(request: Request) {
+  const expected = requestOrigin(request);
   const origin = request.headers.get("origin"),
     site = request.headers.get("sec-fetch-site");
-  const expected = external.origin;
   if (
     site === "cross-site" ||
     (origin ? origin !== expected : site !== "same-origin")

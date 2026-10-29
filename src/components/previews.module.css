@@ -102,6 +102,15 @@
   margin: 0;
   gap: 4px;
 }
+.viewport-tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 6px 12px;
+  background: var(--of-bg-surface);
+  border-bottom: 0.5px solid var(--of-border);
+}
 .devices svg {
   width: 14px;
   height: 14px;
@@ -278,5 +287,10 @@
   }
   .preview-host-status {
     flex-wrap: wrap;
+  }
+}
+@media (max-width: 420px) {
+  .prototype-viewer {
+    flex-direction: column;
   }
 }

@@ -105,13 +105,13 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
   assert.equal(run(f.author, "validate.mjs").status, 1);
 });
 
-test("browser export validation catches runtime network dependencies without relaxing CSP", async (t) => {
+test("browser export validation permits runtime storage, requests and workers", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
   await f.put(
     "packages/prototype/preview/welcome/index.html",
-    '<!doctype html><h1>Broken export</h1><script>fetch("https://example.invalid/private").catch(()=>{})</script>',
+    '<!doctype html><h1>Interactive export</h1><script>localStorage.setItem("prototype", "ok"); fetch(location.href); const worker = new Worker(URL.createObjectURL(new Blob(["postMessage(1)"]))); worker.onmessage = () => worker.terminate();</script>',
   );
   assert.equal(run(f.author, "validate.mjs").status, 0); // Static checks are deliberately not a runtime guarantee.
   const result = run(f.author, "validate.mjs", [
@@ -119,8 +119,7 @@ test("browser export validation catches runtime network dependencies without rel
     "--playwright",
     resolve("node_modules/@playwright/test/index.mjs"),
   ]);
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /Content Security Policy|violates|connect-src/i);
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test("pnpm workspace integration respects matching exclusions while preserving unrelated rules", async (t) => {

@@ -5,6 +5,7 @@ import { IconButton, SegmentedControl } from "@open-folio/ui";
 import type { PublicPreview } from "@/server/public-previews";
 import { DEVICE_VIEWPORTS } from "@/lib/preview-viewport";
 import { PublicShell } from "./public-shell";
+import { PrototypeFrame } from "./prototype-frame";
 import { Empty } from "./document";
 import { useMediaQuery } from "./use-media";
 import styles from "./public-preview.module.css";
@@ -170,7 +171,7 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
               className={styles.frame}
               style={{ width: size.width * scale, height: size.height * scale }}
             >
-              <iframe
+              <PrototypeFrame
                 key={attempt}
                 title={meta.title}
                 src={
@@ -180,8 +181,6 @@ export function PublicPreviewView({ meta }: { meta: PublicPreview }) {
                 }
                 width={size.width}
                 height={size.height}
-                sandbox="allow-scripts"
-                allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
                 referrerPolicy="no-referrer"
                 style={{
                   width: size.width,

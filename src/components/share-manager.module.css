@@ -1,5 +1,7 @@
 .popover {
   width: min(360px, calc(100vw - 16px));
+  max-height: var(--radix-popover-content-available-height);
+  overflow-y: auto;
 }
 .popover header {
   display: flex;
@@ -12,17 +14,25 @@
   margin: 0;
   font-weight: 600;
 }
-.popover p {
+.description {
   font-size: 12.5px;
   line-height: 1.7;
   color: var(--of-text-2);
-  margin: 8px 0 12px;
+  margin: 8px 0 16px;
 }
-.popover label {
-  display: block;
-  font-size: 11.5px;
-  color: var(--of-text-3);
-  margin-bottom: 6px;
+.links {
+  gap: 14px;
+}
+.linkField {
+  gap: 6px;
+  min-width: 0;
+}
+.linkField + .linkField {
+  border-top: 1px solid var(--of-border);
+  padding-top: 14px;
+}
+.linkDescription {
+  color: var(--of-text-2);
 }
 .row {
   display: flex;
@@ -36,13 +46,41 @@
 }
 .row button {
   flex: none;
+  width: 138px;
+}
+.feedback {
+  margin: 0;
+  color: var(--of-text-2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.feedback:empty {
+  margin-top: -6px;
 }
 .popover > a {
   display: inline-block;
-  margin-top: 12px;
+  margin-top: 14px;
   color: var(--of-accent-text);
   font-size: 12px;
   text-underline-offset: 3px;
+}
+.popover > a:focus-visible {
+  outline: 2px solid var(--of-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+@media (max-width: 400px) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .row input {
+    flex: auto;
+    width: 100%;
+  }
+  .row button {
+    width: 100%;
+  }
 }
 @media (max-width: 760px) {
   .triggerText {

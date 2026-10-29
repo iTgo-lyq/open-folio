@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "agent-text-sharing",
+  "title": "为跨系统协作提供 Agent 文本分享链接",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/agent-text-sharing",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-10-29T04:10:09.817Z",
+      "summary": "提供单 Change 的完整 Markdown 分享及网页和 Agent 双复制入口",
+      "source": "用户：可以，建个 Change，按这个方案实现 Agent 文本分享链接。但是复制入口的文案和样式你启动 astra subagent 让他来做。"
+    },
+    "technical": {
+      "at": "2026-10-29T04:10:49.701Z",
+      "summary": "复用现有匿名分享按同一快照返回全文及分篇 Markdown",
+      "source": "用户明确要求按前述文本分享方案实现，常规接口及实现细节由 Agent 落实。"
+    },
+    "plan": {
+      "at": "2026-10-29T04:10:53.644Z",
+      "summary": "交付文本入口和 Astra 设计的双复制入口并完成验证",
+      "source": "用户：按这个方案实现 Agent 文本分享链接，复制入口的文案和样式启动 astra subagent 来做。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "提供 Agent 文本分享与双复制入口",
+      "status": "done",
+      "verification": "34项接口及授权回归、8项分享浏览器回归、六组界面检查、类型检查、生产构建和路由冒烟通过，独立评审问题已关闭",
+      "commitTitle": "feat: add Agent text sharing for Changes"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T04:28:57.021Z",
+      "summary": "范围内34项接口及授权回归、8项分享浏览器回归、类型与生产构建、生产路由冒烟及独立评审通过；范围外导航观察见Execution"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T05:05:10.569Z",
+      "summary": "用户验收通过并要求归档合入 develop 后更新常驻服务",
+      "source": "可以，验收通过，归档合入 develop，并更新常驻服务。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-10-29T05:06:03.260Z",
+      "summary": "同步个人访问与分享的 Agent 文本契约及 Change 分享复制入口行为"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T05:06:07.528Z",
+      "summary": "用户验收通过，完成文本分享契约与复制入口 Specs 同步后归档",
+      "path": "docs/project/archive/2026-10-29-agent-text-sharing"
+    }
+  },
+  "types": [
+    "新功能"
+  ]
+}

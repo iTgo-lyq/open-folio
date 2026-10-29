@@ -1,8 +1,12 @@
 "use client";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Copy, Share2, X } from "lucide-react";
 import {
   Button,
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
   IconButton,
   Input,
   Popover,
@@ -10,26 +14,85 @@ import {
   PopoverTrigger,
 } from "@open-folio/ui";
 import { useWorkspace } from "./context";
-import { sharePath } from "@/lib/share-link";
+import { agentSharePath, sharePath } from "@/lib/share-link";
 import styles from "./share-manager.module.css";
+
+function ShareLinkField({
+  label,
+  description,
+  copyLabel,
+  url,
+}: {
+  label: string;
+  description: string;
+  copyLabel: string;
+  url: string;
+}) {
+  const id = useId();
+  const input = useRef<HTMLInputElement>(null);
+  const [message, setMessage] = useState("");
+  return (
+    <Field className={styles.linkField} aria-labelledby={`${id}-label`}>
+      <FieldLabel id={`${id}-label`} htmlFor={id}>
+        {label}
+      </FieldLabel>
+      <FieldDescription
+        id={`${id}-description`}
+        className={styles.linkDescription}
+      >
+        {description}
+      </FieldDescription>
+      <div className={styles.row}>
+        <Input
+          id={id}
+          ref={input}
+          readOnly
+          value={url}
+          aria-describedby={`${id}-description`}
+          onFocus={(event) => event.target.select()}
+        />
+        <Button
+          size="sm"
+          onClick={async () => {
+            setMessage("");
+            try {
+              await navigator.clipboard.writeText(url);
+              setMessage(`${label}已复制。`);
+            } catch {
+              input.current?.focus();
+              input.current?.select();
+              setMessage(`已选中${label}，请手动复制。`);
+            }
+          }}
+        >
+          <Copy aria-hidden="true" />
+          {copyLabel}
+        </Button>
+      </div>
+      <p className={styles.feedback} role="status" aria-atomic="true">
+        {message}
+      </p>
+    </Field>
+  );
+}
+
 export function ShareManager({ changeId }: { changeId: string }) {
   const { repository, data } = useWorkspace();
   const [open, setOpen] = useState(false),
-    [origin, setOrigin] = useState(""),
-    [message, setMessage] = useState("");
-  const input = useRef<HTMLInputElement>(null);
-  const path = sharePath({
+    [origin, setOrigin] = useState("");
+  const target = {
     repository: repository?.webUrl ?? "",
     change: changeId,
     integrationBranch: data?.integrationBranch ?? undefined,
-  });
+  };
+  const path = sharePath(target);
+  const agentPath = agentSharePath(target);
   return (
     <Popover
       open={open}
       onOpenChange={(value) => {
         setOpen(value);
         setOrigin(window.location.origin);
-        setMessage("");
       }}
     >
       <PopoverTrigger asChild>
@@ -53,42 +116,28 @@ export function ShareManager({ changeId }: { changeId: string }) {
             <X />
           </IconButton>
         </header>
-        <p>
-          持有链接的人无需登录即可阅读这个 Change
-          的全部详情，内容随已推送版本更新。
+        <p className={styles.description}>
+          两种链接都无需登录，分享范围相同，内容随已推送版本更新。
         </p>
-        <label htmlFor="change-share-link">分享链接</label>
-        <div className={styles.row}>
-          <Input
-            id="change-share-link"
-            ref={input}
-            readOnly
-            value={origin + path}
-            onFocus={(event) => event.target.select()}
+        <FieldGroup className={styles.links}>
+          <ShareLinkField
+            key={path}
+            label="网页链接"
+            description="适合在浏览器中阅读这个 Change。"
+            copyLabel="复制网页链接"
+            url={origin + path}
           />
-          <Button
-            size="sm"
-            variant="primary"
-            aria-label="复制分享链接"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(origin + path);
-                setMessage("分享链接已复制。");
-              } catch {
-                input.current?.focus();
-                input.current?.select();
-                setMessage("已选中链接，请手动复制。");
-              }
-            }}
-          >
-            <Copy />
-            复制
-          </Button>
-        </div>
+          <ShareLinkField
+            key={agentPath}
+            label="Agent 文本链接"
+            description="将链接发给 Agent，直接读取 Markdown 内容。"
+            copyLabel="复制 Agent 链接"
+            url={origin + agentPath}
+          />
+        </FieldGroup>
         <a href={path} target="_blank" rel="noopener noreferrer">
           打开分享页
         </a>
-        {message && <p role="status">{message}</p>}
       </PopoverContent>
     </Popover>
   );

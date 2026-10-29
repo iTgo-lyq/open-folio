@@ -1,5 +1,6 @@
 "use client";
 import { usePublication } from "./publication";
+import { PrototypeFrame } from "./prototype-frame";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Monitor,
@@ -54,6 +55,7 @@ export function ChangePreviews({
 }) {
   const { projectId, data, q, nav, notice, readUrl, sharing } = useWorkspace();
   const mobile = useMediaQuery("(max-width: 760px)");
+  const narrowToolbar = useMediaQuery("(max-width: 420px)");
   const requestKey = `${projectId}:${change?.id ?? ""}:${data?.id}:${q.revision ?? ""}`;
   const [response, setResponse] = useState<{
     key: string;
@@ -202,7 +204,8 @@ export function ChangePreviews({
     const report = (event: MessageEvent) => {
       if (
         event.source !== frame.current?.contentWindow ||
-        event.origin !== "null" ||
+        !url ||
+        event.origin !== new URL(url, window.location.href).origin ||
         event.data?.type !== "openfolio-preview-error" ||
         event.data.load !== load
       )
@@ -216,7 +219,7 @@ export function ChangePreviews({
     };
     window.addEventListener("message", report);
     return () => window.removeEventListener("message", report);
-  }, [load]);
+  }, [load, url]);
   useEffect(() => {
     setHostStatus("pending");
     if (!hosted || !load) return;
@@ -442,7 +445,7 @@ export function ChangePreviews({
             >
               <List />
             </IconButton>
-            {controls}
+            {!narrowToolbar && controls}
             <PublicLinkPopover
               url={publication.url}
               error={publication.error}
@@ -459,6 +462,15 @@ export function ChangePreviews({
               <Info />
             </IconButton>
           </ToolbarSlot>
+          {narrowToolbar && (
+            <div
+              className={styles["viewport-tools"]}
+              role="group"
+              aria-label="原型视口操作"
+            >
+              {controls}
+            </div>
+          )}
           <Sheet open={directoryOpen} onOpenChange={setDirectoryOpen}>
             <SheetContent
               side="left"
@@ -594,14 +606,12 @@ export function ChangePreviews({
                   height: size.height * scale,
                 }}
               >
-                <iframe
+                <PrototypeFrame
                   ref={frame}
                   key={load}
                   title={`原型：${entry.title}`}
                   src={url}
                   onLoad={() => setLoaded(load)}
-                  sandbox="allow-scripts"
-                  allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'"
                   referrerPolicy="no-referrer"
                   width={size.width}
                   height={size.height}

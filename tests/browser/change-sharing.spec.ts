@@ -1,3 +1,4 @@
+import { verifyPrototypeCapabilities } from "./prototype-capabilities";
 import {
   test,
   expect,
@@ -23,7 +24,7 @@ test("copying a direct link opens the anonymous reader without private APIs", as
   await page.getByRole("button", { name: "分享", exact: true }).click();
   const manager = page.getByRole("dialog", { name: "分享这个 Change" });
   const link = await manager
-    .getByLabel("分享链接", { exact: true })
+    .getByRole("textbox", { name: "网页链接", exact: true })
     .inputValue();
   expect(new URL(link).pathname).toBe("/share");
   expect(new URL(link).searchParams.get("repository")).toBe(
@@ -33,8 +34,19 @@ test("copying a direct link opens the anonymous reader without private APIs", as
   await expect(
     manager.getByRole("button", { name: /开启分享|停止分享/ }),
   ).toHaveCount(0);
-  await manager.getByRole("button", { name: "复制分享链接" }).click();
+  await manager.getByRole("button", { name: "复制网页链接" }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
+  const agentLink = await manager
+    .getByRole("textbox", { name: "Agent 文本链接", exact: true })
+    .inputValue();
+  expect(new URL(agentLink).pathname).toBe("/share/agent");
+  await manager.getByRole("button", { name: "复制 Agent 链接" }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    agentLink,
+  );
+  const text = await request.get(agentLink);
+  expect(text.headers()["content-type"]).toContain("text/plain");
+  expect(await text.text()).toContain("# 让工程文档成为清晰的阅读体验");
   const anonymous = await browser.newContext({
     baseURL: origin,
     viewport: { width: 1920, height: 1080 },
@@ -112,10 +124,8 @@ test("copying a direct link opens the anonymous reader without private APIs", as
         .frameLocator("iframe")
         .getByRole("heading", { name: "订单列表原型" }),
     ).toBeVisible();
-    await expect(viewer.locator("iframe")).toHaveAttribute(
-      "sandbox",
-      "allow-scripts",
-    );
+    await expect(viewer.locator("iframe")).not.toHaveAttribute("sandbox");
+    await verifyPrototypeCapabilities(viewer, viewer.frameLocator("iframe"));
     await viewer
       .frameLocator("iframe")
       .getByRole("button", { name: "0", exact: true })

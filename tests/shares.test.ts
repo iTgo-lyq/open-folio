@@ -14,6 +14,7 @@ import {
 } from "../src/server/repository-permissions.ts";
 import { SnapshotStore } from "../src/server/store.ts";
 import { ThumbnailCache } from "../src/server/thumbnail-cache.ts";
+import { inspectMarkdown } from "../src/lib/markdown.ts";
 
 async function setup() {
   const f = await repositoryFixture();
@@ -525,3 +526,324 @@ test("a Change absent from a cached repository is refreshed before declaring it 
   assert.equal(response.status, 200);
   assert.equal((await response.json()).change.id, "new-change");
 });
+
+test("Agent text bundles authoritative originals and rewrites scoped links without changing code", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const state = JSON.parse(
+    f.g.git(["show", "HEAD:docs/project/changes/shared/change.json"]),
+  );
+  state.clarifications = {
+    Q1: {
+      round: 1,
+      question: "合作范围？",
+      recommendation: "仅此 Change",
+      answer: "按推荐",
+    },
+    Q2: { round: 1, question: "尚未回答？", recommendation: "继续讨论" },
+  };
+  state.tasks = { T1: { title: "交付协作", status: "todo" } };
+  await f.g.put(
+    "docs/project/changes/shared/change.json",
+    JSON.stringify(state),
+  );
+  const code = "```md\n[代码示例](technical.md)\n```";
+  await f.g.put(
+    "docs/project/changes/shared/requirement.md",
+    `# 原始需求\n\nunique-requirement-body[^1]\n\n[^1]: requirement-footnote\n\n[方案](technical.md#设计 "保留标题")\n\n[空格](<notes/a b.md>)\n\n![图](assets/image.png)\n\n[引用][tech]\n\n[tech]: technical.md "引用标题"\n\n[外链](https://example.org/doc)\n\n[范围外](../private/requirement.md)\n\n${code}\n`,
+  );
+  await f.g.put(
+    "docs/project/changes/shared/technical.md",
+    "# 设计\n\nunique-technical-body[^1]\n\n[^1]: technical-footnote\n\n[Second][tech]\n\n[tech]: research.md\n",
+  );
+  await f.g.put("docs/project/changes/shared/research.md", "# 调查证据");
+  await f.g.put("docs/project/changes/shared/notes/a b.md", "# 空格路径");
+  f.g.commit();
+  const detail = (await (await f.read()).json()) as SharedChange;
+  const response = await f.read("shared", "agent");
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("content-type"),
+    "text/plain; charset=utf-8",
+  );
+  for (const [key, value] of [
+    ["cache-control", "no-store"],
+    ["x-content-type-options", "nosniff"],
+    ["referrer-policy", "no-referrer"],
+    ["x-robots-tag", "noindex, nofollow"],
+  ])
+    assert.equal(response.headers.get(key), value);
+  const body = await response.text();
+  for (const text of [
+    "unique-requirement-body",
+    "unique-technical-body",
+    "合作范围？",
+    "尚未回答？",
+    "交付协作",
+    detail.snapshotId,
+    detail.capturedAt,
+    code,
+    '"保留标题"',
+    '"引用标题"',
+  ])
+    assert.ok(body.includes(text), text);
+  assert.doesNotMatch(body, /private body|uploadUrl/);
+  assert.ok(
+    body.indexOf("## 文件：requirement.md") <
+      body.indexOf("## 文件：technical.md"),
+  );
+  const links = inspectMarkdown(body).links.map((l) => l.url);
+  const tree = inspectMarkdown(body).tree;
+  const referenceNodes: { identifier: string; label: string }[] = [];
+  const definitions = new Map<string, string>();
+  const footnotes: string[] = [];
+  const footnoteDefinitions: string[] = [];
+  function visit(node: {
+    type: string;
+    identifier?: string;
+    url?: string;
+    value?: string;
+    children?: any[];
+  }) {
+    if (node.type === "footnoteReference") footnotes.push(node.identifier!);
+    if (node.type === "footnoteDefinition")
+      footnoteDefinitions.push(node.identifier!);
+    if (node.type === "linkReference")
+      referenceNodes.push({
+        identifier: node.identifier!,
+        label: node.children!.map((c: any) => c.value).join(""),
+      });
+    if (node.type === "definition")
+      definitions.set(node.identifier!, node.url!);
+    node.children?.forEach(visit);
+  }
+  visit(tree);
+  assert.equal(new Set(footnotes).size, 2);
+  assert.deepEqual([...footnotes].sort(), [...footnoteDefinitions].sort());
+  assert.equal(
+    new URL(
+      definitions.get(
+        referenceNodes.find((n) => n.label === "Second")!.identifier,
+      )!,
+    ).searchParams.get("document"),
+    "research.md",
+  );
+  assert.ok(links.includes("https://example.org/doc"));
+  assert.ok(links.includes("#share-reference-unavailable"));
+  const scoped = links.filter((url) =>
+    url.startsWith("https://folio.test/share/agent?"),
+  );
+  const technical = new URL(
+    scoped.find(
+      (url) => new URL(url).searchParams.get("document") === "technical.md",
+    )!,
+  );
+  assert.equal(technical.searchParams.get("snapshot"), detail.snapshotId);
+  assert.ok(
+    scoped.some(
+      (url) => new URL(url).searchParams.get("document") === "notes/a b.md",
+    ),
+  );
+  const single = await f.read(
+    "shared",
+    `agent?document=technical.md&snapshot=${detail.snapshotId}`,
+  );
+  const singleBody = await single.text();
+  assert.match(singleBody, /unique-technical-body/);
+  assert.doesNotMatch(singleBody, /unique-requirement-body/);
+  const asset = links.find((url) => url.includes("/assets/"))!;
+  assert.equal(new URL(asset).searchParams.get("snapshot"), detail.snapshotId);
+  assert.ok(
+    links.some(
+      (url) =>
+        url.includes("/previews/screen/index.html") &&
+        new URL(url).searchParams.get("snapshot") === detail.snapshotId,
+    ),
+  );
+  assert.equal(await (await f.read("shared", "agent", "HEAD")).text(), "");
+});
+
+test("Agent absolute links use the public Host and protocol behind Next's internal listener", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const response = await sharedResponse(
+    new Request(
+      `http://127.0.0.1:11117${sharedReadUrl({ repository: f.repo.webUrl, change: "shared", integrationBranch: "develop" }, "agent")}`,
+      {
+        headers: {
+          host: "folio.example.org",
+          "x-forwarded-proto": "https",
+          "x-forwarded-host": "untrusted.example.org",
+        },
+      },
+    ),
+    ["agent"],
+    f.service,
+    DEFAULT_LIMITS,
+  );
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.match(body, /https:\/\/folio.example.org\/share\/agent\?/);
+  assert.doesNotMatch(body, /127\.0\.0\.1|untrusted.example.org/);
+});
+
+test("Agent relative document links keep the same Change scope after archive", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const directory = "docs/project/archive/2026-10-29-shared";
+  const state = JSON.parse(
+    f.g.git(["show", "HEAD:docs/project/changes/shared/change.json"]),
+  );
+  const at = new Date().toISOString();
+  Object.assign(state, {
+    status: "completed",
+    stage: "close",
+    closure: {
+      verification: { result: "passed", at, summary: "checked" },
+      acceptance: { result: "accepted", at, summary: "accepted" },
+      specs: { result: "not_needed", at, summary: "checked" },
+      archive: { result: "done", at, summary: "archived", path: directory },
+    },
+  });
+  await f.g.put(`${directory}/change.json`, JSON.stringify(state));
+  await f.g.put(
+    `${directory}/requirement.md`,
+    "# archived-original\n\n[相对](../shared/technical.md)\n\n[绝对](/docs/project/changes/shared/technical.md)\n\n[其他](/docs/project/changes/private/requirement.md)\n",
+  );
+  await f.g.put(`${directory}/technical.md`, "# archived-technical");
+  f.g.git(["rm", "-r", "docs/project/changes/shared"]);
+  f.g.commit();
+  const response = await f.read("shared", "agent?document=requirement.md");
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.match(body, /archived-original/);
+  const links = inspectMarkdown(body).links;
+  const aliases = links.filter(
+    (l) =>
+      l.url.startsWith("https://folio.test/share/agent?") &&
+      new URL(l.url).searchParams.get("document") === "technical.md",
+  );
+  assert.equal(aliases.length, 3); // directory plus both original references
+  assert.ok(links.some((l) => l.url === "#share-reference-unavailable"));
+  assert.doesNotMatch(body, /private body/);
+});
+
+test("Agent hosted prototype references preserve parentheses in the artifact URL", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const state = JSON.parse(
+    f.g.git(["show", "HEAD:docs/project/changes/shared/change.json"]),
+  );
+  state.previews[0].artifact = {
+    type: "hosted",
+    version: "v1",
+    url: "https://static.example.org/v1/demo)screen/index.html",
+    sourceCommit: f.g.git(["rev-parse", "HEAD"]),
+    digest: "sha256:" + "a".repeat(64),
+  };
+  await f.g.put(
+    "docs/project/changes/shared/change.json",
+    JSON.stringify(state),
+  );
+  f.g.commit();
+  const body = await (await f.read("shared", "agent")).text();
+  assert.ok(
+    inspectMarkdown(body).links.some(
+      (l) => l.url === "https://static.example.org/v1/demo%29screen/index.html",
+    ),
+  );
+});
+
+test("Agent text returns an explicit directory for large bundles and a complete single original", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const original = "# large-original\n" + "完整材料\n".repeat(45_000);
+  await f.g.put("docs/project/changes/shared/requirement.md", original);
+  f.g.commit();
+  const response = await f.read("shared", "agent");
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.ok(
+    /超过 512 KiB.*未包含任何材料正文/.test(body),
+    "large bundle must explicitly omit originals",
+  );
+  assert.doesNotMatch(body, /# large-original/);
+  assert.match(body, /document=requirement.md/);
+  const single = await f.read("shared", "agent?document=requirement.md");
+  assert.equal(single.status, 200);
+  assert.ok((await single.text()).includes(original));
+});
+
+test("Agent errors stay text and reject traversal, duplicate parameters and stale snapshots", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  for (const path of [
+    "agent?document=../private/requirement.md",
+    "agent?document=docs/project/changes/private/requirement.md",
+    "agent?document=",
+    "agent?document=assets/image.png",
+    "agent?document=requirement.md&document=technical.md",
+    "agent?branch=private",
+    "agent?refresh=0",
+    "agent?snapshot=old",
+  ]) {
+    const response = await f.read("shared", path);
+    assert.ok(response.status >= 400, path);
+    assert.equal(
+      response.headers.get("content-type"),
+      "text/plain; charset=utf-8",
+    );
+    assert.doesNotMatch(
+      await response.text(),
+      /shared body|private body|<!doctype/i,
+    );
+  }
+  assert.equal((await f.read("missing", "agent")).status, 404);
+  assert.equal((await f.read("shared", "agent", "POST")).status, 405);
+  await f.f.sessions.unbind(f.c.cookie, f.c.connection.id);
+  const denied = await f.read("shared", "agent");
+  assert.equal(denied.status, 404);
+  assert.doesNotMatch(await denied.text(), /shared body/);
+});
+
+for (const interruption of ["snapshot", "unbind"] as const) {
+  test(`Agent bundle ${interruption} during body assembly prevents stale delivery`, async (t) => {
+    const f = await setup();
+    t.after(f.cleanup);
+    await f.read();
+    let release!: () => void, started!: () => void;
+    const gate = new Promise<void>((r) => (release = r)),
+      begun = new Promise<void>((r) => (started = r));
+    const original = SnapshotStore.prototype.document;
+    t.mock.method(
+      SnapshotStore.prototype,
+      "document",
+      async function (
+        this: SnapshotStore,
+        ...args: Parameters<typeof original>
+      ) {
+        const value = await original.apply(this, args);
+        started();
+        await gate;
+        return value;
+      },
+    );
+    const pending = f.read("shared", "agent");
+    await begun;
+    try {
+      if (interruption === "snapshot") {
+        await f.g.put(
+          "docs/project/changes/shared/requirement.md",
+          "# Changed during Agent read",
+        );
+        f.g.commit();
+        await f.readPrivate((ctx) => ctx.refresh(DEFAULT_LIMITS));
+      } else await f.f.sessions.unbind(f.c.cookie, f.c.connection.id);
+    } finally {
+      release();
+    }
+    const response = await pending;
+    assert.equal(response.status, interruption === "snapshot" ? 409 : 404);
+    assert.doesNotMatch(await response.text(), /shared body/);
+  });
+}

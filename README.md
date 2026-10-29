@@ -104,6 +104,8 @@ Token 管理页的「复制当前 Token」仅在主动点击时读取当前 Toke
 
 Change 的「分享」直接复制 `/share?repository=...&change=...&integrationBranch=...`，任何人可打开，接收者无需账号或 Token。页面只读展示该 Change 的全部最新详情；服务使用现有可读仓库来源（包括私有仓库），来源全部失效后停止提供内容。链接不绑定分享者，无需创建或开启；文档、图片、原型及合入差异保持同一 Change 与版本范围。
 
+分享弹层也可复制「Agent 文本链接」：`/share/agent?repository=...&change=...&integrationBranch=...`。一次匿名 GET 直接返回 UTF-8 Markdown 文本（`text/plain`），包含当前状态、澄清、任务、材料原文和来源；无需执行网页脚本。可用 `document=technical.md` 读取单篇，`refresh=1` 显式检查更新。分篇及图片、Git 原型链接绑定同一快照，版本变化时重新读取入口；托管原型沿用已登记的固定产物地址。材料正文合计超过 512 KiB 时返回状态、完整目录和分篇链接，并明确不包含正文；不会截断单篇。文本版沿用同一 Change 的来源及权限规则，错误也直接返回文字。
+
 Agent 在材料提交推送后直接提供分享链接，使用 `docs/project/workflow.json` 的 `openfolioUrl` 作为服务根地址。可执行 `node .agents/skills/spec-trail/scripts/share.mjs --change <id> --document technical.md`，原型使用 `--preview <id>`；脚本只在本地生成地址，不验证接口或等待工作台同步，用户进入网页后由页面刷新获取内容。未配置服务地址时提供仓库材料链接，无需分享账号配置，详见[Skill 分享说明](.agents/skills/spec-trail/references/sharing.md)。
 
 原型链接全部公开。已授权用户先准备不可变版本，再分享 `/preview/<publicationId>`；匿名 HTML、截图和元数据只读已发布文件，绝不触发远端 Git 或 API。退出、token 撤销或后续停用仓库原型不删除已经公开的版本。未知版本返回未就绪，部署者主动撤回后为 410。公开原型不包含工程正文、连接或上传秘密；外部托管服务负责自己固定 URL 的持续可用性。
