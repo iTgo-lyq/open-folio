@@ -4,13 +4,13 @@
   "title": "修复 Change 附加 Markdown 文档误报缺失",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/extra-document-reading",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "恢复附加 Markdown 文档阅读并验证缺失与旧链接行为",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
