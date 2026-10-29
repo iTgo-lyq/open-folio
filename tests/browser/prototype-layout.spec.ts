@@ -7,18 +7,19 @@ import {
   waitForWorkbenchLayout,
 } from "./connected";
 const path = `/?${repositoryQuery}&m=prototypes`;
-test("prototype gallery, canvas and public page fit both themes at four widths", async ({
+test("prototype gallery, canvas and public page fit both themes at five widths", async ({
   page,
   context,
   browser,
 }) => {
+  test.setTimeout(60_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const check = async (
     target: import("@playwright/test").Page,
     kind: string,
   ) => {
     for (const theme of ["light", "dark"])
-      for (const width of [1440, 834, 390, 320]) {
+      for (const width of [1440, 834, 390, 360, 320]) {
         await target.setViewportSize({ width, height: 900 });
         if (kind !== "public-prototype")
           await waitForWorkbenchLayout(target, width);
@@ -43,6 +44,45 @@ test("prototype gallery, canvas and public page fit both themes at four widths",
           ),
         ).toBe(true);
         const bar = target.locator("header").first();
+        if (kind === "canvas") {
+          const tools = target.getByRole("group", {
+            name: "原型视口操作",
+            exact: true,
+          });
+          if (width <= 420) {
+            await expect(tools).toBeVisible();
+            const toolbar = await bar.boundingBox();
+            const controls = await tools.boundingBox();
+            const canvas = await target
+              .getByTestId("preview-canvas")
+              .boundingBox();
+            expect(controls!.y).toBeGreaterThanOrEqual(
+              toolbar!.y + toolbar!.height,
+            );
+            expect(canvas!.y).toBeGreaterThanOrEqual(
+              controls!.y + controls!.height,
+            );
+          } else await expect(tools).toHaveCount(0);
+          expect(
+            await bar.evaluate((header) => {
+              const bounds = header.getBoundingClientRect();
+              const buttons = [...header.querySelectorAll("button")]
+                .map((button) => button.getBoundingClientRect())
+                .filter((rect) => rect.width && rect.height);
+              return buttons.every(
+                (rect, index) =>
+                  rect.left >= bounds.left &&
+                  rect.right <= bounds.right &&
+                  buttons
+                    .slice(index + 1)
+                    .every(
+                      (other) =>
+                        rect.right <= other.left || other.right <= rect.left,
+                    ),
+              );
+            }),
+          ).toBe(true);
+        }
         expect(
           await bar.evaluate(
             (element) => element.scrollWidth <= element.clientWidth,
@@ -69,6 +109,22 @@ test("prototype gallery, canvas and public page fit both themes at four widths",
   await expect(page.locator("iframe")).toBeVisible();
   await page.getByRole("radio", { name: "移动设备", exact: true }).click();
   await check(page, "canvas");
+  for (const [device, width] of [
+    ["PC Web", "1440"],
+    ["iPad", "834"],
+    ["移动设备", "390"],
+  ]) {
+    await page.getByRole("radio", { name: device, exact: true }).click();
+    await expect(page.locator("iframe")).toHaveAttribute("width", width);
+  }
+  await page.getByRole("button", { name: "切换横竖方向", exact: true }).click();
+  await expect(page.locator("iframe")).toHaveAttribute("width", "844");
+  await page.getByRole("button", { name: "重新加载原型", exact: true }).click();
+  await expect(
+    page.frameLocator("iframe").getByRole("heading", { name: "订单列表原型" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "切换横竖方向", exact: true }).click();
+  await expect(page.locator("iframe")).toHaveAttribute("width", "390");
   await copyPublicPreviewLink(page);
   const link = await page.evaluate(() => navigator.clipboard.readText());
   const anonymous = await browser.newContext({ baseURL: origin });
