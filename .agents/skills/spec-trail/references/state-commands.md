@@ -48,7 +48,7 @@
 node .agents/skills/spec-trail/scripts/change.mjs create --change example --title '具体目标' --size small
 # 按实际需求编辑 requirement.md，然后登记任务。
 node .agents/skills/spec-trail/scripts/change.mjs task-add --change example --title '实现目标行为'
-# small 推送需求与任务后移交；其余规模在编写 Plan 前移交，见 workspaces.md。
+# 需求提交并按规模确认后移交；small 沿用创建前确认，见 workspaces.md。
 node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
 node .agents/skills/spec-trail/scripts/change.mjs execute --change example
 node .agents/skills/spec-trail/scripts/change.mjs task-start --change example --task T1
