@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "统一合入阅读的头部、文件列表、差异面板与代码区视觉",
-      "status": "doing"
+      "status": "done",
+      "verification": "10 项浏览器回归、类型、格式及生产构建通过；真实归档桌面浅深色和手机截图已获用户认可，长路径表头换行差异已明确接受。",
+      "commitTitle": "integration-diff-visual-polish: verify and record user acceptance"
     }
   },
   "closure": {},

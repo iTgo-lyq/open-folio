@@ -4,11 +4,12 @@
 
 ## 验证证据
 
-- `npx tsc --noEmit`、改动文件 Prettier 检查及 `git diff --check` 通过。
-- 按用户安排，本会话只完成样式实现，未启动浏览器、未运行浏览器回归或截图；任务保持 doing，验收与归档由后续 Agent 完成。
+- `npm run typecheck`、`npm run build`、改动文件 Prettier 检查及 `git diff --check` 通过。
+- `npm run test:e2e -- tests/browser/integration.spec.ts tests/browser/refactor-layout.spec.ts`：10 项通过，覆盖短文件与非文本等高、长行换行、独立滚动、固定版本与深链接、历史导航、复制兜底、晚到响应隔离，以及多宽度双主题布局。浏览器回归沿用框架隔离上下文，兼容测试登录与虚构 Provider。初次启动受旧工作区的跨目录依赖链接影响；改为本地安装后，完整重跑通过。
+- 常驻 Chrome CDP 新标签页运行最新分支界面，通过无 Cookie 的匿名请求读取截图对应的真实归档内容。1440px 浅色/深色、390px 文件列表及差异截图已展示给用户；桌面两栏同为 770px 高。检查后仅关闭任务页面、断开连接并停止临时预览。
 
-## 交接
+## 验收与截图
 
-- 修改前截图（真实增删差异，桌面浅/深色、1920、iPad、手机列表与差异）保存在主工作区 `artifacts/integration-diff-visual-polish/before-*.png`。同目录的 `shots.config.ts`、`shots.spec.ts` 以 `diff.json`（由 `make-diff.mjs` 从提交 7238e8c 生成）拦截文件与差异接口；启动 e2e 服务后运行 `SHOT_LABEL=after node --conditions=react-server node_modules/@playwright/test/cli.js test --config artifacts/integration-diff-visual-polish/shots.config.ts` 可得对比截图。
-- 待核对：两栏表头 52px 最小高度是否对齐；目录 RTL 省略在长路径与根目录文件下的显示；卡片高度在 1000px 桌面与 844px 手机下的底部留白及底部导航遮挡；深色下 hunk 细条与增删行号对比度。
-- 之后运行 `tests/browser/integration.spec.ts`、`refactor-layout.spec.ts`、类型检查与生产构建，依 Requirement 由用户凭前后截图人工验收，再完成关闭步骤、合入 PR #26 并更新 11117 服务。
+- 主工作区 `artifacts/integration-diff-visual-polish/current-desktop-light.png`、`current-desktop-dark.png`、`current-mobile-light.png` 和 `current-mobile-light-list.png` 为本次真实内容截图；`before-*.png` 保留上一轮对照。
+- 目录保留最近层级、浅深色行号与增删底色、视口底部空间及两栏等高已经截图和回归核对。长路径换行时右侧表头比左侧略高，已向用户明确展示，用户接受当前效果。
+- 用户验收原话：“没问题，归档吧”；随后明确要求“合入 dev 和 main”。按仓库配置交付到 develop，再通过发布 PR 同步 main；沿用当前统一版本 0.1.15。Agent 自查无未解决验收项。
