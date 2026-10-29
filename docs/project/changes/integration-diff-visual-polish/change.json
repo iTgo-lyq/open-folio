@@ -4,13 +4,13 @@
   "title": "统一合入变更阅读界面视觉",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/integration-diff-visual-polish",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一合入阅读的头部、文件列表、差异面板与代码区视觉",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
