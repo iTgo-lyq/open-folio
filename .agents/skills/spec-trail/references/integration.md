@@ -1,5 +1,11 @@
 # Change PR 集成与清理
 
+## 合并方式检查
+
+用户委托创建、更新、合并 PR/MR 或配置自动合并时，先核对仓库/目标分支规则和本次请求的选项，防止默认、自动或强制 squash；自动合并和合并队列也须核实最终方式。显式选择普通 merge，并取消本次 squash 选项，不依赖平台默认值；仅允许 squash/rebase、无法关闭本次 squash 或无法核实实际方式时报告受阻，不擅自修改全局规则或回退直推。平台仅提供 squash 选项不构成受阻，自动合并本身也不等于 squash。本检查同样适用于发布 PR/MR；本地预检和归档 CI 通过不代表平台合并方式已核实。
+
+## Change PR
+
 Plan 在工作分支写完并推送后，通过平台工具创建或复用同仓库 Draft PR，子项目标为父项 branch，其余为 integrationBranch，不等待计划确认。small 无 Plan，在移交并推送真实执行状态后、实施前创建。正文说明范围，末尾独立段落写：
 
 ```text
@@ -8,7 +14,7 @@ SpecTrail-Change: example
 
 按仓库、源目标分支和标记匹配已有 PR；有歧义先核实。后续推送同一源分支自动更新 diff，交付时更新同一 PR 的标题、说明与验证证据。未归档时归档 CI 失败是预期门禁，不绕过。
 
-归档前同步实际目标、解决冲突并验证；归档推送后执行：
+归档前完成[提交整理与追踪核对](../SKILL.md#归档前提交整理)，同步实际目标、解决冲突并验证；归档推送后执行：
 
 ```bash
 node .agents/skills/spec-trail/scripts/integration.mjs preflight --change example
