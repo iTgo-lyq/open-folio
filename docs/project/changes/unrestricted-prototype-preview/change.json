@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "unrestricted-prototype-preview",
+  "title": "放开原型预览能力限制",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "放开原型交互能力并验证各预览入口",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "修复"
+  ]
+}
