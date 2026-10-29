@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-diff-visual-polish",
+  "title": "统一合入变更阅读界面视觉",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/integration-diff-visual-polish",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一合入阅读的头部、文件列表、差异面板与代码区视觉",
+      "status": "done",
+      "verification": "10 项浏览器回归、类型、格式及生产构建通过；真实归档桌面浅深色和手机截图已获用户认可，长路径表头换行差异已明确接受。",
+      "commitTitle": "integration-diff-visual-polish: verify and record user acceptance"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-10-29T07:32:57.763Z",
+      "summary": "Agent 自查：10 项浏览器回归与类型/格式/生产构建通过；真实内容截图覆盖桌面浅深色及手机，用户已接受长路径表头换行表现。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-10-29T07:33:01.248Z",
+      "summary": "用户依据新版桌面与手机截图接受当前效果并要求归档，随后明确要求合入开发与发布分支。",
+      "source": "没问题，归档吧；合入 dev 和 main"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-10-29T07:33:04.998Z",
+      "summary": "本次只统一合入阅读视觉，现有只读、路径、换行、滚动及导航能力与长期契约保持有效，无需新增规格。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-10-29T07:33:08.577Z",
+      "summary": "视觉优化已验证并经用户验收，按要求归档交付。",
+      "path": "docs/project/archive/2026-10-29-integration-diff-visual-polish"
+    }
+  },
+  "followUpOf": "integration-readability",
+  "followUpTitle": "合入变更阅读体验",
+  "types": [
+    "体验"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "文件列表选中态是否改为与材料导航一致的中性灰底加粗，主题色只留在小图标上？",
+      "recommendation": "改。双重选中样式是不协调的直接来源，统一后与全站一致。",
+      "answer": "按推荐执行。",
+      "source": "没问题，继续吧"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "文件列表底部的范围说明是否移除，改为“只读”标记的悬停说明？",
+      "recommendation": "移除并收进只读说明。它单独占栏且带分隔线，固定版本·只读已表达大部分含义。",
+      "answer": "按推荐执行。",
+      "source": "没问题，继续吧"
+    },
+    "Q3": {
+      "round": 1,
+      "question": "是否先绘制原型再实现？",
+      "recommendation": "不单独画原型，在独立 worktree 实现后以真实页面前后截图交用户验收。",
+      "answer": "按推荐执行。",
+      "source": "没问题，继续吧"
+    }
+  }
+}

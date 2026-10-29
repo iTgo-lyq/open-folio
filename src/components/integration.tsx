@@ -3,9 +3,10 @@ import { materialClass } from "./material-styles";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import { ArrowLeft, Copy, GitMerge, WrapText, X } from "lucide-react";
-import { Button, IconButton } from "@open-folio/ui";
+import { Button, IconButton, Tooltip } from "@open-folio/ui";
 import type {
   IntegrationSummary,
+  IntegrationFile,
   IntegrationFiles,
   IntegrationDiff,
 } from "@/lib/integration";
@@ -27,6 +28,14 @@ const kinds = {
   symlink: "符号链接",
   "mode-only": "文件模式",
 };
+// 列表默认是修改，只标出其他状态与非文本类型。
+const fileLabel = (file: IntegrationFile) =>
+  [
+    file.status !== "M" && (statuses[file.status] ?? file.status),
+    kinds[file.kind],
+  ]
+    .filter(Boolean)
+    .join(" · ");
 export function ChangeIntegration({ id }: { id: string }) {
   const { data, q, nav, readUrl, notice, refresh } = useWorkspace();
   const url = readUrl(
@@ -201,43 +210,39 @@ export function ChangeIntegration({ id }: { id: string }) {
     );
   const file =
     fileDiff?.file ?? page?.files.find((file) => file.id === selected);
+  const stats = summary.stats;
   return (
     <div className={materialClass("integration-view")}>
       <div className={materialClass("integration-meta")}>
-        <div className={materialClass("integration-timing")}>
-          <span className={materialClass("integration-record-status")}>
-            <GitMerge size={14} />
-            已合入 {summary.integrationBranch}
+        <span className={materialClass("integration-record-status")}>
+          <GitMerge size={13} />
+          已合入 {summary.integrationBranch}
+        </span>
+        <span aria-hidden="true">·</span>
+        <time dateTime={record.committedAt}>
+          {new Date(record.committedAt).toLocaleString("zh-CN", {
+            dateStyle: "short",
+            timeStyle: "short",
+          })}
+        </time>
+        <span aria-hidden="true">·</span>
+        <Button
+          variant="text"
+          size="sm"
+          className={materialClass("integration-commit")}
+          title={record.commit}
+          aria-label={`复制合入提交 ${record.commit.slice(0, 10)}`}
+          onClick={() => void copy(record.commit)}
+        >
+          <code>{record.commit.slice(0, 10)}</code>
+          <Copy />
+        </Button>
+        <span aria-hidden="true">·</span>
+        <Tooltip content="固定合入版本，包含代码、文档与归档移动；差异以本次合入前后为边界。">
+          <span className={materialClass("integration-scope")} tabIndex={0}>
+            只读
           </span>
-          <time dateTime={record.committedAt}>
-            {new Date(record.committedAt).toLocaleString()}
-          </time>
-        </div>
-        <div className={materialClass("integration-commit")}>
-          <Button
-            variant="text"
-            title={record.commit}
-            aria-label={`复制合入提交 ${record.commit.slice(0, 10)}`}
-            onClick={() => void copy(record.commit)}
-          >
-            <Copy size={12} />
-            <code>{record.commit.slice(0, 10)}</code>
-          </Button>
-          <span>固定版本 · 只读</span>
-          {summary.stats && (
-            <span className={materialClass("integration-total")}>
-              <strong>{summary.stats.total} 个文件</strong>
-              <span className={materialClass("diff-added")}>
-                +{summary.stats.added}
-              </span>
-              <span className={materialClass("diff-removed")}>
-                −{summary.stats.removed}
-              </span>
-              {summary.stats.unstatable > 0 &&
-                ` · ${summary.stats.unstatable} 个文件不计行数`}
-            </span>
-          )}
-        </div>
+        </Tooltip>
       </div>
       <div
         className={materialClass("diff-layout")}
@@ -249,8 +254,20 @@ export function ChangeIntegration({ id }: { id: string }) {
           ref={list}
         >
           <div className={materialClass("diff-file-heading")}>
-            <strong>全部文件</strong>
-            <span>{page?.total ?? 0}</span>
+            <strong>{stats?.total ?? page?.total ?? 0} 个文件</strong>
+            {stats && (
+              <span className={materialClass("diff-counts")}>
+                <span className={materialClass("diff-added")}>
+                  +{stats.added}
+                </span>
+                <span className={materialClass("diff-removed")}>
+                  −{stats.removed}
+                </span>
+              </span>
+            )}
+            {!!stats?.unstatable && (
+              <small>{stats.unstatable} 个文件不计行数</small>
+            )}
           </div>
           {page?.files.map((file) => (
             <button
@@ -261,29 +278,34 @@ export function ChangeIntegration({ id }: { id: string }) {
               aria-current={file.id === selected}
               onClick={() => choose(file.id)}
             >
-              <span className={materialClass("diff-file-name")}>
-                {file.path.split("/").at(-1)}
-              </span>
-              <span className={materialClass("diff-file-directory")}>
-                {file.path.includes("/")
-                  ? file.path.slice(0, file.path.lastIndexOf("/") + 1)
-                  : "/"}
-              </span>
-              <span className={materialClass("diff-file-status")}>
-                <span>
-                  {statuses[file.status] ?? file.status}
-                  {kinds[file.kind] && ` · ${kinds[file.kind]}`}
+              <span className={materialClass("diff-file-line")}>
+                <span className={materialClass("diff-file-name")}>
+                  {file.path.split("/").at(-1)}
                 </span>
                 {file.added !== null && (
-                  <>
+                  <span className={materialClass("diff-counts")}>
                     <span className={materialClass("diff-added")}>
                       +{file.added}
                     </span>
                     <span className={materialClass("diff-removed")}>
                       −{file.removed}
                     </span>
-                  </>
+                  </span>
                 )}
+              </span>
+              <span className={materialClass("diff-file-line")}>
+                {fileLabel(file) && (
+                  <span className={materialClass("diff-file-status")}>
+                    {fileLabel(file)}
+                  </span>
+                )}
+                <span className={materialClass("diff-file-directory")}>
+                  <bdi>
+                    {file.path.includes("/")
+                      ? file.path.slice(0, file.path.lastIndexOf("/") + 1)
+                      : "/"}
+                  </bdi>
+                </span>
               </span>
             </button>
           ))}
@@ -299,14 +321,12 @@ export function ChangeIntegration({ id }: { id: string }) {
               加载更多文件
             </Button>
           )}
-          <p className={materialClass("diff-file-footnote")}>
-            包含代码、文档与归档移动。差异以本次合入前后为边界。
-          </p>
         </nav>
         <section className={materialClass("diff-panel")} aria-label="文件差异">
           <div className={materialClass("diff-heading")}>
             <Button
               variant="text"
+              size="sm"
               className={materialClass("diff-back")}
               onClick={() => {
                 nav({ cv: "list" });
@@ -319,7 +339,7 @@ export function ChangeIntegration({ id }: { id: string }) {
                 );
               }}
             >
-              <ArrowLeft size={14} />
+              <ArrowLeft />
               文件
             </Button>
             <div className={materialClass("diff-file-summary")}>
@@ -328,38 +348,39 @@ export function ChangeIntegration({ id }: { id: string }) {
                   (selected ? "读取文件…" : "本次合入没有文件变化")}
               </strong>
               {file && (
-                <>
-                  <code className={materialClass("diff-path")}>
-                    {file.path}
-                  </code>
-                  <p>
-                    {statuses[file.status] ?? file.status}
-                    {kinds[file.kind] && ` · ${kinds[file.kind]}`}
-                    {file.oldPath && ` · 原路径：${file.oldPath}`}
-                    {file.oldMode !== file.newMode &&
-                      ` · ${file.oldMode} → ${file.newMode}`}
-                  </p>
-                </>
+                <p>
+                  <code>{file.path}</code>
+                  {` · ${[
+                    statuses[file.status] ?? file.status,
+                    kinds[file.kind],
+                    file.oldPath && `原路径：${file.oldPath}`,
+                    file.oldMode !== file.newMode &&
+                      `${file.oldMode} → ${file.newMode}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}`}
+                </p>
               )}
             </div>
-          </div>
-          <div className={materialClass("diff-tools")}>
-            <Button
-              variant="text"
-              aria-pressed={wrapLines}
-              onClick={() => setWrapLines((value) => !value)}
-            >
-              <WrapText size={14} />
-              自动换行
-            </Button>
-            <Button
-              variant="text"
-              aria-label="复制 Git 比较命令"
-              onClick={() => void copy(summary.command!)}
-            >
-              <Copy size={13} />
-              Git 比较命令
-            </Button>
+            <div className={materialClass("diff-tools")}>
+              <IconButton
+                size="sm"
+                aria-label="自动换行"
+                aria-pressed={wrapLines}
+                tooltip
+                onClick={() => setWrapLines((value) => !value)}
+              >
+                <WrapText />
+              </IconButton>
+              <IconButton
+                size="sm"
+                aria-label="复制 Git 比较命令"
+                tooltip
+                onClick={() => void copy(summary.command!)}
+              >
+                <Copy />
+              </IconButton>
+            </div>
           </div>
           <div
             className={materialClass("diff-content")}
