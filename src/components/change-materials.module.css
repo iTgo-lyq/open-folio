@@ -514,37 +514,46 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px 20px;
-  font-size: 12px;
-  color: var(--of-text-2);
-  overflow-wrap: anywhere;
+  gap: 2px 8px;
+  margin-top: -4px;
+  color: var(--of-text-3);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
 }
-.integration-timing {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-}
-.integration-commit {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
+.integration-meta > [aria-hidden="true"] {
+  color: var(--of-text-4);
 }
 .integration-record-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: var(--of-success);
 }
-.integration-total {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
+.integration-meta .integration-commit {
+  height: 24px;
+  margin: 0 -5px;
+  padding: 0 5px;
+  gap: 5px;
   color: var(--of-text-2);
-  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.integration-commit code {
+  font: 12px var(--of-font-mono);
+}
+.integration-meta .integration-commit svg {
+  width: 12px;
+  height: 12px;
+  color: var(--of-text-3);
+}
+.integration-scope {
+  border-radius: 4px;
+  cursor: help;
+  text-decoration: underline dotted var(--of-text-4);
+  text-underline-offset: 3px;
+}
+.integration-scope:focus-visible {
+  outline: 2px solid var(--of-accent);
+  outline-offset: 2px;
 }
 .diff-added {
   color: var(--of-success);
@@ -552,13 +561,22 @@
 .diff-removed {
   color: var(--of-danger);
 }
+.diff-counts {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
 .diff-layout {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  height: clamp(360px, 68dvh, 760px);
+  height: clamp(360px, calc(100dvh - 228px), 1200px);
   border: 1px solid var(--of-border);
-  border-radius: 12px;
+  border-radius: var(--of-radius-lg);
+  background: var(--of-bg-surface);
   overflow: hidden;
 }
 .diff-files {
@@ -567,102 +585,102 @@
   min-width: 0;
   min-height: 0;
   height: 100%;
-  background: var(--of-bg-subtle);
-  border-right: 0.5px solid var(--of-border);
+  padding-bottom: 6px;
+  border-right: 1px solid var(--of-border);
   overflow: auto;
   overscroll-behavior: contain;
+}
+.diff-file-heading,
+.diff-heading {
+  box-sizing: border-box;
+  flex: none;
+  min-height: 52px;
+  border-bottom: 1px solid var(--of-border);
 }
 .diff-file-heading {
   position: sticky;
   top: 0;
   z-index: 1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  flex: none;
-  background: var(--of-bg-subtle);
-  border-bottom: 1px solid var(--of-border);
-  color: var(--of-text-2);
-  padding: 12px 14px;
-  font-size: 12px;
+  align-content: center;
+  gap: 2px 10px;
+  margin-bottom: 4px;
+  padding: 8px 14px;
+  background: var(--of-bg-surface);
+  color: var(--of-text);
+  font-size: 13px;
+  font-weight: 600;
 }
-.diff-file-heading > span {
-  min-width: 24px;
-  padding: 1px 6px;
-  border-radius: 5px;
-  background: var(--of-fill-selected);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+.diff-file-heading small {
+  flex-basis: 100%;
+  color: var(--of-text-3);
+  font-size: 11px;
+  font-weight: 400;
 }
 .diff-file-item {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   flex: none;
   width: calc(100% - 12px);
-  margin: 3px 6px;
+  margin: 1px 6px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--of-radius-md);
   background: none;
-  padding: 9px 10px;
-  color: var(--of-text-2);
+  padding: 6px 8px;
+  color: var(--of-text);
   text-align: left;
-  font: 12px var(--of-font-ui);
+  font: 13px/1.5 var(--of-font-ui);
   cursor: pointer;
 }
 .diff-file-item:hover {
   background: var(--of-fill-hover);
 }
 .diff-file-item[aria-current="true"] {
-  color: var(--of-accent-text);
-  background: var(--of-accent-soft);
-  box-shadow: inset 3px 0 var(--of-accent);
+  background: var(--of-fill-selected);
+}
+.diff-file-item[aria-current="true"] .diff-file-name {
+  font-weight: 600;
 }
 .diff-file-item:focus-visible,
 .diff-content:focus-visible {
   outline: 2px solid var(--of-accent);
   outline-offset: -2px;
 }
-.diff-file-name {
-  display: block;
+.diff-file-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.diff-file-name,
+.diff-file-directory {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--of-font-mono);
+}
+.diff-file-name {
   font-weight: 500;
 }
+/* 从开头省略目录，保留离文件最近的层级。 */
 .diff-file-directory {
-  display: block;
+  direction: rtl;
+  text-align: left;
   color: var(--of-text-3);
-  font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 3px;
+  font-size: 11.5px;
 }
 .diff-file-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 10.5px;
-  color: var(--of-text-3);
-  margin-top: 4px;
-}
-.diff-file-footnote {
   flex: none;
-  color: var(--of-text-3);
-  margin: auto 14px 0;
-  padding: 14px 0;
-  border-top: 1px solid var(--of-border);
-  font-size: 11px;
+  color: var(--of-text-2);
+  font-size: 11.5px;
 }
-.diff-more,
-.diff-back {
-  border: 0;
-  background: none;
-  color: var(--of-accent-text);
-  padding: 8px 12px;
-  cursor: pointer;
-  font: 12px var(--of-font-ui);
+.diff-more {
+  align-self: flex-start;
+  margin: 6px 12px;
 }
 .diff-panel {
   display: flex;
@@ -670,59 +688,45 @@
   min-width: 0;
   min-height: 0;
   height: 100%;
-  background: var(--of-bg-surface);
 }
 .diff-heading {
-  display: flex;
-  flex: none;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 12px 14px;
-  color: var(--of-text-2);
-  font-size: 12px;
-}
-.diff-file-summary {
-  min-width: 0;
-  flex: 1;
-  overflow-wrap: anywhere;
-}
-.diff-heading strong {
-  display: block;
-  color: var(--of-text);
-  font: 600 13px/1.5 var(--of-font-mono);
-}
-.diff-path {
-  display: block;
-  margin-top: 3px;
-  font-size: 11px;
-}
-.diff-file-summary p {
-  margin: 5px 0 0;
-  color: var(--of-text-3);
-  font-size: 11px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "summary tools";
+  align-items: center;
+  gap: 4px 12px;
+  padding: 7px 10px 7px 16px;
 }
 .diff-back {
+  grid-area: back;
   display: none;
 }
+.diff-file-summary {
+  grid-area: summary;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.diff-file-summary strong {
+  display: block;
+  color: var(--of-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.diff-file-summary p {
+  margin: 0;
+  color: var(--of-text-3);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.diff-file-summary code {
+  color: var(--of-text-2);
+  font: 11.5px var(--of-font-mono);
+}
 .diff-tools {
+  grid-area: tools;
   display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 10px;
-  border-block: 1px solid var(--of-border);
-  background: var(--of-bg-subtle);
-}
-.diff-tools > button {
-  min-height: 30px;
-  padding: 5px 7px;
-  font-size: 12px;
-}
-.diff-tools > button[aria-pressed="true"] {
-  background: var(--of-accent-soft);
-  color: var(--of-accent-text);
+  gap: 2px;
 }
 .diff-content {
   overflow: auto;
@@ -734,23 +738,62 @@
 .diff-table {
   width: 100%;
   border-collapse: collapse;
-  font: 12px/1.8 var(--of-font-mono);
+  color: var(--of-text);
+  font: 12px/1.7 var(--of-font-mono);
   white-space: pre;
 }
 .diff-table td {
-  padding: 0 6px;
+  padding: 0 8px;
   vertical-align: top;
 }
 .line-no {
-  width: 7ch;
+  width: calc(5ch + 14px);
+}
+.sign {
+  width: calc(2ch + 8px);
+}
+.diff-table .line-no,
+.diff-table .sign {
   color: var(--of-text-3);
   text-align: right;
   user-select: none;
 }
-.sign {
-  width: 3ch;
+.diff-table .line-no {
+  padding: 0 6px 0 8px;
+}
+/* 行号栏右侧细线分隔代码；增删行号叠加同色底，比正文略深便于扫读。 */
+.diff-table .line-no + .line-no {
+  padding-right: 10px;
+  box-shadow: inset -1px 0 var(--of-border);
+}
+.diff-table .sign {
+  padding: 0 2px 0 6px;
   text-align: center;
-  user-select: none;
+}
+.add,
+.add .line-no {
+  background: var(--of-success-soft);
+}
+.remove,
+.remove .line-no {
+  background: var(--of-danger-soft);
+}
+.diff-table .add .sign {
+  color: var(--of-success);
+}
+.diff-table .remove .sign {
+  color: var(--of-danger);
+}
+.diff-table .hunk td,
+.diff-table .note td {
+  padding: 5px 16px;
+  border-block: 1px solid var(--of-border);
+  background: var(--of-fill-hover);
+  color: var(--of-text-3);
+  font-size: 11.5px;
+}
+.diff-table tr:first-child td {
+  border-top: 0;
 }
 .diff-content[data-wrap="true"] .diff-table {
   table-layout: fixed;
@@ -758,28 +801,6 @@
 .diff-content[data-wrap="true"] td:last-child {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-.add .sign {
-  color: var(--of-success);
-}
-.remove .sign {
-  color: var(--of-danger);
-}
-.add {
-  background: var(--of-success-soft);
-}
-.remove {
-  background: var(--of-danger-soft);
-}
-.hunk,
-.note {
-  color: var(--of-text-3);
-  background: var(--of-bg-subtle);
-}
-.diff-table .hunk td,
-.diff-table .note td {
-  padding: 5px 12px;
-  font-size: 11px;
 }
 .diff-loading {
   padding: 20px;
@@ -826,20 +847,21 @@
   .diff-layout[data-view="list"] .diff-panel {
     display: none;
   }
-  .diff-back {
-    display: inline-flex;
-    flex: none;
-    padding: 4px;
-    min-height: 28px;
-  }
   .diff-files {
     border-right: 0;
   }
   .diff-heading {
-    flex-wrap: wrap;
+    grid-template-areas:
+      "back tools"
+      "summary summary";
+    padding: 6px 8px 8px;
+  }
+  .diff-back {
+    display: inline-flex;
+    justify-self: start;
   }
   .diff-file-summary {
-    flex-basis: 100%;
+    padding: 0 6px;
   }
 }
 @media (max-width: 760px) {
