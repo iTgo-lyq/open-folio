@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "精简补充原型工作区风险提示与线上源码基线",
-      "status": "todo"
+      "status": "done",
+      "verification": "原型及主 skill 静态校验通过；应用、lockfile、skill 版本一致为 0.1.16；git diff --check 通过。自查确认提示涵盖工作区关联、并发风险、用户选择与线上 sourceCommit 基线，未强制独立工作区。"
     }
   },
   "closure": {},
