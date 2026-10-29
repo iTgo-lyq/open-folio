@@ -95,9 +95,22 @@ test("materials, raw source and copy fallback preserve a stable reading location
       },
     });
   });
-  await share.getByRole("button", { name: "复制分享链接" }).click();
-  await expect(share.getByRole("status")).toContainText("请手动复制");
-  await expect(share.getByLabel("分享链接", { exact: true })).toBeFocused();
+  for (const name of ["网页链接", "Agent 文本链接"]) {
+    const group = share.getByRole("group", { name, exact: true });
+    await group
+      .getByRole("button", {
+        name: name === "网页链接" ? "复制网页链接" : "复制 Agent 链接",
+      })
+      .click();
+    await expect(group.getByRole("status")).toContainText("请手动复制");
+    const input = group.getByLabel(name, { exact: true });
+    await expect(input).toBeFocused();
+    expect(
+      await input.evaluate(
+        (el: HTMLInputElement) => el.selectionEnd! - el.selectionStart!,
+      ),
+    ).toBe((await input.inputValue()).length);
+  }
   await page.getByRole("button", { name: "关闭分享链接" }).click();
   await expect(
     page.getByRole("button", { name: "分享", exact: true }),

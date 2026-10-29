@@ -11,6 +11,8 @@ import { ThumbnailCache } from "./thumbnail-cache.ts";
 import { previewViewport } from "../lib/preview-viewport.ts";
 import type { Device, Limits, PreviewDescriptor } from "../lib/model.ts";
 import { noteRepositoryActivity } from "./background-refresh.ts";
+import { renderAgentShare } from "./agent-share.ts";
+import { requestOrigin } from "./personal-http.ts";
 
 const headers = {
   "Cache-Control": "no-store",
@@ -66,6 +68,7 @@ export async function sharedResponse(
   limits?: Limits,
   screenshots?: ThumbnailCache,
 ) {
+  const isAgent = segments.length === 1 && segments[0] === "agent";
   let response: Response;
   try {
     if (!["GET", "HEAD"].includes(request.method))
@@ -74,7 +77,7 @@ export async function sharedResponse(
     if (
       [...q.keys()].some(
         (k) =>
-          ![
+          (![
             "repository",
             "change",
             "integrationBranch",
@@ -82,11 +85,14 @@ export async function sharedResponse(
             "cursor",
             "load",
             "refresh",
-          ].includes(k) || q.getAll(k).length !== 1,
+          ].includes(k) &&
+            !(isAgent && k === "document")) ||
+          q.getAll(k).length !== 1,
       )
     )
       throw new AppError("INVALID_PARAMETER", "分享读取参数不合法。", 400);
-    const isDetail = segments.length === 1 && segments[0] === "change";
+    const isDetail =
+      isAgent || (segments.length === 1 && segments[0] === "change");
     if (q.has("refresh") && (!isDetail || q.get("refresh") !== "1"))
       throw new AppError(
         "INVALID_PARAMETER",
@@ -146,7 +152,22 @@ export async function sharedResponse(
           data = projectChange(snapshot, target.change, ctx.project.name);
         }
         let value: Response;
-        if (isDetail) value = Response.json(data);
+        if (isAgent) {
+          const body = await renderAgentShare({
+            data,
+            target: {
+              ...target,
+              integrationBranch: ctx.project.integrationBranch,
+            },
+            origin: requestOrigin(request),
+            document: q.has("document") ? q.get("document")! : undefined,
+            readDocument: async (id) =>
+              (await ctx.store.document(ctx.project, id, snapshot.id)).body,
+          });
+          value = new Response(body, {
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
+          });
+        } else if (isDetail) value = Response.json(data);
         else if (
           segments.length === 2 &&
           ["documents", "assets"].includes(segments[0])
@@ -292,7 +313,7 @@ export async function sharedResponse(
         } else throw new AppError("NOT_FOUND", "接口不存在。", 404);
         await ctx.assertRead();
         if (
-          !isDetail &&
+          (!isDetail || isAgent) &&
           (await ctx.store.snapshot(ctx.project)).id !== snapshot.id
         )
           throw versionChanged();
@@ -309,19 +330,31 @@ export async function sharedResponse(
       "REPOSITORY_MISMATCH",
       "PROVIDER_MISMATCH",
     ].includes(error.code);
-    response = Response.json(
-      {
-        error: {
-          code: denied ? "SHARE_UNAVAILABLE" : error.code,
-          message: denied
-            ? "内容不存在或暂不可读。"
-            : error.status >= 500
-              ? "内容暂时读取失败，请稍后重试。"
-              : error.message,
-        },
-      },
-      { status: denied ? 403 : error.status },
-    );
+    const status = denied ? 403 : error.status;
+    const code = denied ? "SHARE_UNAVAILABLE" : error.code;
+    const message = denied
+      ? "内容不存在或暂不可读。"
+      : error.status >= 500
+        ? "内容暂时读取失败，请稍后重试。"
+        : error.message;
+    response = isAgent
+      ? new Response(`${code}: ${message}\n`, {
+          status,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        })
+      : Response.json(
+          {
+            error: {
+              code: denied ? "SHARE_UNAVAILABLE" : error.code,
+              message: denied
+                ? "内容不存在或暂不可读。"
+                : error.status >= 500
+                  ? "内容暂时读取失败，请稍后重试。"
+                  : error.message,
+            },
+          },
+          { status: denied ? 403 : error.status },
+        );
   }
   for (const [key, value] of Object.entries(headers))
     response.headers.set(key, value);
