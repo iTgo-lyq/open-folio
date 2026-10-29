@@ -4,7 +4,7 @@
   "title": "为跨系统协作提供 Agent 文本分享链接",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/agent-text-sharing",
   "confirmations": {
     "requirement": {
@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "提供 Agent 文本分享与双复制入口",
-      "status": "todo"
+      "status": "done",
+      "verification": "34项接口及授权回归、8项分享浏览器回归、六组界面检查、类型检查、生产构建和路由冒烟通过，独立评审问题已关闭",
+      "commitTitle": "feat: add Agent text sharing for Changes"
     }
   },
   "closure": {},

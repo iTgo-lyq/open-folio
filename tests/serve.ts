@@ -324,6 +324,15 @@ const server = createServer(async (req, res) => {
         attempts: git.attempts.length,
         permissionChecks,
       });
+    } else if (url.pathname === "/share/agent") {
+      response = await sharedResponse(
+        new Request(url, {
+          method: req.method,
+          headers: req.headers as Record<string, string>,
+        }),
+        ["agent"],
+        repos,
+      );
     } else if (
       s[0] === "api" &&
       [
