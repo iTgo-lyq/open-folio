@@ -25,7 +25,6 @@ import {
 } from "./repository.mjs";
 import { closedRecord, validBranchName, planningRecord } from "./routing.mjs";
 import { validateChange } from "./state-schema.mjs";
-import { parseTaskOrder } from "./task-order.mjs";
 
 const assert = (value, message) => {
   if (!value) throw Error(message);
@@ -101,42 +100,24 @@ function ready(repo, catalog, record, note, refresh) {
   assert(!validateChange(state).length, "The planning record is invalid");
   assert(
     state.status === "active" &&
-      (state.size === "xlarge"
-        ? ["technical", "plan", "execution", "close"].includes(state.stage)
-        : ["requirement", "technical", "plan"].includes(state.stage)),
+      (["requirement", "technical", "plan"].includes(state.stage) ||
+        (state.size === "xlarge" && ["execution", "close"].includes(state.stage))),
     "Handoff requires planning or an xlarge parent ready to close",
   );
-  if (state.size !== "small" && !state.confirmations.plan) {
-    assert(state.waitingFor?.kind !== "pause", "Resolve the pause before handoff");
-    for (const name of ["requirement", "technical"])
-      textAt(repo, record.commit, `${record.directory}/${name}.md`);
-    for (const phase of state.size === "large"
-      ? ["requirement", "technical"]
-      : ["requirement"])
-      assert(state.confirmations[phase], `Missing ${phase} confirmation`);
-    assert(
-      state.stage === (state.size === "large" ? "plan" : "technical"),
-      "Prepare the technical proposal before Plan handoff",
-    );
-    return;
-  }
+  assert(state.waitingFor?.kind !== "pause", "Resolve the pause before handoff");
+  textAt(repo, record.commit, `${record.directory}/requirement.md`);
+  if (state.size !== "small")
+    assert(state.confirmations.requirement, "Missing requirement confirmation");
+  if (!["execution", "close"].includes(state.stage)) return;
+
+  // Legacy xlarge parents may still need a closing branch.
   assert(
     !state.waitingFor,
     "Resolve the actual waiting condition before handoff",
   );
-  if (state.size !== "xlarge") assert(Object.keys(state.tasks).length, "Define tasks before handoff");
-  for (const name of state.size === "small"
-    ? ["requirement"]
-    : ["requirement", "technical", "plan"])
+  for (const name of ["technical", "plan"]) {
     textAt(repo, record.commit, `${record.directory}/${name}.md`);
-  if (state.size !== "small")
-    for (const phase of ["requirement", "technical", "plan"])
-      assert(state.confirmations[phase], `Missing ${phase} confirmation`);
-  let plan;
-  try {
-    plan = textAt(repo, record.commit, `${record.directory}/plan.md`);
-  } catch (error) {
-    if (state.size !== "small") throw error;
+    assert(state.confirmations[name], `Missing ${name} confirmation`);
   }
   if (state.size === "xlarge") {
     assert(state.children?.length, "Define children before parent closing handoff");
@@ -147,9 +128,6 @@ function ready(repo, catalog, record, note, refresh) {
           (child.archived && child.branch === catalog.branch && closedRecord(child.state,child.directory))),
         `Child ${id} must be cancelled or centrally archived before parent closing handoff`);
     }
-  } else {
-    const order = parseTaskOrder(state, plan);
-    assert(order.status === "valid", "The task execution order is not valid");
   }
   for (const id of state.dependsOn ?? []) {
     const source = routedRecord(repo, catalog, id, { refresh });
