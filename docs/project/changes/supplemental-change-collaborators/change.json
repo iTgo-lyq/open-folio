@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "supplemental-change-collaborators",
+  "title": "补充 Change 协作者配置",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "实现补充协作者配置与合并展示",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "change-collaborators",
+  "followUpTitle": "Change 协作者识别与配置",
+  "types": [
+    "新功能"
+  ]
+}
