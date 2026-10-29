@@ -4,10 +4,15 @@
   "title": "归档前提交整理与平台 squash 防护",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/commit-history-hygiene",
   "confirmations": {},
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "补齐归档前提交整理和接入、PR/MR squash 检查规范",
+      "status": "doing"
+    }
+  },
   "closure": {},
   "types": [
     "流程",
