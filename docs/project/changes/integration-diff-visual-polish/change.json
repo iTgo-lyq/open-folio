@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-diff-visual-polish",
+  "title": "统一合入变更阅读界面视觉",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一合入阅读的头部、文件列表、差异面板与代码区视觉",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "integration-readability",
+  "followUpTitle": "合入变更阅读体验",
+  "types": [
+    "体验"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "文件列表选中态是否改为与材料导航一致的中性灰底加粗，主题色只留在小图标上？",
+      "recommendation": "改。双重选中样式是不协调的直接来源，统一后与全站一致。",
+      "answer": "按推荐执行。",
+      "source": "没问题，继续吧"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "文件列表底部的范围说明是否移除，改为“只读”标记的悬停说明？",
+      "recommendation": "移除并收进只读说明。它单独占栏且带分隔线，固定版本·只读已表达大部分含义。",
+      "answer": "按推荐执行。",
+      "source": "没问题，继续吧"
+    },
+    "Q3": {
+      "round": 1,
+      "question": "是否先绘制原型再实现？",
+      "recommendation": "不单独画原型，在独立 worktree 实现后以真实页面前后截图交用户验收。",
+      "answer": "按推荐执行。",
+      "source": "没问题，继续吧"
+    }
+  }
+}
