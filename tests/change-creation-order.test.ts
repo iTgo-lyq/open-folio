@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { rename } from "node:fs/promises";
+import { rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.ts";
 import {
@@ -169,7 +169,7 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
   }
 });
 
-test("collaborators keep creator first, resolve noreply aliases and retain distinct same-name identities", () => {
+test("collaborators keep creator first, resolve noreply aliases and collapse identical names", () => {
   const author = (name: string, email: string, time: number) => ({
     time,
     author: { name, email },
@@ -187,12 +187,51 @@ test("collaborators keep creator first, resolve noreply aliases and retain disti
       { name: "Creator", login: "old-name", subjectId: "7" },
       { name: "Other" },
       { name: "Same" },
-      { name: "Same" },
     ],
   );
   assert.deepEqual(
     changeCollaborators(undefined, [author(" ", "x@example.com", 1)]),
     [],
+  );
+});
+
+test("configured collaborators with matching Git display names appear only once", () => {
+  const creator = {
+    time: 100,
+    author: { name: "wanghuizhou", email: "creator@example.com" },
+  };
+  const participant = {
+    time: 50,
+    author: { name: "Worker", email: "8+worker@users.noreply.github.com" },
+  };
+  assert.deepEqual(
+    changeCollaborators(
+      creator,
+      [participant],
+      [
+        { name: "wanghuizhou" },
+        { name: "wanghuizhou", login: "configured-creator" },
+        { name: "Worker" },
+        { name: "New member" },
+        { name: "New member", login: "new-member", subjectId: "9" },
+      ],
+    ),
+    [
+      { name: "wanghuizhou" },
+      { name: "Worker", login: "worker", subjectId: "8" },
+      { name: "New member" },
+    ],
+  );
+  assert.deepEqual(
+    changeCollaborators(
+      undefined,
+      [],
+      [
+        { name: "wanghuizhou" },
+        { name: "wanghuizhou", login: "configured-creator" },
+      ],
+    ),
+    [{ name: "wanghuizhou" }],
   );
 });
 
@@ -218,7 +257,6 @@ test("configured collaborators supplement Git members without replacing their na
     { name: "Worker", login: "worker", subjectId: "8" },
     additions[2],
     additions[3],
-    additions[5],
   ]);
   assert.deepEqual(
     changeCollaborators(creator, [participant], []),
@@ -264,7 +302,7 @@ test("routed configured members reach workbench and share, refresh on edits and 
   await f.put(path, JSON.stringify(state));
   f.commit();
   f.git(["checkout", "-b", "change/supplemented"]);
-  state.collaborators = [{ name: "Configured member" }];
+  state.collaborators = [{ name: "Fixture" }, { name: "Configured member" }];
   await f.put(path, JSON.stringify(state));
   f.commit();
   let snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -275,7 +313,17 @@ test("routed configured members reach workbench and share, refresh on edits and 
     members,
   );
   assert.equal(snapshot.changes[0].creator?.name, "Fixture");
+  const old = structuredClone(snapshot);
+  old.changes[0].collaborators!.push({ name: "Fixture" });
+  await writeFile(
+    join(f.store.directory(), "snapshots", snapshot.id + ".json"),
+    JSON.stringify({ ...old, cacheSchemaVersion: 9 }),
+  );
+  const rebuilt = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
+  assert.notEqual(rebuilt.id, snapshot.id);
+  assert.deepEqual(rebuilt.changes[0].collaborators, members);
   const warm = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  assert.equal(warm.id, rebuilt.id);
   assert.deepEqual(warm.changes[0].collaborators, members);
   state.collaborators = [];
   await f.put(path, JSON.stringify(state));

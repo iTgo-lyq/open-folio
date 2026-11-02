@@ -137,7 +137,7 @@ export class SnapshotStore {
         await readFile(join(dir, "snapshots", `${target}.json`), "utf8"),
       ) as Snapshot;
       if (
-        s.cacheSchemaVersion !== 9 ||
+        s.cacheSchemaVersion !== 10 ||
         !s.integrations ||
         s.integrationBranch !== p.integrationBranch ||
         !Array.isArray(s.routes) ||
@@ -341,7 +341,7 @@ export class SnapshotStore {
         ),
       };
       const s: Snapshot = {
-        cacheSchemaVersion: 9,
+        cacheSchemaVersion: 10,
         integrations: delivery.integrations,
         releaseSource: data.releaseSource,
         deliveryByChange: delivery.deliveryByChange,
@@ -420,7 +420,7 @@ export class SnapshotStore {
       } catch {}
       if (
         !value ||
-        value.cacheSchemaVersion !== 9 ||
+        value.cacheSchemaVersion !== 10 ||
         !value.integrations ||
         Object.hasOwn(value, "archiveRefs") ||
         Object.hasOwn(value, "archivePins")

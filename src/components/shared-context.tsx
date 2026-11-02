@@ -18,7 +18,7 @@ export function documentLocation(data: Workbench, document: DocumentRef) {
 }
 export function sharedWorkbench(value: SharedChange): Workbench {
   return {
-    cacheSchemaVersion: 9,
+    cacheSchemaVersion: 10,
     id: value.snapshotId,
     capturedAt: value.capturedAt,
     projectName: value.projectName,
