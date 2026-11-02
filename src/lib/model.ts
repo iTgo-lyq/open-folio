@@ -296,7 +296,7 @@ export type ReleaseSource = {
   message?: string;
 };
 export type Snapshot = {
-  cacheSchemaVersion: 9;
+  cacheSchemaVersion: 10;
   releaseSource?: ReleaseSource;
   deliveryByChange?: Record<string, Delivery>;
   integrations: IntegrationIndex;

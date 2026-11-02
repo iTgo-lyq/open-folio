@@ -651,8 +651,8 @@ export function changeCollaborators(
     const key = identityKey(row);
     if (!result.has(key)) result.set(key, row);
   }
-  // Configuration may resolve aliases for additions, but must never collapse
-  // or reorder the established Git member list.
+  // Resolve configuration aliases against the established Git member list
+  // before collapsing identical display names.
   const combined = [...result.values()];
   rememberSubjects(configured);
   const known = new Set(combined.map(identityKey));
@@ -663,7 +663,14 @@ export function changeCollaborators(
       combined.push(row);
     }
   }
-  return combined.map((row) => row.member);
+  // Collapse identical display names across Git and configured members, keeping
+  // the first member so the creator and historical display information win.
+  const names = new Set<string>();
+  return combined.flatMap(({ member }) => {
+    if (names.has(member.name)) return [];
+    names.add(member.name);
+    return [member];
+  });
 }
 
 export function compareChangeCreation(a: ChangeGroup, b: ChangeGroup) {
