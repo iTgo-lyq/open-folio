@@ -18,7 +18,7 @@ description: 管理单个 Git 仓库 docs/project 下的需求、技术方案、
 - **复用已有 Change**：目标被现有 `active` Change 覆盖时询问用户是否复用。
 - **需要新建**：按[创建与规模](#创建与规模)完成简短确认，再建立 Change。
 
-先读取当前仓库 `docs/project/workflow.json`，从集成分支的 changes/archive 按 id 定位 Change，再按 `change.json.branch` 定向读取；子项已合入父分支时优先读父分支归档。有效的集中 completed 归档直接作为只读历史；进行中的集中副本可以保留旧状态，不作当前进度依据。通过 Git worktree 登记定位本地执行工作区，不扫描所有分支猜测归属。
+先读取当前仓库 `docs/project/workflow.json`，从集成分支的 changes/archive 按 id 定位 Change。查询进度必须按 `change.json.branch` 核对对应工作分支的最新已推送状态；本地缺少 ref 时定向查询并拉取远端，不得据集中副本下结论。子项已合入父分支时优先读父分支归档；有效的集中 completed 归档直接作为只读历史，其余集中记录仅用于定位。通过 Git worktree 登记定位本地执行工作区，不扫描所有分支猜测归属。
 
 日常调查与搜索默认排除 `docs/project/archive/`，优先读取当前 Specs、未归档 Change 和实现；仅明确需要追溯历史时，按相关 Change 或主题限定归档搜索范围。ID 查重、依赖及子 Change 状态核对可按 ID 定点读取归档元数据，不扩展为历史正文搜索。
 
