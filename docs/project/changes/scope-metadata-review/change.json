@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "补齐标题命名与范围变更后的元数据复核规则",
-      "status": "doing"
+      "status": "done",
+      "verification": "quick_validate.py 通过；版本一致性检查通过；git diff --check 通过。人工核对扩大、收窄、替换、拆分及返工入口，标题命名示例和优先级依据与现有规则一致。"
     }
   },
   "closure": {},
