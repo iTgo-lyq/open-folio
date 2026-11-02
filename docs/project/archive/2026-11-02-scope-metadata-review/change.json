@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "scope-metadata-review",
+  "title": "需求范围变化时同步复核任务标题、规模与优先级",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/scope-metadata-review",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补齐标题命名与范围变更后的元数据复核规则",
+      "status": "done",
+      "verification": "quick_validate.py 通过；版本一致性检查通过；git diff --check 通过。人工核对扩大、收窄、替换、拆分及返工入口，标题命名示例和优先级依据与现有规则一致。"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-02T12:20:02.808Z",
+      "summary": "Agent 自查：技能结构、版本一致性及差异格式校验通过；人工逐项核对命名指导、四类范围变化、澄清与返工入口和既有授权边界。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-02T12:20:21.959Z",
+      "summary": "Agent 自验收：Requirement 四项验收均满足，标题覆盖当前范围，三项元数据统一复核，优先级沿用用户安排。",
+      "source": "small 默认自验收；依据技能校验、版本一致性、diff 检查与全文自查。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-02T12:20:25.593Z",
+      "summary": "同步 change-workflow 中的标题命名与需求范围变化后三项元数据复核规则。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-02T12:20:29.139Z",
+      "summary": "标题命名与范围变化复核指引已验证、自验收并同步 Specs。",
+      "path": "docs/project/archive/2026-11-02-scope-metadata-review"
+    }
+  },
+  "types": [
+    "流程"
+  ]
+}
