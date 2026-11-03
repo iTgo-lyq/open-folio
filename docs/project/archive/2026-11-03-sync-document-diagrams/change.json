@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "sync-document-diagrams",
+  "title": "同步 document-diagrams 最新技术图规范",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/sync-document-diagrams",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "同步完整技能目录并验证安装与运行行为",
+      "status": "done",
+      "verification": "77 个文件与上游逐字节一致，安装引用、21 个 Python 语法及30项回归通过",
+      "commitTitle": "sync-document-diagrams T1: sync upstream 49dcf3e"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-03T09:27:25.209Z",
+      "summary": "Agent 自查通过，77个文件一致性、安装引用、21个Python语法和30项回归均通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-03T09:27:31.309Z",
+      "summary": "用户明确要求提交推送并合入 main，技能同步验收通过",
+      "source": "用户原话：提交推送吧。合入 main"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-03T09:27:34.954Z",
+      "summary": "仅同步外部技能安装副本，不改变应用能力或长期核心方案"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-03T09:27:38.580Z",
+      "summary": "技能完整同步与运行验证通过，按用户合入授权归档",
+      "path": "docs/project/archive/2026-11-03-sync-document-diagrams"
+    }
+  },
+  "types": [
+    "工程"
+  ]
+}
