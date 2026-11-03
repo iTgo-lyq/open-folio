@@ -20,13 +20,13 @@ Three nesting levels, outermost to innermost — reuses the containment grammar 
 
 | Limit | Rule |
 |---|---|
-| Max zones | 3 |
-| Max infrastructure nodes | 6 |
-| Max artifact chips | 9 |
-| Max network paths | 8 |
+| Suggested zones | 3 |
+| Suggested infrastructure nodes | 6 |
+| Suggested artifact chips | 9 |
+| Suggested network paths | 8 |
 | Max focal elements | 2 |
 
-Over budget → split into one deployment diagram per environment.
+Split by environment when placement and network paths become hard to follow.
 
 ## Anti-patterns
 

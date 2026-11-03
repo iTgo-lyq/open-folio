@@ -294,7 +294,7 @@ Each row introduced by a category label at `x = label_col_w + 4` (= 144). The de
 
 ## 10. Complexity budget
 
-| Dimension | Max |
+| Dimension | Guidance |
 |---|---|
 | Lanes (actors) | 6 |
 | Steps | 12 |
@@ -303,7 +303,7 @@ Each row introduced by a category label at `x = label_col_w + 4` (= 144). The de
 | Data-type chips per node | 2 (input + output) |
 | Semantic-colored elements | Not limited by the focal budget; use consistent role colors |
 
-Above 6 lanes or 12 steps: split into two diagrams (overview + detail).
+Above 6 lanes or 12 steps, review spacing and handoffs; split by phase when crowded.
 
 ---
 
@@ -319,7 +319,7 @@ Above 6 lanes or 12 steps: split into two diagrams (overview + detail).
 - **Custom-colored arrows** — connectors are topology-driven; `color` on a node never spreads to its edges.
 - **Unexplained lane tints.** Use quiet, consistent role/category surfaces for lanes; retain clear node boundaries and lane labels.
 - **Data-type chips in a double-line-name node** — skip the chips or shorten the name to one line.
-- **More than 12 steps without splitting** — use an overview + detail pair.
+- Steps packed too tightly to follow their order and handoffs.
 
 ---
 

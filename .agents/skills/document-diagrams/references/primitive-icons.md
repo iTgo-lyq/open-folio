@@ -2,7 +2,7 @@
 
 An icon is optional and never replaces the component name, role, or relationship. Use a small generic outline drawn from basic SVG shapes in a 24×24 slot; use the shared stroke/text colors and keep the visible component label. Product names can be labels instead of logos. Do not fetch or embed external images.
 
-The following identifiers are accepted in type inputs. Preserve their meaning when importing; if there is no suitable local symbol, use a labeled box. Decorative symbols carry `aria-hidden="true"`.
+The following identifiers are accepted in type inputs. Preserve their meaning in the diagram; if there is no suitable local symbol, use a labeled box. Decorative symbols carry `aria-hidden="true"`.
 
 ## Compute
 

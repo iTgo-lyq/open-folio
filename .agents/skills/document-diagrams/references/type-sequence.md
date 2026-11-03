@@ -53,7 +53,7 @@ Use a rectangular **frame** that spans only the lifelines participating in the b
 | Operator | Regions | Divider | Guard label |
 |---|---|---|---|
 | `opt` | 1 | none | `[if condition]` under the tab (`arrow-label` role, 10px) |
-| `alt` | **2 max** | dashed horizontal hairline across the frame | `[guard]` on region 1; `[else]` (or a second guard) on region 2 |
+| `alt` | 2 or more | dashed horizontal hairline between regions | Explicit `[guard]` per region; optional `[else]` last |
 | `loop` | 1 | none | `[for each item]` or `[retry ≤ 3]` under the tab |
 
 ### Guard + divider primitives
@@ -73,8 +73,8 @@ Use a rectangular **frame** that spans only the lifelines participating in the b
 - ≥24px between consecutive message y-levels inside a region (4px grid).
 - Guard sits in the first ~20px under the tab; first message in that region is ≥24px below the guard baseline.
 - Divider y on the 4px grid; ≥16px clear of messages above and below.
-- Nested fragments: **max 1 level**. Prefer two separate diagrams over deep nesting.
-- Default: **one** fragment per diagram. A second only if both stay under the complexity budget.
+- Prefer shallow fragment nesting; separate paths when frames obscure message order.
+- Use the fragments needed to express guards and repetition; keep their boundaries readable.
 - accent stays on **one** headline success message across the whole diagram (usually the happy-path return inside the first `alt` region, or the final success outside a loop). Do not accent both `alt` branches.
 
 ### Out of scope (do not invent)
@@ -82,14 +82,14 @@ Use a rectangular **frame** that spans only the lifelines participating in the b
 - Participant create/destroy, found/lost messages, duration timing bars.
 
 ## Complexity budget (sequence-specific)
-- Max lifelines: 5 (same as the §7 budget table in [layout-budget.md](layout-budget.md#complexity-budget-per-diagram)).
-- Max messages (arrows): 12.
-- Max combined fragments: 1 (hard default); 2 only if each is a single-region `opt`/`loop`.
-- Max `alt` regions: 2.
-- Max fragment nesting depth: 1.
+- Suggested lifelines: 5 (same as the §7 budget table in [layout-budget.md](layout-budget.md#complexity-budget-per-diagram)).
+- Suggested messages (arrows): 12.
+- Prefer one combined fragment; add fragments when needed for the control flow.
+- Suggested `alt` regions: 2.
+- Suggested fragment nesting depth: 1.
 - Max focal elements: 2 (prefer 1 for fragment diagrams).
 
-If you exceed, split: overview (happy path) + detail (failure / refresh path).
+Separate happy and failure paths when one view becomes crowded; retain their guards and outcomes.
 
 ## Lifeline primitive
 ```svg
@@ -109,7 +109,7 @@ If you exceed, split: overview (happy path) + detail (failure / refresh path).
 - Labels sitting over another lifeline — shorten or shift y into a gap.
 - Swimlane-style lanes instead of lifelines (different grammar).
 - Drawing `if/else` as two free-floating arrow clusters with **no** fragment frame.
-- Nested `alt` inside `alt` (split into two diagrams).
+- Nested fragments whose guards or message order cannot be followed.
 - Fragment operator label in the `node-name` sans family — uses the secondary text role (`eyebrow`): `ALT` / `OPT` / `LOOP`.
 - accent on both `alt` branches.
 - Frame that covers actors with no messages inside the fragment.

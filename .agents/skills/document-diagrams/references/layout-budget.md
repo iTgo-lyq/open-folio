@@ -1,6 +1,6 @@
 # Layout grid, per-type budgets, page layout, and summary cards
 
-Routed from SKILL.md §7 and §8. SKILL.md keeps the grid rule in one line, the universal complexity limits, and the split rule. This file holds the full grid table, every per-type budget row, the page layout, and the summary card pattern.
+Routed from SKILL.md §7. Technical content counts and depth values are planning guides; retain semantic structure, focal limits and quantitative encodings.
 
 ## Layout & Spacing
 
@@ -17,24 +17,24 @@ Routed from SKILL.md §7 and §8. SKILL.md keeps the grid rule in one line, the 
 
 ### Complexity budget (per diagram)
 
-These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 focal elements, 2 annotation callouts) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them.
+Use these counts to review grouping and readability at the intended display size (SKILL.md §7).
 
 | Limit | Rule |
 |---|---|
-| Max unique components / relationships / ledger entries (architecture delta) | 8 / 10 / 8 |
-| Max admin bands / traffic scopes / nodes (architecture containment) | 2 / 4 / 8 |
-| Max lifelines (sequence) | 5 |
-| Max combined fragments (sequence) | 1 (default); 2 only if each is single-region `opt`/`loop` |
-| Max `alt` regions (sequence) | 2 |
-| Max fragment nesting (sequence) | 1 |
-| Max lanes (swimlane) | 5 |
+| Suggested components / relationships (architecture delta) | 8 / 10; ledger covers every change |
+| Suggested admin bands / traffic scopes / nodes (architecture containment) | 2 / 4 / 8 |
+| Suggested lifelines (sequence) | 5 |
+| Suggested combined fragments (sequence) | Start with 1; add as needed for control flow |
+| Suggested `alt` regions (sequence) | 2 |
+| Suggested fragment nesting (sequence) | 1 |
+| Suggested lanes (swimlane) | 5 |
 | Max items (quadrant) | 12 |
-| Max entities (ER) | 8 |
-| Max nesting levels (nested) | 6 |
-| Max tree depth | 4 |
-| Max org chart depth | 4 |
-| Max org chart nodes | 12 |
-| Max layers (layer stack) | 6 |
+| Suggested entities (ER) | 8 |
+| Suggested nesting levels (nested) | 6 |
+| Suggested tree depth | 4 |
+| Suggested org chart depth | 4 |
+| Suggested org chart nodes | 12 |
+| Suggested layers (layer stack) | 6 |
 | Max parts / levels / focal parts (exploded axonometric) | 5 / 5 / 1, three detail levels |
 | Max tagged rooms or buildings / boxes / focal (axonometric plan) | 8 / 40 / 1 |
 | Max circles (venn) | 3 |
@@ -57,10 +57,10 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max columns / cards (kanban) | 5 / 12 total, 4 per column |
 | Max stages / rows (user journey) | 6 / 3, 2 pain markers |
 | Max stages / layers (service blueprint) | 6 stages; required customer / frontstage / backstage; optional evidence / support; 1 focal cell |
-| Max zones / nodes / paths (deployment) | 3 / 6 / 8, 9 artifacts |
-| Max nodes / edges (dependency) | 9 / 14, 4 ranks, 1 cycle |
-| Max classes / relationships (UML class) | 7 / 8, 5 members per compartment |
+| Suggested zones / nodes / paths (deployment) | 3 / 6 / 8, 9 artifacts |
+| Suggested nodes / edges (dependency) | 9 / 14, 4 ranks, 1 cycle |
+| Suggested classes / relationships (UML class) | 7 / 8, 5 members per compartment |
 | Max activities / slices / cards (story map) | 5 / 3 / 12 |
-| Max tables / columns / FKs (db schema) | 5 / 8 shown / 6 |
+| Suggested tables / columns / FKs (db schema) | 5 / 8 shown / 6 |
 
-If you exceed, split into two diagrams (overview + detail).
+Split by subsystem or phase when separate views improve readability.

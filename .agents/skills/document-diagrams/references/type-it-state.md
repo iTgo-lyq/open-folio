@@ -335,7 +335,7 @@ Before emitting SVG, verify **every** item:
 - **Tiny text badges as icons.** The source uses 7-px `DB` / `APP` / `EXT` badges; this type uses real 24-px catalog icons. Text badges are only acceptable as the label text, not as the component "icon."
 - **Replacing a focal component's semantic role with an arbitrary highlight hue.** Preserve its role color and emphasize its outline.
 - **Footer bar wired to one component.** Footer = cross-cutting layer-wide concern; a connector from a footer to a specific component is a category error (use `type-dp-integration.md`'s AUTH-line pattern only when the footer service truly authenticates *all* components, and even then the line lands at the zone bottom edge, not at a specific tool).
-- **> 16 total components or > 5 per zone.** Density cap; split into two diagrams.
+- **Crowded zones.** Review grouping above 16 components or 5 per zone; split when labels or paths cannot be followed.
 - **Mixing orientations within one diagram.** Pick one — `horizontal` or `vertical` — and apply it to every zone.
 - **Using `kind: focal` for every issue.** Keep ≤2 editorial pain points; repeat the warning role on all evidenced risks without making them focal.
 
