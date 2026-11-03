@@ -37,6 +37,7 @@ export default function SharedChangePage({
       };
       setTarget((previous) =>
         previous &&
+        previous.shortId === value.shortId &&
         shareParams(previous).toString() === shareParams(value).toString()
           ? previous
           : value,
@@ -55,7 +56,10 @@ export default function SharedChangePage({
       </PublicShell>
     );
   return (
-    <SharedProvider key={shareParams(target).toString()} target={target}>
+    <SharedProvider
+      key={target.shortId ?? shareParams(target).toString()}
+      target={target}
+    >
       <SharedReader target={target} />
     </SharedProvider>
   );

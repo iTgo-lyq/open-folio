@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "保存并恢复分享时的材料与阅读位置",
-      "status": "doing"
+      "status": "done",
+      "verification": "29 项服务端、11 项浏览器、类型与生产构建通过；真实 execution.md 短链、Agent 单篇、生产重启和冒烟退出清理通过"
     }
   },
   "closure": {},

@@ -7,6 +7,9 @@ import {
   shareParams,
   sharePath,
   sharedReadUrl,
+  shareLocation,
+  sharedTextDocument,
+  SHARE_READING_KEYS,
   type ShareTarget,
 } from "../lib/share-link.ts";
 import { ShareLinks } from "./share-links.ts";
@@ -87,6 +90,8 @@ export async function sharedResponse(
     if (shortId) {
       const target = await new ShareLinks(dirname(repos.root)).read(shortId);
       for (const [key, value] of shareParams(target)) q.append(key, value);
+      const document = sharedTextDocument(target.location);
+      if (document && !q.has("document")) q.set("document", document);
     }
     if (
       [...q.keys()].some(
@@ -100,7 +105,10 @@ export async function sharedResponse(
             "load",
             "refresh",
           ].includes(k) &&
-            !(isAgent && k === "document")) ||
+            !(isAgent && k === "document") &&
+            !(
+              isLinks && (SHARE_READING_KEYS as readonly string[]).includes(k)
+            )) ||
           q.getAll(k).length !== 1,
       )
     )
@@ -169,11 +177,14 @@ export async function sharedResponse(
         let value: Response;
         if (isLinks) {
           await ctx.assertRead();
-          const short = await new ShareLinks(dirname(repos.root)).prepare({
-            repository: ctx.repository.webUrl,
-            change: target.change,
-            integrationBranch: ctx.project.integrationBranch,
-          });
+          const short = await new ShareLinks(dirname(repos.root)).prepare(
+            {
+              repository: ctx.repository.webUrl,
+              change: target.change,
+              integrationBranch: ctx.project.integrationBranch,
+            },
+            shareLocation(q),
+          );
           value = Response.json({
             web: sharePath(short),
             agent: agentSharePath(short),

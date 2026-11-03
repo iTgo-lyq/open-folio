@@ -173,6 +173,91 @@ test("short links persist, preserve scope and never authorize entry into the pri
   );
 });
 
+test("short links bind immutable reading positions and Agent defaults to the shared document", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  await f.g.put(
+    "docs/project/changes/shared/execution.md",
+    "# 执行记录\n\n## 验证结果\n\nexecution body",
+  );
+  await f.g.put(
+    "docs/project/changes/shared/notes/技术 #1.md",
+    "# 补充材料\n\nextra body",
+  );
+  f.g.commit();
+  const overview = await (await f.read("shared", "links")).json();
+  const make = async (query: string) => {
+    const response = await f.read("shared", `links?${query}`);
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  const execution = await make(
+    new URLSearchParams({ ct: "execution", anchor: "验证结果" }).toString(),
+  );
+  assert.notEqual(execution.web, overview.web);
+  assert.equal(new URL(execution.web, "https://folio.test").search, "");
+  assert.deepEqual(
+    await make(
+      new URLSearchParams({ anchor: "验证结果", ct: "execution" }).toString(),
+    ),
+    execution,
+  );
+  const id = execution.web.split("/").at(-1)!;
+  const store = new ShareLinks(dirname(f.service.root));
+  assert.deepEqual((await store.read(id)).location, {
+    ct: "execution",
+    anchor: "验证结果",
+  });
+  const read = (path: string) =>
+    sharedResponse(
+      new Request(`https://folio.test${path}`),
+      ["agent", path.split("/")[2]],
+      f.service,
+      DEFAULT_LIMITS,
+    );
+  const response = await read(execution.agent);
+  assert.equal(response.status, 200);
+  const text = await response.text();
+  assert.match(text, /execution body/);
+  assert.doesNotMatch(text, /shared body/);
+  assert.equal(
+    (await read(`${execution.agent}?document=requirement.md`)).status,
+    200,
+  );
+  assert.equal(
+    (await read(`${execution.agent}?document=..%2Fprivate%2Frequirement.md`))
+      .status,
+    404,
+  );
+  const extra = await make(
+    new URLSearchParams({ ct: "file:notes/技术 #1.md" }).toString(),
+  );
+  assert.match(await (await read(extra.agent)).text(), /extra body/);
+  const prototype = await make(
+    "ct=prototypes&preview=screen&device=mobile&orientation=landscape&zoom=75",
+  );
+  assert.equal(
+    (await store.read(prototype.web.split("/").at(-1)!)).location?.device,
+    "mobile",
+  );
+  assert.deepEqual(
+    (await new ShareLinks(dirname(f.service.root)).read(id)).location,
+    { ct: "execution", anchor: "验证结果" },
+  );
+  assert.equal(
+    (await f.read("shared", "links?ct=execution&connectionId=private")).status,
+    400,
+  );
+  assert.equal(
+    (await f.read("shared", "links?ct=execution&ct=technical")).status,
+    400,
+  );
+  assert.equal(
+    (await f.read("shared", `links?anchor=${"a".repeat(4097)}`)).status,
+    400,
+  );
+});
+
 test("a direct anonymous target exposes only one Change and scopes every resource without creating a share", async (t) => {
   const f = await setup();
   t.after(f.cleanup);
