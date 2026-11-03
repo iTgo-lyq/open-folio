@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@open-folio/ui";
 import { useWorkspace } from "./context";
-import { shareParams, sharedReadUrl } from "@/lib/share-link";
+import { shareLocation, shareParams, sharedReadUrl } from "@/lib/share-link";
 import { api } from "./api";
 import styles from "./share-manager.module.css";
 
@@ -80,7 +80,7 @@ function ShareLinkField({
 }
 
 export function ShareManager({ changeId }: { changeId: string }) {
-  const { repository, data } = useWorkspace();
+  const { repository, data, q } = useWorkspace();
   const [open, setOpen] = useState(false),
     [origin, setOrigin] = useState("");
   const [links, setLinks] = useState<{
@@ -95,7 +95,8 @@ export function ShareManager({ changeId }: { changeId: string }) {
     change: changeId,
     integrationBranch: data?.integrationBranch ?? undefined,
   };
-  const key = shareParams(target).toString();
+  const location = new URLSearchParams(Object.entries(shareLocation(q)));
+  const key = `${shareParams(target)}&${location}`;
   useEffect(() => {
     if (!open || links?.key === key) return;
     const controller = new AbortController();
@@ -105,9 +106,12 @@ export function ShareManager({ changeId }: { changeId: string }) {
     );
     let cancelled = false;
     setError("");
-    void api<{ web: string; agent: string }>(sharedReadUrl(target, "links"), {
-      signal: controller.signal,
-    })
+    void api<{ web: string; agent: string }>(
+      sharedReadUrl(target, `links?${location}`),
+      {
+        signal: controller.signal,
+      },
+    )
       .then((value) => {
         if (!cancelled) setLinks({ key, ...value });
       })
@@ -153,7 +157,7 @@ export function ShareManager({ changeId }: { changeId: string }) {
           </IconButton>
         </header>
         <p className={styles.description}>
-          两种链接都无需登录，长期保留，内容随已推送版本更新。
+          链接保留当前阅读位置，长期有效，内容随已推送版本更新。
         </p>
         {error && (
           <p role="alert">

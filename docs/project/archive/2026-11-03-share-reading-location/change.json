@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "share-reading-location",
+  "title": "Change 短链保留分享时的阅读位置",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/share-reading-location",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "保存并恢复分享时的材料与阅读位置",
+      "status": "done",
+      "verification": "29 项服务端、11 项浏览器、类型与生产构建通过；真实 execution.md 短链、Agent 单篇、生产重启和冒烟退出清理通过"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-03T14:28:30.965Z",
+      "summary": "Agent 自查全部差异，29 项服务端、11 项浏览器、类型与构建以及真实执行记录和重启冒烟通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-03T14:28:34.600Z",
+      "summary": "Agent 自验收：分享当前材料和章节、不同位置独立、导航与旧链兼容均通过",
+      "source": "execution.md 中的服务端与浏览器证据、真实 execution.md 的生产短链及 Agent 单篇和重启验证、冒烟会话清理结果"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-03T14:28:59.147Z",
+      "summary": "同步分享位置持久化、默认恢复、导航覆盖与 Agent 单篇规则"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-03T14:29:02.772Z",
+      "summary": "阅读位置分享和旧链兼容已自验收，服务端、浏览器与真实执行记录重启验证通过",
+      "path": "docs/project/archive/2026-11-03-share-reading-location"
+    }
+  },
+  "followUpOf": "durable-change-share-links",
+  "followUpTitle": "Change 分享体验",
+  "types": [
+    "修复"
+  ]
+}

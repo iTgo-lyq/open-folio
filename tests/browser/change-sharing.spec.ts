@@ -14,6 +14,117 @@ function directLink(change: string) {
   return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, integrationBranch: "develop" })}`;
 }
 
+test("short links restore the shared material and chapter while later navigation replaces saved defaults", async ({
+  page,
+  browser,
+  request,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&c=document-reader&ct=technical&anchor=${encodeURIComponent("数据来源")}`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "技术方案", exact: true }),
+  ).toBeVisible();
+  const copy = async () => {
+    await page.getByRole("button", { name: "分享", exact: true }).click();
+    const dialog = page.getByRole("dialog", {
+      name: "分享这个 Change",
+      exact: true,
+    });
+    const input = dialog.getByRole("textbox", {
+      name: "网页链接",
+      exact: true,
+    });
+    await expect(input).toHaveValue(/\/s\/[A-Za-z0-9_-]{22}$/);
+    const value = await input.inputValue();
+    await dialog
+      .getByRole("button", { name: "关闭分享链接", exact: true })
+      .click();
+    return value;
+  };
+  const technical = await copy();
+  expect(new URL(technical).search).toBe("");
+  const agent = await request.get(`${technical}/agent`);
+  expect(await agent.text()).toContain("## 文件：technical.md");
+  const anonymous = await browser.newContext({
+    baseURL: origin,
+    viewport: { width: 1440, height: 1000 },
+  });
+  try {
+    const viewer = await anonymous.newPage();
+    await viewer.addInitScript(() => {
+      const scroll = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (options) {
+        if (this.id) document.documentElement.dataset.scrollAnchor = this.id;
+        return scroll.call(this, options);
+      };
+    });
+    await viewer.goto(technical);
+    await expect(
+      viewer.getByRole("heading", { name: "技术方案", exact: true }),
+    ).toBeVisible();
+    // The fixture fits in the viewport; observe the native scroll destination
+    // rather than requiring a visible scroll offset or active-section change.
+    await expect(viewer.locator("html")).toHaveAttribute(
+      "data-scroll-anchor",
+      "数据来源",
+    );
+    await openMaterial(viewer, "需求");
+    await expect(
+      viewer.getByRole("heading", {
+        name: "让工程文档成为清晰的阅读体验",
+        exact: true,
+      }),
+    ).toBeVisible();
+    expect(new URL(viewer.url()).searchParams.get("anchor")).toBeNull();
+    await viewer.reload();
+    await expect(
+      viewer.getByRole("heading", {
+        name: "让工程文档成为清晰的阅读体验",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await viewer.goBack();
+    await expect(
+      viewer.getByRole("heading", { name: "技术方案", exact: true }),
+    ).toBeVisible();
+    await viewer.goForward();
+    await expect(
+      viewer.getByRole("heading", {
+        name: "让工程文档成为清晰的阅读体验",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await openMaterial(page, "执行记录");
+    const execution = await copy();
+    expect(execution).not.toBe(technical);
+    await viewer.goto(execution);
+    await expect(
+      viewer
+        .getByRole("navigation", { name: "Change 材料", exact: true })
+        .getByRole("link", { name: /^执行记录/ }),
+    ).toHaveAttribute("aria-current", "page");
+    // This fixture intentionally has no execution.md; the saved material must
+    // keep its explicit missing-file page instead of opening the overview.
+    await expect(
+      viewer.getByRole("alert").filter({ hasText: "文件缺失" }),
+    ).toContainText("execution.md");
+    await viewer.goto(technical);
+    await expect(
+      viewer.getByRole("heading", { name: "技术方案", exact: true }),
+    ).toBeVisible();
+    await openMaterial(page, "阅读体验调查");
+    const extra = await copy();
+    await viewer.goto(extra);
+    await expect(
+      viewer.getByRole("heading", { name: "阅读体验调查", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await anonymous.close();
+  }
+});
+
 test("copying a short link opens the anonymous reader and the space name returns through private access checks", async ({
   page,
   context,

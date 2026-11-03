@@ -3,7 +3,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import { shareParams, type ShareTarget } from "../lib/share-link.ts";
+import {
+  SHARE_READING_KEYS,
+  shareParams,
+  type ShareTarget,
+  type ShareLocation,
+} from "../lib/share-link.ts";
 import { dataDirectory } from "./config.ts";
 import { AppError } from "./errors.ts";
 
@@ -12,6 +17,9 @@ const targetSchema = z
     repository: z.string().url(),
     change: z.string().min(1),
     integrationBranch: z.string().min(1),
+    location: z
+      .record(z.enum(SHARE_READING_KEYS), z.string().min(1).max(4096))
+      .optional(),
   })
   .strict();
 const missing = () =>
@@ -23,8 +31,14 @@ export class ShareLinks {
   constructor(root = dataDirectory()) {
     this.directory = join(root, "share-links");
   }
-  async prepare(target: ShareTarget) {
-    const value = targetSchema.parse(Object.fromEntries(shareParams(target)));
+  async prepare(target: ShareTarget, location: ShareLocation = {}) {
+    const parsed = targetSchema.safeParse({
+      ...Object.fromEntries(shareParams(target)),
+      ...(Object.keys(location).length ? { location } : {}),
+    });
+    if (!parsed.success)
+      throw new AppError("INVALID_PARAMETER", "分享阅读位置不合法。", 400);
+    const value = parsed.data;
     const body = JSON.stringify(value) + "\n";
     const id = createHash("sha256")
       .update(body)

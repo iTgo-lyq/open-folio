@@ -1,8 +1,66 @@
+export const SHARE_READING_KEYS = [
+  "ct",
+  "document",
+  "anchor",
+  "raw",
+  "asset",
+  "preview",
+  "device",
+  "orientation",
+  "zoom",
+  "cf",
+  "cv",
+] as const;
+export type ShareLocation = Partial<
+  Record<(typeof SHARE_READING_KEYS)[number], string>
+>;
+
+export function shareLocation(
+  query: URLSearchParams | Record<string, string>,
+): ShareLocation {
+  return Object.fromEntries(
+    SHARE_READING_KEYS.flatMap((key) => {
+      const value =
+        query instanceof URLSearchParams ? query.get(key) : query[key];
+      return value ? [[key, value]] : [];
+    }),
+  );
+}
+
+// A new material replaces its old document/chapter; adjustments keep the material.
+export function shareReadingParams(
+  query: URLSearchParams,
+  saved: ShareLocation = {},
+) {
+  const explicit = shareLocation(query);
+  const changedMaterial = explicit.ct || explicit.document || explicit.asset;
+  return new URLSearchParams(
+    Object.entries(changedMaterial ? explicit : { ...saved, ...explicit }),
+  );
+}
+
+export function sharedTextDocument(location: ShareLocation = {}) {
+  if (location.document) return location.document;
+  if (location.ct?.startsWith("file:")) return location.ct.slice(5);
+  if (
+    [
+      "requirement",
+      "technical",
+      "plan",
+      "research",
+      "execution",
+      "review",
+    ].includes(location.ct ?? "")
+  )
+    return `${location.ct}.md`;
+}
+
 export type ShareTarget = {
   repository: string;
   change: string;
   integrationBranch?: string;
   shortId?: string;
+  location?: ShareLocation;
 };
 
 export function shareParams(target: ShareTarget) {
