@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { repositoryFixture } from "./repositories-fixture.ts";
 import { sharedResponse } from "../src/server/share-api.ts";
 import { sharedReadUrl } from "../src/lib/share-link.ts";
@@ -15,6 +15,8 @@ import {
 import { SnapshotStore } from "../src/server/store.ts";
 import { ThumbnailCache } from "../src/server/thumbnail-cache.ts";
 import { inspectMarkdown } from "../src/lib/markdown.ts";
+import { ShareLinks } from "../src/server/share-links.ts";
+import { repositoryResponse } from "../src/server/repository-api.ts";
 
 async function setup() {
   const f = await repositoryFixture();
@@ -91,6 +93,86 @@ async function setup() {
   };
 }
 
+test("short links persist, preserve scope and never authorize entry into the private space", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const responses = await Promise.all(
+    Array.from({ length: 4 }, () => f.read("shared", "links")),
+  );
+  const links = await Promise.all(
+    responses.map(async (r) => {
+      assert.equal(r.status, 200);
+      return r.json();
+    }),
+  );
+  assert.ok(links.every((value) => value.web === links[0].web));
+  assert.match(links[0].web, /^\/s\/[A-Za-z0-9_-]{22}$/);
+  assert.equal(links[0].agent, `${links[0].web}/agent`);
+  const id = links[0].web.split("/").at(-1)!;
+  // A fresh store instance reads only the durable record, without memory state.
+  const store = new ShareLinks(dirname(f.service.root));
+  const saved = await store.read(id);
+  assert.deepEqual(saved, {
+    repository: f.repo.webUrl,
+    integrationBranch: "develop",
+    change: "shared",
+    shortId: id,
+  });
+  for (const invalid of ["../secret", "unknown", "a".repeat(22)])
+    await assert.rejects(store.read(invalid), {
+      code: "SHARE_LINK_NOT_FOUND",
+      status: 404,
+    });
+  const agent = (query = "", method = "GET", key = id) =>
+    sharedResponse(
+      new Request(`https://folio.test/s/${key}/agent${query}`, { method }),
+      ["agent", key],
+      f.service,
+      DEFAULT_LIMITS,
+    );
+  const text = await agent();
+  assert.equal(text.status, 200);
+  const body = await text.text();
+  assert.match(body, /shared body/);
+  assert.doesNotMatch(body, /private body/);
+  assert.ok(body.includes(`https://folio.test${links[0].web}`));
+  assert.ok(
+    body.includes(`${links[0].agent}?document=requirement.md&snapshot=`),
+  );
+  assert.equal(await (await agent("", "HEAD")).text(), "");
+  assert.equal((await agent("?document=requirement.md")).status, 200);
+  assert.equal((await agent("?snapshot=obsolete")).status, 409);
+  assert.equal((await agent("?change=private")).status, 400);
+  assert.equal(
+    (await agent("?repository=https://evil.test/private/repo")).status,
+    400,
+  );
+  assert.equal((await agent("", "GET", "a".repeat(22))).status, 404);
+  const data = await (await f.read()).json();
+  const space = new URL(data.spacePath, "https://folio.test");
+  assert.equal(space.searchParams.get("repo"), f.key);
+  assert.equal(space.searchParams.get("m"), "changes");
+  assert.equal(space.searchParams.get("fullName"), f.repo.fullName);
+  const privateRead = await repositoryResponse(
+    new Request(
+      `https://folio.test/api/repositories/${f.key}/workbench?connectionId=${f.c.connection.id}`,
+    ),
+    f.key,
+    ["workbench"],
+    f.service,
+    DEFAULT_LIMITS,
+  );
+  assert.equal(privateRead.status, 401);
+  await f.f.sessions.unbind(f.c.cookie, f.c.connection.id);
+  const denied = await agent();
+  assert.equal(denied.status, 404);
+  assert.doesNotMatch(await denied.text(), /shared body|private body/);
+  assert.deepEqual(
+    await new ShareLinks(dirname(f.service.root)).read(id),
+    saved,
+  );
+});
+
 test("a direct anonymous target exposes only one Change and scopes every resource without creating a share", async (t) => {
   const f = await setup();
   t.after(f.cleanup);
@@ -108,6 +190,7 @@ test("a direct anonymous target exposes only one Change and scopes every resourc
     "documents",
     "projectName",
     "snapshotId",
+    "spacePath",
   ]);
   assert.ok(!JSON.stringify(data).includes("uploadUrl"));
   const document = data.documents.find((d) => d.kind === "markdown")!;

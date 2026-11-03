@@ -2,6 +2,7 @@ export type ShareTarget = {
   repository: string;
   change: string;
   integrationBranch?: string;
+  shortId?: string;
 };
 
 export function shareParams(target: ShareTarget) {
@@ -15,6 +16,7 @@ export function shareParams(target: ShareTarget) {
 }
 
 export function sharePath(target: ShareTarget) {
+  if (target.shortId) return `/s/${encodeURIComponent(target.shortId)}`;
   return `/share?${shareParams(target)}`;
 }
 
@@ -22,10 +24,13 @@ export function agentSharePath(
   target: ShareTarget,
   options: { document?: string; snapshot?: string } = {},
 ) {
-  const params = shareParams(target);
+  const params = target.shortId ? new URLSearchParams() : shareParams(target);
   if (options.document !== undefined) params.set("document", options.document);
   if (options.snapshot !== undefined) params.set("snapshot", options.snapshot);
-  return `/share/agent?${params}`;
+  const path = target.shortId
+    ? `/s/${encodeURIComponent(target.shortId)}/agent`
+    : "/share/agent";
+  return `${path}${params.size ? `?${params}` : ""}`;
 }
 
 export function sharedReadUrl(target: ShareTarget, path: string) {
