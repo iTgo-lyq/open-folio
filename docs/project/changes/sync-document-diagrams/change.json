@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "sync-document-diagrams",
+  "title": "同步 document-diagrams 最新技术图规范",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "同步完整技能目录并验证安装与运行行为",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "工程"
+  ]
+}
