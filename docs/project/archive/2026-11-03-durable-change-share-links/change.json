@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "durable-change-share-links",
+  "title": "Change 分享持久短链接与空间名返回入口",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/durable-change-share-links",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "交付持久短链接和受权限保护的空间返回入口",
+      "status": "done",
+      "verification": "30 项服务端检查、10 项相关浏览器检查、类型与生产构建、真实登录及退出清理、生产重启短链验证通过；既有看板失败在 develop 复现并记录"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-03T13:43:15.203Z",
+      "summary": "Agent 自查全部差异与验收对应，30 项服务端、10 项相关浏览器、生产构建和真实重启冒烟通过，既有问题另记边界"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-03T13:44:07.007Z",
+      "summary": "Agent 自验收：空间名返回、权限拦截、持久短链及旧入口兼容均有证据",
+      "source": "execution.md：30 项服务端检查、10 项相关浏览器检查、生产构建、真实登录与退出清理、生产服务重启验证及桌面和手机截图"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-03T13:44:10.684Z",
+      "summary": "同步公开分享、空间名返回、短链阅读和服务持久数据约束"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-03T13:44:14.131Z",
+      "summary": "持久短链与空间名返回已自验收，验证及既有问题边界均有证据",
+      "path": "docs/project/archive/2026-11-03-durable-change-share-links"
+    }
+  },
+  "types": [
+    "优化"
+  ]
+}
