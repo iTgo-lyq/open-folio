@@ -320,9 +320,9 @@ The same rule applies to any other layer-wide service: centralized logging, secr
 
 ---
 
-## 10. Budget — this type exceeds the default
+## 10. Density
 
-This is the one type where the default 9-node / 12-arrow budget is intentionally exceeded. A realistic platform integration shows:
+A platform integration may need:
 
 - 4–6 source nodes
 - 5 platform components

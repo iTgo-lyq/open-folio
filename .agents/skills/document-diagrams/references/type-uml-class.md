@@ -44,9 +44,9 @@ All six SKILL.md §6 connector rules apply in full — orthogonal rounded elbows
 
 ## Complexity budget
 
-Max 7 classes, max 8 relationships, max 5 members per compartment (overflow becomes a `sublabel`-role `…` line), max 2 focal elements. Over budget → split by package.
+Start with 7 classes, 8 relationships and 5 members per compartment; retain members needed to explain behavior. Mark omitted members with `…`. Split by package when crowded; max 2 focal elements.
 
-Seven is the ceiling rather than the target. Three compartments per box makes a class diagram dense fast, so treat 4–5 classes as the normal size; the illustrative example uses all seven only because it doubles as the legend for the full relationship vocabulary.
+
 
 ## Anti-patterns
 

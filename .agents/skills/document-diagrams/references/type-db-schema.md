@@ -10,7 +10,7 @@
 
 - **Header band** — `schema.table` (e.g. `public.orders`) in the `node-name` role, 12px, weight 600, with a rectangular type tag (`rx=2`, NOT a pill) reading `TABLE`. A hairline separates it from the body.
 - **Column rows** — fixed 24px row height so connectors can anchor predictably. Each row: column name in the `node-name` family at 12px anchored left, SQL type in the `sublabel` role 10px `muted` anchored right (`uuid`, `text`, `numeric(12,2)`, `timestamptz`), and constraint chips between them as small `rx=2` tags in the `eyebrow` role at 10px: `PK`, `FK`, `UQ`, `NN`. Alternate row background `ink @ 0.02` on even rows for scannability.
-- **Overflow row** — when a table has more columns than the budget allows, the last row is a `sublabel`-role 10px `muted` line: `+ N more columns`. Never silently truncate a table without saying so.
+- **Overflow row** — when incidental columns are omitted, the last row is a `sublabel`-role 10px `muted` line: `+ N more columns`. Never silently truncate a table without saying so.
 - **Index compartment** — an optional final compartment separated by a hairline, labelled with an `eyebrow`-role 10px `INDEXES` eyebrow, listing index names in the `sublabel` role at 10px (`idx_orders_customer_id`, `uq_products_sku`). List only the indexes that matter to the story, not every index on the table.
 
 ### Foreign-key connectors — the defining rule
@@ -29,7 +29,7 @@ If a schema has no destructive FK, it has no focal element. Leave it unaccented 
 
 ## Complexity budget
 
-Max 5 tables, max 8 column rows shown per table, max 6 FK edges, max 2 focal elements. Over budget → show the subsystem, not the database, and say so in a caption.
+Start with 5 tables, 8 rows per table and 6 FK edges; expand for required schema detail. Keep FK endpoints visible. Split by subsystem when crowded; max 2 focal elements.
 
 ## Anti-patterns
 

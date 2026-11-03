@@ -41,39 +41,25 @@ Use [visual-style.md](visual-style.md) for colors, fonts, sizes and markers. Opt
 
 ## 3. Detail level
 
-How much of the source survives. This is a *count* dial — it governs how many elements make it through, not how they're worded (that's §4).
+Choose content for the diagram's purpose.
 
-| Level | Nodes | Edges | Sublabels | What survives |
-|---|---|---|---|---|
-| `faithful` (詳細) | ≤24, zoned | ≤32 | every port, protocol, version | Every distinct component in the source. Only exact duplicates merge. |
-| `balanced` (default) | ≤12 | ≤16 | technical sublabel on ≤4 nodes | Components that carry the story; leaf clusters collapse to one node each. |
-| `simplified` (簡略) | ≤7 | ≤9 | none | Capabilities and their sequence. Infrastructure disappears. |
+| Level | What survives |
+|---|---|
+| `faithful` | Every distinct component and relationship; merge only exact duplicates. |
+| `balanced` (default) | Components and relationships needed to explain the subject; aggregate incidental detail. |
+| `simplified` | Capabilities and their sequence; retain boundaries and conditions that affect meaning. |
 
-These detail ceilings are upper bounds. For `balanced` and `simplified`, also apply the chosen type and SKILL.md §7 budgets, using the strictest limit (normally 9 nodes and 12 edges). Split when either limit is exceeded. **`faithful` deliberately exceeds it** — that's the trade, and it comes with conditions:
+Apply SKILL.md §7 for density. Use labeled zones for useful responsibility or trust boundaries. A large source may remain one diagram when its labels and routes are readable at the intended size.
 
-1. **Zoning is mandatory.** Above 9 nodes, every node belongs to a labeled zone (2–4 zones, hairline-bordered, `paper-2` fill, secondary zone label at top-left). An unzoned 20-node diagram is a wiring diagram, not a schematic.
-2. **Connector rules don't relax.** SKILL.md §6 rules 1–5 still apply at 24 nodes. If you can't route it without overlaps, you're over the real ceiling — split.
-3. **Above 24 nodes, split.** Produce an overview (zones as nodes, `balanced` grammar) plus one detail diagram per zone. Name them `<base>-overview.svg`, `<base>-<zone>.svg`. Never ship a 40-node single canvas.
-4. **Accent stays at 2.** More nodes never buys more focal elements.
+### Simplification
 
-### Degrade ladder
-
-When the source has more than the level allows, cut in this order and stop as soon as you're under budget. Never cut ad hoc.
-
-1. **Decorative cells** — sticky notes, free-floating text, title blocks, watermarks, the source's own legend. (Notes worth keeping become annotation callouts — max 2, see [primitive-annotation.md](primitive-annotation.md).)
-2. **Exact duplicates** — N identical workers/replicas/shards become one node labeled `Worker ×N`.
-3. **Leaf clusters** — a container whose children are all leaves collapses to the container: `Core Services` replaces its three boxes. The extractor lists these under *collapsible groups*.
-4. **Degree-1 sinks that don't change the story** — a monitoring hook, a log bucket, an archive tier.
-5. **Cross-cutting infrastructure** — logging, metrics, secrets, CI. At `simplified` these go without asking; at `balanced` keep at most one, and only if the diagram is about it.
-6. **Still over?** Split into overview + detail. Splitting beats shrinking.
-
-Anything cut in steps 2–6 goes in the fidelity ledger (§5). Step 1 doesn't need reporting.
+Remove decoration, merge identical replicas, then consider leaf clusters or incidental infrastructure. Preserve distinct behavior, failure paths and trust boundaries. In `faithful`, keep distinct content across detail diagrams if needed. Report material grouping or omissions (§5).
 
 ---
 
 ## 4. Audience level
 
-Independent of the detail dial: the same 12 nodes get named differently for a platform team than for a steering committee. Detail sets *how many*; audience sets *what they're called*.
+Independent of the detail dial: the same 12 nodes get named differently for a platform team than for a steering committee. Detail selects content; audience sets wording.
 
 | Audience | Node names | Sublabels | Edge labels | Never |
 |---|---|---|---|---|
@@ -94,19 +80,9 @@ Two rules that hold at every audience level:
 - **Never invent detail to fill a slot.** If an input names `svc-04` but provides no explanation, keep the identifier and ask rather than guessing a business name.
 - **Keep the source's vocabulary for proper nouns.** Renaming `Kafka` to `Message Bus` is fine at `executive`; renaming it to `Event Grid` (a different product) is a factual error.
 
-## 5. Fidelity ledger
+## 5. Content coverage
 
-Any time output is smaller than input — every `balanced` and `simplified` run, and most `faithful` ones — report what you cut, in chat, after the file path. Short and specific:
-
-```
-Detail: balanced · 18 source nodes → 9 drawn
-Merged:  worker-01..06 → "Ingest Worker ×6"
-Collapsed: "Observability" group (Grafana, Loki, Tempo) → one node
-Dropped: 2 sticky notes, CI pipeline (cross-cutting)
-Kept in full: the request path (Client → Gateway → Orders → Postgres)
-```
-
-The reader of the diagram can't see what's missing. The person who asked for it needs to.
+Report material grouping or omissions alongside the SVG, including which components or relationships they affect.
 
 ---
 
@@ -119,10 +95,9 @@ Run alongside the SKILL.md §9 taste gate.
 - [ ] SVG dimensions preserve readable text at the intended display size, with all content inside the viewBox?
 - [ ] Type ramp matches the size class — not the standard ramp on a slide?
 - [ ] 40px outer margin honoured (64px for `social-og`)?
-- [ ] Node count inside the detail level's ceiling?
-- [ ] `faithful` above 9 nodes → zoned, and split above 24?
+- [ ] Detail matches the request; grouping, labels and routes remain readable at the intended size?
 - [ ] Node names, sublabels, and edge labels all at the same audience level?
 - [ ] CJK labels given a font fallback?
-- [ ] Fidelity ledger reported for anything cut?
+- [ ] Material grouping or omissions reported?
 - [ ] Diagram `<svg>` has `role="img"`, resolving `aria-labelledby`, a non-empty first-child `<title>`, a non-empty `<desc>`, and per-diagram/variant prefixed IDs?
 - [ ] Standalone SVG passes XML, accessibility and structural checks?

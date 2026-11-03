@@ -7,12 +7,12 @@
 - Nodes are small labeled rectangles (`rx=6`), `node-name` role 12px 600 name + optional `sublabel` role 10px. Width 120–180px, height 40–52px.
 - **Connectors are orthogonal (elbow-style), never diagonal.** Parent drops a short vertical line, then a horizontal bus connects siblings, then each child has a short vertical drop into its top edge. 1px muted stroke.
 - Leaf indicator: thinner stroke (0.8) or different fill — OR let terminal position do the work.
-- Max depth: 4 (root + 3 tiers). Max breadth per level: 5.
+- Start with 4 levels and 5 nodes per level; expand while ancestry remains easy to follow.
 - accent on **one** node: root OR critical leaf. Not both.
 - Draw connectors before nodes.
 
 ## Anti-patterns
-- Tree 5+ levels deep on a single page (illegible — split).
+- Deep or wide trees whose ancestry cannot be followed at the intended size.
 - Nodes of wildly varying widths — pick 2 widths max.
 - Diagonal connector lines.
 - Skipped levels (parent connected to grandchild with no middle).

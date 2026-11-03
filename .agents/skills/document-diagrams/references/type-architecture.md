@@ -67,7 +67,7 @@ Rules:
 - Leave 12–16px above the first enclosed node — the eyebrow label sits in this margin.
 - Zone fill: `ink @ 0.02` (2% ink wash). Any stronger competes with node fills.
 - **Zone labels:** use `muted` text on the white or group background. Keep the label readable at the secondary size; a translucent border color is not a text color.
-- Max 3 **flat** zones per diagram. More and it reads like a swimlane (use that type instead). Nested administrative and traffic scopes under **Containment** below are not this cap — they nest, so the cap is sibling traffic scopes at one level.
+- Suggested 3 **flat** zones per diagram. More and it reads like a swimlane (use that type instead). Nested administrative and traffic scopes under **Containment** below are not this cap — they nest, so the cap is sibling traffic scopes at one level.
 
 ## Containment
 
@@ -93,7 +93,7 @@ Provider-neutral metadata (no vendor prefix):
 
 **Sibling axis.** Sibling traffic scopes at one level share one axis. Directly under an administrative band the parent's aspect chooses it: wider than tall (or square) → a row sharing one `y`; taller than wide → a column sharing one `x`. Nested children take the perpendicular axis: siblings inside a traffic scope that sits in a row form a column, and their own children form a row again. Do not mix axes at one level.
 
-**Budget** (tightens Architecture's flat 3-zone cap; see `layout-budget.md`): ≤2 administrative bands, ≤4 traffic scopes, ≤8 nodes, 2 focal elements. Split per subscription when a figure exceeds that.
+**Layout guidance:** Start with 2 administrative bands, 4 traffic scopes and 8 nodes; expand as needed under SKILL.md §7. Keep at most 2 focal elements.
 
 **Draw scopes in place.** Containment is read from each bounds rect's own `x`, `y`, `width`, and `height`. Do not position a scope or node with a `transform` attribute, a moving inline style (`transform`, `translate`, `x`, `y`, `position`, `margin`, and similar), a nested `<svg>`, a `<style>` rule, or an animation, on the element or any group around it. The checker fails each of those. It does not evaluate external stylesheets or script, so keep containment geometry out of both.
 

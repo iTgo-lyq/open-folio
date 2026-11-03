@@ -270,7 +270,7 @@ All legend items align on a single horizontal strip per row. Do not stack vertic
 
 ## 10. Complexity budget
 
-| Dimension | Max |
+| Dimension | Guidance |
 |---|---|
 | Lanes (roles) | 4 |
 | Steps | 6 |
@@ -279,7 +279,7 @@ All legend items align on a single horizontal strip per row. Do not stack vertic
 | Data-type chips per node | 2 |
 | Semantic-colored elements | Not limited by the focal budget; use consistent role colors |
 
-Above 4 lanes or 6 steps: split into two diagrams (e.g., ingestion pipeline / analytics pipeline).
+Above 4 lanes or 6 steps, review spacing and handoffs; split by pipeline when crowded.
 
 ---
 
