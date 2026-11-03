@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Copy, Share2, X } from "lucide-react";
 import {
   Button,
@@ -14,7 +14,8 @@ import {
   PopoverTrigger,
 } from "@open-folio/ui";
 import { useWorkspace } from "./context";
-import { agentSharePath, sharePath } from "@/lib/share-link";
+import { shareLocation, shareParams, sharedReadUrl } from "@/lib/share-link";
+import { api } from "./api";
 import styles from "./share-manager.module.css";
 
 function ShareLinkField({
@@ -48,11 +49,13 @@ function ShareLinkField({
           ref={input}
           readOnly
           value={url}
+          placeholder="正在生成短链接…"
           aria-describedby={`${id}-description`}
           onFocus={(event) => event.target.select()}
         />
         <Button
           size="sm"
+          disabled={!url}
           onClick={async () => {
             setMessage("");
             try {
@@ -77,16 +80,53 @@ function ShareLinkField({
 }
 
 export function ShareManager({ changeId }: { changeId: string }) {
-  const { repository, data } = useWorkspace();
+  const { repository, data, q } = useWorkspace();
   const [open, setOpen] = useState(false),
     [origin, setOrigin] = useState("");
+  const [links, setLinks] = useState<{
+    key: string;
+    web: string;
+    agent: string;
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const target = {
     repository: repository?.webUrl ?? "",
     change: changeId,
     integrationBranch: data?.integrationBranch ?? undefined,
   };
-  const path = sharePath(target);
-  const agentPath = agentSharePath(target);
+  const location = new URLSearchParams(Object.entries(shareLocation(q)));
+  const key = `${shareParams(target)}&${location}`;
+  useEffect(() => {
+    if (!open || links?.key === key) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(new Error("短链接生成超时，请重试。")),
+      15_000,
+    );
+    let cancelled = false;
+    setError("");
+    void api<{ web: string; agent: string }>(
+      sharedReadUrl(target, `links?${location}`),
+      {
+        signal: controller.signal,
+      },
+    )
+      .then((value) => {
+        if (!cancelled) setLinks({ key, ...value });
+      })
+      .catch((cause) => {
+        if (!cancelled) setError((cause as Error).message);
+      })
+      .finally(() => clearTimeout(timeout));
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [open, key, attempt]);
+  const path = links?.key === key ? links.web : "";
+  const agentPath = links?.key === key ? links.agent : "";
   return (
     <Popover
       open={open}
@@ -117,27 +157,41 @@ export function ShareManager({ changeId }: { changeId: string }) {
           </IconButton>
         </header>
         <p className={styles.description}>
-          两种链接都无需登录，分享范围相同，内容随已推送版本更新。
+          链接保留当前阅读位置，长期有效，内容随已推送版本更新。
         </p>
+        {error && (
+          <p role="alert">
+            {error}{" "}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              重试
+            </Button>
+          </p>
+        )}
         <FieldGroup className={styles.links}>
           <ShareLinkField
-            key={path}
+            key={`web:${path}`}
             label="网页链接"
             description="适合在浏览器中阅读这个 Change。"
             copyLabel="复制网页链接"
-            url={origin + path}
+            url={path ? origin + path : ""}
           />
           <ShareLinkField
-            key={agentPath}
+            key={`agent:${agentPath}`}
             label="Agent 文本链接"
             description="将链接发给 Agent，直接读取 Markdown 内容。"
             copyLabel="复制 Agent 链接"
-            url={origin + agentPath}
+            url={agentPath ? origin + agentPath : ""}
           />
         </FieldGroup>
-        <a href={path} target="_blank" rel="noopener noreferrer">
-          打开分享页
-        </a>
+        {path && (
+          <a href={path} target="_blank" rel="noopener noreferrer">
+            打开分享页
+          </a>
+        )}
       </PopoverContent>
     </Popover>
   );

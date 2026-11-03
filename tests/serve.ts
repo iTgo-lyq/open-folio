@@ -66,6 +66,7 @@ const repository: RepositoryIdentity = {
 };
 const valid = new Set(["token-a", "token-b"]);
 let unavailable = false;
+let deniedReadToken: string | undefined;
 let permissionOffset = 0,
   permissionChecks = 0;
 const provider: RepositoryProvider = {
@@ -116,6 +117,7 @@ const provider: RepositoryProvider = {
   resolveRepository: async (ctx, selector) => {
     await provider.authenticate(ctx.secret, ctx.signal);
     if (
+      ctx.secret.use((value) => value) === deniedReadToken ||
       (selector.repositoryId && selector.repositoryId !== "1") ||
       (!selector.repositoryId && selector.fullName !== repository.fullName)
     )
@@ -125,6 +127,8 @@ const provider: RepositoryProvider = {
   assertRead: async (ctx) => {
     permissionChecks++;
     await provider.authenticate(ctx.secret, ctx.signal);
+    if (ctx.secret.use((value) => value) === deniedReadToken)
+      throw new ProviderError("READ_DENIED", "当前连接无法读取这个仓库。", 403);
   },
   probeWorkflow: async (_ctx, _repo, branch) => {
     try {
@@ -197,6 +201,7 @@ const server = createServer(async (req, res) => {
           git.allowed.add("reader:token-a");
           git.allowed.add("reader:token-b");
           unavailable = false;
+          deniedReadToken = undefined;
           repository.archived = false;
         }
         if (input.archived !== undefined) repository.archived = input.archived;
@@ -204,6 +209,7 @@ const server = createServer(async (req, res) => {
           valid.delete(input.revoke);
           git.allowed.delete(`reader:${input.revoke}`);
         }
+        if (input.denyRead) deniedReadToken = input.denyRead;
         if (input.gitRevoke) git.allowed.delete(`reader:${input.gitRevoke}`);
         if (input.unavailable !== undefined) unavailable = input.unavailable;
         if (input.advancePermissions)
@@ -324,13 +330,16 @@ const server = createServer(async (req, res) => {
         attempts: git.attempts.length,
         permissionChecks,
       });
-    } else if (url.pathname === "/share/agent") {
+    } else if (
+      url.pathname === "/share/agent" ||
+      (s[0] === "s" && s.length === 3 && s[2] === "agent")
+    ) {
       response = await sharedResponse(
         new Request(url, {
           method: req.method,
           headers: req.headers as Record<string, string>,
         }),
-        ["agent"],
+        s[0] === "s" ? ["agent", s[1]] : ["agent"],
         repos,
       );
     } else if (

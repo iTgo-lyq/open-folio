@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { repositoryFixture } from "./repositories-fixture.ts";
 import { sharedResponse } from "../src/server/share-api.ts";
 import { sharedReadUrl } from "../src/lib/share-link.ts";
@@ -15,6 +15,8 @@ import {
 import { SnapshotStore } from "../src/server/store.ts";
 import { ThumbnailCache } from "../src/server/thumbnail-cache.ts";
 import { inspectMarkdown } from "../src/lib/markdown.ts";
+import { ShareLinks } from "../src/server/share-links.ts";
+import { repositoryResponse } from "../src/server/repository-api.ts";
 
 async function setup() {
   const f = await repositoryFixture();
@@ -91,6 +93,171 @@ async function setup() {
   };
 }
 
+test("short links persist, preserve scope and never authorize entry into the private space", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const responses = await Promise.all(
+    Array.from({ length: 4 }, () => f.read("shared", "links")),
+  );
+  const links = await Promise.all(
+    responses.map(async (r) => {
+      assert.equal(r.status, 200);
+      return r.json();
+    }),
+  );
+  assert.ok(links.every((value) => value.web === links[0].web));
+  assert.match(links[0].web, /^\/s\/[A-Za-z0-9_-]{22}$/);
+  assert.equal(links[0].agent, `${links[0].web}/agent`);
+  const id = links[0].web.split("/").at(-1)!;
+  // A fresh store instance reads only the durable record, without memory state.
+  const store = new ShareLinks(dirname(f.service.root));
+  const saved = await store.read(id);
+  assert.deepEqual(saved, {
+    repository: f.repo.webUrl,
+    integrationBranch: "develop",
+    change: "shared",
+    shortId: id,
+  });
+  for (const invalid of ["../secret", "unknown", "a".repeat(22)])
+    await assert.rejects(store.read(invalid), {
+      code: "SHARE_LINK_NOT_FOUND",
+      status: 404,
+    });
+  const agent = (query = "", method = "GET", key = id) =>
+    sharedResponse(
+      new Request(`https://folio.test/s/${key}/agent${query}`, { method }),
+      ["agent", key],
+      f.service,
+      DEFAULT_LIMITS,
+    );
+  const text = await agent();
+  assert.equal(text.status, 200);
+  const body = await text.text();
+  assert.match(body, /shared body/);
+  assert.doesNotMatch(body, /private body/);
+  assert.ok(body.includes(`https://folio.test${links[0].web}`));
+  assert.ok(
+    body.includes(`${links[0].agent}?document=requirement.md&snapshot=`),
+  );
+  assert.equal(await (await agent("", "HEAD")).text(), "");
+  assert.equal((await agent("?document=requirement.md")).status, 200);
+  assert.equal((await agent("?snapshot=obsolete")).status, 409);
+  assert.equal((await agent("?change=private")).status, 400);
+  assert.equal(
+    (await agent("?repository=https://evil.test/private/repo")).status,
+    400,
+  );
+  assert.equal((await agent("", "GET", "a".repeat(22))).status, 404);
+  const data = await (await f.read()).json();
+  const space = new URL(data.spacePath, "https://folio.test");
+  assert.equal(space.searchParams.get("repo"), f.key);
+  assert.equal(space.searchParams.get("m"), "changes");
+  assert.equal(space.searchParams.get("fullName"), f.repo.fullName);
+  const privateRead = await repositoryResponse(
+    new Request(
+      `https://folio.test/api/repositories/${f.key}/workbench?connectionId=${f.c.connection.id}`,
+    ),
+    f.key,
+    ["workbench"],
+    f.service,
+    DEFAULT_LIMITS,
+  );
+  assert.equal(privateRead.status, 401);
+  await f.f.sessions.unbind(f.c.cookie, f.c.connection.id);
+  const denied = await agent();
+  assert.equal(denied.status, 404);
+  assert.doesNotMatch(await denied.text(), /shared body|private body/);
+  assert.deepEqual(
+    await new ShareLinks(dirname(f.service.root)).read(id),
+    saved,
+  );
+});
+
+test("short links bind immutable reading positions and Agent defaults to the shared document", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  await f.g.put(
+    "docs/project/changes/shared/execution.md",
+    "# 执行记录\n\n## 验证结果\n\nexecution body",
+  );
+  await f.g.put(
+    "docs/project/changes/shared/notes/技术 #1.md",
+    "# 补充材料\n\nextra body",
+  );
+  f.g.commit();
+  const overview = await (await f.read("shared", "links")).json();
+  const make = async (query: string) => {
+    const response = await f.read("shared", `links?${query}`);
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  const execution = await make(
+    new URLSearchParams({ ct: "execution", anchor: "验证结果" }).toString(),
+  );
+  assert.notEqual(execution.web, overview.web);
+  assert.equal(new URL(execution.web, "https://folio.test").search, "");
+  assert.deepEqual(
+    await make(
+      new URLSearchParams({ anchor: "验证结果", ct: "execution" }).toString(),
+    ),
+    execution,
+  );
+  const id = execution.web.split("/").at(-1)!;
+  const store = new ShareLinks(dirname(f.service.root));
+  assert.deepEqual((await store.read(id)).location, {
+    ct: "execution",
+    anchor: "验证结果",
+  });
+  const read = (path: string) =>
+    sharedResponse(
+      new Request(`https://folio.test${path}`),
+      ["agent", path.split("/")[2]],
+      f.service,
+      DEFAULT_LIMITS,
+    );
+  const response = await read(execution.agent);
+  assert.equal(response.status, 200);
+  const text = await response.text();
+  assert.match(text, /execution body/);
+  assert.doesNotMatch(text, /shared body/);
+  assert.equal(
+    (await read(`${execution.agent}?document=requirement.md`)).status,
+    200,
+  );
+  assert.equal(
+    (await read(`${execution.agent}?document=..%2Fprivate%2Frequirement.md`))
+      .status,
+    404,
+  );
+  const extra = await make(
+    new URLSearchParams({ ct: "file:notes/技术 #1.md" }).toString(),
+  );
+  assert.match(await (await read(extra.agent)).text(), /extra body/);
+  const prototype = await make(
+    "ct=prototypes&preview=screen&device=mobile&orientation=landscape&zoom=75",
+  );
+  assert.equal(
+    (await store.read(prototype.web.split("/").at(-1)!)).location?.device,
+    "mobile",
+  );
+  assert.deepEqual(
+    (await new ShareLinks(dirname(f.service.root)).read(id)).location,
+    { ct: "execution", anchor: "验证结果" },
+  );
+  assert.equal(
+    (await f.read("shared", "links?ct=execution&connectionId=private")).status,
+    400,
+  );
+  assert.equal(
+    (await f.read("shared", "links?ct=execution&ct=technical")).status,
+    400,
+  );
+  assert.equal(
+    (await f.read("shared", `links?anchor=${"a".repeat(4097)}`)).status,
+    400,
+  );
+});
+
 test("a direct anonymous target exposes only one Change and scopes every resource without creating a share", async (t) => {
   const f = await setup();
   t.after(f.cleanup);
@@ -108,6 +275,7 @@ test("a direct anonymous target exposes only one Change and scopes every resourc
     "documents",
     "projectName",
     "snapshotId",
+    "spacePath",
   ]);
   assert.ok(!JSON.stringify(data).includes("uploadUrl"));
   const document = data.documents.find((d) => d.kind === "markdown")!;

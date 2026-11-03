@@ -1,7 +1,13 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { primaryRecord, type DocumentRef, type Workbench } from "@/lib/model";
-import { shareParams, sharedReadUrl, type ShareTarget } from "@/lib/share-link";
+import {
+  SHARE_READING_KEYS,
+  shareReadingParams,
+  shareParams,
+  sharedReadUrl,
+  type ShareTarget,
+} from "@/lib/share-link";
 import type { SharedChange } from "@/lib/shared-change";
 import { ReadingProvider, type Query } from "./context";
 import { documentReadingTarget } from "@/lib/change-reading";
@@ -49,19 +55,7 @@ export function sharedWorkbench(value: SharedChange): Workbench {
     },
   };
 }
-const allowed = new Set([
-  "ct",
-  "document",
-  "anchor",
-  "raw",
-  "asset",
-  "preview",
-  "device",
-  "orientation",
-  "zoom",
-  "cf",
-  "cv",
-]);
+const allowed = new Set<string>(SHARE_READING_KEYS);
 const unavailable = new Set([
   "SHARE_UNAVAILABLE",
   "INVALID_PARAMETER",
@@ -75,10 +69,11 @@ export function SharedProvider({
   target: ShareTarget;
   children: React.ReactNode;
 }) {
-  const id = shareParams(target).toString();
+  const id = target.shortId ?? shareParams(target).toString();
   const cache = useMemo(() => new ReadingCache(), [id]);
-  const [q, setQ] = useState<Query>({});
+  const [q, setQ] = useState<Query>(target.location ?? {});
   const [data, setData] = useState<Workbench | null>(null);
+  const [spacePath, setSpacePath] = useState<string>();
   const [loading, setLoading] = useState(true),
     [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(""),
@@ -89,14 +84,18 @@ export function SharedProvider({
   const controller = useRef<AbortController | null>(null);
   const nav = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
-      const params = new URLSearchParams(window.location.search);
+      const params = shareReadingParams(
+        new URLSearchParams(window.location.search),
+        target.location,
+      );
       if (Object.hasOwn(patch, "doc") && !patch.doc) params.delete("asset");
       for (const [key, value] of Object.entries(patch))
         if (allowed.has(key))
           value ? params.set(key, value) : params.delete(key);
       for (const key of [...params.keys()])
         if (!allowed.has(key)) params.delete(key);
-      for (const [key, value] of shareParams(target)) params.set(key, value);
+      if (!target.shortId)
+        for (const [key, value] of shareParams(target)) params.set(key, value);
       window.history[replace ? "replaceState" : "pushState"](
         {},
         "",
@@ -132,6 +131,7 @@ export function SharedProvider({
             const next = sharedWorkbench(value);
             await cache.prepare(next, readUrl, c.signal);
             if (version !== generation.current || c.signal.aborted) return;
+            setSpacePath(value.spacePath);
             setData((previous) =>
               previous?.id === value.snapshotId ? previous : next,
             );
@@ -175,7 +175,14 @@ export function SharedProvider({
   const refresh = useCallback(() => load(), [load]);
   useEffect(() => {
     const read = () =>
-      setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
+      setQ(
+        Object.fromEntries(
+          shareReadingParams(
+            new URLSearchParams(window.location.search),
+            target.location,
+          ),
+        ),
+      );
     read();
     window.addEventListener("popstate", read);
     void load(true);
@@ -276,6 +283,7 @@ export function SharedProvider({
       value={{
         cache,
         sharing: true,
+        spacePath,
         readScope: id,
         q: query,
         revealVersion: 0,
