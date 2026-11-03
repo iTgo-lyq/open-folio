@@ -1,8 +1,16 @@
 import "server-only";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { repositories, type Repositories } from "./repositories.ts";
 import { readSharedTarget } from "./shared-source.ts";
-import { sharedReadUrl, type ShareTarget } from "../lib/share-link.ts";
+import {
+  agentSharePath,
+  shareParams,
+  sharePath,
+  sharedReadUrl,
+  type ShareTarget,
+} from "../lib/share-link.ts";
+import { ShareLinks } from "./share-links.ts";
+import { repositoryKey } from "./providers/types.ts";
 import { projectChange } from "./shared-change.ts";
 import { dataDirectory, readConfig, limitsFor } from "./config.ts";
 import { AppError, publicError } from "./errors.ts";
@@ -68,12 +76,18 @@ export async function sharedResponse(
   limits?: Limits,
   screenshots?: ThumbnailCache,
 ) {
-  const isAgent = segments.length === 1 && segments[0] === "agent";
+  const isAgent = segments[0] === "agent" && [1, 2].includes(segments.length);
+  const isLinks = segments.length === 1 && segments[0] === "links";
   let response: Response;
   try {
     if (!["GET", "HEAD"].includes(request.method))
       throw new AppError("METHOD_NOT_ALLOWED", "分享仅支持读取。", 405);
     const q = new URL(request.url).searchParams;
+    const shortId = isAgent && segments.length === 2 ? segments[1] : undefined;
+    if (shortId) {
+      const target = await new ShareLinks(dirname(repos.root)).read(shortId);
+      for (const [key, value] of shareParams(target)) q.append(key, value);
+    }
     if (
       [...q.keys()].some(
         (k) =>
@@ -92,7 +106,7 @@ export async function sharedResponse(
     )
       throw new AppError("INVALID_PARAMETER", "分享读取参数不合法。", 400);
     const isDetail =
-      isAgent || (segments.length === 1 && segments[0] === "change");
+      isAgent || isLinks || (segments.length === 1 && segments[0] === "change");
     if (q.has("refresh") && (!isDetail || q.get("refresh") !== "1"))
       throw new AppError(
         "INVALID_PARAMETER",
@@ -102,6 +116,7 @@ export async function sharedResponse(
     const target: ShareTarget = {
       repository: q.get("repository") ?? "",
       change: q.get("change") ?? "",
+      ...(shortId ? { shortId } : {}),
       ...(q.has("integrationBranch")
         ? { integrationBranch: q.get("integrationBranch")! }
         : {}),
@@ -152,7 +167,18 @@ export async function sharedResponse(
           data = projectChange(snapshot, target.change, ctx.project.name);
         }
         let value: Response;
-        if (isAgent) {
+        if (isLinks) {
+          await ctx.assertRead();
+          const short = await new ShareLinks(dirname(repos.root)).prepare({
+            repository: ctx.repository.webUrl,
+            change: target.change,
+            integrationBranch: ctx.project.integrationBranch,
+          });
+          value = Response.json({
+            web: sharePath(short),
+            agent: agentSharePath(short),
+          });
+        } else if (isAgent) {
           const body = await renderAgentShare({
             data,
             target: {
@@ -167,8 +193,19 @@ export async function sharedResponse(
           value = new Response(body, {
             headers: { "Content-Type": "text/plain; charset=utf-8" },
           });
-        } else if (isDetail) value = Response.json(data);
-        else if (
+        } else if (isDetail) {
+          const r = ctx.repository;
+          const space = new URLSearchParams({
+            repo: repositoryKey(r),
+            provider: r.providerId,
+            instance: r.instanceId,
+            repositoryId: r.repositoryId,
+            fullName: r.fullName,
+            integrationBranch: ctx.project.integrationBranch,
+            m: "changes",
+          });
+          value = Response.json({ ...data, spacePath: `/?${space}` });
+        } else if (
           segments.length === 2 &&
           ["documents", "assets"].includes(segments[0])
         ) {

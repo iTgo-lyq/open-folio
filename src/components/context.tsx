@@ -22,6 +22,7 @@ export type Query = Record<string, string>;
 export type ReadingContext = {
   cache: ReadingCache;
   sharing?: boolean;
+  spacePath?: string;
   readScope?: string;
   q: Query;
   revealVersion: number;

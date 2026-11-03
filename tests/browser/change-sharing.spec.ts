@@ -6,6 +6,7 @@ import {
   revisionHeaders,
   origin,
   openMaterial,
+  connectRequest,
 } from "./connected";
 import type { SharedChange } from "../../src/lib/shared-change";
 
@@ -13,24 +14,24 @@ function directLink(change: string) {
   return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, integrationBranch: "develop" })}`;
 }
 
-test("copying a direct link opens the anonymous reader without private APIs", async ({
+test("copying a short link opens the anonymous reader and the space name returns through private access checks", async ({
   page,
   context,
   browser,
   request,
 }) => {
+  test.setTimeout(60_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto(`/?${repositoryQuery}&m=changes&c=document-reader`);
   await page.getByRole("button", { name: "分享", exact: true }).click();
   const manager = page.getByRole("dialog", { name: "分享这个 Change" });
-  const link = await manager
-    .getByRole("textbox", { name: "网页链接", exact: true })
-    .inputValue();
-  expect(new URL(link).pathname).toBe("/share");
-  expect(new URL(link).searchParams.get("repository")).toBe(
-    "https://github.com/acme/fixture",
-  );
-  expect(new URL(link).searchParams.get("change")).toBe("document-reader");
+  const webInput = manager.getByRole("textbox", {
+    name: "网页链接",
+    exact: true,
+  });
+  await expect(webInput).toHaveValue(/\/s\/[A-Za-z0-9_-]{22}$/);
+  const link = await webInput.inputValue();
+  expect(new URL(link).search).toBe("");
   await expect(
     manager.getByRole("button", { name: /开启分享|停止分享/ }),
   ).toHaveCount(0);
@@ -39,7 +40,7 @@ test("copying a direct link opens the anonymous reader without private APIs", as
   const agentLink = await manager
     .getByRole("textbox", { name: "Agent 文本链接", exact: true })
     .inputValue();
-  expect(new URL(agentLink).pathname).toBe("/share/agent");
+  expect(agentLink).toBe(`${link}/agent`);
   await manager.getByRole("button", { name: "复制 Agent 链接" }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     agentLink,
@@ -65,6 +66,17 @@ test("copying a direct link opens the anonymous reader without private APIs", as
     });
     viewer.on("pageerror", (e) => exceptions.push(e.message));
     await viewer.goto(link);
+    const space = viewer.getByRole("link", {
+      name: "acme/fixture",
+      exact: true,
+    });
+    const spacePath = (await space.getAttribute("href"))!;
+    expect(new URL(spacePath, origin).searchParams.get("repo")).toBe(
+      new URLSearchParams(repositoryQuery).get("repo"),
+    );
+    await expect(viewer.getByRole("button", { name: "返回空间" })).toHaveCount(
+      0,
+    );
     const article = viewer
       .getByRole("region", { name: "阅读正文", exact: true })
       .locator("article");
@@ -175,10 +187,24 @@ test("copying a direct link opens the anonymous reader without private APIs", as
         });
       }
     const copied = new URL(viewer.url());
-    expect(copied.searchParams.get("repository")).toBe(
-      "https://github.com/acme/fixture",
-    );
-    expect(copied.searchParams.get("change")).toBe("document-reader");
+    expect(copied.pathname).toBe(new URL(link).pathname);
+    expect(copied.searchParams.has("repository")).toBe(false);
+    expect(copied.searchParams.has("change")).toBe(false);
+    // Query parameters cannot replace the immutable short-link target.
+    await viewer.goto(`${link}?change=not-a-change`);
+    await expect(article.getByRole("heading", { level: 1 })).toBeVisible();
+    await space.click();
+    await expect(
+      viewer.getByRole("textbox", { name: "账号", exact: true }),
+    ).toBeVisible();
+    await viewer.goBack();
+    await expect(article.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.goto(spacePath);
+    await expect(
+      page.getByRole("heading", { name: "Changes", exact: true }),
+    ).toBeVisible();
+    await viewer.goto(directLink("document-reader"));
+    await expect(article.getByRole("heading", { level: 1 })).toBeVisible();
     // A target change within the same mounted page cannot retain old contents.
     await viewer.evaluate(() => {
       const url = new URL(location.href);
@@ -192,6 +218,21 @@ test("copying a direct link opens the anonymous reader without private APIs", as
     await expect(viewer.getByRole("main")).toContainText(/不存在|不可用/);
     await viewer.goBack();
     await expect(viewer.getByRole("heading", { level: 1 })).toBeVisible();
+    // A second account can read the public Change, but cannot use the owner's
+    // repository credentials to enter the rest of its space after losing access.
+    await connectRequest(anonymous.request, "token-b");
+    await request.post("/_fixture/control", {
+      data: { denyRead: "token-b", advancePermissions: 300_001 },
+    });
+    await viewer.goto(link);
+    await expect(article.getByRole("heading", { level: 1 })).toBeVisible();
+    await space.click();
+    await expect(
+      viewer.getByRole("region", { name: "Change 列表", exact: true }),
+    ).toHaveCount(0);
+    await expect(viewer.getByRole("main")).toContainText(
+      /失效|不可读|暂时没有|无法|当前凭据/,
+    );
   } finally {
     await anonymous.close();
   }

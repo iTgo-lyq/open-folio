@@ -17,12 +17,18 @@ import { PublicShell } from "./public-shell";
 import { shareParams, type ShareTarget } from "@/lib/share-link";
 import styles from "./shared-change.module.css";
 
-export default function SharedChangePage() {
-  const [target, setTarget] = useState<ShareTarget | null>(null);
+export default function SharedChangePage({
+  initialTarget,
+}: {
+  initialTarget?: ShareTarget;
+}) {
+  const [target, setTarget] = useState<ShareTarget | null>(
+    initialTarget ?? null,
+  );
   useEffect(() => {
     const read = () => {
       const q = new URLSearchParams(window.location.search);
-      const value = {
+      const value = initialTarget ?? {
         repository: q.get("repository") ?? "",
         change: q.get("change") ?? "",
         ...(q.has("integrationBranch")
@@ -39,7 +45,7 @@ export default function SharedChangePage() {
     read();
     window.addEventListener("popstate", read);
     return () => window.removeEventListener("popstate", read);
-  }, []);
+  }, [initialTarget]);
   if (!target)
     return (
       <PublicShell title="正在读取分享…">
@@ -55,13 +61,15 @@ export default function SharedChangePage() {
   );
 }
 function SharedReader({ target }: { target: ShareTarget }) {
-  const { data, loading, refreshing, refresh, error, message } = useWorkspace();
+  const { data, spacePath, loading, refreshing, refresh, error, message } =
+    useWorkspace();
   const title = target.repository
     .replace(/^https?:\/\/[^/]+\//, "")
     .replace(/\.git$/, "");
   return (
     <PublicShell
       title={title}
+      titleHref={spacePath}
       label="只读分享"
       actions={
         <>

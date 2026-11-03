@@ -79,6 +79,7 @@ export function SharedProvider({
   const cache = useMemo(() => new ReadingCache(), [id]);
   const [q, setQ] = useState<Query>({});
   const [data, setData] = useState<Workbench | null>(null);
+  const [spacePath, setSpacePath] = useState<string>();
   const [loading, setLoading] = useState(true),
     [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(""),
@@ -96,7 +97,8 @@ export function SharedProvider({
           value ? params.set(key, value) : params.delete(key);
       for (const key of [...params.keys()])
         if (!allowed.has(key)) params.delete(key);
-      for (const [key, value] of shareParams(target)) params.set(key, value);
+      if (!target.shortId)
+        for (const [key, value] of shareParams(target)) params.set(key, value);
       window.history[replace ? "replaceState" : "pushState"](
         {},
         "",
@@ -132,6 +134,7 @@ export function SharedProvider({
             const next = sharedWorkbench(value);
             await cache.prepare(next, readUrl, c.signal);
             if (version !== generation.current || c.signal.aborted) return;
+            setSpacePath(value.spacePath);
             setData((previous) =>
               previous?.id === value.snapshotId ? previous : next,
             );
@@ -276,6 +279,7 @@ export function SharedProvider({
       value={{
         cache,
         sharing: true,
+        spacePath,
         readScope: id,
         q: query,
         revealVersion: 0,

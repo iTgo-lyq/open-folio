@@ -8,11 +8,13 @@ import styles from "./public-shell.module.css";
 
 export function PublicShell({
   title,
+  titleHref,
   label,
   actions,
   children,
 }: {
   title: string;
+  titleHref?: string;
   label?: string;
   actions?: ReactNode;
   children: ReactNode;
@@ -38,9 +40,15 @@ export function PublicShell({
       <div className={styles.shell}>
         <header className={styles.header} aria-label="公开阅读工具栏">
           <BrandMark className={styles.brand} label="OpenFolio" />
-          <span className={styles.title} title={title}>
-            {title}
-          </span>
+          {titleHref ? (
+            <a className={styles.title} title={title} href={titleHref}>
+              {title}
+            </a>
+          ) : (
+            <span className={styles.title} title={title}>
+              {title}
+            </span>
+          )}
           {label && <span className={styles.label}>{label}</span>}
           <div className={styles.slot} ref={left} />
           <div className={styles.actions}>
