@@ -204,7 +204,7 @@ src_gap            = 16
 src_row_top(k)     = src_first_top_y + k * (src_node_h + src_gap)
 ```
 
-Same role-badge / icon / name / subtitle pattern as cluster nodes (icon at `src_node_x+54, row_top(k)+6`; name centered at `src_node_x+src_node_w/2, row_top(k)+42`; subtitle one line below). Role badge text: `EXT`. Caps at 4 sources; for more, split into a separate diagram.
+Same role-badge / icon / name / subtitle pattern as cluster nodes (icon at `src_node_x+54, row_top(k)+6`; name centered at `src_node_x+src_node_w/2, row_top(k)+42`; subtitle one line below). Role badge text: `EXT`. Start with 4 sources; expand the layout for distinct sources.
 
 ### 2.9 Right strip — vertical chevrons
 
@@ -309,7 +309,7 @@ Path per target: `M exit_x,source_cy → H trunk_x → V target_cy → H target.
 
 ### 4.3 Fan-out cap
 
-**Max 3 outgoing edges per node.** Above 3, introduce a hub (usually the `focal` node). The chevron banner is the legend; if a node is fanning out to four downstream targets, it's secretly the hub — make it explicit.
+**Fan-out:** Above 3 outgoing edges, review port spacing and routing. Add a hub only when the system has one.
 
 ### 4.4 Bar drops (Airflow → N nodes)
 

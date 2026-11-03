@@ -43,9 +43,6 @@ TRAFFIC_RX = 8.0
 GRID = 4.0
 EPS = 1e-6
 MAX_COORDINATE = 1e7
-MAX_ADMIN = 2
-MAX_TRAFFIC = 4
-MAX_NODES = 8
 
 
 @dataclass(eq=False)
@@ -745,15 +742,6 @@ def check_source(path: Path, source: str) -> list[str]:
         fail(root, "containment requires at least one admin band")
     if not any(box.kind == "traffic" for box in scopes.values()):
         fail(root, "containment requires at least one traffic box")
-    admin_count = sum(1 for box in scopes.values() if box.kind == "admin")
-    traffic_count = sum(1 for box in scopes.values() if box.kind == "traffic")
-    if admin_count > MAX_ADMIN:
-        fail(root, "admin budget is 2 bands")
-    if traffic_count > MAX_TRAFFIC:
-        fail(root, "traffic budget is 4 scopes")
-    if len(nodes) > MAX_NODES:
-        fail(root, "node budget is 8")
-
     known_scopes = set(scopes)
 
     def innermost_parent(box: Box, label: str) -> None:

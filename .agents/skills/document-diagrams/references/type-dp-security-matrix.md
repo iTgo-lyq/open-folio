@@ -211,8 +211,8 @@ Before emitting SVG, verify **every** item:
 - **Freeform `level` values** — closed vocabulary is `full | rw | read | none`. Use `value` for free-form displayed text + `color` override for arbitrary tinting.
 - **Per-row or per-column color tints** — apply `color` per cell only. Whole-row or whole-column highlighting tends to over-emphasize and collapses the matrix into a list.
 - **Using `none_label` as a placeholder for "TBD"** — `none` means *no access*. If the permission is unknown, leave the cell empty in inputs but document it elsewhere; don't render an ambiguous state.
-- **More than 6 roles** — split into two matrices (e.g., human roles vs service accounts) before exceeding 6 columns.
-- **More than 14 components** — split by domain (storage / compute / observability / governance) before exceeding 14 rows.
+- Role columns too narrow to read; widen the canvas or separate role groups.
+- Component rows too dense to compare; separate domains when needed.
 - **Using the matrix to document *how* permissions are granted** — that belongs in a process or sequence diagram. The matrix shows *what* each role can do, not the grant flow.
 
 ---

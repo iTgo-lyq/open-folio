@@ -530,12 +530,7 @@ def check_source(path: Path, source: str) -> list[str]:
             if old.kind == new.kind == "relationship" and (old.endpoints != new.endpoints) != ("rewired" in new.status):
                 fail(new.node, f"REWIRED endpoints mismatch for {identity!r}: endpoints differ iff rewired")
         expected.update((identity, status.upper()) for status in obj.status - {"unchanged"})
-    component_ids = {obj.id for obj in objects if obj.kind == "component"}
     relationship_ids = {obj.id for obj in objects if obj.kind == "relationship"}
-    if len(component_ids) > 8:
-        fail(root, "component budget exceeded: maximum 8 unique components")
-    if len(relationship_ids) > 10:
-        fail(root, "relationship budget exceeded: maximum 10 unique relationships")
     if not relationship_ids:
         fail(root, "architecture delta requires at least one relationship")
 
@@ -553,8 +548,8 @@ def check_source(path: Path, source: str) -> list[str]:
         if key in actual:
             fail(entry, f"duplicate ledger entry {change} {target}")
         actual.add(key)
-    if not entries or len(entries) > 8:
-        fail(root, "ledger budget requires 1-8 entries")
+    if not entries:
+        fail(root, "ledger requires at least one entry")
     for target, change in sorted(expected - actual):
         fail(root, f"missing ledger coverage: {change} {target}")
     for target, change in sorted(actual - expected):

@@ -19,13 +19,13 @@
 
 | Limit | Rule |
 |---|---|
-| Max nodes | 9 |
-| Max edges | 14 |
-| Max rank layers | 4 |
+| Suggested nodes | 9 |
+| Suggested edges | 14 |
+| Suggested rank layers | 4 |
 | Max highlighted cycles | 1 |
 | Max focal elements | 2 |
 
-Over budget: collapse a leaf cluster into one aggregate node labelled with its count (e.g. `+6 leaves`), and say so in a caption — don't silently drop nodes.
+Aggregate equivalent leaf nodes only when individual dependencies are incidental; report the grouping.
 
 ## Anti-patterns
 

@@ -24,7 +24,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** Distinct sources; fanned ingress; an ordered queue with visible slots and count; a capacity/service-rate label; one constrained service point; admitted and deferred/rejected outcomes. Label units (`8/hour`, `3 slots`), not just “high.”
 
-**Complexity budget:** ≤5 sources, ≤5 queue slots, one bottleneck, two outcomes, and ≤9 primary nodes. Aggregate excess sources as a named cohort.
+**Layout guidance:** ≤5 sources, ≤5 queue slots, one bottleneck, two outcomes, and ≤9 primary nodes. Aggregate sources only when their behavior is equivalent.
 
 **Anti-patterns:** Equal-width pipeline that hides contention; arrows merged before they can be traced; capacity implied only by box size; decorative pile-up; reordered items; red alone meaning overloaded.
 
@@ -38,7 +38,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** Ordered stage headers; a consistent slot grid; explicit empty/not-applicable slots; stage-to-stage handoff; stable slot labels; one primary output per stage. Preserve slot order in every stage.
 
-**Complexity budget:** 3–6 stages, 3–4 slot kinds, ≤20 populated cells, ≤2 lines per cell. Split detail when a cell needs prose.
+**Layout guidance:** 3–6 stages, 3–4 slot kinds, ≤20 populated cells, ≤2 lines per cell. Split detail when a cell needs prose.
 
 **Anti-patterns:** Each stage invents a different internal layout; slot meaning encoded by position with no labels; fake precision from dozens of cells; confusing stage order with ownership lanes; shrinking text to keep one canvas.
 
@@ -52,7 +52,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** Source utterance(s); clarifying questions; extracted field/value pairs; a named transformation; the durable artifact boundary; provenance links from representative statements to fields; missing/unknown state.
 
-**Complexity budget:** ≤4 exchanges, ≤6 artifact fields, one transformation, and ≤3 provenance links. Show representative content, not a transcript.
+**Layout guidance:** ≤4 exchanges, ≤6 artifact fields, one transformation, and ≤3 provenance links. Show representative content, not a transcript.
 
 **Anti-patterns:** “AI magic” sparkle between two boxes; artifact shown as another chat bubble; fields appearing without sources; inventing certainty for missing facts; missing or partial readable copy.
 
@@ -66,7 +66,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** The same ordered rules on both traces; explicit status text plus symbol/shape; inputs that differ; final outcomes; a labeled first-divergence marker; a distinction between `SKIPPED` (applicable flow intentionally bypassed) and `NOT REACHED` (evaluation stopped earlier).
 
-**Complexity budget:** Exactly 2 traces, 3–6 rules, one first divergence, ≤12 status cells, and one outcome per trace. Move rule prose to notes if labels exceed one line.
+**Layout guidance:** Exactly 2 traces, 3–6 rules, one first divergence, ≤12 status cells, and one outcome per trace. Move rule prose to notes if labels exceed one line.
 
 **Anti-patterns:** Comparing two independently ordered flows; green/red dots without words; treating skipped and not-reached as synonyms; highlighting every difference; continuing a denied trace as if downstream rules ran.
 
@@ -80,7 +80,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** Labeled trust boundaries; actors and identities; permitted ingress with a positive text label; forbidden ingress terminating at the boundary; approved deployment path; blocked bypass path; privileged gate; isolated runtime; audit destination. Use different line styles and stop symbols in addition to color.
 
-**Complexity budget:** ≤3 trust zones, ≤8 components, ≤10 paths, ≤2 forbidden paths, and one privileged gate. Split control detail into a catalog figure.
+**Layout guidance:** ≤3 trust zones, ≤8 components, ≤10 paths, ≤2 forbidden paths, and one privileged gate. Split control detail into a catalog figure.
 
 **Anti-patterns:** Dashed box called “security” with no route semantics; forbidden arrow crossing into the protected zone; secrets or identity implied but unlabeled; every component styled as trusted; a bypass path that visually rejoins the approved route.
 
@@ -94,7 +94,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** Enforcement-surface groups; named controls; enforcement actor (`code`, `platform`, `human`); timing (`write`, `merge`, `deploy`, `run`); bypassability or exception route; coverage/gap notation.
 
-**Complexity budget:** 3–5 surfaces, 3–7 controls per surface, ≤24 controls total, and ≤3 attributes per control. Summarize counts only when the item list exists elsewhere.
+**Layout guidance:** 3–5 surfaces, 3–7 controls per surface, ≤24 controls total, and ≤3 attributes per control. Summarize counts only when the item list exists elsewhere.
 
 **Anti-patterns:** 35 tiny pills; grouping by vague themes instead of enforcement point; mixing aspirations with enforced controls; icons without control names; claiming defense-in-depth without showing surface coverage.
 
@@ -108,7 +108,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** Ordered threat/risk input; named defensive layers; each layer's mitigation; explicit limitation or escape; residual-risk carrier between layers; final residual risk and consequence/response. Use labels or decreasing measures, never area alone.
 
-**Complexity budget:** 3–5 layers, one primary risk thread, ≤2 mitigations per layer, and one final residual-risk statement. Split multiple unrelated threats into separate figures.
+**Layout guidance:** 3–5 layers, one primary risk thread, ≤2 mitigations per layer, and one final residual-risk statement. Split multiple unrelated threats into separate figures.
 
 **Anti-patterns:** Implying the final layer makes risk zero; equal opaque slabs with no propagation; treating audit as prevention; shrinking shapes without numeric or verbal meaning; reversing prevention/detection/recovery order without explanation.
 
@@ -122,7 +122,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Required primitives:** A stable dotted ID per block (e.g. `PAY-001-02`), shown as a compact badge using the existing node-box type-tag chip (SKILL.md §6; markup in [primitives-core.md](primitives-core.md#node-box--full-pattern)) — never as a separate connector-adjacent label. A noun-phrase block name — the structural element itself ("Fraud Screening"), not an action performed on it — in the node's existing name slot. Parent-child structure is Tree's own elbow connector; this pattern adds no new connector semantics or connector labels. At most one short inbound and one short outbound flow-port label per block, in the existing `sublabel` slot, shown only when both fit without crowding the name — omit by default. Every block's full record — inputs, outputs, constraints, assumptions, and an implementation path — lives in `data-block-*` attributes on the node (`data-block-id`, `data-block-parent`, `data-block-name`, and terse `data-block-input` / `-output` / `-constraint` / `-assumption` / `-impl` values) with full values kept in these attributes — never as additional visible diagram text.
 
-**Complexity budget:** Tree's own root+3-tier / 5-per-level caps and the global 9-node ceiling apply as-is — this pattern does not raise them. A hierarchy that needs more splits into a linked set of diagrams, one per subsystem, each independently traceable; stable metadata IDs allow the graph to be traced across files. At most one in/out port-label pair per block when shown at all; constraints and assumptions are never rendered as visible text, only carried in metadata.
+**Layout guidance:** Keep parent-child structure traceable. Split by subsystem when needed for readability, retaining stable IDs and parent context in each file. Show at most one in/out port-label pair per block; keep constraints and assumptions in metadata.
 
 **Anti-patterns:** Four-sided ICOM boxes with Input/Control/Output/Mechanism arrows on every side — that is IDEF0's grammar, not this pattern's, and it does not fit Tree's connector rules. Drawing input/output arrows between siblings or cousins — that is a dependency graph's job; route to that type instead if cross-block flow must be drawn. Verb-phrase block names — name the structural element, not an action; if a block is genuinely an activity, it likely belongs in a companion Flowchart or Swimlane diagram, not this tree. An ID badge with no matching `data-block-id`, or a rename not mirrored in the embedded metadata. Treating the visible diagram as the complete record — it is a bounded view; the embedded metadata is the source of truth for anything not drawn. Labeling the tree connector itself with an ID or name — Tree has no connector-label convention today and this pattern must not invent one.
 
@@ -138,9 +138,9 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Selection triggers:** One subject advances through a small set of named phases, while waits, retries, cancellation, recovery, and terminal outcomes are as important as the happy path. Use this for the subject's lifecycle, not for messages exchanged between actors.
 
-**Required primitives:** A left-to-right primary phase rail; 4–5 ordered phase states; a separate interruption/recovery band for waits or retries; a separate terminal-outcome band; labeled transitions; distinct terminal state boxes for cancellation and failure when both can occur. Those labeled boxes are sufficient terminal outcomes; optional start/end pseudo-state markers follow the State Machine reference and count toward the transition budget.
+**Required primitives:** A left-to-right primary phase rail; ordered primary phase states; a separate interruption/recovery band for waits or retries; a separate terminal-outcome band; labeled transitions; distinct terminal state boxes for cancellation and failure when both can occur. Those labeled boxes are sufficient terminal outcomes; optional start/end pseudo-state markers follow the State Machine reference and count toward the transition budget.
 
-**Complexity budget:** 4–5 primary phases, ≤2 supporting wait/recovery states, ≤2 terminal states, ≤9 states, and ≤10 transitions. Split lifecycle overview from dense guard logic once either ceiling is reached.
+**Layout guidance:** 4–5 primary phases, ≤2 supporting wait/recovery states, ≤2 terminal states, ≤9 states, and ≤10 transitions. Separate dense guard logic when it obscures the lifecycle.
 
 **Anti-patterns:** Actor lifelines or message arrows disguised as phases; a request/response exchange that belongs in Sequence; every guard and event from the underlying implementation; interruption states placed on the primary rail; cancellation and failure collapsed into one color-only state; a retry loop with no labeled re-entry point.
 
@@ -150,6 +150,6 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 ## Composition rules
 
-- The semantic pattern may specialize status, boundary, queue, or propagation primitives; the selected type still owns page axis, connector grammar, spacing, and type-specific limits.
-- Apply the stricter of the pattern budget and visual-type budget. Semantic cells/statuses are not permission to exceed the nine-node overview target.
+- The semantic pattern may specialize status, boundary, queue, or propagation primitives; the selected type still owns page axis, connector grammar, spacing, and type-specific guidance.
+- Content counts follow SKILL.md §7; preserve the pattern's required semantics, including distinct failure and terminal outcomes.
 - Use stable text for states and outcomes. Color and position reinforce meaning but never carry it alone.

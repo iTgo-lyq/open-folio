@@ -11,7 +11,7 @@
 - `callout`-role asides (see `references/primitive-annotation.md`) — 1–2 max.
 
 ## Anti-patterns
-- More than 6 levels (information disappears inward).
+- Nested levels with too little space for labels and content.
 - Irregular padding between levels — unaligned nesting looks accidental.
 - Content inside rings that isn't part of the hierarchy — use a sibling diagram.
 - accent on multiple levels — hierarchy collapses.
