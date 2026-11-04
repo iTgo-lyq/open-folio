@@ -4,13 +4,13 @@
   "title": "支持无新增 Change 的版本发布",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/release-without-new-changes",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "支持空 Change 清单并验证发布与缓存兼容",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
