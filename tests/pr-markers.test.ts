@@ -13,6 +13,11 @@ test("PR markers require a unique standalone metadata paragraph", () => {
     ),
     { kind: "release", version: "v1.2", includes: ["one", "two"] },
   );
+  assert.deepEqual(prMarker("Maintenance\n\nSpecTrail-Version: 1.2.0"), {
+    kind: "release",
+    version: "1.2.0",
+    includes: [],
+  });
   for (const body of [
     "SpecTrail-Change: example",
     "Title\n\nExample SpecTrail-Change: example",
@@ -26,6 +31,8 @@ test("PR markers require a unique standalone metadata paragraph", () => {
     "SpecTrail-Change: Bad",
     "SpecTrail-Version: 1\nSpecTrail-Includes: a\nSpecTrail-Includes: a",
     "SpecTrail-Version: 1\nSpecTrail-Version: 2\nSpecTrail-Includes: a",
+    "SpecTrail-Version: 1\nSpecTrail-Includes:",
+    "SpecTrail-Includes: a",
   ])
     assert.equal(prMarker(`Description\n\n${metadata}`).kind, "invalid");
 });

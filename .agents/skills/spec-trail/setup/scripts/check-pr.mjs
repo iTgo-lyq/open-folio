@@ -64,7 +64,7 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
       parentBranch:target,id:state.id,branch:state.branch}));
   };
   if (pr.base.ref === config.releaseBranch)
-    assert(marker.kind === 'release', 'Release PR requires trailing SpecTrail-Version and SpecTrail-Includes markers');
+    assert(marker.kind === 'release', 'Release PR requires one trailing SpecTrail-Version marker and valid optional SpecTrail-Includes markers');
   const registeredSource = central.some(row => !row.archived && row.state?.branch === pr.head.ref && pr.head.ref !== config.integrationBranch);
   if (pr.base.ref !== config.releaseBranch && (marker.kind === 'change' || pr.base.ref === config.integrationBranch || registeredSource)) {
     assert(marker.kind === 'change', 'Change PR requires one trailing SpecTrail-Change marker');
@@ -120,7 +120,10 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
     return {kind:'change', changes:[...expected], source:pr.head.sha};
   }
   if (pr.base.ref !== config.releaseBranch) return {kind:'unrelated', changes:[], source:pr.head.sha};
-  assert(marker.kind === 'release', 'Release PR requires trailing SpecTrail-Version and SpecTrail-Includes markers');
+  assert(marker.kind === 'release', 'Release PR requires one trailing SpecTrail-Version marker and valid optional SpecTrail-Includes markers');
+  if (!marker.includes.length)
+    assert(!git(['diff', '--name-only', pr.base.sha, pr.head.sha, '--', 'docs/project/archive/']),
+      'SpecTrail-Includes is required when a release changes Change archives');
   const integrationTip = git(['rev-parse', '--verify', `refs/remotes/origin/${config.integrationBranch}^{commit}`]);
   for (const id of marker.includes) {
     const record = archive(records, id);
