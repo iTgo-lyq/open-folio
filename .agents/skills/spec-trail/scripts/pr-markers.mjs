@@ -30,7 +30,7 @@ export function prMarker(body) {
   const includes = fields.filter(field => field.key === 'SpecTrail-Includes').map(field => field.value);
   const valid = id => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
   if (fields.length === 1 && ids.length === 1 && valid(ids[0])) return {kind:'change',id:ids[0]};
-  if (!ids.length && versions.length === 1 && /^[^\s]+$/.test(versions[0]) && includes.length &&
+  if (!ids.length && versions.length === 1 && /^[^\s]+$/.test(versions[0]) &&
       fields.length === includes.length + 1 && includes.every(valid) && new Set(includes).size === includes.length)
     return {kind:'release',version:versions[0],includes};
   return {kind:'invalid'};

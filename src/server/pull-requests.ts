@@ -30,7 +30,7 @@ const marker = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("release"),
     version: z.string().min(1),
-    includes: z.array(z.string().min(1)).min(1),
+    includes: z.array(z.string().min(1)),
   }),
 ]);
 const item = z.object({
