@@ -5,7 +5,7 @@ description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜
 
 # SpecTrail Prototype
 
-每项目一个原型包，默认 `packages/prototype`。项目维护源码、mock 和构建，静态产物交给所选服务或 Git。UI 组件库的独立预览不自动进入项目原型清单。
+每项目一个原型包，默认 `packages/prototype`。项目维护源码、mock 和构建，静态产物交给所选服务或 Git。UI 组件库的独立预览不自动进入项目原型清单。下文脚本涉及的配置、清单和 Change 引用写入遵循[主 skill 的状态操作入口](../SKILL.md#状态操作入口)。
 
 ## 接入与设计
 

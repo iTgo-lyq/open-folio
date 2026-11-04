@@ -145,6 +145,31 @@ test("one base query is shared; disk pages reuse 304 without bodies and preserve
   );
 });
 
+test("release PRs without Changes survive disk caching and conditional refresh", async (t) => {
+  const d = await disk(t),
+    r = remote();
+  r.collections.main = [
+    { ...raw(1, "main"), body: "Maintenance\n\nSpecTrail-Version: 1.0.1" },
+    {
+      ...raw(2, "main"),
+      body: "Release\n\nSpecTrail-Version: 1.0.0\nSpecTrail-Includes: example",
+    },
+  ];
+  const cache = await d.load();
+  const releases = await cache.query(r.reader, "main", signal);
+  assert.deepEqual(
+    releases.map((pr) => pr.marker),
+    [
+      { kind: "release", version: "1.0.1", includes: [] },
+      { kind: "release", version: "1.0.0", includes: ["example"] },
+    ],
+  );
+  await d.save(cache);
+  const warm = await d.load();
+  assert.deepEqual(await warm.query(r.reader, "main", signal), releases);
+  assert.equal(r.calls.at(-1)?.status, 304);
+});
+
 test("all pages are revalidated beyond ten pages, including old PR edits and removals", async (t) => {
   const d = await disk(t),
     r = remote();

@@ -242,6 +242,61 @@ test("a Change PR cannot introduce another archive", async () => {
   }
 });
 
+test("release without new Changes accepts documentation and inherited planning", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.merge();
+  f.git(["checkout", "main"]);
+  f.git(["merge", "--no-ff", "develop", "-m", "Release baseline"]);
+  f.git(["checkout", "develop"]);
+  await f.put("README.md", "# Updated skill documentation\n");
+  await f.put(
+    "docs/project/changes/later/change.json",
+    JSON.stringify({
+      ...completedChange("later"),
+      status: "active",
+      stage: "requirement",
+      closure: {},
+      tasks: {},
+    }),
+  );
+  const source = f.commit(false);
+  assert.deepEqual(
+    await checkPullRequest(
+      f.git,
+      event(f, "main", "Maintenance\n\nSpecTrail-Version: 1.0.1"),
+    ),
+    { kind: "release", changes: [], source },
+  );
+  assert.equal(f.git(["status", "--porcelain"]), "");
+});
+
+test("omitting the release Change list cannot add, edit or delete archives", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const body = "Maintenance\n\nSpecTrail-Version: 1.0.1";
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", body)),
+    /changes Change archives/,
+  );
+  f.merge();
+  f.git(["checkout", "main"]);
+  f.git(["merge", "--no-ff", "develop", "-m", "Release baseline"]);
+  f.git(["checkout", "develop"]);
+  await f.put(`${f.archivePath}/requirement.md`, "# Edited history\n");
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", body)),
+    /changes Change archives/,
+  );
+  await rm(join(f.author, f.archivePath), { recursive: true });
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", body)),
+    /changes Change archives/,
+  );
+});
+
 test("release checks only included Changes, requiring valid integration and unchanged archives", async () => {
   const f = await integrationFixture();
   try {

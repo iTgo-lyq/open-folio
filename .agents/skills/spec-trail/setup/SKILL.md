@@ -5,7 +5,7 @@ description: 首次或更新接入 SpecTrail 时，配置集成分支和发布�
 
 # 接入 SpecTrail
 
-SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业务项目的 Agent 根据项目现有流程完成 hook 接入，SpecTrail 不规定 hook 目录或管理工具。
+SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业务项目的 Agent 根据项目现有流程完成 hook 接入，SpecTrail 不规定 hook 目录或管理工具。Change 创建与状态更新遵循[主 skill 的状态操作入口](../SKILL.md#状态操作入口)。
 
 校验使用 Node.js 20+、Git 和 Node.js 内置模块，无需第三方依赖。分支配置、skill 中的校验脚本及业务方维护的接入文件随仓库交付；本机 Git 配置不提交。只在 `.git/hooks` 写本机入口不算完成可共享接入。
 

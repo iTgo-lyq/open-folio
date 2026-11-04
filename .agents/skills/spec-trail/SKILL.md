@@ -75,7 +75,9 @@ medium 及以上 Change 涉及数据结构、时序流程等明显变化时，�
 
 ## 状态操作入口
 
-分支移交与工作区定位使用 [工作区命令](./references/workspaces.md)，其中 handoff 仅负责 branch 登记。其余常规 `change.json` 创建和修改统一使用主 skill 自带的 [语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/scripts/change.mjs <command> --change <id>`。调用前按需读取命令说明；不要手写 JSON、用通用 patch 或临时 Python/JS 拼接状态。正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。
+本 skill、子 skill 及引用文档中指定的状态写入命令均为默认入口，统一适用下述逃生通道。分支移交与工作区定位见[工作区命令](./references/workspaces.md)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用[语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/scripts/change.mjs <command> --change <id>`。调用前按需读取命令说明；正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。
+
+**手动逃生通道**：脚本无法满足当前操作时，先向用户说明脚本限制、拟改字段的前后值、关联目录变动及影响，取得用户针对本次手改的二次明确确认后再直接修改，无需先扩展脚本。此例外不豁免实际前置条件、确认与证据要求、归档只读约定及提交校验；修改后核对关联失效状态与正文一致性，并在提交说明中记录原因与确认依据。
 
 脚本负责 UTC 毫秒时间、操作前置、失效状态清理和原子写入；Agent 负责实际确认、验证证据、正文一致性与提交推送。历史勘误按[文档与事实来源](#文档与事实来源)处理。共享校验在 `scripts/state-schema.mjs`，hook 与语义命令共用，保持零第三方依赖。
 
@@ -497,7 +499,7 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 等待时填写 `waitingFor`，摘要说明解除条件，解除后移除。等待与返工不改变 `active` 状态；无等待项不等于已获确认。
 
-返工直接修订原正文和 JSON，不另建返工文档；`rework` 记录当前或最近一轮的时间、原因与处理方式，回到最早受影响阶段：
+返工修订原正文，并按[状态操作入口](#状态操作入口)更新 JSON，不另建返工文档；`rework` 记录当前或最近一轮的时间、原因与处理方式，回到最早受影响阶段：
 
 | 变化 | 确认和任务处理 |
 | --- | --- |
@@ -559,7 +561,7 @@ Specs 以任意深度的稳定业务能力树组织，完整相对路径是能�
 
 前三步成功且证据仍适用后，将完整目录移动到 `docs/project/archive/YYYY-MM-DD-<id>/`，目标冲突不能覆盖，并确认源目录已不存在、目标材料完整。记录 `archive.result: done` 与 `path`，设置 `status: completed`、`stage: close`，移除等待项，将 Specs、最终 JSON 和目录移动一起提交推送。
 
-归档后需再改实现时，按[归档返修约定](references/integration.md#返修)使用 `rework`，不手工搬移或修改状态。
+归档后需再改实现时，按[归档返修约定](references/integration.md#返修)使用 `rework`；脚本无法满足时遵循[手动逃生通道](#状态操作入口)。
 
 Change 的实际实现须归档并通过预检及已接入的归档 CI 后，才可合入交付目标；其他 Change 的继承规划副本随合并保留，见[合码](#同仓库合码)。
 
