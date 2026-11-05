@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "接入文档图片大屏查看器",
-      "status": "doing"
+      "status": "done",
+      "verification": "420 项单元测试、类型检查和生产构建通过；Playwright 验证工作台、窄屏抽屉和匿名分享页的图片交互。窄屏目录用例在 develop 基线同样超时；改动文件格式检查通过。"
     }
   },
   "closure": {},

@@ -43,7 +43,7 @@ export async function seed() {
   // Keep SVG checks on their own capability so existing navigation fixtures stay stable.
   await f.put(
     "docs/project/specs/diagrams/spec.md",
-    "# 图表阅读\n\n![架构示意](./diagram.svg)\n\n[打开架构图](./diagram.svg)\n\n![隔离示意](./isolated.svg)\n\n![损坏示意](./broken.svg)\n\n![外部示意](https://example.test/svg-probe-external.svg)\n",
+    "# 图表阅读\n\n![架构示意](./diagram.svg)\n\n[![链接示意](./diagram.svg)](./diagram.svg)\n\n![隔离示意](./isolated.svg)\n\n![损坏示意](./broken.svg)\n\n![外部示意](https://example.test/svg-probe-external.svg)\n",
   );
   await f.put("docs/project/specs/diagrams/diagram.svg", diagramSvg);
   await f.put("docs/project/specs/diagrams/isolated.svg", isolatedSvg);

@@ -1,14 +1,26 @@
 "use client";
-import { EmptyState } from "@open-folio/ui";
-import { useRef } from "react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+  EmptyState,
+} from "@open-folio/ui";
+import { createContext, useContext, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import Lightbox from "yet-another-react-lightbox";
+import Inline from "yet-another-react-lightbox/plugins/inline";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/styles.css";
 import {
   AlertCircle,
   ArrowUpRight,
   FileText,
   GitBranch,
   Hash,
+  X,
 } from "lucide-react";
 import { remarkHeadings, resolveDocumentLink } from "@/lib/markdown";
 import type { DocumentRef } from "@/lib/model";
@@ -53,6 +65,77 @@ export function Source({ document }: { document: DocumentRef }) {
     </div>
   );
 }
+const InsideDocumentLink = createContext(false);
+
+export function DocumentImage({
+  src,
+  alt,
+  loading,
+  className,
+}: {
+  src: string;
+  alt: string;
+  loading?: "lazy";
+  className?: string;
+}) {
+  const linked = useContext(InsideDocumentLink);
+  const reportError = () => void reportSharedResourceFailure(src);
+  const image = (
+    <img src={src} alt={alt} loading={loading} onError={reportError} />
+  );
+  if (linked) return image;
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className={[styles.imageTrigger, className].filter(Boolean).join(" ")}
+          aria-label={alt ? `放大查看：${alt}` : "放大查看图片"}
+        >
+          {image}
+        </button>
+      </DialogTrigger>
+      <DialogContent
+        className={styles.lightbox}
+        aria-describedby={undefined}
+        onErrorCapture={reportError}
+      >
+        <DialogTitle className={styles.lightboxTitle}>
+          {alt || "图片预览"}
+        </DialogTitle>
+        <Lightbox
+          plugins={[Inline, Zoom]}
+          slides={[{ src, alt }]}
+          carousel={{ finite: true, preload: 0 }}
+          styles={{ container: { touchAction: "none" } }}
+          zoom={{ maxZoomPixelRatio: 4, scrollToZoom: true }}
+          labels={{ "Zoom in": "放大", "Zoom out": "缩小" }}
+          render={{
+            buttonPrev: () => null,
+            buttonNext: () => null,
+            iconError: () => <span role="status">图片加载失败</span>,
+          }}
+          toolbar={{
+            buttons: [
+              <DialogClose asChild key="close">
+                <button
+                  type="button"
+                  className="yarl__button"
+                  aria-label="关闭大图"
+                  title="关闭大图"
+                >
+                  <X aria-hidden="true" />
+                </button>
+              </DialogClose>,
+            ],
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function Markdown({
   body,
   document,
@@ -105,9 +188,14 @@ export function Markdown({
         components={{
           a: ({ href, children }) => {
             const link = resolveDocumentLink(document.path, href ?? "");
+            const content = (
+              <InsideDocumentLink.Provider value={true}>
+                {children}
+              </InsideDocumentLink.Provider>
+            );
             return link.kind === "external" ? (
               <a href={link.url} target="_blank" rel="noopener noreferrer">
-                {children}
+                {content}
                 <ArrowUpRight size={11} className={styles.externalIcon} />
               </a>
             ) : (
@@ -118,7 +206,7 @@ export function Markdown({
                   follow(href ?? "");
                 }}
               >
-                {children}
+                {content}
               </a>
             );
           },
@@ -139,15 +227,10 @@ export function Markdown({
                   )
                 : undefined;
             return ref ? (
-              <img
+              <DocumentImage
                 alt={alt ?? ""}
                 loading="lazy"
                 src={readUrl(`assets/${ref.id}?snapshot=${data!.id}`)}
-                onError={() =>
-                  void reportSharedResourceFailure(
-                    readUrl(`assets/${ref.id}?snapshot=${data!.id}`),
-                  )
-                }
               />
             ) : (
               <span className={styles.imageUnavailable}>
