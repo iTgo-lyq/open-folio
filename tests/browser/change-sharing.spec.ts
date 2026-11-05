@@ -95,6 +95,19 @@ test("short links restore the shared material and chapter while later navigation
     await expect(
       viewer.getByRole("heading", { name: "技术方案", exact: true }),
     ).toBeVisible();
+    const imageTrigger = viewer.getByRole("button", {
+      name: "放大查看：范围示意",
+    });
+    const previewUrl = await imageTrigger.getByRole("img").getAttribute("src");
+    expect(previewUrl).toMatch(/^\/api\/shared-changes\//);
+    await imageTrigger.click();
+    const imageDialog = viewer.getByRole("dialog", { name: "范围示意" });
+    await expect(imageDialog.getByRole("img")).toHaveAttribute(
+      "src",
+      previewUrl!,
+    );
+    await imageDialog.getByRole("button", { name: "关闭大图" }).click();
+    await expect(imageTrigger).toBeFocused();
     // The fixture fits in the viewport; observe the native scroll destination
     // rather than requiring a visible scroll offset or active-section change.
     await expect(viewer.locator("html")).toHaveAttribute(

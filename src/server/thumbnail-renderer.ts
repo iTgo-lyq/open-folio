@@ -5,7 +5,7 @@ import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/ht
 
 export type ThumbnailViewport = { width: number; height: number };
 export type ThumbnailSource = string | { url: string };
-export const THUMBNAIL_VERSION = "playwright-1.63.0-jpeg-1";
+export const THUMBNAIL_VERSION = "playwright-1.65.0-beta-1793840934000-jpeg-1";
 
 // Chromium receives no workbench session, repository credentials or user profile.
 export async function renderThumbnail(
