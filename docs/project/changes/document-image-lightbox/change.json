@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "document-image-lightbox",
+  "title": "支持工作台文档图片大屏浏览",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "接入文档图片大屏查看器",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "体验"
+  ]
+}
