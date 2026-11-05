@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "playwright-cdp-compatibility",
+  "title": "修复仓库 Playwright 的共享 Chrome 连接",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "升级 Playwright 并验证连接和截图",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "修复",
+    "工程"
+  ]
+}
