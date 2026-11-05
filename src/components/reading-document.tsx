@@ -11,10 +11,9 @@ import {
   SheetTitle,
 } from "@open-folio/ui";
 import type { DocumentRef } from "@/lib/model";
-import { Empty, Markdown, Source } from "./document";
+import { DocumentImage, Empty, Markdown, Source } from "./document";
 import { useWorkspace, useDocument } from "./context";
 import styles from "./reader.module.css";
-import { reportSharedResourceFailure } from "./api";
 
 export function ReadingDocument({
   value,
@@ -139,15 +138,10 @@ export function DocumentSheet() {
         <SheetBody className={styles.documentBody}>
           {doc?.kind === "image" ? (
             <>
-              <img
+              <DocumentImage
                 className={styles.image}
                 src={readUrl(`assets/${doc.id}?snapshot=${data!.id}`)}
                 alt={doc.title}
-                onError={() =>
-                  void reportSharedResourceFailure(
-                    readUrl(`assets/${doc.id}?snapshot=${data!.id}`),
-                  )
-                }
               />
               <Source document={doc} />
             </>

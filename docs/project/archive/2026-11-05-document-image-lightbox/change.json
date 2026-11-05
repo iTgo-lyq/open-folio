@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "document-image-lightbox",
+  "title": "支持工作台文档图片大屏浏览",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/document-image-lightbox",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "接入文档图片大屏查看器",
+      "status": "done",
+      "verification": "420 项单元测试、类型检查和生产构建通过；Playwright 验证工作台、窄屏抽屉和匿名分享页的图片交互。窄屏目录用例在 develop 基线同样超时；改动文件格式检查通过。"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-05T10:27:52.531Z",
+      "summary": "自查图片权限与快照、链接和抽屉交互。合入最新 develop 后，11 条浏览器用例、32 条相关单测及生产构建通过。窄屏目录超时在基线复现，仓库格式检查仅报告未修改的 tests/pr-archive-check.test.ts。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-05T10:28:22.352Z",
+      "summary": "Agent 自验收通过。正文、抽屉和匿名分享均可打开大图，窄屏缩放拖动、键盘关闭和焦点恢复通过。",
+      "source": "Playwright svg.spec.ts 与 change-sharing.spec.ts"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-05T10:28:26.798Z",
+      "summary": "同步项目知识工作台的 Spec 阅读能力，记录大屏操作及图片授权和快照范围。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-05T10:28:31.019Z",
+      "summary": "文档图片大屏浏览实现及验证通过，已同步 Spec 阅读。",
+      "path": "docs/project/archive/2026-11-05-document-image-lightbox"
+    }
+  },
+  "types": [
+    "体验"
+  ]
+}

@@ -42,14 +42,65 @@ test("SVG diagrams render styles and internal references in Markdown and the ima
     )
     .toBe(100);
   expect(await page.evaluate(() => "svgInjected" in window)).toBe(false);
-  await page.getByRole("link", { name: "打开架构图" }).click();
-  const dialog = page.getByRole("dialog");
+  const imageTrigger = page.getByRole("button", { name: "放大查看：架构示意" });
+  const imageUrl = await image.getAttribute("src");
+  await imageTrigger.focus();
+  await page.keyboard.press("Enter");
+  const lightbox = page.getByRole("dialog", { name: "架构示意" });
+  const enlarged = lightbox.getByRole("img", { name: "架构示意" });
+  await expect(enlarged).toBeVisible();
+  await expect(enlarged).toHaveAttribute("src", imageUrl!);
+  const zoomIn = lightbox.getByRole("button", { name: "放大", exact: true });
+  await expect(zoomIn).toBeEnabled();
+  const width = (await enlarged.boundingBox())!.width;
+  await zoomIn.focus();
+  await page.keyboard.press("+");
+  await expect
+    .poll(async () => (await enlarged.boundingBox())?.width)
+    .toBeGreaterThan(width);
+  await page.keyboard.press("Escape");
+  await expect(lightbox).toBeHidden();
+  await expect(imageTrigger).toBeFocused();
+
+  await page.getByRole("link", { name: "链接示意" }).click();
+  const dialog = page.getByRole("dialog", { name: "diagram.svg", exact: true });
   await expect(
     dialog.getByRole("img", { name: "diagram.svg", exact: true }),
   ).toBeVisible();
   await expect(dialog).toContainText("docs/project/specs/diagrams/diagram.svg");
-  await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 390, height: 844 });
+  const sheetTrigger = dialog.getByRole("button", {
+    name: "放大查看：diagram.svg",
+  });
+  await sheetTrigger.click();
+  const sheetLightbox = page.getByRole("dialog", {
+    name: "diagram.svg",
+    exact: true,
+  });
+  await expect(
+    sheetLightbox.getByRole("button", { name: "关闭大图" }),
+  ).toBeVisible();
+  const bounds = await sheetLightbox.boundingBox();
+  expect(bounds).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
+  const sheetImage = sheetLightbox.getByRole("img", { name: "diagram.svg" });
+  await sheetLightbox
+    .getByRole("button", { name: "放大", exact: true })
+    .click();
+  await expect
+    .poll(async () => (await sheetImage.boundingBox())?.width)
+    .toBeCloseTo(640, 0);
+  const startX = (await sheetImage.boundingBox())!.x;
+  await page.mouse.move(195, 422);
+  await page.mouse.down();
+  await page.mouse.move(255, 422, { steps: 5 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await sheetImage.boundingBox())?.x)
+    .toBeGreaterThan(startX + 30);
+  await page.keyboard.press("Escape");
+  await expect(sheetTrigger).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
