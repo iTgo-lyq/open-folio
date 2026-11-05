@@ -4,13 +4,13 @@
   "title": "修复分享文档的 YAML 元数据渲染",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/markdown-front-matter",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "统一 Markdown 元数据识别并验证分享页渲染",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
