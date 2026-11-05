@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "playwright-cdp-compatibility",
+  "title": "修复仓库 Playwright 的共享 Chrome 连接",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/playwright-cdp-compatibility",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "升级 Playwright 并验证连接和截图",
+      "status": "done",
+      "verification": "干净 npm ci、npm ls、生产构建和改动文件格式检查通过。普通 Node 加载仓库 Playwright，使用非暂停的 CDP 探针实连常驻 Chrome，跳过异常 worker 并读完、关闭专用标签页。16 条相关单测与 9 条浏览器回归通过。"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-05T11:29:26.221Z",
+      "summary": "自查依赖锁定、Next.js 可选测试依赖范围和截图缓存版本。构建、依赖树、共享 Chrome 连接、16 条单测与 9 条浏览器用例通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-05T11:29:29.818Z",
+      "summary": "Agent 自验收通过。仓库依赖能跳过异常 worker，读取和关闭自己的标签页，带沙箱的原型截图及发布读取通过。",
+      "source": "共享 Chrome 非暂停探针、截图单测和 Playwright 浏览器回归"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-05T11:29:33.774Z",
+      "summary": "现有原型 Spec 已定义截图沙箱和缓存按渲染器版本隔离，本次调整依赖版本与客户端兼容性。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-05T11:29:37.389Z",
+      "summary": "共享 Chrome 兼容性与截图回归验证通过。",
+      "path": "docs/project/archive/2026-11-05-playwright-cdp-compatibility"
+    }
+  },
+  "types": [
+    "修复",
+    "工程"
+  ]
+}
