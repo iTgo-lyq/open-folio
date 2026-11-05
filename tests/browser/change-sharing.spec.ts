@@ -14,6 +14,37 @@ function directLink(change: string) {
   return `/share?${new URLSearchParams({ repository: "https://github.com/acme/fixture", change, integrationBranch: "develop" })}`;
 }
 
+test("shared SKILL.md uses the body H1 and omits YAML metadata from the reader", async ({
+  page,
+}) => {
+  await page.goto(directLink("document-reader") + "&document=SKILL.md");
+  const materials = page.getByRole("navigation", { name: "Change 材料" });
+  await expect(
+    materials.getByRole("link", { name: "正文标题", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  const article = page
+    .getByRole("region", { name: "阅读正文" })
+    .locator("article");
+  await expect(article.getByRole("heading", { level: 1 })).toHaveText(
+    "正文标题",
+  );
+  await expect(article.getByRole("heading", { level: 2 })).toHaveText([
+    "使用方法",
+    "分节说明",
+  ]);
+  await expect(article.getByRole("separator")).toHaveCount(1);
+  await expect(article).not.toContainText(/sample-skill|YAML metadata/);
+  const toc = page.getByRole("navigation", { name: "本页目录" });
+  await expect(toc.getByRole("link")).toHaveText(["使用方法", "分节说明"]);
+  await expect(toc.getByRole("link", { name: "分节说明" })).toHaveAttribute(
+    "href",
+    `#${encodeURIComponent("分节说明")}`,
+  );
+  await expect(
+    article.getByRole("heading", { name: "分节说明" }),
+  ).toHaveAttribute("id", "分节说明");
+});
+
 test("short links restore the shared material and chapter while later navigation replaces saved defaults", async ({
   page,
   browser,
