@@ -170,6 +170,40 @@ test("reference style links retain their actual citation location", () => {
   );
 });
 
+test("Markdown indexes only body headings and links after YAML front matter", () => {
+  const meta =
+    "\uFEFF---\r\nname: skill\r\ndescription: |\r\n  [metadata](metadata.md)\r\n---\r\n";
+  const body = "## Intro\r\n\r\nSetext H1\r\n=========\r\n[body](body.md)";
+  const { title, headings, links } = inspectMarkdown(meta + body);
+  assert.equal(title, "Setext H1");
+  assert.deepEqual(headings, [
+    { id: "intro", text: "Intro", depth: 2, line: 6 },
+    { id: "setext-h1", text: "Setext H1", depth: 1, line: 8 },
+  ]);
+  assert.deepEqual(links, [{ url: "body.md", line: 10 }]);
+  assert.equal(inspectMarkdown(meta + "## Intro").title, "Intro");
+  assert.equal(inspectMarkdown(meta + "Plain body").title, undefined);
+});
+
+test("Markdown keeps ordinary separators and Setext headings at the start", () => {
+  const { title, headings, tree } = inspectMarkdown(
+    "---\n\nSetext H2\n---\n\nPlain body\n\n---",
+  );
+  assert.equal(title, "Setext H2");
+  assert.deepEqual(headings, [
+    { id: "setext-h2", text: "Setext H2", depth: 2, line: 3 },
+  ]);
+  assert.deepEqual(
+    tree.children?.map((node) => node.type),
+    ["thematicBreak", "heading", "paragraph", "thematicBreak"],
+  );
+  assert.equal(inspectMarkdown("---\nname: unclosed").tree.children?.length, 2);
+  assert.equal(
+    inspectMarkdown("# Title\n\n---\nname: in the body\n---").headings.length,
+    2,
+  );
+});
+
 test("unsupported snapshot schemas fail without rewriting stored bytes", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);

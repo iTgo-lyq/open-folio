@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "统一 Markdown 元数据识别并验证分享页渲染",
-      "status": "doing"
+      "status": "done",
+      "verification": "store、incremental-cache、shares 共 35 项通过；分享页 Playwright 9 项通过；类型检查、生产构建及改动文件格式检查通过。",
+      "commitTitle": "markdown-front-matter T1: render Markdown body separately from YAML metadata"
     }
   },
   "closure": {},

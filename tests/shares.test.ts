@@ -716,9 +716,11 @@ test("Agent text bundles authoritative originals and rewrites scoped links witho
     JSON.stringify(state),
   );
   const code = "```md\n[代码示例](technical.md)\n```";
+  const metadata =
+    '---\nname: sample-skill\ndescription: "See [metadata](technical.md)"\n---\n';
   await f.g.put(
     "docs/project/changes/shared/requirement.md",
-    `# 原始需求\n\nunique-requirement-body[^1]\n\n[^1]: requirement-footnote\n\n[方案](technical.md#设计 "保留标题")\n\n[空格](<notes/a b.md>)\n\n![图](assets/image.png)\n\n[引用][tech]\n\n[tech]: technical.md "引用标题"\n\n[外链](https://example.org/doc)\n\n[范围外](../private/requirement.md)\n\n${code}\n`,
+    `${metadata}# 原始需求\n\nunique-requirement-body[^1]\n\n[^1]: requirement-footnote\n\n[方案](technical.md#设计 "保留标题")\n\n[空格](<notes/a b.md>)\n\n![图](assets/image.png)\n\n[引用][tech]\n\n[tech]: technical.md "引用标题"\n\n[外链](https://example.org/doc)\n\n[范围外](../private/requirement.md)\n\n${code}\n`,
   );
   await f.g.put(
     "docs/project/changes/shared/technical.md",
@@ -751,6 +753,7 @@ test("Agent text bundles authoritative originals and rewrites scoped links witho
     detail.snapshotId,
     detail.capturedAt,
     code,
+    metadata,
     '"保留标题"',
     '"引用标题"',
   ])
