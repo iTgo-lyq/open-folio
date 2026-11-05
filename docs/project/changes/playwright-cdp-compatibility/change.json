@@ -4,13 +4,13 @@
   "title": "修复仓库 Playwright 的共享 Chrome 连接",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/playwright-cdp-compatibility",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "升级 Playwright 并验证连接和截图",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
