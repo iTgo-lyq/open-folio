@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "markdown-front-matter",
+  "title": "修复分享文档的 YAML 元数据渲染",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/markdown-front-matter",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "统一 Markdown 元数据识别并验证分享页渲染",
+      "status": "done",
+      "verification": "store、incremental-cache、shares 共 35 项通过；分享页 Playwright 9 项通过；类型检查、生产构建及改动文件格式检查通过。",
+      "commitTitle": "markdown-front-matter T1: render Markdown body separately from YAML metadata"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-05T10:17:07.598Z",
+      "summary": "Agent 自查；35 项定向测试、9 项分享页浏览器回归、类型检查、构建及改动文件格式检查通过。全仓格式检查报出未修改的 tests/pr-archive-check.test.ts。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-05T10:17:24.345Z",
+      "summary": "Agent 自验收；已核对文档名、正文、目录、无 H1 回退及普通 Markdown 分隔线和 Setext 标题。",
+      "source": "T1 定向测试与分享页浏览器回归"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-05T10:17:28.047Z",
+      "summary": "修复分享阅读的标题和正文解析，沿用已有文档阅读能力。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-05T10:17:31.633Z",
+      "summary": "验收通过，归档分享文档 YAML 元数据修复。",
+      "path": "docs/project/archive/2026-11-05-markdown-front-matter"
+    }
+  },
+  "types": [
+    "修复"
+  ]
+}

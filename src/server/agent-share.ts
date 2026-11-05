@@ -1,5 +1,5 @@
 import "server-only";
-import { parser, resolveDocumentLink } from "../lib/markdown.ts";
+import { parseMarkdown, resolveDocumentLink } from "../lib/markdown.ts";
 import { primaryRecord, type DocumentRef } from "../lib/model.ts";
 import type { SharedChange } from "../lib/shared-change.ts";
 import {
@@ -240,7 +240,7 @@ export async function renderAgentShare({
       }
       node.children?.forEach(visit);
     }
-    visit(parser().parse(body) as MarkdownNode);
+    visit(parseMarkdown(body) as MarkdownNode);
     for (const edit of edits.sort((a, b) => b.start - a.start))
       body = body.slice(0, edit.start) + edit.url + body.slice(edit.end);
     if (missing.size)
