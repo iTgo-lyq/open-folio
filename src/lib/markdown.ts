@@ -1,6 +1,7 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import { isMap, parseDocument } from "yaml";
 import type { Heading } from "./model.ts";
 type AstNode = {
   type: string;
@@ -12,7 +13,31 @@ type AstNode = {
   position?: { start: { line: number } };
   data?: Record<string, unknown>;
 };
-export const parser = () => unified().use(remarkParse).use(remarkGfm);
+export function markdownWithoutFrontMatter(body: string): string {
+  const opening = /^\uFEFF?---[ \t]*(?:\r\n?|\n)/.exec(body);
+  if (!opening) return body;
+  const rest = body.slice(opening[0].length);
+  const closing = /(?:^|[\r\n])---[ \t]*(?=[\r\n]|$)/.exec(rest);
+  if (!closing) return body;
+
+  try {
+    const metadata = parseDocument(rest.slice(0, closing.index), {
+      prettyErrors: false,
+    });
+    if (metadata.errors.length || !isMap(metadata.contents)) return body;
+  } catch {
+    return body;
+  }
+
+  // Keep line numbers and offsets relative to the original document.
+  const end = opening[0].length + closing.index + closing[0].length;
+  return body.slice(0, end).replace(/[^\r\n]/g, " ") + body.slice(end);
+}
+export const parseMarkdown = (body: string) =>
+  unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .parse(markdownWithoutFrontMatter(body));
 export const nodeText = (node: AstNode): string =>
   node.value ?? (node.children ?? []).map(nodeText).join("");
 export function headingId(text: string, seen: Map<string, number>): string {
@@ -29,7 +54,7 @@ export function headingId(text: string, seen: Map<string, number>): string {
   return id;
 }
 export function inspectMarkdown(body: string) {
-  const tree = parser().parse(body) as AstNode;
+  const tree = parseMarkdown(body) as AstNode;
   const headings: Heading[] = [],
     links: { url: string; line: number }[] = [];
   const definitions = new Map<string, string>();
@@ -67,7 +92,9 @@ export function inspectMarkdown(body: string) {
     n.children?.forEach(visit);
   }
   visit(tree);
-  return { title: headings[0]?.text, headings, links, tree };
+  const title =
+    headings.find((heading) => heading.depth === 1)?.text ?? headings[0]?.text;
+  return { title, headings, links, tree };
 }
 export function remarkHeadings() {
   return (tree: unknown) => {

@@ -22,7 +22,11 @@ import {
   Hash,
   X,
 } from "lucide-react";
-import { remarkHeadings, resolveDocumentLink } from "@/lib/markdown";
+import {
+  markdownWithoutFrontMatter,
+  remarkHeadings,
+  resolveDocumentLink,
+} from "@/lib/markdown";
 import type { DocumentRef } from "@/lib/model";
 import { useWorkspace } from "./context";
 import { reportSharedResourceFailure } from "./api";
@@ -246,7 +250,7 @@ export function Markdown({
           input: (props) => <input {...props} disabled />,
         }}
       >
-        {body}
+        {markdownWithoutFrontMatter(body)}
       </ReactMarkdown>
     </div>
   );

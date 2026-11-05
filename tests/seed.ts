@@ -311,6 +311,10 @@ export async function seed() {
       );
     if (record.id === "document-reader") {
       await f.put(
+        `${dir}/SKILL.md`,
+        "---\nname: sample-skill\ndescription: YAML metadata\n---\n\n## 使用方法\n\n# 正文标题\n\n先阅读说明。\n\n---\n\n分节说明\n---\n\n这是正文。",
+      );
+      await f.put(
         `${dir}/research.md`,
         "# 阅读体验调查\n\n附加 Markdown 文档可以通过材料链接直接阅读。",
       );

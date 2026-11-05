@@ -38,6 +38,7 @@
     "saxes": "6.0.0",
     "server-only": "0.0.1",
     "unified": "11.0.5",
+    "yaml": "2.9.1",
     "yet-another-react-lightbox": "3.33.0",
     "zod": "3.25.76",
     "@open-folio/ui": "*"
