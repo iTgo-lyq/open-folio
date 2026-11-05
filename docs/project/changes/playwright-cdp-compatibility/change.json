@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "升级 Playwright 并验证连接和截图",
-      "status": "doing"
+      "status": "done",
+      "verification": "干净 npm ci、npm ls、生产构建和改动文件格式检查通过。普通 Node 加载仓库 Playwright，使用非暂停的 CDP 探针实连常驻 Chrome，跳过异常 worker 并读完、关闭专用标签页。16 条相关单测与 9 条浏览器回归通过。"
     }
   },
   "closure": {},
