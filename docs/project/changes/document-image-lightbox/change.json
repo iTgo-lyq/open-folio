@@ -4,13 +4,13 @@
   "title": "支持工作台文档图片大屏浏览",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/document-image-lightbox",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "接入文档图片大屏查看器",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
