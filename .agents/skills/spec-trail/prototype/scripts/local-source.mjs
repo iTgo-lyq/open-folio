@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -9,15 +9,36 @@ import {
   sameRepository,
 } from "./source.mjs";
 import { validateManifest, safePath } from "./contract.mjs";
-export const gitObject = (root, args, keepIndex = false) => {
-  const env = { ...process.env };
-  if (!keepIndex) delete env.GIT_INDEX_FILE;
-  return execFileSync("git", ["-C", root, ...args], {
+const runGit = (root, args, env) =>
+  execFileSync("git", ["-C", root, ...args], {
     env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 16 * 1024 * 1024,
   }).trimEnd();
+
+let localEnvNames;
+export const gitObject = (root, args, keepIndex = false) => {
+  const env = { ...process.env };
+  if (!keepIndex) delete env.GIT_INDEX_FILE;
+  const cwd = process.cwd();
+  if (root !== cwd) {
+    localEnvNames ??= runGit(cwd, ["rev-parse", "--local-env-vars"], env).split(/\r?\n/);
+    if (localEnvNames.some((name) => name !== "GIT_INDEX_FILE" && Object.hasOwn(env, name))) {
+      // A hook's Git environment belongs to the worktree that invoked it.
+      const current = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+        env,
+        encoding: "utf8",
+      });
+      if (
+        current.status !== 0 ||
+        realpathSync(current.stdout.trimEnd()) !== realpathSync(root)
+      ) {
+        for (const name of localEnvNames) delete env[name];
+      }
+    }
+  }
+  return runGit(root, args, env);
 };
 const assert = (value, message) => {
   if (!value) throw Error(message);
