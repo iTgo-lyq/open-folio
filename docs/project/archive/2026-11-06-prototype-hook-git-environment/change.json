@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-hook-git-environment",
+  "title": "修复提交校验误判子模块固定对象缺失",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/prototype-hook-git-environment",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "隔离跨仓 Git 环境并覆盖真实提交回归",
+      "status": "done",
+      "verification": "子模块发布 16 项和提交校验 24 项均通过，包含真实 linked worktree 提交、缺失对象和临时索引；类型检查通过",
+      "commitTitle": "Isolate Git environment for cross-repository prototype validation"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-06T16:06:32.744Z",
+      "summary": "自查跨仓环境边界，子模块发布 16 项、提交校验 24 项及类型检查通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-06T16:06:54.979Z",
+      "summary": "Agent 自验收：真实提交能读取子仓固定对象，缺失对象仍拒绝，部分提交正确读取临时索引",
+      "source": "新增 linked worktree 提交回归、npm test 423 项、setup 24 项及类型检查均通过"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-06T16:06:58.505Z",
+      "summary": "恢复提交校验的既有行为，原型来源与校验契约不变"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-06T16:07:02.361Z",
+      "summary": "归档 Git 环境隔离修复和真实提交回归",
+      "path": "docs/project/archive/2026-11-06-prototype-hook-git-environment"
+    }
+  },
+  "followUpOf": "prototype-submodule-support",
+  "followUpTitle": "子模块原型固定版本交付",
+  "types": [
+    "修复"
+  ]
+}
