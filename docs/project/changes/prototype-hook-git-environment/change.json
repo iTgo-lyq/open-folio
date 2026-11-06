@@ -4,13 +4,13 @@
   "title": "修复提交校验误判子模块固定对象缺失",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/prototype-hook-git-environment",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "隔离跨仓 Git 环境并覆盖真实提交回归",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
