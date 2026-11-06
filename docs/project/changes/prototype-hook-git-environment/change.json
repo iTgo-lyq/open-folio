@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "隔离跨仓 Git 环境并覆盖真实提交回归",
-      "status": "doing"
+      "status": "done",
+      "verification": "子模块发布 16 项和提交校验 24 项均通过，包含真实 linked worktree 提交、缺失对象和临时索引；类型检查通过",
+      "commitTitle": "Isolate Git environment for cross-repository prototype validation"
     }
   },
   "closure": {},
