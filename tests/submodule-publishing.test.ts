@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, writeFile, rm } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { submoduleFixture } from "./submodule-fixture.ts";
@@ -84,6 +84,53 @@ test("unrelated submodule mapping edits do not require the prototype submodule t
   assert.notEqual(checked.status, 0);
   assert.match(checked.stderr, /frontend.*未初始化/);
 });
+test("linked worktree hook reads child objects and the parent commit index", async (t) => {
+  const f = await submoduleFixture();
+  t.after(f.cleanup);
+  const linked = join(f.root, "linked");
+  f.git(["worktree", "add", "-b", "change/hook-index", linked]);
+  f.git(
+    ["-c", "protocol.file.allow=always", "submodule", "update", "--init"],
+    linked,
+  );
+  await f.childPut(f.entry.sourcePath, "updated child source");
+  const child = f.childCommit();
+  const checkout = join(linked, "frontend");
+  f.git(["fetch", "origin", "trunk"], checkout);
+  f.git(["checkout", "--detach", child], checkout);
+  assert.equal(f.git(["cat-file", "-t", child], checkout), "commit");
+
+  const hooks = join(f.root, "hooks");
+  await mkdir(hooks);
+  await writeFile(
+    join(hooks, "pre-commit"),
+    '#!/bin/sh\nexec "$SPECTRAIL_TEST_NODE" "$SPECTRAIL_TEST_HOOK"\n',
+    { mode: 0o755 },
+  );
+  f.git(["config", "core.hooksPath", hooks], linked);
+  const commit = (...args: string[]) =>
+    spawnSync("git", ["commit", "-m", "Update prototype gitlink", ...args], {
+      cwd: linked,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        SPECTRAIL_TEST_NODE: process.execPath,
+        SPECTRAIL_TEST_HOOK: hook,
+      },
+    });
+
+  const missing = "a".repeat(child.length);
+  f.git(["update-index", "--cacheinfo", `160000,${missing},frontend`], linked);
+  const rejected = commit();
+  assert.equal(rejected.status, 1, rejected.stderr);
+  assert.match(rejected.stderr, new RegExp(`缺少固定对象 ${missing}`));
+
+  // Git builds a temporary index from the checkout for a path-limited commit.
+  const accepted = commit("--only", "--", "frontend");
+  assert.equal(accepted.status, 0, accepted.stderr);
+  assert.equal(f.git(["rev-parse", "HEAD:frontend"], linked), child);
+});
+
 test("Git registration rejects an uncommitted sourcePath change hidden inside catalog metadata", async (t) => {
   const f = await submoduleFixture();
   t.after(f.cleanup);
