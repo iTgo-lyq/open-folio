@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "翻倍两类澄清额度并核对到限处理",
-      "status": "doing"
+      "status": "done",
+      "verification": "核对两表八行、轮数乘积、到限续问规则、版本一致性及技能格式。",
+      "commitTitle": "Double SpecTrail clarification budgets"
     }
   },
   "closure": {},
