@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { writeFile, readFile, rm } from "node:fs/promises";
+import { writeFile, readFile, rm, mkdir } from "node:fs/promises";
 import { integrationFixture } from "./integration-fixture.ts";
 import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
 import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
@@ -252,6 +252,75 @@ test("partial cleanup can resume after remote deletion without regenerating the 
     );
   } finally {
     await f.cleanup();
+  }
+});
+
+test("cleanup retains initialized or deinitialized submodule worktrees and explains how to resume", async (t) => {
+  for (const initialize of [true, false]) {
+    await t.test(initialize ? "submodule Git data" : "gitlink only", async (t) => {
+      const f = await setup();
+      t.after(f.cleanup);
+      const modulePath = "repos/experiment_fe";
+      const moduleSource = join(f.root, "experiment-fe");
+      f.git(["init", moduleSource]);
+      f.git(
+        [
+          "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test",
+          "commit", "--allow-empty", "-m", "Submodule baseline",
+        ],
+        moduleSource,
+      );
+      await writeFile(
+        join(f.worktree, ".gitmodules"),
+        `[submodule "${modulePath}"]\n\tpath = ${modulePath}\n\turl = ${moduleSource}\n`,
+      );
+      f.git(["add", ".gitmodules"], f.worktree);
+      const moduleCommit = f.git(["rev-parse", "HEAD"], moduleSource);
+      f.git(
+        ["update-index", "--add", "--cacheinfo", `160000,${moduleCommit},${modulePath}`],
+        f.worktree,
+      );
+      await mkdir(join(f.worktree, modulePath), { recursive: true });
+      f.git(["commit", "-m", "Add submodule"], f.worktree);
+      f.git(["push", "origin", "HEAD"], f.worktree);
+      const options = { verifiedCommit: f.merge(), idleWorktree: f.worktree };
+
+      if (initialize) {
+        f.git(
+          ["-c", "protocol.file.allow=always", "submodule", "update", "--init"],
+          f.worktree,
+        );
+        const gitdir = f.git(["rev-parse", "--absolute-git-dir"], f.worktree);
+        const retained = await cleanup(f.repo, f.id, options);
+        assert.match(
+          retained.cleanup.worktree.reason,
+          /initialized submodules "repos\/experiment_fe"/,
+        );
+        assert.match(
+          retained.cleanup.worktree.reason,
+          /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*references\/integration\.md/,
+        );
+        assert.deepEqual(
+          Object.values(retained.cleanup).map((item) => (item as { status: string }).status),
+          ["retained", "retained", "retained"],
+        );
+        f.git(["submodule", "deinit", "--", modulePath], f.worktree);
+        const deinitialized = await cleanup(f.repo, f.id, options);
+        assert.equal(deinitialized.cleanup.worktree.status, "retained");
+        assert.match(deinitialized.cleanup.worktree.reason, /submodule Git data at/);
+        assert.ok(deinitialized.cleanup.worktree.reason.includes(join(gitdir, "modules")));
+        assert.ok(f.git(["ls-remote", "origin", `refs/heads/${f.branch}`]));
+        assert.ok(f.git(["show-ref", "--verify", `refs/heads/${f.branch}`]));
+        f.git(["worktree", "remove", "--force", "--", f.worktree]);
+      }
+
+      const resumed = await cleanup(f.repo, f.id, options);
+      assert.deepEqual(
+        Object.values(resumed.cleanup).map((item) => (item as { status: string }).status),
+        ["cleaned", "cleaned", "cleaned"],
+        JSON.stringify(resumed.cleanup),
+      );
+    });
   }
 });
 

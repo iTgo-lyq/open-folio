@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "补齐子模块清理预检、操作指引和回归覆盖",
-      "status": "doing"
+      "status": "done",
+      "verification": "npm test 426 项通过，覆盖子模块已初始化、反初始化后残留数据、未初始化和人工移除后重试；npm run typecheck 通过"
     }
   },
   "closure": {},

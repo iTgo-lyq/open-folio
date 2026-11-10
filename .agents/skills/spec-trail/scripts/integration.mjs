@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, rmSync, realpathSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { hostname } from 'node:os';
 import { parseArgs } from 'node:util';
@@ -43,6 +43,20 @@ function worktrees(repo) {
 function visibleIndex(path) {
   const entries = at(path,['ls-files','-v','-z']).split('\0').filter(Boolean);
   assert(!entries.some(entry => entry[0] === 'S' || /^[a-z]/.test(entry)), 'Worktree has assume-unchanged or skip-worktree index entries; clear these flags and inspect files before retrying');
+}
+
+function checkSubmoduleRemoval(path, gitdir) {
+  const populated = at(path,['ls-files','--stage','-z']).split('\0')
+    .filter(entry => entry.startsWith('160000 '))
+    .map(entry => entry.slice(entry.indexOf('\t') + 1))
+    .filter(modulePath => existsSync(join(path,modulePath,'.git')));
+  const modules = join(gitdir,'modules');
+  const evidence = [];
+  if (populated.length) evidence.push(`initialized submodules ${populated.map(modulePath => JSON.stringify(modulePath)).join(', ')}`);
+  if (statSync(modules,{throwIfNoEntry:false})?.isDirectory()) evidence.push(`submodule Git data at ${JSON.stringify(modules)}`);
+  assert(!evidence.length, `Git refuses non-forced removal of source worktree ${JSON.stringify(path)} with ${evidence.join(' and ')}. ` +
+    'Check submodule files, local-only commits and stashes. Obtain explicit user confirmation before running git worktree remove --force manually, then retry cleanup. ' +
+    'See references/integration.md (清理 → 含子模块的 worktree).');
 }
 
 function archived(repo, commit, id) {
@@ -160,7 +174,8 @@ function treeReady(repo, branch, idleWorktree) {
   for (const name of ['index.lock','HEAD.lock','MERGE_HEAD','CHERRY_PICK_HEAD','REVERT_HEAD','rebase-merge','rebase-apply','BISECT_START'])
     assert(!existsSync(join(gitdir,name)), `Worktree has an active Git operation: ${name}`);
   visibleIndex(tree.path);
-  assert(!at(tree.path,['status','--porcelain','--untracked-files=all','--ignored=matching']), 'Worktree contains unsaved or ignored files; preserve private data and remove only known rebuildable outputs before retrying');
+  assert(!at(tree.path,['status','--porcelain','--untracked-files=all','--ignored=matching','--ignore-submodules=none']), 'Worktree contains unsaved or ignored files; preserve private data and remove only known rebuildable outputs before retrying');
+  checkSubmoduleRemoval(tree.path,gitdir);
   return tree;
 }
 
@@ -176,7 +191,7 @@ export async function cleanup(repo, id, options = {}) {
     const result = {...inclusion(repo,catalog,id,target),cleanup:{
       remote:{status:'retained',reason:'Preflight not complete'},worktree:{status:'retained',reason:'Preflight not complete'},branch:{status:'retained',reason:'Preflight not complete'},
     }};
-    let remote, local, tree;
+    let remote, local;
     const precheck = () => {
       const delivered = routedRecord(repo,catalog,id,{refresh:true});
       assert(delivered.archived && !delivered.errors.length && delivered.commit === target.commit,
@@ -184,13 +199,13 @@ export async function cleanup(repo, id, options = {}) {
       assert(typeof options.verifiedCommit === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(options.verifiedCommit) &&
         ancestor(repo,options.verifiedCommit,target.commit), 'Validate project delivery/service and artifacts, then pass --verified-commit <included delivery commit>');
       dependencies(catalog,branch,id);
-      tree = treeReady(repo,branch,options.idleWorktree);
       remote = result.source.remote;
       assert(!remote || ancestor(repo,remote,options.verifiedCommit), 'Remote source has new/unmerged work');
       local = localSource(repo,branch);
       assert(!local || ancestor(repo,local,options.verifiedCommit), 'Local source has new/unmerged work');
       assert(ancestor(repo,options.verifiedCommit,revision(repo,'HEAD') ?? ''), 'Run cleanup from a checkout containing the verified delivery');
       assert(!existsSync(join(repo.common,'packed-refs.lock')) && !existsSync(join(repo.common,`refs/heads/${branch}.lock`)), 'Source refs are locked');
+      treeReady(repo,branch,options.idleWorktree);
     };
     try { precheck(); }
     catch (error) { for (const item of Object.values(result.cleanup)) item.reason = error.message; return result; }
@@ -202,7 +217,7 @@ export async function cleanup(repo, id, options = {}) {
     try {
       // Recheck local state immediately before each destructive step.
       assert(localSource(repo,branch) === local, 'Local source tip changed');
-      tree = treeReady(repo,branch,options.idleWorktree);
+      const tree = treeReady(repo,branch,options.idleWorktree);
       if (tree) repo.git(['worktree','remove',tree.path]);
       result.cleanup.worktree = {status:'cleaned',reason:tree ? 'Removed clean idle worktree' : 'Already absent'};
     } catch (error) { result.cleanup.worktree = {status:'failed',reason:error.message}; return result; }

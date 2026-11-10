@@ -56,4 +56,13 @@ node .agents/skills/spec-trail/scripts/integration.mjs cleanup --repo /path/to/p
 
 若因独有成果、配置、数据、占用或无法核实安全性而决定保留，简述具体原因并询问用户是否保留；答复前暂留。用户选择删除时，按授权保存或丢弃相关内容，再完成清理。
 
-顺序为远端源分支 → worktree → 本地源分支。远端按预期 tip 条件删除，本地使用已合并检查和非强制 worktree 删除。结果逐对象标为 cleaned/retained/failed；退出码 2 表示清理遗留，合入事实仍成立。相同命令可继续清理，不重复生成 M，已不存在对象视作完成。
+常规顺序为远端源分支 → worktree → 本地源分支。远端按预期 tip 条件删除，本地使用已合并检查和非强制 worktree 删除。结果逐对象标为 cleaned/retained/failed；退出码 2 表示清理遗留，合入事实仍成立。相同命令可继续清理，不重复生成 M，已不存在对象视作完成。
+
+### 含子模块的 worktree
+
+Git 会拒绝非强制删除仍有子模块检出或残留子模块 Git 数据的 worktree。即使执行过 `git submodule deinit`，worktree 的 Git 管理目录下仍可能留有 `modules/`。cleanup 在删除远端源分支前识别这两种情况，保留来源并在 `reason` 中列出检出路径或 Git 数据位置及处理指引。只有 gitlink、从未初始化的 worktree 可走常规清理。
+
+1. 在目标工作区运行上述 cleanup，确认交付、来源、文件与占用等常规检查均已通过，并核对输出中的来源路径和子模块数据位置。逐个检查子模块及嵌套子模块。用 `git -C "$submodule" rev-parse --absolute-git-dir` 定位已检出子模块的 Git 数据，用 `git -C "$source" rev-parse --absolute-git-dir` 定位来源 worktree 的管理目录，并检查其中 `modules/` 下已反初始化的仓库。
+2. 对仍有检出的子模块，先检查 `git ls-files -v` 中的 `S` 和小写标记，再用 `git status --porcelain --untracked-files=all --ignored=matching --ignore-submodules=none` 检查暂存、未暂存、未跟踪和忽略文件。对每个 Git 目录运行 `git --git-dir="$module_gitdir" stash list` 和 `git --git-dir="$module_gitdir" for-each-ref refs/heads`，并核对 detached HEAD。刷新对应的远端引用并核实它们仍存在，用 `git merge-base --is-ancestor` 确认各本地 tip 均已纳入远端历史。检查是否还有其他 worktree 依赖这些 Git 数据。发现独有提交、stash、文件或无法核实的状态时，先保留来源并报告原因，妥善保存相关数据后再复查。
+3. 检查全部通过后，向用户说明将删除的确切 worktree 路径、子模块和随 worktree 一起删除的 Git 数据，请求明确确认。确认后重新核实路径、分支 tip、空闲状态和上述检查，再从目标工作区人工执行 `git worktree remove --force -- "$source"`。该例外仅用于 Git 的子模块限制，cleanup 本身仍使用非强制删除。
+4. 确认 worktree 已从 `git worktree list` 消失，重跑同一条 cleanup 命令完成分支清理。先前已经删除的远端分支会标为已完成。
