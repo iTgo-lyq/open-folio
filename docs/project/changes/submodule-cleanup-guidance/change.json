@@ -4,13 +4,13 @@
   "title": "为含子模块的来源 worktree 提供清理指引",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/submodule-cleanup-guidance",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "补齐子模块清理预检、操作指引和回归覆盖",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
