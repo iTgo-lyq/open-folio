@@ -7,6 +7,12 @@ test("PR markers require a unique standalone metadata paragraph", () => {
     kind: "change",
     id: "example",
   });
+  for (const body of [
+    "Feature\n\nSpecTrail-Change: example\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+    "SpecTrail-Change: example\r\n\r\nVerification details",
+    "Feature\n\n~~~text\n\nSpecTrail-Change: demo\n\n~~~\n\nSpecTrail-Change: example\n\nVerification details",
+  ])
+    assert.deepEqual(prMarker(body), { kind: "change", id: "example" });
   assert.deepEqual(
     prMarker(
       "Release\n\nSpecTrail-Version: v1.2\nSpecTrail-Includes: one\nSpecTrail-Includes: two",
@@ -23,10 +29,19 @@ test("PR markers require a unique standalone metadata paragraph", () => {
     "Title\n\nExample SpecTrail-Change: example",
     "Title\n\n```text\nSpecTrail-Change: example\n```",
     "Title\n\n```text\n\nSpecTrail-Change: example",
+    "Title\n\n```text\n``` still inside code\n\nSpecTrail-Change: example\n\n```",
+    "Title\n\n<!-- Example\n\nSpecTrail-Change: example\n\n-->",
+    "Title\n\n<pre>Example\n\nSpecTrail-Change: example\n\n</pre>",
+    "Title\n\n> SpecTrail-Change: example\n\nVerification details",
+    "Title\n\nSpecTrail-Change: example\nAdjacent prose",
+    "Release\n\nSpecTrail-Version: 1.2.0\n\nSignature",
   ])
     assert.equal(prMarker(body).kind, "none");
   for (const metadata of [
     "SpecTrail-Change: a\nSpecTrail-Change: a",
+    "SpecTrail-Change: a\n\nProse\n\nSpecTrail-Change: b",
+    "SpecTrail-Change: a\n\nSpecTrail-Change: a\n\nSignature",
+    "SpecTrail-Change: a\n\nSpecTrail-Version: 1",
     "SpecTrail-Change: a\nSpecTrail-Version: 1",
     "SpecTrail-Change: Bad",
     "SpecTrail-Version: 1\nSpecTrail-Includes: a\nSpecTrail-Includes: a",

@@ -11,17 +11,24 @@ const format = '%H%x00%P%x00%cI%x00%s%x00';
 /** @typedef {(args:string[]) => Promise<Buffer|string>} GitRun */
 
 /** @typedef {{number:number,state:string,mergeCommit:string|null,base:{repositoryId:string,branch:string},head:{repositoryId:string|null,branch:string},body?:string,marker?:ReturnType<typeof prMarker>}} ChangePullRequest */
+/** @template {ChangePullRequest} T @param {T[]} prs
+ * @param {{repositoryId:string,integrationBranch:string,branch:string}} identity
+ * @returns {T[]}
+ */
+export function sourcePullRequests(prs, {repositoryId, integrationBranch, branch}) {
+  return prs.filter(pr => pr.base.repositoryId === repositoryId && pr.head.repositoryId === repositoryId &&
+    pr.base.branch === integrationBranch && pr.head.branch === branch);
+}
+
 /** Exact PR association; commit messages are never association metadata.
  * @template {ChangePullRequest} T @param {T[]} prs
  * @param {{repositoryId:string,integrationBranch:string,id:string,branch:string}} identity
  * @returns {T[]}
  */
-export function changePullRequests(prs, {repositoryId, integrationBranch, id, branch}) {
-  return prs.filter(pr => {
+export function changePullRequests(prs, identity) {
+  return sourcePullRequests(prs, identity).filter(pr => {
     const marker = pr.marker ?? prMarker(pr.body ?? '');
-    return pr.base.repositoryId === repositoryId && pr.head.repositoryId === repositoryId &&
-      pr.base.branch === integrationBranch && pr.head.branch === branch &&
-      marker.kind === 'change' && marker.id === id;
+    return marker.kind === 'change' && marker.id === identity.id;
   });
 }
 

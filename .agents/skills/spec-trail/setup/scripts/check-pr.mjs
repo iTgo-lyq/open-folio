@@ -67,7 +67,7 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
     assert(marker.kind === 'release', 'Release PR requires one trailing SpecTrail-Version marker and valid optional SpecTrail-Includes markers');
   const registeredSource = central.some(row => !row.archived && row.state?.branch === pr.head.ref && pr.head.ref !== config.integrationBranch);
   if (pr.base.ref !== config.releaseBranch && (marker.kind === 'change' || pr.base.ref === config.integrationBranch || registeredSource)) {
-    assert(marker.kind === 'change', 'Change PR requires one trailing SpecTrail-Change marker');
+    assert(marker.kind === 'change', 'Change PR requires one standalone SpecTrail-Change marker');
     assert(pr.head.ref !== config.integrationBranch && pr.head.ref !== config.releaseBranch,
       'Change PR must come from its registered work branch');
     const record = archive(records, marker.id);
