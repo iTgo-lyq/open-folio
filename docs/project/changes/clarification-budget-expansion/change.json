@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "clarification-budget-expansion",
+  "title": "将需求与技术澄清额度翻倍",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "followUpOf": "independent-clarification-budgets",
+  "types": [
+    "流程"
+  ]
+}
