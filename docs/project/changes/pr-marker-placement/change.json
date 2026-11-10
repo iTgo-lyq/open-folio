@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "pr-marker-placement",
+  "title": "兼容 PR 正文中的 Change 标记位置",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "放宽 Change 标记位置并校验未合并 PR",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "pr-based-integration",
+  "followUpTitle": "基于 PR 核实 Change 交付",
+  "types": [
+    "修复"
+  ]
+}
