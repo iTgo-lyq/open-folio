@@ -119,11 +119,15 @@ export async function preflight(repo, id, readPullRequests = githubPullRequests)
   assert(validChangeId(id), 'Invalid Change id');
   const catalog = collaborationCatalog(repo, {refresh:true});
   const {branch,route} = sourceIdentity(catalog,id);
-  const {integration,target} = await changeDelivery(repo,catalog,id,branch,readPullRequests);
+  const {integration,target,open} = await changeDelivery(repo,catalog,id,branch,readPullRequests);
   assert(!['invalid','unavailable'].includes(integration.status), integration.message);
   if (route.kind === 'archive' || integration.status === 'found') return {...inclusion(repo,catalog,id,target),integration};
   assert(!target.parent || target.parent.status === 'active', 'The parent must be active to receive a child delivery');
-  const result = {integrationBranch:target.branch,projectIntegrationBranch:catalog.branch,tip:target.commit,integration};
+  assert(open.length < 2, `发现多个相同源分支和目标分支的未合并 PR：${open.map(pr => '#' + pr.number).join('、')}`);
+  const pr = open[0];
+  assert(!pr || pr.associated, `PR #${pr?.number} 的正文需要唯一的独立标记段落 SpecTrail-Change: ${id}`);
+  const result = {integrationBranch:target.branch,projectIntegrationBranch:catalog.branch,tip:target.commit,integration,
+    pullRequest:pr?.number ?? null};
   const delivery = source(repo,catalog,id);
   assert(remoteBranch(repo,delivery.branch) === delivery.commit, 'Push the archived source before preparing its PR');
   return {...result,source:delivery,sourceIncluded:ancestor(repo,delivery.commit,target.commit)};

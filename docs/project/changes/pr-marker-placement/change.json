@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "放宽 Change 标记位置并校验未合并 PR",
-      "status": "doing"
+      "status": "done",
+      "verification": "79 项定向回归、类型检查和生产构建通过。覆盖署名前的标记、合入核实、归档门禁和旧 PR 缓存刷新。",
+      "commitTitle": "pr-marker-placement T1: accept standalone Change markers before PR footers"
     }
   },
   "closure": {},

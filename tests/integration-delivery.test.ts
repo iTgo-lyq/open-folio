@@ -114,6 +114,8 @@ test("PR preflight and verification never push, and verify follows the actual pl
     assert.ok("source" in ready);
     assert.ok("commit" in ready.source);
     assert.equal(ready.source.commit, f.source);
+    assert.ok("pullRequest" in ready);
+    assert.equal(ready.pullRequest, null);
     assert.ok(!("mergeMessage" in ready));
     await assert.rejects(
       verify(f.repo, f.id, f.readPullRequests),
@@ -130,6 +132,57 @@ test("PR preflight and verification never push, and verify follows the actual pl
   } finally {
     await f.cleanup();
   }
+});
+
+test("preflight checks the open PR marker and verify accepts a trailing signature", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const pr = {
+    number: 12,
+    state: "open" as const,
+    title: "Deliver example",
+    body: "Delivery",
+    url: "https://github.com/demo/work/pull/12",
+    draft: true,
+    base: { repositoryId: "1", branch: "develop", commit: f.base },
+    head: { repositoryId: "1", branch: f.branch, commit: f.source },
+    mergeCommit: null,
+    updatedAt: "2026-10-25T00:00:00Z",
+  };
+  f.pullRequests.push(pr);
+  for (const body of [
+    "Delivery",
+    "Delivery\n\nSpecTrail-Change: other",
+    "Delivery\n\nSpecTrail-Change: example\n\nSpecTrail-Change: example",
+  ]) {
+    pr.body = body;
+    await assert.rejects(
+      preflight(f.repo, f.id, f.readPullRequests),
+      /PR #12.*SpecTrail-Change: example/,
+    );
+  }
+  pr.body =
+    "Delivery\n\nSpecTrail-Change: example\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
+  f.pullRequests.push({ ...pr, number: 13 });
+  await assert.rejects(
+    preflight(f.repo, f.id, f.readPullRequests),
+    /未合并 PR.*#12.*#13/,
+  );
+  f.pullRequests.pop();
+  const pending = await preflight(f.repo, f.id, f.readPullRequests);
+  assert.ok("pullRequest" in pending);
+  assert.equal(pending.pullRequest, 12);
+  assert.equal(pending.integration.status, "missing");
+  f.pullRequests.pop();
+  const merged = f.merge();
+  f.pullRequests[0].body = pr.body;
+  assert.deepEqual(
+    (await verify(f.repo, f.id, f.readPullRequests)).integration,
+    {
+      status: "found",
+      commit: merged,
+    },
+  );
 });
 
 test("preflight requires the current archived source to be pushed", async () => {
