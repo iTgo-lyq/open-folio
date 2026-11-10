@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "pr-marker-placement",
+  "title": "兼容 PR 正文中的 Change 标记位置",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/pr-marker-placement",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "放宽 Change 标记位置并校验未合并 PR",
+      "status": "done",
+      "verification": "79 项定向回归、类型检查和生产构建通过。覆盖署名前的标记、合入核实、归档门禁和旧 PR 缓存刷新。",
+      "commitTitle": "pr-marker-placement T1: accept standalone Change markers before PR footers"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-10T06:11:24.038Z",
+      "summary": "Agent 自查整个变更，79 项定向回归、类型检查及生产构建通过。确认重复或冲突标记会被拒绝，发布 PR 仍使用尾部元数据。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-10T06:11:44.229Z",
+      "summary": "署名前的 Change 标记可用于预检、合入核实、归档 CI 和工作台，预检可识别未合入 PR 的标记错误。",
+      "source": "Agent 自验收，npm test 425 项通过，含署名、未合并 PR 标记及缓存回归。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-10T06:11:47.744Z",
+      "summary": "同步 Change 工作流和工作台追踪两处 Specs，明确独立标记段落及预检结果。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-10T06:11:51.307Z",
+      "summary": "归档通过自验收的 PR 标记兼容修复。",
+      "path": "docs/project/archive/2026-11-10-pr-marker-placement"
+    }
+  },
+  "followUpOf": "pr-based-integration",
+  "followUpTitle": "基于 PR 核实 Change 交付",
+  "types": [
+    "修复"
+  ]
+}

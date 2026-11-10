@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "clarification-budget-expansion",
+  "title": "将需求与技术澄清额度翻倍",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/clarification-budget-expansion",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "翻倍两类澄清额度并核对到限处理",
+      "status": "done",
+      "verification": "核对两表八行、轮数乘积、到限续问规则、版本一致性及技能格式。",
+      "commitTitle": "Double SpecTrail clarification budgets"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-10T06:04:59.099Z",
+      "summary": "自查两类八档额度、每轮上限和到限续问规则，技能格式校验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-10T06:05:10.052Z",
+      "summary": "Agent 自验收，两类总额度翻倍且到限处理与需求一致。",
+      "source": "两类八档表格对照、轮数乘积校验和到限规则对照"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-10T06:05:51.816Z",
+      "summary": "同步 change-workflow 的两类额度和轮次示例。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-10T06:05:55.437Z",
+      "summary": "归档需求澄清与技术问询额度调整。",
+      "path": "docs/project/archive/2026-11-10-clarification-budget-expansion"
+    }
+  },
+  "followUpOf": "independent-clarification-budgets",
+  "types": [
+    "流程"
+  ]
+}

@@ -75,8 +75,18 @@ const cacheSchema = z
   );
 export type CatalogItem = z.infer<typeof item>;
 type CacheData = z.infer<typeof cacheSchema>;
+// Cached pages store parsed markers. Changing the parser requires a fresh body read.
+const markerVersion = 2;
 const queryKey = (reader: DeliveryReader, base: string) =>
-  JSON.stringify([reader.cacheKey, base, "all", "created", "desc", 100]);
+  JSON.stringify([
+    reader.cacheKey,
+    base,
+    "all",
+    "created",
+    "desc",
+    100,
+    markerVersion,
+  ]);
 const invalid = () =>
   new AppError(
     "PR_CACHE_INVALID",

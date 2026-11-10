@@ -221,6 +221,29 @@ test("old cached PRs remain readable and mapping-version refresh fetches merge t
   assert.equal(result[0].mergedAt, "2026-10-23T12:30:00Z");
 });
 
+test("pages cached before marker placement support reload unchanged PR bodies", async (t) => {
+  const d = await disk(t),
+    r = remote();
+  r.collections.develop = [raw(1)];
+  r.collections.develop[0].body +=
+    "\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
+  const first = new PullRequestCache();
+  await first.query(r.reader, "develop", signal);
+  const legacy = JSON.parse(first.serialize());
+  const [query] = legacy.queries;
+  const key = JSON.parse(query.key);
+  key.pop();
+  query.key = JSON.stringify(key);
+  query.pages[0].items = [];
+  await writeFile(d.path, JSON.stringify(legacy));
+
+  const warm = await d.load();
+  warm.retain(r.reader, ["develop"]);
+  const result = await warm.query(r.reader, "develop", signal);
+  assert.equal(r.calls.at(-1)?.etag, null);
+  assert.deepEqual(result[0]?.marker, { kind: "change", id: "item-1" });
+});
+
 test("raw full pages and 304 without Link still discover a new tail; unmarked and foreign PRs are excluded", async (t) => {
   const d = await disk(t),
     r = remote();

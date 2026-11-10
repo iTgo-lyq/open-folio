@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "submodule-cleanup-guidance",
+  "title": "为含子模块的来源 worktree 提供清理指引",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/submodule-cleanup-guidance",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "补齐子模块清理预检、操作指引和回归覆盖",
+      "status": "done",
+      "verification": "npm test 426 项通过，覆盖子模块已初始化、反初始化后残留数据、未初始化和人工移除后重试；npm run typecheck 通过"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-10T06:24:14.880Z",
+      "summary": "Agent 自查通过，426 项全量测试与类型检查通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-10T06:24:18.392Z",
+      "summary": "用户验收并授权将子模块清理修复合入 develop",
+      "source": "可以，按 SpecTrail 流程把这次修复提交并合入 develop。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-10T06:24:23.580Z",
+      "summary": "同步 Change 工作流中子模块预检、用户确认和重试规则"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-10T06:24:27.959Z",
+      "summary": "归档子模块清理预检、操作指引与回归验证",
+      "path": "docs/project/archive/2026-11-10-submodule-cleanup-guidance"
+    }
+  },
+  "types": [
+    "修复",
+    "流程"
+  ]
+}

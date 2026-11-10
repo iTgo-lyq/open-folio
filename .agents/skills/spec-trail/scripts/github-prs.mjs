@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { changePullRequests, integrationEvidence } from './integration-records.mjs';
+import { changePullRequests, integrationEvidence, sourcePullRequests } from './integration-records.mjs';
 import { prMarker } from './pr-markers.mjs';
 import { deliveryTarget } from './repository.mjs';
 
@@ -60,6 +60,7 @@ export async function changeDelivery(repo, catalog, id, branch, read = githubPul
   const central = await read(repo,catalog.branch);
   const direct = changePullRequests(central.pullRequests,{repositoryId:central.repositoryId,integrationBranch:catalog.branch,id,branch});
   let target = {branch:catalog.branch, readBranch:catalog.branch, commit:catalog.commit, ref:catalog.ref};
+  let targetRequests = central.pullRequests;
   let prs = direct;
   if (state?.parent) {
     const parent = catalog.entries.find(row => row.id === state.parent)?.state;
@@ -68,17 +69,23 @@ export async function changeDelivery(repo, catalog, id, branch, read = githubPul
       target = deliveryTarget(repo,catalog,state,{refresh:true});
       const collection = await read(repo,target.branch);
       assert(collection.repositoryId === central.repositoryId, 'Parent PR repository does not match');
-      const nested = changePullRequests(collection.pullRequests,{repositoryId:central.repositoryId,integrationBranch:target.branch,id,branch});
+      targetRequests = collection.pullRequests;
+      const nested = changePullRequests(targetRequests,{repositoryId:central.repositoryId,integrationBranch:target.branch,id,branch});
       prs = [...direct.filter(pr => pr.state === 'merged'), ...nested];
-      if (direct.some(pr => pr.state === 'merged') && !nested.some(pr => pr.state === 'merged'))
+      if (direct.some(pr => pr.state === 'merged') && !nested.some(pr => pr.state === 'merged')) {
         target = {branch:catalog.branch, readBranch:catalog.branch, commit:catalog.commit, ref:catalog.ref};
+        targetRequests = central.pullRequests;
+      }
     }
   }
   const integration = await integrationEvidence(async (before,after) => {
     try { repo.git(['merge-base','--is-ancestor',before,after]); return true; }
     catch (error) { if (error.status === 1) return false; throw error; }
   },target.commit,prs);
-  return {target,integration};
+  const open = sourcePullRequests(targetRequests,{repositoryId:central.repositoryId,integrationBranch:target.branch,branch})
+    .filter(pr => pr.state === 'open')
+    .map(pr => ({number:pr.number,associated:prs.includes(pr)}));
+  return {target,integration,open};
 }
 
 export async function changeIntegration(repo, catalog, id, branch, read = githubPullRequests) {
