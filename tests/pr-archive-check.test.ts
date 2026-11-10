@@ -77,10 +77,19 @@ test("PR archive check accepts its completed archive and leaves inherited planni
     );
     f.commit(false);
     const before = f.git(["status", "--porcelain"]);
-    const result = await checkPullRequest((args: string[]) => {
-      assert.ok(["rev-parse", "show", "ls-tree", "cat-file"].includes(args[0]));
-      return f.git(args);
-    }, event(f));
+    const result = await checkPullRequest(
+      (args: string[]) => {
+        assert.ok(
+          ["rev-parse", "show", "ls-tree", "cat-file"].includes(args[0]),
+        );
+        return f.git(args);
+      },
+      event(
+        f,
+        "develop",
+        `${changeBody}\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)`,
+      ),
+    );
     assert.equal(result.kind, "change");
     assert.deepEqual(result.changes, ["example"]);
     assert.equal(f.git(["status", "--porcelain"]), before);
