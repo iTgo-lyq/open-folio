@@ -4,10 +4,15 @@
   "title": "将需求与技术澄清额度翻倍",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/clarification-budget-expansion",
   "confirmations": {},
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "翻倍两类澄清额度并核对到限处理",
+      "status": "doing"
+    }
+  },
   "closure": {},
   "followUpOf": "independent-clarification-budgets",
   "types": [
