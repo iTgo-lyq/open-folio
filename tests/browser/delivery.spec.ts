@@ -112,14 +112,14 @@ test("delivery groups include archived Changes, combine labels and expose PRs wi
   delivery.stage = "releaseMerged";
   delivery.releasePrs[0].state = "merged";
   await page.reload();
-  await expect(details.getByText("已发布", { exact: true })).toBeVisible();
+  await expect(details.getByText("已合入", { exact: true })).toBeVisible();
   await backToChanges(page);
   await expect(row).toHaveCount(0);
   await page.getByRole("tab", { name: /^已归档/ }).click();
   await expect(row).toBeVisible();
   await expect(
-    changeRow(page, group.title).getByText("已发布", { exact: true }),
-  ).toBeVisible();
+    page.getByRole("region", { name: "合入时间未知", exact: true }),
+  ).toContainText(group.title);
 });
 
 test("delivery history, stale diagnostics and draft links stay readable on desktop and narrow screens", async ({

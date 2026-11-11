@@ -83,7 +83,8 @@ test("adjacent Changes follow the filtered directory order and return to the cur
   ).toBeFocused();
   await expect(page).toHaveURL(/sort=urgency/);
   await changeDisplay(page, "看板");
-  const board = page.getByRole("region", { name: "按阶段看板（只读）" });
+  const board = page.getByRole("region", { name: "不分组看板（只读）" });
+  await expect(board.locator(":scope > section")).toHaveCount(1);
   const boardRows = await board
     .getByRole("link", { name: /^打开 / })
     .evaluateAll((items) =>
