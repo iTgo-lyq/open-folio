@@ -1,4 +1,29 @@
 import { test, expect, repositoryQuery, readingLink } from "./connected";
+import type { Snapshot } from "../../src/lib/model";
+
+async function expectUncoveredToolbar(page: import("@playwright/test").Page) {
+  await expect
+    .poll(() =>
+      page.locator("main > header button").evaluateAll((buttons) =>
+        buttons
+          .filter((button) => {
+            const rect = button.getBoundingClientRect();
+            return (
+              rect.width > 0 &&
+              rect.height > 0 &&
+              !button.contains(
+                document.elementFromPoint(
+                  rect.x + rect.width / 2,
+                  rect.y + rect.height / 2,
+                ),
+              )
+            );
+          })
+          .map((button) => button.getAttribute("aria-label")),
+      ),
+    )
+    .toEqual([]);
+}
 test("Specs tree, anchors, raw view and safe links", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -165,8 +190,9 @@ test("reading settings persist and the floating header leaves anchors and mobile
           1,
     ),
   ).toBe(true);
-  for (const width of [834, 390, 320]) {
+  for (const width of [834, 390, 360, 320]) {
     await page.setViewportSize({ width, height: 844 });
+    await expectUncoveredToolbar(page);
     await page.getByRole("button", { name: /^能力目录：/ }).click();
     await page
       .getByRole("navigation", { name: "能力目录" })
@@ -184,3 +210,70 @@ test("reading settings persist and the floating header leaves anchors and mobile
     await page.screenshot({ path: `/tmp/of-refactor-specs-${width}.png` });
   }
 });
+
+for (const size of ["标准", "较大"])
+  for (const focus of [false, true])
+    test(`narrow reader toolbar stays clickable with a long title, ${size} and focus ${focus}`, async ({
+      page,
+      request,
+      personal,
+    }, testInfo) => {
+      const data: Snapshot = await (
+        await request.get(personal.url("workbench"))
+      ).json();
+      const title =
+        "很长的能力标题用于验证窄屏位置按钮省略且所有入口保持可点击";
+      data.specs.find((spec) => spec.id === "platform")!.title = title;
+      await page.route("**/api/repositories/*/workbench*", (route) =>
+        route.fulfill({ json: data }),
+      );
+      await page.goto(`/?${repositoryQuery}&m=specs&s=platform`);
+      await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+      const settings = page.getByRole("dialog", { name: "阅读设置" });
+      await settings.getByRole("radio", { name: size, exact: true }).click();
+      if (focus)
+        await settings.getByRole("switch", { name: "专注阅读" }).click();
+      await page.keyboard.press("Escape");
+      for (const width of [390, 360, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        await expectUncoveredToolbar(page);
+        const location = page.getByRole("button", {
+          name: `能力目录：${title}`,
+          exact: true,
+        });
+        await location.click();
+        await expect(
+          page.getByRole("dialog", { name: "能力目录", exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(location).toBeFocused();
+        const contents = page.getByRole("button", {
+          name: "本页目录",
+          exact: true,
+        });
+        await contents.click();
+        await expect(
+          page.getByRole("dialog", { name: "本页目录", exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(contents).toBeFocused();
+        const preferences = page.getByRole("button", {
+          name: "阅读设置",
+          exact: true,
+        });
+        await preferences.click();
+        await expect(settings).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(settings).toBeHidden();
+        await expect(preferences).toBeFocused();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        ).toBe(true);
+        if (width === 320)
+          await page.screenshot({
+            path: testInfo.outputPath("toolbar-320.png"),
+          });
+      }
+    });

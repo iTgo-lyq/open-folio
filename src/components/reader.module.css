@@ -399,6 +399,16 @@
   }
 }
 @media (max-width: 360px) {
+  .crumb {
+    gap: 4px;
+  }
+  .switcher {
+    gap: 4px;
+    padding-inline: 4px;
+  }
+  .switcher > svg:not(.chevron) {
+    display: none;
+  }
   .article {
     padding-left: 16px;
     padding-right: 16px;

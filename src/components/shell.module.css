@@ -728,6 +728,15 @@
   }
 }
 @media (max-width: 360px) {
+  .tbLeft:has([data-crumb]) .tbRepo {
+    padding-inline: 4px;
+  }
+  .tbLeft:has([data-crumb]) .tbRepo > svg {
+    display: none;
+  }
+  .tbLeft [data-crumb] {
+    padding-left: 4px;
+  }
   .mobileItem {
     width: 62px;
   }
