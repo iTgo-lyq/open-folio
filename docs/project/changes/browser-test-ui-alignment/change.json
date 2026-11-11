@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "browser-test-ui-alignment",
-  "title": "浏览器回归对齐当前看板与连续交付分组",
+  "title": "浏览器回归对齐当前目录分组、交付与导航",
   "size": "small",
   "status": "active",
   "stage": "execution",
