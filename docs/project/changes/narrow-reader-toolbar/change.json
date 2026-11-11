@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "narrow-reader-toolbar",
+  "title": "修复窄屏阅读顶栏目录按钮互相覆盖",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复窄屏顶栏覆盖并验证阅读入口交互",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "修复",
+    "体验"
+  ]
+}
