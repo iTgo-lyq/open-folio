@@ -68,6 +68,12 @@ npm run test:e2e -- tests/browser/delivery.spec.ts --grep 'delivery groups inclu
 
 恢复只读 main 复现工作区，确认 HEAD 仍为未修改的 `91c235f`，单独执行 `npm run test:e2e -- tests/browser/specs.spec.ts --grep 'reading settings persist' --reporter=line`：1 failed，trace 同样记录「本页目录」按钮拦截点击。日志 `/tmp/openfolio-browser-reading-main-repro.log`，trace `/tmp/openfolio-browser-reading-main-repro-results/`。由此确认它是范围外的既有问题；本次交付验收以已明确的目录分组、交付与导航修复为准，完整套件的未通过结果作为限制保留。只读复现工作区再次交由应用管理流程清理。
 
+### 自验收与提交整理
+
+逐项核对 Requirement：六个相关 spec 已通过；原始 main 失败和本来通过项均有证据；连续交付判断有历史需求及当前 Spec 依据；默认、阶段和不分组的名称、列数及上下文检查保持有效；导航修复覆盖了原断言暴露的真实问题；全量已完整运行并如实保留范围外既有失败。Agent 按 small 进行自查、自验收，范围内没有未解决验收项。
+
+归档前再次定向 fetch 并确认 develop 无新增交付，当前内容已包含目标分支。检查源分支历史，保留 `97287b2` 执行启动、`7a4f011` 实现及相关验证、`e519b9a` 完整验证三个有效检查点；没有反复修测试或纯格式提交需要压缩，不改写已推送历史。既有 Specs 已描述当前分组、交付与相邻导航行为，本次恢复既定行为，无需同步产品规则。
+
 small 自查：默认处理状态、不分组与显式阶段三种看板语义分别为四、一、五列；原排序、筛选、焦点、键盘、窄屏及深链接断言保留。连续交付按真实阶段展示，不把不同阶段的成员搬到一处；标题链接定位排除其他行内导航。详情使用同一目录分组函数，空列不影响顺序；列表、手机与归档时间线继续沿用既有路径。无数据迁移、共享契约或 UI 外观变化，Specs 已描述期望的导航与分组行为，无需新增产品规则。
 
 交付为待审阅 PR；未获合并授权，不合入 develop 或 main。长期服务仅从主工作区已集成提交构建，本次实现待 PR 合入后更新，当前未切换运行服务或常驻数据。

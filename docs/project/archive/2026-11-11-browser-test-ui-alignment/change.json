@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "browser-test-ui-alignment",
+  "title": "浏览器回归对齐当前目录分组、交付与导航",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/browser-test-ui-alignment",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "对齐浏览器分组断言并完成相关与全量回归",
+      "status": "done",
+      "verification": "六个相关 spec 共29项通过；完整E2E 170通过、1项main既有阅读布局失败；16项单元、类型检查、生产构建和格式检查通过，详见execution.md",
+      "commitTitle": "browser-test-ui-alignment T1: verify browser grouping and delivery regressions"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-11T08:07:20.493Z",
+      "summary": "Agent自查：范围内29项浏览器通过；全量170通过、1项main既有布局失败已隔离；单元、类型、构建通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-11T08:07:24.139Z",
+      "summary": "Agent自验收：需求范围内全部通过；全量唯一失败在未修改main复现，按范围要求保留并报告",
+      "source": "按small默认自验收，逐项核对requirement.md及execution.md中的复现、相关回归、全量和基线证据"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-11T08:07:28.406Z",
+      "summary": "恢复既有目录分组、交付文案及相邻导航行为，无新增产品规则或契约"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-11T08:07:33.146Z",
+      "summary": "目录分组与交付浏览器回归修复，相关29项通过，全量范围外main既有失败已记录",
+      "path": "docs/project/archive/2026-11-11-browser-test-ui-alignment"
+    }
+  },
+  "types": [
+    "修复",
+    "测试"
+  ]
+}
