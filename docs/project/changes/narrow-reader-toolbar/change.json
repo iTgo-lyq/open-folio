@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "修复窄屏顶栏覆盖并验证阅读入口交互",
-      "status": "doing"
+      "status": "done",
+      "verification": "原320px失败已修复；5个相关spec共31项通过；长标题与四种阅读偏好命中、弹层和焦点检查通过；类型、构建、格式检查通过",
+      "commitTitle": "narrow-reader-toolbar T1: keep narrow reader controls clickable"
     }
   },
   "closure": {},
