@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "browser-test-ui-alignment",
+  "title": "浏览器回归对齐当前看板与连续交付分组",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "对齐浏览器分组断言并完成相关与全量回归",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "修复",
+    "测试"
+  ]
+}
