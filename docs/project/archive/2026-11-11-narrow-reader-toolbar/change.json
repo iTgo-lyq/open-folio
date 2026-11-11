@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "narrow-reader-toolbar",
+  "title": "修复窄屏阅读顶栏目录按钮互相覆盖",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/narrow-reader-toolbar",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "修复窄屏顶栏覆盖并验证阅读入口交互",
+      "status": "done",
+      "verification": "原320px失败已修复；5个相关spec共31项通过；长标题与四种阅读偏好命中、弹层和焦点检查通过；类型、构建、格式检查通过",
+      "commitTitle": "narrow-reader-toolbar T1: keep narrow reader controls clickable"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-11T08:43:24.359Z",
+      "summary": "Agent自查：原320px覆盖已消除；相关E2E31项、类型、构建与格式检查通过，命中和焦点行为已验证"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-11T08:43:28.696Z",
+      "summary": "Agent自验收：按需求核对320/360/390px与四种阅读偏好、长标题及宽屏回归，全部通过",
+      "source": "依据requirement.md及execution.md的复现、31项相关E2E、截图、类型和构建证据，small默认自验收"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-11T08:43:32.523Z",
+      "summary": "仅恢复现有目录入口可用与长标题省略，不新增产品行为或契约"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-11T08:43:36.582Z",
+      "summary": "修复窄屏阅读顶栏覆盖，相关31项E2E和类型构建验证通过",
+      "path": "docs/project/archive/2026-11-11-narrow-reader-toolbar"
+    }
+  },
+  "types": [
+    "修复",
+    "体验"
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "这次只修复320px顶栏按钮覆盖，是否需要单独绘制原型？",
+      "recommendation": "直接修复，不另画原型，沿用现有设计并以截图和E2E验证",
+      "answer": "直接修复，不另画原型（推荐）",
+      "source": "用户对原型偏好问题的明确答复"
+    }
+  }
+}
