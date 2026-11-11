@@ -25,7 +25,6 @@ import {
 } from "@/lib/change-directory";
 import { matchingFollowUps } from "@/lib/follow-ups";
 import { archiveTimeline } from "@/lib/archive-timeline";
-import { STAGES } from "@/lib/model";
 import { useDocument, useWorkspace } from "./context";
 import { Reader } from "./reader";
 import { ReadingDocument } from "./reading-document";
@@ -102,17 +101,7 @@ export function ChangeReading({
     ),
     !timeline && query.labels.sortByUrgency,
   );
-  const bins =
-    query.view === "board" &&
-    query.scope === "active" &&
-    !query.issues &&
-    !mobile
-      ? STAGES.map((stage) => ({
-          items: visible.filter(
-            (group) => primaryRecord(group)?.state?.stage === stage,
-          ),
-        }))
-      : groupDirectoryChanges(visible, query, data?.deliveryByChange);
+  const bins = groupDirectoryChanges(visible, query, data?.deliveryByChange);
   const ordered = timeline
     ? archiveTimeline(visible, data?.deliveryByChange).flatMap((day) =>
         day.batches.flatMap((batch) => batch.items),

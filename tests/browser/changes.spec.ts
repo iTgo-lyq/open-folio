@@ -257,9 +257,9 @@ test("list filters, inline materials and task order preserve context", async ({
   await changeDisplay(page, "看板");
   await expect(
     page
-      .getByRole("region", { name: "按阶段看板（只读）" })
+      .getByRole("region", { name: "按处理状态看板（只读）" })
       .locator(":scope > section"),
-  ).toHaveCount(5);
+  ).toHaveCount(4);
   await page.screenshot({
     path: "artifacts/changes-board-desktop.png",
     fullPage: true,

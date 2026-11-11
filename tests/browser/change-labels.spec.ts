@@ -158,7 +158,8 @@ test("list and board share stable urgency order and task detail keeps its origin
   );
   await expect.poll(() => titles(page)).toEqual(["紧急修复", "修复问题"]);
   await changeDisplay(page, "看板");
-  const board = page.getByRole("region", { name: "按阶段看板（只读）" });
+  const board = page.getByRole("region", { name: "按处理状态看板（只读）" });
+  await expect(board.locator(":scope > section")).toHaveCount(4);
   await expect
     .poll(() =>
       board

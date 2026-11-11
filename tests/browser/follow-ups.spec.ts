@@ -66,9 +66,31 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   const group = page.getByRole("region", {
     name: "完善技术方案问询机制 的连续交付",
   });
+  // 已完成先按交付阶段分组，同一连续交付在每个阶段只展示对应成员。
+  await expect(group).toHaveCount(2);
+  for (const [stage, title] of [
+    ["待集成", root.title],
+    ["交付待核实", next.title],
+  ]) {
+    const deliveryGroup = page
+      .getByRole("region", { name: stage, exact: true })
+      .getByRole("region", { name: "完善技术方案问询机制 的连续交付" });
+    await expect(deliveryGroup).toHaveCount(1);
+    await expect(deliveryGroup.getByRole("heading")).toHaveText(
+      "完善技术方案问询机制",
+    );
+    await expect(
+      deliveryGroup.getByRole("link", { name: /^打开 / }),
+    ).toHaveCount(1);
+    await expect(
+      deliveryGroup.getByRole("link", { name: `打开 ${title}`, exact: true }),
+    ).toBeVisible();
+  }
+  // 不分组时在一个外框内验证整组的布局、排序、筛选与导航。
+  await changeDisplay(page, "不分组");
   await expect(group).toHaveCount(1);
   await expect(group.getByRole("heading")).toHaveText("完善技术方案问询机制");
-  await expect(group.getByRole("link")).toHaveCount(2);
+  await expect(group.getByRole("link", { name: /^打开 / })).toHaveCount(2);
   await expect(
     group.getByRole("link", { name: "打开 技术方案问询", exact: true }),
   ).toBeVisible();
@@ -113,7 +135,10 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   });
   const frame = await group.boundingBox();
   const heading = await group.getByRole("heading").boundingBox();
-  const first = await group.getByRole("link").first().boundingBox();
+  const first = await group
+    .getByRole("link", { name: /^打开 / })
+    .first()
+    .boundingBox();
   expect(first!.y).toBeGreaterThanOrEqual(heading!.y + heading!.height);
   await group
     .getByRole("link", { name: "打开 技术方案问询", exact: true })
@@ -125,7 +150,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
   await expect
     .poll(() =>
       group
-        .getByRole("link")
+        .getByRole("link", { name: /^打开 / })
         .evaluateAll((links) =>
           links.map((link) => link.getAttribute("aria-label")),
         ),
@@ -139,7 +164,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     .getByRole("menuitemcheckbox", { name: "后续作者", exact: true })
     .click();
   await page.keyboard.press("Escape");
-  await expect(group.getByRole("link")).toHaveCount(1);
+  await expect(group.getByRole("link", { name: /^打开 / })).toHaveCount(1);
   await expect(group.getByRole("heading")).toHaveText("完善技术方案问询机制");
   await expect(
     group.getByRole("link", { name: "打开 技术方案问询", exact: true }),
@@ -180,7 +205,7 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     fullPage: true,
   });
   await page.getByRole("tab", { name: /已取消/ }).click();
-  await expect(group.getByRole("link")).toHaveCount(1);
+  await expect(group.getByRole("link", { name: /^打开 / })).toHaveCount(1);
   await expect(
     group.getByRole("link", { name: `打开 ${cancelled.title}`, exact: true }),
   ).toBeVisible();
@@ -194,7 +219,9 @@ test("continuations show grouped deliveries directly while keeping spacing, filt
     record.state.followUpTitle,
   );
   const wrapped = await longGroup.getByRole("heading").boundingBox();
-  const row = await longGroup.getByRole("link").boundingBox();
+  const row = await longGroup
+    .getByRole("link", { name: /^打开 / })
+    .boundingBox();
   expect(row!.y).toBeGreaterThanOrEqual(wrapped!.y + wrapped!.height);
   expect(
     await page.evaluate(
