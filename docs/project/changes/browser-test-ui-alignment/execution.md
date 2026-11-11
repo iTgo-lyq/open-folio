@@ -58,6 +58,16 @@ npm run test:e2e -- tests/browser/delivery.spec.ts --grep 'delivery groups inclu
 
 `npm run test:e2e -- tests/browser/delivery.spec.ts --reporter=line`：3 passed（21.3 秒），涵盖交付分组、历史和窄屏、限流刷新。日志 `/tmp/openfolio-browser-delivery-related.log`；该文件 Prettier 检查通过。此前五个相关 spec 的 26 项仍适用（产品源码未再修改），相关验证合计 29 项通过。
 
+### 完整套件结果与范围外失败
+
+在最终实现上从头执行、不带筛选或重试参数的 `npm run test:e2e`：170 passed、1 failed（13.4 分钟，退出码 1），171 项均执行，无跳过或中断。本次六个相关 spec 在全量中全部通过。日志 `/tmp/openfolio-browser-full.log`（另存 `/tmp/openfolio-browser-full-second.log`），失败 trace 保存于 `/tmp/openfolio-browser-full-second-results/`。
+
+唯一失败为未修改的 `specs.spec.ts` 第 122 行阅读设置场景。在较大字号、专注阅读后切到 320px，能力目录按钮的点击点被「本页目录」按钮覆盖，Playwright 重试直至 30 秒超时。此前 834px、390px 的导航、标题、无横向溢出及截图检查均通过。trace 明确记录 `subtree intercepts pointer events`，不是 GPU 缺失或本次看板断言。
+
+在任务分支用 `--grep 'reading settings persist' --repeat-each=3` 单独复跑，3 次均失败（日志 `/tmp/openfolio-browser-reading-recheck.log`、trace `/tmp/openfolio-browser-reading-recheck-results/`）。本次差异不含该测试及其 reader、shell 实现。按用户「不改动与这些测试无关的行为」的要求，不调整此处布局、不跳过测试，也不将完整套件报告为全绿。
+
+恢复只读 main 复现工作区，确认 HEAD 仍为未修改的 `91c235f`，单独执行 `npm run test:e2e -- tests/browser/specs.spec.ts --grep 'reading settings persist' --reporter=line`：1 failed，trace 同样记录「本页目录」按钮拦截点击。日志 `/tmp/openfolio-browser-reading-main-repro.log`，trace `/tmp/openfolio-browser-reading-main-repro-results/`。由此确认它是范围外的既有问题；本次交付验收以已明确的目录分组、交付与导航修复为准，完整套件的未通过结果作为限制保留。只读复现工作区再次交由应用管理流程清理。
+
 small 自查：默认处理状态、不分组与显式阶段三种看板语义分别为四、一、五列；原排序、筛选、焦点、键盘、窄屏及深链接断言保留。连续交付按真实阶段展示，不把不同阶段的成员搬到一处；标题链接定位排除其他行内导航。详情使用同一目录分组函数，空列不影响顺序；列表、手机与归档时间线继续沿用既有路径。无数据迁移、共享契约或 UI 外观变化，Specs 已描述期望的导航与分组行为，无需新增产品规则。
 
 交付为待审阅 PR；未获合并授权，不合入 develop 或 main。长期服务仅从主工作区已集成提交构建，本次实现待 PR 合入后更新，当前未切换运行服务或常驻数据。

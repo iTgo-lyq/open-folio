@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "对齐浏览器分组断言并完成相关与全量回归",
-      "status": "doing"
+      "status": "done",
+      "verification": "六个相关 spec 共29项通过；完整E2E 170通过、1项main既有阅读布局失败；16项单元、类型检查、生产构建和格式检查通过，详见execution.md",
+      "commitTitle": "browser-test-ui-alignment T1: verify browser grouping and delivery regressions"
     }
   },
   "closure": {},
