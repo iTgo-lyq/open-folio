@@ -4,18 +4,27 @@
   "title": "修复窄屏阅读顶栏目录按钮互相覆盖",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/narrow-reader-toolbar",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "修复窄屏顶栏覆盖并验证阅读入口交互",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
   "types": [
     "修复",
     "体验"
-  ]
+  ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "这次只修复320px顶栏按钮覆盖，是否需要单独绘制原型？",
+      "recommendation": "直接修复，不另画原型，沿用现有设计并以截图和E2E验证",
+      "answer": "直接修复，不另画原型（推荐）",
+      "source": "用户对原型偏好问题的明确答复"
+    }
+  }
 }
