@@ -28,6 +28,7 @@ import {
   inspectIntegration,
 } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 import { collectDelivery, type DeliveryReader } from "./delivery.ts";
+import { collectReleaseArchives } from "./release-archives.ts";
 import { IntegrationReader } from "./integration.ts";
 import {
   prototypeCatalog,
@@ -271,8 +272,35 @@ export class SnapshotStore {
         ? await PullRequestCache.load(
             join(dir, "pull-requests.json"),
             limits.totalBytes,
-          )
+          ).catch((error) => {
+            if (
+              error instanceof AppError &&
+              ["PR_CACHE_INVALID", "PR_CACHE_LIMIT"].includes(error.code)
+            )
+              return new PullRequestCache(limits.totalBytes);
+            throw error;
+          })
         : undefined;
+      const sameRelease =
+        previous?.scanFingerprint === scanFingerprint(limits) &&
+        JSON.stringify(previous.releaseSource) ===
+          JSON.stringify(data.releaseSource) &&
+        JSON.stringify(previous.changes.map((change) => change.id).sort()) ===
+          JSON.stringify(changes.map((change) => change.id).sort());
+      const releaseArchives =
+        sameRelease &&
+        previous.releaseArchives &&
+        Object.values(previous.releaseArchives).every(
+          (record) => record.status === "invalid" || record.introduction,
+        )
+          ? previous.releaseArchives
+          : await collectReleaseArchives(
+              reader,
+              data.releaseSource,
+              changes.map((change) => change.id),
+              limits,
+              signal,
+            );
       const delivery = await collectDelivery({
         changes,
         integrationTip: data.integrations.tip,
@@ -294,6 +322,7 @@ export class SnapshotStore {
         },
         integrationBranch: data.integrationBranch,
         releaseSource: data.releaseSource,
+        releaseArchives,
         previous: previous?.deliveryByChange,
         reader: context?.delivery,
         cache: prCache,
@@ -318,7 +347,9 @@ export class SnapshotStore {
         JSON.stringify(delivery.integrations) ===
           JSON.stringify(previous.integrations) &&
         JSON.stringify(delivery.deliveryByChange) ===
-          JSON.stringify(previous.deliveryByChange)
+          JSON.stringify(previous.deliveryByChange) &&
+        JSON.stringify(releaseArchives) ===
+          JSON.stringify(previous.releaseArchives)
       ) {
         signal.throwIfAborted();
         await context?.beforePublish();
@@ -344,6 +375,7 @@ export class SnapshotStore {
         cacheSchemaVersion: 10,
         integrations: delivery.integrations,
         releaseSource: data.releaseSource,
+        releaseArchives,
         deliveryByChange: delivery.deliveryByChange,
         integrationBranch: data.integrationBranch,
         routes: data.routes,

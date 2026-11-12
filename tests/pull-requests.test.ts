@@ -244,7 +244,7 @@ test("pages cached before marker placement support reload unchanged PR bodies", 
   assert.deepEqual(result[0]?.marker, { kind: "change", id: "item-1" });
 });
 
-test("raw full pages and 304 without Link still discover a new tail; unmarked and foreign PRs are excluded", async (t) => {
+test("raw full pages and 304 discover a new tail; unmarked PRs support history lookup while foreign PRs are excluded", async (t) => {
   const d = await disk(t),
     r = remote();
   r.collections.develop = Array.from({ length: 100 }, (_, i) =>
@@ -253,7 +253,9 @@ test("raw full pages and 304 without Link still discover a new tail; unmarked an
   r.collections.develop[0].head.repo.id = 99;
   r.collections.develop[0].body = "Feature\n\nSpecTrail-Change: foreign";
   const first = await d.load();
-  assert.deepEqual(await first.query(r.reader, "develop", signal), []);
+  const unmarked = await first.query(r.reader, "develop", signal);
+  assert.equal(unmarked.length, 99);
+  assert.ok(unmarked.every((pr) => pr.marker.kind === "none"));
   assert.deepEqual(
     r.calls.map((c) => c.page),
     [1, 2],
@@ -263,7 +265,10 @@ test("raw full pages and 304 without Link still discover a new tail; unmarked an
   // An old PR changes its target branch: created order appends it after the unchanged full page.
   r.collections.develop.push(raw(1));
   const second = await d.load();
-  assert.equal((await second.query(r.reader, "develop", signal))[0].number, 1);
+  assert.equal(
+    (await second.query(r.reader, "develop", signal)).at(-1)!.number,
+    1,
+  );
   assert.deepEqual(
     r.calls.map((c) => c.status),
     [304, 200],

@@ -53,7 +53,7 @@ test("shared and server schemas allow only the explicit release override", () =>
   }
 });
 
-test("only the integration archive overrides delivery; removal restores automatic calculation", async (t) => {
+test("release archives prove delivery themselves; only integration archives supply legacy overrides", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const overridden = { ...f.record, deliveryOverride: "releaseMerged" };
@@ -70,8 +70,11 @@ test("only the integration archive overrides delivery; removal restores automati
   f.commit();
   assert.equal(
     (await refresh()).deliveryByChange!.example.stage,
-    "pendingIntegration",
+    "releaseMerged",
   );
+  // Remove the published archive to exercise the separate legacy override.
+  f.git(["rm", path]);
+  f.commit();
 
   // Legacy integration deliberately has no SpecTrail merge record.
   f.git(["checkout", "develop"]);

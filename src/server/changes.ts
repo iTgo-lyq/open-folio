@@ -148,6 +148,7 @@ export async function indexChanges(
     "ancestor" | "changeCreations" | "changeParticipants"
   >,
   signal?: AbortSignal,
+  archiveValidationOnly = false,
 ): Promise<ChangeGroup[]> {
   const groups = new Map<string, ChangeGroup>(
     data.routes.map((route) => [
@@ -409,6 +410,9 @@ export async function indexChanges(
       ...(s.parent ? [["parent", s.parent] as [Relation["kind"], string]] : []),
     ];
     for (const [kind, target] of links) {
+      // Published archives retain checks provable within this snapshot, but
+      // do not depend on the availability of external working branches.
+      if (archiveValidationOnly && !groups.has(target)) continue;
       const other = groups.get(target),
         t = other ? primaryRecord(other) : null,
         pendingCreation =
@@ -526,6 +530,7 @@ export async function indexChanges(
       c.validCompleted = false;
     }
   }
+  if (archiveValidationOnly) return [...groups.values()];
   for (const g of groups.values()) {
     const c = primaryRecord(g);
     for (const r of g.relations) {

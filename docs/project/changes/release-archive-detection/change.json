@@ -4,7 +4,7 @@
   "title": "按发布分支归档识别已合入 Change",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
@@ -26,11 +26,23 @@
   "tasks": {
     "T1": {
       "title": "实现发布归档识别、历史PR溯源与已归档分类",
-      "status": "doing"
+      "status": "done",
+      "verification": "npm test 446项、浏览器归档回归2项、类型检查、生产构建通过；独立评审无未解决问题。",
+      "commitTitle": "release-archive-detection T1: derive release state from archive snapshots"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-12T09:23:30.438Z",
+      "summary": "446项自动测试、2项浏览器回归、类型检查和生产构建通过；隔离上下文的独立子Agent评审问题均已修复复验。全仓格式两项既有问题已核实，本次修改格式通过。"
+    }
+  },
   "types": [
     "修复"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "实现和验证已完成，等待用户验收；通过后同步Specs、归档并合入develop更新长期服务。"
+  }
 }

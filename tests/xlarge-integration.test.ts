@@ -368,7 +368,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     f.context,
   );
   assert.equal(parentOnly.deliveryByChange?.parent.stage, "releaseMerged");
-  assert.equal(parentOnly.deliveryByChange?.child.stage, "pendingRelease");
+  assert.equal(parentOnly.deliveryByChange?.child.stage, "releaseMerged");
   release.body =
     "Release\n\nSpecTrail-Version: 1.0\nSpecTrail-Includes: parent\nSpecTrail-Includes: child\nSpecTrail-Includes: second";
   const released = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);

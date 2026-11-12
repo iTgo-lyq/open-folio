@@ -19,6 +19,7 @@ import {
   type CatalogItem,
 } from "./pull-requests.ts";
 import { parentBranch } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import type { ReleaseArchive } from "../lib/model.ts";
 export type { DeliveryReader } from "./pull-requests.ts";
 
 type Input = {
@@ -28,6 +29,7 @@ type Input = {
   readIntegration: (commit: string, id: string) => Promise<IntegrationResult>;
   integrationBranch: string | null;
   releaseSource: ReleaseSource;
+  releaseArchives?: Record<string, ReleaseArchive>;
   previous?: Record<string, Delivery>;
   reader?: DeliveryReader;
   cache?: PullRequestCache;
@@ -37,14 +39,7 @@ type Input = {
 const message = (error: unknown) => {
   if (
     error instanceof AppError &&
-    [
-      "RATE_LIMITED",
-      "TOKEN_INVALID",
-      "READ_DENIED",
-      "OPERATION_CANCELLED",
-      "PR_CACHE_INVALID",
-      "PR_CACHE_LIMIT",
-    ].includes(error.code)
+    ["TOKEN_INVALID", "READ_DENIED", "OPERATION_CANCELLED"].includes(error.code)
   )
     throw error;
   return error instanceof AppError
@@ -98,6 +93,7 @@ export async function collectDelivery(input: Input) {
     ]);
   const changeIndex = new Map<string, CatalogItem[]>();
   const releaseIndex = new Map<string, PullRequest[]>();
+  const releaseCommits = new Map<string, PullRequest[]>();
   const add = <T>(index: Map<string, T[]>, key: string, pr: T) => {
     const items = index.get(key) ?? [];
     items.push(pr);
@@ -106,12 +102,14 @@ export async function collectDelivery(input: Input) {
   const baseErrors = new Map<string, string>();
   let changeError: string | undefined;
   let releaseError: string | undefined;
+  let catalogStopped: string | undefined;
   for (const [kind, base] of [
     ...changeBases.map((base) => ["change", base] as const),
     ["release", releaseSource.branch],
   ] as const) {
     let errorMessage: string | undefined;
-    if (reader && base) {
+    if (catalogStopped) errorMessage = catalogStopped;
+    else if (reader && base) {
       try {
         for (const item of await cache.query(reader, base, signal)) {
           const { marker, ...pr } = item;
@@ -120,10 +118,20 @@ export async function collectDelivery(input: Input) {
           if (kind === "release" && marker.kind === "release")
             for (const id of marker.includes)
               add(releaseIndex, id, { ...pr, version: marker.version });
+          if (kind === "release" && pr.state === "merged" && pr.mergeCommit)
+            add(releaseCommits, pr.mergeCommit, {
+              ...pr,
+              ...(marker.kind === "release" ? { version: marker.version } : {}),
+            });
         }
       } catch (error) {
         signal.throwIfAborted();
         errorMessage = message(error);
+        if (
+          error instanceof AppError &&
+          ["RATE_LIMITED", "PR_CACHE_LIMIT"].includes(error.code)
+        )
+          catalogStopped = errorMessage;
       }
     } else errorMessage = "PR 信息未接通，交付结果待核实。";
     if (kind === "change") {
@@ -178,10 +186,23 @@ export async function collectDelivery(input: Input) {
         changePrsStale = true;
       }
       let releasePrs: PullRequest[];
+      const archive = input.releaseArchives?.[group.id];
+      const matched =
+        !releaseError && archive?.introduction
+          ? (releaseCommits.get(archive.introduction) ?? [])
+          : [];
       if (releaseError) {
         diagnostics.push(releaseError);
         releasePrs = prior?.releasePrs ?? [];
-      } else releasePrs = [...(releaseIndex.get(group.id) ?? [])];
+      } else
+        releasePrs = [
+          ...new Map(
+            [...(releaseIndex.get(group.id) ?? []), ...matched].map((pr) => [
+              pr.number,
+              pr,
+            ]),
+          ).values(),
+        ];
       const changeConflict =
         changePrs.filter((p) => p.state === "open").length > 1;
       const releaseConflict =
@@ -255,33 +276,7 @@ export async function collectDelivery(input: Input) {
       } else if (integratedCommit) {
         stage = "pendingRelease";
         if (releaseSource.message) diagnostics.push(releaseSource.message);
-        if (!releaseSource.commit || releaseError) stage = "unknown";
-        else {
-          for (const p of releasePrs.filter((p) => p.state === "merged")) {
-            if (
-              p.mergeCommit &&
-              (await input.ancestor(p.mergeCommit, releaseSource.commit)) &&
-              (await input.ancestor(integratedCommit, p.mergeCommit))
-            ) {
-              stage = "releaseMerged";
-              if (
-                p.mergedAt &&
-                Number.isFinite(Date.parse(p.mergedAt)) &&
-                (!datedRelease ||
-                  Date.parse(p.mergedAt) < Date.parse(datedRelease.mergedAt!) ||
-                  (Date.parse(p.mergedAt) ===
-                    Date.parse(datedRelease.mergedAt!) &&
-                    p.number < datedRelease.number))
-              )
-                datedRelease = p;
-            } else {
-              diagnostics.push(
-                `发布 PR #${p.number} 已合入，Git 结果仍待核实。`,
-              );
-              if (stage !== "releaseMerged") stage = "unknown";
-            }
-          }
-        }
+        if (!releaseSource.commit) stage = "unknown";
       } else if (evidence.status !== "missing") {
         stage = "unknown";
         if (evidence.status !== "found") diagnostics.push(evidence.message);
@@ -298,8 +293,24 @@ export async function collectDelivery(input: Input) {
       }
       if (stage === "pendingIntegration" && (changePrsStale || changeConflict))
         stage = "unknown";
-      if (stage === "pendingRelease" && releaseConflict) stage = "unknown";
+      if (archive?.message) diagnostics.push(archive.message);
+      if (archive && archive.status !== "found") stage = "unknown";
       if (overridden) stage = "releaseMerged";
+      if (archive?.status === "found") {
+        stage = "releaseMerged";
+        if (
+          matched.length === 1 &&
+          matched[0].mergedAt &&
+          Number.isFinite(Date.parse(matched[0].mergedAt))
+        )
+          datedRelease = matched[0];
+        else
+          diagnostics.push(
+            matched.length > 1
+              ? "归档引入提交对应多个发布 PR，合入时间未知。"
+              : "发布归档已核实，未找到可核实的发布 PR 合入时间。",
+          );
+      }
       const stale = changePrsStale || releasePrsStale;
       if (stale) complete = false;
       deliveryByChange[group.id] = {

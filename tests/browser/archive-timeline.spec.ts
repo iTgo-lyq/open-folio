@@ -16,6 +16,57 @@ import { writeFile } from "node:fs/promises";
 
 test.use({ timezoneId: "Asia/Shanghai" });
 
+test("published archives without PR times stay in archived even when development sources are unavailable", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const original = data.changes.find(
+    (change) => change.id === "document-reader",
+  )!;
+  data.deliveryByChange = {};
+  data.changes = ["无发布PR", "PR读取失败", "开发来源缺失"].map(
+    (title, index) => {
+      const change = structuredClone(original);
+      const record = primaryRecord(change)!;
+      const id = `published-${index}`;
+      change.id = change.primary = record.key = record.id = id;
+      change.title = record.title = title;
+      record.state = { ...record.state!, id, title, status: "completed" };
+      record.validCompleted = index !== 2;
+      if (index === 2) change.primary = null;
+      data.deliveryByChange![id] = {
+        stage: "releaseMerged",
+        changePrs: [],
+        releasePrs: [],
+        diagnostics: [],
+        stale: index === 1,
+      };
+      return change;
+    },
+  );
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=archived`);
+  const unknown = page.getByRole("region", {
+    name: "合入时间未知",
+    exact: true,
+  });
+  for (const change of data.changes)
+    await expect(
+      unknown.getByRole("link", { name: `打开 ${change.title}`, exact: true }),
+    ).toBeVisible();
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=completed`);
+  for (const change of data.changes)
+    await expect(
+      page.getByRole("link", { name: `打开 ${change.title}`, exact: true }),
+    ).toHaveCount(0);
+});
+
 test("archive timeline groups merge days and batches, filters, expands and restores detail focus", async ({
   page,
   request,

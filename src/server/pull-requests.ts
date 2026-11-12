@@ -32,6 +32,8 @@ const marker = z.discriminatedUnion("kind", [
     version: z.string().min(1),
     includes: z.array(z.string().min(1)),
   }),
+  z.object({ kind: z.literal("none") }),
+  z.object({ kind: z.literal("invalid") }),
 ]);
 const item = z.object({
   number: z.number().int().positive().safe(),
@@ -76,7 +78,7 @@ const cacheSchema = z
 export type CatalogItem = z.infer<typeof item>;
 type CacheData = z.infer<typeof cacheSchema>;
 // Cached pages store parsed markers. Changing the parser requires a fresh body read.
-const markerVersion = 2;
+const markerVersion = 3;
 const queryKey = (reader: DeliveryReader, base: string) =>
   JSON.stringify([
     reader.cacheKey,
@@ -186,8 +188,7 @@ export class PullRequestCache {
             const marker = prMarker(body);
             return pr.base.repositoryId === reader.repositoryId &&
               pr.head.repositoryId === reader.repositoryId &&
-              pr.base.branch === base &&
-              (marker.kind === "change" || marker.kind === "release")
+              pr.base.branch === base
               ? [{ ...pr, marker }]
               : [];
           }),
