@@ -198,3 +198,64 @@ test("incomplete release provenance is retried after restart without withdrawing
   assert.deepEqual(f.historyReads(), []);
   assert.deepEqual(f.treeReads(), []);
 });
+
+test("untagged release PRs display the version at introduction, not the later branch version, and reuse it after restart", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  await f.put("package.json", JSON.stringify({ version: "1.2.3" }));
+  f.commit();
+  const integrated = f.merge();
+  f.git(["checkout", "main"]);
+  const beforeRelease = f.git(["rev-parse", "HEAD"]);
+  f.git(["merge", "--no-ff", "develop", "-m", "Release 1.2.3"]);
+  const releaseCommit = f.git(["rev-parse", "HEAD"]);
+  f.git(["push", "origin", "main"]);
+  f.pullRequests.push({
+    number: 2,
+    title: "Release",
+    url: "https://github.com/demo/work/pull/2",
+    body: "",
+    state: "merged",
+    draft: false,
+    base: { repositoryId: "1", branch: "main", commit: beforeRelease },
+    head: { repositoryId: "1", branch: "develop", commit: integrated },
+    mergeCommit: releaseCommit,
+    mergedAt: "2026-10-25T08:00:00Z",
+    updatedAt: "2026-10-25T08:00:00Z",
+  });
+  const first = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(first.deliveryByChange?.example.releasePrs[0].version, "1.2.3");
+  await f.put("package.json", JSON.stringify({ version: "9.9.9" }));
+  f.commit();
+  const later = await f
+    .makeStore()
+    .refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(later.deliveryByChange?.example.releasePrs[0].version, "1.2.3");
+  assert.deepEqual(later.releaseVersions, first.releaseVersions);
+});
+
+test("real remote annotated release tags provide versions when files are absent", async (t) => {
+  const f = await tracedRelease();
+  t.after(f.cleanup);
+  f.git([
+    "tag",
+    "-a",
+    "release/v1.2.3",
+    f.releaseCommit,
+    "-m",
+    "Version 1.2.3",
+  ]);
+  f.git(["tag", "v9.9.9", f.beforeRelease]);
+  f.git(["push", "origin", "--tags"]);
+  const first = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(first.deliveryByChange?.example.releasePrs[0].version, "1.2.3");
+  f.calls.length = 0;
+  const second = await f
+    .makeStore()
+    .refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(second.id, first.id);
+  assert.equal(
+    f.calls.some((args) => args[0] === "ls-remote" && args.includes("--tags")),
+    false,
+  );
+});

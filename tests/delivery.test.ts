@@ -111,6 +111,35 @@ test("archive batches use the unique introduction PR, independently of change PR
   };
   const first = await collectDelivery(input);
   assert.equal(first.deliveryByChange.example.releaseMergedPrNumber, 7);
+  const inferred = await collectDelivery({
+    ...input,
+    releaseVersions: { [oid("7")]: { status: "found", version: "2.3.4" } },
+  });
+  assert.equal(
+    inferred.deliveryByChange.example.releasePrs.find((pr) => pr.number === 7)
+      ?.version,
+    "2.3.4",
+  );
+  for (const status of ["ambiguous", "unreadable", "unavailable"] as const) {
+    const unknownVersion = await collectDelivery({
+      ...input,
+      releaseVersions: { [oid("7")]: { status } },
+    });
+    assert.equal(
+      unknownVersion.deliveryByChange.example.releasePrs.find(
+        (pr) => pr.number === 7,
+      )?.version,
+      undefined,
+    );
+    assert.equal(
+      unknownVersion.deliveryByChange.example.stage,
+      "releaseMerged",
+    );
+    assert.equal(
+      unknownVersion.deliveryByChange.example.releaseMergedPrNumber,
+      7,
+    );
+  }
   const record = input.changes[0].candidates.find(
     (c) => c.key === input.changes[0].primary,
   )!;

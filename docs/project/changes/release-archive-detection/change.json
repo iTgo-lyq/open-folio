@@ -8,19 +8,19 @@
   "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
-      "at": "2026-11-12T08:58:10.648Z",
-      "summary": "单发布分支有效归档决定已合入，缺少发布PR时间仍进入已归档。",
-      "source": "用户：那先保持单发布分支，按 releaseBranch 中的有效归档判断已合入，再从 Git 历史反查 PR，查不到 PR 就丢进合入时间未知分类中。保证都转到已归档的 tab"
+      "at": "2026-11-12T09:58:15.170Z",
+      "summary": "补充从发布提交的常见静态文件读取版本并缓存",
+      "source": "用户：SpecTrail-Version 可以从 package.json 反推，以及 go 之类的有自己的版本号文件吗？可以补一些常见的。"
     },
     "technical": {
-      "at": "2026-11-12T09:01:42.932Z",
-      "summary": "读取有效发布归档，沿第一父链定位引入提交并精确匹配PR。",
-      "source": "沿用本会话已讨论方案；用户明确要求按 releaseBranch 中的有效归档判断，再从 Git 历史反查 PR。"
+      "at": "2026-11-12T09:58:19.020Z",
+      "summary": "按归档引入提交读取根版本文件并持久缓存结果",
+      "source": "沿用用户已指定的历史反推与缓存方向，补充常见静态版本文件；PR标记协议删除仍在讨论。"
     },
     "plan": {
-      "at": "2026-11-12T09:01:46.603Z",
-      "summary": "依次完成归档判定、历史PR关联和归档分类并验证。",
-      "source": "用户要求实现上述已讨论流程并保证全部进入已归档tab；本计划按该依赖顺序实施。"
+      "at": "2026-11-12T09:58:22.671Z",
+      "summary": "追加版本读取与缓存任务并覆盖历史版本回归",
+      "source": "用户要求补充常见版本文件识别，在当前交付中追加实现与验证。"
     }
   },
   "tasks": {
@@ -29,20 +29,31 @@
       "status": "done",
       "verification": "npm test 446项、浏览器归档回归2项、类型检查、生产构建通过；独立评审无未解决问题。",
       "commitTitle": "release-archive-detection T1: derive release state from archive snapshots"
+    },
+    "T2": {
+      "title": "从发布提交识别项目版本",
+      "status": "done",
+      "verification": "常见静态文件与精确tag推断、历史版本固定、持久正负缓存、超限和符号链接降级等25项回归通过，独立评审无遗留问题。",
+      "commitTitle": "release-archive-detection T2: infer release versions from files and tags"
     }
   },
   "closure": {
     "verification": {
       "result": "passed",
-      "at": "2026-11-12T09:23:30.438Z",
-      "summary": "446项自动测试、2项浏览器回归、类型检查和生产构建通过；隔离上下文的独立子Agent评审问题均已修复复验。全仓格式两项既有问题已核实，本次修改格式通过。"
+      "at": "2026-11-12T10:07:38.334Z",
+      "summary": "全量455项、最终版本缓存与交付回归25项、类型检查和生产构建通过；独立子Agent评审问题已修复复验。"
     }
   },
   "types": [
     "修复"
   ],
+  "rework": {
+    "at": "2026-11-12T09:57:24.632Z",
+    "reason": "补充从发布提交中的常见版本文件识别版本号",
+    "approach": "保持归档与PR溯源，新增静态版本读取及持久缓存"
+  },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "实现和验证已完成，等待用户验收；通过后同步Specs、归档并合入develop更新长期服务。"
+    "summary": "发布归档与版本识别均已实现验证，等待用户验收；通过后同步Specs、归档并合入develop更新长期服务。"
   }
 }

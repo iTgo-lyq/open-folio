@@ -5,6 +5,7 @@ import type {
   IntegrationIndex,
   PullRequest,
   ReleaseSource,
+  ReleaseVersion,
 } from "../lib/model.ts";
 import { AppError } from "./errors.ts";
 import {
@@ -30,6 +31,7 @@ type Input = {
   integrationBranch: string | null;
   releaseSource: ReleaseSource;
   releaseArchives?: Record<string, ReleaseArchive>;
+  releaseVersions?: Record<string, ReleaseVersion>;
   previous?: Record<string, Delivery>;
   reader?: DeliveryReader;
   cache?: PullRequestCache;
@@ -113,15 +115,26 @@ export async function collectDelivery(input: Input) {
       try {
         for (const item of await cache.query(reader, base, signal)) {
           const { marker, ...pr } = item;
+          const inferred = pr.mergeCommit
+            ? input.releaseVersions?.[pr.mergeCommit]
+            : undefined;
+          const releaseVersion =
+            inferred?.status === "found"
+              ? inferred.version
+              : inferred && inferred.status !== "missing"
+                ? undefined
+                : marker.kind === "release"
+                  ? marker.version
+                  : undefined;
           if (kind === "change" && marker.kind === "change")
             add(changeIndex, marker.id, item);
           if (kind === "release" && marker.kind === "release")
             for (const id of marker.includes)
-              add(releaseIndex, id, { ...pr, version: marker.version });
+              add(releaseIndex, id, { ...pr, version: releaseVersion });
           if (kind === "release" && pr.state === "merged" && pr.mergeCommit)
             add(releaseCommits, pr.mergeCommit, {
               ...pr,
-              ...(marker.kind === "release" ? { version: marker.version } : {}),
+              ...(releaseVersion ? { version: releaseVersion } : {}),
             });
         }
       } catch (error) {

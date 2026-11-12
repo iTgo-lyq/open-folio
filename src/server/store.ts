@@ -29,6 +29,7 @@ import {
 } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
 import { collectDelivery, type DeliveryReader } from "./delivery.ts";
 import { collectReleaseArchives } from "./release-archives.ts";
+import { collectReleaseVersions } from "./release-versions.ts";
 import { IntegrationReader } from "./integration.ts";
 import {
   prototypeCatalog,
@@ -301,6 +302,17 @@ export class SnapshotStore {
               limits,
               signal,
             );
+      const releaseVersions = await collectReleaseVersions(
+        reader,
+        Object.values(releaseArchives).flatMap((record) =>
+          record.introduction ? [record.introduction] : [],
+        ),
+        limits,
+        signal,
+        previous?.scanFingerprint === scanFingerprint(limits)
+          ? previous.releaseVersions
+          : undefined,
+      );
       const delivery = await collectDelivery({
         changes,
         integrationTip: data.integrations.tip,
@@ -323,6 +335,7 @@ export class SnapshotStore {
         integrationBranch: data.integrationBranch,
         releaseSource: data.releaseSource,
         releaseArchives,
+        releaseVersions: releaseVersions.versions,
         previous: previous?.deliveryByChange,
         reader: context?.delivery,
         cache: prCache,
@@ -349,7 +362,9 @@ export class SnapshotStore {
         JSON.stringify(delivery.deliveryByChange) ===
           JSON.stringify(previous.deliveryByChange) &&
         JSON.stringify(releaseArchives) ===
-          JSON.stringify(previous.releaseArchives)
+          JSON.stringify(previous.releaseArchives) &&
+        JSON.stringify(releaseVersions.cache) ===
+          JSON.stringify(previous.releaseVersions)
       ) {
         signal.throwIfAborted();
         await context?.beforePublish();
@@ -376,6 +391,7 @@ export class SnapshotStore {
         integrations: delivery.integrations,
         releaseSource: data.releaseSource,
         releaseArchives,
+        releaseVersions: releaseVersions.cache,
         deliveryByChange: delivery.deliveryByChange,
         integrationBranch: data.integrationBranch,
         routes: data.routes,

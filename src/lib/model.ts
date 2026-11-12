@@ -300,10 +300,23 @@ export type ReleaseArchive = {
   introduction?: string;
   message?: string;
 };
+export type ReleaseVersion = {
+  status: "found" | "missing" | "ambiguous" | "unreadable" | "unavailable";
+  version?: string;
+};
+export type ReleaseVersionCache = {
+  files: Record<string, ReleaseVersion>;
+  tags?: {
+    checkedAt: number;
+    commits: string[];
+    versions: Record<string, ReleaseVersion>;
+  };
+};
 export type Snapshot = {
   cacheSchemaVersion: 10;
   releaseSource?: ReleaseSource;
   releaseArchives?: Record<string, ReleaseArchive>;
+  releaseVersions?: ReleaseVersionCache;
   deliveryByChange?: Record<string, Delivery>;
   integrations: IntegrationIndex;
   integrationBranch: string | null;
