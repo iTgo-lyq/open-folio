@@ -64,3 +64,7 @@ BENCHMARK_UNMARKED=1 node --conditions=react-server scripts/benchmark-release-hi
 基线用 `git archive 2711c13` 解包到独立目录并链接锁定的依赖，再将脚本的第一个参数改为该目录，不设置 BENCHMARK_UNMARKED。脚本输出 JSON，包含实际限额、耗时、Git 命令次数和 fixture 请求数。真实接口对比使用 GET `/repos/iTgo-lyq/open-folio/pulls?state=all&sort=updated&direction=desc&per_page=100&page=1`（按 Link 翻页），从返回中取 main 已合并 PR 的 merge_commit_sha，再逐一 GET `/repos/iTgo-lyq/open-folio/commits/{sha}/pulls?per_page=100`；条件请求使用首屏返回的 ETag。
 
 上表采用最终代码各规模的单次重测值；开发过程另有中间测量，不混合为统计样本，没有统计置信区间或跨机器保证。Git 对象传输、仓库规模、文档体积和真实网络可能改变时间。默认文档限额、120 秒整体刷新限额及既有 Git 输出限额仍生效；超限不能伪装为完整结果。首次列表可读不意味着历史已经补齐；未知 PR/时间保留已归档。版本只支持已列的根静态文件和精确 tag；不执行动态版本逻辑，不推断 monorepo 多包独立版本。当前保留按发布提交的 ls-tree 和顺序文件写入，5k 列表仍需约 17.2 秒，未宣称瞬时可用。
+
+## T4 后的已知限制
+
+完整冷重建的 GitHub 翻页按真实 1.6 秒/页估算，5k 样本的 52 页约需 80 秒，叠加本地 21 秒接近 120 秒整体刷新限额；刷新失败不保存部分分页，重试从头冷读，可能长期停留在 historyPending。列表首屏不受影响。祖先判定读取目标完整 rev-list，超过约 40 万提交受 16 MB 输出上限限制。该网络估算来自单次小样本外推，不是 5k 真实网络测量，也不能保证正常规模不会达到上限。当前未实现分页续读或分段祖先查询。

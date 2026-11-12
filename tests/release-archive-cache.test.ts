@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
+import { access, readFile, writeFile } from "node:fs/promises";
 import { integrationFixture } from "./integration-fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { GitReader } from "../src/server/git.ts";
@@ -124,6 +125,20 @@ test("complete release archive caches survive refresh and restart while PR metad
   assert.equal(pr?.mergedAt, "2026-10-26T09:30:00Z");
   assert.deepEqual(f.historyReads(), []);
   assert.deepEqual(f.treeReads(), []);
+
+  // A new registration revalidates current archives but reuses traced introductions.
+  await f.register({ later: "develop" });
+  f.calls.length = 0;
+  const registered = await restarted.refresh(
+    f.project,
+    DEFAULT_LIMITS,
+    f.context,
+  );
+  assert.deepEqual(
+    registered.releaseArchives?.example,
+    first.releaseArchives?.example,
+  );
+  assert.deepEqual(f.historyReads(), []);
 });
 
 test("release tip changes and force-pushed archive removal invalidate cached delivery evidence", async (t) => {
@@ -263,6 +278,25 @@ test("real remote annotated release tags provide versions when files are absent"
     f.calls.some((args) => args[0] === "ls-remote" && args.includes("--tags")),
     false,
   );
+
+  // An expired tag check with the same result refreshes the cache, not the snapshot.
+  const tagsPath = join(f.store.directory(), "release-tags.json");
+  const tags = JSON.parse(await readFile(tagsPath, "utf8"));
+  await writeFile(
+    tagsPath,
+    JSON.stringify({ ...tags, checkedAt: tags.checkedAt - 10 * 60_000 }),
+  );
+  f.calls.length = 0;
+  const expired = await f
+    .makeStore()
+    .refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(expired.id, first.id);
+  assert(
+    f.calls.some((args) => args[0] === "ls-remote" && args.includes("--tags")),
+  );
+  assert(
+    JSON.parse(await readFile(tagsPath, "utf8")).checkedAt > tags.checkedAt,
+  );
 });
 
 test("cold refresh publishes verified archives before PR enrichment and retains that snapshot if final publication loses permission", async (t) => {
@@ -308,6 +342,10 @@ test("cold refresh publishes verified archives before PR enrichment and retains 
     resume();
     await rejected;
     assert.equal((await f.store.snapshot(f.project)).id, snapshot.id);
+    // PR data read before the failed permission check is never persisted.
+    await assert.rejects(
+      access(join(f.store.directory(), "pull-requests.json")),
+    );
     const restored = await f
       .makeStore()
       .refresh(f.project, DEFAULT_LIMITS, { ...f.context, automatic: true });

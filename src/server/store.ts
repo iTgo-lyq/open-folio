@@ -15,6 +15,7 @@ import type {
   Limits,
   ProjectConfig,
   ProjectSummary,
+  ReleaseVersionCache,
   Snapshot,
   Workbench,
 } from "../lib/model.ts";
@@ -292,19 +293,32 @@ export class SnapshotStore {
             throw error;
           })
         : undefined;
-      const sameRelease =
+      const releaseTagsPath = join(dir, "release-tags.json");
+      const releaseTags = await readFile(releaseTagsPath, "utf8")
+        .then((body) => JSON.parse(body) as ReleaseVersionCache["tags"])
+        .then((tags) =>
+          typeof tags?.checkedAt === "number" &&
+          Array.isArray(tags.commits) &&
+          tags.versions &&
+          typeof tags.versions === "object"
+            ? tags
+            : undefined,
+        )
+        .catch(() => undefined);
+      const priorArchives =
         previous?.scanFingerprint === scanFingerprint(limits) &&
         JSON.stringify(previous.releaseSource) ===
-          JSON.stringify(data.releaseSource) &&
-        JSON.stringify(previous.changes.map((change) => change.id).sort()) ===
-          JSON.stringify(changes.map((change) => change.id).sort());
+          JSON.stringify(data.releaseSource)
+          ? previous.releaseArchives
+          : undefined;
       let releaseArchives =
-        sameRelease &&
-        previous.releaseArchives &&
-        Object.values(previous.releaseArchives).every(
+        priorArchives &&
+        JSON.stringify(previous?.changes.map((change) => change.id).sort()) ===
+          JSON.stringify(changes.map((change) => change.id).sort()) &&
+        Object.values(priorArchives).every(
           (record) => record.status === "invalid" || record.introduction,
         )
-          ? previous.releaseArchives
+          ? priorArchives
           : await collectReleaseArchives(
               reader,
               data.releaseSource,
@@ -313,6 +327,12 @@ export class SnapshotStore {
               signal,
               { history: false, blobs: data.blobs },
             );
+      // Introductions depend only on the release commit; new registrations reuse them.
+      for (const [id, record] of Object.entries(releaseArchives)) {
+        const introduction = priorArchives?.[id]?.introduction;
+        if (record.status === "found" && !record.introduction && introduction)
+          releaseArchives[id] = { ...record, introduction };
+      }
       const main = data.branches.find(
         (b) => b.name === data.integrationBranch,
       )?.commit;
@@ -381,7 +401,10 @@ export class SnapshotStore {
         changes,
         ...base,
       };
-      const publish = async (snapshot: Snapshot) => {
+      const publish = async (
+        snapshot: Snapshot,
+        saveCaches?: () => Promise<void>,
+      ) => {
         for (const [blob, body] of data.blobs) {
           signal.throwIfAborted();
           if (!persisted.has(blob)) {
@@ -392,6 +415,8 @@ export class SnapshotStore {
         signal.throwIfAborted();
         await context?.beforePublish();
         signal.throwIfAborted();
+        // Platform data read with this credential persists only after the permission check.
+        await saveCaches?.();
         await atomic(
           join(dir, "snapshots", `${snapshot.id}.json`),
           JSON.stringify(snapshot),
@@ -418,10 +443,24 @@ export class SnapshotStore {
         ),
         limits,
         signal,
-        previous?.scanFingerprint === scanFingerprint(limits)
-          ? previous.releaseVersions
-          : undefined,
+        {
+          files:
+            previous?.scanFingerprint === scanFingerprint(limits)
+              ? (previous.releaseVersions?.files ?? {})
+              : {},
+          ...(releaseTags ? { tags: releaseTags } : {}),
+        },
       );
+      // Tag freshness lives beside the snapshot so a TTL check alone never publishes one.
+      const saveCaches = async () => {
+        if (prCache)
+          await atomic(join(dir, "pull-requests.json"), prCache.serialize());
+        if (releaseVersions.cache.tags)
+          await atomic(
+            releaseTagsPath,
+            JSON.stringify(releaseVersions.cache.tags),
+          );
+      };
       let integrationRecords:
         | Awaited<ReturnType<typeof integrationBatch>>
         | undefined;
@@ -513,25 +552,22 @@ export class SnapshotStore {
           JSON.stringify(previous.deliveryByChange) &&
         JSON.stringify(releaseArchives) ===
           JSON.stringify(previous.releaseArchives) &&
-        JSON.stringify(releaseVersions.cache) ===
-          JSON.stringify(previous.releaseVersions)
+        JSON.stringify(releaseVersions.cache.files) ===
+          JSON.stringify(previous.releaseVersions?.files)
       ) {
         signal.throwIfAborted();
         await context?.beforePublish();
         signal.throwIfAborted();
-        if (prCache)
-          await atomic(join(dir, "pull-requests.json"), prCache.serialize());
+        await saveCaches();
         await markChecked(previous.id);
         await unlink(join(dir, "last-error.json")).catch(() => {});
         return previous;
       }
       s.integrations = delivery.integrations;
       s.releaseArchives = releaseArchives;
-      s.releaseVersions = releaseVersions.cache;
+      s.releaseVersions = { files: releaseVersions.cache.files };
       s.deliveryByChange = delivery.deliveryByChange;
-      if (prCache)
-        await atomic(join(dir, "pull-requests.json"), prCache.serialize());
-      await publish(s);
+      await publish(s, saveCaches);
       await markChecked(s.id).catch(() => {});
       await unlink(join(dir, "last-error.json")).catch(() => {});
       // Cleanup must never turn a published refresh into a reported failure.

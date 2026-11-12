@@ -46,3 +46,16 @@ PR 缓存为仓库身份 + PR 编号的扁平目录，不保存正文，首屏 E
 - 真实 GitHub 60 PR/26 发布提交只读对比：全仓 1 次 1.612 秒、980,403 B；逐发布提交 26 次 28.629 秒、426,196 B；条件请求 1 次 1.020 秒、304/0 B。范围不同和网络边界详见 [Performance](performance.md)，不外推千级网络延迟。
 
 当前进入人工验收，保留 Draft PR。用户验收后再同步 change-workflow、project-knowledge/change-tracking 和采集缓存相关 Specs，归档并集成 develop，再按仓库约定更新长期服务。
+
+## T4 评审问题返修
+
+按 Review R9 返修，不改变已确认的判定规则。Git stdin 增加 error 监听，子进程提前退出只让本次读取失败。合入差异批读改用记录分隔符，单亲提交跳过后由逐项读取兜底，不再拖垮整批。发布快照不可读只把待发布 Change 降为 unknown，进行中和待集成 Change 保持原阶段。最终发布时 PR 与 tag 缓存都在权限复查后写盘；tag 新鲜度移到独立的 release-tags.json，快照只保存版本文件结果，键按提交排序。PR 读取失败时，仅当上次批次 PR 的合并提交仍是首次引入提交才沿用其编号。发布 CI 用一次归档差异替代逐归档 rev-parse，只允许新增 Change 归档目录内的路径。发布源不变时，新登记 Change 复用已追溯的首次引入。删除 catalogStopped、releaseConflict、无用别名和 associated。OpenFolio、lock 与 SpecTrail 统一升到 0.1.34。
+
+验证证据：
+
+- 新增或扩展的回归：单亲提交批读、Git 提前退出时 stdin 不使进程崩溃、发布不可读的降级范围、限流及读取失败时保留批次且仅限同一引入提交、权限复查失败不落盘 PR 缓存、tag 过期复查不产生新快照、新登记复用首次引入、发布 CI 拒绝非记录归档路径。以修复前代码对照：批读用例失败，stdin 用例直接让测试进程以 EPIPE 退出，三项缓存断言均失败。
+- 交付、缓存、CI 定向回归 16 / 6 / 17 项通过；新增 git-batch 2 项通过。
+- 全量 `npm test` 464 项中 463 项在沙箱通过。service-tools 生命周期用例失败，原因是沙箱网络命名空间与宿主 tmux 服务隔离，未修改的 T3 代码同样失败；该用例经 host-bash 在宿主网络下通过。
+- `tsc --noEmit`、全仓 Prettier 检查与 git diff --check 通过。
+
+归档前复核补充：旧发布批次复用同时核实发布目标分支与引入提交，并清除主 skill 遗留的标记要求。最终交付、Git 批读、版本、缓存、CI 及服务生命周期回归 46/46 通过（7.3 秒），其中服务生命周期在当前宿主环境直接通过。`npm run typecheck`、`npm run build`、修改代码格式、skill quick_validate 及 git diff --check 通过。评审结论见 R10，千级性能沿用 T3 实测并保留网络边界说明。

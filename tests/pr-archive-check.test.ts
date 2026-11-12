@@ -295,6 +295,19 @@ test("omitting the release Change list cannot add, edit or delete archives", asy
   f.git(["checkout", "main"]);
   f.git(["merge", "--no-ff", "develop", "-m", "Release baseline"]);
   f.git(["checkout", "develop"]);
+  // Archive paths outside any new Change record are read-only too.
+  await f.put("docs/project/archive/notes.md", "# Notes\n");
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", body)),
+    /archive\/notes\.md: released archives are read-only/,
+  );
+  await rm(join(f.author, "docs/project/archive/notes.md"));
+  f.commit(false);
+  assert.equal(
+    (await checkPullRequest(f.git, event(f, "main", body))).kind,
+    "release",
+  );
   await f.put(`${f.archivePath}/requirement.md`, "# Edited history\n");
   f.commit(false);
   await assert.rejects(

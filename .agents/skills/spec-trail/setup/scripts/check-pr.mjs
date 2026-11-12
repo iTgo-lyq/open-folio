@@ -125,11 +125,12 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
   }
   const before = recordsAt({git}, pr.base.sha);
   const existing = new Set(before.filter(row => row.archived).map(row => row.id));
-  for (const old of before.filter(row => row.archived))
-    assert(records.some(row => row.archived && row.directory === old.directory) &&
-      git(['rev-parse',`${pr.base.sha}:${old.directory}`]) === git(['rev-parse',`${pr.head.sha}:${old.directory}`]),
-      `Change ${old.id}: released archives are read-only`);
-  const includes = records.filter(row => row.archived && !existing.has(row.id)).map(row => row.id);
+  const added = records.filter(row => row.archived && !existing.has(row.id));
+  // One diff: a release may only add new Change archive directories; everything else there is read-only.
+  const allowed = added.map(row => `${row.directory.replace(/\/$/, '')}/`);
+  for (const path of git(['diff', '--name-only', '--no-renames', '-z', pr.base.sha, pr.head.sha, '--', 'docs/project/archive/']).split('\0').filter(Boolean))
+    assert(allowed.some(prefix => path.startsWith(prefix)), `${path}: released archives are read-only`);
+  const includes = added.map(row => row.id);
   const integrationTip = git(['rev-parse', '--verify', `refs/remotes/origin/${config.integrationBranch}^{commit}`]);
   for (const id of includes) {
     const record = archive(records, id);

@@ -314,6 +314,8 @@ export class GitReader {
           signal,
         },
       );
+      // A killed or failed child closes stdin early; the command promise reports the failure.
+      command.child.stdin?.on("error", () => {});
       command.child.stdin?.end(input);
       const r = await command;
       return r.stdout;

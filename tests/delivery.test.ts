@@ -165,7 +165,26 @@ test("archive batches use the unique introduction PR, independently of change PR
     ...input,
     previous: first.deliveryByChange,
   });
-  assert.equal(stale.deliveryByChange.example.releaseMergedPrNumber, undefined);
+  // A failed read keeps the last verified batch, only for the same introduction.
+  assert.equal(stale.deliveryByChange.example.releaseMergedPrNumber, 7);
+  const moved = await collectDelivery({
+    ...input,
+    previous: first.deliveryByChange,
+    releaseArchives: {
+      example: { status: "found" as const, introduction: oid("8") },
+    },
+  });
+  assert.equal(moved.deliveryByChange.example.releaseMergedPrNumber, undefined);
+  const retargeted = await collectDelivery({
+    ...input,
+    previous: first.deliveryByChange,
+    releaseSource: { ...input.releaseSource, branch: "production" },
+  });
+  assert.equal(retargeted.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(
+    retargeted.deliveryByChange.example.releaseMergedPrNumber,
+    undefined,
+  );
   r.fail();
   r.set([releases[1], { ...releases[1], number: 9 }]);
   const ambiguous = await collectDelivery(input);
@@ -174,6 +193,39 @@ test("archive batches use the unique introduction PR, independently of change PR
     ambiguous.deliveryByChange.example.releaseMergedPrNumber,
     undefined,
   );
+});
+
+test("an unreadable release snapshot only blocks Changes waiting for release", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const r = remote();
+  const message = "发布分支归档暂不可核实。";
+  const project = async () => {
+    const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    return collectDelivery({
+      changes: snapshot.changes,
+      integrationTip: snapshot.integrations.tip,
+      integrationBranch: "develop",
+      releaseSource: { branch: "main", commit: oid("a") },
+      releaseArchives: {
+        example: { status: "unavailable" as const, message },
+      },
+      readIntegration: (commit: string, id: string) =>
+        inspectIntegration(f.run, commit, id),
+      reader: r.reader,
+      signal: new AbortController().signal,
+      ancestor: async () => true,
+    });
+  };
+  r.set([]);
+  const waiting = (await project()).deliveryByChange.example;
+  assert.equal(waiting.stage, "pendingIntegration");
+  assert(!waiting.diagnostics.includes(message));
+  const m = f.merge();
+  r.set([{ ...pr(), state: "merged" as const, mergeCommit: m }]);
+  const integrated = (await project()).deliveryByChange.example;
+  assert.equal(integrated.stage, "unknown");
+  assert(integrated.diagnostics.includes(message));
 });
 
 test("published archives enter the archived tab without PRs; only their exact introduction PR supplies time", async (t) => {
@@ -227,7 +279,15 @@ test("published archives enter the archived tab without PRs; only their exact in
   );
   r.calls.length = 0;
   r.fail(new ProviderError("RATE_LIMITED", "PR rate limited", 429));
-  unknown(await refresh());
+  // Rate limiting keeps the archived batch instead of moving it to unknown time.
+  const limited = await refresh();
+  assert.equal(limited.deliveryByChange!.example.stage, "releaseMerged");
+  assert.equal(limited.deliveryByChange!.example.releaseMergedPrNumber, 10);
+  assert.equal(
+    archiveTimeline(limited.changes, limited.deliveryByChange)[0].batches[0].pr!
+      .number,
+    10,
+  );
   assert.equal(r.calls.length, 1);
   r.fail();
   const { writeFile } = await import("node:fs/promises");

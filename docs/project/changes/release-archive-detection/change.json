@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "修复评审发现的稳定性与降级问题",
-      "status": "doing"
+      "status": "done",
+      "verification": "复核46项通过，类型检查与生产构建通过；R9和R10问题关闭，千级证据沿用T3并明确网络限制。",
+      "commitTitle": "release-archive-detection T4: stabilize reconstruction and cache publication"
     }
   },
   "closure": {},

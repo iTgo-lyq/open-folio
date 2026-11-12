@@ -83,7 +83,7 @@ export async function changeDelivery(repo, catalog, id, branch, read = githubPul
   },target.commit,prs);
   const open = sourcePullRequests(targetRequests,{repositoryId:central.repositoryId,integrationBranch:target.branch,branch})
     .filter(pr => pr.state === 'open')
-    .map(pr => ({number:pr.number,associated:prs.includes(pr)}));
+    .map(pr => ({number:pr.number}));
   return {target,integration,open};
 }
 

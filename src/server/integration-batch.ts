@@ -13,7 +13,8 @@ export async function integrationBatch(
     [
       "log",
       "--no-walk=unsorted",
-      "--format=%x00%H%x00%P%x00%cI%x00%s%x00",
+      // A record separator keeps a single-parent %P from looking like a new commit.
+      "--format=%x1e%H%x00%P%x00%cI%x00%s%x00",
       "--raw",
       "--no-abbrev",
       "-z",
@@ -26,11 +27,9 @@ export async function integrationBatch(
     ],
     signal,
   );
-  for (const section of body
-    .toString()
-    .split(/\0(?=[a-f0-9]{40,64}\0)/)
-    .slice(1)) {
-    const [commit, parents, committedAt, title, ...paths] = section.split("\0");
+  for (const section of body.toString().split("\x1e").slice(1)) {
+    const [commit, parents = "", committedAt, title, ...paths] =
+      section.split("\0");
     const [base, source, extra] = parents.split(" ");
     if (!base || !source || extra) continue;
     const found = new Map<string, IntegrationRecord>();

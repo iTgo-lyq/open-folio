@@ -118,21 +118,19 @@ export async function collectDelivery(input: Input) {
   const baseErrors = new Map<string, string>();
   let changeError: string | undefined;
   let releaseError: string | undefined;
-  let catalogStopped: string | undefined;
+  // Every base shares one catalog read, so a failed read fails each base once.
   for (const [kind, base] of [
     ...changeBases.map((base) => ["change", base] as const),
     ["release", releaseSource.branch],
   ] as const) {
     let errorMessage: string | undefined;
-    if (catalogStopped) errorMessage = catalogStopped;
-    else if (reader && base) {
+    if (reader && base) {
       try {
-        for (const item of await cache.query(reader, base, signal)) {
-          const pr = item;
+        for (const pr of await cache.query(reader, base, signal)) {
           const releaseVersion = pr.mergeCommit
             ? input.releaseVersions?.[pr.mergeCommit]?.version
             : undefined;
-          if (kind === "change") add(changeIndex, pr.head.branch, item);
+          if (kind === "change") add(changeIndex, pr.head.branch, pr);
           if (kind === "release" && pr.state === "merged" && pr.mergeCommit)
             add(releaseCommits, pr.mergeCommit, {
               ...pr,
@@ -142,11 +140,6 @@ export async function collectDelivery(input: Input) {
       } catch (error) {
         signal.throwIfAborted();
         errorMessage = message(error);
-        if (
-          error instanceof AppError &&
-          ["RATE_LIMITED", "PR_CACHE_LIMIT"].includes(error.code)
-        )
-          catalogStopped = errorMessage;
       }
     } else errorMessage = "PR 信息未接通，交付结果待核实。";
     if (kind === "change") {
@@ -226,9 +219,7 @@ export async function collectDelivery(input: Input) {
       } else releasePrs = matched;
       const changeConflict =
         changePrs.filter((p) => p.state === "open").length > 1;
-      const releaseConflict =
-        releasePrs.filter((p) => p.state === "open").length > 1;
-      if (changeConflict || releaseConflict)
+      if (changeConflict)
         diagnostics.push(
           "存在多个待合入 PR，无法确定当前交付，请核对登记分支和交付目标。",
         );
@@ -310,20 +301,34 @@ export async function collectDelivery(input: Input) {
       }
       if (stage === "pendingIntegration" && (changePrsStale || changeConflict))
         stage = "unknown";
-      if (archive?.message) diagnostics.push(archive.message);
-      if (archive && archive.status !== "found") stage = "unknown";
+      // An unreadable release snapshot only blocks work that is waiting for release.
+      const releaseUnknown =
+        archive?.status === "invalid" ||
+        (archive?.status === "unavailable" && stage === "pendingRelease");
+      if (archive?.message && (archive.status === "found" || releaseUnknown))
+        diagnostics.push(archive.message);
+      if (releaseUnknown) stage = "unknown";
       if (overridden) stage = "releaseMerged";
       if (archive?.status === "found") {
         stage = "releaseMerged";
+        // A failed PR read keeps the batch from the last successful read.
+        const dated = releaseError
+          ? releasePrs.filter(
+              (p) =>
+                p.number === prior?.releaseMergedPrNumber &&
+                p.base.branch === releaseSource.branch &&
+                p.mergeCommit === archive.introduction,
+            )
+          : matched;
         if (
-          matched.length === 1 &&
-          matched[0].mergedAt &&
-          Number.isFinite(Date.parse(matched[0].mergedAt))
+          dated.length === 1 &&
+          dated[0].mergedAt &&
+          Number.isFinite(Date.parse(dated[0].mergedAt))
         )
-          datedRelease = matched[0];
+          datedRelease = dated[0];
         else
           diagnostics.push(
-            matched.length > 1
+            dated.length > 1
               ? "归档引入提交对应多个发布 PR，合入时间未知。"
               : "发布归档已核实，未找到可核实的发布 PR 合入时间。",
           );

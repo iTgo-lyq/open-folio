@@ -236,9 +236,9 @@ export async function collectReleaseVersions(
     for (const commit of pending.keys())
       files[commit] = { status: "unavailable" };
   }
-  const needsTags = Object.keys(files).filter(
-    (commit) => files[commit].status === "missing",
-  );
+  const needsTags = Object.keys(files)
+    .sort()
+    .filter((commit) => files[commit].status === "missing");
   let tags: ReleaseVersionCache["tags"];
   if (needsTags.length) {
     const prior = previous?.tags;
@@ -276,10 +276,14 @@ export async function collectReleaseVersions(
       }
     }
   }
-  for (const [commit, result] of Object.entries(files))
+  // Stable keys keep cached and freshly read commits comparable across refreshes.
+  const sorted = Object.fromEntries(
+    Object.entries(files).sort(([a], [b]) => a.localeCompare(b)),
+  );
+  for (const [commit, result] of Object.entries(sorted))
     versions[commit] =
       result.status === "missing"
         ? (tags?.versions[commit] ?? { status: "unavailable" })
         : result;
-  return { cache: { files, ...(tags ? { tags } : {}) }, versions };
+  return { cache: { files: sorted, ...(tags ? { tags } : {}) }, versions };
 }
