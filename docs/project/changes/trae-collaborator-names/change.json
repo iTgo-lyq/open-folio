@@ -4,10 +4,15 @@
   "title": "按邮箱识别 TRAE 提交的协作者",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/trae-collaborator-names",
   "confirmations": {},
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "用提交邮箱修正 TRAE 作者显示并刷新旧快照",
+      "status": "doing"
+    }
+  },
   "closure": {},
   "followUpOf": "change-collaborators",
   "types": [
