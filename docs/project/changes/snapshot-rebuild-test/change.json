@@ -4,10 +4,15 @@
   "title": "同步快照重建测试的版本预期",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/snapshot-rebuild-test",
   "confirmations": {},
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "比较重建快照与原有效快照的版本",
+      "status": "doing"
+    }
+  },
   "closure": {},
   "followUpOf": "trae-collaborator-names",
   "types": [
