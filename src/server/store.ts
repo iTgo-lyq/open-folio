@@ -228,6 +228,9 @@ export class SnapshotStore {
     context?: RefreshContext,
   ) {
     const dir = this.directory();
+    const parallel = new AbortController();
+    let prWork: Promise<unknown> | undefined;
+    let prDenied: unknown;
     try {
       await this.acquire();
       const previous = await this.snapshot(p).catch(() => undefined);
@@ -256,10 +259,40 @@ export class SnapshotStore {
       await mkdir(join(dir, "blobs"), { recursive: true, mode: 0o700 });
       const signal = AbortSignal.any([
         AbortSignal.timeout(limits.refreshMs),
+        parallel.signal,
         ...(context ? [context.signal] : []),
       ]);
       const reader = this.readerFactory(join(dir, "git"), p);
       const persisted = new Set<string>();
+      const prCache = context?.delivery
+        ? await PullRequestCache.load(
+            join(dir, "pull-requests.json"),
+            limits.totalBytes,
+          ).catch((error) => {
+            if (
+              error instanceof AppError &&
+              ["PR_CACHE_INVALID", "PR_CACHE_LIMIT"].includes(error.code)
+            )
+              return new PullRequestCache(limits.totalBytes);
+            throw error;
+          })
+        : undefined;
+      if (prCache && context?.delivery) {
+        // One repository catalog query overlaps Git I/O; delivery reuses the same promise.
+        prWork = prCache
+          .query(context.delivery, p.integrationBranch, signal)
+          .catch((error) => {
+            if (
+              error instanceof AppError &&
+              ["TOKEN_INVALID", "READ_DENIED", "IDENTITY_CHANGED"].includes(
+                error.code,
+              )
+            ) {
+              prDenied = error;
+              parallel.abort();
+            }
+          });
+      }
       const data = await reader.collect(
         limits,
         signal,
@@ -280,19 +313,6 @@ export class SnapshotStore {
         data.unchanged && previous
           ? previous.changes
           : await indexChanges(data, reader, signal);
-      const prCache = context?.delivery
-        ? await PullRequestCache.load(
-            join(dir, "pull-requests.json"),
-            limits.totalBytes,
-          ).catch((error) => {
-            if (
-              error instanceof AppError &&
-              ["PR_CACHE_INVALID", "PR_CACHE_LIMIT"].includes(error.code)
-            )
-              return new PullRequestCache(limits.totalBytes);
-            throw error;
-          })
-        : undefined;
       const releaseTagsPath = join(dir, "release-tags.json");
       const releaseTags = await readFile(releaseTagsPath, "utf8")
         .then((body) => JSON.parse(body) as ReleaseVersionCache["tags"])
@@ -574,12 +594,15 @@ export class SnapshotStore {
       await this.prune(dir, s.id).catch(() => {});
       return s;
     } catch (e) {
-      const error = publicError(e);
+      const error = publicError(prDenied ?? e);
       await atomic(
         join(dir, "last-error.json"),
         JSON.stringify({ message: error.message }),
       ).catch(() => {});
       throw error;
+    } finally {
+      parallel.abort();
+      await prWork;
     }
   }
   private async prune(dir: string, current: string) {

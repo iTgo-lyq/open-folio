@@ -428,11 +428,85 @@ export class GitReader {
         }),
       );
     };
+    const fetched = new Map<string, string>();
+    const fetchBatch = async (
+      names: string[],
+      advertised: Map<string, string>,
+    ) => {
+      const refs = names
+        .map((name) => `refs/heads/${name}`)
+        .filter((ref) => advertised.has(ref));
+      if (!refs.length) return;
+      const localRefs = () =>
+        this.run(
+          [
+            "for-each-ref",
+            "--format=%(objecttype)%09%(objectname)%09%(refname)",
+            ...refs.map((ref) =>
+              ref.replace("refs/heads/", "refs/remotes/origin/"),
+            ),
+          ],
+          signal,
+        ).then(
+          (body) =>
+            new Map(
+              body
+                .toString()
+                .trim()
+                .split("\n")
+                .flatMap((row) => {
+                  const [type, commit, ref] = row.split("\t");
+                  return type === "commit"
+                    ? [
+                        [
+                          ref.replace("refs/remotes/origin/", "refs/heads/"),
+                          commit,
+                        ],
+                      ]
+                    : [];
+                }),
+            ),
+        );
+      let local = await localRefs();
+      const changed = refs.filter(
+        (ref) => local.get(ref) !== advertised.get(ref),
+      );
+      if (changed.length) {
+        // One writer updates all requested refs together; never run concurrent fetches here.
+        await this.run(
+          [
+            "fetch",
+            "--atomic",
+            "--no-tags",
+            "--no-recurse-submodules",
+            "origin",
+            ...changed.map(
+              (ref) =>
+                `+${ref}:${ref.replace("refs/heads/", "refs/remotes/origin/")}`,
+            ),
+          ],
+          signal,
+        );
+        local = await localRefs();
+      }
+      for (const ref of refs) {
+        const commit = local.get(ref);
+        if (!commit)
+          throw new AppError(
+            "GIT_READ_FAILED",
+            "远端分支未能读取为有效提交。",
+            503,
+          );
+        fetched.set(ref, commit);
+      }
+    };
     const fetchRef = async (
       remote: string,
       local: string,
       advertised: string,
     ) => {
+      const prepared = fetched.get(remote);
+      if (prepared) return prepared;
       // Missing live advertisements never consult residual local refs.
       const found = (
         await this.run(
@@ -747,20 +821,6 @@ export class GitReader {
       return finish();
     }
     releaseSource = { branch: workflow.releaseBranch, commit: null };
-    try {
-      const ref = `refs/heads/${workflow.releaseBranch}`;
-      const advertised = (await exact([ref])).get(ref);
-      if (advertised)
-        releaseSource.commit = await fetchRef(
-          ref,
-          `refs/remotes/origin/${workflow.releaseBranch}`,
-          advertised,
-        );
-      else releaseSource.message = "发布分支尚不存在，发布结果待核实。";
-    } catch {
-      signal.throwIfAborted();
-      releaseSource.message = "发布分支暂不可读取，发布结果待核实。";
-    }
     // PR records determine integrations after the known Change catalog is loaded.
     // Fetch complete Git history so PR ancestry and immutable diffs can be verified.
     if (
@@ -816,7 +876,31 @@ export class GitReader {
         "SOURCE_LIMIT",
         "指定来源数量超过配置限制，已保留上次快照。",
       );
-    const refs = await exact(targets.map((name) => `refs/heads/${name}`));
+    const releaseRef = `refs/heads/${workflow.releaseBranch}`;
+    let refs = new Map<string, string>();
+    try {
+      refs = await exact([
+        releaseRef,
+        ...targets.map((name) => `refs/heads/${name}`),
+      ]);
+    } catch (error) {
+      signal.throwIfAborted();
+      if (targets.length) throw error;
+      releaseSource.message = "发布分支暂不可读取，发布结果待核实。";
+    }
+    try {
+      await fetchBatch([workflow.releaseBranch, ...targets], refs);
+      releaseSource.commit = fetched.get(releaseRef) ?? null;
+      if (!releaseSource.commit && !releaseSource.message)
+        releaseSource.message = "发布分支尚不存在，发布结果待核实。";
+    } catch (error) {
+      signal.throwIfAborted();
+      if (!refs.has(releaseRef)) throw error;
+      // The optional release source must not prevent readable working sources from loading.
+      // Retry only the required sources as one batch, preserving the old failure boundary.
+      releaseSource.message = "发布分支暂不可读取，发布结果待核实。";
+      await fetchBatch(targets, refs);
+    }
     const parentIds = new Set(
       routes
         .filter((r) => r.kind === "target")
