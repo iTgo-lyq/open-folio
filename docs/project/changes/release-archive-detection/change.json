@@ -4,16 +4,31 @@
   "title": "按发布分支归档识别已合入 Change",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
       "at": "2026-11-12T08:58:10.648Z",
       "summary": "单发布分支有效归档决定已合入，缺少发布PR时间仍进入已归档。",
       "source": "用户：那先保持单发布分支，按 releaseBranch 中的有效归档判断已合入，再从 Git 历史反查 PR，查不到 PR 就丢进合入时间未知分类中。保证都转到已归档的 tab"
+    },
+    "technical": {
+      "at": "2026-11-12T09:01:42.932Z",
+      "summary": "读取有效发布归档，沿第一父链定位引入提交并精确匹配PR。",
+      "source": "沿用本会话已讨论方案；用户明确要求按 releaseBranch 中的有效归档判断，再从 Git 历史反查 PR。"
+    },
+    "plan": {
+      "at": "2026-11-12T09:01:46.603Z",
+      "summary": "依次完成归档判定、历史PR关联和归档分类并验证。",
+      "source": "用户要求实现上述已讨论流程并保证全部进入已归档tab；本计划按该依赖顺序实施。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "实现发布归档识别、历史PR溯源与已归档分类",
+      "status": "doing"
+    }
+  },
   "closure": {},
   "types": [
     "修复"
