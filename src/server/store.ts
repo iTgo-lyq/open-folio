@@ -1,3 +1,4 @@
+import { integrationBatch } from "./integration-batch.ts";
 import {
   mkdir,
   readFile,
@@ -14,6 +15,7 @@ import type {
   Limits,
   ProjectConfig,
   ProjectSummary,
+  ReleaseVersionCache,
   Snapshot,
   Workbench,
 } from "../lib/model.ts";
@@ -27,7 +29,16 @@ import {
   INTEGRATION_VERSION,
   inspectIntegration,
 } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { collectDelivery, type DeliveryReader } from "./delivery.ts";
+import {
+  collectDelivery,
+  hasReleaseOverride,
+  type DeliveryReader,
+} from "./delivery.ts";
+import {
+  collectReleaseArchives,
+  traceReleaseArchives,
+} from "./release-archives.ts";
+import { collectReleaseVersions } from "./release-versions.ts";
 import { IntegrationReader } from "./integration.ts";
 import {
   prototypeCatalog,
@@ -41,6 +52,7 @@ type RefreshContext = {
   signal: AbortSignal;
   beforePublish: () => Promise<void>;
   automatic?: boolean;
+  onCurrent?: (snapshot: Snapshot) => void;
   delivery?: DeliveryReader;
 };
 const alive = (pid: number) => {
@@ -232,6 +244,7 @@ export class SnapshotStore {
       if (
         context?.automatic &&
         previous &&
+        !previous.historyPending &&
         previous.integrations.version === INTEGRATION_VERSION &&
         previous.scanFingerprint === scanFingerprint(limits) &&
         checked?.snapshotId === previous.id &&
@@ -271,63 +284,54 @@ export class SnapshotStore {
         ? await PullRequestCache.load(
             join(dir, "pull-requests.json"),
             limits.totalBytes,
-          )
+          ).catch((error) => {
+            if (
+              error instanceof AppError &&
+              ["PR_CACHE_INVALID", "PR_CACHE_LIMIT"].includes(error.code)
+            )
+              return new PullRequestCache(limits.totalBytes);
+            throw error;
+          })
         : undefined;
-      const delivery = await collectDelivery({
-        changes,
-        integrationTip: data.integrations.tip,
-        branchTips: Object.fromEntries(
-          data.branches.map((b) => [b.name, b.commit]),
-        ),
-        readIntegration: (commit, id) => {
-          const prior =
-            previous?.integrations?.version === INTEGRATION_VERSION
-              ? previous.integrations.records[id]
-              : undefined;
-          return prior?.status === "found" && prior.commit === commit
-            ? Promise.resolve(prior)
-            : inspectIntegration(
-                (args) => reader.run(args, signal),
-                commit,
-                id,
-              );
-        },
-        integrationBranch: data.integrationBranch,
-        releaseSource: data.releaseSource,
-        previous: previous?.deliveryByChange,
-        reader: context?.delivery,
-        cache: prCache,
-        signal,
-        ancestor: (before, after) => reader.ancestor(before, after, signal),
-      });
-      const deliveryLastSuccess = delivery.complete
-        ? new Date().toISOString()
-        : checked?.deliveryLastSuccess;
-      const markChecked = (id: string) =>
-        atomic(
-          join(dir, "last-checked.json"),
-          JSON.stringify({
-            snapshotId: id,
-            at: Date.now(),
-            deliveryLastSuccess,
-          }),
-        );
-      if (
-        data.unchanged &&
-        previous &&
-        JSON.stringify(delivery.integrations) ===
-          JSON.stringify(previous.integrations) &&
-        JSON.stringify(delivery.deliveryByChange) ===
-          JSON.stringify(previous.deliveryByChange)
-      ) {
-        signal.throwIfAborted();
-        await context?.beforePublish();
-        signal.throwIfAborted();
-        if (prCache)
-          await atomic(join(dir, "pull-requests.json"), prCache.serialize());
-        await markChecked(previous.id);
-        await unlink(join(dir, "last-error.json")).catch(() => {});
-        return previous;
+      const releaseTagsPath = join(dir, "release-tags.json");
+      const releaseTags = await readFile(releaseTagsPath, "utf8")
+        .then((body) => JSON.parse(body) as ReleaseVersionCache["tags"])
+        .then((tags) =>
+          typeof tags?.checkedAt === "number" &&
+          Array.isArray(tags.commits) &&
+          tags.versions &&
+          typeof tags.versions === "object"
+            ? tags
+            : undefined,
+        )
+        .catch(() => undefined);
+      const priorArchives =
+        previous?.scanFingerprint === scanFingerprint(limits) &&
+        JSON.stringify(previous.releaseSource) ===
+          JSON.stringify(data.releaseSource)
+          ? previous.releaseArchives
+          : undefined;
+      let releaseArchives =
+        priorArchives &&
+        JSON.stringify(previous?.changes.map((change) => change.id).sort()) ===
+          JSON.stringify(changes.map((change) => change.id).sort()) &&
+        Object.values(priorArchives).every(
+          (record) => record.status === "invalid" || record.introduction,
+        )
+          ? priorArchives
+          : await collectReleaseArchives(
+              reader,
+              data.releaseSource,
+              changes.map((change) => change.id),
+              limits,
+              signal,
+              { history: false, blobs: data.blobs },
+            );
+      // Introductions depend only on the release commit; new registrations reuse them.
+      for (const [id, record] of Object.entries(releaseArchives)) {
+        const introduction = priorArchives?.[id]?.introduction;
+        if (record.status === "found" && !record.introduction && introduction)
+          releaseArchives[id] = { ...record, introduction };
       }
       const main = data.branches.find(
         (b) => b.name === data.integrationBranch,
@@ -342,9 +346,25 @@ export class SnapshotStore {
       };
       const s: Snapshot = {
         cacheSchemaVersion: 10,
-        integrations: delivery.integrations,
+        integrations: data.integrations,
         releaseSource: data.releaseSource,
-        deliveryByChange: delivery.deliveryByChange,
+        releaseArchives,
+        deliveryByChange: Object.fromEntries(
+          changes.map((change) => [
+            change.id,
+            {
+              stage:
+                releaseArchives[change.id]?.status === "found" ||
+                hasReleaseOverride(change, data.integrationBranch)
+                  ? "releaseMerged"
+                  : "unknown",
+              changePrs: [],
+              releasePrs: [],
+              diagnostics: [],
+              stale: true,
+            },
+          ]),
+        ),
         integrationBranch: data.integrationBranch,
         routes: data.routes,
         sourceDiagnostics: data.sourceDiagnostics,
@@ -381,17 +401,173 @@ export class SnapshotStore {
         changes,
         ...base,
       };
-      for (const [blob, body] of data.blobs) {
+      const publish = async (
+        snapshot: Snapshot,
+        saveCaches?: () => Promise<void>,
+      ) => {
+        for (const [blob, body] of data.blobs) {
+          signal.throwIfAborted();
+          if (!persisted.has(blob)) {
+            await atomic(join(dir, "blobs", blob), body);
+            persisted.add(blob);
+          }
+        }
         signal.throwIfAborted();
-        if (!persisted.has(blob)) await atomic(join(dir, "blobs", blob), body);
+        await context?.beforePublish();
+        signal.throwIfAborted();
+        // Platform data read with this credential persists only after the permission check.
+        await saveCaches?.();
+        await atomic(
+          join(dir, "snapshots", `${snapshot.id}.json`),
+          JSON.stringify(snapshot),
+        );
+        await atomic(join(dir, "current"), snapshot.id);
+      };
+      if (!previous) {
+        const initial = { ...s, historyPending: true };
+        await publish(initial);
+        context?.onCurrent?.(initial);
+        s.id = randomUUID();
       }
-      signal.throwIfAborted();
-      await context?.beforePublish();
-      signal.throwIfAborted();
-      if (prCache)
-        await atomic(join(dir, "pull-requests.json"), prCache.serialize());
-      await atomic(join(dir, "snapshots", `${s.id}.json`), JSON.stringify(s));
-      await atomic(join(dir, "current"), s.id);
+      if (data.releaseSource.commit)
+        releaseArchives = await traceReleaseArchives(
+          reader,
+          data.releaseSource.commit,
+          releaseArchives,
+          signal,
+        );
+      const releaseVersions = await collectReleaseVersions(
+        reader,
+        Object.values(releaseArchives).flatMap((record) =>
+          record.introduction ? [record.introduction] : [],
+        ),
+        limits,
+        signal,
+        {
+          files:
+            previous?.scanFingerprint === scanFingerprint(limits)
+              ? (previous.releaseVersions?.files ?? {})
+              : {},
+          ...(releaseTags ? { tags: releaseTags } : {}),
+        },
+      );
+      // Tag freshness lives beside the snapshot so a TTL check alone never publishes one.
+      const saveCaches = async () => {
+        if (prCache)
+          await atomic(join(dir, "pull-requests.json"), prCache.serialize());
+        if (releaseVersions.cache.tags)
+          await atomic(
+            releaseTagsPath,
+            JSON.stringify(releaseVersions.cache.tags),
+          );
+      };
+      let integrationRecords:
+        | Awaited<ReturnType<typeof integrationBatch>>
+        | undefined;
+      let integrationBatchUnavailable = false;
+      const ancestors = new Map<string, Promise<Set<string>>>();
+      const delivery = await collectDelivery({
+        changes,
+        integrationTip: data.integrations.tip,
+        branchTips: Object.fromEntries(
+          data.branches.map((b) => [b.name, b.commit]),
+        ),
+        prepareIntegrations: async (commits) => {
+          const cached = new Set(
+            Object.values(
+              previous?.integrations.version === INTEGRATION_VERSION
+                ? previous.integrations.records
+                : {},
+            ).flatMap((record) =>
+              record.status === "found" ? [record.commit] : [],
+            ),
+          );
+          integrationRecords = await integrationBatch(
+            reader,
+            commits.filter((commit) => !cached.has(commit)),
+            signal,
+          ).catch(() => {
+            integrationBatchUnavailable = true;
+            return new Map();
+          });
+        },
+        readIntegration: (commit, id) => {
+          const batch = integrationRecords?.get(commit)?.get(id);
+          if (batch) return Promise.resolve(batch);
+          const prior =
+            previous?.integrations?.version === INTEGRATION_VERSION
+              ? previous.integrations.records[id]
+              : undefined;
+          return prior?.status === "found" && prior.commit === commit
+            ? Promise.resolve(prior)
+            : integrationBatchUnavailable
+              ? Promise.resolve({
+                  status: "unavailable" as const,
+                  message: "合入提交暂不可读取。",
+                })
+              : inspectIntegration(
+                  (args) => reader.run(args, signal),
+                  commit,
+                  id,
+                );
+        },
+        integrationBranch: data.integrationBranch,
+        releaseSource: data.releaseSource,
+        releaseArchives,
+        releaseVersions: releaseVersions.versions,
+        previous: previous?.deliveryByChange,
+        reader: context?.delivery,
+        cache: prCache,
+        signal,
+        ancestor: async (before, after) => {
+          if (before === after) return true;
+          let history = ancestors.get(after);
+          if (!history) {
+            history = reader
+              .run(["rev-list", after], signal)
+              .then((body) => new Set(body.toString().trim().split("\n")));
+            ancestors.set(after, history);
+          }
+          return (await history).has(before);
+        },
+      });
+      const deliveryLastSuccess = delivery.complete
+        ? new Date().toISOString()
+        : checked?.deliveryLastSuccess;
+      const markChecked = (id: string) =>
+        atomic(
+          join(dir, "last-checked.json"),
+          JSON.stringify({
+            snapshotId: id,
+            at: Date.now(),
+            deliveryLastSuccess,
+          }),
+        );
+      if (
+        data.unchanged &&
+        previous &&
+        JSON.stringify(delivery.integrations) ===
+          JSON.stringify(previous.integrations) &&
+        JSON.stringify(delivery.deliveryByChange) ===
+          JSON.stringify(previous.deliveryByChange) &&
+        JSON.stringify(releaseArchives) ===
+          JSON.stringify(previous.releaseArchives) &&
+        JSON.stringify(releaseVersions.cache.files) ===
+          JSON.stringify(previous.releaseVersions?.files)
+      ) {
+        signal.throwIfAborted();
+        await context?.beforePublish();
+        signal.throwIfAborted();
+        await saveCaches();
+        await markChecked(previous.id);
+        await unlink(join(dir, "last-error.json")).catch(() => {});
+        return previous;
+      }
+      s.integrations = delivery.integrations;
+      s.releaseArchives = releaseArchives;
+      s.releaseVersions = { files: releaseVersions.cache.files };
+      s.deliveryByChange = delivery.deliveryByChange;
+      await publish(s, saveCaches);
       await markChecked(s.id).catch(() => {});
       await unlink(join(dir, "last-error.json")).catch(() => {});
       // Cleanup must never turn a published refresh into a reported failure.

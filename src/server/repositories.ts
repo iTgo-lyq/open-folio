@@ -31,11 +31,18 @@ export interface ReadContext {
   refresh(
     limits: Limits,
     automatic?: boolean,
+    currentFirst?: boolean,
   ): ReturnType<SnapshotStore["refresh"]>;
 }
 type ReaderFactory = (directory: string, transport: GitTransport) => GitReader;
 const state = globalThis as typeof globalThis & {
-  folioRefreshes?: Map<string, Promise<unknown>>;
+  folioRefreshes?: Map<
+    string,
+    {
+      complete: Promise<import("../lib/model.ts").Snapshot>;
+      available: Promise<import("../lib/model.ts").Snapshot>;
+    }
+  >;
 };
 export class Repositories {
   readonly root: string;
@@ -265,7 +272,7 @@ export class Repositories {
               integrationBranch: child.defaultBranch ?? undefined,
             });
         },
-        refresh: async (limits, automatic = false) => {
+        refresh: async (limits, automatic = false, currentFirst = false) => {
           await assertTracked(lease);
           const locks = (state.folioRefreshes ??= new Map());
           const path = store.directory();
@@ -273,7 +280,18 @@ export class Repositories {
           // waiting device must still have a valid session before delivery.
           let next = locks.get(path);
           if (!next) {
-            next = (async () => {
+            let available!: (
+              snapshot: import("../lib/model.ts").Snapshot,
+            ) => void;
+            let unavailable!: (error: unknown) => void;
+            const initial = new Promise<import("../lib/model.ts").Snapshot>(
+              (resolve, reject) => {
+                available = resolve;
+                unavailable = reject;
+              },
+            );
+            void initial.catch(() => {});
+            const complete = (async () => {
               const owner = await this.sessions.credentialLease(
                 lease.accountId,
                 lease.workspaceId,
@@ -283,6 +301,7 @@ export class Repositories {
                 const shared = await makeStore(owner);
                 const snapshot = await shared.refresh(project, limits, {
                   automatic,
+                  onCurrent: available,
                   signal: owner.context.signal,
                   beforePublish: async () => {
                     await assertPermission(owner);
@@ -318,18 +337,31 @@ export class Repositories {
                 await owner.assertCurrent();
                 permissions.assertAllowed(owner, key);
                 return snapshot;
+              } catch (error) {
+                // The initial HTTP response may already have returned. Background
+                // failures must still invalidate the credential's cached permission.
+                permissions.reject(owner, key, error);
+                if (
+                  error instanceof AppError &&
+                  error.code === "GIT_READ_FAILED" &&
+                  !owner.context.signal.aborted
+                )
+                  await assertPermission(owner, true);
+                throw error;
               } finally {
                 owner.release();
               }
             })();
+            complete.then(available, unavailable);
+            next = { complete, available: initial };
             locks.set(path, next);
-            void next
+            void complete
               .finally(() => {
                 if (locks.get(path) === next) locks.delete(path);
               })
               .catch(() => {});
           }
-          const result = await next;
+          const result = await (currentFirst ? next.available : next.complete);
           return result as Awaited<ReturnType<SnapshotStore["refresh"]>>;
         },
       };

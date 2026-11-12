@@ -177,15 +177,20 @@ test("a transient candidate read failure is retried even if the collaboration ti
   const merge = f.merge();
   let fail = true;
   class Reader extends GitReader {
-    override async run(args: string[], signal?: AbortSignal, limit?: number) {
+    override async run(
+      args: string[],
+      signal?: AbortSignal,
+      limit?: number,
+      input?: string | Buffer,
+    ) {
       if (
         fail &&
-        args[0] === "ls-tree" &&
+        ["ls-tree", "log"].includes(args[0]) &&
         args.includes(merge) &&
         args.includes("docs/project/archive/")
       )
         throw Error("Transient object read failure");
-      return super.run(args, signal, limit);
+      return super.run(args, signal, limit, input);
     }
   }
   const store = new SnapshotStore(
@@ -240,7 +245,7 @@ test("PR history finds the original merge after concurrent synchronization and r
   assert.equal(summary.record.status, "found");
 });
 
-test("PR body changes at the same Git tip refresh associations without reusing stale evidence", async (t) => {
+test("PR body changes cannot alter branch-based association", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   f.merge();
@@ -248,10 +253,10 @@ test("PR body changes at the same Git tip refresh associations without reusing s
   const original = f.pullRequests[0].body;
   f.pullRequests[0].body = "PR\n\nSpecTrail-Change: unrelated";
   const second = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
-  assert.equal(integrationFor(second.integrations, f.id).status, "missing");
-  assert.equal(second.deliveryByChange?.example.stage, "pendingIntegration");
+  assert.equal(integrationFor(second.integrations, f.id).status, "found");
+  assert.equal(second.deliveryByChange?.example.stage, "pendingRelease");
   assert.deepEqual(first.branches, second.branches);
-  assert.notEqual(first.id, second.id);
+  assert.equal(first.id, second.id);
   f.pullRequests[0].body = original;
   const third = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   assert.equal(integrationFor(third.integrations, f.id).status, "found");

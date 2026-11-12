@@ -1,3 +1,4 @@
+import { readBlobs } from "./git-objects.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -41,7 +42,7 @@ const submoduleReads = new Map<string, Promise<void>>();
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 // Bump the version when scanning or indexing semantics change.
 export const scanFingerprint = (limits: Limits) =>
-  hash(JSON.stringify([16, limits]));
+  hash(JSON.stringify([19, limits]));
 export const documentId = (branch: string, path: string) =>
   hash(`${branch}\0${path}`).slice(0, 32);
 const safePath = (s: string) =>
@@ -202,6 +203,7 @@ export class GitReader {
     args: string[],
     signal?: AbortSignal,
     inputLimit = 16 * 1024 * 1024,
+    input?: string | Buffer,
   ): Promise<Buffer> {
     signal = AbortSignal.any([
       ...(signal ? [signal] : []),
@@ -282,7 +284,7 @@ export class GitReader {
       env[`GIT_CONFIG_VALUE_${i}`] = value;
     });
     try {
-      const r = await exec(
+      const command = exec(
         "git",
         [
           "-C",
@@ -312,6 +314,10 @@ export class GitReader {
           signal,
         },
       );
+      // A killed or failed child closes stdin early; the command promise reports the failure.
+      command.child.stdin?.on("error", () => {});
+      command.child.stdin?.end(input);
+      const r = await command;
       return r.stdout;
     } catch (e) {
       if ((e as { code?: string }).code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER")
@@ -484,12 +490,15 @@ export class GitReader {
       blobs = new Map<string, Buffer>();
     let total = 0;
     const sourceTrees = new Map<string, string>();
+    const documentKeys = new Set<string>();
+    const documentsByPath = new Map<string, DocumentRef>();
     const collectSource = async (
       branch: Branch,
       scope: string[],
       ids?: string[],
       catalogOnly = false,
     ) => {
+      const selectedIds = ids ? new Set(ids) : undefined;
       const selected = (path: string) =>
         (!catalogOnly ||
           !/^docs\/project\/(changes|archive)\//.test(path) ||
@@ -499,13 +508,11 @@ export class GitReader {
             path === prefix ||
             (prefix.endsWith("/") && path.startsWith(prefix)),
         ) &&
-        (!ids ||
-          ids.some(
-            (id) =>
-              path.startsWith(`docs/project/changes/${id}/`) ||
-              new RegExp(
-                `^docs/project/archive/[0-9]{4}-[0-9]{2}-[0-9]{2}-${id}/`,
-              ).test(path),
+        (!selectedIds ||
+          selectedIds.has(
+            /^docs\/project\/(?:changes\/|archive\/[^/]{10}-)([a-z0-9-]+)\//.exec(
+              path,
+            )?.[1] ?? "",
           ));
       const prior = previous?.branches.find((b) => b.name === branch.name);
       const priorIds = previous?.routes
@@ -523,13 +530,15 @@ export class GitReader {
           (d) => d.branch === branch.name && selected(d.path),
         )) {
           signal.throwIfAborted();
-          if (documents.some((d) => d.id === doc.id)) continue;
+          if (documentKeys.has(`${doc.branch}:${doc.path}`)) continue;
           if (documents.length >= limits.documents)
             throw new AppError(
               "SOURCE_LIMIT",
               "文档条目超过配置限制，已保留上次快照。",
             );
           documents.push(doc);
+          documentKeys.add(`${doc.branch}:${doc.path}`);
+          documentsByPath.set(`${doc.branch}:${doc.path}`, doc);
           if (
             doc.kind === "unsupported" ||
             doc.diagnostics.some((d) =>
@@ -564,21 +573,20 @@ export class GitReader {
         sourceTrees.get(treeKey) ??
         (
           await this.run(
-            ["ls-tree", "-rz", "--full-tree", branch.commit, "--", ...scope],
+            ["ls-tree", "-rlz", "--full-tree", branch.commit, "--", ...scope],
             signal,
           )
         ).toString("utf8");
       if (scope.includes("docs/project/")) sourceTrees.set(treeKey, raw);
+      const pendingDocuments: DocumentRef[] = [];
+      const needed = new Map<string, number>();
       for (const row of raw.split("\0")) {
         if (!row) continue;
         const tab = row.indexOf("\t"),
-          [mode, kind, blob] = row.slice(0, tab).split(" "),
+          [mode, kind, blob, sizeText] = row.slice(0, tab).trim().split(/\s+/),
           path = row.slice(tab + 1);
         if (!safePath(path)) continue;
-        if (
-          !selected(path) ||
-          documents.some((d) => d.branch === branch.name && d.path === path)
-        )
+        if (!selected(path) || documentKeys.has(`${branch.name}:${path}`))
           continue;
         if (documents.length >= limits.documents)
           throw new AppError(
@@ -605,6 +613,8 @@ export class GitReader {
           diagnostics: [],
         };
         documents.push(doc);
+        documentKeys.add(`${branch.name}:${path}`);
+        documentsByPath.set(`${branch.name}:${path}`, doc);
         if (kind !== "blob" || !["100644", "100755"].includes(mode)) {
           doc.diagnostics.push({
             code: "FILE_MODE",
@@ -615,9 +625,7 @@ export class GitReader {
           continue;
         }
         if (doc.kind === "unsupported") continue;
-        const size = Number(
-          (await this.run(["cat-file", "-s", blob], signal)).toString(),
-        );
+        const size = Number(sizeText);
         doc.bytes = size;
         const max =
           doc.kind === "markdown"
@@ -634,18 +642,21 @@ export class GitReader {
           });
           continue;
         }
-        if (!blobs.has(blob)) {
+        if (!blobs.has(blob) && !needed.has(blob)) {
           total += size;
           if (total > limits.totalBytes)
             throw new AppError(
               "SOURCE_LIMIT",
               "正文总量超过配置限制，已保留上次快照。",
             );
-          blobs.set(
-            blob,
-            await this.run(["cat-file", "blob", blob], signal, max + 1024),
-          );
+          needed.set(blob, size);
         }
+        pendingDocuments.push(doc);
+      }
+      for (const [blob, body] of await readBlobs(this, needed, signal))
+        blobs.set(blob, body);
+      for (const doc of pendingDocuments) {
+        const { blob, path } = doc;
         const buffer = blobs.get(blob)!;
         if (doc.kind === "image") {
           doc.mime = imageMime(buffer);
@@ -685,7 +696,7 @@ export class GitReader {
       }
     };
     const readJson = (branch: string, path: string) => {
-      const doc = documents.find((d) => d.branch === branch && d.path === path);
+      const doc = documentsByPath.get(`${branch}:${path}`);
       if (!doc?.readable) throw Error(`无法读取 ${branch}:${path}`);
       return JSON.parse(blobs.get(doc.blob)!.toString());
     };
@@ -1188,6 +1199,7 @@ export class GitReader {
     );
   }
   async ancestor(base: string, tip: string, signal?: AbortSignal) {
+    if (base === tip) return true;
     try {
       return (
         (await this.run(["merge-base", "--is-ancestor", base, tip], signal))

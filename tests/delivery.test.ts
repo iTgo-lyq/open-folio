@@ -3,6 +3,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { integrationFixture } from "./integration-fixture.ts";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
+import { classifyDirectoryState } from "../src/lib/change-directory.ts";
+import { archiveTimeline } from "../src/lib/archive-timeline.ts";
 import {
   collectDelivery,
   type DeliveryReader,
@@ -47,7 +49,7 @@ function remote() {
       calls.push(JSON.stringify(query));
       if (error) throw error;
       return {
-        items: prs.filter((p) => p.base.branch === query.base),
+        items: prs.filter((p) => !query.base || p.base.branch === query.base),
         nextCursor: null,
       };
     },
@@ -64,7 +66,7 @@ function remote() {
   };
 }
 
-test("archive batches select the earliest dated verified release, including overrides without inventing evidence", async (t) => {
+test("archive batches use the unique introduction PR, independently of change PRs and overrides", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const m = f.merge();
@@ -98,6 +100,9 @@ test("archive batches select the earliest dated verified release, including over
     integrationTip: snapshot.integrations.tip,
     integrationBranch: "develop",
     releaseSource: { branch: "main", commit: oid("a") },
+    releaseArchives: {
+      example: { status: "found" as const, introduction: oid("7") },
+    },
     readIntegration: (commit: string, id: string) =>
       inspectIntegration(f.run, commit, id),
     reader: r.reader,
@@ -106,6 +111,35 @@ test("archive batches select the earliest dated verified release, including over
   };
   const first = await collectDelivery(input);
   assert.equal(first.deliveryByChange.example.releaseMergedPrNumber, 7);
+  const inferred = await collectDelivery({
+    ...input,
+    releaseVersions: { [oid("7")]: { status: "found", version: "2.3.4" } },
+  });
+  assert.equal(
+    inferred.deliveryByChange.example.releasePrs.find((pr) => pr.number === 7)
+      ?.version,
+    "2.3.4",
+  );
+  for (const status of ["ambiguous", "unreadable", "unavailable"] as const) {
+    const unknownVersion = await collectDelivery({
+      ...input,
+      releaseVersions: { [oid("7")]: { status } },
+    });
+    assert.equal(
+      unknownVersion.deliveryByChange.example.releasePrs.find(
+        (pr) => pr.number === 7,
+      )?.version,
+      undefined,
+    );
+    assert.equal(
+      unknownVersion.deliveryByChange.example.stage,
+      "releaseMerged",
+    );
+    assert.equal(
+      unknownVersion.deliveryByChange.example.releaseMergedPrNumber,
+      7,
+    );
+  }
   const record = input.changes[0].candidates.find(
     (c) => c.key === input.changes[0].primary,
   )!;
@@ -118,10 +152,7 @@ test("archive batches select the earliest dated verified release, including over
   r.set(releases);
   const missing = await collectDelivery(input);
   assert.equal(missing.deliveryByChange.example.stage, "releaseMerged");
-  assert.equal(
-    missing.deliveryByChange.example.releaseMergedPrNumber,
-    undefined,
-  );
+  assert.equal(missing.deliveryByChange.example.releaseMergedPrNumber, 7);
   r.set([changePr, { ...releases[0], mergedAt: undefined }]);
   const undated = await collectDelivery(input);
   assert.equal(undated.deliveryByChange.example.stage, "releaseMerged");
@@ -134,7 +165,153 @@ test("archive batches select the earliest dated verified release, including over
     ...input,
     previous: first.deliveryByChange,
   });
-  assert.equal(stale.deliveryByChange.example.releaseMergedPrNumber, undefined);
+  // A failed read keeps the last verified batch, only for the same introduction.
+  assert.equal(stale.deliveryByChange.example.releaseMergedPrNumber, 7);
+  const moved = await collectDelivery({
+    ...input,
+    previous: first.deliveryByChange,
+    releaseArchives: {
+      example: { status: "found" as const, introduction: oid("8") },
+    },
+  });
+  assert.equal(moved.deliveryByChange.example.releaseMergedPrNumber, undefined);
+  const retargeted = await collectDelivery({
+    ...input,
+    previous: first.deliveryByChange,
+    releaseSource: { ...input.releaseSource, branch: "production" },
+  });
+  assert.equal(retargeted.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(
+    retargeted.deliveryByChange.example.releaseMergedPrNumber,
+    undefined,
+  );
+  r.fail();
+  r.set([releases[1], { ...releases[1], number: 9 }]);
+  const ambiguous = await collectDelivery(input);
+  assert.equal(ambiguous.deliveryByChange.example.stage, "releaseMerged");
+  assert.equal(
+    ambiguous.deliveryByChange.example.releaseMergedPrNumber,
+    undefined,
+  );
+});
+
+test("an unreadable release snapshot only blocks Changes waiting for release", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const r = remote();
+  const message = "发布分支归档暂不可核实。";
+  const project = async () => {
+    const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    return collectDelivery({
+      changes: snapshot.changes,
+      integrationTip: snapshot.integrations.tip,
+      integrationBranch: "develop",
+      releaseSource: { branch: "main", commit: oid("a") },
+      releaseArchives: {
+        example: { status: "unavailable" as const, message },
+      },
+      readIntegration: (commit: string, id: string) =>
+        inspectIntegration(f.run, commit, id),
+      reader: r.reader,
+      signal: new AbortController().signal,
+      ancestor: async () => true,
+    });
+  };
+  r.set([]);
+  const waiting = (await project()).deliveryByChange.example;
+  assert.equal(waiting.stage, "pendingIntegration");
+  assert(!waiting.diagnostics.includes(message));
+  const m = f.merge();
+  r.set([{ ...pr(), state: "merged" as const, mergeCommit: m }]);
+  const integrated = (await project()).deliveryByChange.example;
+  assert.equal(integrated.stage, "unknown");
+  assert(integrated.diagnostics.includes(message));
+});
+
+test("published archives enter the archived tab without PRs; only their exact introduction PR supplies time", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.merge();
+  f.git(["checkout", "main"]);
+  f.git(["merge", "--no-ff", "develop", "-m", "Publish archives"]);
+  f.git(["push", "origin", "main"]);
+  const release = f.git(["rev-parse", "HEAD"]);
+  const r = remote();
+  const context = {
+    signal: new AbortController().signal,
+    delivery: r.reader,
+    beforePublish: async () => {},
+  };
+  const refresh = () => f.store.refresh(f.project, DEFAULT_LIMITS, context);
+  const unknown = (snapshot: Awaited<ReturnType<typeof refresh>>) => {
+    const delivery = snapshot.deliveryByChange!.example;
+    assert.equal(delivery.stage, "releaseMerged");
+    assert.equal(
+      classifyDirectoryState(snapshot.changes[0], delivery),
+      "archived",
+    );
+    assert.equal(delivery.releaseMergedPrNumber, undefined);
+    assert.equal(
+      archiveTimeline(snapshot.changes, snapshot.deliveryByChange)[0].label,
+      "合入时间未知",
+    );
+  };
+  r.set([]);
+  unknown(await refresh());
+  r.fail(new ProviderError("PR_READ_DENIED", "PR inaccessible", 403));
+  unknown(await refresh());
+  r.fail();
+  const published = {
+    ...pr(10, true),
+    body: "Release without metadata",
+    state: "merged" as const,
+    mergeCommit: release,
+    mergedAt: "2026-10-28T00:00:00Z",
+  };
+  r.set([published]);
+  const matched = await refresh();
+  assert.equal(matched.deliveryByChange!.example.releaseMergedPrNumber, 10);
+  assert.equal(matched.deliveryByChange!.example.releasePrs[0].number, 10);
+  assert.equal(
+    archiveTimeline(matched.changes, matched.deliveryByChange)[0].batches[0].pr!
+      .number,
+    10,
+  );
+  r.calls.length = 0;
+  r.fail(new ProviderError("RATE_LIMITED", "PR rate limited", 429));
+  // Rate limiting keeps the archived batch instead of moving it to unknown time.
+  const limited = await refresh();
+  assert.equal(limited.deliveryByChange!.example.stage, "releaseMerged");
+  assert.equal(limited.deliveryByChange!.example.releaseMergedPrNumber, 10);
+  assert.equal(
+    archiveTimeline(limited.changes, limited.deliveryByChange)[0].batches[0].pr!
+      .number,
+    10,
+  );
+  assert.equal(r.calls.length, 1);
+  r.fail();
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(`${f.store.directory()}/pull-requests.json`, "broken cache");
+  assert.equal(
+    (await refresh()).deliveryByChange!.example.releaseMergedPrNumber,
+    10,
+  );
+  // A later release also contains the archive, but did not introduce it.
+  await f.put("later.txt", "later release");
+  const later = f.commit();
+  r.set([{ ...published, number: 11, mergeCommit: later }]);
+  unknown(await refresh());
+  r.set([{ ...published, mergedAt: undefined }]);
+  unknown(await refresh());
+  r.set([published, { ...published, number: 12 }]);
+  unknown(await refresh());
+  // The current main snapshot is authoritative after an archive removal.
+  f.git(["rm", "-r", f.archivePath]);
+  f.commit();
+  assert.notEqual(
+    (await refresh()).deliveryByChange!.example.stage,
+    "releaseMerged",
+  );
 });
 
 test("PR-only refreshes update snapshots, preserve close/reopen history and recheck publication permission", async (t) => {
@@ -151,20 +328,15 @@ test("PR-only refreshes update snapshots, preserve close/reopen history and rech
   };
   const first = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(first.deliveryByChange?.example.stage, "pendingIntegration");
-  assert.equal(checks, 1);
+  assert.equal(checks, 2);
   const same = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(same.id, first.id);
-  assert.equal(checks, 2);
-  assert.deepEqual(r.calls, [
-    '{"base":"develop"}',
-    '{"base":"main"}',
-    '{"base":"develop"}',
-    '{"base":"main"}',
-  ]);
+  assert.equal(checks, 3);
+  assert.deepEqual(r.calls, ["{}", "{}"]);
   r.set([{ ...pr(), state: "closed" }, pr(2)]);
   const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.notEqual(rebuilt.id, first.id);
-  assert.equal(checks, 3);
+  assert.equal(checks, 4);
   assert.deepEqual(
     rebuilt.deliveryByChange?.example.changePrs.map((p) => [p.number, p.state]),
     [
@@ -200,7 +372,7 @@ test("PR-only refreshes update snapshots, preserve close/reopen history and rech
   });
 });
 
-test("cold base catalog survives deleted sources; release inclusion also requires real Git ancestry", async (t) => {
+test("release archives survive deleted sources and PR body changes; PR claims alone do not prove release", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const m = f.merge();
@@ -214,17 +386,14 @@ test("cold base catalog survives deleted sources; release inclusion also require
   };
   const integrated = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(integrated.deliveryByChange?.example.stage, "pendingRelease");
-  assert.deepEqual(r.calls, ['{"base":"develop"}', '{"base":"main"}']);
+  assert.deepEqual(r.calls, ["{}"]);
   r.set([
     { ...pr(), state: "merged", mergeCommit: m },
     { ...pr(2, true), state: "merged", mergeCommit: oid("f") },
   ]);
   const unverified = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
-  assert.equal(unverified.deliveryByChange?.example.stage, "unknown");
-  assert.equal(
-    unverified.deliveryByChange?.example.releasePrs[0].state,
-    "merged",
-  );
+  assert.equal(unverified.deliveryByChange?.example.stage, "pendingRelease");
+  assert.deepEqual(unverified.deliveryByChange?.example.releasePrs, []);
   f.git(["checkout", "main"]);
   f.git(["merge", "--no-ff", "develop", "-m", "Release 1.0"]);
   f.git(["push", "origin", "main"]);
@@ -237,9 +406,9 @@ test("cold base catalog survives deleted sources; release inclusion also require
   assert.equal(delivered.deliveryByChange?.example.stage, "releaseMerged");
   assert.equal(
     delivered.deliveryByChange?.example.releasePrs[0].version,
-    "1.0",
+    undefined,
   );
-  // Ancestry alone cannot invent semantic inclusion after the PR body changes.
+  // Published archives remain released even when the PR omits their IDs.
   r.set([
     { ...pr(), state: "merged", mergeCommit: m },
     {
@@ -252,7 +421,7 @@ test("cold base catalog survives deleted sources; release inclusion also require
   assert.equal(
     (await f.store.refresh(f.project, DEFAULT_LIMITS, context)).deliveryByChange
       ?.example.stage,
-    "pendingRelease",
+    "releaseMerged",
   );
 });
 
@@ -378,61 +547,6 @@ test("a new metadata snapshot cannot publish after a final permission denial", a
   assert.equal((await f.store.snapshot(f.project)).id, first.id);
 });
 
-test("unrelated PR read failures do not erase verified delivery phases", async (t) => {
-  const f = await integrationFixture();
-  t.after(f.cleanup);
-  const initial = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  const r = remote();
-  const input = {
-    changes: initial.changes,
-    integrationTip: initial.integrations.tip,
-    readIntegration: (commit: string, id: string) =>
-      inspectIntegration(f.run, commit, id),
-    integrationBranch: "develop",
-    releaseSource: initial.releaseSource!,
-    signal: new AbortController().signal,
-    ancestor: async () => true,
-  };
-  const denied = () => {
-    throw new ProviderError("PR_READ_DENIED", "PR permission missing", 403);
-  };
-  const waiting = await collectDelivery({
-    ...input,
-    reader: {
-      ...r.reader,
-      list: (q, c, s) =>
-        q.base === "main" ? denied() : r.reader.list(q, c, s),
-    },
-  });
-  assert.equal(waiting.deliveryByChange.example.stage, "pendingIntegration");
-  assert.equal(waiting.deliveryByChange.example.changePrsStale, false);
-  assert.equal(waiting.deliveryByChange.example.releasePrsStale, true);
-  const m = f.merge();
-  const integrated = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  r.set([{ ...pr(2, true), state: "merged", mergeCommit: m }]);
-  const released = await collectDelivery({
-    ...input,
-    changes: integrated.changes,
-    integrationTip: integrated.integrations.tip,
-    readIntegration: (commit: string, id: string) =>
-      inspectIntegration(f.run, commit, id),
-    reader: {
-      ...r.reader,
-      list: (q, c, s) =>
-        q.base !== "main" ? denied() : r.reader.list(q, c, s),
-    },
-  });
-  assert.equal(released.deliveryByChange.example.stage, "unknown");
-  assert.equal(released.deliveryByChange.example.changePrsStale, true);
-  assert.equal(released.deliveryByChange.example.releasePrsStale, false);
-  assert.equal(released.deliveryByChange.example.releasePrs[0].state, "merged");
-  assert.ok(
-    !released.deliveryByChange.example.diagnostics.some((d) =>
-      d.includes("尚无"),
-    ),
-  );
-});
-
 test("delivery request count depends on base pages, not the number or history of Changes", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
@@ -455,10 +569,10 @@ test("delivery request count depends on base pages, not the number or history of
   };
   const first = await collectDelivery(input);
   assert.equal(Object.keys(first.deliveryByChange).length, 138);
-  assert.deepEqual(r.calls, ['{"base":"develop"}', '{"base":"main"}']);
+  assert.deepEqual(r.calls, ["{}"]);
   r.calls.length = 0;
   await collectDelivery({ ...input, previous: first.deliveryByChange });
-  assert.equal(r.calls.length, 2);
+  assert.equal(r.calls.length, 1);
   r.calls.length = 0;
   await collectDelivery({
     ...input,
@@ -467,7 +581,7 @@ test("delivery request count depends on base pages, not the number or history of
   assert.equal(r.calls.length, 1);
 });
 
-test("rate limiting stops a refresh immediately and preserves snapshot, complete cache and success timestamps", async (t) => {
+test("PR rate limiting stops further API calls but publishes Git facts without advancing PR success", async (t) => {
   const { readFile } = await import("node:fs/promises");
   const { join } = await import("node:path");
   const f = await integrationFixture();
@@ -482,18 +596,22 @@ test("rate limiting stops a refresh immediately and preserves snapshot, complete
   const cachePath = join(f.store.directory(), "pull-requests.json");
   const checkedPath = join(f.store.directory(), "last-checked.json");
   const beforeCache = await readFile(cachePath, "utf8");
-  const beforeChecked = await readFile(checkedPath, "utf8");
+  const beforeChecked = JSON.parse(await readFile(checkedPath, "utf8"));
   r.calls.length = 0;
   r.fail(new ProviderError("RATE_LIMITED", "GitHub rate limited", 429, "90"));
-  await assert.rejects(f.store.refresh(f.project, DEFAULT_LIMITS, context), {
-    code: "RATE_LIMITED",
-    retryAfter: "90",
-  });
+  const limited = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(r.calls.length, 1);
-  assert.equal((await f.store.snapshot(f.project)).id, snapshot.id);
+  assert.notEqual(limited.id, snapshot.id);
+  assert.equal(limited.deliveryByChange!.example.stale, true);
+  assert.match(
+    limited.deliveryByChange!.example.diagnostics.join(),
+    /rate limited/,
+  );
   assert.equal(await readFile(cachePath, "utf8"), beforeCache);
-  assert.equal(await readFile(checkedPath, "utf8"), beforeChecked);
-  assert.match((await f.store.summary(f.project)).lastError!, /rate limited/);
+  assert.equal(
+    JSON.parse(await readFile(checkedPath, "utf8")).deliveryLastSuccess,
+    beforeChecked.deliveryLastSuccess,
+  );
   r.fail();
   await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal((await f.store.summary(f.project)).lastError, undefined);

@@ -5,7 +5,9 @@ import type {
   IntegrationIndex,
   PullRequest,
   ReleaseSource,
+  ReleaseVersion,
 } from "../lib/model.ts";
+import { primaryRecord } from "../lib/model.ts";
 import { AppError } from "./errors.ts";
 import {
   INTEGRATION_VERSION,
@@ -19,15 +21,19 @@ import {
   type CatalogItem,
 } from "./pull-requests.ts";
 import { parentBranch } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import type { ReleaseArchive } from "../lib/model.ts";
 export type { DeliveryReader } from "./pull-requests.ts";
 
 type Input = {
   changes: ChangeGroup[];
   integrationTip: string | null;
   branchTips?: Record<string, string>;
+  prepareIntegrations?: (commits: string[]) => Promise<void>;
   readIntegration: (commit: string, id: string) => Promise<IntegrationResult>;
   integrationBranch: string | null;
   releaseSource: ReleaseSource;
+  releaseArchives?: Record<string, ReleaseArchive>;
+  releaseVersions?: Record<string, ReleaseVersion>;
   previous?: Record<string, Delivery>;
   reader?: DeliveryReader;
   cache?: PullRequestCache;
@@ -37,20 +43,26 @@ type Input = {
 const message = (error: unknown) => {
   if (
     error instanceof AppError &&
-    [
-      "RATE_LIMITED",
-      "TOKEN_INVALID",
-      "READ_DENIED",
-      "OPERATION_CANCELLED",
-      "PR_CACHE_INVALID",
-      "PR_CACHE_LIMIT",
-    ].includes(error.code)
+    ["TOKEN_INVALID", "READ_DENIED", "OPERATION_CANCELLED"].includes(error.code)
   )
     throw error;
   return error instanceof AppError
     ? error.message
     : "PR 信息暂不可读取，请稍后重试。";
 };
+
+export function hasReleaseOverride(
+  change: ChangeGroup,
+  integrationBranch: string | null,
+) {
+  const candidate = primaryRecord(change);
+  return !!(
+    candidate?.validCompleted &&
+    candidate.archived &&
+    candidate.branch === integrationBranch &&
+    candidate.state?.deliveryOverride === "releaseMerged"
+  );
+}
 
 /** Project only known Changes; platform data never discovers or mutates a Change. */
 export async function collectDelivery(input: Input) {
@@ -97,7 +109,7 @@ export async function collectDelivery(input: Input) {
       ...(releaseSource.branch ? [releaseSource.branch] : []),
     ]);
   const changeIndex = new Map<string, CatalogItem[]>();
-  const releaseIndex = new Map<string, PullRequest[]>();
+  const releaseCommits = new Map<string, PullRequest[]>();
   const add = <T>(index: Map<string, T[]>, key: string, pr: T) => {
     const items = index.get(key) ?? [];
     items.push(pr);
@@ -106,6 +118,7 @@ export async function collectDelivery(input: Input) {
   const baseErrors = new Map<string, string>();
   let changeError: string | undefined;
   let releaseError: string | undefined;
+  // Every base shares one catalog read, so a failed read fails each base once.
   for (const [kind, base] of [
     ...changeBases.map((base) => ["change", base] as const),
     ["release", releaseSource.branch],
@@ -113,13 +126,16 @@ export async function collectDelivery(input: Input) {
     let errorMessage: string | undefined;
     if (reader && base) {
       try {
-        for (const item of await cache.query(reader, base, signal)) {
-          const { marker, ...pr } = item;
-          if (kind === "change" && marker.kind === "change")
-            add(changeIndex, marker.id, item);
-          if (kind === "release" && marker.kind === "release")
-            for (const id of marker.includes)
-              add(releaseIndex, id, { ...pr, version: marker.version });
+        for (const pr of await cache.query(reader, base, signal)) {
+          const releaseVersion = pr.mergeCommit
+            ? input.releaseVersions?.[pr.mergeCommit]?.version
+            : undefined;
+          if (kind === "change") add(changeIndex, pr.head.branch, pr);
+          if (kind === "release" && pr.state === "merged" && pr.mergeCommit)
+            add(releaseCommits, pr.mergeCommit, {
+              ...pr,
+              ...(releaseVersion ? { version: releaseVersion } : {}),
+            });
         }
       } catch (error) {
         signal.throwIfAborted();
@@ -132,6 +148,20 @@ export async function collectDelivery(input: Input) {
     } else releaseError = errorMessage;
   }
 
+  const ownedBranches = new Set(
+    [...byId.values()].flatMap((candidate) =>
+      candidate?.state?.branch ? [candidate.state.branch] : [],
+    ),
+  );
+  await input.prepareIntegrations?.(
+    [...changeIndex].flatMap(([branch, prs]) =>
+      ownedBranches.has(branch)
+        ? prs.flatMap((pr) =>
+            pr.state === "merged" && pr.mergeCommit ? [pr.mergeCommit] : [],
+          )
+        : [],
+    ),
+  );
   if (!input.integrationBranch) changeError = "集成分支尚未配置。";
   const integrations: IntegrationIndex = {
     version: INTEGRATION_VERSION,
@@ -166,29 +196,32 @@ export async function collectDelivery(input: Input) {
         changePrsStale = true;
         changePrs = prior?.changePrs ?? [];
       } else if (branch) {
-        changePrs = deliveryPullRequests(changeIndex.get(group.id) ?? [], {
+        changePrs = deliveryPullRequests(changeIndex.get(branch) ?? [], {
           repositoryId: reader!.repositoryId,
           integrationBranch: input.integrationBranch!,
           id: group.id,
           branch,
           parentBranch: target?.branch,
-        }).map(({ marker: _marker, ...pr }) => pr);
+        });
       } else {
         diagnostics.push("Change 来源或 PR 读取能力尚未就绪。");
         changePrsStale = true;
       }
       let releasePrs: PullRequest[];
+      const archive = input.releaseArchives?.[group.id];
+      const matched =
+        !releaseError && archive?.introduction
+          ? (releaseCommits.get(archive.introduction) ?? [])
+          : [];
       if (releaseError) {
         diagnostics.push(releaseError);
         releasePrs = prior?.releasePrs ?? [];
-      } else releasePrs = [...(releaseIndex.get(group.id) ?? [])];
+      } else releasePrs = matched;
       const changeConflict =
         changePrs.filter((p) => p.state === "open").length > 1;
-      const releaseConflict =
-        releasePrs.filter((p) => p.state === "open").length > 1;
-      if (changeConflict || releaseConflict)
+      if (changeConflict)
         diagnostics.push(
-          "存在多个待合入 PR，无法确定当前交付，请核对关联标记。",
+          "存在多个待合入 PR，无法确定当前交付，请核对登记分支和交付目标。",
         );
       const merged = changePrs.filter((p) => p.state === "merged");
       const targetBranch =
@@ -242,11 +275,7 @@ export async function collectDelivery(input: Input) {
       let stage: Delivery["stage"];
       let datedRelease: PullRequest | undefined;
       // candidate.branch is the read source; state.branch retains historical ownership.
-      const overridden =
-        candidate?.validCompleted &&
-        candidate.archived &&
-        candidate.branch === input.integrationBranch &&
-        candidate.state?.deliveryOverride === "releaseMerged";
+      const overridden = hasReleaseOverride(group, input.integrationBranch);
       if (integratedCommit && !inProject) {
         stage = projectError ? "unknown" : "pendingIntegration";
         diagnostics.push(
@@ -255,33 +284,7 @@ export async function collectDelivery(input: Input) {
       } else if (integratedCommit) {
         stage = "pendingRelease";
         if (releaseSource.message) diagnostics.push(releaseSource.message);
-        if (!releaseSource.commit || releaseError) stage = "unknown";
-        else {
-          for (const p of releasePrs.filter((p) => p.state === "merged")) {
-            if (
-              p.mergeCommit &&
-              (await input.ancestor(p.mergeCommit, releaseSource.commit)) &&
-              (await input.ancestor(integratedCommit, p.mergeCommit))
-            ) {
-              stage = "releaseMerged";
-              if (
-                p.mergedAt &&
-                Number.isFinite(Date.parse(p.mergedAt)) &&
-                (!datedRelease ||
-                  Date.parse(p.mergedAt) < Date.parse(datedRelease.mergedAt!) ||
-                  (Date.parse(p.mergedAt) ===
-                    Date.parse(datedRelease.mergedAt!) &&
-                    p.number < datedRelease.number))
-              )
-                datedRelease = p;
-            } else {
-              diagnostics.push(
-                `发布 PR #${p.number} 已合入，Git 结果仍待核实。`,
-              );
-              if (stage !== "releaseMerged") stage = "unknown";
-            }
-          }
-        }
+        if (!releaseSource.commit) stage = "unknown";
       } else if (evidence.status !== "missing") {
         stage = "unknown";
         if (evidence.status !== "found") diagnostics.push(evidence.message);
@@ -298,8 +301,38 @@ export async function collectDelivery(input: Input) {
       }
       if (stage === "pendingIntegration" && (changePrsStale || changeConflict))
         stage = "unknown";
-      if (stage === "pendingRelease" && releaseConflict) stage = "unknown";
+      // An unreadable release snapshot only blocks work that is waiting for release.
+      const releaseUnknown =
+        archive?.status === "invalid" ||
+        (archive?.status === "unavailable" && stage === "pendingRelease");
+      if (archive?.message && (archive.status === "found" || releaseUnknown))
+        diagnostics.push(archive.message);
+      if (releaseUnknown) stage = "unknown";
       if (overridden) stage = "releaseMerged";
+      if (archive?.status === "found") {
+        stage = "releaseMerged";
+        // A failed PR read keeps the batch from the last successful read.
+        const dated = releaseError
+          ? releasePrs.filter(
+              (p) =>
+                p.number === prior?.releaseMergedPrNumber &&
+                p.base.branch === releaseSource.branch &&
+                p.mergeCommit === archive.introduction,
+            )
+          : matched;
+        if (
+          dated.length === 1 &&
+          dated[0].mergedAt &&
+          Number.isFinite(Date.parse(dated[0].mergedAt))
+        )
+          datedRelease = dated[0];
+        else
+          diagnostics.push(
+            dated.length > 1
+              ? "归档引入提交对应多个发布 PR，合入时间未知。"
+              : "发布归档已核实，未找到可核实的发布 PR 合入时间。",
+          );
+      }
       const stale = changePrsStale || releasePrsStale;
       if (stale) complete = false;
       deliveryByChange[group.id] = {

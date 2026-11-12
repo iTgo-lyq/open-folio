@@ -139,7 +139,6 @@ export async function preflight(repo, id, readPullRequests = githubPullRequests)
   assert(!target.parent || target.parent.status === 'active', 'The parent must be active to receive a child delivery');
   assert(open.length < 2, `发现多个相同源分支和目标分支的未合并 PR：${open.map(pr => '#' + pr.number).join('、')}`);
   const pr = open[0];
-  assert(!pr || pr.associated, `PR #${pr?.number} 的正文需要唯一的独立标记段落 SpecTrail-Change: ${id}`);
   const result = {integrationBranch:target.branch,projectIntegrationBranch:catalog.branch,tip:target.commit,integration,
     pullRequest:pr?.number ?? null};
   const delivery = source(repo,catalog,id);

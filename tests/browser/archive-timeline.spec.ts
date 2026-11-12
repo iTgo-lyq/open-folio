@@ -16,6 +16,57 @@ import { writeFile } from "node:fs/promises";
 
 test.use({ timezoneId: "Asia/Shanghai" });
 
+test("published archives without PR times stay in archived even when development sources are unavailable", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const data: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const original = data.changes.find(
+    (change) => change.id === "document-reader",
+  )!;
+  data.deliveryByChange = {};
+  data.changes = ["无发布PR", "PR读取失败", "开发来源缺失"].map(
+    (title, index) => {
+      const change = structuredClone(original);
+      const record = primaryRecord(change)!;
+      const id = `published-${index}`;
+      change.id = change.primary = record.key = record.id = id;
+      change.title = record.title = title;
+      record.state = { ...record.state!, id, title, status: "completed" };
+      record.validCompleted = index !== 2;
+      if (index === 2) change.primary = null;
+      data.deliveryByChange![id] = {
+        stage: "releaseMerged",
+        changePrs: [],
+        releasePrs: [],
+        diagnostics: [],
+        stale: index === 1,
+      };
+      return change;
+    },
+  );
+  await page.route("**/api/repositories/*/workbench*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=archived`);
+  const unknown = page.getByRole("region", {
+    name: "合入时间未知",
+    exact: true,
+  });
+  for (const change of data.changes)
+    await expect(
+      unknown.getByRole("link", { name: `打开 ${change.title}`, exact: true }),
+    ).toBeVisible();
+  await page.goto(`/?${repositoryQuery}&m=changes&scope=completed`);
+  for (const change of data.changes)
+    await expect(
+      page.getByRole("link", { name: `打开 ${change.title}`, exact: true }),
+    ).toHaveCount(0);
+});
+
 test("archive timeline groups merge days and batches, filters, expands and restores detail focus", async ({
   page,
   request,
@@ -222,4 +273,102 @@ test("archive timeline groups merge days and batches, filters, expands and resto
   await expect
     .poll(() => new URL(page.url()).searchParams.get("c"))
     .toBe(secondId);
+});
+
+test("a cold list is usable before history and then moves from unknown time into its release batch", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const complete: Snapshot = await (
+    await request.get(personal.url("workbench"))
+  ).json();
+  const change = complete.changes.find(
+    (item) => item.id === "document-reader",
+  )!;
+  complete.changes = [change];
+  complete.id = "complete-history";
+  complete.deliveryByChange = {
+    [change.id]: {
+      stage: "releaseMerged",
+      changePrs: [],
+      releasePrs: [
+        {
+          number: 128,
+          title: "Release",
+          url: "https://github.com/acme/fixture/pull/128",
+          state: "merged",
+          draft: false,
+          base: { repositoryId: "1", branch: "main", commit: "a".repeat(40) },
+          head: {
+            repositoryId: "1",
+            branch: "develop",
+            commit: "b".repeat(40),
+          },
+          mergeCommit: "c".repeat(40),
+          updatedAt: "2026-10-28T00:00:00Z",
+          mergedAt: "2026-10-27T01:00:00Z",
+          version: "1.2.3",
+        },
+      ],
+      releaseMergedPrNumber: 128,
+      diagnostics: [],
+      stale: false,
+    },
+  };
+  const initial = structuredClone(complete);
+  initial.id = "current-archives";
+  initial.historyPending = true;
+  initial.deliveryByChange![change.id] = {
+    stage: "releaseMerged",
+    changePrs: [],
+    releasePrs: [],
+    diagnostics: [],
+    stale: true,
+  };
+  let reads = 0,
+    enriched = false,
+    automatic = 0;
+  let resume!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  await page.route("**/api/repositories/*/workbench*", (route) => {
+    if (reads++ === 0)
+      return route.fulfill({
+        status: 409,
+        json: { error: { code: "NO_SNAPSHOT", message: "First read" } },
+      });
+    return route.fulfill({ json: enriched ? complete : initial });
+  });
+  await page.route("**/api/repositories/*/refresh*", async (route) => {
+    if (new URL(route.request().url()).searchParams.get("automatic") === "1") {
+      automatic++;
+      await gate;
+      enriched = true;
+    }
+    await route.fulfill({
+      json: { snapshotId: enriched ? complete.id : initial.id },
+    });
+  });
+  try {
+    await page.goto(`/?${repositoryQuery}&m=changes&scope=archived`);
+    await expect(
+      page
+        .getByRole("region", { name: "合入时间未知", exact: true })
+        .getByRole("link", { name: `打开 ${change.title}`, exact: true }),
+    ).toBeVisible();
+    await expect.poll(() => automatic).toBe(1);
+    resume();
+    await expect(
+      page
+        .getByRole("region", { name: "合入 PR #128", exact: true })
+        .getByRole("link", { name: `打开 ${change.title}`, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "合入时间未知", exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    resume();
+  }
 });

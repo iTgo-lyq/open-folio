@@ -31,14 +31,18 @@ test("only a uniquely associated merged PR proves delivery; messages and wrong i
   for (const patch of [
     { state: "closed" as const },
     { state: "open" as const },
-    { body: "Mention SpecTrail-Change: example" },
-    { body: "PR\n\nSpecTrail-Change: example\nSpecTrail-Change: example" },
     { head: { ...pr.head, repositoryId: "2" } },
     { head: { ...pr.head, branch: "other" } },
     { base: { ...pr.base, repositoryId: "2" } },
     { base: { ...pr.base, branch: "main" } },
   ])
     assert.equal((await resolve([{ ...pr, ...patch }])).status, "missing");
+  for (const body of [
+    "Delivery",
+    "Mention SpecTrail-Change: other",
+    "PR\n\nSpecTrail-Change: example\nSpecTrail-Change: example",
+  ])
+    assert.equal((await resolve([{ ...pr, body }])).status, "found");
   assert.equal((await resolve([pr, { ...pr, number: 2 }])).status, "invalid");
   assert.equal(
     (await resolve([{ ...pr, mergeCommit: null }])).status,

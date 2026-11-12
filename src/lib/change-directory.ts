@@ -30,9 +30,9 @@ export function classifyDirectoryState(
   group: ChangeGroup,
   delivery?: Delivery,
 ): DirectoryScope | undefined {
+  if (delivery?.stage === "releaseMerged") return "archived";
   const record = primaryRecord(group);
-  if (record?.validCompleted)
-    return delivery?.stage === "releaseMerged" ? "archived" : "completed";
+  if (record?.validCompleted) return "completed";
   const status = record?.state?.status;
   return status === "active" || status === "cancelled" ? status : undefined;
 }

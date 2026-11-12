@@ -114,6 +114,12 @@ Agent 在材料提交推送后直接提供分享链接，使用 `docs/project/wo
 
 原型链接全部公开。已授权用户先准备不可变版本，再分享 `/preview/<publicationId>`；匿名 HTML、截图和元数据只读已发布文件，绝不触发远端 Git 或 API。退出、token 撤销或后续停用仓库原型不删除已经公开的版本。未知版本返回未就绪，部署者主动撤回后为 410。公开原型不包含工程正文、连接或上传秘密；外部托管服务负责自己固定 URL 的持续可用性。
 
+## 发布历史与版本识别
+
+冷启动先展示当前发布分支中已核实的有效归档，再由同一刷新任务补齐首次进入提交、PR、时间和版本；未知时间仍归入已归档。历史按 Change ID 一次遍历，不复验各历史节点。PR 目录按仓库及编号缓存，按更新时间增量读取，首页未改变时复用历史；不逐 Change 查询。
+
+发布批次的版本优先读取该批次发布提交中的根目录 `package.json`、`Cargo.toml`、`pyproject.toml`、`pom.xml`、`pubspec.yaml`、`VERSION` 或 `version.txt`。只识别静态项目版本，不执行构建，也不把依赖或工具链版本当作项目版本；多个有效文件版本冲突时留空。无文件版本时接受精确指向该提交的 `v1.2.3`、`1.2.3`、`release-1.2.3`、`release/v1.2.3` 等 tag，支持预发布后缀、轻量和附注 tag；不会沿祖先寻找旧版本。文件结果按提交持久缓存，tag 正负结果缓存 5 分钟后重查，支持后补、移动和删除。无法识别版本不影响归档分类和合入时间。SpecTrail 不再要求 PR 机器标记；归档与集成 CI 根据登记分支和实际差异核实。
+
 ## 运维配置与备份
 
 `OPENFOLIO_DATA_DIR` 默认为服务用户的 `~/.local/share/open-folio`，配置默认在 `config.json`；`OPENFOLIO_CONFIG` 可指定其他路径。首次读取缺失配置时创建私有空文件；损坏文件不覆盖。配置只含运维参数：
@@ -166,7 +172,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 `prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `publish.mjs associate` 关联 Change，最后一次提交 gitlink 与 Change。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
 
-当前原型总览读取所选集成分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 归档后以带 `SpecTrail-Change: <id>` 的双亲合并提交保存交付边界；“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。原始分支与工作区可在远端核实后安全清理，不再创建保留标签。旧归档缺少有效关联时，diff 和原型留空，正文仍可读。关闭开关只禁止后续准备，已经公开的产物仍可访问。
+当前原型总览读取所选集成分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 归档后通过登记源分支对应 PR 的双亲合并提交保存交付边界；“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。原始分支与工作区可在远端核实后安全清理，不再创建保留标签。旧归档缺少有效关联时，diff 和原型留空，正文仍可读。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 
 通过 [SpecTrail 原型 skill](.agents/skills/spec-trail/prototype/SKILL.md) 维护源码、mock 和构建。产物可选 OpenFolio 内置托管、外部托管或 Git 自包含 HTML；服务不安装仓库依赖、不执行仓库构建。
 

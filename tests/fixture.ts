@@ -77,7 +77,7 @@ export async function fixture() {
     repositoryId: "1",
     cacheKey: "fixture:1",
     list: async ({ base }) => ({
-      items: pullRequests.filter((pr) => pr.base.branch === base),
+      items: pullRequests.filter((pr) => !base || pr.base.branch === base),
       nextCursor: null,
     }),
   };

@@ -53,7 +53,7 @@ test("shared and server schemas allow only the explicit release override", () =>
   }
 });
 
-test("only the integration archive overrides delivery; removal restores automatic calculation", async (t) => {
+test("release archives prove delivery themselves; only integration archives supply legacy overrides", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
   const overridden = { ...f.record, deliveryOverride: "releaseMerged" };
@@ -70,8 +70,11 @@ test("only the integration archive overrides delivery; removal restores automati
   f.commit();
   assert.equal(
     (await refresh()).deliveryByChange!.example.stage,
-    "pendingIntegration",
+    "releaseMerged",
   );
+  // Remove the published archive to exercise the separate legacy override.
+  f.git(["rm", path]);
+  f.commit();
 
   // Legacy integration deliberately has no SpecTrail merge record.
   f.git(["checkout", "develop"]);
@@ -126,7 +129,14 @@ test("a central override survives missing history and PR failures without bypass
   );
   f.commit();
   f.merge();
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
+  let initial: import("../src/lib/model.ts").Snapshot | undefined;
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, {
+    ...context,
+    onCurrent: (value) => {
+      initial = value;
+    },
+  });
+  assert.equal(initial?.deliveryByChange?.example.stage, "releaseMerged");
   const input = {
     changes: snapshot.changes,
     integrationBranch: "develop",
@@ -194,7 +204,7 @@ test("a central override survives missing history and PR failures without bypass
     reader: {
       ...emptyReader,
       list: async (q) => ({
-        items: q.base === "develop" ? [pr(1), pr(2)] : [],
+        items: !q.base || q.base === "develop" ? [pr(1), pr(2)] : [],
         nextCursor: null,
       }),
     },

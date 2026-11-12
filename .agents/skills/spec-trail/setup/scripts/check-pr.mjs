@@ -7,7 +7,6 @@ import { pathToFileURL } from 'node:url';
 import { recordsAt } from '../../scripts/repository.mjs';
 import { validateChange, validateWorkflow } from '../../scripts/state-schema.mjs';
 import { closedRecord, validBranchName, parentBranch } from '../../scripts/routing.mjs';
-import { prMarker } from '../../scripts/pr-markers.mjs';
 import { changePullRequests, deliveryPullRequests, integrationEvidence } from '../../scripts/integration-records.mjs';
 import { githubPullRequests } from '../../scripts/github-prs.mjs';
 
@@ -37,7 +36,6 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
   const config = JSON.parse(git(['show', `${pr.head.sha}:docs/project/workflow.json`]));
   const issues = validateWorkflow(config);
   assert(!issues.length, `Invalid workflow.json: ${issues.join('; ')}`);
-  const marker = prMarker(pr.body ?? '');
   const records = recordsAt({git}, pr.head.sha);
   const centralTip = pr.base.ref === config.integrationBranch ? pr.base.sha :
     git(['rev-parse','--verify',`refs/remotes/origin/${config.integrationBranch}^{commit}`]);
@@ -63,18 +61,17 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
       repositoryId:String(event.repository.id),integrationBranch:config.integrationBranch,
       parentBranch:target,id:state.id,branch:state.branch}));
   };
-  if (pr.base.ref === config.releaseBranch)
-    assert(marker.kind === 'release', 'Release PR requires one trailing SpecTrail-Version marker and valid optional SpecTrail-Includes markers');
-  const registeredSource = central.some(row => !row.archived && row.state?.branch === pr.head.ref && pr.head.ref !== config.integrationBranch);
-  if (pr.base.ref !== config.releaseBranch && (marker.kind === 'change' || pr.base.ref === config.integrationBranch || registeredSource)) {
-    assert(marker.kind === 'change', 'Change PR requires one standalone SpecTrail-Change marker');
+  const registrations = central.filter(row => !row.archived && row.state?.branch === pr.head.ref && pr.head.ref !== config.integrationBranch);
+  if (pr.base.ref !== config.releaseBranch && (pr.base.ref === config.integrationBranch || registrations.length)) {
+    assert(registrations.length === 1, 'Change PR requires one uniquely registered source branch');
+    const id = registrations[0].id;
     assert(pr.head.ref !== config.integrationBranch && pr.head.ref !== config.releaseBranch,
       'Change PR must come from its registered work branch');
-    const record = archive(records, marker.id);
+    const record = archive(records, id);
     assert(record.state.branch === pr.head.ref, 'Archive ownership does not match the PR source branch');
-    const registration = central.filter(row => row.id === marker.id);
+    const registration = central.filter(row => row.id === id);
     assert(registration.length === 1 && !registration[0].error && !registration[0].archived &&
-      registration[0].state?.id === marker.id && registration[0].state.branch === pr.head.ref &&
+      registration[0].state?.id === id && registration[0].state.branch === pr.head.ref &&
       registration[0].state.parent === record.state.parent,
     'Register this Change source branch on the integration branch before merging');
     const before = recordsAt({git}, pr.base.sha);
@@ -89,17 +86,17 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
       target = parentBranch(record.state,parent,config.integrationBranch,config.releaseBranch);
     }
     assert(pr.base.ref === target, 'Change PR target does not match its parent or configured delivery branch');
-    const expected = new Set([marker.id]);
+    const expected = new Set([id]);
     if (record.state.size === 'xlarge') {
       for (const id of record.state.children ?? []) {
         const rows = records.filter(row => row.id === id), child = rows[0];
-        assert(rows.length === 1 && !child.error && child.state?.parent === marker.id, `Child ${id}: missing or invalid parent relationship`);
+        assert(rows.length === 1 && !child.error && child.state?.parent === record.state.id, `Child ${id}: missing or invalid parent relationship`);
         if (!child.archived) {
           const entry = central.find(row => row.id === id);
           assert(entry?.state?.branch === child.state.branch, `Child ${id}: invalid cancellation source`);
           const cancelled = recordsAt({git},`refs/remotes/origin/${child.state.branch}`,id);
           assert(cancelled.length === 1 && !cancelled[0].error && !validateChange(cancelled[0].state).length &&
-            cancelled[0].state.status === 'cancelled' && cancelled[0].state.parent === marker.id,
+            cancelled[0].state.status === 'cancelled' && cancelled[0].state.parent === record.state.id,
             `Child ${id}: must be completed or cancelled`);
           continue;
         }
@@ -120,12 +117,22 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
     return {kind:'change', changes:[...expected], source:pr.head.sha};
   }
   if (pr.base.ref !== config.releaseBranch) return {kind:'unrelated', changes:[], source:pr.head.sha};
-  assert(marker.kind === 'release', 'Release PR requires one trailing SpecTrail-Version marker and valid optional SpecTrail-Includes markers');
-  if (!marker.includes.length)
-    assert(!git(['diff', '--name-only', pr.base.sha, pr.head.sha, '--', 'docs/project/archive/']),
-      'SpecTrail-Includes is required when a release changes Change archives');
+  const archivedIds = new Set(records.filter(row => row.archived).map(row => row.id));
+  const seen = new Set();
+  for (const row of records) {
+    assert(!seen.has(row.id) || !archivedIds.has(row.id), `Change ${row.id}: release requires one unique archive without a live record`);
+    seen.add(row.id);
+  }
+  const before = recordsAt({git}, pr.base.sha);
+  const existing = new Set(before.filter(row => row.archived).map(row => row.id));
+  const added = records.filter(row => row.archived && !existing.has(row.id));
+  // One diff: a release may only add new Change archive directories; everything else there is read-only.
+  const allowed = added.map(row => `${row.directory.replace(/\/$/, '')}/`);
+  for (const path of git(['diff', '--name-only', '--no-renames', '-z', pr.base.sha, pr.head.sha, '--', 'docs/project/archive/']).split('\0').filter(Boolean))
+    assert(allowed.some(prefix => path.startsWith(prefix)), `${path}: released archives are read-only`);
+  const includes = added.map(row => row.id);
   const integrationTip = git(['rev-parse', '--verify', `refs/remotes/origin/${config.integrationBranch}^{commit}`]);
-  for (const id of marker.includes) {
+  for (const id of includes) {
     const record = archive(records, id);
     const parent = record.state.parent ? records.find(row => row.id === record.state.parent)?.state : null;
     const integration = await evidence(record.state,parent,integrationTip);
@@ -138,7 +145,7 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
       git(['rev-parse', `${integration.commit}:${record.directory}`]),
     `Change ${id}: release candidate modified its integrated archive`);
   }
-  return {kind:'release', changes:marker.includes, source:pr.head.sha};
+  return {kind:'release', changes:includes, source:pr.head.sha};
 }
 
 async function main() {
