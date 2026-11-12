@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-trail-cli-entry",
+  "title": "SpecTrail 脚本收敛为统一命令行入口",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "工程",
+    "体验"
+  ],
+  "waitingFor": {
+    "kind": "pause",
+    "summary": "等 SpecTrail skill 文档清理完成后由用户恢复"
+  }
+}
