@@ -11,9 +11,14 @@ async function traced() {
   const f = await fixture(),
     calls: string[][] = [];
   class Reader extends GitReader {
-    override run(args: string[], signal?: AbortSignal, limit?: number) {
+    override run(
+      args: string[],
+      signal?: AbortSignal,
+      limit?: number,
+      input?: string | Buffer,
+    ) {
       calls.push(args);
-      return super.run(args, signal, limit);
+      return super.run(args, signal, limit, input);
     }
   }
   const makeStore = () =>
@@ -44,7 +49,13 @@ async function traced() {
     calls,
     makeStore,
     store: makeStore(),
-    scans: () => calls.filter((a) => a[0] === "ls-tree" && a[1] === "-rz"),
+    scans: () =>
+      calls.filter(
+        (a) =>
+          a[0] === "ls-tree" &&
+          a[1] === "-rlz" &&
+          !a.includes("docs/project/workflow.json"),
+      ),
   };
 }
 
@@ -179,7 +190,7 @@ test("default branch changes preserve the configured collaboration scope, and ol
   f.calls.length = 0;
   const upgraded = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
   assert.notEqual(upgraded.id, next.id);
-  assert.equal(f.scans().length, 1);
+  assert.equal(f.scans().length, 2); // Current collaboration and release catalogs.
   await assert.rejects(
     f.store.refresh(f.project, { ...DEFAULT_LIMITS, documents: 1 }),
     { code: "SOURCE_LIMIT" },

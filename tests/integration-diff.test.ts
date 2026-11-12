@@ -146,7 +146,7 @@ test("integration API requires snapshots, rechecks permissions and rejects forei
   ]);
   f.g.recordMerge("example", "change/example");
   f.g.git(["push", "origin", "develop"]);
-  assert.equal((await f.request("refresh", "POST")).status, 200);
+  assert.equal((await f.request("refresh?automatic=1", "POST")).status, 200);
   const snapshot = await (await f.request("workbench")).json();
   const base = "changes/example/integration",
     query = `snapshot=${snapshot.id}`;

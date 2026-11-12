@@ -134,7 +134,7 @@ test("PR preflight and verification never push, and verify follows the actual pl
   }
 });
 
-test("preflight checks the open PR marker and verify accepts a trailing signature", async (t) => {
+test("preflight associates an unmarked PR by registered source and target", async (t) => {
   const f = await setup();
   t.after(f.cleanup);
   const pr = {
@@ -156,10 +156,9 @@ test("preflight checks the open PR marker and verify accepts a trailing signatur
     "Delivery\n\nSpecTrail-Change: example\n\nSpecTrail-Change: example",
   ]) {
     pr.body = body;
-    await assert.rejects(
-      preflight(f.repo, f.id, f.readPullRequests),
-      /PR #12.*SpecTrail-Change: example/,
-    );
+    const result = await preflight(f.repo, f.id, f.readPullRequests);
+    assert("pullRequest" in result);
+    assert.equal(result.pullRequest, 12);
   }
   pr.body =
     "Delivery\n\nSpecTrail-Change: example\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
@@ -310,70 +309,101 @@ test("partial cleanup can resume after remote deletion without regenerating the 
 
 test("cleanup retains initialized or deinitialized submodule worktrees and explains how to resume", async (t) => {
   for (const initialize of [true, false]) {
-    await t.test(initialize ? "submodule Git data" : "gitlink only", async (t) => {
-      const f = await setup();
-      t.after(f.cleanup);
-      const modulePath = "repos/experiment_fe";
-      const moduleSource = join(f.root, "experiment-fe");
-      f.git(["init", moduleSource]);
-      f.git(
-        [
-          "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test",
-          "commit", "--allow-empty", "-m", "Submodule baseline",
-        ],
-        moduleSource,
-      );
-      await writeFile(
-        join(f.worktree, ".gitmodules"),
-        `[submodule "${modulePath}"]\n\tpath = ${modulePath}\n\turl = ${moduleSource}\n`,
-      );
-      f.git(["add", ".gitmodules"], f.worktree);
-      const moduleCommit = f.git(["rev-parse", "HEAD"], moduleSource);
-      f.git(
-        ["update-index", "--add", "--cacheinfo", `160000,${moduleCommit},${modulePath}`],
-        f.worktree,
-      );
-      await mkdir(join(f.worktree, modulePath), { recursive: true });
-      f.git(["commit", "-m", "Add submodule"], f.worktree);
-      f.git(["push", "origin", "HEAD"], f.worktree);
-      const options = { verifiedCommit: f.merge(), idleWorktree: f.worktree };
-
-      if (initialize) {
+    await t.test(
+      initialize ? "submodule Git data" : "gitlink only",
+      async (t) => {
+        const f = await setup();
+        t.after(f.cleanup);
+        const modulePath = "repos/experiment_fe";
+        const moduleSource = join(f.root, "experiment-fe");
+        f.git(["init", moduleSource]);
         f.git(
-          ["-c", "protocol.file.allow=always", "submodule", "update", "--init"],
+          [
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "Submodule baseline",
+          ],
+          moduleSource,
+        );
+        await writeFile(
+          join(f.worktree, ".gitmodules"),
+          `[submodule "${modulePath}"]\n\tpath = ${modulePath}\n\turl = ${moduleSource}\n`,
+        );
+        f.git(["add", ".gitmodules"], f.worktree);
+        const moduleCommit = f.git(["rev-parse", "HEAD"], moduleSource);
+        f.git(
+          [
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            `160000,${moduleCommit},${modulePath}`,
+          ],
           f.worktree,
         );
-        const gitdir = f.git(["rev-parse", "--absolute-git-dir"], f.worktree);
-        const retained = await cleanup(f.repo, f.id, options);
-        assert.match(
-          retained.cleanup.worktree.reason,
-          /initialized submodules "repos\/experiment_fe"/,
-        );
-        assert.match(
-          retained.cleanup.worktree.reason,
-          /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*references\/integration\.md/,
-        );
-        assert.deepEqual(
-          Object.values(retained.cleanup).map((item) => (item as { status: string }).status),
-          ["retained", "retained", "retained"],
-        );
-        f.git(["submodule", "deinit", "--", modulePath], f.worktree);
-        const deinitialized = await cleanup(f.repo, f.id, options);
-        assert.equal(deinitialized.cleanup.worktree.status, "retained");
-        assert.match(deinitialized.cleanup.worktree.reason, /submodule Git data at/);
-        assert.ok(deinitialized.cleanup.worktree.reason.includes(join(gitdir, "modules")));
-        assert.ok(f.git(["ls-remote", "origin", `refs/heads/${f.branch}`]));
-        assert.ok(f.git(["show-ref", "--verify", `refs/heads/${f.branch}`]));
-        f.git(["worktree", "remove", "--force", "--", f.worktree]);
-      }
+        await mkdir(join(f.worktree, modulePath), { recursive: true });
+        f.git(["commit", "-m", "Add submodule"], f.worktree);
+        f.git(["push", "origin", "HEAD"], f.worktree);
+        const options = { verifiedCommit: f.merge(), idleWorktree: f.worktree };
 
-      const resumed = await cleanup(f.repo, f.id, options);
-      assert.deepEqual(
-        Object.values(resumed.cleanup).map((item) => (item as { status: string }).status),
-        ["cleaned", "cleaned", "cleaned"],
-        JSON.stringify(resumed.cleanup),
-      );
-    });
+        if (initialize) {
+          f.git(
+            [
+              "-c",
+              "protocol.file.allow=always",
+              "submodule",
+              "update",
+              "--init",
+            ],
+            f.worktree,
+          );
+          const gitdir = f.git(["rev-parse", "--absolute-git-dir"], f.worktree);
+          const retained = await cleanup(f.repo, f.id, options);
+          assert.match(
+            retained.cleanup.worktree.reason,
+            /initialized submodules "repos\/experiment_fe"/,
+          );
+          assert.match(
+            retained.cleanup.worktree.reason,
+            /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*references\/integration\.md/,
+          );
+          assert.deepEqual(
+            Object.values(retained.cleanup).map(
+              (item) => (item as { status: string }).status,
+            ),
+            ["retained", "retained", "retained"],
+          );
+          f.git(["submodule", "deinit", "--", modulePath], f.worktree);
+          const deinitialized = await cleanup(f.repo, f.id, options);
+          assert.equal(deinitialized.cleanup.worktree.status, "retained");
+          assert.match(
+            deinitialized.cleanup.worktree.reason,
+            /submodule Git data at/,
+          );
+          assert.ok(
+            deinitialized.cleanup.worktree.reason.includes(
+              join(gitdir, "modules"),
+            ),
+          );
+          assert.ok(f.git(["ls-remote", "origin", `refs/heads/${f.branch}`]));
+          assert.ok(f.git(["show-ref", "--verify", `refs/heads/${f.branch}`]));
+          f.git(["worktree", "remove", "--force", "--", f.worktree]);
+        }
+
+        const resumed = await cleanup(f.repo, f.id, options);
+        assert.deepEqual(
+          Object.values(resumed.cleanup).map(
+            (item) => (item as { status: string }).status,
+          ),
+          ["cleaned", "cleaned", "cleaned"],
+          JSON.stringify(resumed.cleanup),
+        );
+      },
+    );
   }
 });
 

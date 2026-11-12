@@ -49,7 +49,7 @@ function remote() {
       calls.push(JSON.stringify(query));
       if (error) throw error;
       return {
-        items: prs.filter((p) => p.base.branch === query.base),
+        items: prs.filter((p) => !query.base || p.base.branch === query.base),
         nextCursor: null,
       };
     },
@@ -268,20 +268,15 @@ test("PR-only refreshes update snapshots, preserve close/reopen history and rech
   };
   const first = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(first.deliveryByChange?.example.stage, "pendingIntegration");
-  assert.equal(checks, 1);
+  assert.equal(checks, 2);
   const same = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(same.id, first.id);
-  assert.equal(checks, 2);
-  assert.deepEqual(r.calls, [
-    '{"base":"develop"}',
-    '{"base":"main"}',
-    '{"base":"develop"}',
-    '{"base":"main"}',
-  ]);
+  assert.equal(checks, 3);
+  assert.deepEqual(r.calls, ["{}", "{}"]);
   r.set([{ ...pr(), state: "closed" }, pr(2)]);
   const rebuilt = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.notEqual(rebuilt.id, first.id);
-  assert.equal(checks, 3);
+  assert.equal(checks, 4);
   assert.deepEqual(
     rebuilt.deliveryByChange?.example.changePrs.map((p) => [p.number, p.state]),
     [
@@ -331,17 +326,14 @@ test("release archives survive deleted sources and PR body changes; PR claims al
   };
   const integrated = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(integrated.deliveryByChange?.example.stage, "pendingRelease");
-  assert.deepEqual(r.calls, ['{"base":"develop"}', '{"base":"main"}']);
+  assert.deepEqual(r.calls, ["{}"]);
   r.set([
     { ...pr(), state: "merged", mergeCommit: m },
     { ...pr(2, true), state: "merged", mergeCommit: oid("f") },
   ]);
   const unverified = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
   assert.equal(unverified.deliveryByChange?.example.stage, "pendingRelease");
-  assert.equal(
-    unverified.deliveryByChange?.example.releasePrs[0].state,
-    "merged",
-  );
+  assert.deepEqual(unverified.deliveryByChange?.example.releasePrs, []);
   f.git(["checkout", "main"]);
   f.git(["merge", "--no-ff", "develop", "-m", "Release 1.0"]);
   f.git(["push", "origin", "main"]);
@@ -354,7 +346,7 @@ test("release archives survive deleted sources and PR body changes; PR claims al
   assert.equal(delivered.deliveryByChange?.example.stage, "releaseMerged");
   assert.equal(
     delivered.deliveryByChange?.example.releasePrs[0].version,
-    "1.0",
+    undefined,
   );
   // Published archives remain released even when the PR omits their IDs.
   r.set([
@@ -495,61 +487,6 @@ test("a new metadata snapshot cannot publish after a final permission denial", a
   assert.equal((await f.store.snapshot(f.project)).id, first.id);
 });
 
-test("unrelated PR read failures do not erase verified delivery phases", async (t) => {
-  const f = await integrationFixture();
-  t.after(f.cleanup);
-  const initial = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  const r = remote();
-  const input = {
-    changes: initial.changes,
-    integrationTip: initial.integrations.tip,
-    readIntegration: (commit: string, id: string) =>
-      inspectIntegration(f.run, commit, id),
-    integrationBranch: "develop",
-    releaseSource: initial.releaseSource!,
-    signal: new AbortController().signal,
-    ancestor: async () => true,
-  };
-  const denied = () => {
-    throw new ProviderError("PR_READ_DENIED", "PR permission missing", 403);
-  };
-  const waiting = await collectDelivery({
-    ...input,
-    reader: {
-      ...r.reader,
-      list: (q, c, s) =>
-        q.base === "main" ? denied() : r.reader.list(q, c, s),
-    },
-  });
-  assert.equal(waiting.deliveryByChange.example.stage, "pendingIntegration");
-  assert.equal(waiting.deliveryByChange.example.changePrsStale, false);
-  assert.equal(waiting.deliveryByChange.example.releasePrsStale, true);
-  const m = f.merge();
-  const integrated = await f.store.refresh(f.project, DEFAULT_LIMITS);
-  r.set([{ ...pr(2, true), state: "merged", mergeCommit: m }]);
-  const released = await collectDelivery({
-    ...input,
-    changes: integrated.changes,
-    integrationTip: integrated.integrations.tip,
-    readIntegration: (commit: string, id: string) =>
-      inspectIntegration(f.run, commit, id),
-    reader: {
-      ...r.reader,
-      list: (q, c, s) =>
-        q.base !== "main" ? denied() : r.reader.list(q, c, s),
-    },
-  });
-  assert.equal(released.deliveryByChange.example.stage, "unknown");
-  assert.equal(released.deliveryByChange.example.changePrsStale, true);
-  assert.equal(released.deliveryByChange.example.releasePrsStale, false);
-  assert.equal(released.deliveryByChange.example.releasePrs[0].state, "merged");
-  assert.ok(
-    !released.deliveryByChange.example.diagnostics.some((d) =>
-      d.includes("尚无"),
-    ),
-  );
-});
-
 test("delivery request count depends on base pages, not the number or history of Changes", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);
@@ -572,10 +509,10 @@ test("delivery request count depends on base pages, not the number or history of
   };
   const first = await collectDelivery(input);
   assert.equal(Object.keys(first.deliveryByChange).length, 138);
-  assert.deepEqual(r.calls, ['{"base":"develop"}', '{"base":"main"}']);
+  assert.deepEqual(r.calls, ["{}"]);
   r.calls.length = 0;
   await collectDelivery({ ...input, previous: first.deliveryByChange });
-  assert.equal(r.calls.length, 2);
+  assert.equal(r.calls.length, 1);
   r.calls.length = 0;
   await collectDelivery({
     ...input,

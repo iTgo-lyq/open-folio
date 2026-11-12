@@ -1,3 +1,4 @@
+import { readBlobs } from "./git-objects.ts";
 import type {
   DocumentRef,
   Limits,
@@ -16,11 +17,12 @@ export async function collectReleaseArchives(
   ids: string[],
   limits: Limits,
   signal: AbortSignal,
+  options: { history?: boolean; blobs?: Map<string, Buffer> } = {},
 ): Promise<Record<string, ReleaseArchive>> {
   if (!source.branch || !source.commit || !ids.length) return {};
   const branch = source.branch;
   const wanted = new Set(ids);
-  const blobs = new Map<string, Buffer>();
+  const blobs = options.blobs ?? new Map<string, Buffer>();
   let bytes = 0;
   const read = async (commit: string) => {
     const rows = (
@@ -40,6 +42,7 @@ export async function collectReleaseArchives(
       .toString()
       .split("\0");
     const documents: DocumentRef[] = [];
+    const needed = new Map<string, number>();
     for (const row of rows) {
       const tab = row.indexOf("\t");
       if (tab < 0) continue;
@@ -71,22 +74,10 @@ export async function collectReleaseArchives(
         ["100644", "100755"].includes(mode) &&
         Number.isSafeInteger(size) &&
         size <= max;
-      if (readable && !blobs.has(blob)) {
+      if (readable && !blobs.has(blob) && !needed.has(blob)) {
         bytes += size;
         if (bytes > limits.totalBytes) throw Error("Release content limit");
-        const body = await reader.run(
-          ["cat-file", "blob", blob],
-          signal,
-          max + 1024,
-        );
-        blobs.set(blob, body);
-      }
-      if (readable) {
-        try {
-          new TextDecoder("utf-8", { fatal: true }).decode(blobs.get(blob)!);
-        } catch {
-          readable = false;
-        }
+        needed.set(blob, size);
       }
       documents.push({
         id: `${commit}:${path}`,
@@ -102,6 +93,18 @@ export async function collectReleaseArchives(
         diagnostics: [],
       });
     }
+    for (const [blob, body] of await readBlobs(reader, needed, signal))
+      blobs.set(blob, body);
+    for (const doc of documents)
+      if (doc.readable) {
+        try {
+          new TextDecoder("utf-8", { fatal: true }).decode(
+            blobs.get(doc.blob)!,
+          );
+        } catch {
+          doc.readable = false;
+        }
+      }
     const entries = new Map<string, string>();
     for (const doc of documents) {
       const location =
@@ -169,13 +172,26 @@ export async function collectReleaseArchives(
           },
     ]),
   );
+  return options.history === false
+    ? result
+    : traceReleaseArchives(reader, source.commit, result, signal);
+}
+
+/** Current validity is already established. History supplies identity and provenance only. */
+export async function traceReleaseArchives(
+  reader: Pick<GitReader, "run">,
+  commit: string,
+  current: Record<string, ReleaseArchive>,
+  signal: AbortSignal,
+): Promise<Record<string, ReleaseArchive>> {
+  const result = structuredClone(current);
   const pending = new Set(
-    Object.keys(result).filter((id) => result[id].status === "found"),
+    Object.keys(result).filter(
+      (id) => result[id].status === "found" && !result[id].introduction,
+    ),
   );
   if (!pending.size) return result;
   try {
-    // First-parent traversal identifies entry into the release branch, rather
-    // than the original archive commit in the merged development history.
     const history = (
       await reader.run(
         [
@@ -183,58 +199,39 @@ export async function collectReleaseArchives(
           "--first-parent",
           "--full-history",
           "--reverse",
+          "--root",
           "--format=%x00%H%x00",
           "--name-only",
           "-z",
           "--no-renames",
+          "--diff-filter=A",
           "--diff-merges=first-parent",
-          source.commit,
+          commit,
           "--",
           "docs/project/archive/",
-          "docs/project/changes/",
         ],
         signal,
       )
     )
       .toString()
-      .split("\0")
-      .map((part) => part.trim())
-      .filter(Boolean);
-    const commits: { commit: string; paths: string[] }[] = [];
-    for (const part of history) {
-      if (/^[a-f0-9]{40,64}$/.test(part))
-        commits.push({ commit: part, paths: [] });
-      else commits.at(-1)?.paths.push(part);
-    }
-    const seen = new Set<string>();
-    for (const { commit, paths } of commits) {
-      let relevant = false;
-      for (const path of paths) {
-        const archive =
-          /^docs\/project\/archive\/\d{4}-\d{2}-\d{2}-([^/]+)\/(change\.json|plan\.md)$/.exec(
-            path,
-          );
-        if (archive && wanted.has(archive[1])) {
-          seen.add(archive[1]);
-          relevant = true;
-        }
-        const live = /^docs\/project\/changes\/([^/]+)\//.exec(path);
-        if (live && wanted.has(live[1]) && seen.has(live[1])) relevant = true;
+      .split("\0");
+    let introduction = "";
+    for (const item of history) {
+      const value = item.trim();
+      if (/^[a-f0-9]{40,64}$/.test(value)) {
+        introduction = value;
+        continue;
       }
-      if (!relevant) continue;
-      for (const group of commit === source.commit
-        ? current
-        : await read(commit)) {
-        if (pending.has(group.id) && primaryRecord(group)?.validCompleted) {
-          result[group.id].introduction = commit;
-          pending.delete(group.id);
-        }
-      }
+      const match =
+        /^docs\/project\/archive\/[^/]{10}-([a-z0-9]+(?:-[a-z0-9]+)*)\/change\.json$/.exec(
+          value,
+        );
+      if (match && introduction && pending.delete(match[1]))
+        result[match[1]].introduction = introduction;
       if (!pending.size) break;
     }
   } catch {
     signal.throwIfAborted();
-    // Current snapshot validity remains authoritative even without provenance.
   }
   for (const id of pending)
     result[id].message = "已核实发布归档，首次合入历史暂不可核实。";

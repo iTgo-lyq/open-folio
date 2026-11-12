@@ -129,10 +129,29 @@ function readerFixture(manifests: Record<string, Record<string, string>>) {
     fail: (value: boolean) => {
       fail = value;
     },
-    async run(args: string[]) {
+    async run(
+      args: string[],
+      _signal?: AbortSignal,
+      _limit?: number,
+      input?: string | Buffer,
+    ) {
       calls.push(args);
       if (fail) throw Error("offline");
       if (args[0] === "ls-remote") return Buffer.from(tags);
+      if (args[0] === "cat-file" && args[1] === "--batch")
+        return Buffer.concat(
+          String(input)
+            .trim()
+            .split("\n")
+            .map((id) => {
+              const body = Buffer.from(blobs.get(id)!);
+              return Buffer.concat([
+                Buffer.from(`${id} blob ${body.length}\n`),
+                body,
+                Buffer.from("\n"),
+              ]);
+            }),
+        );
       if (args[0] === "cat-file") return Buffer.from(blobs.get(args[2])!);
       assert.equal(args[0], "ls-tree");
       return Buffer.from(

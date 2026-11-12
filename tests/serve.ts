@@ -111,7 +111,9 @@ const provider: RepositoryProvider = {
   },
   listRepositories: async () => ({ items: [repository], nextCursor: null }),
   listPullRequests: async (_ctx, _repo, query) => ({
-    items: f.pullRequests.filter((pr) => pr.base.branch === query.base),
+    items: f.pullRequests.filter(
+      (pr) => !query.base || pr.base.branch === query.base,
+    ),
     nextCursor: null,
   }),
   resolveRepository: async (ctx, selector) => {

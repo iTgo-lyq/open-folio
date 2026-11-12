@@ -24,11 +24,16 @@ async function tracedRelease() {
   const calls: string[][] = [];
   let unavailableHistory = false;
   class Reader extends GitReader {
-    override run(args: string[], signal?: AbortSignal, limit?: number) {
+    override run(
+      args: string[],
+      signal?: AbortSignal,
+      limit?: number,
+      input?: string | Buffer,
+    ) {
       calls.push([...args]);
       if (unavailableHistory && releaseHistory(args))
         return Promise.reject(Error("Release history unavailable"));
-      return super.run(args, signal, limit);
+      return super.run(args, signal, limit, input);
     }
   }
   const makeStore = () =>
@@ -115,7 +120,7 @@ test("complete release archive caches survive refresh and restart while PR metad
   const pr = updated.deliveryByChange?.example.releasePrs.find(
     (pr) => pr.number === 2,
   );
-  assert.equal(pr?.version, "1.2.3");
+  assert.equal(pr?.version, undefined);
   assert.equal(pr?.mergedAt, "2026-10-26T09:30:00Z");
   assert.deepEqual(f.historyReads(), []);
   assert.deepEqual(f.treeReads(), []);
@@ -258,4 +263,57 @@ test("real remote annotated release tags provide versions when files are absent"
     f.calls.some((args) => args[0] === "ls-remote" && args.includes("--tags")),
     false,
   );
+});
+
+test("cold refresh publishes verified archives before PR enrichment and retains that snapshot if final publication loses permission", async (t) => {
+  const f = await tracedRelease();
+  t.after(f.cleanup);
+  let resume!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  let available!: (
+    snapshot: Awaited<ReturnType<typeof f.store.snapshot>>,
+  ) => void;
+  const initial = new Promise<Awaited<ReturnType<typeof f.store.snapshot>>>(
+    (resolve) => {
+      available = resolve;
+    },
+  );
+  let checks = 0;
+  const completion = f.store.refresh(f.project, DEFAULT_LIMITS, {
+    ...f.context,
+    beforePublish: async () => {
+      if (++checks === 2) throw Error("Permission revoked");
+    },
+    onCurrent: available,
+    delivery: {
+      ...f.context.delivery,
+      list: async (...args) => {
+        await gate;
+        return f.context.delivery.list(...args);
+      },
+    },
+  });
+  const rejected = assert.rejects(completion, /读取暂时失败/);
+  try {
+    const snapshot = await initial;
+    assert.equal(snapshot.historyPending, true);
+    assert.equal(snapshot.deliveryByChange?.example.stage, "releaseMerged");
+    assert.equal(
+      snapshot.deliveryByChange?.example.releaseMergedPrNumber,
+      undefined,
+    );
+    assert.equal((await f.store.snapshot(f.project)).id, snapshot.id);
+    resume();
+    await rejected;
+    assert.equal((await f.store.snapshot(f.project)).id, snapshot.id);
+    const restored = await f
+      .makeStore()
+      .refresh(f.project, DEFAULT_LIMITS, { ...f.context, automatic: true });
+    assert.equal(restored.historyPending, undefined);
+    assert.equal(restored.deliveryByChange?.example.releaseMergedPrNumber, 2);
+  } finally {
+    resume();
+  }
 });

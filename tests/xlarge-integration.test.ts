@@ -149,16 +149,14 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     ...f.context,
     delivery: {
       ...f.delivery,
-      list: async (query, cursor, signal) => {
-        if (query.base === "feature/whole")
-          throw new ProviderError("PR_READ_DENIED", "Parent PRs denied", 403);
-        return f.delivery.list(query, cursor, signal);
+      list: async () => {
+        throw new ProviderError("PR_READ_DENIED", "Repository PRs denied", 403);
       },
     },
   });
   assert.equal(failed.deliveryByChange?.child.stage, "unknown");
-  assert.equal(failed.deliveryByChange?.parent.changePrsStale, false);
-  assert.equal(failed.integrations.complete, true);
+  assert.equal(failed.deliveryByChange?.parent.changePrsStale, true);
+  assert.equal(failed.integrations.complete, false);
 
   assert.equal(
     (await verify(repository(f.author), "child", f.readPullRequests))

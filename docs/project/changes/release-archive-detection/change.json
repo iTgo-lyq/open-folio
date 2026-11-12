@@ -8,19 +8,19 @@
   "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
-      "at": "2026-11-12T09:58:15.170Z",
-      "summary": "补充从发布提交的常见静态文件读取版本并缓存",
-      "source": "用户：SpecTrail-Version 可以从 package.json 反推，以及 go 之类的有自己的版本号文件吗？可以补一些常见的。"
+      "at": "2026-11-12T10:20:22.027Z",
+      "summary": "移除PR标记并按正常协作约束优化完整冷重建",
+      "source": "用户明确要求去掉SpecTrail-Change，并给出单发布分支、当前有效归档、一次历史追溯和千级冷启动实测要求。"
     },
     "technical": {
-      "at": "2026-11-12T09:58:19.020Z",
-      "summary": "按归档引入提交读取根版本文件并持久缓存结果",
-      "source": "沿用用户已指定的历史反推与缓存方向，补充常见静态版本文件；PR标记协议删除仍在讨论。"
+      "at": "2026-11-12T10:20:25.706Z",
+      "summary": "批量读取当前对象并按ID一次追溯发布历史",
+      "source": "执行用户指定设计原则：不重验历史归档，按发布提交复用计算，比较GitHub成本并评估先列表后历史。"
     },
     "plan": {
-      "at": "2026-11-12T09:58:22.671Z",
-      "summary": "追加版本读取与缓存任务并覆盖历史版本回归",
-      "source": "用户要求补充常见版本文件识别，在当前交付中追加实现与验证。"
+      "at": "2026-11-12T10:20:29.594Z",
+      "summary": "先记录基线再简化链路并验证千级冷启动",
+      "source": "用户要求先梳理算法和成本，再完成实现、测试和性能验证。"
     }
   },
   "tasks": {
@@ -35,25 +35,31 @@
       "status": "done",
       "verification": "常见静态文件与精确tag推断、历史版本固定、持久正负缓存、超限和符号链接降级等25项回归通过，独立评审无遗留问题。",
       "commitTitle": "release-archive-detection T2: infer release versions from files and tags"
+    },
+    "T3": {
+      "title": "去除PR标记并优化完整冷重建",
+      "status": "done",
+      "verification": "全量461项、缓存及权限31项、浏览器13项通过；独立评审99项及容量边界复验通过；千级冷重建与真实GitHub成本已实测记录。",
+      "commitTitle": "release-archive-detection T3: batch release history reconstruction"
     }
   },
   "closure": {
     "verification": {
       "result": "passed",
-      "at": "2026-11-12T10:07:38.334Z",
-      "summary": "全量455项、最终版本缓存与交付回归25项、类型检查和生产构建通过；独立子Agent评审问题已修复复验。"
+      "at": "2026-11-12T10:58:44.615Z",
+      "summary": "全量461项、最后缓存权限31项、浏览器13项、类型/格式/生产构建通过；独立子Agent评审99项与字节边界复验通过，所有发现已修复；完整冷启动和真实接口成本见performance.md。"
     }
   },
   "types": [
     "修复"
   ],
   "rework": {
-    "at": "2026-11-12T09:57:24.632Z",
-    "reason": "补充从发布提交中的常见版本文件识别版本号",
-    "approach": "保持归档与PR溯源，新增静态版本读取及持久缓存"
+    "at": "2026-11-12T10:16:02.144Z",
+    "reason": "移除PR标记依赖并优化完整冷重建链路",
+    "approach": "利用归档只读与普通合并约束，批量读取当前数据、一次追溯历史，实测千级Change冷启动和接口成本"
   },
   "waitingFor": {
     "kind": "confirmation",
-    "summary": "发布归档与版本识别均已实现验证，等待用户验收；通过后同步Specs、归档并合入develop更新长期服务。"
+    "summary": "实现、完整冷重建实测与独立评审完成，等待用户验收后同步Specs、归档并集成develop。"
   }
 }

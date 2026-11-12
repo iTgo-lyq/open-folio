@@ -152,7 +152,7 @@ test("short reads use entry authorization; subsequent reads detect revocation an
 test("unchanged and changed refreshes reuse permissions until the next periodic check", async () => {
   const t = await setup();
   try {
-    const first = await (await t.request("refresh", "POST")).json();
+    const first = await (await t.request("refresh?automatic=1", "POST")).json();
     let reads = 0;
     const original = t.f.provider.assertRead.bind(t.f.provider);
     t.f.provider.assertRead = async (...args) => {
@@ -390,7 +390,7 @@ for (const cached of [false, true])
     );
     try {
       const previous = cached
-        ? await (await t.request("refresh", "POST")).json()
+        ? await (await t.request("refresh?automatic=1", "POST")).json()
         : undefined;
       const other = await t.f.connect();
       const one = service.read(
@@ -452,7 +452,9 @@ test("switching the selected collaboration source isolates snapshots and concurr
   );
   await t.g.put("docs/project/specs/platform/spec.md", "# Alternate source\n");
   t.g.commit();
-  const original = await (await t.request("refresh", "POST")).json();
+  const original = await (
+    await t.request("refresh?automatic=1", "POST")
+  ).json();
   const customRead = <T>(operation: Parameters<typeof t.service.read<T>>[3]) =>
     t.service.read(
       t.c.cookie,
@@ -600,7 +602,9 @@ test("two accounts using the same Token isolate real snapshots, preferences and 
 test("untracking and archiving reject new refreshes while retaining authorized snapshots", async () => {
   const t = await setup();
   try {
-    const initial = await (await t.request("refresh", "POST")).json();
+    const initial = await (
+      await t.request("refresh?automatic=1", "POST")
+    ).json();
     const { providerId, instanceId, repositoryId, fullName } = t.repo;
     await t.f.sessions.updatePreferences(t.c.cookie, {
       untrackedRepositories: {
@@ -632,7 +636,9 @@ test("a refresh already collecting data cannot publish after tracking is stopped
     release = resolve;
   });
   try {
-    const initial = await (await t.request("refresh", "POST")).json();
+    const initial = await (
+      await t.request("refresh?automatic=1", "POST")
+    ).json();
     let reached!: () => void;
     const collecting = new Promise<void>((resolve) => {
       reached = resolve;
@@ -667,3 +673,74 @@ test("a refresh already collecting data cannot publish after tracking is stopped
   }
 });
 import { GitReader as GitReaderForTest } from "../src/server/git.ts";
+
+test("cold refresh HTTP returns the current list while one shared job enriches history", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  let resume!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  let requests = 0;
+  f.f.provider.listPullRequests = async () => {
+    requests++;
+    await gate;
+    return { items: [], nextCursor: null };
+  };
+  try {
+    const early = await f.request("refresh", "POST");
+    assert.equal(early.status, 200);
+    const initial = await early.json();
+    const list = await (await f.request("workbench")).json();
+    assert.equal(list.id, initial.snapshotId);
+    assert.ok(list.documents.length);
+    let done = false;
+    const complete = f
+      .request("refresh?automatic=1", "POST")
+      .then(async (response) => {
+        done = true;
+        assert.equal(response.status, 200);
+        return response.json();
+      });
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    assert.equal(done, false);
+    resume();
+    const final = await complete;
+    assert.notEqual(final.snapshotId, initial.snapshotId);
+    assert.equal(requests, 1);
+    assert.equal(
+      (await (await f.request("workbench")).json()).id,
+      final.snapshotId,
+    );
+  } finally {
+    resume();
+  }
+});
+
+test("a background credential rejection invalidates the early snapshot without another refresh waiter", async (t) => {
+  const f = await setup();
+  t.after(f.cleanup);
+  const { AppError } = await import("../src/server/errors.ts");
+  let resume!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  f.f.provider.listPullRequests = async () => {
+    await gate;
+    throw new AppError("TOKEN_INVALID", "Expired", 401);
+  };
+  try {
+    assert.equal((await f.request("refresh", "POST")).status, 200);
+    assert.equal((await f.request("workbench")).status, 200);
+    f.f.controls.identityInvalid = true;
+    resume();
+    let status = 200;
+    for (let i = 0; i < 20 && status === 200; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      status = (await f.request("workbench")).status;
+    }
+    assert.equal(status, 401);
+  } finally {
+    resume();
+  }
+});

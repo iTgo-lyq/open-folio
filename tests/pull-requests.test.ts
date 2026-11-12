@@ -25,7 +25,9 @@ const raw = (number: number, base = "develop", marked = true) => ({
   head: { ref: `change/item-${number}`, sha: oid("b"), repo: { id: 12 } },
   merged_at: null as string | null,
   merge_commit_sha: null,
-  updated_at: "2026-10-24T00:00:00Z",
+  updated_at: new Date(
+    Date.parse("2026-10-24T00:00:00Z") + number * 1000,
+  ).toISOString(),
 });
 function remote() {
   const collections: Record<string, ReturnType<typeof raw>[]> = {
@@ -64,25 +66,23 @@ function remote() {
   const provider = new GitHubProvider(async (input, init) => {
     const u = new URL(String(input));
     assert.equal(u.pathname, "/repos/demo/work/pulls");
-    assert.equal(u.searchParams.get("sort"), "created");
+    assert.equal(u.searchParams.get("sort"), "updated");
     assert.equal(u.searchParams.get("state"), "all");
     assert.equal(u.searchParams.get("head"), null);
-    const base = u.searchParams.get("base")!;
+    const base = u.searchParams.get("base") ?? "all";
+    const rows = Object.values(collections)
+      .flat()
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
     const page = Number(u.searchParams.get("page"));
     const etag = new Headers(init?.headers).get("if-none-match");
-    const items = collections[base].slice((page - 1) * 100, page * 100);
+    const items = rows.slice((page - 1) * 100, page * 100);
     const tag = `"${createHash("sha256").update(JSON.stringify(items)).digest("hex")}"`;
     const status =
-      base === "develop" && page === failPage
-        ? 503
-        : withEtag && etag === tag
-          ? 304
-          : 200;
+      page === failPage ? 503 : withEtag && etag === tag ? 304 : 200;
     calls.push({ base, page, etag, status });
     if (status !== 200) return new Response(null, { status });
     const headers: Record<string, string> = withEtag ? { etag: tag } : {};
-    if (page * 100 < collections[base].length)
-      headers.link = '<ignored>; rel="next"';
+    if (page * 100 < rows.length) headers.link = '<ignored>; rel="next"';
     return Response.json(items, { headers });
   });
   const reader: DeliveryReader = {
@@ -120,221 +120,135 @@ async function disk(t: { after: (fn: () => Promise<void>) => void }) {
   };
 }
 
-test("one base query is shared; disk pages reuse 304 without bodies and preserve undiscovered markers", async (t) => {
+test("one repository query serves every base and persists a body-free flat catalog", async (t) => {
   const d = await disk(t),
     r = remote();
   r.collections.develop = [raw(1), raw(2)];
-  r.collections.develop[0].merged_at = "2026-10-23T12:30:00Z";
+  r.collections.main = [raw(3, "main", false)];
   const cache = await d.load();
-  const results = await Promise.all(
-    Array.from({ length: 74 }, () => cache.query(r.reader, "develop", signal)),
-  );
+  const [develop, main] = await Promise.all([
+    cache.query(r.reader, "develop", signal),
+    cache.query(r.reader, "main", signal),
+  ]);
+  assert.equal(develop.length, 2);
+  assert.equal(main.length, 1);
   assert.equal(r.calls.length, 1);
-  assert.equal(results[0][1].marker.kind, "change");
-  assert.equal(results[0][0].mergedAt, "2026-10-23T12:30:00Z");
-  await cache.query(r.reader, "main", signal);
-  assert.equal(r.calls.length, 2);
   await d.save(cache);
-  assert(!String(await readFile(d.path)).includes('"body"'));
+  const text = await readFile(d.path, "utf8");
+  assert(!text.includes('"body"'));
+  assert(!text.includes('"marker"'));
+  assert.deepEqual(Object.keys(JSON.parse(text).items), ["1", "2", "3"]);
   const warm = await d.load();
-  assert.deepEqual(await warm.query(r.reader, "develop", signal), results[0]);
-  await warm.query(r.reader, "main", signal);
-  assert.deepEqual(
-    r.calls.map((c) => c.status),
-    [200, 200, 304, 304],
-  );
-});
-
-test("release PRs without Changes survive disk caching and conditional refresh", async (t) => {
-  const d = await disk(t),
-    r = remote();
-  r.collections.main = [
-    { ...raw(1, "main"), body: "Maintenance\n\nSpecTrail-Version: 1.0.1" },
-    {
-      ...raw(2, "main"),
-      body: "Release\n\nSpecTrail-Version: 1.0.0\nSpecTrail-Includes: example",
-    },
-  ];
-  const cache = await d.load();
-  const releases = await cache.query(r.reader, "main", signal);
-  assert.deepEqual(
-    releases.map((pr) => pr.marker),
-    [
-      { kind: "release", version: "1.0.1", includes: [] },
-      { kind: "release", version: "1.0.0", includes: ["example"] },
-    ],
-  );
-  await d.save(cache);
-  const warm = await d.load();
-  assert.deepEqual(await warm.query(r.reader, "main", signal), releases);
+  assert.deepEqual(await warm.query(r.reader, "develop", signal), develop);
   assert.equal(r.calls.at(-1)?.status, 304);
 });
 
-test("all pages are revalidated beyond ten pages, including old PR edits and removals", async (t) => {
+test("cold pagination reads all PRs; unchanged history uses only the first-page conditional request", async (t) => {
   const d = await disk(t),
     r = remote();
-  r.collections.develop = Array.from({ length: 1001 }, (_, i) => raw(1001 - i));
-  const first = await d.load();
-  assert.equal((await first.query(r.reader, "develop", signal)).length, 1001);
+  r.collections.develop = Array.from({ length: 1001 }, (_, i) => raw(i + 1));
+  const cold = await d.load();
+  assert.equal((await cold.query(r.reader, "develop", signal)).length, 1001);
   assert.equal(r.calls.length, 11);
-  await d.save(first);
+  await d.save(cold);
   r.calls.length = 0;
-  r.collections.develop[1000].title = "Old PR renamed";
-  r.collections.develop[1000].body = "Old PR\n\nSpecTrail-Change: reassociated";
-  const second = await d.load();
-  const result = await second.query(r.reader, "develop", signal);
-  assert.equal(result.at(-1)?.title, "Old PR renamed");
-  assert.deepEqual(result.at(-1)?.marker, {
-    kind: "change",
-    id: "reassociated",
-  });
-  assert.deepEqual(
-    r.calls.map((c) => c.status),
-    [...Array(10).fill(304), 200],
-  );
-  await d.save(second);
-  r.collections.develop = [];
-  const empty = await d.load();
-  assert.deepEqual(await empty.query(r.reader, "develop", signal), []);
-  await d.save(empty);
-  assert.equal(
-    JSON.parse(await readFile(d.path, "utf8")).queries[0].pages.length,
-    1,
-  );
-});
-
-test("old cached PRs remain readable and mapping-version refresh fetches merge time without old ETags", async (t) => {
-  const d = await disk(t),
-    r = remote();
-  r.collections.develop = [raw(1)];
-  r.collections.develop[0].merged_at = "2026-10-23T12:30:00Z";
-  const oldReader = { ...r.reader, cacheKey: "old-mapping-version" };
-  const first = new PullRequestCache();
-  await first.query(oldReader, "develop", signal);
-  const legacy = JSON.parse(first.serialize());
-  delete legacy.queries[0].pages[0].items[0].mergedAt;
-  await writeFile(d.path, JSON.stringify(legacy));
   const warm = await d.load();
-  warm.retain(r.reader, ["develop"]);
-  const result = await warm.query(r.reader, "develop", signal);
-  assert.equal(r.calls.at(-1)?.etag, null);
-  assert.equal(result[0].mergedAt, "2026-10-23T12:30:00Z");
+  assert.equal((await warm.query(r.reader, "develop", signal)).length, 1001);
+  assert.equal(r.calls.length, 1);
+  assert.equal(r.calls[0].status, 304);
 });
 
-test("pages cached before marker placement support reload unchanged PR bodies", async (t) => {
+test("updated-order incremental pages handle old PR edits, closing, reopening and retargeting", async (t) => {
   const d = await disk(t),
     r = remote();
-  r.collections.develop = [raw(1)];
-  r.collections.develop[0].body +=
-    "\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
-  const first = new PullRequestCache();
-  await first.query(r.reader, "develop", signal);
-  const legacy = JSON.parse(first.serialize());
-  const [query] = legacy.queries;
-  const key = JSON.parse(query.key);
-  key.pop();
-  query.key = JSON.stringify(key);
-  query.pages[0].items = [];
-  await writeFile(d.path, JSON.stringify(legacy));
-
-  const warm = await d.load();
-  warm.retain(r.reader, ["develop"]);
-  const result = await warm.query(r.reader, "develop", signal);
-  assert.equal(r.calls.at(-1)?.etag, null);
-  assert.deepEqual(result[0]?.marker, { kind: "change", id: "item-1" });
-});
-
-test("raw full pages and 304 discover a new tail; unmarked PRs support history lookup while foreign PRs are excluded", async (t) => {
-  const d = await disk(t),
-    r = remote();
-  r.collections.develop = Array.from({ length: 100 }, (_, i) =>
-    raw(101 - i, "develop", false),
-  );
-  r.collections.develop[0].head.repo.id = 99;
-  r.collections.develop[0].body = "Feature\n\nSpecTrail-Change: foreign";
-  const first = await d.load();
-  const unmarked = await first.query(r.reader, "develop", signal);
-  assert.equal(unmarked.length, 99);
-  assert.ok(unmarked.every((pr) => pr.marker.kind === "none"));
-  assert.deepEqual(
-    r.calls.map((c) => c.page),
-    [1, 2],
-  );
-  await d.save(first);
+  r.collections.develop = Array.from({ length: 1001 }, (_, i) => raw(i + 1));
+  const cold = await d.load();
+  await cold.query(r.reader, "develop", signal);
+  await d.save(cold);
+  const old = r.collections.develop[0];
+  old.title = "Old edited";
+  old.state = "closed";
+  old.base.ref = "main";
+  old.updated_at = "2026-10-25T00:00:00Z";
   r.calls.length = 0;
-  // An old PR changes its target branch: created order appends it after the unchanged full page.
-  r.collections.develop.push(raw(1));
-  const second = await d.load();
+  const updated = await d.load();
+  assert.equal((await updated.query(r.reader, "develop", signal)).length, 1000);
   assert.equal(
-    (await second.query(r.reader, "develop", signal)).at(-1)!.number,
-    1,
+    (await updated.query(r.reader, "main", signal))[0].title,
+    "Old edited",
   );
-  assert.deepEqual(
-    r.calls.map((c) => c.status),
-    [304, 200],
+  assert.equal(r.calls.length, 1);
+  await d.save(updated);
+  old.state = "open";
+  old.updated_at = "2026-10-26T00:00:00Z";
+  const reopened = await d.load();
+  assert.equal(
+    (await reopened.query(r.reader, "main", signal))[0].state,
+    "open",
   );
 });
 
-test("failed second page leaves the complete previous base intact while another base can update", async (t) => {
+test("timestamp ties continue pagination and failed updates preserve the complete catalog", async (t) => {
   const d = await disk(t),
     r = remote();
-  r.collections.develop = Array.from({ length: 101 }, (_, i) => raw(101 - i));
-  const first = await d.load();
-  await first.query(r.reader, "develop", signal);
-  await first.query(r.reader, "main", signal);
-  await d.save(first);
-  const old = JSON.parse(first.serialize()).queries[0];
-  r.collections.develop[0].title = "Uncommitted page";
-  r.collections.main.push(raw(102, "main"));
+  r.collections.develop = Array.from({ length: 101 }, (_, i) => raw(i + 1));
+  const cold = await d.load();
+  await cold.query(r.reader, "develop", signal);
+  await d.save(cold);
+  const previous = cold.serialize();
+  for (const row of r.collections.develop)
+    row.updated_at = "2026-10-26T00:00:00Z";
   r.fail(2);
-  const second = await d.load();
-  await assert.rejects(second.query(r.reader, "develop", signal), {
+  const failed = await d.load();
+  await assert.rejects(failed.query(r.reader, "develop", signal), {
     code: "PROVIDER_UNAVAILABLE",
   });
-  // Duplicate failed query also shares its rejection instead of issuing HTTP again.
-  const count = r.calls.length;
-  await assert.rejects(second.query(r.reader, "develop", signal));
-  assert.equal(r.calls.length, count);
-  assert.equal((await second.query(r.reader, "main", signal)).length, 1);
-  await d.save(second);
-  const stored = JSON.parse(await readFile(d.path, "utf8"));
-  assert.deepEqual(stored.queries[0], old);
-  assert.equal(stored.queries[1].pages[0].items.length, 1);
+  const calls = r.calls.length;
+  await assert.rejects(failed.query(r.reader, "main", signal));
+  assert.equal(r.calls.length, calls);
+  assert.equal(failed.serialize(), previous);
+  r.fail(0);
+  const retried = await d.load();
+  assert.equal((await retried.query(r.reader, "develop", signal)).length, 101);
+  await d.save(retried);
+  r.noEtag();
+  r.calls.length = 0;
+  const tied = await d.load();
+  await tied.query(r.reader, "develop", signal);
+  assert.equal(r.calls.length, 2);
 });
 
-test("corrupt, incomplete and oversized caches fail explicitly; query identity and no-ETag responses remain distinct", async (t) => {
+test("repository and source identity boundaries exclude foreign PRs and invalidate prior data", async (t) => {
+  const d = await disk(t),
+    r = remote();
+  r.collections.develop = [raw(1), raw(2)];
+  r.collections.develop[0].head.repo.id = 99;
+  const cache = await d.load();
+  assert.equal((await cache.query(r.reader, "develop", signal)).length, 1);
+  await d.save(cache);
+  const warm = await d.load();
+  const changed = { ...r.reader, cacheKey: "new-identity" };
+  warm.retain(changed, ["develop"]);
+  await warm.query(changed, "develop", signal);
+  assert.equal(r.calls.at(-1)?.etag, null);
+});
+
+test("invalid, legacy and oversized caches fail explicitly without committing partial records", async (t) => {
   const d = await disk(t),
     r = remote();
   await writeFile(d.path, "not json");
   await assert.rejects(d.load(), { code: "PR_CACHE_INVALID" });
-  await writeFile(
-    d.path,
-    JSON.stringify({
-      version: 1,
-      queries: [
-        { key: "q", pages: [{ rawCount: 100, hasNext: false, items: [] }] },
-      ],
-    }),
-  );
+  await writeFile(d.path, JSON.stringify({ version: 1, queries: [] }));
   await assert.rejects(d.load(), { code: "PR_CACHE_INVALID" });
-  const small = new PullRequestCache(150);
   r.collections.develop = [raw(1)];
+  const small = new PullRequestCache(150);
   await assert.rejects(small.query(r.reader, "develop", signal), {
     code: "PR_CACHE_LIMIT",
   });
-  assert.equal(JSON.parse(small.serialize()).queries.length, 0);
-  r.noEtag();
-  const cache = new PullRequestCache();
-  await cache.query(r.reader, "develop", signal);
-  await d.save(cache);
-  const warm = await d.load();
-  await warm.query(r.reader, "develop", signal);
-  assert.equal(r.calls.at(-1)?.etag, null);
-  const changed = { ...r.reader, cacheKey: "other-source-or-version" };
-  warm.retain(changed, ["develop"]);
-  await warm.query(changed, "develop", signal);
-  assert.equal(r.calls.at(-1)?.etag, null);
-  assert.equal(JSON.parse(warm.serialize()).queries.length, 1);
+  assert.deepEqual(JSON.parse(small.serialize()).items, {});
+  const normal = new PullRequestCache();
+  await normal.query(r.reader, "develop", signal);
+  await d.save(normal);
   await assert.rejects(PullRequestCache.load(d.path, 1), {
     code: "PR_CACHE_LIMIT",
   });

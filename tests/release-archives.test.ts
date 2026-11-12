@@ -23,17 +23,18 @@ function release(f: Fixture) {
   return { integrated, commit: f.git(["rev-parse", "HEAD"]) };
 }
 
-function readGit(f: Fixture, args: string[]) {
+function readGit(f: Fixture, args: string[], input?: string | Buffer) {
   return execFileSync("git", args, {
     cwd: f.author,
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ["pipe", "pipe", "pipe"],
+    input,
   });
 }
 
 function archives(f: Fixture, ids = [f.id]) {
   return collectReleaseArchives(
     {
-      run: async (args) => readGit(f, args),
+      run: async (args, _signal, _limit, input) => readGit(f, args, input),
     },
     { branch: "main", commit: f.git(["rev-parse", "main"]) },
     ids,
@@ -168,12 +169,12 @@ test("unavailable first-parent history preserves a valid release archive without
   let historyReads = 0;
   const result = await collectReleaseArchives(
     {
-      run: async (args) => {
+      run: async (args, _signal, _limit, input) => {
         if (args[0] === "log") {
           historyReads++;
           throw Error("History unavailable");
         }
-        return readGit(f, args);
+        return readGit(f, args, input);
       },
     },
     { branch: "main", commit },
@@ -251,4 +252,33 @@ test("a released parent archive does not depend on a cancelled child's external 
   const result = await archives(f, ["parent", "cancelled-child"]);
   assert.deepEqual(result.parent, { status: "found", introduction: commit });
   assert.equal(result["cancelled-child"], undefined);
+});
+
+test("validated current archives trace first arrival without revalidating historical closure", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const incomplete = structuredClone(f.record);
+  incomplete.closure.verification.result = "failed";
+  await f.put(`${f.archivePath}/change.json`, JSON.stringify(incomplete));
+  f.commit(false);
+  const { commit } = release(f);
+  await f.put(`${f.archivePath}/change.json`, JSON.stringify(f.record));
+  f.commit(false);
+  const calls: string[][] = [];
+  const result = await collectReleaseArchives(
+    {
+      run: async (args, _signal, _limit, input) => {
+        calls.push(args);
+        return readGit(f, args, input);
+      },
+    },
+    { branch: "main", commit: f.git(["rev-parse", "HEAD"]) },
+    [f.id],
+    DEFAULT_LIMITS,
+    new AbortController().signal,
+  );
+  assert.deepEqual(result.example, { status: "found", introduction: commit });
+  assert.equal(calls.filter((args) => args[0] === "log").length, 1);
+  assert.equal(calls.filter((args) => args[0] === "ls-tree").length, 1);
+  assert.equal(calls.filter((args) => args[0] === "cat-file").length, 1);
 });

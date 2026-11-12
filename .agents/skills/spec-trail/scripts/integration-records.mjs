@@ -1,7 +1,6 @@
-import { prMarker } from './pr-markers.mjs';
 import { changeLocation } from './routing.mjs';
 
-export const INTEGRATION_VERSION = 4;
+export const INTEGRATION_VERSION = 5;
 export const validChangeId = (id) => typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
 const sha = (value) => /^[a-f0-9]{40,64}$/.test(value);
 const format = '%H%x00%P%x00%cI%x00%s%x00';
@@ -10,7 +9,7 @@ const format = '%H%x00%P%x00%cI%x00%s%x00';
 /** @typedef {{version:number, tip:string|null, complete:boolean, records:Record<string,IntegrationResult>, issues:string[], message?:string}} IntegrationIndex */
 /** @typedef {(args:string[]) => Promise<Buffer|string>} GitRun */
 
-/** @typedef {{number:number,state:string,mergeCommit:string|null,base:{repositoryId:string,branch:string},head:{repositoryId:string|null,branch:string},body?:string,marker?:ReturnType<typeof prMarker>}} ChangePullRequest */
+/** @typedef {{number:number,state:string,mergeCommit:string|null,base:{repositoryId:string,branch:string},head:{repositoryId:string|null,branch:string},body?:string}} ChangePullRequest */
 /** @template {ChangePullRequest} T @param {T[]} prs
  * @param {{repositoryId:string,integrationBranch:string,branch:string}} identity
  * @returns {T[]}
@@ -26,10 +25,7 @@ export function sourcePullRequests(prs, {repositoryId, integrationBranch, branch
  * @returns {T[]}
  */
 export function changePullRequests(prs, identity) {
-  return sourcePullRequests(prs, identity).filter(pr => {
-    const marker = pr.marker ?? prMarker(pr.body ?? '');
-    return marker.kind === 'change' && marker.id === identity.id;
-  });
+  return sourcePullRequests(prs, identity);
 }
 
 /** Include old direct deliveries only when they really merged; new child PRs target the parent.

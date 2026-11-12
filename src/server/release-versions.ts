@@ -1,3 +1,4 @@
+import { readBlobs } from "./git-objects.ts";
 import "server-only";
 import { parse as toml } from "smol-toml";
 import { parseDocument } from "yaml";
@@ -159,7 +160,8 @@ export async function collectReleaseVersions(
 }> {
   const files: Record<string, ReleaseVersion> = {};
   const versions: Record<string, ReleaseVersion> = {};
-  const blobs = new Map<string, string>();
+  const needed = new Map<string, number>();
+  const pending = new Map<string, { path: string; blob: string }[]>();
   let bytes = 0;
   for (const commit of [...new Set(commits)].sort()) {
     signal.throwIfAborted();
@@ -180,14 +182,14 @@ export async function collectReleaseVersions(
       )
         .toString()
         .split("\0");
-      const found: string[] = [];
+      const entries: { path: string; blob: string }[] = [];
       let unreadable = false;
       for (const row of rows) {
         const match =
           /^(\d{6}) (blob|tree|commit) ([a-f0-9]+)\s+(\d+|-)\t(.+)$/.exec(row);
         if (!match || !paths.includes(match[5])) continue;
-        const [, mode, kind, blob, sizeText, path] = match;
-        const size = Number(sizeText);
+        const [, mode, kind, blob, sizeText, path] = match,
+          size = Number(sizeText);
         if (
           kind !== "blob" ||
           !["100644", "100755"].includes(mode) ||
@@ -197,31 +199,42 @@ export async function collectReleaseVersions(
           unreadable = true;
           continue;
         }
-        if (!blobs.has(blob)) {
+        if (!needed.has(blob)) {
+          if (bytes + size > limits.totalBytes)
+            throw Error("Version read limit");
           bytes += size;
-          if (bytes > limits.totalBytes) throw Error("Version read limit");
-          const content = await reader.run(
-            ["cat-file", "blob", blob],
-            signal,
-            size + 1024,
-          );
-          try {
-            blobs.set(
-              blob,
-              new TextDecoder("utf-8", { fatal: true }).decode(content),
-            );
-          } catch {
-            blobs.set(blob, "");
-          }
+          needed.set(blob, size);
         }
-        const value = versionFromFile(path, blobs.get(blob)!);
-        if (value) found.push(value);
+        entries.push({ path, blob });
       }
-      files[commit] = unreadable ? { status: "unreadable" } : unique(found);
+      if (unreadable) files[commit] = { status: "unreadable" };
+      else pending.set(commit, entries);
     } catch {
       signal.throwIfAborted();
       files[commit] = { status: "unavailable" };
     }
+  }
+  try {
+    const blobs = await readBlobs(reader, needed, signal);
+    const text = new Map<string, string>();
+    for (const [blob, body] of blobs) {
+      try {
+        text.set(blob, new TextDecoder("utf-8", { fatal: true }).decode(body));
+      } catch {
+        text.set(blob, "");
+      }
+    }
+    for (const [commit, entries] of pending)
+      files[commit] = unique(
+        entries.flatMap(({ path, blob }) => {
+          const value = versionFromFile(path, text.get(blob)!);
+          return value ? [value] : [];
+        }),
+      );
+  } catch {
+    signal.throwIfAborted();
+    for (const commit of pending.keys())
+      files[commit] = { status: "unavailable" };
   }
   const needsTags = Object.keys(files).filter(
     (commit) => files[commit].status === "missing",

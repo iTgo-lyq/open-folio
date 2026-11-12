@@ -314,6 +314,7 @@ export type ReleaseVersionCache = {
 };
 export type Snapshot = {
   cacheSchemaVersion: 10;
+  historyPending?: boolean;
   releaseSource?: ReleaseSource;
   releaseArchives?: Record<string, ReleaseArchive>;
   releaseVersions?: ReleaseVersionCache;

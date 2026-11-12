@@ -129,7 +129,14 @@ test("a central override survives missing history and PR failures without bypass
   );
   f.commit();
   f.merge();
-  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
+  let initial: import("../src/lib/model.ts").Snapshot | undefined;
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, {
+    ...context,
+    onCurrent: (value) => {
+      initial = value;
+    },
+  });
+  assert.equal(initial?.deliveryByChange?.example.stage, "releaseMerged");
   const input = {
     changes: snapshot.changes,
     integrationBranch: "develop",
@@ -197,7 +204,7 @@ test("a central override survives missing history and PR failures without bypass
     reader: {
       ...emptyReader,
       list: async (q) => ({
-        items: q.base === "develop" ? [pr(1), pr(2)] : [],
+        items: !q.base || q.base === "develop" ? [pr(1), pr(2)] : [],
         nextCursor: null,
       }),
     },

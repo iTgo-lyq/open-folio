@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
 import { changePullRequests, integrationEvidence, sourcePullRequests } from './integration-records.mjs';
-import { prMarker } from './pr-markers.mjs';
 import { deliveryTarget } from './repository.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
@@ -45,7 +44,7 @@ export async function githubPullRequests(repo, base, request = args => execFileS
         (p.head.repo === null || repoId(p.head.repo?.id)) &&
         (p.merge_commit_sha === null || sha(p.merge_commit_sha)), 'Incomplete or inconsistent GitHub PR records');
       seen.add(p.number);
-      pullRequests.push({number:p.number,marker:prMarker(p.body ?? ''),state:p.merged_at ? 'merged' : p.state,
+      pullRequests.push({number:p.number,state:p.merged_at ? 'merged' : p.state,
         base:{repositoryId:String(p.base.repo.id),branch:p.base.ref,commit:p.base.sha},
         head:{repositoryId:p.head.repo ? String(p.head.repo.id) : null,branch:p.head.ref,commit:p.head.sha},
         mergeCommit:p.merged_at ? p.merge_commit_sha : null});
