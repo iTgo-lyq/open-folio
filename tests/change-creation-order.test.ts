@@ -68,10 +68,10 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
       f.git(["push", "origin", "HEAD"]);
     };
     await f.put("docs/project/changes/z-old/change.json", record("z-old"));
-    commit("2026-01-01T00:00:00Z");
+    commit("2026-01-01T00:00:00Z", ["TRAE", "ada@example.com"]);
     await f.put("docs/project/changes/a-new/change.json", record("a-new"));
     commit("2026-02-01T00:00:00Z", [
-      "Grace",
+      "TRAE",
       "12345+grace-h@users.noreply.github.com",
     ]);
     let snap = await f.store.refresh(f.project, DEFAULT_LIMITS);
@@ -96,7 +96,7 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
       "docs/project/changes/z-old/change.json",
       record("z-old").replace('"title":"z-old"', '"title":"edited"'),
     );
-    commit("2026-04-01T00:00:00Z", ["Editor", "editor@example.com"]);
+    commit("2026-04-01T00:00:00Z", ["TRAE", "editor@example.com"]);
     await f.put("docs/project/changes/z-old/requirement.md", "# 推进材料\n");
     commit("2026-04-02T00:00:00Z", ["Editor", "EDITOR@example.com"]);
     await f.put("unrelated-code.ts", "export {};\n");
@@ -124,15 +124,20 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
         { id: "merge-new", creator: { name: "Linus" } },
         {
           id: "a-new",
-          creator: { name: "Grace", login: "grace-h", subjectId: "12345" },
+          creator: { name: "grace-h", login: "grace-h", subjectId: "12345" },
         },
-        { id: "z-old", creator: { name: "Ada" } },
+        { id: "z-old", creator: { name: "ada" } },
       ],
     );
     assert.doesNotMatch(JSON.stringify(snap.changes), /@example|noreply/);
+    const members = [
+      { name: "ada" },
+      { name: "editor" },
+      { name: "Archivist" },
+    ];
     assert.deepEqual(
       snap.changes.find((g) => g.id === "z-old")!.collaborators,
-      [{ name: "Ada" }, { name: "Editor" }, { name: "Archivist" }],
+      members,
     );
     assert.deepEqual(
       snap.changes.find((g) => g.id === "merge-new")!.collaborators,
@@ -143,11 +148,24 @@ test("snapshot traces first Git addition through edits, merge introductions, arc
       snap.changes.find((g) => g.id === "a-new")!.collaborators,
     );
     assert.deepEqual(projectChange(snap, "a-new", "fixture").change.creator, {
-      name: "Grace",
+      name: "grace-h",
       login: "grace-h",
       subjectId: "12345",
     });
+    const old = structuredClone(snap);
+    const oldChange = old.changes.find((g) => g.id === "z-old")!;
+    oldChange.creator = { name: "TRAE" };
+    oldChange.collaborators = [{ name: "TRAE" }, { name: "Archivist" }];
+    await writeFile(
+      join(f.store.directory(), "snapshots", snap.id + ".json"),
+      JSON.stringify({ ...old, cacheSchemaVersion: 10 }),
+    );
+    const rebuilt = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
+    assert.notEqual(rebuilt.id, snap.id);
+    assert.deepEqual(rebuilt.changes, snap.changes);
+
     const warm = await f.store.refresh(f.project, DEFAULT_LIMITS);
+    assert.equal(warm.id, rebuilt.id);
     assert.deepEqual(
       warm.changes.map((g) => g.collaborators),
       snap.changes.map((g) => g.collaborators),
@@ -401,6 +419,19 @@ test("creator keeps the Git name and only derives a login from GitHub noreply ad
     { name: "Mallory" },
   );
   assert.equal(changeCreator("  ", "nobody@example.com"), undefined);
+});
+
+test("TRAE uses the email prefix when available, including the GitHub noreply login", () => {
+  assert.deepEqual(changeCreator(" Trae ", " dev.12@example.com "), {
+    name: "dev.12",
+  });
+  assert.deepEqual(
+    changeCreator("TRAE", "12345+grace-h@users.noreply.github.com"),
+    { name: "grace-h", login: "grace-h", subjectId: "12345" },
+  );
+  for (const email of ["", "@example.com", "name@@example.com"]) {
+    assert.deepEqual(changeCreator("TRAE", email), { name: "TRAE" });
+  }
 });
 
 test("unmerged unrelated branch edits cannot leak collaborators into a Change or its share", async () => {
