@@ -4,10 +4,15 @@
   "title": "批量获取远端分支并缩短冷刷新等待",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/remote-refresh-batching",
   "confirmations": {},
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "批量获取分支并并发补齐远端历史",
+      "status": "doing"
+    }
+  },
   "closure": {},
   "followUpOf": "release-archive-detection",
   "types": [
