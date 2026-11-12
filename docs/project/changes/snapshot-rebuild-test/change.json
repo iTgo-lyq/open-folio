@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "比较重建快照与原有效快照的版本",
-      "status": "doing"
+      "status": "done",
+      "verification": "18 项缓存与作者识别回归通过，测试文件格式检查通过",
+      "commitTitle": "snapshot-rebuild-test T1: compare against the original valid cache schema"
     }
   },
   "closure": {},
