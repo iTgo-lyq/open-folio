@@ -4,7 +4,7 @@
   "title": "按发布分支归档识别已合入 Change",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
@@ -41,25 +41,19 @@
       "status": "done",
       "verification": "全量461项、缓存及权限31项、浏览器13项通过；独立评审99项及容量边界复验通过；千级冷重建与真实GitHub成本已实测记录。",
       "commitTitle": "release-archive-detection T3: batch release history reconstruction"
+    },
+    "T4": {
+      "title": "修复评审发现的稳定性与降级问题",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-11-12T10:58:44.615Z",
-      "summary": "全量461项、最后缓存权限31项、浏览器13项、类型/格式/生产构建通过；独立子Agent评审99项与字节边界复验通过，所有发现已修复；完整冷启动和真实接口成本见performance.md。"
-    }
-  },
+  "closure": {},
   "types": [
     "修复"
   ],
   "rework": {
-    "at": "2026-11-12T10:16:02.144Z",
-    "reason": "移除PR标记依赖并优化完整冷重建链路",
-    "approach": "利用归档只读与普通合并约束，批量读取当前数据、一次追溯历史，实测千级Change冷启动和接口成本"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "实现、完整冷重建实测与独立评审完成，等待用户验收后同步Specs、归档并集成develop。"
+    "at": "2026-11-12T11:44:00.261Z",
+    "reason": "代码评审发现进程崩溃、单亲提交解析与降级范围等问题",
+    "approach": "在已确认范围内追加T4修复可复现缺陷与快照抖动，极端规模场景记录为已知限制"
   }
 }
