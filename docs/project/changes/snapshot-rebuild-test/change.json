@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "snapshot-rebuild-test",
+  "title": "同步快照重建测试的版本预期",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "followUpOf": "trae-collaborator-names",
+  "types": [
+    "测试"
+  ]
+}
