@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "release-archive-detection",
+  "title": "按发布分支归档识别已合入 Change",
+  "size": "medium",
+  "status": "active",
+  "stage": "technical",
+  "branch": "develop",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-12T08:58:10.648Z",
+      "summary": "单发布分支有效归档决定已合入，缺少发布PR时间仍进入已归档。",
+      "source": "用户：那先保持单发布分支，按 releaseBranch 中的有效归档判断已合入，再从 Git 历史反查 PR，查不到 PR 就丢进合入时间未知分类中。保证都转到已归档的 tab"
+    }
+  },
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "修复"
+  ]
+}
