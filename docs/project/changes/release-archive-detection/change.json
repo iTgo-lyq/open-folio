@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
       "at": "2026-11-12T08:58:10.648Z",
