@@ -1179,7 +1179,7 @@ export class GitReader {
   }
   // Inspect additions across all parents: merge resolutions can introduce records too.
   // Group active and archived paths by stable ID so moving a Change never resets it.
-  // 首次加入 change.json 的时间与作者；作者邮箱只交给调用方识别平台登录名，不进入快照。
+  // 首次加入 change.json 的时间与作者；作者邮箱仅供服务端识别身份与显示名。
   async changeCreations(commits: string[], signal?: AbortSignal) {
     const created = new Map<
       string,

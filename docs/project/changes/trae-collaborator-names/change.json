@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "用提交邮箱修正 TRAE 作者显示并刷新旧快照",
-      "status": "doing"
+      "status": "done",
+      "verification": "10 项 Git 作者与协作者回归、类型检查、变更文件格式检查及生产构建通过",
+      "commitTitle": "trae-collaborator-names T1: display TRAE authors by email prefix"
     }
   },
   "closure": {},

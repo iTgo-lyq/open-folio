@@ -313,7 +313,7 @@ export type ReleaseVersionCache = {
   };
 };
 export type Snapshot = {
-  cacheSchemaVersion: 10;
+  cacheSchemaVersion: 11;
   historyPending?: boolean;
   releaseSource?: ReleaseSource;
   releaseArchives?: Record<string, ReleaseArchive>;

@@ -603,10 +603,16 @@ export function changeCreator(
   name: string,
   email: string,
 ): ChangeCreator | undefined {
-  const match = GITHUB_NOREPLY.exec(email.trim());
+  const address = email.trim();
+  const match = GITHUB_NOREPLY.exec(address);
   const login = match?.[2],
     subjectId = match?.[1];
-  const display = name.trim() || login;
+  const authorName = name.trim();
+  const emailName =
+    authorName.toUpperCase() === "TRAE"
+      ? (login ?? /^([^@\s<>]+)@[^@\s<>]+$/.exec(address)?.[1])
+      : undefined;
+  const display = emailName ?? (authorName || login);
   if (!display) return undefined;
   return login
     ? { name: display, login, ...(subjectId ? { subjectId } : {}) }
