@@ -3,8 +3,8 @@
   "id": "release-archive-detection",
   "title": "按发布分支归档识别已合入 Change",
   "size": "medium",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "codex/release-archive-detection",
   "confirmations": {
     "requirement": {
@@ -49,7 +49,30 @@
       "commitTitle": "release-archive-detection T4: stabilize reconstruction and cache publication"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-12T12:07:18.150Z",
+      "summary": "独立评审与归档前复核问题均已关闭，46项回归、类型及构建通过，冷重建证据见Performance。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-12T12:07:23.854Z",
+      "summary": "用户要求复核优化合理后直接归档，复核通过。",
+      "source": "用户原话：刚刚另一个 agent 又 review 优化了一下。你看看是不是都合理。没问题就归档吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-12T12:09:09.871Z",
+      "summary": "同步change-workflow与project-knowledge及change-tracking的去标记、归档事实、历史追溯和缓存契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-12T12:09:13.547Z",
+      "summary": "用户授权复核后归档，T1至T4交付与评审通过，Specs已同步。",
+      "path": "docs/project/archive/2026-11-12-release-archive-detection"
+    }
+  },
   "types": [
     "修复"
   ],
