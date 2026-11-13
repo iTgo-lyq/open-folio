@@ -4,7 +4,7 @@
   "title": "SpecTrail 脚本收敛为统一命令行入口",
   "size": "medium",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "codex/spec-trail-cli-entry",
   "confirmations": {
     "requirement": {
@@ -41,15 +41,17 @@
       "status": "done",
       "verification": "Setup 24 项、PR 检查与路由回归通过，覆盖实际 hook 拒绝与部分提交、有效归档与未归档；原型上传端到端通过。",
       "commitTitle": "spec-trail-cli-entry T3: migrate project checks and callers"
+    },
+    "T4": {
+      "title": "帮助一次给全并精简提交钩子输出",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "隔离服务管理测试的 tmux 环境",
+      "status": "todo"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-11-13T05:06:14.838Z",
-      "summary": "项目 471 项、skill 41 项、类型检查及原型上传端到端通过；独立子 Agent 评审，两处参数问题已修正并复验。"
-    }
-  },
+  "closure": {},
   "types": [
     "工程",
     "体验"
@@ -77,8 +79,9 @@
       "source": "默认 json 即可，因为人本身不会用这个 cli"
     }
   },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收统一 CLI 后同步 Specs、归档并交付"
+  "rework": {
+    "at": "2026-11-13T05:47:10.550Z",
+    "reason": "验收反馈：帮助需一次给全参数取值与示例，提交钩子成功输出干扰提交；服务管理测试在本机共享 tmux 下失败，用户要求一并修复。",
+    "approach": "保留已有确认与 T1–T3，追加 T4 完善帮助与钩子输出、T5 隔离服务测试的 tmux 环境，重新整体验证后再请用户验收。"
   }
 }
