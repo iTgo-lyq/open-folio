@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "codex/spec-trail-cli-entry",
   "confirmations": {
     "requirement": {
       "at": "2026-11-13T04:21:10.693Z",
