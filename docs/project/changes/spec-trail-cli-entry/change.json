@@ -13,8 +13,31 @@
     "工程",
     "体验"
   ],
+  "clarifications": {
+    "Q1": {
+      "round": 1,
+      "question": "统一入口继续随 skill 分发，通过 node 加固定路径调用，还是另外提供可直接执行的 spec-trail 命令？",
+      "recommendation": "沿用项目内安装，新增单一 Node 入口。用现有安装步骤即可调用，也无需额外配置全局命令或 npm 包。",
+      "answer": "统一通过 `node .agents/skills/spec-trail/cli.mjs` 调用。",
+      "source": "统一通过 `node .agents/skills/spec-trail/cli.mjs` 即可"
+    },
+    "Q2": {
+      "round": 1,
+      "question": "新模板和 OpenFolio 切到统一入口后，已有项目的旧脚本调用应该怎样过渡？",
+      "recommendation": "保留既有路径的参数、输出和退出码，让升级后的 hook、归档 CI 和自动化继续运行，由维护者择机迁移。本次暂不设移除日期。",
+      "answer": "不需要考虑历史兼容。",
+      "source": "不需要考虑历史兼容"
+    },
+    "Q3": {
+      "round": 1,
+      "question": "统一入口的操作结果默认输出 JSON，还是默认给人读的文本并通过 --json 获取结构化结果？",
+      "recommendation": "操作结果默认 JSON，帮助用文本，错误写入 stderr。Agent 与自动化可以直接解析 stdout。",
+      "answer": "默认 JSON，CLI 面向 Agent 和自动化，人不会直接使用。",
+      "source": "默认 json 即可，因为人本身不会用这个 cli"
+    }
+  },
   "waitingFor": {
-    "kind": "pause",
-    "summary": "等 SpecTrail skill 文档清理完成后由用户恢复"
+    "kind": "confirmation",
+    "summary": "等待确认更新后的完整需求范围与验收标准"
   }
 }
