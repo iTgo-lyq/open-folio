@@ -23,6 +23,28 @@ const integration = (required = [], optional = []) => define(
   async (command, values) => (await import("./integration.mjs")).runIntegration(command, values),
   { required: ["change", ...required], optional: ["repo", ...optional] },
 );
+const prototypeSetup = () => define(
+  async (command, values) => (await import("../prototype/scripts/setup.mjs")).runPrototypeSetup(command, values),
+  {
+    optional: ["repo", "package", "design", "hosting", "openfolio-url", "upload-url"],
+    booleans: ["fetch-upload-url"],
+    note: "Use --fetch-upload-url with --hosting openfolio instead of --upload-url.",
+  },
+);
+const publication = (required = [], optional = [], note) => define(
+  async (command, values) => (await import("../prototype/scripts/publish.mjs")).runPrototypePublication(command, values),
+  { required, optional: ["repo", ...optional], note },
+);
+const archiveTags = (deleting = false) => define(
+  async (command, values) => (await import("./retire-archive-tags.mjs")).runArchiveTags(command, values),
+  {
+    required: ["manifest"], optional: ["repo"],
+    ...(deleting && {
+      booleans: ["service-ready"],
+      note: "Pass --service-ready after verifying the deployed reader and stopping old archive writers.",
+    }),
+  },
+);
 
 export const commands = {
   change: {
@@ -74,5 +96,31 @@ export const commands = {
       optional: ["repo", "document", "preview"],
       note: "Choose at most one of --document and --preview.",
     }),
+  },
+  prototype: {
+    accept: prototypeSetup(),
+    decline: prototypeSetup(),
+    enable: prototypeSetup(),
+    configure: prototypeSetup(),
+    validate: define(
+      async (command, values) => (await import("../prototype/scripts/validate.mjs")).runPrototypeValidation(command, values),
+      { optional: ["repo", "package", "playwright"], booleans: ["browser"] },
+    ),
+    prepare: publication(["directory", "entries", "repository", "out"], ["package"]),
+    upload: publication(["request", "result"], ["change", "upload-url", "openfolio-url"]),
+    register: publication(
+      [], ["change", "git-entry", "request", "result", "package", "repository"],
+      "Provide --git-entry or both --request and --result.",
+    ),
+    associate: publication(["change"], ["entry"]),
+    recover: publication(),
+  },
+  maintenance: {
+    "version-next": define(async (_command, values) => {
+      const { nextVersion, readVersion } = await import("./version.mjs");
+      return { output: { version: nextVersion(readVersion(values.file)) } };
+    }, { required: ["file"] }),
+    "archive-tags-list": archiveTags(),
+    "archive-tags-delete": archiveTags(true),
   },
 };

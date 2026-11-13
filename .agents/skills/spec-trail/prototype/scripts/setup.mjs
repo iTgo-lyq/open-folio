@@ -23,30 +23,6 @@ import {
 } from "./contract.mjs";
 import { htmlIssues } from "./html.mjs";
 import { localPackage } from './local-source.mjs';
-const args = process.argv.slice(2),
-  options = {};
-for (let i = 0; i < args.length; i++) {
-  const key = args[i];
-  if (
-    ![
-      "--repo",
-      "--package",
-      "--design",
-      "--accept",
-      "--decline",
-      "--enable",
-      "--configure",
-      "--hosting",
-      "--openfolio-url",
-      "--upload-url",
-      "--fetch-upload-url",
-    ].includes(key)
-  )
-    throw Error(`Unknown option ${key}`);
-  options[key] = ["--accept", "--decline", "--enable", "--configure", "--fetch-upload-url"].includes(key)
-    ? true
-    : args[++i];
-}
 const json = async (p) => JSON.parse(await readFile(p, "utf8"));
 const exists = async (p) => {
   try {
@@ -56,14 +32,8 @@ const exists = async (p) => {
     throw e;
   }
 };
-try {
-  if (
-    [options["--accept"], options["--decline"], options["--enable"], options["--configure"]].filter(
-      Boolean,
-    ).length !== 1
-  )
-    throw Error("Choose --accept, --decline, --enable or --configure.");
-  const cwd = resolve(options["--repo"] || ".");
+export async function runPrototypeSetup(command, options) {
+  const cwd = resolve(options["repo"] || ".");
   const root = execFileSync(
     "git",
     ["-C", cwd, "rev-parse", "--show-toplevel"],
@@ -72,17 +42,17 @@ try {
   const configPath = checkedPath(root, "docs/project/workflow.json");
   let original = readFileSync(configPath, "utf8");
   const config = JSON.parse(original);
-  if (options["--openfolio-url"] !== undefined)
-    config.openfolioUrl = options["--openfolio-url"] === "none" ? null : options["--openfolio-url"];
-  if (options["--fetch-upload-url"]) {
-    if (options["--hosting"] !== "openfolio" || options["--upload-url"])
+  if (options["openfolio-url"] !== undefined)
+    config.openfolioUrl = options["openfolio-url"] === "none" ? null : options["openfolio-url"];
+  if (options["fetch-upload-url"]) {
+    if (options["hosting"] !== "openfolio" || options["upload-url"])
       throw Error("Use --fetch-upload-url with --hosting openfolio instead of --upload-url.");
-    options["--upload-url"] = await discoverUpload(config.openfolioUrl);
+    options["upload-url"] = await discoverUpload(config.openfolioUrl);
   }
-  const hosting = options["--hosting"]
-    ? { provider: options["--hosting"], ...(options["--upload-url"] ? { uploadUrl: options["--upload-url"] } : {}) }
+  const hosting = options["hosting"]
+    ? { provider: options["hosting"], ...(options["upload-url"] ? { uploadUrl: options["upload-url"] } : {}) }
     : config.prototype?.hosting;
-  if (options["--upload-url"] && !options["--hosting"])
+  if (options["upload-url"] && !options["hosting"])
     throw Error("Provide --hosting with --upload-url.");
   const persist = async (value) => {
     const next = { ...config, prototype: { ...value, ...(hosting ? { hosting } : {}) } };
@@ -100,15 +70,15 @@ try {
       } finally { try { unlinkSync(tmp); } catch (e) { if (e.code !== "ENOENT") throw e; } }
     });
   };
-  if (options["--configure"]) {
-    await persist(config.prototype ?? { status: "pending", packagePath: options["--package"] || "packages/prototype" });
-    console.log("Prototype hosting selection saved. Commit workflow.json to share it.");
-  } else if (options["--decline"]) {
+  if (command === "configure") {
+    await persist(config.prototype ?? { status: "pending", packagePath: options["package"] || "packages/prototype" });
+    return { output: { status: config.prototype.status, hosting: config.prototype.hosting?.provider, path: "docs/project/workflow.json" } };
+  } else if (command === "decline") {
     await persist({ status: "disabled" });
-    console.log("Prototype tracking disabled; existing files preserved.");
+    return { output: { status: "disabled", path: "docs/project/workflow.json" } };
   } else {
     const location =
-      options["--package"] ||
+      options["package"] ||
       config.prototype?.packagePath ||
       "packages/prototype";
     if (!packagePath(location)) throw Error("Invalid package path");
@@ -130,7 +100,7 @@ try {
     const source=localPackage(root,execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),location);
     if(source.mount && !(await exists(join(pkg,'package.json')))?.isFile())
       throw Error('Submodule package must already exist; initialize the recorded gitlink and reuse its frontend package before enabling');
-    let design = options["--design"];
+    let design = options["design"];
     if (design) {
       const actual = await realpath(resolve(root, design));
       if (
@@ -140,7 +110,7 @@ try {
         throw Error("Design source must be a regular repository file");
       design = relative(root, actual);
     }
-    if (options["--accept"]) {
+    if (command === "accept") {
       // A fully configured package may be checked again without overwriting its contents.
       await persist({ status: "pending", packagePath: location });
       const existing = await exists(pkg);
@@ -177,13 +147,13 @@ try {
         );
         execFileSync(process.execPath, [join(pkg, "build.mjs"), ...(hosting && hosting.provider !== "git" ? ["--hosted"] : [])], {
           cwd: pkg,
-          stdio: "inherit",
+          stdio: ["inherit", 2, 2],
         });
         if (hosting && hosting.provider !== "git")
           await writeFile(join(pkg, "prototype.json"), JSON.stringify({ schemaVersion: 1, entries: [{ id: "welcome", title: "Welcome", sourcePath: `${location}/src/pages/welcome.html`, kind: "page", devices: ["pc-web"] }] }, null, 2) + "\n", { flag: "wx" });
       } else if (!(await exists(join(pkg, "package.json")))?.isFile())
         throw Error(
-          "Existing directory preserved; provide package.json and self-contained preview output before --enable.",
+          "Existing directory preserved; provide package.json and self-contained preview output before prototype enable.",
         );
       for (const [file, body] of [
         [
@@ -205,11 +175,11 @@ try {
       config.prototype?.status !== "enabled"
     )
       throw Error(
-        "Initialize the prototype package with --accept before --enable.",
+        "Initialize the prototype package with prototype accept before prototype enable.",
       );
     if (validatePrototype(config.prototype).length)
       throw Error("Invalid prototype configuration");
-    if (options["--enable"] && config.prototype.status === "enabled")
+    if (command === "enable" && config.prototype.status === "enabled")
       await persist({ status: "pending", packagePath: location });
     const packageJson = await json(join(pkg, "package.json"));
     if (!packageJson.name || packageJson.private !== true)
@@ -249,7 +219,7 @@ try {
       );
     else
       throw Error(
-        "Provide prototype.json and host build/publish instructions, or self-contained Git previews, then run --enable.",
+        "Provide prototype.json and host build/publish instructions, or self-contained Git previews, then run prototype enable.",
       );
     const rootPackage = join(root, "package.json");
     if (!source.mount && await exists(join(root, "pnpm-workspace.yaml"))) {
@@ -261,7 +231,7 @@ try {
         )?.[1];
       if (!block)
         throw Error(
-          "Existing pnpm workspace preserved: use a multiline packages glob list, then retry --enable.",
+          "Existing pnpm workspace preserved: use a multiline packages glob list, then retry prototype enable.",
         );
       const patterns = [];
       for (const line of block.split(/\r?\n/)) {
@@ -272,7 +242,7 @@ try {
           );
         if (!match)
           throw Error(
-            "Existing pnpm packages list uses unsupported YAML; preserve it and normalize only that list before --enable.",
+            "Existing pnpm packages list uses unsupported YAML; preserve it and normalize only that list before prototype enable.",
           );
         patterns.push(match[1] ?? match[2] ?? match[3]);
       }
@@ -285,7 +255,7 @@ try {
       );
       if (!included || excluded)
         throw Error(
-          "Existing pnpm workspace preserved: include this package and remove any matching exclusion, then retry --enable.",
+          "Existing pnpm workspace preserved: include this package and remove any matching exclusion, then retry prototype enable.",
         );
     } else if (!source.mount && await exists(rootPackage)) {
       const value = await json(rootPackage);
@@ -304,11 +274,6 @@ try {
       await writeFile(rootPackage, JSON.stringify(value, null, 2) + "\n");
     }
     await persist({ status: "enabled", packagePath: location });
-    console.log(
-      `Prototype enabled: ${location}; ${count} static entry(s). Commit configuration, sources and outputs; publish the configuration baseline before viewing in OpenFolio.`,
-    );
+    return { output: { status: "enabled", packagePath: location, entries: count } };
   }
-} catch (e) {
-  console.error(`Prototype setup: ${e.message}`);
-  process.exitCode = 1;
 }

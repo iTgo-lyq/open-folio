@@ -4,11 +4,11 @@ import { readFile, writeFile, rm, symlink } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { resolve, join } from "node:path";
 import { fixture } from "./fixture.ts";
-const scripts = resolve(".agents/skills/spec-trail/prototype/scripts");
-const run = (repo: string, script: string, args: string[] = []) =>
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
+const run = (repo: string, command: string, args: string[] = []) =>
   spawnSync(
     process.execPath,
-    [join(scripts, script), "--repo", repo, ...args],
+    [cli, "prototype", command, "--repo", repo, ...args],
     { cwd: repo, encoding: "utf8" },
   );
 const config = async (repo: string) =>
@@ -26,10 +26,9 @@ test("setup persists refusal, initializes one package, reuses design and preserv
     }),
   );
   await f.put("docs/design.md", "# Existing project design\n");
-  assert.equal(run(f.author, "setup.mjs", ["--decline"]).status, 0);
+  assert.equal(run(f.author, "decline").status, 0);
   assert.deepEqual((await config(f.author)).prototype, { status: "disabled" });
-  let result = run(f.author, "setup.mjs", [
-    "--accept",
+  let result = run(f.author, "accept", [
     "--design",
     "docs/design.md",
   ]);
@@ -46,7 +45,7 @@ test("setup persists refusal, initializes one package, reuses design and preserv
     "Keep my project-specific instructions\n",
   );
   await writeFile(join(pkg, "DESIGN.md"), "# My reviewed design rules\n");
-  result = run(f.author, "setup.mjs", ["--accept"]);
+  result = run(f.author, "accept");
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     await readFile(join(pkg, "AGENTS.md"), "utf8"),
@@ -62,12 +61,12 @@ test("setup persists refusal, initializes one package, reuses design and preserv
   assert.equal(root.scripts.build, "existing");
   assert.deepEqual(root.workspaces, ["packages/prototype"]);
   assert.equal(
-    run(f.author, "setup.mjs", ["--accept", "--package", "other/prototype"])
+    run(f.author, "accept", ["--package", "other/prototype"])
       .status,
     1,
   );
   await symlink(resolve("node_modules"), join(f.author, "node_modules"), "dir");
-  result = run(f.author, "validate.mjs", ["--browser"]);
+  result = run(f.author, "validate", ["--browser"]);
   assert.equal(result.status, 0, result.stderr);
 });
 
@@ -75,7 +74,7 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
   const f = await fixture();
   t.after(f.cleanup);
   await f.put("packages/prototype/notes.md", "existing project\n");
-  const result = run(f.author, "setup.mjs", ["--accept"]);
+  const result = run(f.author, "accept");
   assert.equal(result.status, 1);
   assert.deepEqual((await config(f.author)).prototype, {
     status: "pending",
@@ -86,7 +85,7 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
     "existing project\n",
   );
   await rm(join(f.author, "packages/prototype"), { recursive: true });
-  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
+  assert.equal(run(f.author, "accept").status, 0);
   const target = join(
     f.author,
     "packages/prototype/preview/welcome/index.html",
@@ -102,19 +101,19 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
   );
   assert.equal(build.status, 1);
   assert.equal(await readFile(outside, "utf8"), "untouched");
-  assert.equal(run(f.author, "validate.mjs").status, 1);
+  assert.equal(run(f.author, "validate").status, 1);
 });
 
 test("browser export validation permits runtime storage, requests and workers", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
+  assert.equal(run(f.author, "accept").status, 0);
   await f.put(
     "packages/prototype/preview/welcome/index.html",
     '<!doctype html><h1>Interactive export</h1><script>localStorage.setItem("prototype", "ok"); fetch(location.href); const worker = new Worker(URL.createObjectURL(new Blob(["postMessage(1)"]))); worker.onmessage = () => worker.terminate();</script>',
   );
-  assert.equal(run(f.author, "validate.mjs").status, 0); // Static checks are deliberately not a runtime guarantee.
-  const result = run(f.author, "validate.mjs", [
+  assert.equal(run(f.author, "validate").status, 0); // Static checks are deliberately not a runtime guarantee.
+  const result = run(f.author, "validate", [
     "--browser",
     "--playwright",
     resolve("node_modules/@playwright/test/index.mjs"),
@@ -128,28 +127,28 @@ test("pnpm workspace integration respects matching exclusions while preserving u
   const yaml =
     "packages:\n  - 'packages/*'\n  - '!**/test/**'\nonlyBuiltDependencies:\n  - esbuild\n";
   await f.put("pnpm-workspace.yaml", yaml);
-  let result = run(f.author, "setup.mjs", ["--accept"]);
+  let result = run(f.author, "accept");
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     await readFile(join(f.author, "pnpm-workspace.yaml"), "utf8"),
     yaml,
   );
-  assert.equal(run(f.author, "setup.mjs", ["--enable"]).status, 0);
+  assert.equal(run(f.author, "enable").status, 0);
   await f.put(
     "pnpm-workspace.yaml",
     "packages:\n  - 'packages/*'\n  - '!packages/prototype'\n",
   );
-  result = run(f.author, "setup.mjs", ["--enable"]);
+  result = run(f.author, "enable");
   assert.equal(result.status, 1);
   assert.equal((await config(f.author)).prototype.status, "pending");
   await f.put("pnpm-workspace.yaml", yaml);
-  assert.equal(run(f.author, "setup.mjs", ["--enable"]).status, 0);
+  assert.equal(run(f.author, "enable").status, 0);
 });
 
 test("shared source inlining preserves JavaScript replacement strings verbatim", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
+  assert.equal(run(f.author, "accept").status, 0);
   const source = "window.render = 'abc'.replace(/b/g, '[$&]');";
   await f.put("packages/prototype/src/shared/replace.js", source);
   await f.put(
@@ -175,8 +174,7 @@ test("shared source inlining preserves JavaScript replacement strings verbatim",
 test("hosting choices persist through setup and disable, hosted scaffolds build dist, invalid changes preserve workflow", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
-  let result = run(f.author, "setup.mjs", [
-    "--accept",
+  let result = run(f.author, "accept", [
     "--hosting",
     "openfolio",
     "--openfolio-url",
@@ -199,15 +197,14 @@ test("hosting choices persist through setup and disable, hosted scaffolds build 
     join(f.author, "packages/prototype/package.json"),
     "utf8",
   );
-  assert.equal(run(f.author, "setup.mjs", ["--decline"]).status, 0);
+  assert.equal(run(f.author, "decline").status, 0);
   assert.deepEqual(
     (await config(f.author)).prototype.hosting,
     workflow.prototype.hosting,
   );
-  assert.equal(run(f.author, "setup.mjs", ["--accept"]).status, 0);
+  assert.equal(run(f.author, "accept").status, 0);
   assert.deepEqual(await config(f.author), workflow);
-  result = run(f.author, "setup.mjs", [
-    "--configure",
+  result = run(f.author, "configure", [
     "--hosting",
     "custom",
     "--openfolio-url",
@@ -218,7 +215,7 @@ test("hosting choices persist through setup and disable, hosted scaffolds build 
   assert.equal(result.status, 0, result.stderr);
   assert.equal((await config(f.author)).openfolioUrl, null);
   assert.equal((await config(f.author)).prototype.hosting.provider, "custom");
-  result = run(f.author, "setup.mjs", ["--configure", "--hosting", "git"]);
+  result = run(f.author, "configure", ["--hosting", "git"]);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual((await config(f.author)).prototype.hosting, {
     provider: "git",
@@ -227,8 +224,7 @@ test("hosting choices persist through setup and disable, hosted scaffolds build 
     join(f.author, "docs/project/workflow.json"),
     "utf8",
   );
-  result = run(f.author, "setup.mjs", [
-    "--configure",
+  result = run(f.author, "configure", [
     "--hosting",
     "openfolio",
   ]);

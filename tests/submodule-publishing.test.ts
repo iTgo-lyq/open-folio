@@ -21,7 +21,7 @@ import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { preflight } from "../.agents/skills/spec-trail/scripts/integration.mjs";
 import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
 const hook = resolve(".agents/skills/spec-trail/setup/scripts/pre-commit.js");
-const setup = resolve(".agents/skills/spec-trail/prototype/scripts/setup.mjs");
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 test("declared source and dependencies inside preview are never exempted as generated output", async (t) => {
   const f = await submoduleFixture();
   t.after(f.cleanup);
@@ -251,7 +251,9 @@ for (const directory of ["packages/prototype", ""])
       const validated = spawnSync(
         process.execPath,
         [
-          resolve(".agents/skills/spec-trail/prototype/scripts/validate.mjs"),
+          cli,
+          "prototype",
+          "validate",
           "--repo",
           f.child,
           "--package",
@@ -507,7 +509,7 @@ test("submodule adoption preserves parent workspaces and existing frontend confi
   const before = await readFile(join(f.author, "package.json"), "utf8");
   const result = spawnSync(
     process.execPath,
-    [setup, "--enable", "--repo", f.author],
+    [cli, "prototype", "enable", "--repo", f.author],
     { encoding: "utf8" },
   );
   assert.equal(result.status, 0, result.stderr);

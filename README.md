@@ -170,7 +170,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 ## 原型与内置托管
 
-`prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `publish.mjs associate` 关联 Change，最后一次提交 gitlink 与 Change。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
+`prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `node .agents/skills/spec-trail/cli.mjs prototype associate` 关联 Change，最后一次提交 gitlink 与 Change。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
 
 当前原型总览读取所选集成分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 归档后通过登记源分支对应 PR 的双亲合并提交保存交付边界；“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。原始分支与工作区可在远端核实后安全清理，不再创建保留标签。旧归档缺少有效关联时，diff 和原型留空，正文仍可读。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 
@@ -179,7 +179,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 部署管理员可使用既有 skill 协议获取上传地址（密码通过环境安全注入）：
 
 ```bash
-node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting openfolio --openfolio-url https://folio.example.com --fetch-upload-url
+node .agents/skills/spec-trail/cli.mjs prototype configure --hosting openfolio --openfolio-url https://folio.example.com --fetch-upload-url
 ```
 
 上传地址本身授权上传，不授权修改服务配置。每次上传最多 2000 文件、100 MiB，同时最多两次；反向代理须支持相应请求大小和时长。完整且摘要一致才发布，历史字节不覆盖。停机后轮换 `prototype-upload-key` 可撤销旧上传地址，已经公开的静态文件不受影响。

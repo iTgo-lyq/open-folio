@@ -55,6 +55,8 @@ async function main() {
     return;
   }
   try {
+    if (group === "prototype" && Number(process.versions.node.split(".")[0]) < 24)
+      throw Error("Node.js 24 or newer is required for prototype commands.");
     const { output, exitCode = 0 } = await definition.run(command, options);
     process.stdout.write(JSON.stringify(output, null, 2) + "\n");
     process.exitCode = exitCode;

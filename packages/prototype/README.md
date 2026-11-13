@@ -31,7 +31,7 @@ npm ci
 npm run build --workspace prototype
 # 对本次发布的每个页面执行截图；示例替换为实际入口。
 npm run screenshot --workspace prototype -- --entry dist/quiet-home/index.html
-node .agents/skills/spec-trail/prototype/scripts/publish.mjs prepare \
+node .agents/skills/spec-trail/cli.mjs prototype prepare \
   --directory packages/prototype/dist \
   --entries packages/prototype/publish-quiet-entries.json \
   --repository https://github.com/iTgo-lyq/open-folio \
@@ -45,11 +45,11 @@ node packages/prototype/publish-r2.mjs \
 上传成功后，再执行以下登记；失败时保留已有配置和引用，原请求可重试：
 
 ```bash
-node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting custom
-node .agents/skills/spec-trail/prototype/scripts/publish.mjs register \
+node .agents/skills/spec-trail/cli.mjs prototype configure --hosting custom
+node .agents/skills/spec-trail/cli.mjs prototype register \
   --request /tmp/open-folio-r2-request.json --result /tmp/open-folio-r2-result.json \
   --change your-change-id
-node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
+node .agents/skills/spec-trail/cli.mjs prototype validate --browser
 ```
 
 固定引用包含源码提交、内容摘要和公开 URL。登记后验证各设备交互，再提交清单、workflow 与新 Change；引用推送至配置的协作分支后更新项目总览。上传失败不切换 Git 兜底，也不覆盖历史引用。

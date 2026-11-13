@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "原型和维护命令输出 JSON",
-      "status": "todo"
+      "status": "done",
+      "verification": "原型脚手架、静态校验与发布准备 stdout 可解析；原型工具、发布、子模块、版本及本地远端标签验证通过。",
+      "commitTitle": "spec-trail-cli-entry T2: expose prototype and maintenance commands"
     },
     "T3": {
       "title": "通过统一入口接入项目校验",
