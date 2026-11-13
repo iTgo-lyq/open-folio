@@ -4,7 +4,7 @@
   "title": "补齐 SpecTrail 日常状态命令与提交前校验",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/spec-trail-cli-coverage",
   "confirmations": {
     "requirement": {
@@ -61,7 +61,13 @@
       "commitTitle": "spec-trail-cli-coverage T6: handle additional script syntax in the hook"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-13T09:19:36.568Z",
+      "summary": "独立子 Agent 评审和复验通过，479 项应用测试、43 项 SpecTrail 测试、类型检查、生产构建与隔离实例冒烟通过"
+    }
+  },
   "types": [
     "工程",
     "流程"
@@ -88,5 +94,9 @@
       "answer": "按推荐处理阶段对齐，不支持 xlarge。",
       "source": "用户回复“没问题”"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收五个 CLI 命令及提交前校验"
   }
 }
