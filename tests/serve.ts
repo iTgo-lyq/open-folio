@@ -165,6 +165,7 @@ const discoveries = new Discovery(join(root, "discoveries"), sessions),
 repositoryPermissions(sessions).now = () => Date.now() + permissionOffset;
 const key = repositoryKey(repository);
 const originalCollaboration = f.git(["rev-parse", "develop"]);
+const originalReader = f.git(["rev-parse", "change/document-reader"]);
 f.git(["checkout", "-b", "team/integration", "develop"]);
 const customWorkflow = JSON.parse(
   f.git(["show", "develop:docs/project/workflow.json"]),
@@ -225,6 +226,37 @@ const server = createServer(async (req, res) => {
           const path = "packages/prototype/prototype.json";
           const manifest = JSON.parse(f.git(["show", `develop:${path}`]));
           manifest.entries[0].title = "自动更新后的原型";
+          await f.put(path, JSON.stringify(manifest));
+          f.commit();
+        }
+        if (input.removeAccessSpec) {
+          f.git(["checkout", "develop"]);
+          f.git(["rm", "docs/project/specs/platform/access/spec.md"]);
+          f.commit();
+        }
+        if (input.removeResearch) {
+          f.git(["checkout", "change/document-reader"]);
+          f.git(["rm", "docs/project/changes/document-reader/research.md"]);
+          f.commit();
+        }
+        if (input.removeReaderChange) {
+          f.git(["checkout", "develop"]);
+          f.git(["rm", "-r", "docs/project/changes/document-reader"]);
+          f.commit();
+        }
+        if (input.restoreReader) {
+          f.git(["checkout", "change/document-reader"]);
+          f.git(["reset", "--hard", originalReader]);
+          f.git(["push", "--force", "origin", "change/document-reader"]);
+          f.git(["checkout", "develop"]);
+        }
+        if (input.removeOrdersPrototype) {
+          f.git(["checkout", "develop"]);
+          const path = "packages/prototype/prototype.json";
+          const manifest = JSON.parse(f.git(["show", `develop:${path}`]));
+          manifest.entries = manifest.entries.filter(
+            (entry: { id: string }) => entry.id !== "orders",
+          );
           await f.put(path, JSON.stringify(manifest));
           f.commit();
         }
