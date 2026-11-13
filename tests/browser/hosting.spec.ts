@@ -161,14 +161,16 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
     storageState: { cookies: [], origins: [] },
   });
   try {
-    const run = (script: string, args: string[]) =>
+    const run = (command: string, args: string[]) =>
       execFileSync(
         process.execPath,
         [
-          resolve(`.agents/skills/spec-trail/prototype/scripts/${script}`),
-          ...(script === "publish.mjs"
-            ? [args[0], "--repo", f.author, ...args.slice(1)]
-            : ["--repo", f.author, ...args]),
+          resolve(".agents/skills/spec-trail/cli.mjs"),
+          "prototype",
+          command,
+          "--repo",
+          f.author,
+          ...args,
         ],
         {
           encoding: "utf8",
@@ -178,8 +180,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
           },
         },
       );
-    run("setup.mjs", [
-      "--accept",
+    run("accept", [
       "--hosting",
       "openfolio",
       "--openfolio-url",
@@ -217,8 +218,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
       entries,
       JSON.stringify([{ id: "welcome", entryPath: "welcome/index.html" }]),
     );
-    run("publish.mjs", [
-      "prepare",
+    run("prepare", [
       "--directory",
       "packages/prototype/dist",
       "--entries",
@@ -228,8 +228,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
       "--out",
       request,
     ]);
-    const output = run("publish.mjs", [
-      "upload",
+    const output = run("upload", [
       "--request",
       request,
       "--result",
@@ -239,6 +238,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
     ]);
     expect(output).not.toContain(workflow.prototype.hosting.uploadUrl);
     const published = JSON.parse(await readFile(result, "utf8"));
+    expect(JSON.parse(output)).toEqual(published);
     const manifest = JSON.parse(
       await readFile(
         join(f.author, "packages/prototype/prototype.json"),

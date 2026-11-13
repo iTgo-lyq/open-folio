@@ -97,6 +97,24 @@ export const commands = {
       note: "Choose at most one of --document and --preview.",
     }),
   },
+  setup: {
+    check: define(
+      async (command, values) => (await import("../setup/scripts/check-setup.mjs")).runSetupCheck(command, values),
+      { optional: ["repo"] },
+    ),
+    "preview-routing": define(
+      async (command, values) => (await import("../setup/scripts/preview-routing.mjs")).runPreviewRouting(command, values),
+      { optional: ["repo", "baseline"], multiple: ["work-branch"] },
+    ),
+    "pre-commit": define(
+      async (command, values) => (await import("../setup/scripts/pre-commit.mjs")).runPreCommit(command, values),
+      { optional: ["repo"] },
+    ),
+    "check-pr": define(
+      async (command, values) => (await import("../setup/scripts/check-pr.mjs")).runCheckPullRequest(command, values),
+      { optional: ["repo", "event"], note: "Provide --event or set GITHUB_EVENT_PATH." },
+    ),
+  },
   prototype: {
     accept: prototypeSetup(),
     decline: prototypeSetup(),

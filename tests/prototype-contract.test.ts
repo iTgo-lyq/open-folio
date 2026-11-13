@@ -190,7 +190,7 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   const run = () =>
     spawnSync(
       process.execPath,
-      [resolve(".agents/skills/spec-trail/setup/scripts/pre-commit.js")],
+      [resolve(".agents/skills/spec-trail/cli.mjs"), "setup", "pre-commit"],
       { cwd: work, encoding: "utf8" },
     );
   const stage = () => git(["add", "."]);

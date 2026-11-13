@@ -27,9 +27,9 @@ function usage() {
 }
 
 function parseCommand() {
-  if (!group || (group === "--help" && !command)) return;
+  if (group === undefined || (group === "--help" && command === undefined)) return;
   if (!groupCommands) throw Error(`Unknown command group: ${group}`);
-  if (!command || (command === "--help" && !args.length)) return;
+  if (command === undefined || (command === "--help" && !args.length)) return;
   if (!definition) throw Error(`Unknown command: ${group} ${command}`);
   const { values } = parseArgs({
     args,

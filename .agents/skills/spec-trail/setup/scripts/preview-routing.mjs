@@ -1,18 +1,9 @@
-#!/usr/bin/env node
-import { parseArgs } from "node:util";
 import { repository, recordsAt, revision } from "../../scripts/repository.mjs";
 import { validBranchName, closedRecord } from "../../scripts/routing.mjs";
 import { validateChange } from "../../scripts/state-schema.mjs";
 
 // Read only known local/tracking refs. No fetching, branch enumeration or writes.
-try {
-  const { values } = parseArgs({
-    options: {
-      repo: { type: "string" },
-      baseline: { type: "string" },
-      "work-branch": { type: "string", multiple: true, default: [] },
-    },
-  });
+export function runPreviewRouting(_command, values) {
   const repo = repository(values.repo);
   const baseline =
     values.baseline ?? repo.config.integrationBranch;
@@ -166,27 +157,20 @@ try {
       files: record.directory,
     });
   }
-  console.log(
-    JSON.stringify(
-      {
-        readonly: true,
-        integrationBranch,
-        baseline,
-        coverage: {
-          worktreeBranches: knownTrees,
-          explicitBranches: values["work-branch"],
-          note: "Only baseline entries, registered worktrees and explicitly supplied branches were checked; unknown remote work was not discovered.",
-        },
-        sources,
-        proposals,
-        errors,
+  return {
+    output: {
+      readonly: true,
+      integrationBranch,
+      baseline,
+      coverage: {
+        worktreeBranches: knownTrees,
+        explicitBranches: values["work-branch"],
+        note: "Only baseline entries, registered worktrees and explicitly supplied branches were checked; unknown remote work was not discovered.",
       },
-      null,
-      2,
-    ),
-  );
-  if (errors.length) process.exitCode = 1;
-} catch (error) {
-  console.error(`SpecTrail migration preview: ${error.message}`);
-  process.exitCode = 1;
+      sources,
+      proposals,
+      errors,
+    },
+    exitCode: errors.length ? 1 : 0,
+  };
 }

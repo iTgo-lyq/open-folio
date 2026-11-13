@@ -27,7 +27,9 @@ test("CLI help and argument errors work outside a Git project", t => {
   }
 
   for (const [args, expected] of [
+    [[""], /Unknown command group/],
     [["toString"], /Unknown command group/],
+    [["change", ""], /Unknown command/],
     [["change", "constructor"], /Unknown command/],
     [["change", "show", "--typo"], /Unknown option/],
     [["change", "show", "--change", "example", "extra"], /Unexpected argument/],

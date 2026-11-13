@@ -171,7 +171,7 @@ export function withLock(root, fn) {
   } catch (error) {
     if (error.code === "EEXIST")
       throw Error(
-        `Another state operation holds ${lock}. Inspect owner.json (if present), the owning process and worktree; only remove a confirmed stale lock, then run publish.mjs recover. Never remove an active or unverified lock.`,
+        `Another state operation holds ${lock}. Inspect owner.json (if present), the owning process and worktree; only remove a confirmed stale lock, then run node .agents/skills/spec-trail/cli.mjs prototype recover. Never remove an active or unverified lock.`,
       );
     throw error;
   }

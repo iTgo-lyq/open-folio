@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { repository } from './repository.mjs';

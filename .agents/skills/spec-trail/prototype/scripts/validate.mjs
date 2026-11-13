@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { readFile, readdir, realpath, lstat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";

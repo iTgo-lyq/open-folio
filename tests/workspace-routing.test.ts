@@ -757,15 +757,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
   const output = JSON.parse(
     execFileSync(
       process.execPath,
-      [
-        cli,
-        "integration",
-        "verify",
-        "--repo",
-        f.repo,
-        "--change",
-        "parent",
-      ],
+      [cli, "integration", "verify", "--repo", f.repo, "--change", "parent"],
       { encoding: "utf8", env },
     ),
   );

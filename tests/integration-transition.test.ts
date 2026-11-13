@@ -281,9 +281,22 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   const cli = resolve(".agents/skills/spec-trail/cli.mjs");
   const manifest = join(f.root, "tag-inventory.json");
   const run = (command: string, ...options: string[]) =>
-    JSON.parse(execFileSync(process.execPath, [
-      cli, "maintenance", command, "--repo", f.author, "--manifest", manifest, ...options,
-    ], { encoding: "utf8" }));
+    JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          cli,
+          "maintenance",
+          command,
+          "--repo",
+          f.author,
+          "--manifest",
+          manifest,
+          ...options,
+        ],
+        { encoding: "utf8" },
+      ),
+    );
   const plan = run("archive-tags-list");
   assert.equal(plan.refs.length, 2);
   await assert.rejects(retire(repo, plan), /Deploy and verify/);

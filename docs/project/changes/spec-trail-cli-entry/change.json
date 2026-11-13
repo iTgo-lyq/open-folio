@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "通过统一入口接入项目校验",
-      "status": "todo"
+      "status": "done",
+      "verification": "Setup 24 项、PR 检查与路由回归通过，覆盖实际 hook 拒绝与部分提交、有效归档与未归档；原型上传端到端通过。",
+      "commitTitle": "spec-trail-cli-entry T3: migrate project checks and callers"
     }
   },
   "closure": {},

@@ -426,7 +426,7 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
   };
   register(f.author, { request, result, change: "publish-demo" });
   f.git(["add", "."]);
-  run(".agents/skills/spec-trail/setup/scripts/pre-commit.js");
+  run(".agents/skills/spec-trail/cli.mjs", ["setup", "pre-commit"]);
   f.commit();
   await f.put(
     "packages/prototype/preview/screen/index.html",

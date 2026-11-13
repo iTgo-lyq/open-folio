@@ -28,10 +28,7 @@ test("setup persists refusal, initializes one package, reuses design and preserv
   await f.put("docs/design.md", "# Existing project design\n");
   assert.equal(run(f.author, "decline").status, 0);
   assert.deepEqual((await config(f.author)).prototype, { status: "disabled" });
-  let result = run(f.author, "accept", [
-    "--design",
-    "docs/design.md",
-  ]);
+  let result = run(f.author, "accept", ["--design", "docs/design.md"]);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual((await config(f.author)).prototype, {
     status: "enabled",
@@ -61,8 +58,7 @@ test("setup persists refusal, initializes one package, reuses design and preserv
   assert.equal(root.scripts.build, "existing");
   assert.deepEqual(root.workspaces, ["packages/prototype"]);
   assert.equal(
-    run(f.author, "accept", ["--package", "other/prototype"])
-      .status,
+    run(f.author, "accept", ["--package", "other/prototype"]).status,
     1,
   );
   await symlink(resolve("node_modules"), join(f.author, "node_modules"), "dir");
@@ -224,10 +220,7 @@ test("hosting choices persist through setup and disable, hosted scaffolds build 
     join(f.author, "docs/project/workflow.json"),
     "utf8",
   );
-  result = run(f.author, "configure", [
-    "--hosting",
-    "openfolio",
-  ]);
+  result = run(f.author, "configure", ["--hosting", "openfolio"]);
   assert.equal(result.status, 1);
   assert.equal(
     await readFile(join(f.author, "docs/project/workflow.json"), "utf8"),

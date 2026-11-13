@@ -1,9 +1,6 @@
-#!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parseArgs } from 'node:util';
-import { pathToFileURL } from 'node:url';
 import { recordsAt } from '../../scripts/repository.mjs';
 import { validateChange, validateWorkflow } from '../../scripts/state-schema.mjs';
 import { closedRecord, validBranchName, parentBranch } from '../../scripts/routing.mjs';
@@ -148,17 +145,13 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
   return {kind:'release', changes:includes, source:pr.head.sha};
 }
 
-async function main() {
-  const {values} = parseArgs({options:{repo:{type:'string',default:'.'},event:{type:'string'}}});
+export async function runCheckPullRequest(_command, values) {
   const eventPath = values.event ?? process.env.GITHUB_EVENT_PATH;
   assert(eventPath, 'Provide --event <PR event JSON> or GITHUB_EVENT_PATH');
-  const git = args => execFileSync('git', ['-C', resolve(values.repo), '--literal-pathspecs', ...args], {
+  const git = args => execFileSync('git', ['-C', resolve(values.repo ?? "."), '--literal-pathspecs', ...args], {
     encoding:'utf8', stdio:['ignore','pipe','pipe'], maxBuffer:32 * 1024 * 1024,
   }).trimEnd();
   const result = await checkPullRequest(git, JSON.parse(readFileSync(eventPath, 'utf8')));
-  process.stdout.write(JSON.stringify(result) + '\n');
   process.stderr.write('Prototype source verification: not executed by archive CI; private submodule objects require authorized local publication/preflight or OpenFolio reads.\n');
+  return { output: result };
 }
-
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
-  main().catch(error => { process.stderr.write(`SpecTrail: ${error.message}\n`); process.exitCode = 1; });

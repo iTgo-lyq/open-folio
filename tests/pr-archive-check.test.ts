@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { checkPullRequest as check } from "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 
-const cli = resolve(".agents/skills/spec-trail/setup/scripts/check-pr.mjs");
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 const changeBody = "Delivery\n\nSpecTrail-Change: example";
 const releaseBody =
   "Release\n\nSpecTrail-Version: 1.0.0\nSpecTrail-Includes: example";
@@ -130,6 +130,15 @@ test("archive prototype containment is checked before merge", async (t) => {
 test("unarchived and reworked Changes fail even in Draft, then pass after archive is restored", async () => {
   const f = await integrationFixture();
   try {
+    const eventPath = join(f.root, "event.json");
+    const runCheck = async () => {
+      await writeFile(eventPath, JSON.stringify(event(f)));
+      return spawnSync(
+        process.execPath,
+        [cli, "setup", "check-pr", "--repo", f.author, "--event", eventPath],
+        { encoding: "utf8" },
+      );
+    };
     await f.put("docs/project/changes/example/requirement.md", "# Rework");
     await rename(
       join(f.author, f.archivePath, "change.json"),
@@ -145,16 +154,18 @@ test("unarchived and reworked Changes fail even in Draft, then pass after archiv
       }),
     );
     f.commit(false);
-    await assert.rejects(
-      checkPullRequest(f.git, event(f)),
-      /valid completed archive/,
-    );
+    const rejected = await runCheck();
+    assert.equal(rejected.status, 1, rejected.stderr);
+    assert.equal(rejected.stdout, "");
+    assert.match(rejected.stderr, /valid completed archive/);
     await rm(join(f.author, "docs/project/changes/example"), {
       recursive: true,
     });
     await f.put(`${f.archivePath}/change.json`, JSON.stringify(f.record));
     f.commit(false);
-    assert.equal((await checkPullRequest(f.git, event(f))).kind, "change");
+    const accepted = await runCheck();
+    assert.equal(accepted.status, 0, accepted.stderr);
+    assert.equal(JSON.parse(accepted.stdout).kind, "change");
   } finally {
     await f.cleanup();
   }
@@ -429,7 +440,7 @@ test("CLI reads PR JSON as data and propagates failed archive checks", async () 
     );
     const output = execFileSync(
       process.execPath,
-      [cli, "--repo", f.author, "--event", eventPath],
+      [cli, "setup", "check-pr", "--repo", f.author, "--event", eventPath],
       { encoding: "utf8" },
     );
     assert.equal(JSON.parse(output).kind, "change");
@@ -443,10 +454,14 @@ test("CLI reads PR JSON as data and propagates failed archive checks", async () 
         },
       }),
     );
-    const failed = spawnSync(process.execPath, [cli, "--repo", f.author], {
-      env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
-      encoding: "utf8",
-    });
+    const failed = spawnSync(
+      process.execPath,
+      [cli, "setup", "check-pr", "--repo", f.author],
+      {
+        env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
+        encoding: "utf8",
+      },
+    );
     assert.equal(failed.status, 1);
     assert.match(failed.stderr, /registered source branch/);
     assert.equal(f.git(["status", "--porcelain"]), "");
