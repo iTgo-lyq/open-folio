@@ -4,7 +4,7 @@
   "title": "SpecTrail 脚本收敛为统一命令行入口",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/spec-trail-cli-entry",
   "confirmations": {
     "requirement": {
@@ -61,7 +61,13 @@
       "commitTitle": "spec-trail-cli-entry T6: correct help details and harden service test isolation"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-13T06:15:30.183Z",
+      "summary": "返修后项目 471 项、skill 42 项、类型检查与原型上传 e2e 通过；独立子 Agent 评审 9 项发现已在 T6 修正并复验。"
+    }
+  },
   "types": [
     "工程",
     "体验"
@@ -93,5 +99,9 @@
     "at": "2026-11-13T05:47:10.550Z",
     "reason": "验收反馈：帮助需一次给全参数取值与示例，提交钩子成功输出干扰提交；服务管理测试在本机共享 tmux 下失败，用户要求一并修复。",
     "approach": "保留已有确认与 T1–T3，追加 T4 完善帮助与钩子输出、T5 隔离服务测试的 tmux 环境，重新整体验证后再请用户验收。"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收统一 CLI 后同步 Specs、归档并交付"
   }
 }

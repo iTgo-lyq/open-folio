@@ -20,7 +20,17 @@
 
 ## 整体验证
 
+首轮（7777da9）由原执行会话完成：
+
 - `npm test` 通过 471 项，`npm run typecheck` 通过。
 - `node --test .agents/skills/spec-trail/setup/tests/setup.test.mjs .agents/skills/spec-trail/tests/*.test.mjs` 通过 41 项。
 - `npm run test:e2e -- tests/browser/hosting.spec.ts -g 'skill CLI'` 通过 1 项，验证配置、构建、上传、登记和浏览器读取。测试使用 Playwright runner 的独立测试浏览器和服务夹具，以隔离管理员会话与发布数据。
 - 独立评审检查命令分派、输出与退出码、Git 暂存区传播、文档和 CI 调用。修正了空命令被当作帮助及归档标签删除的必填选项提示。两项修正均通过 Node.js 20/24 CLI 回归，标签维护通过本地远端复测。
+
+验收返修后（85950db）：
+
+- 首轮之后，本机出现了沙箱外启动的 tmux server，服务测试随之失败，`npm test` 为 470/471，develop 基线同样失败。T5、T6 修复后，`npm test` 恢复为 471/471，`npm run typecheck` 通过。
+- skill 测试 42 项通过。CLI 与 Setup 测试在 Node.js 20 和 24 均通过，原型用例在 Node.js 20 上按约定跳过。
+- `npm run test:e2e -- tests/browser/hosting.spec.ts -g 'skill CLI'` 通过 1 项。
+- 文档中 46 处 CLI 示例的命令、参数及固定取值均合法。默认 tmux server 上没有测试遗留。
+- 独立子 Agent 评审 T4、T5 的差异，9 项发现已在 T6 修正并复验，没有遗留问题。
