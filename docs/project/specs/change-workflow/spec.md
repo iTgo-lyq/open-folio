@@ -73,7 +73,7 @@ medium 及以上 Change 涉及数据结构、时序流程等明显变化时，�
 
 SpecTrail 直接从本公开仓库 `.agents/skills/spec-trail/` 分发，保留 MIT LICENSE。skill 根目录的 `version.json` 使用 `major.minor.patch`，首次版本为 `0.1.0`；修改技能时在同一提交中递增补丁号，内容未变或重复发布不增加版本。源码和安装包使用同一版本文件，不再同步到独立仓库。
 
-`change.mjs` 是唯一更新检查入口，在状态操作成功且释放锁后检查，并保持原 JSON 字段、流程记录与退出码。show 同样检查；help、dry-run、无效参数和原操作失败不检查。目标项目 workflow v3 的可选布尔字段 `checkForUpdates` 省略或 true 为开启，false 为关闭；关闭后不读取检查缓存、不联网或展示缓存提醒。项目从当前目录或 --repo 定位，skill 与 OpenFolio 的严格配置校验共同接受该字段，旧配置无需迁移。
+统一 CLI 的 `change` 分组在状态操作成功且释放锁后检查 skill 更新。更新提示保留原 JSON 字段、流程记录与退出码。show 同样检查；help、dry-run、无效参数和原操作失败不检查。目标项目 workflow v3 的可选布尔字段 `checkForUpdates` 省略或 true 为开启，false 为关闭；关闭后不读取检查缓存、不联网或展示缓存提醒。项目从当前目录或 --repo 定位，skill 与 OpenFolio 的严格配置校验共同接受该字段，旧配置无需迁移。
 
 本地版本从实际执行的 skill 安装读取，最新版仅从本公开仓库 main 的 `.agents/skills/spec-trail/version.json` 获取，无需 Token，不发送项目地址、路径或正文。请求与响应体共用 3 秒超时，响应最多 16 KiB；检查结果在 Git common-dir 的 `spec-trail/update-check.json` 缓存 24 小时。worktree 共享结果但分别读取项目开关，每次比较实际安装版本，缓存失败不影响状态操作。
 
@@ -81,7 +81,11 @@ SpecTrail 直接从本公开仓库 `.agents/skills/spec-trail/` 分发，保留 
 
 ## 命令与责任
 
-主 skill 自带 scripts/change.mjs，使用 Node.js 内置模块，无第三方依赖。命令覆盖创建、修改展示标题与标签、阶段确认、任务登记/执行/阻塞/完成、等待与恢复、返工、关闭四步、取消及原型关联。修改标题和标签保留 Change id 与已有流程记录。具体调用参见仓库 [.agents 状态命令说明](../../../../.agents/skills/spec-trail/references/state-commands.md)。
+项目通过 `node .agents/skills/spec-trail/cli.mjs <分组> <命令>` 调用 SpecTrail。命令按 Change、工作区、集成、分享、接入检查、原型和维护分组。入口使用 Node.js 内置模块，原型命令需要 Node.js 24+，其他分组支持 Node.js 20+。
+
+总帮助列出各命令的用途和用法，包含必填参数、固定取值和值格式。分组帮助补充约束，命令帮助逐项说明参数并提供示例。通过入口文件的绝对路径可以在仓库外查看帮助。未知命令、未知参数、缺少必填参数或固定取值错误返回退出码 1 并提示用法。命令结果在 `stdout` 输出单个 JSON 值，帮助输出文本，日志与诊断写入 `stderr`。操作成功返回 0，校验失败返回 1，集成清理或标签删除部分完成返回 2。
+
+`change` 分组覆盖创建、修改展示标题与标签、阶段确认、任务登记/执行/阻塞/完成、等待与恢复、返工、关闭四步、取消及原型关联。修改标题和标签保留 Change id 与已有流程记录。具体调用参见仓库 [.agents 状态命令说明](../../../../.agents/skills/spec-trail/references/state-commands.md)。
 
 Agent 根据实际用户授权、验证与评审结果传入摘要和来源，脚本负责既有 JSON 契约、阶段前置、时间、失效字段清理与本地写入。脚本不判断正文质量、不替用户确认、不运行测试，不自动提交/推送或合入分支。命令成功不等于中心仓库状态已持久化。
 
@@ -95,7 +99,7 @@ confirmations 下所有 summary 均为阶段内容简述：requirement 写目标
 
 历史发布补记是归档只读的限定例外：核实确已合入发布分支后，仅在集成分支有效归档的 change.json 增删可选 `deliveryOverride: "releaseMerged"`，以普通提交留痕，不改写其他关闭记录。字段只覆盖交付展示，不替代 Git/PR 证据或 CI；缺省恢复自动判定。版本升级步骤见[升级说明](../../../../.agents/skills/spec-trail/references/upgrade.md)。
 
-workspace.mjs 的 handoff 检查已提交的 Requirement，非 small 还须需求确认；不等待 Technical、Plan、任务或依赖交付，显式暂缓仍阻止移交。执行与关闭继续检查原有前置条件，保留旧 xlarge 父项的关闭移交校验。普通 Change 先推送共享的 branch 登记提交，再快进集成分支；子项从 active 父分支建立，将独立的集中登记提交合入子分支后先推送子分支，再仅向集成分支推送登记提交，避免泄漏父项实现。中断重试核对准备时父基线，父 tip 已变化时保留现场并拒绝静默沿用旧基线。失败重试检查完整所属目录和真实引用，保留无关脏文件与暂存现场，不制造指针文件、规划清理或执行状态镜像提交。locate 只读报告来源、新鲜度和本地 worktree 状态；prepare 定向刷新并复用或准备工作区，不重置、rebase 或 prune。创建 worktree 不证明会话已绑定，客户端无法自动绑定时使用人工打开与续接提示，再核对 cwd、命名分支及仓库身份。
+`workspace handoff` 检查已提交的 Requirement，非 small 还须需求确认；不等待 Technical、Plan、任务或依赖交付，显式暂缓仍阻止移交。执行与关闭继续检查原有前置条件，保留旧 xlarge 父项的关闭移交校验。普通 Change 先推送共享的 branch 登记提交，再快进集成分支；子项从 active 父分支建立，将独立的集中登记提交合入子分支后先推送子分支，再仅向集成分支推送登记提交，避免泄漏父项实现。中断重试核对准备时父基线，父 tip 已变化时保留现场并拒绝静默沿用旧基线。失败重试检查完整所属目录和真实引用，保留无关脏文件与暂存现场，不制造指针文件、规划清理或执行状态镜像提交。locate 只读报告来源、新鲜度和本地 worktree 状态；prepare 定向刷新并复用或准备工作区，不重置、rebase 或 prune。创建 worktree 不证明会话已绑定，客户端无法自动绑定时使用人工打开与续接提示，再核对 cwd、命名分支及仓库身份。
 
 ## 提交整理
 
@@ -127,7 +131,7 @@ workspace.mjs 的 handoff 检查已提交的 Requirement，非 small 还须需�
 
 用户或业务项目的 Agent 根据现有提交管理方式接入校验器，沿调用链修改项目维护的入口并保留既有检查，管理器生成的转发文件不作为接入维护位置。SpecTrail 不规定 hook 目录或管理工具。接入应传播非零退出码，并通过实际提交的成功路径和失败传播验证；文件存在、字符串匹配或准备检查通过均不代表已接通。
 
-校验器和接入文件随仓库共享；本机 Git 配置不随 clone 传递，新克隆沿业务项目的启用方式接入。同仓库 worktree 的入口调用当前工作区校验器。提交校验检查本次实际暂存区，保留 GIT_INDEX_FILE 以兼容部分提交；实际确认、交付、依赖与合码条件由流程命令和 Agent 核对。
+校验器和接入文件随仓库共享；本机 Git 配置不随 clone 传递，新克隆沿业务项目的启用方式接入。hook 通过当前工作区的 CLI 调用 `setup pre-commit`，丢弃 `stdout` 的 JSON 并保留 `stderr` 诊断及退出码。提交校验检查本次实际暂存区，保留 GIT_INDEX_FILE 以兼容部分提交；实际确认、交付、依赖与合码条件由流程命令和 Agent 核对。
 
 集成分支的普通提交涉及 `docs/project/changes/<id>/` 任意文件时，若 HEAD 中该 Change 为 active、登记到独立工作分支且本地命名分支或已有跟踪记录含该 Change 的实际归属证据，则拒绝整个提交，提示所属分支和本地已登记 worktree；本地没有工作区时提示 locate 命令。仅预填名称或目标只有继承副本且集中记录仍符合规划条件时允许提交；损坏、重复或冲突证据保留诊断。hook 不联网，跟踪记录不代表实时远端状态。新增、修改、删除及重命名来源均在检查范围内，以提交前的分支登记为准，实际归属已核实时不依赖集中副本的 stage，也不因同次改写或删除 change.json 放行。未移交规划、首次移交登记、工作/任务分支和正常合并继续按既有规则提交；不涉及 Change 文档的实现提交不作归属推断。检查只读取本地 Git 数据，失败保留文件与暂存区；此机制在提交时拦截，不提供文件写入隔离。
 

@@ -1,10 +1,7 @@
-#!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, rmSync, realpathSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { hostname } from 'node:os';
-import { parseArgs } from 'node:util';
-import { pathToFileURL } from 'node:url';
 import { repository, collaborationCatalog, routedRecord, deliveryTarget, recordsAt, revision, remoteBranch, fetchBranch } from './repository.mjs';
 import { closedRecord, validBranchName } from './routing.mjs';
 import { validateChange } from './state-schema.mjs';
@@ -233,17 +230,16 @@ export async function cleanup(repo, id, options = {}) {
   });
 }
 
-async function main() {
-  const {values,positionals} = parseArgs({allowPositionals:true,options:{
-    repo:{type:'string',default:'.'},change:{type:'string'},'idle-worktree':{type:'string'},'verified-commit':{type:'string'},
-  }});
-  const repo = repository(values.repo), id = values.change;
-  const command = positionals[0];
-  assert(positionals.length === 1 && ['preflight','verify','cleanup'].includes(command), 'Usage: integration.mjs preflight|verify|cleanup --change <id> [--repo <checkout>]');
-  const output = command === 'preflight' ? await preflight(repo,id) : command === 'verify' ? await verify(repo,id) :
-    await cleanup(repo,id,{idleWorktree:values['idle-worktree'],verifiedCommit:values['verified-commit']});
-  process.stdout.write(JSON.stringify(output,null,2) + '\n');
-  if (output.cleanup && Object.values(output.cleanup).some(item => item.status !== 'cleaned')) process.exitCode = 2;
+export async function runIntegration(command, values) {
+  const repo = repository(values.repo);
+  const id = values.change;
+  if (command === "preflight") return { output: await preflight(repo, id) };
+  if (command === "verify") return { output: await verify(repo, id) };
+
+  const output = await cleanup(repo, id, {
+    idleWorktree: values["idle-worktree"],
+    verifiedCommit: values["verified-commit"],
+  });
+  const incomplete = Object.values(output.cleanup).some(item => item.status !== "cleaned");
+  return { output, exitCode: incomplete ? 2 : 0 };
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
-  main().catch(error => { process.stderr.write(error.message + '\n'); process.exitCode = 1; });

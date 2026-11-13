@@ -110,7 +110,7 @@ Change 的「分享」生成并复制 `/s/<id>` 短链接，任何人可打开�
 
 网页分享左上角的现有空间名可点击返回该仓库的 Changes 空间，不增加返回按钮。进入空间需要接收者自己的登录和仓库连接，分享链接不授予其他工程内容的读取权限。
 
-Agent 在材料提交推送后直接提供分享链接，使用 `docs/project/workflow.json` 的 `openfolioUrl` 作为服务根地址。可执行 `node .agents/skills/spec-trail/scripts/share.mjs --change <id> --document technical.md`，原型使用 `--preview <id>`；脚本只在本地生成地址，不验证接口或等待工作台同步，用户进入网页后由页面刷新获取内容。未配置服务地址时提供仓库材料链接，无需分享账号配置，详见[Skill 分享说明](.agents/skills/spec-trail/references/sharing.md)。
+Agent 在材料提交推送后直接提供分享链接，使用 `docs/project/workflow.json` 的 `openfolioUrl` 作为服务根地址。可执行 `node .agents/skills/spec-trail/cli.mjs share link --change <id> --document technical.md`，原型使用 `--preview <id>`；脚本只在本地生成地址，不验证接口或等待工作台同步，用户进入网页后由页面刷新获取内容。未配置服务地址时提供仓库材料链接，无需分享账号配置，详见[Skill 分享说明](.agents/skills/spec-trail/references/sharing.md)。
 
 原型链接全部公开。已授权用户先准备不可变版本，再分享 `/preview/<publicationId>`；匿名 HTML、截图和元数据只读已发布文件，绝不触发远端 Git 或 API。退出、token 撤销或后续停用仓库原型不删除已经公开的版本。未知版本返回未就绪，部署者主动撤回后为 410。公开原型不包含工程正文、连接或上传秘密；外部托管服务负责自己固定 URL 的持续可用性。
 
@@ -170,7 +170,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 ## 原型与内置托管
 
-`prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `publish.mjs associate` 关联 Change，最后一次提交 gitlink 与 Change。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
+`prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `node .agents/skills/spec-trail/cli.mjs prototype associate` 关联 Change，最后一次提交 gitlink 与 Change。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
 
 当前原型总览读取所选集成分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。Change 归档后通过登记源分支对应 PR 的双亲合并提交保存交付边界；“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。原始分支与工作区可在远端核实后安全清理，不再创建保留标签。旧归档缺少有效关联时，diff 和原型留空，正文仍可读。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 
@@ -179,7 +179,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 部署管理员可使用既有 skill 协议获取上传地址（密码通过环境安全注入）：
 
 ```bash
-node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting openfolio --openfolio-url https://folio.example.com --fetch-upload-url
+node .agents/skills/spec-trail/cli.mjs prototype configure --hosting openfolio --openfolio-url https://folio.example.com --fetch-upload-url
 ```
 
 上传地址本身授权上传，不授权修改服务配置。每次上传最多 2000 文件、100 MiB，同时最多两次；反向代理须支持相应请求大小和时长。完整且摘要一致才发布，历史字节不覆盖。停机后轮换 `prototype-upload-key` 可撤销旧上传地址，已经公开的静态文件不受影响。

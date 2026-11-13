@@ -1,25 +1,24 @@
-#!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const skillPath = ".agents/skills/spec-trail";
-const validatorPath = `${skillPath}/setup/scripts/pre-commit.js`;
+const validatorPath = `${skillPath}/setup/scripts/pre-commit.mjs`;
+const cliPath = `${skillPath}/cli.mjs`;
+const commandsPath = `${skillPath}/scripts/cli-commands.mjs`;
 const schemaPath = `${skillPath}/scripts/state-schema.mjs`;
 const routingPath = `${skillPath}/scripts/routing.mjs`;
 const contractPath = `${skillPath}/prototype/scripts/contract.mjs`;
 const sourcePath = `${skillPath}/prototype/scripts/source.mjs`;
 const localSourcePath = `${skillPath}/prototype/scripts/local-source.mjs`;
 const workflowPath = "docs/project/workflow.json";
-const command = `node "$(git rev-parse --show-toplevel)/${validatorPath}"`;
+const command = `node "$(git rev-parse --show-toplevel)/${cliPath}" setup pre-commit >/dev/null`;
 
-try {
-  const [repoArg = ".", ...extra] = process.argv.slice(2);
-  if (extra.length) throw Error("Usage: node check-setup.mjs [repo-dir]");
+export async function runSetupCheck(_command, { repo = "." }) {
   if (Number(process.versions.node.split(".")[0]) < 20)
     throw Error("Node.js 20 or newer is required.");
-  const cwd = resolve(repoArg);
+  const cwd = resolve(repo);
   const git = (args) =>
     execFileSync("git", ["-C", cwd, ...args], {
       encoding: "utf8",
@@ -29,7 +28,7 @@ try {
     throw Error("Choose a repository with a working tree.");
   const root = git(["rev-parse", "--show-toplevel"]);
   const issues = [];
-  const resources = [validatorPath, schemaPath, routingPath, contractPath, sourcePath, localSourcePath].map(
+  const resources = [cliPath, commandsPath, validatorPath, schemaPath, routingPath, contractPath, sourcePath, localSourcePath].map(
     (path) => {
       try {
         if (!statSync(join(root, path)).isFile()) throw Error("must be a file");
@@ -57,7 +56,9 @@ try {
     },
   );
   let schema;
-  for (const [path, exports] of [
+  for (const [path, names, type = "function"] of [
+    [commandsPath, ["commands", "groups"], "object"],
+    [validatorPath, ["runPreCommit"]],
     [schemaPath, ["validateWorkflow", "validateChange"]],
     [routingPath, ["validBranchName", "routeCatalog"]],
     [contractPath, ["entryPath", "validatePrototype", "validatePreviews"]],
@@ -68,9 +69,9 @@ try {
     if (resource.status !== "ready") continue;
     try {
       const module = await import(pathToFileURL(join(root, path)).href);
-      for (const name of exports)
-        if (typeof module[name] !== "function")
-          throw Error(`must export ${name} as a function`);
+      for (const name of names)
+        if (typeof module[name] !== type)
+          throw Error(`must export ${name} as type ${type}`);
       if (path === schemaPath) schema = module;
     } catch (error) {
       resource.status = "not_ready";
@@ -141,25 +142,18 @@ try {
       "hooks/pre-commit",
     ]),
   };
-  console.log(
-    JSON.stringify(
-      {
-        repository: root,
-        environment: { node: process.versions.node, git: git(["--version"]) },
-        readiness: issues.length ? "not_ready" : "ready",
-        resources,
-        workflow,
-        integration,
-        hook,
-        command,
-        issues,
-      },
-      null,
-      2,
-    ),
-  );
-  if (issues.length) process.exitCode = 1;
-} catch (error) {
-  console.error(`SpecTrail setup: ${error.message}`);
-  process.exitCode = 1;
+  return {
+    output: {
+      repository: root,
+      environment: { node: process.versions.node, git: git(["--version"]) },
+      readiness: issues.length ? "not_ready" : "ready",
+      resources,
+      workflow,
+      integration,
+      hook,
+      command,
+      issues,
+    },
+    exitCode: issues.length ? 1 : 0,
+  };
 }

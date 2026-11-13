@@ -1,6 +1,4 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 
 export function parseVersion(value) {
   if (
@@ -44,18 +42,4 @@ export function nextVersion(current) {
   const next = parts.join(".");
   parseVersion(next);
   return next;
-}
-
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
-) {
-  try {
-    if (process.argv.length !== 3)
-      throw Error("Usage: node version.mjs <version.json>");
-    console.log(nextVersion(readVersion(process.argv[2])));
-  } catch (error) {
-    console.error(`SpecTrail version: ${error.message}`);
-    process.exitCode = 1;
-  }
 }

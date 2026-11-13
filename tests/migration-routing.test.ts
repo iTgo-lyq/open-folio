@@ -11,9 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 
-const script = resolve(
-  ".agents/skills/spec-trail/setup/scripts/preview-routing.mjs",
-);
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 const at = (cwd: string, ...args: string[]) =>
   execFileSync("git", args, {
     cwd,
@@ -90,7 +88,9 @@ function fixture(
     const result = spawnSync(
       process.execPath,
       [
-        script,
+        cli,
+        "setup",
+        "preview-routing",
         "--repo",
         root,
         ...branches.flatMap((b) => ["--work-branch", b]),
@@ -258,9 +258,13 @@ test("routing preview rejects legacy workflow without modifying refs, index or s
   const config = readFileSync(join(f.root, "docs/project/workflow.json")),
     refs = at(f.root, "show-ref"),
     index = readFileSync(join(f.root, ".git/index"));
-  const result = spawnSync(process.execPath, [script, "--repo", f.root], {
-    encoding: "utf8",
-  });
+  const result = spawnSync(
+    process.execPath,
+    [cli, "setup", "preview-routing", "--repo", f.root],
+    {
+      encoding: "utf8",
+    },
+  );
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,

@@ -19,11 +19,13 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 const checker = fileURLToPath(
-  new URL("../scripts/check-setup.mjs", import.meta.url),
+  new URL("../../cli.mjs", import.meta.url),
 );
 const skill = fileURLToPath(new URL("../../", import.meta.url));
 const resourcePaths = [
-  "setup/scripts/pre-commit.js",
+  "cli.mjs",
+  "scripts/cli-commands.mjs",
+  "setup/scripts/pre-commit.mjs",
   "scripts/state-schema.mjs",
   "scripts/routing.mjs",
   "prototype/scripts/contract.mjs",
@@ -31,7 +33,7 @@ const resourcePaths = [
   'prototype/scripts/local-source.mjs',
 ];
 const checkCommand =
-  'node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/setup/scripts/pre-commit.js"';
+  'node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit >/dev/null';
 const validWorkflow = {
   schemaVersion: 3,
   integrationBranch: "develop",
@@ -130,7 +132,7 @@ function sandbox(t) {
     return repo;
   }
   const check = (repo, expected = 0) =>
-    JSON.parse(run(process.execPath, [checker, repo], base, expected));
+    JSON.parse(run(process.execPath, [checker, "setup", "check", "--repo", repo], base, expected));
   function write(repo, relative, value) {
     const path = join(repo, relative);
     mkdirSync(dirname(path), { recursive: true });
@@ -309,7 +311,7 @@ test("guard uses configured integration branch and gives locate guidance without
     1,
   );
   assert.match(output, /integration branch collaboration/);
-  assert.match(output, /workspace\.mjs locate --change feature/);
+  assert.match(output, /cli\.mjs workspace locate --change feature/);
 });
 
 test("partial and implementation-only commits exclude unrelated staged or unstaged Change edits", (t) => {
@@ -606,7 +608,9 @@ test("existing hook manager and ESM package remain unchanged", (t) => {
   assert.equal(s.check(repo).readiness, "ready");
   assert.deepEqual(s.snapshot(repo), before);
   writeFileSync(hook, `${original}${checkCommand}\n`);
-  assert.equal(s.check(repo).hook.status, "unverified");
+  const integrated = s.check(repo);
+  assert.equal(integrated.hook.status, "unverified");
+  assert.equal(integrated.command, checkCommand);
   assert.equal(readFileSync(join(repo, "package.json"), "utf8"), pkg);
   assert.equal(
     s.git(repo, ["config", "--get", "core.hooksPath"]).trim(),
@@ -713,12 +717,12 @@ test("setup rejects broken script syntax and unusable shared modules", (t) => {
   s.provision(repo);
   s.write(
     repo,
-    ".agents/skills/spec-trail/setup/scripts/pre-commit.js",
+    ".agents/skills/spec-trail/setup/scripts/pre-commit.mjs",
     "const = broken;\n",
   );
   const before = s.snapshot(repo);
   const broken = s.check(repo, 1);
-  assert.equal(broken.resources[0].status, "not_ready");
+  assert.equal(broken.resources.find(resource => resource.path.endsWith("/pre-commit.mjs")).status, "not_ready");
   assert.deepEqual(s.snapshot(repo), before);
   s.provision(repo);
   s.write(
@@ -729,7 +733,7 @@ test("setup rejects broken script syntax and unusable shared modules", (t) => {
   const moduleBefore = s.snapshot(repo);
   const brokenModule = s.check(repo, 1);
   assert.equal(brokenModule.readiness, "not_ready");
-  assert.equal(brokenModule.resources[1].status, "not_ready");
+  assert.equal(brokenModule.resources.find(resource => resource.path.endsWith("/state-schema.mjs")).status, "not_ready");
   assert.ok(
     brokenModule.issues.some((issue) =>
       issue.startsWith(".agents/skills/spec-trail/scripts/state-schema.mjs:"),
@@ -758,7 +762,7 @@ test("setup rejects broken script syntax and unusable shared modules", (t) => {
   assert.deepEqual(s.snapshot(repo), contractBefore);
   s.run(
     process.execPath,
-    [join(repo, ".agents/skills/spec-trail/setup/scripts/pre-commit.js")],
+    [join(repo, ".agents/skills/spec-trail/cli.mjs"), "setup", "pre-commit"],
     repo,
     1,
   );
@@ -766,7 +770,7 @@ test("setup rejects broken script syntax and unusable shared modules", (t) => {
   assert.equal(s.check(repo).readiness, "ready");
   s.run(
     process.execPath,
-    [join(repo, ".agents/skills/spec-trail/setup/scripts/pre-commit.js")],
+    [join(repo, ".agents/skills/spec-trail/cli.mjs"), "setup", "pre-commit"],
     repo,
   );
 });
@@ -806,6 +810,7 @@ test("delegated hook integration survives regeneration and remains unverified by
   const accepted = s.git(repo, ["commit", "-m", "Valid delegated hook"]);
   assert.match(accepted, /existing-check/);
   assert.match(accepted, /after-validation/);
+  assert.doesNotMatch(accepted, /"valid"/);
   assert.equal(readFileSync(join(repo, "package.json"), "utf8"), pkg);
   const head = s.git(repo, ["rev-parse", "HEAD"]).trim();
   s.write(repo, "docs/project/workflow.json", invalidWorkflow);
@@ -867,18 +872,15 @@ test("inherited preview records skip local artifact checks but still require val
   };
   s.write(repo, path, value);
   s.git(repo, ["add", "docs/project"]);
-  const validator = join(
-    repo,
-    ".agents/skills/spec-trail/setup/scripts/pre-commit.js",
-  );
-  s.run(process.execPath, [validator], repo);
+  const validator = [join(repo, ".agents/skills/spec-trail/cli.mjs"), "setup", "pre-commit"];
+  s.run(process.execPath, validator, repo);
   s.write(repo, path, { ...value, title: "" });
   s.git(repo, ["add", path]);
-  assert.match(s.run(process.execPath, [validator], repo, 1), /\/title/);
+  assert.match(s.run(process.execPath, validator, repo, 1), /\/title/);
   s.write(repo, path, { ...value, branch: "develop" });
   s.git(repo, ["add", path]);
   assert.match(
-    s.run(process.execPath, [validator], repo, 1),
+    s.run(process.execPath, validator, repo, 1),
     /unknown source commit/,
   );
 });

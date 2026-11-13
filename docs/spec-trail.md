@@ -14,7 +14,7 @@ SpecTrail 是一套 Agent Skill，用 Git 和 `docs/project/` 管理需求、技
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 ```
 
-安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。当前版本的脚本调用约定使用这个项目内路径，请使用上述安装方式。
+安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。Agent 通过 `node .agents/skills/spec-trail/cli.mjs --help` 一次查看全部命令的用途与完整用法，命令后加 `--help` 查看参数说明与示例；操作结果默认输出 JSON。
 
 也可以为其他支持 Agent Skills 的客户端安装，例如：
 
@@ -22,7 +22,7 @@ npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-code --copy -y
 ```
 
-它会同时生成共享 Skill 目录 `.agents/skills/spec-trail`（主 Skill 脚本从这里调用）和 Claude Code 入口 `.claude/skills/spec-trail`。
+它会同时生成共享 Skill 目录 `.agents/skills/spec-trail`（统一 CLI 从这里调用）和 Claude Code 入口 `.claude/skills/spec-trail`。
 
 安装后确认项目内 `.agents/skills/spec-trail/` 包含完整目录，其他客户端的入口由安装器管理。工作流由 Agent 执行，脚本校验流程状态、原型发布引用和 Git 兜底产物。
 
@@ -89,6 +89,7 @@ docs/project/
 .agents/skills/spec-trail/
 ├── SKILL.md
 ├── LICENSE
+├── cli.mjs
 ├── references/
 ├── scripts/
 ├── setup/

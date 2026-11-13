@@ -13,10 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { completedChange } from "./integration-fixture.ts";
-const stateScript = resolve(".agents/skills/spec-trail/scripts/change.mjs");
-const workspaceScript = resolve(
-  ".agents/skills/spec-trail/scripts/workspace.mjs",
-);
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 const at = (root: string, ...args: string[]) =>
   execFileSync("git", ["-C", root, ...args], {
     encoding: "utf8",
@@ -45,6 +42,7 @@ function fixture(t: import("node:test").TestContext) {
       schemaVersion: 3,
       integrationBranch: "develop",
       releaseBranch: "main",
+      checkForUpdates: false,
     }),
   );
   const commit = (cwd = repo) => {
@@ -55,7 +53,7 @@ function fixture(t: import("node:test").TestContext) {
   commit();
   at(repo, "push", "origin", "HEAD:main");
   const run = (
-    script: string,
+    group: string,
     command: string,
     options: string[] = [],
     expected = 0,
@@ -64,7 +62,7 @@ function fixture(t: import("node:test").TestContext) {
   ) => {
     const result = spawnSync(
       process.execPath,
-      [script, command, "--repo", cwd, "--change", id, ...options],
+      [cli, group, command, "--repo", cwd, "--change", id, ...options],
       { encoding: "utf8" },
     );
     assert.equal(
@@ -80,14 +78,14 @@ function fixture(t: import("node:test").TestContext) {
     expected = 0,
     id = "sample",
     cwd = repo,
-  ) => run(stateScript, cmd, opts, expected, id, cwd);
+  ) => run("change", cmd, opts, expected, id, cwd);
   const workspace = (
     cmd: string,
     opts: string[] = [],
     expected = 0,
     id = "sample",
     cwd = repo,
-  ) => run(workspaceScript, cmd, opts, expected, id, cwd);
+  ) => run("workspace", cmd, opts, expected, id, cwd);
   const planning = (id = "sample") => {
     state("create", ["--title", "Test goal", "--size", "small"], 0, id);
     state("task-add", ["--title", "Implement"], 0, id);
@@ -759,14 +757,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
   const output = JSON.parse(
     execFileSync(
       process.execPath,
-      [
-        resolve(".agents/skills/spec-trail/scripts/integration.mjs"),
-        "verify",
-        "--repo",
-        f.repo,
-        "--change",
-        "parent",
-      ],
+      [cli, "integration", "verify", "--repo", f.repo, "--change", "parent"],
       { encoding: "utf8", env },
     ),
   );

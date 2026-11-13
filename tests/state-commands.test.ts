@@ -13,10 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-const script = resolve(".agents/skills/spec-trail/scripts/change.mjs");
-const workspaceScript = resolve(
-  ".agents/skills/spec-trail/scripts/workspace.mjs",
-);
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 function fixture(
   t: import("node:test").TestContext,
   integrationBranch = "develop",
@@ -46,6 +43,7 @@ function fixture(
       schemaVersion: 3,
       integrationBranch,
       releaseBranch: "main",
+      checkForUpdates: false,
     }),
   );
   git("add", ".");
@@ -63,7 +61,7 @@ function fixture(
   ) => {
     const result = spawnSync(
       process.execPath,
-      [script, command, "--repo", root, "--change", id, ...options],
+      [cli, "change", command, "--repo", root, "--change", id, ...options],
       { encoding: "utf8" },
     );
     assert.equal(
@@ -134,7 +132,8 @@ function fixture(
     const result = spawnSync(
       process.execPath,
       [
-        workspaceScript,
+        cli,
+        "workspace",
         "handoff",
         "--repo",
         planning,
@@ -1042,7 +1041,7 @@ test("preview association command preserves unrelated state and enforces configu
   f.verify();
   f.accept();
   const result = f.archive();
-  assert.match(result.next, /integration.mjs preflight/);
+  assert.match(result.next, /cli\.mjs integration preflight/);
 });
 
 test("execution requires a published archived dependency already integrated in the branch", (t) => {

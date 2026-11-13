@@ -1,26 +1,24 @@
 // SpecTrail staged validation. Node.js built-ins only.
 
-async function main() {
-  const prototypeContract = await import(
-    "../../prototype/scripts/contract.mjs"
-  );
-  const { validateChange, validateWorkflow } = await import(
-    "../../scripts/state-schema.mjs"
-  );
-  const {localPackage,gitObject,verifyPrototypeSource,verifyOwnerSource}=await import('../../prototype/scripts/local-source.mjs');
-  const {inPackage,withinPackage,treeRows,moduleAddress}=await import('../../prototype/scripts/source.mjs');
-  // Dynamic import works in both CommonJS and ESM projects.
-  const { execFileSync } = await import("node:child_process");
-  const { isDeepStrictEqual } = await import("node:util");
-  const { changeLocation, sourceOwnership, planningRecord } = await import("../../scripts/routing.mjs");
-  const git = (args) =>
+import { execFileSync } from "node:child_process";
+import { isDeepStrictEqual } from "node:util";
+import * as prototypeContract from "../../prototype/scripts/contract.mjs";
+import { validateChange, validateWorkflow } from "../../scripts/state-schema.mjs";
+import { localPackage, gitObject, verifyPrototypeSource, verifyOwnerSource } from "../../prototype/scripts/local-source.mjs";
+import { inPackage, withinPackage, treeRows, moduleAddress } from "../../prototype/scripts/source.mjs";
+import { changeLocation, sourceOwnership, planningRecord } from "../../scripts/routing.mjs";
+
+export function runPreCommit(_command, { repo = "." }) {
+  // Inherit Git's environment, including GIT_INDEX_FILE for partial commits.
+  const gitAt = (cwd, args) =>
     execFileSync("git", args, {
+      cwd,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       maxBuffer: 32 * 1024 * 1024,
     });
-  // Preserve GIT_INDEX_FILE so partial commits validate the index Git actually commits.
-  process.chdir(git(["rev-parse", "--show-toplevel"]).trim());
+  const root = gitAt(repo, ["rev-parse", "--show-toplevel"]).trim();
+  const git = args => gitAt(root, args);
   const paths = git([
     "diff",
     "--cached",
@@ -144,7 +142,7 @@ async function main() {
           `cannot commit its documents on integration branch ${branch}. ` +
           (location
             ? `Continue in worktree ${location}.`
-            : `Locate its worktree with workspace.mjs locate --change ${id}.`),
+            : `Locate its worktree with node .agents/skills/spec-trail/cli.mjs workspace locate --change ${id}.`),
       );
       failed = true;
     }
@@ -188,7 +186,7 @@ async function main() {
             errors.push(`/previews/${i}/sourceCommit: unknown source commit`);
           }
           if(changed && !previous?.some(old=>isDeepStrictEqual(old,preview)))try{
-            verifyPrototypeSource(process.cwd(),preview.artifact.sourceCommit,preview.id,preview.artifact.source,{index:true});
+            verifyPrototypeSource(root,preview.artifact.sourceCommit,preview.id,preview.artifact.source,{index:true});
           }catch(error){errors.push(`/previews/${i}/source: ${error.message}`);}
           if (preview.artifact.type === "hosted") continue;
         }
@@ -243,7 +241,7 @@ async function main() {
     }
     const moduleRelevant=!isDeepStrictEqual(config,committedWorkflow?.prototype) || mappingChanged || allChanged.some(path=>config.packagePath===path||config.packagePath.startsWith(path+'/'));
     if(!indexed.has(manifestPath)&&moduleRelevant)try{
-      const source=localPackage(process.cwd(),git(['rev-parse','HEAD']).trim(),config.packagePath,{index:true});
+      const source=localPackage(root,git(['rev-parse','HEAD']).trim(),config.packagePath,{index:true});
       if(source.links.length){
         const manifest=JSON.parse(gitObject(source.source,['show',`${source.revision}:${inPackage(source.packagePath,'prototype.json')}`]));
         const issues=prototypeContract.validateManifest(manifest);
@@ -255,7 +253,7 @@ async function main() {
           }
           if(entry.artifact){
             if(entry.artifact.source)verifyOwnerSource(source,entry.artifact.sourceCommit,entry.id,entry.artifact.source);
-            else verifyPrototypeSource(process.cwd(),entry.artifact.sourceCommit,entry.id,undefined,{index:true});
+            else verifyPrototypeSource(root,entry.artifact.sourceCommit,entry.id,undefined,{index:true});
             if(entry.artifact.type==='git'){
               if(!entry.artifact.path.startsWith(inPackage(source.packagePath,'preview')+'/'))issues.push('Current Git entry must stay in prototype preview');
               const row=treeRows(gitObject(source.source,['ls-tree','-lz',source.revision,'--',entry.artifact.path+'/index.html']))[0];
@@ -271,17 +269,6 @@ async function main() {
     console.error(
       "SpecTrail: fix the reported state files and stage the corrections before committing.",
     );
-    process.exitCode = 1;
-  } else {
-    console.log(
-      count
-        ? `SpecTrail: ${count} staged state file(s) passed rule validation.`
-        : "SpecTrail: no staged state files to validate.",
-    );
   }
+  return { output: { valid: !failed, checkedStateFiles: count }, exitCode: failed ? 1 : 0 };
 }
-
-main().catch((error) => {
-  console.error(`SpecTrail: ${error.message}`);
-  process.exitCode = 1;
-});

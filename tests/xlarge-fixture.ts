@@ -27,7 +27,7 @@ export async function xlargeFixture(integrationBranch = "develop") {
     return at(cwd, "rev-parse", "HEAD");
   };
   const cli = (
-    script: string,
+    group: string,
     cwd: string,
     id: string,
     command: string,
@@ -38,7 +38,8 @@ export async function xlargeFixture(integrationBranch = "develop") {
     const result = spawnSync(
       process.execPath,
       [
-        resolve(`.agents/skills/spec-trail/scripts/${script}.mjs`),
+        resolve(".agents/skills/spec-trail/cli.mjs"),
+        group,
         command,
         "--repo",
         cwd,

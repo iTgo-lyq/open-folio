@@ -5,13 +5,14 @@ import { readFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { githubCli } from "./github-cli-fixture.ts";
 import { integrationFixture } from "./integration-fixture.ts";
-const cli = resolve(".agents/skills/spec-trail/scripts/change.mjs");
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 const restore = (repo: string, env = process.env) =>
   JSON.parse(
     execFileSync(
       process.execPath,
       [
         cli,
+        "change",
         "rework",
         "--repo",
         repo,

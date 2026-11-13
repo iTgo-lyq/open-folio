@@ -1,6 +1,6 @@
 # Change 状态命令
 
-常规状态修改默认使用 `node .agents/skills/spec-trail/scripts/change.mjs <命令> --change <id>`，规划在集成分支运行，移交后在登记的工作分支运行。Node.js 20+，仅使用内置模块，无需安装依赖。`--repo <仓库>` 可显式指定工作区；`--dry-run` 只输出拟写状态，不修改文档。`show` 按 ID 读取活动或归档 Change 的元数据，查找范围遵循[主 skill](../SKILL.md#入口与通用约束)。
+常规状态修改默认使用 `node .agents/skills/spec-trail/cli.mjs change <命令> --change <id>`，规划在集成分支运行，移交后在登记的工作分支运行。Node.js 20+，仅使用内置模块，无需安装依赖。`--repo <仓库>` 可显式指定工作区；`--dry-run` 只输出拟写状态，不修改文档。`show` 按 ID 读取活动或归档 Change 的元数据，查找范围遵循[主 skill](../SKILL.md#入口与通用约束)。
 
 脚本写入现有 `change.json`，不会替用户确认、运行测试、验证 Markdown 正文含义或自动提交/推送。摘要和来源由 Agent 根据真实证据填写；调用成功仅代表本地状态更新。任务默认按编号数值递增串行；Plan 可用显式执行顺序表覆盖，存在但无效时拒绝推进。顺序解析和前置链校验由共享 `scripts/task-order.mjs` 执行，正文任务定义和实际交付仍由 Agent 核对。依赖读取本地及 `origin` 跟踪分支，调用前按主 skill fetch；缺少已推送关闭记录时拒绝执行；父项关闭与子项依赖另核实实际 PR 交付，人工说明不能替代合入事实；若因 squash 等原因无法从祖先关系证明交付已集成，先核对所需代码/验证并写入 Execution，再用 `--availability-note '具体集成依据'` 继续。execute 及 xlarge 的 verify/accept/archive 接受该参数，输出前置主分支与当前 HEAD 的提交身份和依据，不把人工核对冒充祖先证明。
 
@@ -34,7 +34,7 @@
 
 ## 更新提醒
 
-只有 `change.mjs` 在成功操作或 show 结束后检查 skill 新版。默认开启，可在目标项目 `docs/project/workflow.json` 设置 `"checkForUpdates": false` 关闭；关闭后不读取检查缓存、不联网、不显示提醒。此字段需使用支持它的 skill 与 OpenFolio 读取器，旧配置不必修改。
+只有 `change` 分组 在成功操作或 show 结束后检查 skill 新版。默认开启，可在目标项目 `docs/project/workflow.json` 设置 `"checkForUpdates": false` 关闭；关闭后不读取检查缓存、不联网、不显示提醒。此字段需使用支持它的 skill 与 OpenFolio 读取器，旧配置不必修改。
 
 有新版时 JSON 外层追加 `skillUpdate`，包含 `status: "available"`、`currentVersion`、`latestVersion` 与 `message`；已是最新时省略字段。安装缺少版本或检查异常时返回 `status: "unknown"`，不改变原操作、state 或退出码。旧安装需从 OpenFolio 仓库重新安装一次，取得检查代码及随源码提交的 version.json；缺少版本文件时不会联网猜测。
 
@@ -45,17 +45,17 @@
 确认摘要示例：requirement「支持浏览器多身份添加、切换和移除。」；technical「采用身份集合与两阶段切换，隔离读取并支持撤销。」；plan「先交付添加与切换，再完成移除和设备撤销。」；merge「保留新版身份机制，合并工作台改动。」。确认原话另填 source。
 
 ```bash
-node .agents/skills/spec-trail/scripts/change.mjs create --change example --title '具体目标' --size small
+node .agents/skills/spec-trail/cli.mjs change create --change example --title '具体目标' --size small
 # 按实际需求编辑 requirement.md，然后登记任务。
-node .agents/skills/spec-trail/scripts/change.mjs task-add --change example --title '实现目标行为'
+node .agents/skills/spec-trail/cli.mjs change task-add --change example --title '实现目标行为'
 # 需求提交并按规模确认后移交；small 沿用创建前确认，见 workspaces.md。
-node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
-node .agents/skills/spec-trail/scripts/change.mjs execute --change example
-node .agents/skills/spec-trail/scripts/change.mjs task-start --change example --task T1
+node .agents/skills/spec-trail/cli.mjs workspace handoff --change example
+node .agents/skills/spec-trail/cli.mjs change execute --change example
+node .agents/skills/spec-trail/cli.mjs change task-start --change example --task T1
 # small 提交推送真实执行状态后创建 Draft PR，再开始实现，见 integration.md。
 # 完成实现与验证后，填真实结果；提交、推送与 done 一起完成。
-node .agents/skills/spec-trail/scripts/change.mjs task-complete --change example --task T1 --verification '实际验证命令与结果'
-node .agents/skills/spec-trail/scripts/change.mjs verify --change example --result passed --summary '实际整体验证与评审结论'
+node .agents/skills/spec-trail/cli.mjs change task-complete --change example --task T1 --verification '实际验证命令与结果'
+node .agents/skills/spec-trail/cli.mjs change verify --change example --result passed --summary '实际整体验证与评审结论'
 ```
 
 按主 skill 决定自验收或 `wait --kind confirmation`。人工验收通过后用 resume 清除等待；accept 记录真实依据，完成 Specs 同步后执行 specs，再 archive。需返修时使用 rework，保留已完成任务并追加返修任务。

@@ -66,7 +66,8 @@ test("archiving fixes a shared Git prototype before concurrent collaboration cha
   );
   f.commit();
   const command = [
-    resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+    resolve(".agents/skills/spec-trail/cli.mjs"),
+    "change",
     "archive",
     "--repo",
     f.author,
@@ -234,7 +235,8 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
     execFileSync(
       process.execPath,
       [
-        resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+        resolve(".agents/skills/spec-trail/cli.mjs"),
+        "change",
         "archive",
         "--repo",
         f.author,
@@ -248,7 +250,7 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
       { encoding: "utf8" },
     ),
   );
-  assert.match(result.next, /integration.mjs preflight/);
+  assert.match(result.next, /cli\.mjs integration preflight/);
   f.commit();
   f.git(["checkout", "develop"]);
   const worktree = join(f.root, "source");
@@ -276,10 +278,29 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   f.git(["tag", "-a", "spec-trail/archive-v2/old-annotated", "-m", "old"]);
   f.git(["tag", "release-keep"]);
   f.git(["push", "origin", "--tags"]);
-  const plan = inventory(repo);
+  const cli = resolve(".agents/skills/spec-trail/cli.mjs");
+  const manifest = join(f.root, "tag-inventory.json");
+  const run = (command: string, ...options: string[]) =>
+    JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          cli,
+          "maintenance",
+          command,
+          "--repo",
+          f.author,
+          "--manifest",
+          manifest,
+          ...options,
+        ],
+        { encoding: "utf8" },
+      ),
+    );
+  const plan = run("archive-tags-list");
   assert.equal(plan.refs.length, 2);
   await assert.rejects(retire(repo, plan), /Deploy and verify/);
-  assert.equal((await retire(repo, plan, true)).complete, true);
+  assert.equal(run("archive-tags-delete", "--service-ready").complete, true);
   assert.equal((await retire(repo, plan, true)).complete, true);
   assert.ok(f.git(["ls-remote", "origin", "refs/tags/release-keep"]));
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);

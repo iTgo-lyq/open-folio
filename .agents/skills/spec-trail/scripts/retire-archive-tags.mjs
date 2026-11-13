@@ -1,9 +1,5 @@
-#!/usr/bin/env node
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { parseArgs } from 'node:util';
 import { repository } from './repository.mjs';
 import { withRepositoryLock } from './integration.mjs';
 
@@ -60,20 +56,18 @@ export async function retire(repo, manifest, serviceReady = false) {
   });
 }
 
-async function main() {
-  const {values,positionals} = parseArgs({allowPositionals:true,options:{repo:{type:'string',default:'.'},manifest:{type:'string'},'service-ready':{type:'boolean',default:false}}});
+export async function runArchiveTags(command, values) {
   const repo = repository(values.repo);
-  assert(positionals.length === 1 && ['list','delete'].includes(positionals[0]), 'Usage: retire-archive-tags.mjs list|delete --manifest <file> [--repo <checkout>]');
-  assert(values.manifest, 'Provide --manifest for the exact tag inventory');
-  if (positionals[0] === 'list') {
-    const value = inventory(repo);
-    writeFileSync(values.manifest,JSON.stringify(value,null,2) + '\n',{flag:'wx',mode:0o600});
-    process.stdout.write(JSON.stringify(value,null,2) + '\n');
-  } else {
-    const result = await retire(repo,JSON.parse(readFileSync(values.manifest,'utf8')),values['service-ready']);
-    process.stdout.write(JSON.stringify(result,null,2) + '\n');
-    if (!result.complete) process.exitCode = 2;
+  if (command === "archive-tags-list") {
+    const output = inventory(repo);
+    writeFileSync(values.manifest, JSON.stringify(output, null, 2) + "\n", {
+      flag: "wx",
+      mode: 0o600,
+    });
+    return { output };
   }
+
+  const manifest = JSON.parse(readFileSync(values.manifest, "utf8"));
+  const output = await retire(repo, manifest, values["service-ready"]);
+  return { output, exitCode: output.complete ? 0 : 2 };
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
-  main().catch(error => {process.stderr.write(error.message + '\n');process.exitCode = 1;});

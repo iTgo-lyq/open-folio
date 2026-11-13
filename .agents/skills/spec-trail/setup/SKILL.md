@@ -30,11 +30,11 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 ## 准备检查
 
 1. 核对上述配置与分支准备。没有 remote 时说明登记的是本地约定，尚无共享入口或服务端保护。
-   校验器位于 `.agents/skills/spec-trail/setup/scripts/pre-commit.js`，依赖同一 skill 内的 `scripts/state-schema.mjs`、`scripts/routing.mjs` 与 `prototype/scripts/contract.mjs`；缺少文件时补齐 skill 交付，不复制校验逻辑到业务 hook。
-2. 从任意目录运行，`<setup-dir>` 指本文件所在目录：
+   统一入口通过 `setup pre-commit` 调用暂存区校验，依赖同一 skill 内的 `scripts/state-schema.mjs`、`scripts/routing.mjs` 与 `prototype/scripts/contract.mjs`；缺少文件时补齐 skill 交付，不复制校验逻辑到业务 hook。
+2. 从任意目录运行，`<skill-dir>` 指主 skill 目录：
 
    ```bash
-   node <setup-dir>/scripts/check-setup.mjs <repo-dir>
+   node <skill-dir>/cli.mjs setup check --repo <repo-dir>
    ```
 
    检查器只读取目标仓库，不创建或复制文件、不修改 Git 配置、不执行业务 hook。JSON 输出 `readiness`、资源/配置问题、集成分支的已知引用、默认合入目标、调用命令和 Git 入口信息；退出码 0 表示本地准备就绪，1 表示需修正。已知本地或远程跟踪引用不证明远端仍存在；Agent 另用精确 ref 查询核实远端与平台权限。`remotePermissions` 和 `hook.status` 为 `unverified`，检查成功不代表权限与 hook 已验证。
@@ -44,7 +44,7 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 先完成 workflow v3 配置；旧版配置不会被校验器或流程命令接受。只读预览使用当前仓库配置、指定基线（省略时为集成分支）、Git worktree 登记与明确给出的工作分支：
 
 ```bash
-node <setup-dir>/scripts/preview-routing.mjs --repo <repo-dir> --work-branch change/example
+node <skill-dir>/cli.mjs setup preview-routing --repo <repo-dir> --work-branch change/example
 ```
 
 work-branch 可重复提供。脚本不联网、不扫描全部分支、不改 Git 引用/暂存区/工作文件；输出覆盖依据、每个来源提交与新鲜度、接入建议和冲突。先定向 fetch 所需引用，再复跑；本地与 tracking ref 不同、同 ID 多个主张、归档/活动冲突、缺失目标均需核对。未被列出的远端工作不会被自动发现，不把只读预览称为迁移完成。
@@ -74,10 +74,10 @@ npx --yes skills add iTgo-lyq/document-diagrams --skill document-diagrams --glob
 在会修改暂存区的步骤之后、提前退出之前调用校验器；已有等效调用不重复添加。Shell 入口可使用：
 
 ```sh
-node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/setup/scripts/pre-commit.js" || exit $?
+node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit >/dev/null || exit $?
 ```
 
-其他入口采用等效调用并传播非零退出码。接入只需调用校验器，无需为 SpecTrail 新增 npm 脚本或修改包配置；项目已有管理工具的安装配置继续由业务方维护。
+校验器的 JSON 结果写入 `stdout`，hook 将其丢弃，拒绝原因写入 `stderr` 保留可见。其他入口采用等效调用并传播非零退出码。接入只需调用校验器，无需为 SpecTrail 新增 npm 脚本或修改包配置；项目已有管理工具的安装配置继续由业务方维护。
 
 手动运行校验器，并用不污染用户工作区或暂存区的方式验证实际提交入口的成功路径和失败传播；必要时使用临时测试仓库。只有实际执行证据才能确认 hook 已接通，目录存在、字符串匹配或 setup 检查成功均不算验收。没有待校验文件时如实报告，不能据此推定失败路径通过。
 
@@ -106,4 +106,4 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 
 更新规则时只修改 skill 中的校验脚本并提交对应更新，使规则与主 skill 的类型声明保持一致；hook 保持对该脚本的调用。
 
-修改校验规则或 setup 检查后运行 `node --test <setup-dir>/tests/setup.test.mjs`，覆盖只读检查、业务方显式接入、字段规则、暂存区、部分提交、clone 和 worktree。
+修改校验规则或 setup 检查后运行 `node --test <skill-dir>/setup/tests/setup.test.mjs`，覆盖只读检查、业务方显式接入、字段规则、暂存区、部分提交、clone 和 worktree。

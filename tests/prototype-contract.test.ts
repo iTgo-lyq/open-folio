@@ -190,7 +190,7 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   const run = () =>
     spawnSync(
       process.execPath,
-      [resolve(".agents/skills/spec-trail/setup/scripts/pre-commit.js")],
+      [resolve(".agents/skills/spec-trail/cli.mjs"), "setup", "pre-commit"],
       { cwd: work, encoding: "utf8" },
     );
   const stage = () => git(["add", "."]);
@@ -221,7 +221,8 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   const handoff = spawnSync(
     process.execPath,
     [
-      resolve(".agents/skills/spec-trail/scripts/workspace.mjs"),
+      resolve(".agents/skills/spec-trail/cli.mjs"),
+      "workspace",
       "handoff",
       "--repo",
       f.author,
@@ -237,7 +238,8 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     const step = spawnSync(
       process.execPath,
       [
-        resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+        resolve(".agents/skills/spec-trail/cli.mjs"),
+        "change",
         ...args,
         "--repo",
         work,

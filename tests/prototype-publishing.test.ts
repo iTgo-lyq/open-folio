@@ -63,7 +63,8 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
     assert.equal(result.status, 0, result.stderr);
   };
   const state = (name: string, args: string[] = []) =>
-    command(".agents/skills/spec-trail/scripts/change.mjs", [
+    command(".agents/skills/spec-trail/cli.mjs", [
+      "change",
       name,
       "--change",
       "publish-demo",
@@ -96,7 +97,8 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   );
   f.commit();
   const work = join(f.root, "publish-work");
-  command(".agents/skills/spec-trail/scripts/workspace.mjs", [
+  command(".agents/skills/spec-trail/cli.mjs", [
+    "workspace",
     "handoff",
     "--change",
     "publish-demo",
@@ -424,7 +426,7 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
   };
   register(f.author, { request, result, change: "publish-demo" });
   f.git(["add", "."]);
-  run(".agents/skills/spec-trail/setup/scripts/pre-commit.js");
+  run(".agents/skills/spec-trail/cli.mjs", ["setup", "pre-commit"]);
   f.commit();
   await f.put(
     "packages/prototype/preview/screen/index.html",
@@ -436,9 +438,9 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "# Fixture delivery",
   );
   f.commit();
-  const stateScript = ".agents/skills/spec-trail/scripts/change.mjs";
+  const stateScript = ".agents/skills/spec-trail/cli.mjs";
   const command = (name: string, args: string[]) =>
-    run(stateScript, [name, "--change", "publish-demo", ...args]);
+    run(stateScript, ["change", name, "--change", "publish-demo", ...args]);
   command("task-complete", [
     "--task",
     "T1",

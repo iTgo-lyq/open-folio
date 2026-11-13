@@ -34,4 +34,4 @@ jobs:
       - name: Require completed archives
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node .agents/skills/spec-trail/setup/scripts/check-pr.mjs
+        run: node .agents/skills/spec-trail/cli.mjs setup check-pr
