@@ -53,6 +53,12 @@
       "status": "done",
       "verification": "评审复现的归档任务保护、规模升档验收和脚本扫描边界均有通过的回归测试",
       "commitTitle": "spec-trail-cli-coverage T5: fix independent review findings"
+    },
+    "T6": {
+      "title": "复验暂存检查的声明与表达式边界",
+      "status": "done",
+      "verification": "实际提交回归通过，39 个现有脚本通过扫描，独立评审复验无遗留问题",
+      "commitTitle": "spec-trail-cli-coverage T6: handle additional script syntax in the hook"
     }
   },
   "closure": {},

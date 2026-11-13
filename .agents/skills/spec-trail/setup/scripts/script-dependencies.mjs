@@ -1,10 +1,11 @@
 import { isBuiltin } from "node:module";
 
-const tokenPattern = /\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*'|[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*|\S/guy;
+const tokenPattern = /\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*'|(?:[$_\p{ID_Start}]|\\u(?:[\da-fA-F]{4}|\{[\da-fA-F]+\}))(?:[$\u200c\u200d\p{ID_Continue}]|\\u(?:[\da-fA-F]{4}|\{[\da-fA-F]+\}))*|\S/guy;
 const whitespace = /\s+/y;
 const regexLiteral = /\/(?:\\[^\r\n]|\[(?:\\[^\r\n]|[^\]\\\r\n])*\]|[^/[\r\n\\])+\/[a-z]*/y;
 const regexPrefix = /^(?:[([{=,:;!?&|+*%~<>^-]|return|throw|case|yield|await|typeof|void|delete|else|do)$/;
 const control = /^(?:if|for|while|switch|with|catch)$/;
+const declarationBoundary = [undefined, "{", "}", ";", "export", "default"];
 const templatePart = /(?:\\[\s\S]|\$(?!\{)|[^`\\$])*(?:`|\$\{)/y;
 
 function tokens(source) {
@@ -13,7 +14,8 @@ function tokens(source) {
   const scan = (interpolation = false) => {
     const parentheses = [];
     let afterControl = false;
-    let braces = 0;
+    let functionDeclaration = false;
+    const braces = [];
     while (index < source.length) {
       whitespace.lastIndex = index;
       if (whitespace.test(source)) {
@@ -26,7 +28,7 @@ function tokens(source) {
         index += token.length;
         continue;
       }
-      if (token === "}" && interpolation && !braces) {
+      if (token === "}" && interpolation && !braces.length) {
         index++;
         return;
       }
@@ -56,10 +58,17 @@ function tokens(source) {
         token = regexLiteral.exec(source)?.[0] ?? token;
       }
       index += token.length;
-      if (token === "{") braces++;
-      if (token === "}") braces--;
-      if (token === "(") parentheses.push(control.test(result.at(-1)));
-      afterControl = token === ")" && parentheses.pop();
+      const previous = result.at(-1);
+      if (token === "function") {
+        const before = previous === "async" ? result.at(-2) : previous;
+        functionDeclaration = declarationBoundary.includes(before);
+      }
+      if (token === "{") braces.push(afterControl || /^(?:else|do|try|finally)$/.test(previous));
+      if (token === "(") {
+        parentheses.push(control.test(previous) || functionDeclaration);
+        functionDeclaration = false;
+      }
+      afterControl = (token === ")" && parentheses.pop()) || (token === "}" && braces.pop());
       result.push(token);
     }
   };
@@ -91,7 +100,7 @@ function fromSpecifier(parts, start) {
   } else {
     index++;
   }
-  if (parts[index] === "from") return parts[index + 1];
+  if (parts[index] === "from" && quoted(parts[index + 1])) return parts[index + 1];
 }
 
 function literalArgument(parts, start) {
@@ -100,31 +109,54 @@ function literalArgument(parts, start) {
   if (quoted(argument) || (argument?.startsWith("`") && !argument.includes("${"))) return argument;
 }
 
-export function externalScriptDependencies(source) {
-  const parts = tokens(source.replace(/^#![^\r\n]*/, ""));
-  const external = new Set();
-  // An ordinary local require function does not load a module.
+function localRequireScopes(parts) {
+  // Bind function names and simple parameters to the body that owns them.
+  const bodyBindings = new Set();
   let scope = {};
-  const scopes = parts.map((token, index) => {
-    if (token === "{") scope = { parent: scope };
-    if (token === "require") {
-      const previous = parts[index - 1];
-      const arrow = parts[index + 3] === "=" && parts[index + 4] === ">";
-      if (previous === "function" ||
-          (["const", "let", "var"].includes(previous) && parts[index + 1] === "=" &&
-            (["(", "function"].includes(parts[index + 2]) || arrow))) scope.localRequire = true;
+  return parts.map((token, index) => {
+    if (token === "function") {
+      const nameIndex = index + (parts[index + 1] === "*" ? 2 : 1);
+      const name = parts[nameIndex] === "(" ? undefined : parts[nameIndex];
+      const start = nameIndex + (name ? 1 : 0);
+      let end = start + 1;
+      for (let depth = 1; end < parts.length && depth; end++) {
+        if (parts[end] === "(") depth++;
+        if (parts[end] === ")") depth--;
+      }
+      const before = parts[index - (parts[index - 1] === "async" ? 2 : 1)];
+      const parameters = parts.slice(start + 1, end - 1);
+      if (name === "require" && declarationBoundary.includes(before))
+        scope.localRequire = true;
+      if (parts[end] === "{" && (name === "require" || parameters.some(
+        (part, offset) => part === "require" && (offset === 0 || parameters[offset - 1] === ",") &&
+          [undefined, ",", "="].includes(parameters[offset + 1]),
+      ))) bodyBindings.add(end);
+    }
+    if (token === "{") scope = { parent: scope, localRequire: bodyBindings.has(index) };
+    if (token === "require" && ["const", "let", "var"].includes(parts[index - 1]) &&
+        parts[index + 1] === "=") {
+      const start = index + (parts[index + 2] === "async" ? 3 : 2);
+      const value = parts[start];
+      const arrow = parts[start + 1] === "=" && parts[start + 2] === ">";
+      if (["(", "function"].includes(value) || arrow) scope.localRequire = true;
     }
     const current = scope;
     if (token === "}") scope = scope.parent ?? scope;
     return current;
   });
+}
+
+export function externalScriptDependencies(source) {
+  const parts = tokens(source.replace(/^#![^\r\n]*/, ""));
+  const external = new Set();
+  const scopes = parts.includes("require") ? localRequireScopes(parts) : [];
   for (const [index, token] of parts.entries()) {
     const next = parts[index + 1];
     let literal;
     if (token === "import" && parts[index - 1] !== ".") {
       if (quoted(next)) literal = next;
       else if (next === "(") literal = literalArgument(parts, index + 2);
-      else if (next !== ".") literal = fromSpecifier(parts, index + 1);
+      else if (next !== "." && next !== ":") literal = fromSpecifier(parts, index + 1);
     } else if (token === "export" && ["{", "*"].includes(next)) {
       literal = fromSpecifier(parts, index + 1);
     } else if (token === "require" && parts[index - 1] !== "." && next === "(") {

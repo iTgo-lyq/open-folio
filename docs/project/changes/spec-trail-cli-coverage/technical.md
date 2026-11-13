@@ -18,7 +18,7 @@
 
 ## Skill 脚本的提交检查
 
-在 `setup pre-commit` 中对本次提交新增、修改或移入 `.agents/skills/spec-trail/` 的 JavaScript 脚本检查模块引用，读取 Git index 中的内容。检查静态 `import`、`export … from`、副作用导入和字面量 `import()` / `require()`，接受相对路径和有效的 `node:` 内置模块，报错包含脚本路径及模块名。用本地、零依赖的轻量扫描识别模块语句，跳过注释、普通文本和本地同名函数调用。原型浏览器验证按需从业务项目解析 Playwright 的既有入口继续可用。此检查聚焦直接声明的依赖，覆盖常规提交与部分提交，保持 Node.js 20+ 的 hook 支持。
+在 `setup pre-commit` 中对本次提交新增、修改或移入 `.agents/skills/spec-trail/` 的 JavaScript 脚本检查模块引用，读取 Git index 中的内容。检查静态 `import`、`export … from`、副作用导入和字面量 `import()` / `require()`，接受相对路径和有效的 `node:` 内置模块，报错包含脚本路径及模块名。用本地、零依赖的词法扫描识别常见模块语句、注释、文本和局部同名函数。运行时拼接路径、加载函数别名和完整 JavaScript 作用域分析超出此检查的覆盖范围。原型浏览器验证按需从业务项目解析 Playwright 的既有入口继续可用。检查覆盖常规提交与部分提交，保持 Node.js 20+ 的 hook 支持。
 
 ## 取舍与验证
 

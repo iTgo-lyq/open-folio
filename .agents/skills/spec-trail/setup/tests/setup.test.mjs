@@ -586,8 +586,13 @@ test("pre-commit checks direct module dependencies in staged Skill scripts", (t)
     '// import ignored from "comment-package";',
     'const text = "import ignored from \'text-package\'";',
     'const pattern = /import ignored from "regex-package"/;',
+    'const from = "moduleType"; const options = { import: from };',
     'if (true) /import ignored from "regex-statement"/.test("ordinary text");',
+    'if (true) {}\n/import ignored from "regex-after-block"/.test("ordinary text");',
+    'function example() {}\n/import ignored from "regex-after-function"/.test("ordinary text");',
     'function local() { const require = value => value; return require("local-argument"); }',
+    'function localParameter(require) { return require("local-parameter"); }',
+    'function localAsync() { const require = async value => value; return require("local-async"); }',
   ].join("\n");
   const external = [
     'import value from "external-default";',
@@ -595,9 +600,11 @@ test("pre-commit checks direct module dependencies in staged Skill scripts", (t)
     'export {thing} from "external-export";',
     'import(/* source */ "external-dynamic");',
     'import 工具 from "external-unicode";',
+    'import \\u0066oo from "external-escaped-binding";',
     'import(`external-template`);',
     'const interpolation = `text ${import("external-interpolation")}`;',
     'function scoped() { function require(value) { return value; } }',
+    'const helper = function require(value) { return value; };',
     'const require = createRequire(import.meta.url);',
     'require("external-commonjs");',
     'import "node:not-a-builtin";',
@@ -608,10 +615,10 @@ test("pre-commit checks direct module dependencies in staged Skill scripts", (t)
   const rejected = s.git(repo, ["commit", "-m", "Reject staged dependency"], 1);
   for (const specifier of [
     "external-default", "external-side-effect", "external-export",
-    "external-dynamic", "external-template", "external-unicode", "external-interpolation",
+    "external-dynamic", "external-template", "external-unicode", "external-interpolation", "external-escaped-binding",
     "external-commonjs", "node:not-a-builtin",
   ]) assert.ok(rejected.includes(`${path}:`) && rejected.includes(JSON.stringify(specifier)));
-  assert.doesNotMatch(rejected, /comment-package|text-package|regex-package|regex-statement|local-argument/);
+  assert.doesNotMatch(rejected, /comment-package|text-package|regex-package|regex-statement|regex-after-block|regex-after-function|local-argument|local-parameter|local-async/);
   s.git(repo, ["add", path]);
   s.write(repo, path, external.join("\n"));
   s.git(repo, ["commit", "-m", "Accept staged relative and builtin modules"]);
