@@ -4,13 +4,13 @@
   "title": "仓库刷新后恢复最相关的工作台页面",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/workspace-reading-fallback",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "刷新后修正失效的阅读定位并验证回退行为",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
