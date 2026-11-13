@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "刷新后修正失效的阅读定位并验证回退行为",
-      "status": "doing"
+      "status": "done",
+      "verification": "471 项仓库测试、生产构建、类型检查及 9 项定向浏览器测试通过，覆盖自动与手动回退、旧链接、固定原型和失效合入文件。",
+      "commitTitle": "workspace-reading-fallback T1: repair stale reading locations after refresh"
     }
   },
   "closure": {},
