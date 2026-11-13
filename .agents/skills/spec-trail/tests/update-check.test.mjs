@@ -254,7 +254,7 @@ function cliFixture(t, installFrom) {
     });
     writeFileSync(join(install, "version.json"), '{"version":"0.1.0"}');
   }
-  const script = join(installFrom ?? install, "scripts/change.mjs");
+  const script = join(installFrom ?? install, "cli.mjs");
   const configFile = join(repo, "docs/project/workflow.json"),
     stateFile = join(repo, "docs/project/changes/sample/change.json");
   const config = {
@@ -311,7 +311,7 @@ globalThis.fetch = async (url, options) => {
 };\n`,
   );
   const run = (args, cwd = repo) =>
-    spawnSync(process.execPath, ["--import", preload, script, ...args], {
+    spawnSync(process.execPath, ["--import", preload, script, "change", ...args], {
       cwd,
       encoding: "utf8",
       env: {

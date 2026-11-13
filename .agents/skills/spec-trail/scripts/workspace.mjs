@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { isDeepStrictEqual, parseArgs } from "node:util";
+import { isDeepStrictEqual } from "node:util";
 import { randomUUID } from "node:crypto";
 import {
   repository,
@@ -477,7 +477,7 @@ function handoff(repo, id, options) {
         catalog.branch,
         verified.commit,
       ),
-      next: "Open or continue a session bound to this worktree; verify its actual cwd and branch, then use change.mjs execute",
+      next: "Open or continue a session bound to this worktree; verify its actual cwd and branch, then use node .agents/skills/spec-trail/cli.mjs change execute",
     };
   }
 }
@@ -572,30 +572,7 @@ function prepare(repo, id, options) {
   return { ...locate(repo, id), command: "prepare", reused: tree.reused };
 }
 
-function main() {
-  const [command, ...args] = process.argv.slice(2);
-  if (!command || ["--help", "help"].includes(command)) {
-    console.log(
-      "Usage: node workspace.mjs <locate|prepare|handoff> --change <id> [--repo <path>] [--branch <name>] [--path <worktree>] [--dry-run] [--availability-note <evidence>]",
-    );
-    return;
-  }
-  assert(
-    ["handoff", "locate", "prepare"].includes(command),
-    `Unknown command: ${command}`,
-  );
-  const { values } = parseArgs({
-    args,
-    strict: true,
-    options: {
-      repo: { type: "string" },
-      change: { type: "string" },
-      branch: { type: "string" },
-      path: { type: "string" },
-      "dry-run": { type: "boolean", default: false },
-      "availability-note": { type: "string" },
-    },
-  });
+export function runWorkspace(command, values) {
   assert(
     typeof values.change === "string" &&
       /^[a-z0-9]+(-[a-z0-9]+)*$/.test(values.change),
@@ -603,14 +580,12 @@ function main() {
   );
   const repo = repository(values.repo);
   if (command === "locate") {
-    console.log(json(locate(repo, values.change)));
-    return;
+    return { output: locate(repo, values.change) };
   }
   const operation = command === "handoff" ? handoff : prepare;
   const lock = join(repo.common, "spec-trail-state.lock");
   if (values["dry-run"]) {
-    console.log(json(operation(repo, values.change, values)));
-    return;
+    return { output: operation(repo, values.change, values) };
   }
   try {
     mkdirSync(lock);
@@ -620,14 +595,8 @@ function main() {
     );
   }
   try {
-    console.log(json(operation(repo, values.change, values)));
+    return { output: operation(repo, values.change, values) };
   } finally {
     rmSync(lock, { recursive: true, force: true });
   }
-}
-try {
-  main();
-} catch (error) {
-  console.error(`SpecTrail workspace: ${error.message}`);
-  process.exitCode = 1;
 }

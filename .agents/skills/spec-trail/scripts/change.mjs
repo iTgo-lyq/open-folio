@@ -15,7 +15,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { isDeepStrictEqual, parseArgs } from "node:util";
+import { isDeepStrictEqual } from "node:util";
 import {
   validateChange,
   validateWorkflow,
@@ -36,51 +36,6 @@ import {
   deliveryTarget,
 } from "./repository.mjs";
 
-const commands = {
-  create: [
-    "title",
-    "size",
-    "depends-on",
-    "parent",
-    "children",
-    "follow-up-of",
-    "group-title",
-    "types",
-    "urgency",
-    "collaborators",
-  ],
-  labels: ["types", "urgency"],
-  collaborators: ["members"],
-  "follow-up": ["target", "group-title"],
-  show: [],
-  retitle: ["title"],
-  "clarification-ask": ["question", "round", "text", "recommendation"],
-  "clarification-answer": ["question", "answer", "source"],
-  "clarification-withdraw": ["question", "reason"],
-  confirm: [
-    "phase",
-    "summary",
-    "source",
-    "source-commit",
-    "target-commit",
-    "base-commit",
-  ],
-  "task-add": ["task", "title", "branch"],
-  "task-start": ["task"],
-  "task-block": ["task", "reason"],
-  "task-complete": ["task", "verification", "commit-title"],
-  "task-retry": ["task"],
-  execute: ["availability-note"],
-  wait: ["kind", "summary"],
-  resume: [],
-  rework: ["stage", "reason", "approach"],
-  verify: ["result", "summary", "availability-note"],
-  accept: ["summary", "source", "mode", "availability-note"],
-  specs: ["result", "summary"],
-  archive: ["summary", "date", "availability-note"],
-  cancel: ["reason"],
-  "previews-set": ["file"],
-};
 const stages = ["requirement", "technical", "plan", "execution", "close"];
 const steps = ["verification", "acceptance", "specs", "archive"];
 const assert = (value, message) => {
@@ -90,33 +45,7 @@ const json = (value) => JSON.stringify(value, null, 2) + "\n";
 const read = (path) => JSON.parse(readFileSync(path, "utf8"));
 const list = (value) => (value ? value.split(",") : []);
 
-async function main() {
-  const [command, ...args] = process.argv.slice(2);
-  if (!command || command === "--help" || command === "help") {
-    console.log(
-      "Usage: node change.mjs <command> --change <id> [--repo <path>] [--dry-run] [command options]\n" +
-        Object.entries(commands)
-          .map(
-            ([name, flags]) =>
-              `${name}: ${flags.map((f) => `--${f} <value>`).join(" ")}`,
-          )
-          .join("\n") +
-        "\nSee ../references/state-commands.md for evidence, phase and publishing requirements.",
-    );
-    return;
-  }
-  assert(Object.hasOwn(commands, command), `Unknown command: ${command}`);
-  const { values: opts } = parseArgs({
-    args,
-    options: Object.fromEntries([
-      ...["repo", "change", ...commands[command]].map((k) => [
-        k,
-        { type: "string" },
-      ]),
-      ["dry-run", { type: "boolean", default: false }],
-    ]),
-    strict: true,
-  });
+async function change(command, opts) {
   const need = (key) => {
     assert(
       typeof opts[key] === "string" && opts[key].trim(),
@@ -1274,7 +1203,7 @@ async function main() {
     }
     result.next =
       archiveDir
-        ? `Commit and push the archived source, then run scripts/integration.mjs preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use rework for corrections before integration.`
+        ? `Commit and push the archived source, then run node .agents/skills/spec-trail/cli.mjs integration preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use rework for corrections before integration.`
         : "Review the local diff, commit and push. A local command is not a published workflow fact.";
     return { output: result, repo };
   } finally {
@@ -1282,15 +1211,8 @@ async function main() {
   }
 }
 
-try {
-  const completed = await main();
-  if (completed) {
-    const update = completed.skipUpdate
-      ? undefined
-      : await checkForUpdates(completed.repo);
-    console.log(json(update ? { ...completed.output, skillUpdate: update } : completed.output));
-  }
-} catch (error) {
-  console.error(`SpecTrail state: ${error.message}`);
-  process.exitCode = 1;
+export async function runChange(command, options) {
+  const { output, repo, skipUpdate } = await change(command, options);
+  const update = skipUpdate ? undefined : await checkForUpdates(repo);
+  return { output: update ? { ...output, skillUpdate: update } : output };
 }

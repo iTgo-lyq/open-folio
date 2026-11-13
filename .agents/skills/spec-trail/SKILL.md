@@ -75,7 +75,7 @@ medium 及以上 Change 涉及数据结构、时序流程等明显变化时，�
 
 ## 状态操作入口
 
-本 skill、子 skill 及引用文档中指定的状态写入命令均为默认入口，统一适用下述逃生通道。分支移交与工作区定位见[工作区命令](./references/workspaces.md)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用[语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/scripts/change.mjs <command> --change <id>`。调用前按需读取命令说明；正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。
+本 skill、子 skill 及引用文档中指定的状态写入命令均为默认入口，统一适用下述逃生通道。分支移交与工作区定位见[工作区命令](./references/workspaces.md)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用[语义命令](./references/state-commands.md)：`node .agents/skills/spec-trail/cli.mjs change <command> --change <id>`。调用前按需读取命令说明；正文 Markdown 继续直接编辑，下面的字段定义用于阅读与校验。
 
 **手动逃生通道**：脚本无法满足当前操作时，先向用户说明脚本限制、拟改字段的前后值、关联目录变动及影响，取得用户针对本次手改的二次明确确认后再直接修改，无需先扩展脚本。此例外不豁免实际前置条件、确认与证据要求、归档只读约定及提交校验；修改后核对关联失效状态与正文一致性，并在提交说明中记录原因与确认依据。
 

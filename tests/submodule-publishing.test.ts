@@ -368,7 +368,8 @@ for (const directory of ["packages/prototype", ""])
           const result = spawnSync(
             process.execPath,
             [
-              resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+              resolve(".agents/skills/spec-trail/cli.mjs"),
+              "change",
               name,
               "--change",
               id,

@@ -120,12 +120,14 @@ test("CLI returns a link from any working directory without checking the service
   const f = await fixture(t);
   await f.configure("https://unavailable.invalid");
   const script = fileURLToPath(
-    new URL("../.agents/skills/spec-trail/scripts/share.mjs", import.meta.url),
+    new URL("../.agents/skills/spec-trail/cli.mjs", import.meta.url),
   );
   const output = execFileSync(
     process.execPath,
     [
       script,
+      "share",
+      "link",
       "--repo",
       f.root,
       "--change",

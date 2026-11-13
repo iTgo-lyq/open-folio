@@ -1,5 +1,3 @@
-import { parseArgs } from "node:util";
-import { pathToFileURL } from "node:url";
 import { repository } from "./repository.mjs";
 
 const safeUrl = (value) => {
@@ -75,25 +73,4 @@ export async function getShareLink({
     ...(preview ? { preview } : {}),
   }).toString();
   return { url: link.href };
-}
-
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
-  try {
-    const { values } = parseArgs({
-      options: Object.fromEntries(
-        ["repo", "change", "document", "preview"].map((k) => [
-          k,
-          { type: "string" },
-        ]),
-      ),
-    });
-    const result = await getShareLink(values);
-    process.stdout.write(JSON.stringify(result, null, 2) + "\n");
-  } catch (error) {
-    process.stderr.write(error.message + "\n");
-    process.exitCode = 1;
-  }
 }

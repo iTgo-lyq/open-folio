@@ -21,8 +21,8 @@ workspace/
 需求文档提交并按规模确认后移交，small 沿用现有确认规则。不等待技术方案、Plan、任务或依赖交付，显式暂缓仍阻止移交；执行与关闭继续检查原有前置条件。
 
 ```bash
-node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example --dry-run
-node .agents/skills/spec-trail/scripts/workspace.mjs handoff --change example
+node .agents/skills/spec-trail/cli.mjs workspace handoff --change example --dry-run
+node .agents/skills/spec-trail/cli.mjs workspace handoff --change example
 ```
 
 默认工作分支 `change/<id>`，路径为主工作区同级的 `<项目名>-worktrees/<id>`；可用 `--branch`、`--path` 覆盖。已有登记和 Git worktree 优先复用。普通 Change 创建共享登记提交；子项从已移交且 active 的父分支建立，再合入仅改自身 branch 的集中登记提交。先推送工作分支，再向集成分支推送登记提交，子项 tip 不得作为集中登记推送。失败保留现场与提交供重试，不镜像执行状态。它不授予阶段确认、不进入 execution。执行仍检查全部确认与依赖；需人工核对依赖交付时先记录证据，再传 `--availability-note`。
@@ -42,9 +42,9 @@ handoff 可重复调用。目标推送失败，集中入口保持原状；登记
 ## 定位与续接
 
 ```bash
-node .agents/skills/spec-trail/scripts/workspace.mjs locate --change example
-node .agents/skills/spec-trail/scripts/workspace.mjs prepare --change example --dry-run
-node .agents/skills/spec-trail/scripts/workspace.mjs prepare --change example
+node .agents/skills/spec-trail/cli.mjs workspace locate --change example
+node .agents/skills/spec-trail/cli.mjs workspace prepare --change example --dry-run
+node .agents/skills/spec-trail/cli.mjs workspace prepare --change example
 ```
 
 locate 只读本地跟踪引用，明确输出 freshness；它不是实时远端查询。prepare 定向 fetch 集成分支与登记的工作分支，缺失远端时拒绝使用残留跟踪引用；新克隆可从登记分支建立 worktree，已有工作区的未提交文件、领先提交、分叉均保留，不自动 reset/rebase。归档与取消记录可定位但不准备写入工作区。失效的 Git worktree 登记需先检查，不自动 prune。

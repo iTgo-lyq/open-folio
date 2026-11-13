@@ -66,7 +66,8 @@ test("archiving fixes a shared Git prototype before concurrent collaboration cha
   );
   f.commit();
   const command = [
-    resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+    resolve(".agents/skills/spec-trail/cli.mjs"),
+    "change",
     "archive",
     "--repo",
     f.author,
@@ -234,7 +235,8 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
     execFileSync(
       process.execPath,
       [
-        resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+        resolve(".agents/skills/spec-trail/cli.mjs"),
+        "change",
         "archive",
         "--repo",
         f.author,
@@ -248,7 +250,7 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
       { encoding: "utf8" },
     ),
   );
-  assert.match(result.next, /integration.mjs preflight/);
+  assert.match(result.next, /cli\.mjs integration preflight/);
   f.commit();
   f.git(["checkout", "develop"]);
   const worktree = join(f.root, "source");

@@ -221,7 +221,8 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   const handoff = spawnSync(
     process.execPath,
     [
-      resolve(".agents/skills/spec-trail/scripts/workspace.mjs"),
+      resolve(".agents/skills/spec-trail/cli.mjs"),
+      "workspace",
       "handoff",
       "--repo",
       f.author,
@@ -237,7 +238,8 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     const step = spawnSync(
       process.execPath,
       [
-        resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+        resolve(".agents/skills/spec-trail/cli.mjs"),
+        "change",
         ...args,
         "--repo",
         work,
