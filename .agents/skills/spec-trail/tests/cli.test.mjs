@@ -20,6 +20,7 @@ test("CLI help and argument errors work outside a Git project", t => {
     [["--help"], /Groups:.*change.*workspace/],
     [["change", "--help"], /Commands:.*task-start/],
     [["change", "task-start", "--help"], /--change <value> --task <value>/],
+    [["maintenance", "archive-tags-delete", "--help"], / --service-ready \[--help\]/],
   ]) {
     const result = run(args);
     assert.equal(result.status, 0, result.stderr);
@@ -34,6 +35,7 @@ test("CLI help and argument errors work outside a Git project", t => {
     [["change", "show", "--typo"], /Unknown option/],
     [["change", "show", "--change", "example", "extra"], /Unexpected argument/],
     [["change", "task-start", "--change", "example"], /--task is required/],
+    [["maintenance", "archive-tags-delete", "--manifest", "missing.json"], /--service-ready is required/],
   ]) {
     const result = run(args);
     assert.equal(result.status, 1, result.stderr);

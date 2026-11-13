@@ -4,7 +4,8 @@ function define(run, { required = [], optional = [], booleans = [], multiple = [
     required,
     note,
     options: Object.fromEntries([
-      ...[...required, ...optional].map(name => [name, { type: "string" }]),
+      ...[...required.filter(name => !booleans.includes(name)), ...optional]
+        .map(name => [name, { type: "string" }]),
       ...booleans.map(name => [name, { type: "boolean", default: false }]),
       ...multiple.map(name => [name, { type: "string", multiple: true, default: [] }]),
     ]),
@@ -38,7 +39,8 @@ const publication = (required = [], optional = [], note) => define(
 const archiveTags = (deleting = false) => define(
   async (command, values) => (await import("./retire-archive-tags.mjs")).runArchiveTags(command, values),
   {
-    required: ["manifest"], optional: ["repo"],
+    required: deleting ? ["manifest", "service-ready"] : ["manifest"],
+    optional: ["repo"],
     ...(deleting && {
       booleans: ["service-ready"],
       note: "Pass --service-ready after verifying the deployed reader and stopping old archive writers.",

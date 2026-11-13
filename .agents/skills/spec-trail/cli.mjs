@@ -36,8 +36,11 @@ function parseCommand() {
     options: { ...definition.options, help: { type: "boolean" } },
   });
   if (values.help) return;
-  for (const name of definition.required)
-    if (!values[name]?.trim()) throw Error(`--${name} is required`);
+  for (const name of definition.required) {
+    const value = values[name];
+    if (value !== true && !(typeof value === "string" && value.trim()))
+      throw Error(`--${name} is required`);
+  }
   return values;
 }
 
