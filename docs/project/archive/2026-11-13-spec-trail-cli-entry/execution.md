@@ -34,3 +34,5 @@
 - `npm run test:e2e -- tests/browser/hosting.spec.ts -g 'skill CLI'` 通过 1 项。
 - 文档中 46 处 CLI 示例的命令、参数及固定取值均合法。默认 tmux server 上没有测试遗留。
 - 独立子 Agent 评审 T4、T5 的差异，9 项发现已在 T6 修正并复验，没有遗留问题。
+
+归档前复核了分支 `62083ee` 上的帮助、提交钩子和服务测试隔离改动。项目测试 471 项、skill 测试 42 项、类型检查及原型上传端到端测试均通过。Node.js 20 的帮助与参数测试通过，原型用例按 Node.js 24 要求跳过。直接执行 `setup pre-commit` 可解析 JSON，仓库 hook 成功时输出为空。
