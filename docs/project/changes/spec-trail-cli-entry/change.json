@@ -50,7 +50,9 @@
     },
     "T5": {
       "title": "隔离服务管理测试的 tmux 环境",
-      "status": "todo"
+      "status": "done",
+      "verification": "沙箱内存在外部 tmux server 时服务测试连续两次通过，宿主环境复跑通过；默认 tmux server 无遗留会话，typecheck 通过。",
+      "commitTitle": "spec-trail-cli-entry T5: isolate the service test tmux server"
     }
   },
   "closure": {},

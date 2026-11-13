@@ -48,6 +48,13 @@ test(
       `OPENFOLIO_SERVICE_PORT=${port}\nOPENFOLIO_SERVICE_HOST=127.0.0.1\nOPENFOLIO_SERVICE_SESSION=${session}\nOPENFOLIO_DATA_DIR=${join(root, "data")}\nOPENFOLIO_VERIFY_TOKEN=fixture-private-token\n`,
     );
     await writeFile(join(root, "data/sentinel"), "keep-workspace");
+    // A private tmux server keeps the fixture out of the developer's sessions, whose
+    // server may run in another network namespace than this test.
+    const env: NodeJS.ProcessEnv = { ...process.env, TMUX_TMPDIR: join(root, "tmux") };
+    delete env.TMUX;
+    await mkdir(join(root, "tmux"));
+    // Like a shared server, it outlives the service session and so reaps stopped supervisors.
+    await execute("tmux", ["start-server", ";", "set-option", "-s", "exit-empty", "off"], { env });
     await writeFile(
       join(root, "node_modules/next/dist/bin/next"),
       `
@@ -67,14 +74,14 @@ test(
       const result = await execute(
         process.execPath,
         [join(root, "scripts/service.mjs"), command],
-        { cwd: tmpdir(), timeout: 40000 },
+        { cwd: tmpdir(), env, timeout: 40000 },
       );
       assert.ok(!result.stdout.includes("fixture-private-token"));
       return JSON.parse(result.stdout);
     };
     t.after(async () => {
       await call("stop").catch(() => {});
-      await execute("tmux", ["kill-session", "-t", session]).catch(() => {});
+      await execute("tmux", ["kill-server"], { env }).catch(() => {});
       reserve.close();
       await rm(root, { recursive: true, force: true });
     });
