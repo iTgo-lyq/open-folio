@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "通过 CLI 更新 Change 关系并拒绝无效状态",
-      "status": "todo"
+      "status": "done",
+      "verification": "7 项关系、CLI、暂存、PR 与工作台校验测试通过，118 条 Change 记录兼容",
+      "commitTitle": "spec-trail-cli-coverage T3: maintain relationships and share validation"
     },
     "T4": {
       "title": "提交时拦截 Skill 脚本的第三方引用",

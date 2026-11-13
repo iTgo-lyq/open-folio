@@ -735,6 +735,17 @@ async function change(command, opts) {
         state.size = size;
         break;
       }
+      case "depends": {
+        assert(state.size !== "xlarge", "xlarge cannot declare dependencies");
+        const targets = need("depends-on");
+        if (targets === "none") delete state.dependsOn;
+        else state.dependsOn = list(targets);
+        break;
+      }
+      case "children":
+        assert(state.size === "xlarge", "Only xlarge can have children");
+        state.children = list(need("children"));
+        break;
       case "labels":
         assert(
           opts.types !== undefined || opts.urgency !== undefined,
@@ -1169,6 +1180,20 @@ async function change(command, opts) {
         "xlarge requires children, no tasks or dependsOn",
       );
     else assert(!state.children?.length, "Only xlarge can have children");
+    if (command === "depends") {
+      const previous = JSON.parse(original).dependsOn ?? [];
+      for (const target of state.dependsOn ?? []) {
+        if (previous.includes(target)) continue;
+        if (["execution", "close"].includes(state.stage)) {
+          await dependency(target);
+        } else {
+          const record = routedRecord(repo, catalog, target, { refresh: !opts["dry-run"] });
+          assert(!record.errors.length, `Dependency ${target} has invalid state`);
+          assert(record.sourceRef?.startsWith("refs/remotes/origin/"),
+            `Push dependency ${target} before declaring it`);
+        }
+      }
+    }
     const result = {
       command,
       dryRun: opts["dry-run"],

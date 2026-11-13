@@ -228,6 +228,17 @@ export const commands = {
       help: { size: { choices: ["small", "medium", "large"], text: "New size; xlarge cannot be resized" } },
       example: " --size medium",
     }),
+    depends: change("Replace or clear the dependencies of an active ordinary Change", {
+      required: ["depends-on"],
+      optional: ["availability-note"],
+      help: { "depends-on": { value: "id,id|none", text: "Comma-separated published Change ids; none clears the list" } },
+      example: " --depends-on prerequisite,other",
+    }),
+    children: change("Replace the child list of an active xlarge Change", {
+      required: ["children"],
+      help: { children: { value: "id,id", text: "Non-empty comma-separated list of child Change ids" } },
+      example: " --children child-a,child-b",
+    }),
     "task-add": change("Add a todo task in requirement, technical, plan or execution (not for xlarge)", {
       required: ["title"],
       optional: ["task", "branch"],

@@ -189,6 +189,7 @@ test("supplemental collaborator configuration has the same strict contract in ho
   for (const collaborators of [
     [],
     [{ name: "参与者" }],
+    [{ name: "Team @ Home" }],
     [{ name: "Known", login: "known-login", subjectId: "123" }],
     [{ name: "Number only", subjectId: "123" }],
   ]) {
@@ -208,6 +209,7 @@ test("supplemental collaborator configuration has the same strict contract in ho
     [{ name: " Name" }],
     [{ name: "Name\n" }],
     [{ name: "Name\u2028line" }],
+    [{ name: "Name <private@example.com>" }],
     [{ name: "Name", login: "bad/login" }],
     [{ name: "Name", login: "" }],
     [{ name: "Name", subjectId: 123 }],
@@ -230,7 +232,7 @@ test("invalid label fields are isolated without revoking completion or dependenc
       {
         types: ["修复", "自定义"],
         urgency: "invalid",
-        collaborators: [{ name: "Invalid", email: "private@example.com" }],
+        collaborators: [{ name: "Invalid <private@example.com>" }],
       },
     ],
     ["consumer", { dependsOn: ["prior"], types: [" "], urgency: "high" }],

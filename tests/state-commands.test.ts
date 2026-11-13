@@ -869,6 +869,48 @@ test("resizing aligns large planning and clears invalidated closure on upgrade",
   assert.equal(f.state().tasks.T1.status, "done");
 });
 
+test("relationship commands replace lists and reject invalid declarations", (t) => {
+  const f = fixture(t);
+  f.create("xlarge", "parent", ["--children", "sample"]);
+  f.create("small", "upstream");
+  f.create("small", "other");
+  assert.match(f.run("create", [
+    "--size", "small", "--title", "Child", "--parent", "parent", "--depends-on", "parent",
+  ], 1), /cannot depend on its parent/);
+  f.create("small", "sample", ["--parent", "parent"]);
+  f.commit();
+  const before = f.state();
+  assert.deepEqual(
+    f.run("depends", ["--depends-on", "upstream", "--dry-run"]).state.dependsOn,
+    ["upstream"],
+  );
+  assert.deepEqual(f.state(), before);
+  f.run("depends", ["--depends-on", "upstream,other"]);
+  f.run("depends", ["--depends-on", "other"]);
+  assert.deepEqual(f.state().dependsOn, ["other"]);
+  assert.match(f.run("depends", ["--depends-on", "parent"], 1), /cannot depend on its parent/);
+  assert.match(f.run("depends", ["--depends-on", "missing"], 1), /not registered/);
+  f.run("depends", ["--depends-on", "none"]);
+  assert(!Object.hasOwn(f.state(), "dependsOn"));
+  f.run("children", ["--children", "sample,next"], 0, "parent");
+  assert.deepEqual(f.state("parent").children, ["sample", "next"]);
+  f.run("children", ["--children", "sample,next,next"], 1, "parent");
+  f.run("children", ["--children", "other"], 1);
+  f.run("depends", ["--depends-on", "none"], 1, "parent");
+});
+
+test("collaborator commands reject email addresses in display names", (t) => {
+  const f = fixture(t);
+  const members = JSON.stringify([{ name: "Member <member@example.org>" }]);
+  assert.match(f.run("create", [
+    "--size", "small", "--title", "Example", "--collaborators", members,
+  ], 1), /collaborators\/0\/name.*email address/);
+  f.create();
+  assert.match(f.run("collaborators", ["--members", members], 1), /email address/);
+  f.run("collaborators", ["--members", JSON.stringify([{ name: "Team @ Home" }])]);
+  assert.deepEqual(f.state().collaborators, [{ name: "Team @ Home" }]);
+});
+
 test("explicit parallel order overrides the default and completion rechecks changed predecessors", (t) => {
   const f = fixture(t);
   f.create("medium");

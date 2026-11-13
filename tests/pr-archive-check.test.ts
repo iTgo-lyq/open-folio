@@ -127,6 +127,17 @@ test("archive prototype containment is checked before merge", async (t) => {
   );
 });
 
+test("PR archive checks reject invalid collaborator display names", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  await f.put(`${f.archivePath}/change.json`, JSON.stringify({
+    ...f.record,
+    collaborators: [{ name: "Member <member@example.org>" }],
+  }));
+  f.commit(false);
+  await assert.rejects(checkPullRequest(f.git, event(f)), /valid completed archive/);
+});
+
 test("unarchived and reworked Changes fail even in Draft, then pass after archive is restored", async () => {
   const f = await integrationFixture();
   try {
