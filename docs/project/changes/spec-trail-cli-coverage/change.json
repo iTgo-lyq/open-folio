@@ -4,19 +4,29 @@
   "title": "补齐 SpecTrail 日常状态命令与提交前校验",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "change/spec-trail-cli-coverage",
   "confirmations": {
     "requirement": {
       "at": "2026-11-13T08:51:34.671Z",
       "summary": "补齐五个状态命令，在执行和提交时校验流程约束",
       "source": "用户审阅最新版需求后回复「继续推进吧」"
+    },
+    "technical": {
+      "at": "2026-11-13T09:02:13.126Z",
+      "summary": "沿用状态写入和暂存校验，用 Git 历史保护任务编号",
+      "source": "用户回复「继续吧」，并要求完成开发直到可以验收"
+    },
+    "plan": {
+      "at": "2026-11-13T09:02:29.116Z",
+      "summary": "依次交付任务编辑、规模调整、关系校验与提交检查",
+      "source": "用户回复「继续吧」，并要求完成开发直到可以验收"
     }
   },
   "tasks": {
     "T1": {
       "title": "通过 CLI 编辑任务并保留已提交编号",
-      "status": "todo"
+      "status": "doing"
     },
     "T2": {
       "title": "通过 CLI 调整 Change 规模和确认阶段",
@@ -58,9 +68,5 @@
       "answer": "按推荐处理阶段对齐，不支持 xlarge。",
       "source": "用户回复“没问题”"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待确认技术方案与 T1–T4 执行计划"
   }
 }
