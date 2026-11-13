@@ -4,9 +4,15 @@
   "title": "补齐 SpecTrail 日常状态命令与提交前校验",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-13T08:51:34.671Z",
+      "summary": "补齐五个状态命令，在执行和提交时校验流程约束",
+      "source": "用户审阅最新版需求后回复「继续推进吧」"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
