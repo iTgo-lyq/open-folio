@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useRef,
   useMemo,
   useState,
@@ -13,6 +14,7 @@ import { SUGGESTED_INTEGRATION_BRANCH } from "@/lib/collaboration";
 import { AUTO_REFRESH_MS } from "@/lib/model";
 import { NETWORK_ERROR } from "@/lib/sync-status";
 import { documentReadingTarget } from "@/lib/change-reading";
+import { repairReadingLocation } from "@/lib/reading-location";
 import type { RepositoryIdentity } from "@/server/providers/types";
 import { api, ApiError } from "./api";
 import { ReadingCache, type DocumentValue } from "./reading-cache";
@@ -67,8 +69,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [loading, setLoading] = useState(false),
     [refreshing, setRefreshing] = useState(false),
     [failure, setFailure] = useState({ message: "", code: "", identity: "" }),
-    [message, setMessage] = useState(""),
-    [retry, setRetry] = useState(0);
+    [message, setMessage] = useState("");
   const setError = (message: string, cause?: unknown, confirmedRead = false) =>
     setFailure((previous) => {
       const code = message ? errorCodeOf(cause) : "";
@@ -122,12 +123,37 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+  const repairLocation = useCallback(
+    (next: Workbench, previous: Workbench | null) => {
+      const location = Object.fromEntries(
+        new URLSearchParams(window.location.search),
+      );
+      if (
+        location.repo !== projectId ||
+        (location.integrationBranch ?? integrationBranch) !== integrationBranch
+      )
+        return;
+      const patch = repairReadingLocation(location, next, previous);
+      if (patch) nav(patch, true);
+    },
+    [integrationBranch, nav, projectId],
+  );
+  const applyWorkbench = useCallback(
+    (next: Workbench) => {
+      cache.set(scope, next);
+      setLoaded({ key: scope, value: next });
+    },
+    [cache, scope],
+  );
+  const restoreLocation = useEffectEvent(() => {
+    setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
+    if (loaded?.key === scope && !loaded.value.historyPending)
+      repairLocation(loaded.value, null);
+  });
   useEffect(() => {
-    const read = () => {
-      setQ(Object.fromEntries(new URLSearchParams(window.location.search)));
-      setReady(true);
-    };
+    const read = () => restoreLocation();
     read();
+    setReady(true);
     window.addEventListener("popstate", read);
     return () => window.removeEventListener("popstate", read);
   }, []);
@@ -336,8 +362,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         }
         await cache.prepare(next, readUrl, c.signal);
         if (!c.signal.aborted && version === generation.current) {
-          cache.set(scope, next);
-          setLoaded({ key: scope, value: next });
+          applyWorkbench(next);
           setError("", undefined, true);
         }
       } catch (e) {
@@ -356,7 +381,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       c.abort();
       generation.current++;
     };
-  }, [scope, ready, readUrl, reading, retry, cache]);
+  }, [scope, ready, readUrl, reading, cache, applyWorkbench]);
   const hasData = !!data;
   useEffect(() => {
     if (!reading || !data || loading || refreshing) return;
@@ -364,7 +389,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       version = generation.current;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let running = false,
-      snapshotId = data.id;
+      previous = data;
     const check = async () => {
       if (running || c.signal.aborted || document.visibilityState !== "visible")
         return;
@@ -378,17 +403,18 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             signal: c.signal,
           },
         );
-        if (result.snapshotId !== snapshotId) {
+        if (result.snapshotId !== previous.id) {
           const next = await api<Workbench>(readUrl("workbench"), {
             signal: c.signal,
           });
           await cache.prepare(next, readUrl, c.signal);
           if (!c.signal.aborted && version === generation.current) {
-            cache.set(scope, next);
-            snapshotId = next.id;
-            setLoaded({ key: scope, value: next });
+            repairLocation(next, previous);
+            applyWorkbench(next);
+            previous = next;
           }
-        }
+        } else if (!c.signal.aborted && version === generation.current)
+          repairLocation(previous, null);
         if (!c.signal.aborted && version === generation.current)
           setError("", undefined, true);
       } catch (e) {
@@ -410,7 +436,17 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", resume);
       document.removeEventListener("visibilitychange", resume);
     };
-  }, [hasData, scope, loading, refreshing, readUrl, reading, cache]);
+  }, [
+    hasData,
+    scope,
+    loading,
+    refreshing,
+    readUrl,
+    reading,
+    cache,
+    applyWorkbench,
+    repairLocation,
+  ]);
   const refresh = useCallback(async () => {
     if (!projectId || !connection || refreshing) return;
     const version = ++generation.current;
@@ -421,15 +457,35 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     setError("");
     try {
       await api(readUrl("refresh"), { method: "POST", signal: c.signal });
-      setRetry((v) => v + 1);
+      const next = await api<Workbench>(readUrl("workbench"), {
+        signal: c.signal,
+      });
+      await cache.prepare(next, readUrl, c.signal);
+      if (!c.signal.aborted && version === generation.current) {
+        repairLocation(next, data);
+        applyWorkbench(next);
+        setError("", undefined, true);
+      }
     } catch (e) {
       if (!c.signal.aborted && version === generation.current) {
         setError((e as Error).message, e);
       }
     } finally {
-      if (version === generation.current) setRefreshing(false);
+      if (version === generation.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [projectId, connection, refreshing, readUrl]);
+  }, [
+    projectId,
+    connection,
+    refreshing,
+    readUrl,
+    cache,
+    data,
+    applyWorkbench,
+    repairLocation,
+  ]);
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 6000);

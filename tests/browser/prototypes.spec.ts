@@ -585,10 +585,11 @@ test("detail links handle reload, missing entries, image errors and narrow layou
   await page.goBack();
   await expect(details).toBeVisible();
   await page.goto(path + "&pdetail=removed");
+  await expect(page).not.toHaveURL(/[?&]pdetail=/);
+  await expect(details).toHaveCount(0);
   await expect(
-    details.getByRole("heading", { name: "未找到此原型" }),
+    page.getByRole("region", { name: "项目原型总览" }),
   ).toBeVisible();
-  await details.getByRole("button", { name: "关闭原型详情" }).click();
   await page.getByRole("radio", { name: "手机", exact: true }).click();
   await page.getByRole("button", { name: "查看原型详情：待导出页面" }).click();
   await expect(
