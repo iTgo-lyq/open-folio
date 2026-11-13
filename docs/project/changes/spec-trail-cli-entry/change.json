@@ -4,7 +4,7 @@
   "title": "SpecTrail 脚本收敛为统一命令行入口",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "codex/spec-trail-cli-entry",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "spec-trail-cli-entry T3: migrate project checks and callers"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-13T05:06:14.838Z",
+      "summary": "项目 471 项、skill 41 项、类型检查及原型上传端到端通过；独立子 Agent 评审，两处参数问题已修正并复验。"
+    }
+  },
   "types": [
     "工程",
     "体验"
@@ -70,5 +76,9 @@
       "answer": "默认 JSON，CLI 面向 Agent 和自动化，人不会直接使用。",
       "source": "默认 json 即可，因为人本身不会用这个 cli"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收统一 CLI 后同步 Specs、归档并交付"
   }
 }
