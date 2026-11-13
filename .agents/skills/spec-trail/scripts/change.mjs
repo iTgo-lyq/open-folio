@@ -43,6 +43,38 @@ const assert = (value, message) => {
 const json = (value) => JSON.stringify(value, null, 2) + "\n";
 const read = (path) => JSON.parse(readFileSync(path, "utf8"));
 const list = (value) => (value ? value.split(",") : []);
+const taskIdPattern = /^T[1-9][0-9]*$/;
+
+function largestTaskNumber(git, id, current) {
+  assert(
+    git(["rev-parse", "--is-shallow-repository"]) === "false",
+    "Task numbering requires complete Change history; fetch with --unshallow and retry",
+  );
+  const blobs = new Set();
+  const history = git([
+    "log", "--full-history", "-m", "--format=", "--raw", "--no-abbrev",
+    "--no-renames", "HEAD", "--",
+    `docs/project/changes/${id}/change.json`,
+    `:(glob)docs/project/archive/*-${id}/change.json`,
+  ]);
+  for (const match of history.matchAll(/^:\d+ \d+ ([a-f0-9]+) ([a-f0-9]+) /gm)) {
+    for (const blob of match.slice(1)) if (!/^0+$/.test(blob)) blobs.add(blob);
+  }
+  let largest = 0n;
+  const consider = (tasks) => {
+    for (const key of Object.keys(tasks ?? {})) {
+      if (!taskIdPattern.test(key)) continue;
+      const number = BigInt(key.slice(1));
+      if (number > largest) largest = number;
+    }
+  };
+  consider(current);
+  for (const blob of blobs) {
+    const previous = JSON.parse(git(["cat-file", "blob", blob]));
+    if (previous?.id === id) consider(previous.tasks);
+  }
+  return largest;
+}
 
 async function change(command, opts) {
   const need = (key) => {
@@ -276,6 +308,16 @@ async function change(command, opts) {
     } else assert(state.status === "active", "Only active Changes can be modified");
     const recordDir = restoring ? dirname(file) : liveDir;
     const now = new Date().toISOString();
+    const requireUncommittedTask = (taskId) => {
+      const path = relative(root, file);
+      const committed = git(["ls-tree", "--name-only", "HEAD", "--", path])
+        ? JSON.parse(git(["show", `HEAD:${path}`]))
+        : undefined;
+      assert(
+        committed?.tasks?.[taskId]?.status !== "done",
+        "Committed completed tasks are immutable",
+      );
+    };
     const requireStage = (...allowed) =>
       assert(
         allowed.includes(state.stage),
@@ -789,22 +831,38 @@ async function change(command, opts) {
           state.stage = "plan";
         break;
       }
-      case "task-add": {
+      case "task-add":
+      case "task-update":
+      case "task-remove": {
         requireStage("requirement", "technical", "plan", "execution");
         assert(state.size !== "xlarge", "xlarge uses children, not tasks");
-        const taskId =
-          opts.task ||
-          `T${Math.max(0, ...Object.keys(state.tasks).map((k) => Number(k.slice(1)))) + 1}`;
-        assert(/^T[1-9][0-9]*$/.test(taskId), "Invalid task id");
-        assert(
-          !Object.hasOwn(state.tasks, taskId),
-          "Task already exists; completed task definitions are immutable",
-        );
-        state.tasks[taskId] = {
-          title: need("title"),
-          status: "todo",
-          ...(opts.branch ? { branch: opts.branch } : {}),
-        };
+        if (opts.task !== undefined) assert(taskIdPattern.test(opts.task), "Invalid task id");
+        if (command === "task-add") {
+          const largest = largestTaskNumber(git, id, state.tasks);
+          const taskId = opts.task ?? `T${largest + 1n}`;
+          assert(
+            BigInt(taskId.slice(1)) > largest,
+            `Task number must be greater than ${largest} (current and committed tasks)`,
+          );
+          state.tasks[taskId] = {
+            title: need("title"),
+            status: "todo",
+            ...(opts.branch ? { branch: opts.branch } : {}),
+          };
+        } else {
+          const taskId = need("task");
+          assert(Object.hasOwn(state.tasks, taskId), "Task not found");
+          requireUncommittedTask(taskId);
+          if (command === "task-remove") {
+            delete state.tasks[taskId];
+          } else {
+            assert(opts.title !== undefined || opts.branch !== undefined, "task-update requires --title or --branch");
+            const task = state.tasks[taskId];
+            if (opts.title !== undefined) task.title = need("title");
+            if (opts.branch === "none") delete task.branch;
+            else if (opts.branch !== undefined) task.branch = need("branch");
+          }
+        }
         break;
       }
       case "task-retry": {
@@ -815,25 +873,7 @@ async function change(command, opts) {
             state.tasks[taskId].status === "done",
           "Only an uncommitted done task can be retried",
         );
-        let committed;
-        try {
-          committed = JSON.parse(git(["show", `HEAD:${relative(root, file)}`]));
-        } catch (e) {
-          assert(
-            !git([
-              "ls-tree",
-              "--name-only",
-              "HEAD",
-              "--",
-              relative(root, file),
-            ]),
-            "Cannot read committed state",
-          );
-        }
-        assert(
-          committed?.tasks?.[taskId]?.status !== "done",
-          "Committed completed tasks are immutable",
-        );
+        requireUncommittedTask(taskId);
         state.tasks[taskId].status = "doing";
         delete state.tasks[taskId].verification;
         delete state.tasks[taskId].commitTitle;

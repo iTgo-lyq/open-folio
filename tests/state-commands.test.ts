@@ -735,11 +735,60 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
   }
 });
 
+test("task editing preserves committed numbers and protects committed completions", (t) => {
+  const f = fixture(t);
+  f.create();
+  for (const title of ["First", "Second", "Third"]) f.run("task-add", ["--title", title]);
+  f.handoff();
+  f.run("task-remove", ["--task", "T3"]);
+  f.commit();
+  assert.match(f.run("task-add", ["--title", "Reuse", "--task", "T3"], 1), /greater than 3/);
+  f.run("task-add", ["--title", "Fourth"]);
+  assert.equal(f.state().tasks.T4.title, "Fourth");
+  f.run("task-remove", ["--task", "T4"]);
+  f.run("task-add", ["--title", "Fourth again"]);
+  const before = f.state();
+  const preview = f.run("task-update", ["--task", "T1", "--title", "Edited", "--dry-run"]);
+  assert.equal(preview.state.tasks.T1.title, "Edited");
+  assert.deepEqual(f.state(), before);
+  f.run("task-update", ["--task", "T1", "--title", "Edited", "--branch", "task/sample/T1"]);
+  assert.equal(f.state().tasks.T1.branch, "task/sample/T1");
+  f.run("task-update", ["--task", "T1", "--branch", "none"]);
+  assert.deepEqual(f.state().tasks.T1, { title: "Edited", status: "todo" });
+  f.run("execute");
+  f.run("task-start", ["--task", "T1"]);
+  f.done();
+  f.run("task-update", ["--task", "T1", "--title", "Pending commit"]);
+  f.commit(false);
+  assert.match(f.run("task-update", ["--task", "T1", "--title", "Too late"], 1), /immutable/);
+  assert.match(f.run("task-remove", ["--task", "T1"], 1), /immutable/);
+});
+
+test("task numbering also reads committed archive snapshots", (t) => {
+  const f = fixture(t);
+  f.create();
+  f.handoff();
+  const archive = "docs/project/archive/2026-10-04-sample";
+  mkdirSync(join(f.root, archive), { recursive: true });
+  const active = f.state();
+  f.git("mv", "docs/project/changes/sample/change.json", archive);
+  writeFileSync(join(f.root, archive, "change.json"), JSON.stringify({
+    ...active,
+    tasks: { T12: { title: "Archived task", status: "done" } },
+  }));
+  f.commit(false);
+  f.git("mv", archive + "/change.json", "docs/project/changes/sample");
+  writeFileSync(f.path(), JSON.stringify(active));
+  f.commit(false);
+  f.run("task-add", ["--title", "Next after archive"]);
+  assert.equal(f.state().tasks.T13.title, "Next after archive");
+});
+
 test("default scheduling enforces numeric serial order for every ordinary size", (t) => {
   for (const size of ["small", "medium", "large"]) {
     const f = fixture(t);
     f.create(size);
-    for (const id of ["T10", "T2", "T1"])
+    for (const id of ["T1", "T2", "T10"])
       f.run("task-add", ["--task", id, "--title", id]);
     if (size !== "small") f.confirm();
     f.handoff();

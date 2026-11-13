@@ -227,10 +227,21 @@ export const commands = {
       required: ["title"],
       optional: ["task", "branch"],
       help: {
-        task: { value: "Tn", text: "Explicit task id (default: next number); existing ids are never replaced" },
+        task: { value: "Tn", text: "Task id above the current and committed maximum (default: next number)" },
         branch: { value: "name", text: "Task branch such as task/<id>/T3 when the task runs in parallel" },
       },
       example: " --title '实现目标行为'",
+    }),
+    "task-update": change("Update the title or branch of a task that has not been committed as done", {
+      required: ["task"],
+      optional: ["title", "branch"],
+      help: { branch: { value: "name|none", text: "Set the task branch, or use none to clear it" } },
+      notes: ["Provide at least one of --title and --branch."],
+      example: " --task T1 --title '验证目标行为' --branch task/example/T1",
+    }),
+    "task-remove": change("Remove a task that has not been committed as done", {
+      required: ["task"],
+      example: " --task T2",
     }),
     "task-start": change("Move a task from todo or blocked to doing after its predecessors are done (stage execution)", {
       required: ["task"],

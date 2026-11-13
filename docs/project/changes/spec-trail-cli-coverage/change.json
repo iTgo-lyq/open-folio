@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "通过 CLI 编辑任务并保留已提交编号",
-      "status": "doing"
+      "status": "done",
+      "verification": "CLI 帮助及 Git 夹具通过，覆盖编号历史、归档快照、dry-run 和已提交完成任务保护",
+      "commitTitle": "spec-trail-cli-coverage T1: maintain tasks and preserve committed IDs"
     },
     "T2": {
       "title": "通过 CLI 调整 Change 规模和确认阶段",

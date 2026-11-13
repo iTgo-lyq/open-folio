@@ -15,7 +15,9 @@
 | `clarification-ask` | `--round --text --recommendation`；可选 `--question Qn`，默认下一个编号，只能递增。保存实际问过的需求或技术问题，round 为从 1 开始的正整数，同轮问题用同一值，跨阶段继续递增。 |
 | `clarification-answer` | `--question Qn --answer`，可附 `--source`。保存用户最终有效回答，更正覆盖同题答案；未提供 source 时清除旧来源，实质改变需求或关键方案先按返工处理。 |
 | `clarification-withdraw` | `--question Qn --reason`。保留原问答并记不再适用的原因，不退额度；撤回后不再回答，需要时新增问题。 |
-| `task-add` | `--title`；可选 `--task Tn --branch`，默认分配下一个编号。完成任务不可覆盖，返修追加任务并更新 Plan。 |
+| `task-add` | `--title`；可选 `--task Tn --branch`。编号必须大于当前任务和本 Change 已提交历史的最大值，默认取该值加一。 |
+| `task-update` | `--task Tn`；至少传 `--title` 或 `--branch`，`--branch none` 清除分支。已提交为 done 的任务不可修改，变更后同步 Plan。 |
+| `task-remove` | `--task Tn`；删除尚未提交为 done 的任务，变更后同步 Plan。仅在本地创建后删除的编号可重新分配。 |
 | `task-start` | `--task Tn`；检查当前执行安排与整条前置链均已完成，再从 todo/blocked → doing，并移除旧阻塞原因。 |
 | `task-block` | `--task Tn --reason`；保留任务定义，说明实际阻塞。 |
 | `task-complete` | `--task Tn --verification`，可附 `--commit-title`；复核当前安排和前置链后 doing → done。先完成验证，再和实现一起提交推送。 |
