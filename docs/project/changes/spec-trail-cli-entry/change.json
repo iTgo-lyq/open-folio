@@ -56,7 +56,9 @@
     },
     "T6": {
       "title": "修正独立评审发现的帮助与测试隔离问题",
-      "status": "todo"
+      "status": "done",
+      "verification": "评审 9 项全部修正；CLI 与 Setup 测试 Node 20/24 通过，49 个示例可解析；服务测试在沙箱、长 TMPDIR 与宿主各通过，无遗留；typecheck 通过。",
+      "commitTitle": "spec-trail-cli-entry T6: correct help details and harden service test isolation"
     }
   },
   "closure": {},

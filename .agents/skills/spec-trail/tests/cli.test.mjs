@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import test from "node:test";
 
 const cli = fileURLToPath(new URL("../cli.mjs", import.meta.url));
@@ -71,6 +72,14 @@ test("help gives runnable usage for every command and documents every option", a
       const details = help(group, name);
       assert.match(details, /^Options:$/m);
       assert.ok(details.includes(`Example:\n  node .agents/skills/spec-trail/cli.mjs ${group} ${name}`));
+      // The example must pass the same parsing, required and choice checks as a real call.
+      const words = [...spec.example.matchAll(/'([^']*)'|"([^"]*)"|(\S+)/g)].map(m => m[1] ?? m[2] ?? m[3]);
+      const { values } = parseArgs({ args: words, options: spec.options });
+      for (const option of spec.required)
+        assert.ok(values[option], `${group} ${name} example lacks --${option}`);
+      for (const [option, value] of Object.entries(spec.options))
+        if (value.choices && values[option] !== undefined)
+          assert.ok(value.choices.includes(values[option]), `${group} ${name} example uses an invalid --${option}`);
       for (const [option, value] of Object.entries(spec.options)) {
         assert.ok(value.text, `${group} ${name} --${option} needs help text`);
         assert.ok(value.type === "boolean" || value.value || value.choices, `${group} ${name} --${option} needs a value format`);

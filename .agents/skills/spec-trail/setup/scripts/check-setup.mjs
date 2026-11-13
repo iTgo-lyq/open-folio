@@ -57,7 +57,7 @@ export async function runSetupCheck(_command, { repo = "." }) {
   );
   let schema;
   for (const [path, names, type = "function"] of [
-    [commandsPath, ["commands"], "object"],
+    [commandsPath, ["commands", "groups"], "object"],
     [validatorPath, ["runPreCommit"]],
     [schemaPath, ["validateWorkflow", "validateChange"]],
     [routingPath, ["validBranchName", "routeCatalog"]],

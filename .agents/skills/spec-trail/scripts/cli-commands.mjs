@@ -75,7 +75,10 @@ const prototypeSetup = (summary, example) => define(
       design: { value: "file", text: "Existing design standard in the repository that DESIGN.md should reference instead of copying" },
       "fetch-upload-url": { text: "Fetch and save the upload URL with OPENFOLIO_ADMIN_PASSWORD; use with --hosting openfolio instead of --upload-url" },
     },
-    notes: ["accept, decline, enable and configure share these options and save any hosting options given."],
+    notes: [
+      "accept, decline, enable and configure share these options and save any hosting options given.",
+      "--design applies to accept; --package applies to accept, enable and a first configure; decline only records disabled.",
+    ],
     example,
   },
 );
@@ -111,7 +114,7 @@ export const groups = {
     summary: "Change state in docs/project/changes/<id>/change.json",
     notes: [
       "Plan on the integration branch; after handoff, run on the registered work branch.",
-      "Commands write change.json only; commit and push the result yourself.",
+      "Commands change only local files (archive and rework move the Change directory, task-retry updates the staged change.json) and never commit or push.",
       "A successful command (or show) may add skillUpdate to the JSON when a newer skill is published.",
     ],
   },
@@ -133,7 +136,10 @@ export const commands = {
       optional: ["depends-on", "parent", "children", "follow-up-of", "group-title", "types", "urgency", "collaborators"],
       help: {
         size: { choices: ["small", "medium", "large", "xlarge"], text: "Change size by core contract impact and implementation scope" },
-        "depends-on": { value: "id,id", text: "Prerequisite Change ids, comma-separated; each must already be pushed" },
+        "depends-on": {
+          value: "id,id",
+          text: "Prerequisite Change ids, comma-separated; execute later requires each to be a pushed, completed archive whose delivery is available",
+        },
         parent: { value: "id", text: "Parent xlarge Change id" },
         children: { value: "id,id", text: "Child Change ids in Plan order, comma-separated (xlarge parent)" },
         "follow-up-of": { value: "id", text: "Direct predecessor: a pushed, completed archive" },
@@ -213,6 +219,7 @@ export const commands = {
       notes: [
         "requirement moves to technical; a large technical confirmation moves to plan.",
         "medium/xlarge: record technical and plan with two calls, then run change execute.",
+        "small Changes record only merge confirmations.",
       ],
       example: " --phase requirement --summary '支持浏览器多身份添加、切换和移除。' --source '确认需求，进入技术方案'",
     }),
@@ -340,13 +347,13 @@ export const commands = {
       optional: ["idle-worktree"],
       help: {
         "verified-commit": {
-          value: "sha",
-          text: "Delivery commit you verified; it must be in the remote target history and contain every source tip",
+          value: "full-sha",
+          text: "Full 40- or 64-hex delivery commit you verified; it must be in the remote target history and contain every source tip",
         },
         "idle-worktree": { value: "dir", text: "Source worktree you confirmed is no longer in use; omit when there is none" },
       },
-      notes: ["Exit code 2 when some items were kept; the JSON lists each item's status."],
-      example: " --verified-commit 0123abc --idle-worktree ../project-worktrees/example",
+      notes: ["Exit code 2 when cleanup is incomplete; the JSON lists each item's status."],
+      example: " --verified-commit \"$(git rev-parse origin/develop)\" --idle-worktree ../project-worktrees/example",
     }),
   },
   share: {
@@ -428,7 +435,7 @@ export const commands = {
         help: {
           package: { value: "path", text: "Validate this package directly (frontend repository; . for its root) instead of reading workflow.json" },
           playwright: { value: "path", text: "Playwright module to import (default: @playwright/test resolved from the repository)" },
-          browser: { text: "Also load every entry and declared viewport in a browser" },
+          browser: { text: "Also load each entry once in headless Chromium (default viewport); fails on page or console errors and HTTP 400+" },
         },
         example: "--browser",
       },
@@ -474,7 +481,9 @@ export const commands = {
       help: { entry: { value: "id", text: "Associate only this entry (default: all current entries)" } },
       example: "--change example --entry orders",
     }),
-    recover: publication("Finish an interrupted multi-file registration; stops on newer user edits", {}),
+    recover: publication("Roll back an interrupted multi-file registration to its previous files; stops on newer edits or commits", {
+      notes: ["Rerun register or upload afterwards; recover does not complete the registration."],
+    }),
   },
   maintenance: {
     "version-next": define(async (_command, values) => {
