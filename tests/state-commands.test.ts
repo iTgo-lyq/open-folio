@@ -816,6 +816,59 @@ test("default scheduling enforces numeric serial order for every ordinary size",
   }
 });
 
+test("resizing aligns confirmations while preserving completed tasks and a pause", (t) => {
+  const f = fixture(t);
+  f.create();
+  f.begin();
+  f.done();
+  f.commit();
+  const completed = f.state().tasks.T1;
+  const preview = f.run("resize", ["--size", "medium", "--dry-run"]);
+  assert.equal(preview.state.stage, "requirement");
+  assert.equal(f.state().size, "small");
+  f.run("wait", ["--kind", "pause", "--summary", "Wait here"]);
+  f.run("resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "requirement");
+  assert.equal(f.state().waitingFor.kind, "pause");
+  f.run("resume");
+  f.confirm();
+  f.run("execute");
+  assert.deepEqual(f.state().tasks.T1, completed);
+  const confirmations = f.state().confirmations;
+  f.run("resize", ["--size", "large"]);
+  assert.equal(f.state().stage, "execution");
+  assert.deepEqual(f.state().confirmations, confirmations);
+  f.run("resize", ["--size", "xlarge"], 1);
+  assert.equal(f.state().size, "large");
+});
+
+test("resizing aligns large planning and clears invalidated closure on upgrade", (t) => {
+  const f = fixture(t);
+  f.create("large");
+  for (const phase of ["requirement", "technical"]) {
+    f.run("confirm", ["--phase", phase, "--summary", phase, "--source", "Fixture"]);
+  }
+  const confirmations = f.state().confirmations;
+  assert.equal(f.state().stage, "plan");
+  f.run("resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "technical");
+  assert.deepEqual(f.state().confirmations, confirmations);
+  f.run("resize", ["--size", "large"]);
+  assert.equal(f.state().stage, "plan");
+  f.run("resize", ["--size", "small"]);
+  assert.equal(f.state().stage, "requirement");
+  assert.deepEqual(f.state().confirmations, confirmations);
+  f.create("xlarge", "parent", ["--children", "sample"]);
+  assert.match(f.run("resize", ["--size", "medium"], 1, "parent"), /xlarge/);
+  f.begin();
+  f.done();
+  f.verify();
+  f.run("resize", ["--size", "large"]);
+  assert.equal(f.state().stage, "plan");
+  assert.deepEqual(f.state().closure, {});
+  assert.equal(f.state().tasks.T1.status, "done");
+});
+
 test("explicit parallel order overrides the default and completion rechecks changed predecessors", (t) => {
   const f = fixture(t);
   f.create("medium");

@@ -223,6 +223,11 @@ export const commands = {
       ],
       example: " --phase requirement --summary '支持浏览器多身份添加、切换和移除。' --source '确认需求，进入技术方案'",
     }),
+    resize: change("Change the size of an active Change and align its stage with its confirmations", {
+      required: ["size"],
+      help: { size: { choices: ["small", "medium", "large"], text: "New size; xlarge cannot be resized" } },
+      example: " --size medium",
+    }),
     "task-add": change("Add a todo task in requirement, technical, plan or execution (not for xlarge)", {
       required: ["title"],
       optional: ["task", "branch"],

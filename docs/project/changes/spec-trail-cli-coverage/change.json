@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "通过 CLI 调整 Change 规模和确认阶段",
-      "status": "todo"
+      "status": "done",
+      "verification": "规模变更与 CLI 帮助测试通过，覆盖升级恢复执行、降级阶段、关闭记录清理和 xlarge 拒绝",
+      "commitTitle": "spec-trail-cli-coverage T2: resize changes and align confirmations"
     },
     "T3": {
       "title": "通过 CLI 更新 Change 关系并拒绝无效状态",

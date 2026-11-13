@@ -36,6 +36,7 @@ import {
 } from "./repository.mjs";
 
 const stages = ["requirement", "technical", "plan", "execution", "close"];
+const ordinarySizes = ["small", "medium", "large"];
 const steps = ["verification", "acceptance", "specs", "archive"];
 const assert = (value, message) => {
   if (!value) throw Error(message);
@@ -74,6 +75,21 @@ function largestTaskNumber(git, id, current) {
     if (previous?.id === id) consider(previous.tasks);
   }
   return largest;
+}
+
+function stageAfterResize(state, size) {
+  const { stage, confirmations } = state;
+  if (ordinarySizes.indexOf(size) < ordinarySizes.indexOf(state.size)) {
+    if (size === "small" && ["technical", "plan"].includes(stage)) return "requirement";
+    return stage === "plan" ? "technical" : stage;
+  }
+  if (!confirmations.requirement) return "requirement";
+  if (!confirmations.technical) return "technical";
+  if (size === "large" && (!confirmations.plan || stages.indexOf(stage) < stages.indexOf("plan"))) {
+    return "plan";
+  }
+  if (!confirmations.plan || stage === "requirement") return "technical";
+  return stage;
 }
 
 async function change(command, opts) {
@@ -703,6 +719,22 @@ async function change(command, opts) {
       case "collaborators":
         setCollaborators(need("members"));
         break;
+      case "resize": {
+        const size = need("size");
+        assert(
+          ordinarySizes.includes(state.size) && ordinarySizes.includes(size),
+          "Cannot resize to or from xlarge",
+        );
+        if (state.size === size) break;
+        const stage = stageAfterResize(state, size);
+        if (state.stage === "close" && stage !== "close") {
+          state.closure = {};
+          delete state.confirmations.merge;
+        }
+        state.stage = stage;
+        state.size = size;
+        break;
+      }
       case "labels":
         assert(
           opts.types !== undefined || opts.urgency !== undefined,
