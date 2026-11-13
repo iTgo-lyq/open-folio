@@ -13,7 +13,24 @@
       "source": "用户审阅最新版需求后回复「继续推进吧」"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "通过 CLI 编辑任务并保留已提交编号",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "通过 CLI 调整 Change 规模和确认阶段",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "通过 CLI 更新 Change 关系并拒绝无效状态",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "提交时拦截 Skill 脚本的第三方引用",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "工程",
@@ -41,5 +58,9 @@
       "answer": "按推荐处理阶段对齐，不支持 xlarge。",
       "source": "用户回复“没问题”"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待确认技术方案与 T1–T4 执行计划"
   }
 }
