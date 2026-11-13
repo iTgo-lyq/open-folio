@@ -26,6 +26,7 @@ const resourcePaths = [
   "cli.mjs",
   "scripts/cli-commands.mjs",
   "setup/scripts/pre-commit.mjs",
+  "setup/scripts/script-dependencies.mjs",
   "scripts/state-schema.mjs",
   "scripts/routing.mjs",
   "prototype/scripts/contract.mjs",
@@ -510,6 +511,8 @@ test("field rules reject invalid workflow and Change state with precise paths", 
     [(v) => (v.branch = "bad branch"), "/branch"],
     [(v) => (v.id = "Bad_ID"), "/id"],
     [(v) => (v.dependsOn = ["dependency", "dependency"]), "/dependsOn"],
+    [(v) => (v.dependsOn = [v.parent]), "/dependsOn"],
+    [(v) => (v.collaborators = [{ name: "Member <member@example.org>" }]), "/collaborators/0/name"],
     [(v) => (v.children = null), "/children"],
     [(v) => (v["unknown/key~"] = true), "/unknown~1key~0"],
     [(v) => (v.tasks.T0 = v.tasks.T1), "/tasks/T0"],
@@ -566,6 +569,63 @@ test("field rules reject invalid workflow and Change state with precise paths", 
   s.write(repo, "docs/project/changes/feature/change.json", valid);
   s.git(repo, ["add", "docs/project/changes/feature/change.json"]);
   s.git(repo, ["commit", "-m", "Valid optional and conditional fields"]);
+});
+
+test("pre-commit checks direct module dependencies in staged Skill scripts", (t) => {
+  const s = sandbox(t);
+  const repo = s.makeRepo("script dependencies");
+  s.prepare(repo);
+  s.commit(repo);
+  const path = ".agents/skills/spec-trail/scripts/example.mjs";
+  const safe = [
+    'import {readFile} from "node:fs/promises";',
+    'export {use} from "./local.mjs";',
+    'import "../other.mjs";',
+    'const local = import("./local.mjs");',
+    'const computed = import("runtime-" + name);',
+    '// import ignored from "comment-package";',
+    'const text = "import ignored from \'text-package\'";',
+    'const pattern = /import ignored from "regex-package"/;',
+    'const from = "moduleType"; const options = { import: from };',
+    'if (true) /import ignored from "regex-statement"/.test("ordinary text");',
+    'if (true) {}\n/import ignored from "regex-after-block"/.test("ordinary text");',
+    'function example() {}\n/import ignored from "regex-after-function"/.test("ordinary text");',
+    'function local() { const require = value => value; return require("local-argument"); }',
+    'function localParameter(require) { return require("local-parameter"); }',
+    'function localAsync() { const require = async value => value; return require("local-async"); }',
+  ].join("\n");
+  const external = [
+    'import value from "external-default";',
+    'import "external-side-effect";',
+    'export {thing} from "external-export";',
+    'import(/* source */ "external-dynamic");',
+    'import 工具 from "external-unicode";',
+    'import \\u0066oo from "external-escaped-binding";',
+    'import(`external-template`);',
+    'const interpolation = `text ${import("external-interpolation")}`;',
+    'function scoped() { function require(value) { return value; } }',
+    'const helper = function require(value) { return value; };',
+    'const require = createRequire(import.meta.url);',
+    'require("external-commonjs");',
+    'import "node:not-a-builtin";',
+  ];
+  s.write(repo, path, [...external, safe].join("\n"));
+  s.git(repo, ["add", path]);
+  s.write(repo, path, safe);
+  const rejected = s.git(repo, ["commit", "-m", "Reject staged dependency"], 1);
+  for (const specifier of [
+    "external-default", "external-side-effect", "external-export",
+    "external-dynamic", "external-template", "external-unicode", "external-interpolation", "external-escaped-binding",
+    "external-commonjs", "node:not-a-builtin",
+  ]) assert.ok(rejected.includes(`${path}:`) && rejected.includes(JSON.stringify(specifier)));
+  assert.doesNotMatch(rejected, /comment-package|text-package|regex-package|regex-statement|regex-after-block|regex-after-function|local-argument|local-parameter|local-async/);
+  s.git(repo, ["add", path]);
+  s.write(repo, path, external.join("\n"));
+  s.git(repo, ["commit", "-m", "Accept staged relative and builtin modules"]);
+  s.write(repo, "other.mjs", 'import "external-other";');
+  s.git(repo, ["add", "other.mjs", path]);
+  s.git(repo, ["commit", "-m", "Commit only other script", "--", "other.mjs"]);
+  s.git(repo, ["commit", "-m", "Still reject staged Skill script"], 1);
 });
 
 test("archive renames are checked and deletions need no validation", (t) => {

@@ -25,7 +25,7 @@ import {
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
-import { closedRecord } from "./routing.mjs";
+import { changeLocation, closedRecord } from "./routing.mjs";
 import { changeIntegration } from "./github-prs.mjs";
 import { checkForUpdates } from "./update-check.mjs";
 import {
@@ -36,6 +36,7 @@ import {
 } from "./repository.mjs";
 
 const stages = ["requirement", "technical", "plan", "execution", "close"];
+const ordinarySizes = ["small", "medium", "large"];
 const steps = ["verification", "acceptance", "specs", "archive"];
 const assert = (value, message) => {
   if (!value) throw Error(message);
@@ -43,6 +44,53 @@ const assert = (value, message) => {
 const json = (value) => JSON.stringify(value, null, 2) + "\n";
 const read = (path) => JSON.parse(readFileSync(path, "utf8"));
 const list = (value) => (value ? value.split(",") : []);
+const taskIdPattern = /^T[1-9][0-9]*$/;
+
+function largestTaskNumber(git, id, current) {
+  assert(
+    git(["rev-parse", "--is-shallow-repository"]) === "false",
+    "Task numbering requires complete Change history; fetch with --unshallow and retry",
+  );
+  const blobs = new Set();
+  const history = git([
+    "log", "--full-history", "-m", "--format=", "--raw", "--no-abbrev",
+    "--no-renames", "HEAD", "--",
+    `docs/project/changes/${id}/change.json`,
+    `:(glob)docs/project/archive/????-??-??-${id}/change.json`,
+  ]);
+  for (const match of history.matchAll(/^:\d+ \d+ ([a-f0-9]+) ([a-f0-9]+) /gm)) {
+    for (const blob of match.slice(1)) if (!/^0+$/.test(blob)) blobs.add(blob);
+  }
+  let largest = 0n;
+  const consider = (tasks) => {
+    for (const key of Object.keys(tasks ?? {})) {
+      if (!taskIdPattern.test(key)) continue;
+      const number = BigInt(key.slice(1));
+      if (number > largest) largest = number;
+    }
+  };
+  consider(current);
+  for (const blob of blobs) {
+    const previous = JSON.parse(git(["cat-file", "blob", blob]));
+    if (previous?.id === id) consider(previous.tasks);
+  }
+  return largest;
+}
+
+function stageAfterResize(state, size) {
+  const { stage, confirmations } = state;
+  if (ordinarySizes.indexOf(size) < ordinarySizes.indexOf(state.size)) {
+    if (size === "small" && ["technical", "plan"].includes(stage)) return "requirement";
+    return stage === "plan" ? "technical" : stage;
+  }
+  if (!confirmations.requirement) return "requirement";
+  if (!confirmations.technical) return "technical";
+  if (size === "large" && (!confirmations.plan || stages.indexOf(stage) < stages.indexOf("plan"))) {
+    return "plan";
+  }
+  if (!confirmations.plan || stage === "requirement") return "technical";
+  return stage;
+}
 
 async function change(command, opts) {
   const need = (key) => {
@@ -276,6 +324,18 @@ async function change(command, opts) {
     } else assert(state.status === "active", "Only active Changes can be modified");
     const recordDir = restoring ? dirname(file) : liveDir;
     const now = new Date().toISOString();
+    const requireUncommittedTask = (taskId) => {
+      const path = relative(root, file);
+      const committedPath = git(["ls-tree", "--name-only", "HEAD", "--", path]) ||
+        git(["ls-tree", "-r", "--name-only", "HEAD", "--", "docs/project/archive/"])
+          .split("\n").find((entry) => changeLocation(entry)?.id === id);
+      const committed = committedPath
+        ? JSON.parse(git(["show", `HEAD:${committedPath}`])) : undefined;
+      assert(
+        committed?.tasks?.[taskId]?.status !== "done",
+        "Committed completed tasks are immutable",
+      );
+    };
     const requireStage = (...allowed) =>
       assert(
         allowed.includes(state.stage),
@@ -661,6 +721,38 @@ async function change(command, opts) {
       case "collaborators":
         setCollaborators(need("members"));
         break;
+      case "resize": {
+        const size = need("size");
+        assert(
+          ordinarySizes.includes(state.size) && ordinarySizes.includes(size),
+          "Cannot resize to or from xlarge",
+        );
+        if (state.size === size) break;
+        const stage = stageAfterResize(state, size);
+        if (state.stage === "close" && stage !== "close") {
+          state.closure = {};
+          delete state.confirmations.merge;
+        } else if (state.stage === "close" && state.size === "small" && state.closure.acceptance) {
+          // The record does not store the mode. Recheck acceptance under the new size.
+          delete state.closure.acceptance;
+          delete state.closure.specs;
+          delete state.confirmations.merge;
+        }
+        state.stage = stage;
+        state.size = size;
+        break;
+      }
+      case "depends": {
+        assert(state.size !== "xlarge", "xlarge cannot declare dependencies");
+        const targets = need("depends-on");
+        if (targets === "none") delete state.dependsOn;
+        else state.dependsOn = list(targets);
+        break;
+      }
+      case "children":
+        assert(state.size === "xlarge", "Only xlarge can have children");
+        state.children = list(need("children"));
+        break;
       case "labels":
         assert(
           opts.types !== undefined || opts.urgency !== undefined,
@@ -789,22 +881,38 @@ async function change(command, opts) {
           state.stage = "plan";
         break;
       }
-      case "task-add": {
+      case "task-add":
+      case "task-update":
+      case "task-remove": {
         requireStage("requirement", "technical", "plan", "execution");
         assert(state.size !== "xlarge", "xlarge uses children, not tasks");
-        const taskId =
-          opts.task ||
-          `T${Math.max(0, ...Object.keys(state.tasks).map((k) => Number(k.slice(1)))) + 1}`;
-        assert(/^T[1-9][0-9]*$/.test(taskId), "Invalid task id");
-        assert(
-          !Object.hasOwn(state.tasks, taskId),
-          "Task already exists; completed task definitions are immutable",
-        );
-        state.tasks[taskId] = {
-          title: need("title"),
-          status: "todo",
-          ...(opts.branch ? { branch: opts.branch } : {}),
-        };
+        if (opts.task !== undefined) assert(taskIdPattern.test(opts.task), "Invalid task id");
+        if (command === "task-add") {
+          const largest = largestTaskNumber(git, id, state.tasks);
+          const taskId = opts.task ?? `T${largest + 1n}`;
+          assert(
+            BigInt(taskId.slice(1)) > largest,
+            `Task number must be greater than ${largest} (current and committed tasks)`,
+          );
+          state.tasks[taskId] = {
+            title: need("title"),
+            status: "todo",
+            ...(opts.branch ? { branch: opts.branch } : {}),
+          };
+        } else {
+          const taskId = need("task");
+          assert(Object.hasOwn(state.tasks, taskId), "Task not found");
+          requireUncommittedTask(taskId);
+          if (command === "task-remove") {
+            delete state.tasks[taskId];
+          } else {
+            assert(opts.title !== undefined || opts.branch !== undefined, "task-update requires --title or --branch");
+            const task = state.tasks[taskId];
+            if (opts.title !== undefined) task.title = need("title");
+            if (opts.branch === "none") delete task.branch;
+            else if (opts.branch !== undefined) task.branch = need("branch");
+          }
+        }
         break;
       }
       case "task-retry": {
@@ -815,25 +923,7 @@ async function change(command, opts) {
             state.tasks[taskId].status === "done",
           "Only an uncommitted done task can be retried",
         );
-        let committed;
-        try {
-          committed = JSON.parse(git(["show", `HEAD:${relative(root, file)}`]));
-        } catch (e) {
-          assert(
-            !git([
-              "ls-tree",
-              "--name-only",
-              "HEAD",
-              "--",
-              relative(root, file),
-            ]),
-            "Cannot read committed state",
-          );
-        }
-        assert(
-          committed?.tasks?.[taskId]?.status !== "done",
-          "Committed completed tasks are immutable",
-        );
+        requireUncommittedTask(taskId);
         state.tasks[taskId].status = "doing";
         delete state.tasks[taskId].verification;
         delete state.tasks[taskId].commitTitle;
@@ -1097,6 +1187,20 @@ async function change(command, opts) {
         "xlarge requires children, no tasks or dependsOn",
       );
     else assert(!state.children?.length, "Only xlarge can have children");
+    if (command === "depends") {
+      const previous = JSON.parse(original).dependsOn ?? [];
+      for (const target of state.dependsOn ?? []) {
+        if (previous.includes(target)) continue;
+        if (["execution", "close"].includes(state.stage)) {
+          await dependency(target);
+        } else {
+          const record = routedRecord(repo, catalog, target, { refresh: !opts["dry-run"] });
+          assert(!record.errors.length, `Dependency ${target} has invalid state`);
+          assert(record.sourceRef?.startsWith("refs/remotes/origin/"),
+            `Push dependency ${target} before declaring it`);
+        }
+      }
+    }
     const result = {
       command,
       dryRun: opts["dry-run"],

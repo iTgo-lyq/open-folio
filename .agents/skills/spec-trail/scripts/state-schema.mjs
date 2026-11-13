@@ -96,6 +96,8 @@ const collaborators = list(object(
         value.trim() !== value || /[\r\n\u2028\u2029]/.test(value)
       )
         report(errors, path, "must be a trimmed, non-empty single-line name");
+      else if (/[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+/u.test(value))
+        report(errors, path, "must not contain an email address");
     },
     login: stringRule(
       /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i,
@@ -339,6 +341,9 @@ const changeFields = object(
 
 function change(value, path, errors) {
   changeFields(value, path, errors);
+  if (isObject(value) && typeof value.parent === "string" && Array.isArray(value.dependsOn) &&
+      value.dependsOn.includes(value.parent))
+    report(errors, pointer(path, "dependsOn"), "a child Change cannot depend on its parent");
   if (
     isObject(value) &&
     value.status === "cancelled" &&

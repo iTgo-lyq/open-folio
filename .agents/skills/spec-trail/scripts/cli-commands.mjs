@@ -223,14 +223,41 @@ export const commands = {
       ],
       example: " --phase requirement --summary '支持浏览器多身份添加、切换和移除。' --source '确认需求，进入技术方案'",
     }),
+    resize: change("Change the size of an active Change and align its stage with its confirmations", {
+      required: ["size"],
+      help: { size: { choices: ["small", "medium", "large"], text: "New size; xlarge cannot be resized" } },
+      example: " --size medium",
+    }),
+    depends: change("Replace or clear the dependencies of an active ordinary Change", {
+      required: ["depends-on"],
+      optional: ["availability-note"],
+      help: { "depends-on": { value: "id,id|none", text: "Comma-separated published Change ids; none clears the list" } },
+      example: " --depends-on prerequisite,other",
+    }),
+    children: change("Replace the child list of an active xlarge Change", {
+      required: ["children"],
+      help: { children: { value: "id,id", text: "Non-empty comma-separated list of child Change ids" } },
+      example: " --children child-a,child-b",
+    }),
     "task-add": change("Add a todo task in requirement, technical, plan or execution (not for xlarge)", {
       required: ["title"],
       optional: ["task", "branch"],
       help: {
-        task: { value: "Tn", text: "Explicit task id (default: next number); existing ids are never replaced" },
+        task: { value: "Tn", text: "Task id above the current and committed maximum (default: next number)" },
         branch: { value: "name", text: "Task branch such as task/<id>/T3 when the task runs in parallel" },
       },
       example: " --title '实现目标行为'",
+    }),
+    "task-update": change("Update the title or branch of a task that has not been committed as done", {
+      required: ["task"],
+      optional: ["title", "branch"],
+      help: { branch: { value: "name|none", text: "Set the task branch, or use none to clear it" } },
+      notes: ["Provide at least one of --title and --branch."],
+      example: " --task T1 --title '验证目标行为' --branch task/example/T1",
+    }),
+    "task-remove": change("Remove a task that has not been committed as done", {
+      required: ["task"],
+      example: " --task T2",
     }),
     "task-start": change("Move a task from todo or blocked to doing after its predecessors are done (stage execution)", {
       required: ["task"],

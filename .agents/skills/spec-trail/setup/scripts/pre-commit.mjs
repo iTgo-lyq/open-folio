@@ -7,6 +7,7 @@ import { validateChange, validateWorkflow } from "../../scripts/state-schema.mjs
 import { localPackage, gitObject, verifyPrototypeSource, verifyOwnerSource } from "../../prototype/scripts/local-source.mjs";
 import { inPackage, withinPackage, treeRows, moduleAddress } from "../../prototype/scripts/source.mjs";
 import { changeLocation, sourceOwnership, planningRecord } from "../../scripts/routing.mjs";
+import { externalScriptDependencies } from "./script-dependencies.mjs";
 
 export function runPreCommit(_command, { repo = "." }) {
   // Inherit Git's environment, including GIT_INDEX_FILE for partial commits.
@@ -34,6 +35,24 @@ export function runPreCommit(_command, { repo = "." }) {
   const allChanged=git(['diff','--cached','--name-only','-z']).split('\0').filter(Boolean);
   let count = 0;
   let failed = false;
+  const scripts = git([
+    "diff", "--cached", "--name-only", "--diff-filter=ACMT", "--no-renames",
+    "-z", "--", ".agents/skills/spec-trail/",
+  ]).split("\0").filter((path) => /\.[cm]?js$/.test(path));
+  for (const path of scripts) {
+    let dependencies;
+    try {
+      dependencies = externalScriptDependencies(git(["show", `:${path}`]));
+    } catch (error) {
+      console.error(`${path}: cannot check staged script dependencies: ${error.message}`);
+      failed = true;
+      continue;
+    }
+    for (const specifier of dependencies) {
+      console.error(`${path}: use a relative path or node: built-in instead of ${JSON.stringify(specifier)}`);
+      failed = true;
+    }
+  }
   for (const path of paths) {
     const validate =
       path === "docs/project/workflow.json"

@@ -11,11 +11,16 @@
 | `collaborators` | `--members <JSON成员数组>`；设置活动 Change 的补充名单，每项必填 `name`，可选 GitHub `login`、`subjectId`。`name` 必须是无首尾空白的非空单行文字，`subjectId` 为正整数字符串；拒绝邮箱及其他字段。更新只替换配置补充名单，工作台始终与 Git 识别成员合并去重，不覆盖历史成员；`--members '[]'` 删除配置补充项，保留 Git 识别结果和流程状态。 |
 | `follow-up` | `--target id/none`，可选 `--group-title`；为 active Change 设置直接前序或移除关联，沿前序链拒绝未归档、缺失、自指与循环。移除或更换前序时清除自身旧组名声明；无关联不可命名，显式名称不得与前序已有声明冲突。关联前读取整组名称，分叉同样沿用。不影响执行依赖、任务及确认，归档记录仍只读。 |
 | `retitle` | `--title`；仅修改活动 Change 的展示标题，保留 id、阶段、任务与确认；需在所属分支运行。 |
+| `resize` | `--size small/medium/large`；按新规模对齐阶段，保留有效确认和已完成任务。升级后可用 `confirm`、`execute` 继续；从 close 退回规划时清理关闭结果与合码确认。xlarge 不可互转。 |
+| `depends` | `--depends-on id,id/none`；替换依赖或清空。新依赖须已推送，子项不可依赖父项，xlarge 不声明依赖。执行或关闭阶段新增依赖时核对交付可用性，可传 `--availability-note` 记录已有证据。 |
+| `children` | `--children id,id`；替换 xlarge 的非空子项列表，同步更新父 Plan。 |
 | `confirm` | `--phase requirement/technical/plan/merge --summary --source`。summary 写阶段内容，优先 20–40 字符，最多 60 个 Unicode 码点、单句且不换行；source 写实际确认依据。需求确认进入 technical，large 技术确认进入 plan；执行另用 execute。medium/xlarge 技术与计划同次获确认时连续记录两次。merge 可附 `--source-commit --target-commit --base-commit`。 |
 | `clarification-ask` | `--round --text --recommendation`；可选 `--question Qn`，默认下一个编号，只能递增。保存实际问过的需求或技术问题，round 为从 1 开始的正整数，同轮问题用同一值，跨阶段继续递增。 |
 | `clarification-answer` | `--question Qn --answer`，可附 `--source`。保存用户最终有效回答，更正覆盖同题答案；未提供 source 时清除旧来源，实质改变需求或关键方案先按返工处理。 |
 | `clarification-withdraw` | `--question Qn --reason`。保留原问答并记不再适用的原因，不退额度；撤回后不再回答，需要时新增问题。 |
-| `task-add` | `--title`；可选 `--task Tn --branch`，默认分配下一个编号。完成任务不可覆盖，返修追加任务并更新 Plan。 |
+| `task-add` | `--title`；可选 `--task Tn --branch`。编号必须大于当前任务和本 Change 已提交历史的最大值，默认取该值加一。 |
+| `task-update` | `--task Tn`；至少传 `--title` 或 `--branch`，`--branch none` 清除分支。已提交为 done 的任务不可修改，变更后同步 Plan。 |
+| `task-remove` | `--task Tn`；删除尚未提交为 done 的任务，变更后同步 Plan。仅在本地创建后删除的编号可重新分配。 |
 | `task-start` | `--task Tn`；检查当前执行安排与整条前置链均已完成，再从 todo/blocked → doing，并移除旧阻塞原因。 |
 | `task-block` | `--task Tn --reason`；保留任务定义，说明实际阻塞。 |
 | `task-complete` | `--task Tn --verification`，可附 `--commit-title`；复核当前安排和前置链后 doing → done。先完成验证，再和实现一起提交推送。 |

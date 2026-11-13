@@ -735,11 +735,62 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
   }
 });
 
+test("task editing preserves committed numbers and protects committed completions", (t) => {
+  const f = fixture(t);
+  f.create();
+  for (const title of ["First", "Second", "Third"]) f.run("task-add", ["--title", title]);
+  f.handoff();
+  f.run("task-remove", ["--task", "T3"]);
+  f.commit();
+  assert.match(f.run("task-add", ["--title", "Reuse", "--task", "T3"], 1), /greater than 3/);
+  f.run("task-add", ["--title", "Fourth"]);
+  assert.equal(f.state().tasks.T4.title, "Fourth");
+  f.run("task-remove", ["--task", "T4"]);
+  f.run("task-add", ["--title", "Fourth again"]);
+  const before = f.state();
+  const preview = f.run("task-update", ["--task", "T1", "--title", "Edited", "--dry-run"]);
+  assert.equal(preview.state.tasks.T1.title, "Edited");
+  assert.deepEqual(f.state(), before);
+  f.run("task-update", ["--task", "T1", "--title", "Edited", "--branch", "task/sample/T1"]);
+  assert.equal(f.state().tasks.T1.branch, "task/sample/T1");
+  f.run("task-update", ["--task", "T1", "--branch", "none"]);
+  assert.deepEqual(f.state().tasks.T1, { title: "Edited", status: "todo" });
+  f.run("execute");
+  f.run("task-start", ["--task", "T1"]);
+  f.done();
+  f.run("task-update", ["--task", "T1", "--title", "Pending commit"]);
+  f.commit(false);
+  assert.match(f.run("task-update", ["--task", "T1", "--title", "Too late"], 1), /immutable/);
+  assert.match(f.run("task-remove", ["--task", "T1"], 1), /immutable/);
+});
+
+test("task numbering also reads committed archive snapshots", (t) => {
+  const f = fixture(t);
+  f.create();
+  f.handoff();
+  const archive = "docs/project/archive/2026-10-04-sample";
+  mkdirSync(join(f.root, archive), { recursive: true });
+  const active = f.state();
+  f.git("mv", "docs/project/changes/sample/change.json", archive);
+  writeFileSync(join(f.root, archive, "change.json"), JSON.stringify({
+    ...active,
+    tasks: { T12: { title: "Archived task", status: "done" } },
+  }));
+  f.commit(false);
+  f.git("mv", archive + "/change.json", "docs/project/changes/sample");
+  assert.match(f.run("task-remove", ["--task", "T12"], 1), /immutable/);
+  assert.match(f.run("task-update", ["--task", "T12", "--title", "Edited"], 1), /immutable/);
+  writeFileSync(f.path(), JSON.stringify(active));
+  f.commit(false);
+  f.run("task-add", ["--title", "Next after archive"]);
+  assert.equal(f.state().tasks.T13.title, "Next after archive");
+});
+
 test("default scheduling enforces numeric serial order for every ordinary size", (t) => {
   for (const size of ["small", "medium", "large"]) {
     const f = fixture(t);
     f.create(size);
-    for (const id of ["T10", "T2", "T1"])
+    for (const id of ["T1", "T2", "T10"])
       f.run("task-add", ["--task", id, "--title", id]);
     if (size !== "small") f.confirm();
     f.handoff();
@@ -765,6 +816,119 @@ test("default scheduling enforces numeric serial order for every ordinary size",
     f.accept(size === "small" ? "agent" : "user");
     assert.equal(f.archive().state.status, "completed");
   }
+});
+
+test("resizing aligns confirmations while preserving completed tasks and a pause", (t) => {
+  const f = fixture(t);
+  f.create();
+  f.begin();
+  f.done();
+  f.commit();
+  const completed = f.state().tasks.T1;
+  const preview = f.run("resize", ["--size", "medium", "--dry-run"]);
+  assert.equal(preview.state.stage, "requirement");
+  assert.equal(f.state().size, "small");
+  f.run("wait", ["--kind", "pause", "--summary", "Wait here"]);
+  f.run("resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "requirement");
+  assert.equal(f.state().waitingFor.kind, "pause");
+  f.run("resume");
+  f.confirm();
+  f.run("execute");
+  assert.deepEqual(f.state().tasks.T1, completed);
+  const confirmations = f.state().confirmations;
+  f.run("resize", ["--size", "large"]);
+  assert.equal(f.state().stage, "execution");
+  assert.deepEqual(f.state().confirmations, confirmations);
+  f.run("resize", ["--size", "xlarge"], 1);
+  assert.equal(f.state().size, "large");
+});
+
+test("resizing aligns large planning and clears invalidated closure on upgrade", (t) => {
+  const f = fixture(t);
+  f.create("large");
+  for (const phase of ["requirement", "technical"]) {
+    f.run("confirm", ["--phase", phase, "--summary", phase, "--source", "Fixture"]);
+  }
+  const confirmations = f.state().confirmations;
+  assert.equal(f.state().stage, "plan");
+  f.run("resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "technical");
+  assert.deepEqual(f.state().confirmations, confirmations);
+  f.run("resize", ["--size", "large"]);
+  assert.equal(f.state().stage, "plan");
+  f.run("resize", ["--size", "small"]);
+  assert.equal(f.state().stage, "requirement");
+  assert.deepEqual(f.state().confirmations, confirmations);
+  f.create("xlarge", "parent", ["--children", "sample"]);
+  assert.match(f.run("resize", ["--size", "medium"], 1, "parent"), /xlarge/);
+  f.begin();
+  f.done();
+  f.verify();
+  f.run("resize", ["--size", "large"]);
+  assert.equal(f.state().stage, "plan");
+  assert.deepEqual(f.state().closure, {});
+  assert.equal(f.state().tasks.T1.status, "done");
+});
+
+test("an acceptance recorded as small cannot close a medium Change", (t) => {
+  const f = fixture(t);
+  f.create("medium");
+  f.confirm();
+  f.begin();
+  f.done();
+  f.run("resize", ["--size", "small"]);
+  f.verify();
+  f.accept();
+  f.run("resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "close");
+  assert.equal(f.state().closure.verification.result, "passed");
+  assert.equal(f.state().closure.acceptance, undefined);
+  f.run("accept", ["--mode", "agent", "--summary", "Agent", "--source", "Fixture"], 1);
+  f.accept("user");
+  assert.equal(f.archive().state.status, "completed");
+});
+
+test("relationship commands replace lists and reject invalid declarations", (t) => {
+  const f = fixture(t);
+  f.create("xlarge", "parent", ["--children", "sample"]);
+  f.create("small", "upstream");
+  f.create("small", "other");
+  assert.match(f.run("create", [
+    "--size", "small", "--title", "Child", "--parent", "parent", "--depends-on", "parent",
+  ], 1), /cannot depend on its parent/);
+  f.create("small", "sample", ["--parent", "parent"]);
+  f.commit();
+  const before = f.state();
+  assert.deepEqual(
+    f.run("depends", ["--depends-on", "upstream", "--dry-run"]).state.dependsOn,
+    ["upstream"],
+  );
+  assert.deepEqual(f.state(), before);
+  f.run("depends", ["--depends-on", "upstream,other"]);
+  f.run("depends", ["--depends-on", "other"]);
+  assert.deepEqual(f.state().dependsOn, ["other"]);
+  assert.match(f.run("depends", ["--depends-on", "parent"], 1), /cannot depend on its parent/);
+  assert.match(f.run("depends", ["--depends-on", "missing"], 1), /not registered/);
+  f.run("depends", ["--depends-on", "none"]);
+  assert(!Object.hasOwn(f.state(), "dependsOn"));
+  f.run("children", ["--children", "sample,next"], 0, "parent");
+  assert.deepEqual(f.state("parent").children, ["sample", "next"]);
+  f.run("children", ["--children", "sample,next,next"], 1, "parent");
+  f.run("children", ["--children", "other"], 1);
+  f.run("depends", ["--depends-on", "none"], 1, "parent");
+});
+
+test("collaborator commands reject email addresses in display names", (t) => {
+  const f = fixture(t);
+  const members = JSON.stringify([{ name: "Member <member@example.org>" }]);
+  assert.match(f.run("create", [
+    "--size", "small", "--title", "Example", "--collaborators", members,
+  ], 1), /collaborators\/0\/name.*email address/);
+  f.create();
+  assert.match(f.run("collaborators", ["--members", members], 1), /email address/);
+  f.run("collaborators", ["--members", JSON.stringify([{ name: "Team @ Home" }])]);
+  assert.deepEqual(f.state().collaborators, [{ name: "Team @ Home" }]);
 });
 
 test("explicit parallel order overrides the default and completion rechecks changed predecessors", (t) => {

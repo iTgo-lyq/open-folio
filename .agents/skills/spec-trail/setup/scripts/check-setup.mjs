@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 
 const skillPath = ".agents/skills/spec-trail";
 const validatorPath = `${skillPath}/setup/scripts/pre-commit.mjs`;
+const dependenciesPath = `${skillPath}/setup/scripts/script-dependencies.mjs`;
 const cliPath = `${skillPath}/cli.mjs`;
 const commandsPath = `${skillPath}/scripts/cli-commands.mjs`;
 const schemaPath = `${skillPath}/scripts/state-schema.mjs`;
@@ -28,7 +29,7 @@ export async function runSetupCheck(_command, { repo = "." }) {
     throw Error("Choose a repository with a working tree.");
   const root = git(["rev-parse", "--show-toplevel"]);
   const issues = [];
-  const resources = [cliPath, commandsPath, validatorPath, schemaPath, routingPath, contractPath, sourcePath, localSourcePath].map(
+  const resources = [cliPath, commandsPath, validatorPath, dependenciesPath, schemaPath, routingPath, contractPath, sourcePath, localSourcePath].map(
     (path) => {
       try {
         if (!statSync(join(root, path)).isFile()) throw Error("must be a file");
@@ -59,6 +60,7 @@ export async function runSetupCheck(_command, { repo = "." }) {
   for (const [path, names, type = "function"] of [
     [commandsPath, ["commands", "groups"], "object"],
     [validatorPath, ["runPreCommit"]],
+    [dependenciesPath, ["externalScriptDependencies"]],
     [schemaPath, ["validateWorkflow", "validateChange"]],
     [routingPath, ["validBranchName", "routeCatalog"]],
     [contractPath, ["entryPath", "validatePrototype", "validatePreviews"]],
