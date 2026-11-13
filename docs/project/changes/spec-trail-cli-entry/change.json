@@ -13,7 +13,20 @@
       "source": "确认，按更新后的需求范围和验收标准继续，进入技术方案吧。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "统一入口和 Change 工作流",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "原型和维护命令输出 JSON",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "通过统一入口接入项目校验",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "工程",
@@ -41,5 +54,9 @@
       "answer": "默认 JSON，CLI 面向 Agent 和自动化，人不会直接使用。",
       "source": "默认 json 即可，因为人本身不会用这个 cli"
     }
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户一起确认技术方案和实施计划"
   }
 }
