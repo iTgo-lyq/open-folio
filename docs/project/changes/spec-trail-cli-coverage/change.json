@@ -47,6 +47,12 @@
       "status": "done",
       "verification": "实际提交验证索引与部分暂存，第三方引用被拒绝，原型验证 6 项通过（含项目 Playwright）",
       "commitTitle": "spec-trail-cli-coverage T4: reject direct third-party script dependencies"
+    },
+    "T5": {
+      "title": "修复独立评审发现的脚本扫描与流程边界",
+      "status": "done",
+      "verification": "评审复现的归档任务保护、规模升档验收和脚本扫描边界均有通过的回归测试",
+      "commitTitle": "spec-trail-cli-coverage T5: fix independent review findings"
     }
   },
   "closure": {},

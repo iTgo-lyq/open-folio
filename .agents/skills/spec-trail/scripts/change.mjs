@@ -25,7 +25,7 @@ import {
 import { entryPath } from "../prototype/scripts/contract.mjs";
 import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
-import { closedRecord } from "./routing.mjs";
+import { changeLocation, closedRecord } from "./routing.mjs";
 import { changeIntegration } from "./github-prs.mjs";
 import { checkForUpdates } from "./update-check.mjs";
 import {
@@ -56,7 +56,7 @@ function largestTaskNumber(git, id, current) {
     "log", "--full-history", "-m", "--format=", "--raw", "--no-abbrev",
     "--no-renames", "HEAD", "--",
     `docs/project/changes/${id}/change.json`,
-    `:(glob)docs/project/archive/*-${id}/change.json`,
+    `:(glob)docs/project/archive/????-??-??-${id}/change.json`,
   ]);
   for (const match of history.matchAll(/^:\d+ \d+ ([a-f0-9]+) ([a-f0-9]+) /gm)) {
     for (const blob of match.slice(1)) if (!/^0+$/.test(blob)) blobs.add(blob);
@@ -326,9 +326,11 @@ async function change(command, opts) {
     const now = new Date().toISOString();
     const requireUncommittedTask = (taskId) => {
       const path = relative(root, file);
-      const committed = git(["ls-tree", "--name-only", "HEAD", "--", path])
-        ? JSON.parse(git(["show", `HEAD:${path}`]))
-        : undefined;
+      const committedPath = git(["ls-tree", "--name-only", "HEAD", "--", path]) ||
+        git(["ls-tree", "-r", "--name-only", "HEAD", "--", "docs/project/archive/"])
+          .split("\n").find((entry) => changeLocation(entry)?.id === id);
+      const committed = committedPath
+        ? JSON.parse(git(["show", `HEAD:${committedPath}`])) : undefined;
       assert(
         committed?.tasks?.[taskId]?.status !== "done",
         "Committed completed tasks are immutable",
@@ -729,6 +731,11 @@ async function change(command, opts) {
         const stage = stageAfterResize(state, size);
         if (state.stage === "close" && stage !== "close") {
           state.closure = {};
+          delete state.confirmations.merge;
+        } else if (state.stage === "close" && state.size === "small" && state.closure.acceptance) {
+          // The record does not store the mode. Recheck acceptance under the new size.
+          delete state.closure.acceptance;
+          delete state.closure.specs;
           delete state.confirmations.merge;
         }
         state.stage = stage;

@@ -778,6 +778,8 @@ test("task numbering also reads committed archive snapshots", (t) => {
   }));
   f.commit(false);
   f.git("mv", archive + "/change.json", "docs/project/changes/sample");
+  assert.match(f.run("task-remove", ["--task", "T12"], 1), /immutable/);
+  assert.match(f.run("task-update", ["--task", "T12", "--title", "Edited"], 1), /immutable/);
   writeFileSync(f.path(), JSON.stringify(active));
   f.commit(false);
   f.run("task-add", ["--title", "Next after archive"]);
@@ -867,6 +869,24 @@ test("resizing aligns large planning and clears invalidated closure on upgrade",
   assert.equal(f.state().stage, "plan");
   assert.deepEqual(f.state().closure, {});
   assert.equal(f.state().tasks.T1.status, "done");
+});
+
+test("an acceptance recorded as small cannot close a medium Change", (t) => {
+  const f = fixture(t);
+  f.create("medium");
+  f.confirm();
+  f.begin();
+  f.done();
+  f.run("resize", ["--size", "small"]);
+  f.verify();
+  f.accept();
+  f.run("resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "close");
+  assert.equal(f.state().closure.verification.result, "passed");
+  assert.equal(f.state().closure.acceptance, undefined);
+  f.run("accept", ["--mode", "agent", "--summary", "Agent", "--source", "Fixture"], 1);
+  f.accept("user");
+  assert.equal(f.archive().state.status, "completed");
 });
 
 test("relationship commands replace lists and reject invalid declarations", (t) => {
