@@ -4,9 +4,15 @@
   "title": "SpecTrail 脚本收敛为统一命令行入口",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-13T04:21:10.693Z",
+      "summary": "统一 SpecTrail 命令入口，默认 JSON 并切换现有调用方。",
+      "source": "确认，按更新后的需求范围和验收标准继续，进入技术方案吧。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
@@ -35,9 +41,5 @@
       "answer": "默认 JSON，CLI 面向 Agent 和自动化，人不会直接使用。",
       "source": "默认 json 即可，因为人本身不会用这个 cli"
     }
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待确认更新后的完整需求范围与验收标准"
   }
 }
