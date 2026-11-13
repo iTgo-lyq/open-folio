@@ -5,7 +5,7 @@
   "size": "medium",
   "status": "active",
   "stage": "technical",
-  "branch": "develop",
+  "branch": "change/spec-trail-cli-coverage",
   "confirmations": {
     "requirement": {
       "at": "2026-11-13T08:51:34.671Z",
