@@ -32,6 +32,12 @@
 
 在本机沙箱、且存在外部 tmux server 的条件下运行该测试并通过；运行后确认默认 tmux server 上没有遗留的测试会话。
 
+## T6 修正独立评审发现的帮助与测试隔离问题
+
+评审返修，关联 T4 与 T5。帮助文案改为与实际行为一致：`prototype recover` 是回滚中断的登记；`integration cleanup` 需要完整提交号；浏览器校验在默认视口逐个加载入口；change 分组除 `change.json` 外还会移动目录或更新暂存区；依赖约束由 `execute` 检查；各原型接入参数分别适用于哪些命令；small 只记录 merge 确认。接入检查器同时核对 `groups` 导出。测试新增一项：按定义解析每个命令的示例，确认示例可直接运行。服务测试的私有 tmux server 改用短路径、不加载用户配置，并在启动前注册清理。
+
+运行 CLI 与 Setup 回归，在 Node.js 20 与 24 下检查帮助。服务测试在沙箱内、`TMPDIR` 较长时、宿主环境各运行一次，并确认默认 tmux server 上没有遗留。
+
 ## 整体验证
 
 - 按仓库约定在修改 skill 的提交中同步 SpecTrail 与 OpenFolio 版本。
