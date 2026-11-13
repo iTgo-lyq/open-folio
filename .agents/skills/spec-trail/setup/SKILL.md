@@ -74,10 +74,10 @@ npx --yes skills add iTgo-lyq/document-diagrams --skill document-diagrams --glob
 在会修改暂存区的步骤之后、提前退出之前调用校验器；已有等效调用不重复添加。Shell 入口可使用：
 
 ```sh
-node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit || exit $?
+node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit >/dev/null || exit $?
 ```
 
-其他入口采用等效调用并传播非零退出码。接入只需调用校验器，无需为 SpecTrail 新增 npm 脚本或修改包配置；项目已有管理工具的安装配置继续由业务方维护。
+校验器的 JSON 结果写入 `stdout`，hook 将其丢弃，拒绝原因写入 `stderr` 保留可见。其他入口采用等效调用并传播非零退出码。接入只需调用校验器，无需为 SpecTrail 新增 npm 脚本或修改包配置；项目已有管理工具的安装配置继续由业务方维护。
 
 手动运行校验器，并用不污染用户工作区或暂存区的方式验证实际提交入口的成功路径和失败传播；必要时使用临时测试仓库。只有实际执行证据才能确认 hook 已接通，目录存在、字符串匹配或 setup 检查成功均不算验收。没有待校验文件时如实报告，不能据此推定失败路径通过。
 

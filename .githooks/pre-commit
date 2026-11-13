@@ -1,2 +1,2 @@
 #!/bin/sh
-exec node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit "$@"
+exec node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit "$@" >/dev/null

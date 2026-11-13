@@ -44,7 +44,9 @@
     },
     "T4": {
       "title": "帮助一次给全并精简提交钩子输出",
-      "status": "todo"
+      "status": "done",
+      "verification": "CLI 测试 Node 20/24 通过，覆盖全部 51 个命令的用法与参数说明及取值报错；skill 42 项、项目 470/471（仅 T5 服务测试）通过；实际 hook 成功无 stdout、拒绝仅 stderr。",
+      "commitTitle": "spec-trail-cli-entry T4: complete CLI help and quiet hook output"
     },
     "T5": {
       "title": "隔离服务管理测试的 tmux 环境",

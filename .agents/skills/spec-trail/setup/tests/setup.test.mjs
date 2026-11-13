@@ -33,7 +33,7 @@ const resourcePaths = [
   'prototype/scripts/local-source.mjs',
 ];
 const checkCommand =
-  'node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit';
+  'node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit >/dev/null';
 const validWorkflow = {
   schemaVersion: 3,
   integrationBranch: "develop",
@@ -608,7 +608,9 @@ test("existing hook manager and ESM package remain unchanged", (t) => {
   assert.equal(s.check(repo).readiness, "ready");
   assert.deepEqual(s.snapshot(repo), before);
   writeFileSync(hook, `${original}${checkCommand}\n`);
-  assert.equal(s.check(repo).hook.status, "unverified");
+  const integrated = s.check(repo);
+  assert.equal(integrated.hook.status, "unverified");
+  assert.equal(integrated.command, checkCommand);
   assert.equal(readFileSync(join(repo, "package.json"), "utf8"), pkg);
   assert.equal(
     s.git(repo, ["config", "--get", "core.hooksPath"]).trim(),
@@ -808,6 +810,7 @@ test("delegated hook integration survives regeneration and remains unverified by
   const accepted = s.git(repo, ["commit", "-m", "Valid delegated hook"]);
   assert.match(accepted, /existing-check/);
   assert.match(accepted, /after-validation/);
+  assert.doesNotMatch(accepted, /"valid"/);
   assert.equal(readFileSync(join(repo, "package.json"), "utf8"), pkg);
   const head = s.git(repo, ["rev-parse", "HEAD"]).trim();
   s.write(repo, "docs/project/workflow.json", invalidWorkflow);

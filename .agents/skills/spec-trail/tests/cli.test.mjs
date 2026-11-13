@@ -8,19 +8,23 @@ import test from "node:test";
 
 const cli = fileURLToPath(new URL("../cli.mjs", import.meta.url));
 
-test("CLI help and argument errors work outside a Git project", t => {
+function outsideProject(t) {
   const cwd = mkdtempSync(join(tmpdir(), "spec-trail-cli-"));
   t.after(() => rmSync(cwd, { recursive: true, force: true }));
-  const run = args => spawnSync(process.execPath, [cli, ...args], {
+  return args => spawnSync(process.execPath, [cli, ...args], {
     cwd,
     encoding: "utf8",
   });
+}
+
+test("CLI help and argument errors work outside a Git project", t => {
+  const run = outsideProject(t);
 
   for (const [args, expected] of [
-    [["--help"], /Groups:.*change.*workspace/],
-    [["change", "--help"], /Commands:.*task-start/],
-    [["change", "task-start", "--help"], /--change <value> --task <value>/],
-    [["maintenance", "archive-tags-delete", "--help"], / --service-ready \[--help\]/],
+    [["--help"], /^  create --change <id> --title <text> --size <small\|medium\|large\|xlarge> /m],
+    [["change", "--help"], /^  task-start --change <id> --task <Tn> \[--repo <path>\] \[--dry-run\]$/m],
+    [["change", "task-start", "--help"], /--task <Tn> +\(required\) Task id such as T1/],
+    [["maintenance", "archive-tags-delete", "--help"], /--manifest <file> --service-ready \[--repo <path>\]/],
   ]) {
     const result = run(args);
     assert.equal(result.status, 0, result.stderr);
@@ -36,12 +40,44 @@ test("CLI help and argument errors work outside a Git project", t => {
     [["change", "show", "--change", "example", "extra"], /Unexpected argument/],
     [["change", "task-start", "--change", "example"], /--task is required/],
     [["maintenance", "archive-tags-delete", "--manifest", "missing.json"], /--service-ready is required/],
+    [["change", "verify", "--change", "example", "--result", "maybe", "--summary", "done"], /--result must be one of: passed, failed/],
+    [["prototype", "configure", "--hosting", "s3"], /--hosting must be one of: openfolio, custom, git/],
   ]) {
     const result = run(args);
     assert.equal(result.status, 1, result.stderr);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, expected);
     assert.match(result.stderr, /Usage:/);
+  }
+});
+
+test("help gives runnable usage for every command and documents every option", async t => {
+  const { commands, groups } = await import("../scripts/cli-commands.mjs");
+  const run = outsideProject(t);
+  const help = (...args) => {
+    const result = run([...args, "--help"]);
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout;
+  };
+  const overview = help();
+
+  for (const [group, entries] of Object.entries(commands)) {
+    assert.ok(groups[group]?.summary, `${group} needs a summary`);
+    const section = help(group).split("\n");
+    for (const [name, spec] of Object.entries(entries)) {
+      assert.ok(spec.summary, `${group} ${name} needs a summary`);
+      const usage = section.find(line => line.startsWith(`  ${name} `));
+      assert.ok(usage && overview.includes(`${usage}\n      ${spec.summary}`), `${group} ${name} is missing from the overview`);
+      const details = help(group, name);
+      assert.match(details, /^Options:$/m);
+      assert.ok(details.includes(`Example:\n  node .agents/skills/spec-trail/cli.mjs ${group} ${name}`));
+      for (const [option, value] of Object.entries(spec.options)) {
+        assert.ok(value.text, `${group} ${name} --${option} needs help text`);
+        assert.ok(value.type === "boolean" || value.value || value.choices, `${group} ${name} --${option} needs a value format`);
+        assert.match(usage, new RegExp(`--${option}(?=[ \\]]|$)`));
+        assert.ok(details.includes(value.text), `${group} ${name} --${option} help is not shown`);
+      }
+    }
   }
 });
 

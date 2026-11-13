@@ -13,7 +13,7 @@ const contractPath = `${skillPath}/prototype/scripts/contract.mjs`;
 const sourcePath = `${skillPath}/prototype/scripts/source.mjs`;
 const localSourcePath = `${skillPath}/prototype/scripts/local-source.mjs`;
 const workflowPath = "docs/project/workflow.json";
-const command = `node "$(git rev-parse --show-toplevel)/${cliPath}" setup pre-commit`;
+const command = `node "$(git rev-parse --show-toplevel)/${cliPath}" setup pre-commit >/dev/null`;
 
 export async function runSetupCheck(_command, { repo = "." }) {
   if (Number(process.versions.node.split(".")[0]) < 20)

@@ -14,7 +14,7 @@ SpecTrail 是一套 Agent Skill，用 Git 和 `docs/project/` 管理需求、技
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 ```
 
-安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。Agent 通过 `node .agents/skills/spec-trail/cli.mjs --help` 查找命令，操作结果默认输出 JSON。
+安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。Agent 通过 `node .agents/skills/spec-trail/cli.mjs --help` 一次查看全部命令的用途与完整用法，命令后加 `--help` 查看参数说明与示例；操作结果默认输出 JSON。
 
 也可以为其他支持 Agent Skills 的客户端安装，例如：
 
