@@ -157,8 +157,16 @@ try {
         for (const scene of scenes) {
           await frame.getByLabel("原型场景").selectOption(scene);
           await expect(frame.locator(".prototype-surface")).not.toBeEmpty();
-          if (scene === "error")
+          if (scene === "error") {
             await expect(frame.getByText(/演示.*失败/).first()).toBeVisible();
+            // 阅读片段的同步失败保留上次内容，只显示失败横幅。
+            if (
+              ["quiet-specs", "quiet-changes", "quiet-share"].includes(entry.id)
+            ) {
+              await expect(frame.getByRole("alert").first()).toBeVisible();
+              await expect(frame.getByText("演示请求失败")).toHaveCount(0);
+            }
+          }
           if (scene === "loading")
             await expect(
               frame.getByText(/正在(发现仓库|读取分享|打开工作台)/).first(),

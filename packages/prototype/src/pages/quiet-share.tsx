@@ -9,7 +9,7 @@ import { mount } from "../fragment";
 
 // 分享页阅读主体未导出，这里按其读取、失败与不可读状态轻量还原。
 function SharedReading() {
-  const { data, loading, error, refresh } = useWorkspace();
+  const { data, loading, error, refresh, message } = useWorkspace();
   return (
     <PublicShell title="demo/atlas" label="只读分享 · 虚构">
       {!data ? (
@@ -46,6 +46,11 @@ function SharedReading() {
             ) : undefined
           }
         />
+      )}
+      {message && (
+        <div className={styles.toast} role="status">
+          {message}
+        </div>
       )}
     </PublicShell>
   );

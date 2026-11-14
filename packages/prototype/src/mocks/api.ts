@@ -51,7 +51,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = init.method ?? "GET";
   const body = typeof init.body === "string" ? JSON.parse(init.body) : {};
   const route = path.split("?")[0];
-  if (scene === "error")
+  // 仓库同步失败不影响个人视图读取，业务仍保留上次内容。
+  if (scene === "error" && route !== "/mock/change-views")
     throw new ApiError("MOCK_FAILED", "演示请求失败，请切换正常场景重试。");
   let result: unknown;
   if (route === "/mock/change-views") {
