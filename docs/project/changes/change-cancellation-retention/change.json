@@ -4,7 +4,7 @@
   "title": "取消 Change 时可选择删除或归档留存",
   "size": "small",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/change-cancellation-retention",
   "confirmations": {},
   "tasks": {
@@ -15,8 +15,18 @@
       "commitTitle": "change-cancellation-retention T1: implement cancellation retention"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T20:29:10.451Z",
+      "summary": "两条取消路径及同名移交校验通过，现存取消记录已迁移。应用 468 项、Skill 21 项、类型、构建与浏览器回归通过。"
+    }
+  },
   "types": [
     "流程"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收取消删除、归档留存与分支校验。"
+  }
 }
