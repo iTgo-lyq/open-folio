@@ -4,7 +4,7 @@
   "title": "取消 Change 时可选择删除或归档留存",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/change-cancellation-retention",
   "confirmations": {},
   "tasks": {
