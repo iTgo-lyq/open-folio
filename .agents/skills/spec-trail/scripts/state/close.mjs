@@ -1,8 +1,7 @@
 // close group: overall verification, acceptance, Specs sync and archive, in order.
-import { existsSync } from "node:fs";
 import { relative } from "node:path";
 import { pinPreviews } from "../prototype/hooks.mjs";
-import { assert, stateCommand, stateNotes } from "./context.mjs";
+import { archiveDestination, assert, stateCommand, stateNotes } from "./context.mjs";
 import { requireConfirmations, requireDelivered, requireDocs, requireStage, requireTaskOrder, unblocked } from "./guards.mjs";
 
 const steps = ["verification", "acceptance", "specs", "archive"];
@@ -100,7 +99,7 @@ export const commands = {
     notes: ["Then commit, push and run integration preflight."],
     example: " --date 2026-01-31 --summary '验收通过，Specs 已同步'",
     async run(ctx) {
-      const { branch, config, need, safe, root, id } = ctx;
+      const { branch, config, need, root } = ctx;
       assert(
         branch !== config.integrationBranch,
         "Handoff to an independent closing branch before archiving; this also applies to xlarge parents",
@@ -109,15 +108,7 @@ export const commands = {
       unblocked(ctx);
       await completeTasks(ctx);
       requireTaskOrder(ctx);
-      const date = need("date");
-      assert(
-        /^\d{4}-\d{2}-\d{2}$/.test(date) &&
-          Number.isFinite(Date.parse(`${date}T00:00:00.000Z`)) &&
-          new Date(`${date}T00:00:00.000Z`).toISOString().startsWith(date),
-        "Use a valid YYYY-MM-DD date in the user timezone",
-      );
-      const archiveDir = safe(`docs/project/archive/${date}-${id}`);
-      assert(!existsSync(archiveDir), "Archive destination already exists");
+      const archiveDir = archiveDestination(ctx, need("date"));
       recordStep(ctx, "archive", "done", { path: relative(root, archiveDir) });
       ctx.archiveDir = archiveDir;
       ctx.archiveCopies.push(...pinPreviews(ctx, archiveDir));

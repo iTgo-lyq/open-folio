@@ -138,7 +138,7 @@ cli integration verify --change example
 
 ### 合入前返修
 
-归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `cli stage rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。已集成后的修正建立新 Change。
+已完成交付且尚未合入的归档可返修。先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `cli stage rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。已集成后的修正建立新 Change。
 
 ### 清理
 

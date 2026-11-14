@@ -282,6 +282,8 @@ export async function seed() {
     const dir =
       record.status === "completed"
         ? record.closure.archive!.path!
+        : record.status === "cancelled"
+          ? `docs/project/archive/${record.cancellation!.at.slice(0, 10)}-${record.id}`
         : `docs/project/changes/${record.id}`;
     await f.put(
       `${dir}/change.json`,
@@ -374,6 +376,14 @@ export async function seed() {
   );
   f.commit();
   await f.register(Object.fromEntries(records.map((r) => [r.id, r.branch])));
+  for (const record of records.filter(record => record.status === "cancelled")) {
+    const path = `docs/project/changes/${record.id}/change.json`;
+    const entry = JSON.parse(f.git(["show", `HEAD:${path}`]));
+    await f.put(path, JSON.stringify({
+      ...entry, status: "cancelled", cancellation: record.cancellation,
+    }));
+  }
+  f.commit();
   const snapshot = await f.store.refresh(project, DEFAULT_LIMITS);
   return { ...f, project, snapshot };
 }

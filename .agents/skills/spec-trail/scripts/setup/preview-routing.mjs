@@ -1,5 +1,5 @@
 import { repository, recordsAt, revision } from "../core/repository.mjs";
-import { validBranchName, closedRecord } from "../core/routing.mjs";
+import { validBranchName, closedRecord, cancelledArchive, matchesCancellation } from "../core/routing.mjs";
 import { validateChange } from "../core/state-schema.mjs";
 
 // Read only known local/tracking refs. No fetching, branch enumeration or writes.
@@ -75,7 +75,8 @@ export function runPreviewRouting(values) {
       base.length === 1 &&
       base[0].archived &&
       !validateChange(base[0].state).length &&
-      closedRecord(base[0].state, base[0].directory);
+      (closedRecord(base[0].state, base[0].directory) ||
+        (base[0].state.branch === baseline && cancelledArchive(base[0].state)));
     const problems = [];
     if (base.length > 1 || owned.length > 1)
       problems.push("Multiple known live/archive sources claim this id");
@@ -108,8 +109,11 @@ export function runPreviewRouting(values) {
       record.state?.branch !== baseline
     )
       problems.push("Registered owner was not found among known sources");
-    if (record?.archived && !closedRecord(record.state, record.directory))
+    if (record?.archived && !closedRecord(record.state, record.directory) && !cancelledArchive(record.state))
       problems.push("Archive is not a complete closed record");
+    if (record?.state?.status === "cancelled" &&
+        (!record.archived || (!history && !matchesCancellation(base[0]?.state, record))))
+      problems.push("Cancellation requires an archive and its matching collaboration entry");
     if (record?.state?.status === "completed" && !record.archived)
       problems.push(
         "Completed record must be in its closed archive directory before migration",
@@ -120,7 +124,7 @@ export function runPreviewRouting(values) {
       repo.config.releaseBranch === record.sourceBranch
     )
       problems.push("Protected branch cannot own an execution entry");
-    if (!history && owned.length && record.archived)
+    if (!history && owned.length && record.archived && !cancelledArchive(record.state))
       problems.push(
         "Integrate the completed delivery before importing its archive as collaboration history",
       );

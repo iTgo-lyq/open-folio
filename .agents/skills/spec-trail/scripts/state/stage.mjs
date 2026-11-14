@@ -21,7 +21,7 @@ function uniqueActive({ branch, config, state, all, id }) {
   );
 }
 
-export const notes = [...stateNotes, "rework moves an archived Change that is not integrated back to docs/project/changes/."];
+export const notes = [...stateNotes, "rework restores a completed archive awaiting integration to docs/project/changes/."];
 
 export const commands = {
   confirm: stateCommand("Record a stage confirmation the user actually gave", {
@@ -98,7 +98,7 @@ export const commands = {
       delete state.waitingFor;
     },
   }),
-  rework: stateCommand("Return to the earliest affected stage; keeps done tasks and restores an archive that is not integrated yet", {
+  rework: stateCommand("Return to the earliest affected stage; keeps done tasks and can restore a completed archive awaiting integration", {
     required: ["stage", "reason", "approach"],
     help: {
       stage: { choices: ["requirement", "technical", "plan", "execution"], text: "Earliest affected stage, not later than the current one" },

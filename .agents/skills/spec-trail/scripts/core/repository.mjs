@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
-import { changeLocation, routeCatalog, validBranchName, parentBranch, parentArchive, sourceOwnership, resolvePlanningRoute, planningRecord } from "./routing.mjs";
+import { changeLocation, routeCatalog, validBranchName, parentBranch, parentArchive, sourceOwnership, resolvePlanningRoute, planningRecord, matchesCancellation } from "./routing.mjs";
 
 export function repository(cwd = ".") {
   const git = (args) =>
@@ -147,8 +147,10 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
     throw Error(`Change ${id} is not registered on ${catalog.branch}`);
   if (route.errors.length) throw Error(`${id}: ${route.errors.join("; ")}`);
   const centralEntry = catalog.entries.find(row => row.id === id);
+  const hasParentTarget = route.kind === 'target' && route.parent &&
+    centralEntry?.state?.status !== "cancelled";
   let unstartedChild = false;
-  if (route.kind === 'target' && route.parent) {
+  if (hasParentTarget) {
     const parentEntry = catalog.entries.find(row => row.id === route.parent);
     if (!parentEntry || parentEntry.state?.parent)
       throw Error(`Child ${id}: parent is missing or nested`);
@@ -157,7 +159,7 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
     unstartedChild = !parent.archived && parent.branch === catalog.branch &&
       planningRecord(parent.state) && planningRecord(centralEntry?.state);
   }
-  if (route.kind === 'target' && route.parent && !unstartedChild) {
+  if (hasParentTarget && !unstartedChild) {
     const entry = catalog.entries.find(row => row.id === id);
     const target = deliveryTarget(repo, catalog, entry.state, {refresh});
     const record = parentArchive(recordsAt(repo, target.commit, id), entry.state, target.parent);
@@ -205,6 +207,10 @@ export function routedRecord(repo, catalog, id, { refresh = false } = {}) {
     );
   const record = records[0];
   if (record.error) throw Error(record.error);
+  if (route.kind === "target" &&
+      [centralEntry?.state?.status, record.state?.status].includes("cancelled") &&
+      !matchesCancellation(centralEntry.state, record))
+    throw Error(`Cancellation archive on ${route.branch} does not match the collaboration marker`);
   if (
     record.state?.id !== id ||
     (route.kind !== "archive" && record.state?.branch !== route.branch &&

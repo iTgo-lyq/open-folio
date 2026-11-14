@@ -1,9 +1,10 @@
 // SpecTrail staged validation. Node.js built-ins only.
 
 import { execFileSync } from "node:child_process";
+import { isDeepStrictEqual } from "node:util";
 import { validateChange, validateWorkflow } from "../core/state-schema.mjs";
 import { stagedPrototypeIssues } from "../prototype/hooks.mjs";
-import { changeLocation, sourceOwnership, planningRecord } from "../core/routing.mjs";
+import { changeLocation, sourceOwnership, planningRecord, matchesCancellation } from "../core/routing.mjs";
 
 export function runPreCommit({ repo = "." }) {
   // Inherit Git's environment, including GIT_INDEX_FILE for partial commits.
@@ -99,7 +100,7 @@ export function runPreCommit({ repo = "." }) {
       // before this commit, including when it deletes or rewrites change.json.
       const owner = readState(`HEAD:${path}`);
       if (
-        owner?.status !== "active" ||
+        !["active", "cancelled"].includes(owner?.status) ||
         typeof owner.branch !== "string" ||
         !owner.branch ||
         owner.branch === branch ||
@@ -107,6 +108,7 @@ export function runPreCommit({ repo = "." }) {
       )
         continue;
       const ownership = [];
+      let published = [];
       for (const ref of [`refs/heads/${owner.branch}`, `refs/remotes/origin/${owner.branch}`]) {
         try { git(['rev-parse', '--verify', `${ref}^{commit}`]); } catch { continue; }
         const records = git(['ls-tree', '-rz', '--full-tree', ref, '--',
@@ -118,7 +120,20 @@ export function runPreCommit({ repo = "." }) {
             return [{...location, state, ...(!state ? {error: 'Invalid source JSON'} : {})}];
           });
         ownership.push(sourceOwnership(records, id, owner.branch));
+        if (ref.startsWith("refs/remotes/origin/")) published = records;
       }
+      const files = [...indexed.keys()].filter(file => file.startsWith(`docs/project/changes/${id}/`));
+      if (owner.status === "active" && !files.length &&
+          ownership.every(value => value === "unclaimed")) continue;
+      const proposed = readState(`:${path}`);
+      if (owner.status === "active" && proposed?.status === "cancelled" && published.length === 1 &&
+          matchesCancellation(proposed, published[0]) && !validateChange(published[0].state).length &&
+          allChanged.filter(file => file.startsWith(`docs/project/changes/${id}/`)).every(file => file === path) &&
+          isDeepStrictEqual(proposed, {
+            ...Object.fromEntries(Object.entries(owner).filter(([key]) => key !== "waitingFor")),
+            status: "cancelled",
+            cancellation: published[0].state.cancellation,
+          })) continue;
       if (planningRecord(owner) && !ownership.some(value => value !== 'unclaimed')) continue;
       if (ownership.includes('invalid')) {
         console.error(`${path}: Cannot verify the Change source on ${owner.branch}; inspect its invalid records before committing.`);

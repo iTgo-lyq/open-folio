@@ -1,9 +1,11 @@
 // change group: create a Change and maintain its metadata and relations.
 import { relative } from "node:path";
 import { define } from "../define.mjs";
-import { routedRecord } from "../core/repository.mjs";
+import { fetchBranch, recordsAt, remoteBranch, revision, routedRecord } from "../core/repository.mjs";
+import { cancelledArchive, sourceOwnership } from "../core/routing.mjs";
 import { validateChange, validateCollaborators, validateTypes, validateUrgency } from "../core/state-schema.mjs";
-import { assert, changeIdPattern, list, locate, stages, stateCommand, stateNotes } from "./context.mjs";
+import { pinPreviews } from "../prototype/hooks.mjs";
+import { archiveDestination, assert, changeIdPattern, list, locate, stages, stateCommand, stateNotes } from "./context.mjs";
 import { requireDelivered } from "./guards.mjs";
 import { setFollowUp } from "./follow-up.mjs";
 
@@ -54,7 +56,8 @@ function show(opts) {
   const { root, repo, catalog, route, matches, id } = locate(opts, { refresh: false });
   if (route?.errors.length) throw Error(route.errors.join("; "));
   const local =
-    (!route || (route.kind !== "archive" && route.branch === repo.branch)) &&
+    (!route || (route.kind !== "archive" && route.branch === repo.branch &&
+      catalog.entries.find(row => row.id === id)?.state?.status !== "cancelled")) &&
     matches.filter(
       (r) =>
         r.state.branch === repo.branch ||
@@ -71,6 +74,47 @@ function show(opts) {
       freshness: catalog.freshness,
     };
   return { ...routedRecord(repo, catalog, id), source: "pushed-record" };
+}
+
+function cancel(ctx) {
+  const { state, need, opts, catalog, repo, id, branch, git, root, liveDir } = ctx;
+  const mode = need("mode");
+  if (mode === "delete") {
+    const pending = git(["status", "--porcelain", "--untracked-files=all",
+      "--ignored=matching", "--", relative(root, liveDir)]);
+    assert(!pending, "Inspect and resolve uncommitted Change files before deleting the record");
+    if (state.branch !== branch && !opts["dry-run"]) {
+      const source = state.branch;
+      const remote = remoteBranch(repo, source) && fetchBranch(repo, source);
+      for (const tip of [remote, revision(repo, `refs/heads/${source}`)]) {
+        if (!tip) continue;
+        assert(sourceOwnership(recordsAt(repo, tip, id), id, source) === "unclaimed",
+          `Remove the verified Change branch ${source} before deleting its collaboration record`);
+      }
+    }
+    ctx.deleteChange = true;
+    return;
+  }
+  if (mode === "mark") {
+    assert(state.branch !== catalog.branch, "Use --mode keep for an unhanded Change");
+    const ref = `refs/remotes/origin/${state.branch}`;
+    const tip = opts["dry-run"] ? revision(repo, ref) :
+      remoteBranch(repo, state.branch) && fetchBranch(repo, state.branch);
+    const records = tip ? recordsAt(repo, tip, id) : [];
+    const source = records[0];
+    assert(records.length === 1 && source.archived && !source.error && cancelledArchive(source.state) &&
+      source.state.id === id && source.state.branch === state.branch &&
+      source.state.parent === state.parent && !validateChange(source.state).length,
+    "Push the cancelled archive on the work branch before marking the collaboration record");
+    state.cancellation = source.state.cancellation;
+  } else {
+    ctx.archiveDir = archiveDestination(ctx, need("date"));
+    ctx.archiveCopies.push(...pinPreviews(ctx, ctx.archiveDir));
+    state.branch = branch;
+    state.cancellation = { at: ctx.now, reason: need("reason") };
+  }
+  state.status = "cancelled";
+  delete state.waitingFor;
 }
 
 export const notes = stateNotes;
@@ -228,13 +272,17 @@ export const commands = {
       state.size = size;
     },
   }),
-  cancel: stateCommand("Cancel an active Change; stage, tasks, documents and code are kept and the branch is frozen", {
-    required: ["reason"],
-    example: " --reason '需求已由其他 Change 覆盖'",
-    run({ state, now, need }) {
-      state.status = "cancelled";
-      state.cancellation = { at: now, reason: need("reason") };
-      delete state.waitingFor;
+  cancel: stateCommand("Apply the user's cancellation decision: keep an archive, mark its collaboration entry, or delete the entry", {
+    collaboration: true,
+    required: ["mode"],
+    optional: ["reason", "date"],
+    help: {
+      mode: { choices: ["keep", "mark", "delete"], text: "keep: archive on the owning branch; mark: record a pushed cancellation on the collaboration branch; delete: remove the collaboration entry" },
+      date: { value: "YYYY-MM-DD", text: "Archive date in the user's timezone (required with keep)" },
     },
+    notes: ["Use keep or delete after the user chooses retention. keep also requires --date and --reason.",
+      "The delete dry run checks the collaboration entry before source branches are removed."],
+    example: " --mode keep --date 2026-11-15 --reason '需求已由其他 Change 覆盖'",
+    run: cancel,
   }),
 };

@@ -68,6 +68,22 @@ export function closedRecord(state, directory) {
   );
 }
 
+export function cancelledArchive(state) {
+  return state?.status === "cancelled" &&
+    Number.isFinite(Date.parse(state.cancellation?.at)) &&
+    typeof state.cancellation?.reason === "string" &&
+    !!state.cancellation.reason.trim() &&
+    !state.waitingFor && !state.closure?.archive;
+}
+
+export function matchesCancellation(marker, record) {
+  return marker?.status === "cancelled" && record?.archived && cancelledArchive(record.state) &&
+    record.state.id === marker.id && record.state.branch === marker.branch &&
+    record.state.parent === marker.parent &&
+    record.state.cancellation.at === marker.cancellation?.at &&
+    record.state.cancellation.reason === marker.cancellation?.reason;
+}
+
 /** Resolve ownership, never infer a parent from a branch name. */
 export function parentBranch(child, parent, integrationBranch, releaseBranch) {
   if (!child?.parent) return integrationBranch;
@@ -108,6 +124,8 @@ export function sourceOwnership(records, id, branch) {
       !['active', 'completed', 'cancelled'].includes(own[0].state?.status)) return 'invalid';
   const record = own[0];
   if (record.state.branch !== branch) return 'unclaimed';
+  if (record.state.status === "cancelled")
+    return record.archived && cancelledArchive(record.state) ? "owned" : "invalid";
   if (record.archived && !closedRecord(record.state, record.directory)) return 'invalid';
   return 'owned';
 }
@@ -162,12 +180,15 @@ export function routeCatalog(
         : state?.branch === integrationBranch
           ? "planning"
           : "target";
-      if (entry.archived && !closedRecord(state, entry.directory))
+      if (entry.archived && !closedRecord(state, entry.directory) &&
+          !(state?.branch === integrationBranch && cancelledArchive(state)))
         errors.push(
-          "The collaboration archive does not contain a valid completed record",
+          "The collaboration archive does not contain a valid completed or cancelled record",
         );
       if (!entry.archived && releaseBranch && releaseBranch === state?.branch)
         errors.push("A live Change cannot be owned by the release branch");
+      if (!entry.archived && state?.branch === integrationBranch && state.status === "cancelled")
+        errors.push("A cancelled Change owned by the collaboration branch must be archived");
       return {
         id,
         entryPath: entry.path,
