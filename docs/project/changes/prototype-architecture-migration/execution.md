@@ -72,3 +72,22 @@ python3 -m http.server 10684 --bind 127.0.0.1 --directory packages/prototype/dis
 删除版本：`0b61fa94`、`176f00ab`、`68649130`、`74d75e67`、`96c1740f`、`bc283d75`、`ccc20ad1`、`e60b41dc`、`f4d4d9ff`。本机清单与删除结果位于 `/tmp/openfolio-prototype-cleanup-report.json`。
 
 `develop` 当前仍引用 `06e078ce` 和 `b79cf450`，其他分支/Change 也有独立固定引用，这些对象未提前删除。旧手写架构、专属 mock 与资源已从本 Change 源码移除，不提供兼容层；未改写历史归档、Git 历史或真实账号及工作台数据。
+
+### 线上验证
+
+- `prototype validate` 与 `prototype validate --browser` 均通过，七项清单及托管页面可用。
+- 直接访问 R2 的 21 组入口/设备组合，逐项切换全部声明场景与深色主题；无页面异常、非预期资源请求或原生 Storage 调用。初轮在第十组遇到代理 `ERR_TUNNEL_CONNECTION_FAILED`，保留前九组成功记录；新浏览器重测剩余 12 组全部通过，未调整原型代码或网络策略。
+- 通过 `withSmokeSession` 建立独立真实测试会话，刷新 develop 后读取本 Change descriptor：七项均可用并指向新版本。浏览器使用回调提供的 Cookie，逐个打开七个片段并切换主题，另验证 PC Web、iPad、移动设备切换及 Change 分享页。截图位于 `artifacts/prototype-publication/change-{pc-web,ipad,mobile,share}.png`。
+- 在该浏览器内加载并解码全部 21 张公开缩略图，均满足 `complete && naturalWidth > 0`。这是图片可用性检查，不冒充默认总览卡片检查。
+- 所有真实登录检查都在包装器回调内完成；初次检查异常后亦执行清理，最终完整 smoke 和最新版本号退出复查通过，没有会话清理失败。
+- 独立 subagent 复核 T2 的文档、发布请求/结果、实际 dist、七项登记和旧数据删除集合，无明确问题，见 [Review](review.md)。`git diff --check` 通过，业务 `src` 和 `packages/ui` 仍无差异。
+
+日志：`/tmp/openfolio-prototype-release-browser.log`、`/tmp/openfolio-prototype-release-browser-retry.log`、`/tmp/openfolio-prototype-release-change-smoke.log`。构建与截图日志分别为 `/tmp/openfolio-prototype-release-build.log`、`/tmp/openfolio-prototype-release-screenshots.log`。
+
+### 默认总览与验收边界
+
+最初尝试将工作分支作为临时 integrationBranch 检查总览，接口返回空列表及“配置基线缺少有效的 workflow.json 原型配置”。原因是仓库 workflow 明确声明 develop，与工作分支不匹配；没有篡改 workflow、注入假响应或改动服务绕过这个限制。默认 develop 总览仍返回旧七项，这是尚未合入的实际结果，不是新制品发布失败。
+
+本 Change 的在线预览和分享页已使用新制品，可直接验收；默认总览的七项卡片、逐设备图片展示，以及仍由 develop 使用的旧对象清理，需在用户验收并合入后完成。用户本轮仅授权公开上传和旧原型数据清理，未代其记录代码验收、归档或合入；常驻服务实现、运行数据及 `.next` 未改动。
+
+在线入口：[本 Change 的新原型](https://drwulzcazu.merlin-devbox.bytedance.net/share?repository=https%3A%2F%2Fgithub.com%2FiTgo-lyq%2Fopen-folio&change=prototype-architecture-migration&integrationBranch=develop&ct=previews&preview=quiet-home)。复验默认总览时，应在合入后刷新项目，再按原型包 README「发布验收」逐设备检查卡片，不将本次已通过的 Change 画布检查替代该步骤。
