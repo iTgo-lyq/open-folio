@@ -14,22 +14,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/mobile.png"
           }
         ]
       }
@@ -47,22 +47,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/mobile.png"
           }
         ]
       }
@@ -80,22 +80,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/mobile.png"
           }
         ]
       }
@@ -113,22 +113,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/mobile.png"
           }
         ]
       }
@@ -146,22 +146,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/mobile.png"
           }
         ]
       }
@@ -179,22 +179,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/mobile.png"
           }
         ]
       }
@@ -212,22 +212,22 @@
       ],
       "artifact": {
         "type": "hosted",
-        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
-        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/index.html",
-        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
-        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
         "thumbnails": [
           {
             "device": "pc-web",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/pc-web.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/pc-web.png"
           },
           {
             "device": "ipad",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/ipad.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/ipad.png"
           },
           {
             "device": "mobile",
-            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/mobile.png"
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/mobile.png"
           }
         ]
       }

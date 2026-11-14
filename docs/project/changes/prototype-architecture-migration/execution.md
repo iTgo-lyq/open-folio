@@ -67,7 +67,9 @@ python3 -m http.server 10684 --bind 127.0.0.1 --directory packages/prototype/dis
 
 ### 旧数据清理
 
-扫描中心仓库全部 11 个分支 tip；远端无标签。按这些版本的 `docs/project` 与 `packages/prototype` 中固定对象地址核对引用，排除新发布版本后，识别并删除 9 个无有效引用的旧版本，共 130 个对象、16,457,381 字节。删除响应无错误，并逐版本列举确认对象数为零，没有创建备份。
+扫描中心仓库全部 11 个分支 tip；远端无标签。按这些版本的 `docs/project` 与 `packages/prototype` 中固定对象地址核对引用，排除新发布版本后，识别并删除 9 个在当前分支均无引用的旧版本，共 130 个对象、16,457,381 字节。删除响应无错误，并逐版本列举确认对象数为零，没有创建备份。
+
+评审更正（T3）：扫描只覆盖当前分支 tip。其中 6 个版本仍出现在 develop 的历史中间提交里，另有 6 个版本被常驻 OpenFolio 的 16 个旧公开预览版本引用，这些链接现已返回 404。用户确认不考虑历史数据兼容，不恢复、不撤回，也不再另行清理。
 
 删除版本：`0b61fa94`、`176f00ab`、`68649130`、`74d75e67`、`96c1740f`、`bc283d75`、`ccc20ad1`、`e60b41dc`、`f4d4d9ff`。本机清单与删除结果位于 `/tmp/openfolio-prototype-cleanup-report.json`。
 
@@ -91,3 +93,26 @@ python3 -m http.server 10684 --bind 127.0.0.1 --directory packages/prototype/dis
 本 Change 的在线预览和分享页已使用新制品，可直接验收；默认总览的七项卡片、逐设备图片展示，以及仍由 develop 使用的旧对象清理，需在用户验收并合入后完成。用户本轮仅授权公开上传和旧原型数据清理，未代其记录代码验收、归档或合入；常驻服务实现、运行数据及 `.next` 未改动。
 
 在线入口：[本 Change 的新原型](https://drwulzcazu.merlin-devbox.bytedance.net/share?repository=https%3A%2F%2Fgithub.com%2FiTgo-lyq%2Fopen-folio&change=prototype-architecture-migration&integrationBranch=develop&ct=previews&preview=quiet-home)。复验默认总览时，应在合入后刷新项目，再按原型包 README「发布验收」逐设备检查卡片，不将本次已通过的 Change 画布检查替代该步骤。
+
+## T3：按业务状态还原片段并重新发布七组原型
+
+### 实际交付
+
+评审返修 T1、T2，见 [Review](review.md) R6–R8。删除包内自拟的 `ReadingState`。工作台片段在 `WorkbenchFrame` 中还原 `Workspace` 页面主体的同步失败横幅（重试 / 当前凭据）和首次读取占位“正在打开工作台…”；分享片段还原分享页的“正在读取分享…”、同步失败横幅与“内容不存在或暂不可读”。两处都直接使用业务的 `Shell`、`PublicShell`、`ChangeReading`、`Empty`、`Button` 和对应 CSS Modules，只补写未导出的分支判断。mock 在加载场景和分享空态下不提供快照，其余空态保留连接、只清空数据；“未绑定 Token”空态只用于我的仓库与账号片段，因为业务在无连接时只显示个人页。业务 `src` 与 `packages/ui` 无差异。
+
+### 检查
+
+- `npm run typecheck --workspace prototype` 通过；七入口构建通过 htmlIssues 校验。
+- 已合入 develop 最新提交（含 #68），无冲突；合并后根与原型类型检查、构建、包内测试通过。
+- `npm test --workspace prototype` 23 项通过；协议测试 `node --conditions=react-server --test tests/prototype-contract.test.ts tests/prototype-publishing.test.ts tests/prototype-tools.test.ts` 16 项通过。Token 绑定用例显式以账号片段的空态开始。
+- `npm run verify --workspace prototype`：56 组入口 / 主题 / 视口组合、全部声明场景和 11 条交互流程通过。首轮发现 Changes 空态因移除 Token 停在“正在恢复视图…”，按上述空态语义修正后复测通过。
+- 浏览器逐个检查 Changes 空态与失败、Specs 加载与失败、分享加载、失败与空态：显示业务文案和样式，没有页面异常。
+- 独立评审（R9）发现 Changes 失败场景连个人视图也失败、列表被替换为请求失败提示，以及分享页缺少通知提示。改为同步失败时个人视图仍可读、分享片段显示业务通知；验证脚本新增断言：阅读片段的失败场景显示失败横幅且保留内容。修正后类型检查、23 项测试与完整浏览器矩阵复测通过。
+
+### 重新发布
+
+在干净提交 `66e3df6` 构建七入口、生成 21 张标准图，`prototype prepare` 后用 R2 适配器上传。发布凭据只在进程内从主工作区 `.env` 加载。新版本为 `612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0`，摘要为 `sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b`。R9 修正前曾从 `c1ac187` 发布 `e4583dbc`，该版本的登记未提交，已被本版本取代。`prototype register` 将七项当前 artifact 与本 Change previews 一并替换为新版本。逐个下载 28 个公开对象，与本地产物字节一致；`prototype validate` 与 `prototype validate --browser` 均通过。旧版本 `3dd6ccb8` 与未登记的 `e4583dbc` 不再被引用，按不兼容历史数据的前提保留原样，不另行删除。
+
+构建存在一处不确定输出（R8），不影响发布字节与摘要一致；从同一 sourceCommit 重建不保证得到相同摘要。
+
+合入后核对默认原型总览的七张卡片、逐设备图片及新 Change 原型页，结果记录在 PR 与交付报告中。
