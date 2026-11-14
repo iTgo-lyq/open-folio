@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-architecture-migration",
+  "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "followUpOf": "spec-trail-core-simplification",
+  "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
+  "types": [
+    "重构"
+  ]
+}
