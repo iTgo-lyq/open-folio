@@ -16,7 +16,6 @@ const resourcePaths = [
   `${skillPath}/scripts/define.mjs`,
   setupPath,
   validatorPath,
-  `${skillPath}/scripts/setup/script-dependencies.mjs`,
   schemaPath,
   `${skillPath}/scripts/core/routing.mjs`,
   `${skillPath}/scripts/prototype/hooks.mjs`,

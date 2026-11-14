@@ -12,7 +12,7 @@
 
 ### 文档与接入
 
-- 主 `SKILL.md` 按工作流重排，合并原来分散的状态、工作区、集成和分享说明，本次保持单个文件。
+- 主 `SKILL.md` 按工作流重排，合并原来分散的状态、工作区、集成和分享说明。原型说明定稿后再拆分：正常需求开发要读的内容留在主文件，归档等低频规则改为按需参考；需求澄清和技术问询共用一处提问规则。
 - 主 Skill 不再提接入检查。项目接入后，在 `AGENTS.md` 或项目实际使用的 Agent 入口里声明本仓库遵循 spec-trail skill，后续会话读到入口即可知道已接入；本仓库的 `AGENTS.md` 已加上这句声明。未接入的仓库运行日常命令时，提示按接入说明完成接入。
 - 接入说明和模板归入 `references/setup/`，原型说明、模板和适配器示例归入 `references/prototype/`，两者都不再标记为独立 skill，Skill 内只保留主 `SKILL.md` 一个入口。setup 和 prototype 命令只在各自说明里出现。Git hook 和 PR CI 仍调用 `setup pre-commit`、`setup check-pr`，已接入的项目无需修改。
 - Skill 只供用户自己使用：删除 Skill、文档和介绍站中的许可文件与许可描述；`packages/ui` 里第三方组件的来源注释保留。
@@ -22,7 +22,7 @@
 - 帮助分三层：`cli --help` 只列命令组，`cli <group> --help` 列出组内命令，`cli <group> <command> --help` 才给出参数和示例。
 - 状态命令按职责分为 `change`、`clarify`、`task`、`stage`、`close` 五组，例如 `task start`、`stage execute`、`close archive`，不保留旧命令名。`change previews-set` 改为 `prototype previews`。只读的 `change show` 去掉 `--dry-run`。
 - setup 和 prototype 是隐藏组，总帮助里不显示，用法分别见接入说明和原型说明；Node.js 24 的要求由 prototype 组自己声明。
-- 删除 `maintenance` 组，包括 `version-next` 和旧归档标签清理工具。版本号改为手动维护，`version.json`、`package.json`、`package-lock.json` 三处保持一致。
+- 删除 `maintenance` 组，包括 `version-next` 和旧归档标签清理工具；远端最后一个旧归档标签 `spec-trail/archive/change-prototype-preview` 已删除，它指向的提交仍在 `develop` 和 `main` 上。版本号改为手动维护，`version.json`、`package.json`、`package-lock.json` 三处保持一致。
 - 删除 Skill 自动版本检查及其提示和缓存。CLI、hook 和工作台都把 `checkForUpdates` 当作未知字段，现行文档和介绍站里的更新引导一并移除。
 
 ### 代码结构
@@ -46,21 +46,17 @@
 
 删除只验证简单校验的测试，合并重叠的场景；保留 Git 安全、路由与移交、合入与清理、任务编号与顺序、并发和原型等复杂逻辑的测试。
 
+Skill 脚本只用相对路径和 `node:` 内置模块。这项检查从分发出去的 pre-commit 移到 Skill 测试，扫描 Skill 内全部脚本，hook 不再检查脚本依赖；扫描器随测试放在 `tests/`。
+
 ## 后续
 
-- 原型说明稳定后，另提 Change 拆分主 Skill，决定哪些内容留作必读、哪些改为按需参考。
 - 本仓库 `packages/prototype` 仍是 HTML 拼接构建，迁移到新的原型方式另提 Change。
-
-## 待定
-
-- 需求澄清和技术问询是否共用一处提问规则。
-- Skill 脚本的依赖检查是继续放在分发出去的 pre-commit 里，还是改由本仓库 CI 承担。
-- 远端遗留的旧归档标签 `spec-trail/archive/change-prototype-preview` 是否删除。删除属于对外操作，需另行授权。
 
 ## 验收
 
 - 主 Skill 不包含接入检查，接入说明给出入口声明的写法；setup 和原型命令只在各自文档中出现；Skill 内没有主 `SKILL.md` 以外的 skill 入口。
 - `cli --help` 只列出八个日常命令组；组帮助列出命令，命令帮助给出参数和示例；文档、Specs 与实际命令一致。
+- Skill 测试扫描 Skill 内全部脚本的依赖，pre-commit 不再检查脚本依赖。
 - hook、PR CI 和日常状态命令通过回归测试；含 `checkForUpdates` 的配置在 CLI 和工作台均被拒绝。
 - 仓库中的 Skill、文档和介绍站不含许可文件与许可描述。
 - 原型说明写明以业务页面片段为输出单位、直接跨包引用业务代码并克制修改业务仓库、按业务技术栈多页面静态构建；Skill 中不再包含原型构建脚手架。

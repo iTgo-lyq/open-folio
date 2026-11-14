@@ -159,7 +159,7 @@ confirmations 下所有 summary 均为阶段内容简述：requirement 写目标
 
 字段校验由主 skill 的 state-schema.mjs 共享给命令与提交 hook，hook 继续只验证实际 index，支持部分提交及 GIT_INDEX_FILE。原型引用区分 hosted 与 git，校验项目开关、源码提交、当前清单、引用及适用的暂存 HTML；继承的其他 Change 仍检查本次修改 JSON 的结构，但不要求其远端原型产物存在于本地，hook 不联网；宿主上传和浏览器验证不由 hook 执行，详细协议见[原型浏览与预览](../project-knowledge/prototype-preview/spec.md)。
 
-提交包含 SpecTrail JavaScript 脚本时，hook 读取本次提交的脚本内容，检查常见写法的直接模块引用。脚本引用使用相对路径或 `node:` 内置模块。运行时拼接、加载函数别名与完整作用域分析超出该检查范围；原型浏览器检查仍可按需加载业务项目的 Playwright。
+SpecTrail 脚本引用只使用相对路径或 `node:` 内置模块。本仓库的 Skill 测试扫描 Skill 内全部脚本，检查常见写法的直接模块引用；运行时拼接、加载函数别名与完整作用域分析超出该检查范围。提交 hook 不检查脚本依赖。原型浏览器检查仍可按需加载业务项目的 Playwright。
 
 命令使用仓库级锁、原文复查和同目录临时文件 rename；错误参数、错分支、符号链接、越级关闭、重复覆盖与归档目标冲突均拒绝。提交失败的 `task retry` 仅恢复 HEAD 尚未完成的任务；同时修正该任务已暂存的 done，保留其余部分暂存差异。已提交完成任务不回退；推送失败保留提交并重试推送。
 
