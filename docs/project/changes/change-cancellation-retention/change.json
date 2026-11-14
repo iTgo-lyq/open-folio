@@ -4,7 +4,7 @@
   "title": "取消 Change 时可选择删除或归档留存",
   "size": "small",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/change-cancellation-retention",
   "confirmations": {},
   "tasks": {
@@ -13,20 +13,19 @@
       "status": "done",
       "verification": "应用 468 项、Skill 21 项、取消详情浏览器 1 项通过，准备检查、类型检查与生产构建通过。现存取消 Change 已迁移并核实。",
       "commitTitle": "change-cancellation-retention T1: implement cancellation retention"
+    },
+    "T2": {
+      "title": "修复取消预览与发布检查并澄清归档说明",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-11-14T20:29:10.451Z",
-      "summary": "两条取消路径及同名移交校验通过，现存取消记录已迁移。应用 468 项、Skill 21 项、类型、构建与浏览器回归通过。"
-    }
-  },
+  "closure": {},
   "types": [
     "流程"
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收取消删除、归档留存与分支校验。"
+  "rework": {
+    "at": "2026-11-14T23:14:14.223Z",
+    "reason": "验收评审指出取消预览、发布目录身份和归档说明问题",
+    "approach": "按 R2–R4 修正并补充回归验证"
   }
 }
