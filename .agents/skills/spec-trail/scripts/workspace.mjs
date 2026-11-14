@@ -476,7 +476,7 @@ function handoff(repo, id, options) {
         catalog.branch,
         verified.commit,
       ),
-      next: "Open or continue a session bound to this worktree; verify its actual cwd and branch, then use node .agents/skills/spec-trail/cli.mjs change execute",
+      next: "Open or continue a session bound to this worktree; verify its actual cwd and branch, then use node .agents/skills/spec-trail/cli.mjs stage execute",
     };
   }
 }

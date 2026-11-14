@@ -234,12 +234,11 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     { encoding: "utf8" },
   );
   assert.equal(handoff.status, 0, handoff.stderr);
-  for (const args of [["execute"], ["task-start", "--task", "T1"]]) {
+  for (const args of [["stage", "execute"], ["task", "start", "--task", "T1"]]) {
     const step = spawnSync(
       process.execPath,
       [
         resolve(".agents/skills/spec-trail/cli.mjs"),
-        "change",
         ...args,
         "--repo",
         work,

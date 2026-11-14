@@ -60,7 +60,7 @@ function fixture(
   ) => {
     const result = spawnSync(
       process.execPath,
-      [cli, "change", command, "--repo", root, "--change", id, ...options],
+      [cli, ...command.split(" "), "--repo", root, "--change", id, ...options],
       { encoding: "utf8" },
     );
     assert.equal(
@@ -71,7 +71,7 @@ function fixture(
     return expected === 0 ? JSON.parse(result.stdout) : result.stderr;
   };
   const create = (size = "small", id = "sample", extras: string[] = []) => {
-    run("create", ["--title", "Example", "--size", size, ...extras], 0, id);
+    run("change create", ["--title", "Example", "--size", size, ...extras], 0, id);
     for (const name of ["requirement", "technical", "plan"])
       writeFileSync(
         join(root, `docs/project/changes/${id}/${name}.md`),
@@ -79,16 +79,16 @@ function fixture(
       );
   };
   const begin = () => {
-    run("task-add", ["--title", "Implement"]);
+    run("task add", ["--title", "Implement"]);
     handoff();
-    run("execute");
-    run("task-start", ["--task", "T1"]);
+    run("stage execute");
+    run("task start", ["--task", "T1"]);
   };
   const plan = (body: string) =>
     writeFileSync(join(root, "docs/project/changes/sample/plan.md"), body);
   const confirm = () => {
     for (const phase of ["requirement", "technical", "plan"])
-      run("confirm", [
+      run("stage confirm", [
         "--phase",
         phase,
         "--summary",
@@ -98,16 +98,16 @@ function fixture(
       ]);
   };
   const done = () =>
-    run("task-complete", [
+    run("task complete", [
       "--task",
       "T1",
       "--verification",
       "Actual checks passed",
     ]);
   const verify = () =>
-    run("verify", ["--result", "passed", "--summary", "Verified"]);
+    run("close verify", ["--result", "passed", "--summary", "Verified"]);
   const accept = (mode = "agent") =>
-    run("accept", [
+    run("close accept", [
       "--mode",
       mode,
       "--summary",
@@ -116,8 +116,8 @@ function fixture(
       "Explicit user instruction",
     ]);
   const archive = () => {
-    run("specs", ["--result", "not_needed", "--summary", "No lasting change"]);
-    return run("archive", ["--date", "2026-10-04", "--summary", "Archived"]);
+    run("close specs", ["--result", "not_needed", "--summary", "No lasting change"]);
+    return run("close archive", ["--date", "2026-10-04", "--summary", "Archived"]);
   };
   const commit = (push = true) => {
     git("add", ".");
@@ -193,13 +193,13 @@ test("labels support free names, partial updates and restoring normal without ch
   assert.deepEqual(f.state().types, ["修复", "安全", "数据,迁移", "none"]);
   assert.equal(f.state().urgency, "high");
   const { types: _types, urgency: _urgency, ...workflow } = f.state();
-  f.run("labels", ["--types", '["自定义"]']);
+  f.run("change labels", ["--types", '["自定义"]']);
   assert.equal(f.state().urgency, "high");
-  f.run("labels", ["--urgency", "normal"]);
+  f.run("change labels", ["--urgency", "normal"]);
   assert(!Object.hasOwn(f.state(), "urgency"));
   assert.deepEqual(f.state().types, ["自定义"]);
   const before = readFileSync(f.path(), "utf8");
-  f.run("labels", ["--types", "[]", "--dry-run"]);
+  f.run("change labels", ["--types", "[]", "--dry-run"]);
   assert.equal(readFileSync(f.path(), "utf8"), before);
   for (const options of [
     [],
@@ -210,13 +210,13 @@ test("labels support free names, partial updates and restoring normal without ch
     ["--types", '["修复\\n"]'],
     ["--types", '["新类型"]', "--urgency", "none"],
   ]) {
-    f.run("labels", options, 1);
+    f.run("change labels", options, 1);
     assert.equal(readFileSync(f.path(), "utf8"), before);
   }
-  f.run("labels", ["--types", "[]"]);
+  f.run("change labels", ["--types", "[]"]);
   assert.deepEqual(f.state(), workflow);
   f.begin();
-  f.run("labels", ["--urgency", "urgent"]);
+  f.run("change labels", ["--urgency", "urgent"]);
   assert.equal(f.state().tasks.T1.status, "doing");
   f.done();
   f.commit();
@@ -224,7 +224,7 @@ test("labels support free names, partial updates and restoring normal without ch
   f.accept();
   const archived = f.archive().path;
   const frozen = readFileSync(join(f.root, archived), "utf8");
-  f.run("labels", ["--urgency", "normal"], 1);
+  f.run("change labels", ["--urgency", "normal"], 1);
   assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
 });
 
@@ -233,9 +233,9 @@ test("normal creates no stored urgency and cancelled labels remain read-only", (
   f.create("small", "sample", ["--urgency", "normal", "--types", "[]"]);
   assert(!Object.hasOwn(f.state(), "urgency"));
   assert(!Object.hasOwn(f.state(), "types"));
-  f.run("cancel", ["--reason", "取消"]);
+  f.run("change cancel", ["--reason", "取消"]);
   const before = readFileSync(f.path(), "utf8");
-  f.run("labels", ["--types", '["修复"]'], 1);
+  f.run("change labels", ["--types", '["修复"]'], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
@@ -246,7 +246,7 @@ test("collaborator commands create, replace and clear only supplemental configur
   assert.deepEqual(f.state().collaborators, members);
   const { collaborators: _members, ...workflow } = f.state();
   const before = readFileSync(f.path(), "utf8");
-  f.run("collaborators", ["--members", "[]", "--dry-run"]);
+  f.run("change collaborators", ["--members", "[]", "--dry-run"]);
   assert.equal(readFileSync(f.path(), "utf8"), before);
   for (const options of [
     [],
@@ -255,15 +255,15 @@ test("collaborator commands create, replace and clear only supplemental configur
     ["--members", '[{"name":" "}]'],
     ["--members", '[{"name":"Member","email":"private@example.com"}]'],
   ]) {
-    f.run("collaborators", options, 1);
+    f.run("change collaborators", options, 1);
     assert.equal(readFileSync(f.path(), "utf8"), before);
   }
-  f.run("collaborators", ["--members", '[{"name":"另一位"}]']);
+  f.run("change collaborators", ["--members", '[{"name":"另一位"}]']);
   assert.deepEqual(f.state().collaborators, [{ name: "另一位" }]);
-  f.run("collaborators", ["--members", "[]"]);
+  f.run("change collaborators", ["--members", "[]"]);
   assert.deepEqual(f.state(), workflow);
   f.begin();
-  f.run("collaborators", ["--members", JSON.stringify(members)]);
+  f.run("change collaborators", ["--members", JSON.stringify(members)]);
   assert.equal(f.state().tasks.T1.status, "doing");
   f.done();
   f.commit();
@@ -271,16 +271,16 @@ test("collaborator commands create, replace and clear only supplemental configur
   f.accept();
   const archived = f.archive().path;
   const frozen = readFileSync(join(f.root, archived), "utf8");
-  f.run("collaborators", ["--members", "[]"], 1);
+  f.run("change collaborators", ["--members", "[]"], 1);
   assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
 });
 
 test("collaborator updates keep cancelled Changes read-only", (t) => {
   const f = fixture(t);
   f.create();
-  f.run("cancel", ["--reason", "取消"]);
+  f.run("change cancel", ["--reason", "取消"]);
   const before = readFileSync(f.path(), "utf8");
-  f.run("collaborators", ["--members", '[{"name":"Member"}]'], 1);
+  f.run("change collaborators", ["--members", '[{"name":"Member"}]'], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
@@ -383,20 +383,20 @@ test("follow-up registration requires a published closed predecessor and stays i
   assert.equal(f.state().followUpTitle, "完善技术方案问询机制");
   assert(!f.state().dependsOn);
   const before = readFileSync(f.path(), "utf8");
-  f.run("follow-up", ["--target", "second", "--group-title", "其他名称"], 1);
+  f.run("change follow-up", ["--target", "second", "--group-title", "其他名称"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
-  f.run("follow-up", ["--target", "first", "--group-title", "两行\n标题"], 1);
+  f.run("change follow-up", ["--target", "first", "--group-title", "两行\n标题"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
-  f.run("follow-up", ["--target", "first", "--dry-run"]);
+  f.run("change follow-up", ["--target", "first", "--dry-run"]);
   assert.equal(readFileSync(f.path(), "utf8"), before);
   f.create("small", "pending", ["--parent", "unfinished-child"]);
   f.create("small", "cancelled-child", ["--parent", "valid-parent"]);
-  f.run("cancel", ["--reason", "取消不影响已关闭父项"], 0, "cancelled-child");
+  f.run("change cancel", ["--reason", "取消不影响已关闭父项"], 0, "cancelled-child");
   f.create("small", "invalid-cancelled", [
     "--parent",
     "invalid-cancelled-parent",
   ]);
-  f.run("cancel", ["--reason", "取消"], 0, "invalid-cancelled");
+  f.run("change cancel", ["--reason", "取消"], 0, "invalid-cancelled");
   writeFileSync(
     f.path("invalid-cancelled"),
     JSON.stringify({
@@ -422,43 +422,43 @@ test("follow-up registration requires a published closed predecessor and stays i
     "unfinished-child",
     "invalid-cancelled-parent",
   ]) {
-    f.run("follow-up", ["--target", target], 1);
+    f.run("change follow-up", ["--target", target], 1);
     assert.equal(readFileSync(f.path(), "utf8"), before);
   }
   closed("unpublished");
   f.commit(false);
-  f.run("follow-up", ["--target", "unpublished"], 1);
+  f.run("change follow-up", ["--target", "unpublished"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
-  f.run("follow-up", ["--target", "first"]);
+  f.run("change follow-up", ["--target", "first"]);
   assert.equal(f.state().followUpOf, "first");
   assert(!f.state().followUpTitle);
-  f.run("follow-up", ["--target", "first", "--group-title", "首次分组命名"]);
+  f.run("change follow-up", ["--target", "first", "--group-title", "首次分组命名"]);
   assert.equal(f.state().followUpTitle, "首次分组命名");
-  f.run("follow-up", ["--target", "valid-medium"]);
+  f.run("change follow-up", ["--target", "valid-medium"]);
   assert.equal(f.state().followUpOf, "valid-medium");
   assert(!f.state().followUpTitle);
-  f.run("follow-up", ["--target", "valid-parent"]);
+  f.run("change follow-up", ["--target", "valid-parent"]);
   assert.equal(f.state().followUpOf, "valid-parent");
-  f.run("follow-up", [
+  f.run("change follow-up", [
     "--target",
     "valid-parent",
     "--group-title",
     "父目标交付",
   ]);
-  f.run("follow-up", ["--target", "none", "--group-title", "不应写入"], 1);
+  f.run("change follow-up", ["--target", "none", "--group-title", "不应写入"], 1);
   assert.equal(f.state().followUpTitle, "父目标交付");
-  f.run("follow-up", ["--target", "none"]);
+  f.run("change follow-up", ["--target", "none"]);
   assert(!f.state().followUpOf);
   assert(!f.state().followUpTitle);
   f.run(
-    "create",
+    "change create",
     ["--title", "没有关联", "--size", "small", "--group-title", "无效组名"],
     1,
     "unlinked",
   );
   assert(!existsSync(f.path("unlinked")));
   f.run(
-    "create",
+    "change create",
     ["--title", "bad", "--size", "small", "--follow-up-of", "absent"],
     1,
     "bad",
@@ -496,8 +496,8 @@ test("small lifecycle on a custom collaboration branch preserves evidence, order
     times.map(Date.parse).toSorted((a, b) => a - b),
   );
   const original = readFileSync(join(f.root, archived.path), "utf8");
-  f.run("wait", ["--kind", "pause", "--summary", "No"], 1);
-  f.run("archive", ["--date", "2026-10-04", "--summary", "Again"], 1);
+  f.run("stage wait", ["--kind", "pause", "--summary", "No"], 1);
+  f.run("close archive", ["--date", "2026-10-04", "--summary", "Again"], 1);
   assert.equal(readFileSync(join(f.root, archived.path), "utf8"), original);
 });
 
@@ -505,7 +505,7 @@ test("clarification records persist questions, corrections and withdrawal across
   const f = fixture(t);
   f.create("medium");
   const ask = (round: string, extras: string[] = []) =>
-    f.run("clarification-ask", [
+    f.run("clarify ask", [
       "--round",
       round,
       "--text",
@@ -524,7 +524,7 @@ test("clarification records persist questions, corrections and withdrawal across
     question: "导出范围？",
     recommendation: "仅当前筛选，沿用列表权限。",
   });
-  f.run("clarification-answer", [
+  f.run("clarify answer", [
     "--question",
     "Q1",
     "--answer",
@@ -532,7 +532,7 @@ test("clarification records persist questions, corrections and withdrawal across
     "--source",
     "本轮回答",
   ]);
-  f.run("clarification-answer", [
+  f.run("clarify answer", [
     "--question",
     "Q1",
     "--answer",
@@ -540,14 +540,14 @@ test("clarification records persist questions, corrections and withdrawal across
   ]);
   assert.equal(f.state().clarifications.Q1.answer, "只导出已选记录");
   assert(!f.state().clarifications.Q1.source);
-  f.run("clarification-withdraw", [
+  f.run("clarify withdraw", [
     "--question",
     "Q1",
     "--reason",
     "导出功能移出本次范围",
   ]);
   assert.equal(f.state().clarifications.Q1.answer, "只导出已选记录");
-  f.run("clarification-withdraw", [
+  f.run("clarify withdraw", [
     "--question",
     "Q2",
     "--reason",
@@ -555,7 +555,7 @@ test("clarification records persist questions, corrections and withdrawal across
   ]);
   f.confirm();
   const entries = f.state().clarifications;
-  f.run("rework", [
+  f.run("stage rework", [
     "--stage",
     "requirement",
     "--reason",
@@ -584,8 +584,8 @@ test("invalid clarification writes preserve state and cannot reuse withdrawn que
     "--recommendation",
     "本次只做导出。",
   ];
-  f.run("clarification-ask", args);
-  f.run("clarification-withdraw", [
+  f.run("clarify ask", args);
+  f.run("clarify withdraw", [
     "--question",
     "Q1",
     "--reason",
@@ -593,34 +593,34 @@ test("invalid clarification writes preserve state and cannot reuse withdrawn que
   ]);
   const before = readFileSync(f.path(), "utf8");
   for (const round of ["0", "-1", "1.5", "1e2", "9007199254740992"])
-    f.run("clarification-ask", ["--round", round, ...args.slice(2)], 1);
+    f.run("clarify ask", ["--round", round, ...args.slice(2)], 1);
   for (const id of ["Q1", "Q0", "__proto__", "Q9007199254740992"])
-    f.run("clarification-ask", [...args, "--question", id], 1);
+    f.run("clarify ask", [...args, "--question", id], 1);
   f.run(
-    "clarification-ask",
+    "clarify ask",
     ["--round", "1", "--text", " ", "--recommendation", "建议"],
     1,
   );
   for (const id of ["Q1", "Q99", "__proto__"])
-    f.run("clarification-answer", ["--question", id, "--answer", "确认"], 1);
-  f.run("clarification-withdraw", ["--question", "Q1", "--reason", "重复"], 1);
+    f.run("clarify answer", ["--question", id, "--answer", "确认"], 1);
+  f.run("clarify withdraw", ["--question", "Q1", "--reason", "重复"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
-  f.run("clarification-ask", args);
+  f.run("clarify ask", args);
   const pending = readFileSync(f.path(), "utf8");
-  f.run("clarification-answer", ["--question", "Q2", "--answer", " "], 1);
+  f.run("clarify answer", ["--question", "Q2", "--answer", " "], 1);
   f.run(
-    "clarification-answer",
+    "clarify answer",
     ["--question", "Q2", "--answer", "导出筛选结果", "--source", " "],
     1,
   );
-  f.run("clarification-answer", [
+  f.run("clarify answer", [
     "--question",
     "Q2",
     "--answer",
     "导出筛选结果",
     "--dry-run",
   ]);
-  f.run("clarification-withdraw", [
+  f.run("clarify withdraw", [
     "--question",
     "Q2",
     "--reason",
@@ -628,9 +628,9 @@ test("invalid clarification writes preserve state and cannot reuse withdrawn que
     "--dry-run",
   ]);
   assert.equal(readFileSync(f.path(), "utf8"), pending);
-  f.run("cancel", ["--reason", "不再实施"]);
+  f.run("change cancel", ["--reason", "不再实施"]);
   const cancelled = readFileSync(f.path(), "utf8");
-  f.run("clarification-ask", args, 1);
+  f.run("clarify ask", args, 1);
   assert.equal(readFileSync(f.path(), "utf8"), cancelled);
 });
 
@@ -650,12 +650,12 @@ test("all confirmation phases enforce 60 Unicode characters and single-line summ
       "甲\u2029乙",
     ])
       f.run(
-        "confirm",
+        "stage confirm",
         ["--phase", phase, "--summary", summary, "--source", "本轮明确确认"],
         1,
       );
     assert.equal(readFileSync(f.path(), "utf8"), before);
-    f.run("confirm", [
+    f.run("stage confirm", [
       "--phase",
       phase,
       "--summary",
@@ -668,7 +668,7 @@ test("all confirmation phases enforce 60 Unicode characters and single-line summ
   const prior = f.state();
   prior.confirmations.requirement.summary = "历史摘要".repeat(30);
   writeFileSync(f.path(), JSON.stringify(prior));
-  f.run("retitle", ["--title", "仍可操作旧记录"]);
+  f.run("change retitle", ["--title", "仍可操作旧记录"]);
   assert.equal(
     f.state().confirmations.requirement.summary,
     prior.confirmations.requirement.summary,
@@ -679,10 +679,10 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
   for (const size of ["medium", "large"]) {
     const f = fixture(t);
     f.create(size);
-    f.run("task-add", ["--title", "Implement"]);
-    f.run("execute", [], 1);
+    f.run("task add", ["--title", "Implement"]);
+    f.run("stage execute", [], 1);
     for (const phase of ["requirement", "technical", "plan"])
-      f.run("confirm", [
+      f.run("stage confirm", [
         "--phase",
         phase,
         "--summary",
@@ -691,24 +691,24 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
         "Conversation",
       ]);
     f.handoff();
-    f.run("execute");
-    f.run("task-start", ["--task", "T1"]);
+    f.run("stage execute");
+    f.run("task start", ["--task", "T1"]);
     f.done();
     f.commit();
     f.verify();
     f.run(
-      "accept",
+      "close accept",
       ["--mode", "agent", "--summary", "No", "--source", "Agent"],
       1,
     );
-    f.run("wait", ["--kind", "confirmation", "--summary", "Await user"]);
+    f.run("stage wait", ["--kind", "confirmation", "--summary", "Await user"]);
     f.run(
-      "accept",
+      "close accept",
       ["--mode", "user", "--summary", "Yes", "--source", "User"],
       1,
     );
     const completed = f.state().tasks.T1;
-    f.run("rework", [
+    f.run("stage rework", [
       "--stage",
       "execution",
       "--reason",
@@ -718,10 +718,10 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
     ]);
     assert.deepEqual(f.state().closure, {});
     assert(!f.state().waitingFor);
-    f.run("task-start", ["--task", "T1"], 1);
-    f.run("task-add", ["--title", "Repair"]);
-    f.run("task-start", ["--task", "T2"]);
-    f.run("task-complete", [
+    f.run("task start", ["--task", "T1"], 1);
+    f.run("task add", ["--title", "Repair"]);
+    f.run("task start", ["--task", "T2"]);
+    f.run("task complete", [
       "--task",
       "T2",
       "--verification",
@@ -737,30 +737,30 @@ test("medium/large confirmations, repair tasks and explicit acceptance preserve 
 test("task editing preserves committed numbers and protects committed completions", (t) => {
   const f = fixture(t);
   f.create();
-  for (const title of ["First", "Second", "Third"]) f.run("task-add", ["--title", title]);
+  for (const title of ["First", "Second", "Third"]) f.run("task add", ["--title", title]);
   f.handoff();
-  f.run("task-remove", ["--task", "T3"]);
+  f.run("task remove", ["--task", "T3"]);
   f.commit();
-  assert.match(f.run("task-add", ["--title", "Reuse", "--task", "T3"], 1), /greater than 3/);
-  f.run("task-add", ["--title", "Fourth"]);
+  assert.match(f.run("task add", ["--title", "Reuse", "--task", "T3"], 1), /greater than 3/);
+  f.run("task add", ["--title", "Fourth"]);
   assert.equal(f.state().tasks.T4.title, "Fourth");
-  f.run("task-remove", ["--task", "T4"]);
-  f.run("task-add", ["--title", "Fourth again"]);
+  f.run("task remove", ["--task", "T4"]);
+  f.run("task add", ["--title", "Fourth again"]);
   const before = f.state();
-  const preview = f.run("task-update", ["--task", "T1", "--title", "Edited", "--dry-run"]);
+  const preview = f.run("task update", ["--task", "T1", "--title", "Edited", "--dry-run"]);
   assert.equal(preview.state.tasks.T1.title, "Edited");
   assert.deepEqual(f.state(), before);
-  f.run("task-update", ["--task", "T1", "--title", "Edited", "--branch", "task/sample/T1"]);
+  f.run("task update", ["--task", "T1", "--title", "Edited", "--branch", "task/sample/T1"]);
   assert.equal(f.state().tasks.T1.branch, "task/sample/T1");
-  f.run("task-update", ["--task", "T1", "--branch", "none"]);
+  f.run("task update", ["--task", "T1", "--branch", "none"]);
   assert.deepEqual(f.state().tasks.T1, { title: "Edited", status: "todo" });
-  f.run("execute");
-  f.run("task-start", ["--task", "T1"]);
+  f.run("stage execute");
+  f.run("task start", ["--task", "T1"]);
   f.done();
-  f.run("task-update", ["--task", "T1", "--title", "Pending commit"]);
+  f.run("task update", ["--task", "T1", "--title", "Pending commit"]);
   f.commit(false);
-  assert.match(f.run("task-update", ["--task", "T1", "--title", "Too late"], 1), /immutable/);
-  assert.match(f.run("task-remove", ["--task", "T1"], 1), /immutable/);
+  assert.match(f.run("task update", ["--task", "T1", "--title", "Too late"], 1), /immutable/);
+  assert.match(f.run("task remove", ["--task", "T1"], 1), /immutable/);
 });
 
 test("task numbering also reads committed archive snapshots", (t) => {
@@ -777,11 +777,11 @@ test("task numbering also reads committed archive snapshots", (t) => {
   }));
   f.commit(false);
   f.git("mv", archive + "/change.json", "docs/project/changes/sample");
-  assert.match(f.run("task-remove", ["--task", "T12"], 1), /immutable/);
-  assert.match(f.run("task-update", ["--task", "T12", "--title", "Edited"], 1), /immutable/);
+  assert.match(f.run("task remove", ["--task", "T12"], 1), /immutable/);
+  assert.match(f.run("task update", ["--task", "T12", "--title", "Edited"], 1), /immutable/);
   writeFileSync(f.path(), JSON.stringify(active));
   f.commit(false);
-  f.run("task-add", ["--title", "Next after archive"]);
+  f.run("task add", ["--title", "Next after archive"]);
   assert.equal(f.state().tasks.T13.title, "Next after archive");
 });
 
@@ -790,21 +790,21 @@ test("default scheduling enforces numeric serial order for every ordinary size",
     const f = fixture(t);
     f.create(size);
     for (const id of ["T1", "T2", "T10"])
-      f.run("task-add", ["--task", id, "--title", id]);
+      f.run("task add", ["--task", id, "--title", id]);
     if (size !== "small") f.confirm();
     f.handoff();
-    f.run("execute");
+    f.run("stage execute");
     const before = readFileSync(f.path(), "utf8"),
       index = f.git("ls-files", "--stage");
-    assert.match(f.run("task-start", ["--task", "T2"], 1), /T1/);
-    assert.match(f.run("task-start", ["--task", "T10", "--dry-run"], 1), /T1/);
+    assert.match(f.run("task start", ["--task", "T2"], 1), /T1/);
+    assert.match(f.run("task start", ["--task", "T10", "--dry-run"], 1), /T1/);
     assert.equal(readFileSync(f.path(), "utf8"), before);
     assert.equal(f.git("ls-files", "--stage"), index);
-    f.run("task-block", ["--task", "T1", "--reason", "Waiting for input"]);
-    f.run("task-start", ["--task", "T2"], 1);
+    f.run("task block", ["--task", "T1", "--reason", "Waiting for input"]);
+    f.run("task start", ["--task", "T2"], 1);
     for (const id of ["T1", "T2", "T10"]) {
-      f.run("task-start", ["--task", id]);
-      f.run("task-complete", [
+      f.run("task start", ["--task", id]);
+      f.run("task complete", [
         "--task",
         id,
         "--verification",
@@ -824,22 +824,22 @@ test("resizing aligns confirmations while preserving completed tasks and a pause
   f.done();
   f.commit();
   const completed = f.state().tasks.T1;
-  const preview = f.run("resize", ["--size", "medium", "--dry-run"]);
+  const preview = f.run("change resize", ["--size", "medium", "--dry-run"]);
   assert.equal(preview.state.stage, "requirement");
   assert.equal(f.state().size, "small");
-  f.run("wait", ["--kind", "pause", "--summary", "Wait here"]);
-  f.run("resize", ["--size", "medium"]);
+  f.run("stage wait", ["--kind", "pause", "--summary", "Wait here"]);
+  f.run("change resize", ["--size", "medium"]);
   assert.equal(f.state().stage, "requirement");
   assert.equal(f.state().waitingFor.kind, "pause");
-  f.run("resume");
+  f.run("stage resume");
   f.confirm();
-  f.run("execute");
+  f.run("stage execute");
   assert.deepEqual(f.state().tasks.T1, completed);
   const confirmations = f.state().confirmations;
-  f.run("resize", ["--size", "large"]);
+  f.run("change resize", ["--size", "large"]);
   assert.equal(f.state().stage, "execution");
   assert.deepEqual(f.state().confirmations, confirmations);
-  f.run("resize", ["--size", "xlarge"], 1);
+  f.run("change resize", ["--size", "xlarge"], 1);
   assert.equal(f.state().size, "large");
 });
 
@@ -847,24 +847,24 @@ test("resizing aligns large planning and clears invalidated closure on upgrade",
   const f = fixture(t);
   f.create("large");
   for (const phase of ["requirement", "technical"]) {
-    f.run("confirm", ["--phase", phase, "--summary", phase, "--source", "Fixture"]);
+    f.run("stage confirm", ["--phase", phase, "--summary", phase, "--source", "Fixture"]);
   }
   const confirmations = f.state().confirmations;
   assert.equal(f.state().stage, "plan");
-  f.run("resize", ["--size", "medium"]);
+  f.run("change resize", ["--size", "medium"]);
   assert.equal(f.state().stage, "technical");
   assert.deepEqual(f.state().confirmations, confirmations);
-  f.run("resize", ["--size", "large"]);
+  f.run("change resize", ["--size", "large"]);
   assert.equal(f.state().stage, "plan");
-  f.run("resize", ["--size", "small"]);
+  f.run("change resize", ["--size", "small"]);
   assert.equal(f.state().stage, "requirement");
   assert.deepEqual(f.state().confirmations, confirmations);
   f.create("xlarge", "parent", ["--children", "sample"]);
-  assert.match(f.run("resize", ["--size", "medium"], 1, "parent"), /xlarge/);
+  assert.match(f.run("change resize", ["--size", "medium"], 1, "parent"), /xlarge/);
   f.begin();
   f.done();
   f.verify();
-  f.run("resize", ["--size", "large"]);
+  f.run("change resize", ["--size", "large"]);
   assert.equal(f.state().stage, "plan");
   assert.deepEqual(f.state().closure, {});
   assert.equal(f.state().tasks.T1.status, "done");
@@ -876,14 +876,14 @@ test("an acceptance recorded as small cannot close a medium Change", (t) => {
   f.confirm();
   f.begin();
   f.done();
-  f.run("resize", ["--size", "small"]);
+  f.run("change resize", ["--size", "small"]);
   f.verify();
   f.accept();
-  f.run("resize", ["--size", "medium"]);
+  f.run("change resize", ["--size", "medium"]);
   assert.equal(f.state().stage, "close");
   assert.equal(f.state().closure.verification.result, "passed");
   assert.equal(f.state().closure.acceptance, undefined);
-  f.run("accept", ["--mode", "agent", "--summary", "Agent", "--source", "Fixture"], 1);
+  f.run("close accept", ["--mode", "agent", "--summary", "Agent", "--source", "Fixture"], 1);
   f.accept("user");
   assert.equal(f.archive().state.status, "completed");
 });
@@ -893,40 +893,40 @@ test("relationship commands replace lists and reject invalid declarations", (t) 
   f.create("xlarge", "parent", ["--children", "sample"]);
   f.create("small", "upstream");
   f.create("small", "other");
-  assert.match(f.run("create", [
+  assert.match(f.run("change create", [
     "--size", "small", "--title", "Child", "--parent", "parent", "--depends-on", "parent",
   ], 1), /cannot depend on its parent/);
   f.create("small", "sample", ["--parent", "parent"]);
   f.commit();
   const before = f.state();
   assert.deepEqual(
-    f.run("depends", ["--depends-on", "upstream", "--dry-run"]).state.dependsOn,
+    f.run("change depends", ["--depends-on", "upstream", "--dry-run"]).state.dependsOn,
     ["upstream"],
   );
   assert.deepEqual(f.state(), before);
-  f.run("depends", ["--depends-on", "upstream,other"]);
-  f.run("depends", ["--depends-on", "other"]);
+  f.run("change depends", ["--depends-on", "upstream,other"]);
+  f.run("change depends", ["--depends-on", "other"]);
   assert.deepEqual(f.state().dependsOn, ["other"]);
-  assert.match(f.run("depends", ["--depends-on", "parent"], 1), /cannot depend on its parent/);
-  assert.match(f.run("depends", ["--depends-on", "missing"], 1), /not registered/);
-  f.run("depends", ["--depends-on", "none"]);
+  assert.match(f.run("change depends", ["--depends-on", "parent"], 1), /cannot depend on its parent/);
+  assert.match(f.run("change depends", ["--depends-on", "missing"], 1), /not registered/);
+  f.run("change depends", ["--depends-on", "none"]);
   assert(!Object.hasOwn(f.state(), "dependsOn"));
-  f.run("children", ["--children", "sample,next"], 0, "parent");
+  f.run("change children", ["--children", "sample,next"], 0, "parent");
   assert.deepEqual(f.state("parent").children, ["sample", "next"]);
-  f.run("children", ["--children", "sample,next,next"], 1, "parent");
-  f.run("children", ["--children", "other"], 1);
-  f.run("depends", ["--depends-on", "none"], 1, "parent");
+  f.run("change children", ["--children", "sample,next,next"], 1, "parent");
+  f.run("change children", ["--children", "other"], 1);
+  f.run("change depends", ["--depends-on", "none"], 1, "parent");
 });
 
 test("collaborator commands reject email addresses in display names", (t) => {
   const f = fixture(t);
   const members = JSON.stringify([{ name: "Member <member@example.org>" }]);
-  assert.match(f.run("create", [
+  assert.match(f.run("change create", [
     "--size", "small", "--title", "Example", "--collaborators", members,
   ], 1), /collaborators\/0\/name.*email address/);
   f.create();
-  assert.match(f.run("collaborators", ["--members", members], 1), /email address/);
-  f.run("collaborators", ["--members", JSON.stringify([{ name: "Team @ Home" }])]);
+  assert.match(f.run("change collaborators", ["--members", members], 1), /email address/);
+  f.run("change collaborators", ["--members", JSON.stringify([{ name: "Team @ Home" }])]);
   assert.deepEqual(f.state().collaborators, [{ name: "Team @ Home" }]);
 });
 
@@ -934,27 +934,27 @@ test("explicit parallel order overrides the default and completion rechecks chan
   const f = fixture(t);
   f.create("medium");
   for (const id of ["T1", "T2"])
-    f.run("task-add", ["--task", id, "--title", id]);
+    f.run("task add", ["--task", id, "--title", id]);
   f.confirm();
   const parallel =
     "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n| T2 | 无 |\n";
   f.plan(parallel);
   f.handoff();
-  f.run("execute");
-  f.run("task-start", ["--task", "T2"]);
-  f.run("task-start", ["--task", "T1"]);
+  f.run("stage execute");
+  f.run("task start", ["--task", "T2"]);
+  f.run("task start", ["--task", "T1"]);
   assert.equal(f.state().tasks.T1.status, "doing");
   assert.equal(f.state().tasks.T2.status, "doing");
   f.plan(parallel.replace("| T2 | 无 |", "| T2 | T1 |"));
   const before = readFileSync(f.path(), "utf8");
   f.run(
-    "task-complete",
+    "task complete",
     ["--task", "T2", "--verification", "Premature completion"],
     1,
   );
   assert.equal(readFileSync(f.path(), "utf8"), before);
   f.done();
-  f.run("task-complete", [
+  f.run("task complete", [
     "--task",
     "T2",
     "--verification",
@@ -966,7 +966,7 @@ test("explicit parallel order overrides the default and completion rechecks chan
 test("invalid explicit orders block execution and every closure step without writing state", (t) => {
   const f = fixture(t);
   f.create("medium");
-  f.run("task-add", ["--title", "Implement"]);
+  f.run("task add", ["--title", "Implement"]);
   f.confirm();
   const good =
     "## 执行顺序\n\n| 任务 | 前置任务 |\n| --- | --- |\n| T1 | 无 |\n";
@@ -979,18 +979,18 @@ test("invalid explicit orders block execution and every closure step without wri
   const original = readFileSync(f.path(), "utf8");
   for (const body of invalid) {
     f.plan(body);
-    f.run("execute", [], 1);
+    f.run("stage execute", [], 1);
     assert.equal(readFileSync(f.path(), "utf8"), original);
   }
   f.plan(good);
   f.handoff();
-  f.run("execute");
+  f.run("stage execute");
   f.plan(invalid[0]);
   const execution = readFileSync(f.path(), "utf8");
-  f.run("task-start", ["--task", "T1"], 1);
+  f.run("task start", ["--task", "T1"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), execution);
   f.plan(good);
-  f.run("task-start", ["--task", "T1"]);
+  f.run("task start", ["--task", "T1"]);
   f.done();
   const checked = (command: string, options: string[], action: () => void) => {
     f.plan(invalid[0]);
@@ -1002,19 +1002,19 @@ test("invalid explicit orders block execution and every closure step without wri
     f.plan(good);
     action();
   };
-  checked("verify", ["--result", "passed", "--summary", "Bad order"], f.verify);
+  checked("close verify", ["--result", "passed", "--summary", "Bad order"], f.verify);
   checked(
-    "accept",
+    "close accept",
     ["--mode", "user", "--summary", "Bad order", "--source", "Fixture"],
     () => f.accept("user"),
   );
-  checked("specs", ["--result", "not_needed", "--summary", "Bad order"], () =>
-    f.run("specs", ["--result", "not_needed", "--summary", "Fixture"]),
+  checked("close specs", ["--result", "not_needed", "--summary", "Bad order"], () =>
+    f.run("close specs", ["--result", "not_needed", "--summary", "Fixture"]),
   );
-  checked("archive", ["--date", "2026-10-09", "--summary", "Bad order"], () => {
+  checked("close archive", ["--date", "2026-10-09", "--summary", "Bad order"], () => {
     assert(existsSync(f.path()));
     assert(!existsSync(join(f.root, "docs/project/archive/2026-10-09-sample")));
-    f.run("archive", ["--date", "2026-10-09", "--summary", "Valid order"]);
+    f.run("close archive", ["--date", "2026-10-09", "--summary", "Valid order"]);
   });
 });
 
@@ -1022,13 +1022,13 @@ test("serial scheduling checks earlier ancestors even when an intermediate task 
   const f = fixture(t);
   f.create();
   for (const id of ["T1", "T2", "T3"])
-    f.run("task-add", ["--task", id, "--title", id]);
+    f.run("task add", ["--task", id, "--title", id]);
   f.handoff();
-  f.run("execute");
+  f.run("stage execute");
   const state = f.state();
   state.tasks.T2.status = "done";
   writeFileSync(f.path(), JSON.stringify(state));
-  assert.match(f.run("task-start", ["--task", "T3"], 1), /T1/);
+  assert.match(f.run("task start", ["--task", "T3"], 1), /T1/);
   assert.equal(f.state().tasks.T3.status, "todo");
 });
 
@@ -1036,20 +1036,20 @@ test("failed operations, dry runs, locks and conflicting files leave source byte
   const f = fixture(t);
   f.create();
   const before = readFileSync(f.path(), "utf8");
-  f.run("create", ["--title", "Overwrite", "--size", "small"], 1);
-  f.run("task-add", ["--title", "No", "--task", "__proto__"], 1);
-  f.run("task-add", ["--title", "No", "--unknown", "value"], 1);
-  f.run("verify", ["--result", "passed", "--summary", "Skip"], 1);
-  f.run("task-add", ["--title", "Plan only", "--dry-run"]);
+  f.run("change create", ["--title", "Overwrite", "--size", "small"], 1);
+  f.run("task add", ["--title", "No", "--task", "__proto__"], 1);
+  f.run("task add", ["--title", "No", "--unknown", "value"], 1);
+  f.run("close verify", ["--result", "passed", "--summary", "Skip"], 1);
+  f.run("task add", ["--title", "Plan only", "--dry-run"]);
   assert.equal(readFileSync(f.path(), "utf8"), before);
   mkdirSync(join(f.common, "spec-trail-state.lock"));
-  f.run("task-add", ["--title", "Contended"], 1);
+  f.run("task add", ["--title", "Contended"], 1);
   assert(existsSync(join(f.common, "spec-trail-state.lock")));
   rmSync(join(f.common, "spec-trail-state.lock"), { recursive: true });
   f.git("switch", "-c", "codex/wrong");
-  f.run("task-add", ["--title", "Wrong owner"], 1);
+  f.run("task add", ["--title", "Wrong owner"], 1);
   f.git("switch", "main");
-  f.run("task-add", ["--title", "Protected"], 1);
+  f.run("task add", ["--title", "Protected"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
@@ -1059,13 +1059,13 @@ test("closure remains strict about future clocks and required steps; no precisio
   f.begin();
   f.done();
   f.verify();
-  f.run("specs", ["--result", "synced", "--summary", "Skip acceptance"], 1);
+  f.run("close specs", ["--result", "synced", "--summary", "Skip acceptance"], 1);
   const state = f.state();
   state.closure.verification.at = "2999-01-01T00:00:00.080Z";
   writeFileSync(f.path(), JSON.stringify(state));
   const before = readFileSync(f.path(), "utf8");
   f.run(
-    "accept",
+    "close accept",
     ["--mode", "agent", "--summary", "Accept", "--source", "Policy"],
     1,
   );
@@ -1090,7 +1090,7 @@ test("retry only repairs an uncommitted done task; waiting, blocking, failed ver
   writeFileSync(hook, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
   assert.throws(() => f.git("commit", "-m", "Rejected checkpoint"));
   rmSync(hook);
-  f.run("task-retry", ["--task", "T1"]);
+  f.run("task retry", ["--task", "T1"]);
   const recoveredIndex = JSON.parse(
     f.git("show", ":docs/project/changes/sample/change.json"),
   );
@@ -1100,22 +1100,22 @@ test("retry only repairs an uncommitted done task; waiting, blocking, failed ver
   assert.equal(f.state().title, "Unstaged title");
   assert.equal(f.state().tasks.T1.status, "doing");
   assert(!f.state().tasks.T1.verification);
-  f.run("task-block", ["--task", "T1", "--reason", "External data missing"]);
-  f.run("task-complete", ["--task", "T1", "--verification", "No"], 1);
-  f.run("wait", ["--kind", "dependency", "--summary", "Upstream"]);
-  f.run("task-start", ["--task", "T1"], 1);
-  f.run("resume");
-  f.run("task-start", ["--task", "T1"]);
+  f.run("task block", ["--task", "T1", "--reason", "External data missing"]);
+  f.run("task complete", ["--task", "T1", "--verification", "No"], 1);
+  f.run("stage wait", ["--kind", "dependency", "--summary", "Upstream"]);
+  f.run("task start", ["--task", "T1"], 1);
+  f.run("stage resume");
+  f.run("task start", ["--task", "T1"]);
   f.done();
   f.commit();
-  f.run("task-retry", ["--task", "T1"], 1);
-  f.run("verify", ["--result", "failed", "--summary", "Integration failed"]);
+  f.run("task retry", ["--task", "T1"], 1);
+  f.run("close verify", ["--result", "failed", "--summary", "Integration failed"]);
   f.run(
-    "accept",
+    "close accept",
     ["--mode", "agent", "--summary", "No", "--source", "Policy"],
     1,
   );
-  f.run("rework", [
+  f.run("stage rework", [
     "--stage",
     "requirement",
     "--reason",
@@ -1123,10 +1123,10 @@ test("retry only repairs an uncommitted done task; waiting, blocking, failed ver
     "--approach",
     "Reconsider",
   ]);
-  f.run("cancel", ["--reason", "User cancelled"]);
+  f.run("change cancel", ["--reason", "User cancelled"]);
   const before = readFileSync(f.path(), "utf8");
-  f.run("resume", [], 1);
-  f.run("create", ["--title", "Other", "--size", "small"], 1, "other");
+  f.run("stage resume", [], 1);
+  f.run("change create", ["--title", "Other", "--size", "small"], 1, "other");
   assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
@@ -1137,23 +1137,23 @@ test("archive collision and symlink inputs do not overwrite files", (t) => {
   f.done();
   f.verify();
   f.accept();
-  f.run("specs", ["--result", "synced", "--summary", "Synced"]);
+  f.run("close specs", ["--result", "synced", "--summary", "Synced"]);
   mkdirSync(join(f.root, "docs/project/archive/2026-10-04-sample"), {
     recursive: true,
   });
   const before = readFileSync(f.path(), "utf8");
-  f.run("archive", ["--date", "2026-10-04", "--summary", "Collision"], 1);
-  f.run("archive", ["--date", "2026-02-30", "--summary", "Bad date"], 1);
+  f.run("close archive", ["--date", "2026-10-04", "--summary", "Collision"], 1);
+  f.run("close archive", ["--date", "2026-02-30", "--summary", "Bad date"], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
   const outside = join(f.root, "outside.json");
   writeFileSync(outside, before);
   rmSync(f.path());
   symlinkSync(outside, f.path());
-  f.run("show", [], 1);
+  f.run("change show", [], 1);
   assert.equal(readFileSync(outside, "utf8"), before);
   rmSync(f.path());
   symlinkSync(join(f.root, "does-not-exist"), f.path());
-  f.run("show", [], 1);
+  f.run("change show", [], 1);
 });
 
 test("preview association command preserves unrelated state and enforces configuration and output paths", (t) => {
@@ -1175,7 +1175,7 @@ test("preview association command preserves unrelated state and enforces configu
     devices: ["mobile"],
   };
   writeFileSync(entries, JSON.stringify([entry]));
-  f.run("previews-set", ["--file", entries], 1);
+  f.run("prototype previews", ["--file", entries], 1);
   writeFileSync(
     join(f.root, "docs/project/workflow.json"),
     JSON.stringify({
@@ -1188,17 +1188,17 @@ test("preview association command preserves unrelated state and enforces configu
       },
     }),
   );
-  f.run("previews-set", ["--file", entries], 1);
+  f.run("prototype previews", ["--file", entries], 1);
   mkdirSync(join(f.root, entry.artifact.path), { recursive: true });
   writeFileSync(
     join(f.root, entry.artifact.path, "index.html"),
     "<h1>Page</h1>",
   );
   const before = f.state();
-  f.run("previews-set", ["--file", entries]);
+  f.run("prototype previews", ["--file", entries]);
   assert.deepEqual(f.state(), { ...before, previews: [entry] });
   writeFileSync(entries, JSON.stringify([{ ...entry, devices: ["watch"] }]));
-  f.run("previews-set", ["--file", entries], 1);
+  f.run("prototype previews", ["--file", entries], 1);
   f.begin();
   f.done();
   f.verify();
@@ -1219,19 +1219,19 @@ test("execution requires a published archived dependency already integrated in t
   const upstream = f.root;
   f.usePlanning();
   f.create("small", "next", ["--depends-on", "sample"]);
-  f.run("task-add", ["--title", "Use prerequisite"], 0, "next");
-  assert.match(f.run("execute", [], 1, "next"), /not closed/);
+  f.run("task add", ["--title", "Use prerequisite"], 0, "next");
+  assert.match(f.run("stage execute", [], 1, "next"), /not closed/);
   assert.equal(f.state("next").stage, "requirement");
   f.at(upstream, "push", "origin", "HEAD");
   f.handoff(0, "next");
   assert.match(
-    f.run("execute", [], 1, "next"),
+    f.run("stage execute", [], 1, "next"),
     /Cannot establish sample by ancestry/,
   );
   assert.equal(f.state("next").stage, "requirement");
   f.git("merge", "--no-edit", "change/sample");
   f.git("push", "origin", "HEAD");
-  f.run("execute", [], 0, "next");
+  f.run("stage execute", [], 0, "next");
   assert.equal(f.state("next").stage, "execution");
 });
 
@@ -1261,14 +1261,14 @@ test("squashed delivery accepts explicit evidence while the archived dependency 
     f.git("merge-base", "--is-ancestor", sourceCommit, "HEAD"),
   );
   f.create("small", "next", ["--depends-on", "sample"]);
-  f.run("task-add", ["--title", "Use upstream"], 0, "next");
+  f.run("task add", ["--title", "Use upstream"], 0, "next");
   const note = `Verified delivery.txt matches archived sample after squash ${f.git("rev-parse", "HEAD")}`;
   f.handoff(0, "next", ["--availability-note", note]);
   assert.match(
-    f.run("execute", [], 1, "next"),
+    f.run("stage execute", [], 1, "next"),
     /Cannot establish sample by ancestry/,
   );
-  const result = f.run("execute", ["--availability-note", note], 0, "next");
+  const result = f.run("stage execute", ["--availability-note", note], 0, "next");
   assert.equal(result.state.stage, "execution");
   assert.equal(result.availability[0].sourceCommit, sourceCommit);
   assert.equal(result.availability[0].evidence, note);
@@ -1285,14 +1285,14 @@ test("state commands reject legacy workflow before writing planning or execution
       releaseBranch: "main",
     }),
   );
-  for (const command of ["show", "execute", "retitle"])
+  for (const command of ["change show", "stage execute", "change retitle"])
     assert.match(
-      f.run(command, command === "retitle" ? ["--title", "Rejected"] : [], 1),
+      f.run(command, command === "change retitle" ? ["--title", "Rejected"] : [], 1),
       /Invalid workflow.json.*(?:version 2|schemaVersion)/,
     );
   assert.equal(readFileSync(f.path(), "utf8"), before);
   assert.match(
-    f.run("create", ["--title", "Rejected", "--size", "small"], 1, "other"),
+    f.run("change create", ["--title", "Rejected", "--size", "small"], 1, "other"),
     /Invalid workflow.json/,
   );
   assert(!existsSync(f.path("other")));

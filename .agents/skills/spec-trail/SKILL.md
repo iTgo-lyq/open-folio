@@ -11,10 +11,6 @@ description: 管控项目需求澄清、技术方案、计划、执行、验收�
 
 用户派发任务时，先检查分支、工作区和相关 Change。
 
-### 项目接入
-
-运行 `cli setup check` 检查项目接入准备状态, 未接入时读取 ./references/setup/setup.md
-
 ### 是否需要 Change
 
 - **无需创建 Change**：纯问答、讨论、只读调查或评审；局部、无歧义的拼写、注释、格式等机械修正，或纠正、补录既有事实的文档描述。后两类必须不改变产品行为、既定要求、架构、共享契约、数据迁移、权限安全或难回退的外部状态。
@@ -60,7 +56,7 @@ description: 管控项目需求澄清、技术方案、计划、执行、验收�
 
 medium 及以上 Change 涉及数据结构、时序流程等明显变化时，建议按变更模块分别评估配图，并放入相关需求或技术方案。图片保存到所属文档旁的 `assets/` 目录，以 Markdown 相对图片链接引用。
 
-归档后尚未集成的 Change 可用 `rework` 恢复返修，见[返修](#返修)。已集成归档的正文、状态与证据保持只读；后续需求或返修创建新 Change。历史勘误仅限用户明确要求，在所属分支做最小人工修正，以独立提交说明原因，不改写已推送 Git 历史。
+归档后尚未集成的 Change 可用 `stage rework` 恢复返修，见[返修](#返修)。已集成归档的正文、状态与证据保持只读；后续需求或返修创建新 Change。历史勘误仅限用户明确要求，在所属分支做最小人工修正，以独立提交说明原因，不改写已推送 Git 历史。
 
 ### 规模
 
@@ -204,7 +200,7 @@ cli workspace handoff --change example --dry-run
 cli workspace handoff --change example
 ```
 
-移交不授予阶段确认、不进入 execution。原型、技术方案、Plan 和实现均在所属工作区推进，Draft PR 按[PR 合入](#pr-合入)创建。移交后须在目标会话核验，获所需确认后运行 execute。
+移交不授予阶段确认、不进入 execution。原型、技术方案、Plan 和实现均在所属工作区推进，Draft PR 按[PR 合入](#pr-合入)创建。移交后须在目标会话核验，获所需确认后运行 `stage execute`。
 
 已移交 Change 的修改误写到集成分支时，保留现场，核对归属后迁往正确工作区，不清空其他会话的修改。
 
@@ -260,7 +256,7 @@ cli workspace prepare --change example
 
 ### 语义命令
 
-分支移交与工作区定位见[移交](#移交)与[工作区与会话](#工作区与会话)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用语义命令：`cli change <command> --change <id>`。`cli --help` 列出命令组，`cli <group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。
+分支移交与工作区定位见[移交](#移交)与[工作区与会话](#工作区与会话)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用语义命令 `cli <group> <command> --change <id>`，按职责分为 change、clarify、task、stage、close 五组。`cli --help` 列出命令组，`cli <group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。
 
 脚本负责前置检查和失效状态清理；Agent 负责实际确认、验证证据、正文一致性与提交推送。进程异常退出可能遗留状态锁；确认持锁进程已结束、核对工作区后才能清理。
 
@@ -273,18 +269,18 @@ cli workspace prepare --change example
 ```bash
 cli change create --change example --title '具体目标' --size small
 # 按实际需求编辑 requirement.md，然后登记任务。
-cli change task-add --change example --title '实现目标行为'
+cli task add --change example --title '实现目标行为'
 # 需求提交并按规模确认后移交；small 沿用创建前确认。
 cli workspace handoff --change example
-cli change execute --change example
-cli change task-start --change example --task T1
+cli stage execute --change example
+cli task start --change example --task T1
 # small 提交推送真实执行状态后创建 Draft PR，再开始实现。
 # 完成实现与验证后，填真实结果；提交、推送与 done 一起完成。
-cli change task-complete --change example --task T1 --verification '实际验证命令与结果'
-cli change verify --change example --result passed --summary '实际整体验证与评审结论'
+cli task complete --change example --task T1 --verification '实际验证命令与结果'
+cli close verify --change example --result passed --summary '实际整体验证与评审结论'
 ```
 
-按[验收](#验收)规则决定自验收或 `wait --kind confirmation`。人工验收通过后用 resume 清除等待；accept 记录真实依据，完成 Specs 同步后执行 specs，再 archive。
+按[验收](#验收)规则决定自验收或 `stage wait --kind confirmation`。人工验收通过后用 `stage resume` 清除等待；`close accept` 记录真实依据，完成 Specs 同步后执行 `close specs`，再 `close archive`。
 
 ## 阶段推进
 
@@ -350,7 +346,7 @@ Git 材料历史未覆盖实际参与者时，可用 `collaborators` 补充协�
 
 ### 只记录、暂不启动
 
-用户明确要求“只记录需求、短期不启动”时，只保存已知目标、范围、未决问题，并用 `wait --kind pause` 记录暂缓原因或恢复条件。暂缓期间可继续补充需求和澄清，不能因补充材料自动 resume。暂缓不是任务受阻，不用 task-block 表达。
+用户明确要求“只记录需求、短期不启动”时，只保存已知目标、范围、未决问题，并用 `stage wait --kind pause` 记录暂缓原因或恢复条件。暂缓期间可继续补充需求和澄清，不能因补充材料自动 `stage resume`。暂缓不是任务受阻，不用 `task block` 表达。
 
 ### 范围与规模调整
 
@@ -418,7 +414,7 @@ Requirement 只保留影响目标、范围、行为或验收的结论与必要�
 
 ### 问答记录
 
-用 `clarification-ask / clarification-answer / clarification-withdraw` 保存需求与技术阶段实际提过的问题、推荐和用户最终有效回答，便于回溯遗漏与澄清偏差，不记录用户思考过程。创建时补录创建前问答，`round` 在整个 Change 中递增，同轮共享，不随阶段重启；明确更正覆盖原答案，含糊冲突先澄清再更新。实质改变需求或关键方案按返工处理。问答不代替阶段确认。
+用 `clarify ask / answer / withdraw` 保存需求与技术阶段实际提过的问题、推荐和用户最终有效回答，便于回溯遗漏与澄清偏差，不记录用户思考过程。创建时补录创建前问答，`round` 在整个 Change 中递增，同轮共享，不随阶段重启；明确更正覆盖原答案，含糊冲突先澄清再更新。实质改变需求或关键方案按返工处理。问答不代替阶段确认。
 
 每题按首次提问所要决定的内容归入需求或技术，只消耗一类额度，不按当前阶段归类。每轮将需求结论写回 Requirement，技术结论写回 Technical（small 写入 Requirement 的方案要点），在对应取舍处注明问题类别并引用 Q 编号；未答或撤回问题也保留类别与引用，跨文档引用、回答引发需求返工均不改变原题归属。较长调查证据放 Research，不复制完整访谈。
 
@@ -519,10 +515,10 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 ### 单任务循环
 
-1. 按默认编号串行或 Plan 显式安排选择就绪任务，用 `task-start` 将任务设为 `doing`。
+1. 按默认编号串行或 Plan 显式安排选择就绪任务，用 `task start` 将任务设为 `doing`。
 2. 复用项目模式，完成最小可验证交付并保持中间版本可运行；运行与改动相称的测试、类型检查、构建和必要交互验证；无新变化或疑点时不重复已有成功检查。
 3. 对照 Requirement、Technical 与任务验收核对交付；有用户确认原型的 UI 实现，按[原型还原验收](./prototype/SKILL.md#开发后的原型还原验收)核对本任务范围。将摘要写 `verification`；较长证据按任务编号写 Execution，记录范围、命令、结果和未验证限制。
-4. 验证通过后，用 `task-complete` 记录真实验证，将实现与 `done` 记录一起提交推送，成功后才算完成。提交失败时用 `task-retry` 恢复为 `doing`，它会清除验证摘要，修复后重新 `task-complete`；推送失败按[检查点](#检查点)处理。
+4. 验证通过后，用 `task complete` 记录真实验证，将实现与 `done` 记录一起提交推送，成功后才算完成。提交失败时用 `task retry` 恢复为 `doing`，它会清除验证摘要，修复后重新 `task complete`；推送失败按[检查点](#检查点)处理。
 
 同一分支串行推进，当前任务的实现或状态检查点提交成功后，可切换到其他就绪任务；并行实施使用[任务分支](#任务分支)与隔离工作区。未完成任务保留 `doing` / `blocked`，可提交真实状态与证据；可运行的中间实现需先调整成独立交付。所有任务完成后按[阶段表](#阶段表)进入 close。`commitTitle` 建议用 `<id> T<n>:` 开头，不为记录提交 hash 另造提交。
 
@@ -561,9 +557,9 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 small 默认自验收后归档；用户要求人工验收或人工验收提出问题后，该 Change 后续均须用户确认，并在 Requirement 保留此要求。其余规模人工验收。
 
-自验收时逐项核对 Requirement 与交付证据，无未解决验收项后用 `accept --mode agent` 记录通过，摘要注明“Agent 自验收”及依据。
+自验收时逐项核对 Requirement 与交付证据，无未解决验收项后用 `close accept --mode agent` 记录通过，摘要注明“Agent 自验收”及依据。
 
-向用户提供实现摘要、验收对应结果、验证证据和已知限制。用户实际验收或明确要求将当前交付归档、合入指定目标分支后，用 `accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`。Agent 自查、测试通过和事先“做完就行”的笼统指示不等于用户验收。
+向用户提供实现摘要、验收对应结果、验证证据和已知限制。用户实际验收或明确要求将当前交付归档、合入指定目标分支后，用 `close accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`。Agent 自查、测试通过和事先“做完就行”的笼统指示不等于用户验收。
 
 请求用户确认验收或合入集成分支时，必须提示合入集成分支（如 `dev` / `develop`）即视为验收通过，变更可随下次发布进入正式环境。
 
@@ -584,7 +580,7 @@ Specs 以任意深度的稳定业务能力树组织，完整相对路径是能�
 
 ### 归档
 
-归档前同步交付目标并验证，必须按[归档前提交整理](#归档前提交整理)检查提交历史并核对追踪信息。前三步成功且证据仍适用后，用 `archive` 将完整目录移动到 `docs/project/archive/YYYY-MM-DD-<id>/`，将 Specs、最终 JSON 和目录移动一起提交推送。
+归档前同步交付目标并验证，必须按[归档前提交整理](#归档前提交整理)检查提交历史并核对追踪信息。前三步成功且证据仍适用后，用 `close archive` 将完整目录移动到 `docs/project/archive/YYYY-MM-DD-<id>/`，将 Specs、最终 JSON 和目录移动一起提交推送。
 
 Change 的实际实现须归档并通过预检后，才可合入交付目标；归档推送后按[PR 合入](#pr-合入)交付，再按[清理](#清理)处理来源。
 
@@ -677,7 +673,7 @@ PR 以同仓库、登记来源分支和实际目标关联，定位双亲合并�
 
 ### 返修
 
-归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `cli change rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。已集成后的修正建立新 Change。
+归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `cli stage rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。已集成后的修正建立新 Change。
 
 ### 清理
 

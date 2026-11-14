@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { validateChange, validateWorkflow } from "./state-schema.mjs";
 import { changeLocation, routeCatalog, validBranchName, parentBranch, parentArchive, sourceOwnership, resolvePlanningRoute, planningRecord } from "./routing.mjs";
@@ -12,9 +12,10 @@ export function repository(cwd = ".") {
       maxBuffer: 32 * 1024 * 1024,
     }).trimEnd();
   const root = git(["rev-parse", "--show-toplevel"]);
-  const config = JSON.parse(
-    readFileSync(join(root, "docs/project/workflow.json"), "utf8"),
-  );
+  const workflow = join(root, "docs/project/workflow.json");
+  if (!existsSync(workflow))
+    throw Error("SpecTrail is not set up here (docs/project/workflow.json is missing); follow .agents/skills/spec-trail/references/setup/setup.md");
+  const config = JSON.parse(readFileSync(workflow, "utf8"));
   const issues = validateWorkflow(config);
   if (issues.length) throw Error(`Invalid workflow.json: ${issues.join("; ")}`);
   let branch = null;

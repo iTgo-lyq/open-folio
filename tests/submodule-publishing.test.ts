@@ -377,8 +377,7 @@ for (const directory of ["packages/prototype", ""])
             process.execPath,
             [
               resolve(".agents/skills/spec-trail/cli.mjs"),
-              "change",
-              name,
+              ...name.split(" "),
               "--change",
               id,
               "--repo",
@@ -397,29 +396,29 @@ for (const directory of ["packages/prototype", ""])
               .previews,
           ),
         );
-        command("previews-set", ["--file", retained]);
-        command("task-add", ["--title", "Deliver fixed prototype"]);
+        command("prototype previews", ["--file", retained]);
+        command("task add", ["--title", "Deliver fixed prototype"]);
         await f.put(
           `${statePath.slice(0, -12)}/requirement.md`,
           "# Fixed child delivery",
         );
         f.commit();
-        command("execute");
-        command("task-start", ["--task", "T1"]);
-        command("task-complete", [
+        command("stage execute");
+        command("task start", ["--task", "T1"]);
+        command("task complete", [
           "--task",
           "T1",
           "--verification",
           "fixture verified",
         ]);
         f.commit();
-        command("verify", [
+        command("close verify", [
           "--result",
           "passed",
           "--summary",
           "fixture verified",
         ]);
-        command("accept", [
+        command("close accept", [
           "--mode",
           "agent",
           "--summary",
@@ -427,8 +426,8 @@ for (const directory of ["packages/prototype", ""])
           "--source",
           "fixture verification",
         ]);
-        command("specs", ["--result", "not_needed", "--summary", "fixture"]);
-        command("archive", [
+        command("close specs", ["--result", "not_needed", "--summary", "fixture"]);
+        command("close archive", [
           "--date",
           "2026-10-29",
           "--summary",

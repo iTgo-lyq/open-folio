@@ -64,8 +64,7 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   };
   const state = (name: string, args: string[] = []) =>
     command(".agents/skills/spec-trail/cli.mjs", [
-      "change",
-      name,
+      ...name.split(" "),
       "--change",
       "publish-demo",
       ...args,
@@ -89,8 +88,8 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   await f.put(current.sourcePath, "<!doctype html><button>ready</button>");
   await f.put(".gitignore", "packages/prototype/dist/\n");
   f.commit();
-  state("create", ["--title", "发布", "--size", "small"]);
-  state("task-add", ["--title", "发布"]);
+  state("change create", ["--title", "发布", "--size", "small"]);
+  state("task add", ["--title", "发布"]);
   await f.put(
     "docs/project/changes/publish-demo/requirement.md",
     "# Publication fixture\n",
@@ -107,8 +106,8 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   ]);
   assert.equal(git(["branch", "--show-current"]), "develop");
   author = work;
-  state("execute");
-  state("task-start", ["--task", "T1"]);
+  state("stage execute");
+  state("task start", ["--task", "T1"]);
   f.commit();
   await f.put(
     "packages/prototype/dist/index.html",
@@ -440,15 +439,15 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
   f.commit();
   const stateScript = ".agents/skills/spec-trail/cli.mjs";
   const command = (name: string, args: string[]) =>
-    run(stateScript, ["change", name, "--change", "publish-demo", ...args]);
-  command("task-complete", [
+    run(stateScript, [...name.split(" "), "--change", "publish-demo", ...args]);
+  command("task complete", [
     "--task",
     "T1",
     "--verification",
     "fixture checks",
   ]);
-  command("verify", ["--result", "passed", "--summary", "fixture checks"]);
-  command("accept", [
+  command("close verify", ["--result", "passed", "--summary", "fixture checks"]);
+  command("close accept", [
     "--mode",
     "agent",
     "--summary",
@@ -456,8 +455,8 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "--source",
     "fixture",
   ]);
-  command("specs", ["--result", "not_needed", "--summary", "fixture"]);
-  command("archive", ["--date", "2026-10-09", "--summary", "fixture"]);
+  command("close specs", ["--result", "not_needed", "--summary", "fixture"]);
+  command("close archive", ["--date", "2026-10-09", "--summary", "fixture"]);
   const archived = "docs/project/archive/2026-10-09-publish-demo";
   const state = JSON.parse(
     await readFile(join(f.author, archived, "change.json"), "utf8"),

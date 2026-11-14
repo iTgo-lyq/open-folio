@@ -32,11 +32,11 @@ function usage() {
       "",
       "Each operation prints one JSON value to stdout; help is text and diagnostics go to stderr.",
       "Exit codes: 0 success, 1 usage error or failed check, 2 incomplete cleanup.",
-      "Options take --name value or --name=value. Prototype commands need Node.js 24+, the others Node.js 20+.",
+      "Options take --name value or --name=value. Commands need Node.js 20+ unless their group says otherwise.",
       "Use <group> --help to list its commands, and <group> <command> --help for options and an example.",
       "",
       "Groups:",
-      ...table(Object.keys(commands).filter(name => name !== "setup").map(name => [name, groups[name].summary])),
+      ...table(Object.keys(commands).filter(name => !groups[name].hidden).map(name => [name, groups[name].summary])),
     ].join("\n");
   if (!definition)
     return [
@@ -106,8 +106,9 @@ async function main() {
     return;
   }
   try {
-    if (group === "prototype" && Number(process.versions.node.split(".")[0]) < 24)
-      throw Error("Node.js 24 or newer is required for prototype commands.");
+    const { minNode } = groups[group];
+    if (minNode && Number(process.versions.node.split(".")[0]) < minNode)
+      throw Error(`Node.js ${minNode} or newer is required for ${group} commands.`);
     const { output, exitCode = 0 } = await definition.run(command, options);
     process.stdout.write(JSON.stringify(output, null, 2) + "\n");
     process.exitCode = exitCode;

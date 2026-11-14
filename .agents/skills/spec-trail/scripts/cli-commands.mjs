@@ -45,8 +45,9 @@ function define(run, {
   };
 }
 
-const change = (summary, { required = [], optional = [], help, notes, example = "", dryRun = true } = {}) => define(
-  async (command, values) => (await import("./change.mjs")).runChange(command, values),
+// State commands run in change.mjs under their operation names, e.g. `task start` runs task-start.
+const stateCommand = operation => (summary, { required = [], optional = [], help, notes, example = "", dryRun = true } = {}) => define(
+  async (command, values) => (await import("./change.mjs")).runChange(operation(command), values),
   {
     summary,
     required: ["change", ...required],
@@ -57,6 +58,12 @@ const change = (summary, { required = [], optional = [], help, notes, example = 
     example: `--change example${example}`,
   },
 );
+const change = stateCommand(command => command);
+const clarify = stateCommand(command => `clarification-${command}`);
+const task = stateCommand(command => `task-${command}`);
+const stage = change;
+const close = change;
+const previewsCommand = stateCommand(() => "previews-set");
 const workspace = (summary, { optional = [], booleans = [], help, notes } = {}) => define(
   async (command, values) => (await import("./workspace.mjs")).runWorkspace(command, values),
   { summary, required: ["change"], optional: [...optional, "repo"], booleans, help, notes, example: "--change example" },
@@ -87,21 +94,27 @@ const publication = (summary, { required = [], optional = [], help, notes, examp
   { summary, required, optional: [...optional, "repo"], help, notes, example },
 );
 
+const stateNotes = [
+  "Plan on the integration branch; after handoff, run on the registered work branch.",
+  "Commands change only local files in docs/project/ and never commit or push.",
+];
+
+// Hidden groups stay out of the overview; their own guides document them.
 export const groups = {
-  change: {
-    summary: "Change state in docs/project/changes/<id>/change.json",
-    notes: [
-      "Plan on the integration branch; after handoff, run on the registered work branch.",
-      "Commands change only local files (archive and rework move the Change directory, task-retry updates the staged change.json) and never commit or push.",
-    ],
-  },
+  change: { summary: "Create a Change and maintain its title, labels, relations and cancellation", notes: stateNotes },
+  clarify: { summary: "Record clarification questions and the user's answers", notes: stateNotes },
+  task: { summary: "Plan tasks and move them through todo, doing, blocked and done", notes: [...stateNotes, "retry also updates the staged change.json."] },
+  stage: { summary: "Stage confirmations, entering execution, waiting and rework", notes: [...stateNotes, "rework moves an archived Change that is not integrated back to docs/project/changes/."] },
+  close: { summary: "Overall verification, acceptance, Specs sync and archive", notes: [...stateNotes, "archive moves the Change directory to docs/project/archive/."] },
   workspace: { summary: "Work branch registration and Change worktrees" },
   integration: { summary: "Pull request delivery checks and source cleanup after archiving" },
   share: { summary: "OpenFolio links to Change materials" },
-  setup: { summary: "Project readiness, routing preview and commit/PR validators" },
+  setup: { summary: "Project readiness, routing preview and commit/PR validators", hidden: true },
   prototype: {
-    summary: "Prototype package, publishing and validation",
+    summary: "Prototype package, publishing, validation and Change previews",
     notes: ["Requires Node.js 24 or newer."],
+    minNode: 24,
+    hidden: true,
   },
 };
 
@@ -114,7 +127,7 @@ export const commands = {
         size: { choices: ["small", "medium", "large", "xlarge"], text: "Change size by core contract impact and implementation scope" },
         "depends-on": {
           value: "id,id",
-          text: "Prerequisite Change ids, comma-separated; execute later requires each to be a pushed, completed archive whose delivery is available",
+          text: "Prerequisite Change ids, comma-separated; stage execute later requires each to be a pushed, completed archive whose delivery is available",
         },
         parent: { value: "id", text: "Parent xlarge Change id" },
         children: { value: "id,id", text: "Child Change ids in Plan order, comma-separated (xlarge parent)" },
@@ -126,6 +139,11 @@ export const commands = {
         },
       },
       example: " --title '支持账号切换并保留各自工作台' --size medium --types '[\"新功能\"]'",
+    }),
+    show: change("Read the metadata of an active or archived Change from its registered source (read-only)", { dryRun: false }),
+    retitle: change("Change the display title of an active Change on its owning branch; id, stage, tasks and confirmations are kept", {
+      required: ["title"],
+      example: " --title '支持账号切换并保留各自工作台'",
     }),
     labels: change("Update the labels of an active Change without touching workflow records", {
       optional: ["types", "urgency"],
@@ -148,12 +166,29 @@ export const commands = {
       help: { target: { value: "id|none", text: "Archived direct predecessor id, or none to remove the link and its group title" } },
       example: " --target earlier-change",
     }),
-    show: change("Read the metadata of an active or archived Change from its registered source (read-only)", { dryRun: false }),
-    retitle: change("Change the display title of an active Change on its owning branch; id, stage, tasks and confirmations are kept", {
-      required: ["title"],
-      example: " --title '支持账号切换并保留各自工作台'",
+    depends: change("Replace or clear the dependencies of an active ordinary Change", {
+      required: ["depends-on"],
+      optional: ["availability-note"],
+      help: { "depends-on": { value: "id,id|none", text: "Comma-separated published Change ids; none clears the list" } },
+      example: " --depends-on prerequisite,other",
     }),
-    "clarification-ask": change("Record a clarification question that was actually asked", {
+    children: change("Replace the child list of an active xlarge Change", {
+      required: ["children"],
+      help: { children: { value: "id,id", text: "Non-empty comma-separated list of child Change ids" } },
+      example: " --children child-a,child-b",
+    }),
+    resize: change("Change the size of an active Change and align its stage with its confirmations", {
+      required: ["size"],
+      help: { size: { choices: ["small", "medium", "large"], text: "New size; xlarge cannot be resized" } },
+      example: " --size medium",
+    }),
+    cancel: change("Cancel an active Change; stage, tasks, documents and code are kept and the branch is frozen", {
+      required: ["reason"],
+      example: " --reason '需求已由其他 Change 覆盖'",
+    }),
+  },
+  clarify: {
+    ask: clarify("Record a clarification question that was actually asked", {
       required: ["round", "text", "recommendation"],
       optional: ["question"],
       help: {
@@ -164,7 +199,7 @@ export const commands = {
       },
       example: " --round 1 --text '是否保留旧入口？' --recommendation '不保留，减少维护面'",
     }),
-    "clarification-answer": change("Record the user's final effective answer; overwrites an earlier answer", {
+    answer: clarify("Record the user's final effective answer; overwrites an earlier answer", {
       required: ["question", "answer"],
       optional: ["source"],
       help: {
@@ -174,12 +209,59 @@ export const commands = {
       },
       example: " --question Q1 --answer '不保留旧入口' --source '不需要考虑历史兼容'",
     }),
-    "clarification-withdraw": change("Mark a question as no longer applicable; the original question and answer are kept", {
+    withdraw: clarify("Mark a question as no longer applicable; the original question and answer are kept", {
       required: ["question", "reason"],
       help: { question: { value: "Qn", text: "Question id such as Q1" } },
       example: " --question Q2 --reason '范围调整后不再适用'",
     }),
-    confirm: change("Record a stage confirmation the user actually gave", {
+  },
+  task: {
+    add: task("Add a todo task in requirement, technical, plan or execution (not for xlarge)", {
+      required: ["title"],
+      optional: ["task", "branch"],
+      help: {
+        task: { value: "Tn", text: "Task id above the current and committed maximum (default: next number)" },
+        branch: { value: "name", text: "Task branch such as task/<id>/T3 when the task runs in parallel" },
+      },
+      example: " --title '实现目标行为'",
+    }),
+    update: task("Update the title or branch of a task that has not been committed as done", {
+      required: ["task"],
+      optional: ["title", "branch"],
+      help: { branch: { value: "name|none", text: "Set the task branch, or use none to clear it" } },
+      notes: ["Provide at least one of --title and --branch."],
+      example: " --task T1 --title '验证目标行为' --branch task/example/T1",
+    }),
+    remove: task("Remove a task that has not been committed as done", {
+      required: ["task"],
+      example: " --task T2",
+    }),
+    start: task("Move a task from todo or blocked to doing after its predecessors are done (stage execution)", {
+      required: ["task"],
+      example: " --task T1",
+    }),
+    block: task("Mark a task blocked with the evidence and the condition that unblocks it", {
+      required: ["task", "reason"],
+      help: { reason: { value: "text", text: "Actual blocker, evidence and the condition that unblocks it" } },
+      example: " --task T2 --reason '等待接口契约确认后继续'",
+    }),
+    complete: task("Move a doing task to done after real verification", {
+      required: ["task", "verification"],
+      optional: ["commit-title"],
+      help: {
+        verification: { value: "text", text: "Verification actually run and its results" },
+        "commit-title": { value: "text", text: "Title of the delivery commit, e.g. '<id> T1: ...', as a lookup hint" },
+      },
+      notes: ["Commit and push the implementation together with the done state; on a failed commit use task retry."],
+      example: " --task T1 --verification 'npm test 通过 120 项' --commit-title 'example T1: deliver target behavior'",
+    }),
+    retry: task("Return a done task that is not yet committed to doing after a failed commit", {
+      required: ["task"],
+      example: " --task T1",
+    }),
+  },
+  stage: {
+    confirm: stage("Record a stage confirmation the user actually gave", {
       required: ["phase", "summary", "source"],
       optional: ["source-commit", "target-commit", "base-commit"],
       help: {
@@ -194,74 +276,15 @@ export const commands = {
       },
       notes: [
         "requirement moves to technical; a large technical confirmation moves to plan.",
-        "medium/xlarge: record technical and plan with two calls, then run change execute.",
+        "medium/xlarge: record technical and plan with two calls, then run stage execute.",
         "small Changes record only merge confirmations.",
       ],
       example: " --phase requirement --summary '支持浏览器多身份添加、切换和移除。' --source '确认需求，进入技术方案'",
     }),
-    resize: change("Change the size of an active Change and align its stage with its confirmations", {
-      required: ["size"],
-      help: { size: { choices: ["small", "medium", "large"], text: "New size; xlarge cannot be resized" } },
-      example: " --size medium",
-    }),
-    depends: change("Replace or clear the dependencies of an active ordinary Change", {
-      required: ["depends-on"],
-      optional: ["availability-note"],
-      help: { "depends-on": { value: "id,id|none", text: "Comma-separated published Change ids; none clears the list" } },
-      example: " --depends-on prerequisite,other",
-    }),
-    children: change("Replace the child list of an active xlarge Change", {
-      required: ["children"],
-      help: { children: { value: "id,id", text: "Non-empty comma-separated list of child Change ids" } },
-      example: " --children child-a,child-b",
-    }),
-    "task-add": change("Add a todo task in requirement, technical, plan or execution (not for xlarge)", {
-      required: ["title"],
-      optional: ["task", "branch"],
-      help: {
-        task: { value: "Tn", text: "Task id above the current and committed maximum (default: next number)" },
-        branch: { value: "name", text: "Task branch such as task/<id>/T3 when the task runs in parallel" },
-      },
-      example: " --title '实现目标行为'",
-    }),
-    "task-update": change("Update the title or branch of a task that has not been committed as done", {
-      required: ["task"],
-      optional: ["title", "branch"],
-      help: { branch: { value: "name|none", text: "Set the task branch, or use none to clear it" } },
-      notes: ["Provide at least one of --title and --branch."],
-      example: " --task T1 --title '验证目标行为' --branch task/example/T1",
-    }),
-    "task-remove": change("Remove a task that has not been committed as done", {
-      required: ["task"],
-      example: " --task T2",
-    }),
-    "task-start": change("Move a task from todo or blocked to doing after its predecessors are done (stage execution)", {
-      required: ["task"],
-      example: " --task T1",
-    }),
-    "task-block": change("Mark a task blocked with the evidence and the condition that unblocks it", {
-      required: ["task", "reason"],
-      help: { reason: { value: "text", text: "Actual blocker, evidence and the condition that unblocks it" } },
-      example: " --task T2 --reason '等待接口契约确认后继续'",
-    }),
-    "task-complete": change("Move a doing task to done after real verification", {
-      required: ["task", "verification"],
-      optional: ["commit-title"],
-      help: {
-        verification: { value: "text", text: "Verification actually run and its results" },
-        "commit-title": { value: "text", text: "Title of the delivery commit, e.g. '<id> T1: ...', as a lookup hint" },
-      },
-      notes: ["Commit and push the implementation together with the done state; on a failed commit use task-retry."],
-      example: " --task T1 --verification 'npm test 通过 120 项' --commit-title 'example T1: deliver target behavior'",
-    }),
-    "task-retry": change("Return a done task that is not yet committed to doing after a failed commit", {
-      required: ["task"],
-      example: " --task T1",
-    }),
-    execute: change("Enter execution after checking documents, confirmations, task order, dependencies and the single-branch rule", {
+    execute: stage("Enter execution after checking documents, confirmations, task order, dependencies and the single-branch rule", {
       optional: ["availability-note"],
     }),
-    wait: change("Record what the Change is waiting for", {
+    wait: stage("Record what the Change is waiting for", {
       required: ["kind", "summary"],
       help: {
         kind: { choices: ["confirmation", "dependency", "pause"], text: "Waiting type; pause keeps a recorded requirement on hold" },
@@ -269,8 +292,8 @@ export const commands = {
       },
       example: " --kind confirmation --summary '等待用户验收后同步 Specs 并归档'",
     }),
-    resume: change("Clear the waiting condition once it is actually resolved; grants no confirmation"),
-    rework: change("Return to the earliest affected stage; keeps done tasks and restores an archive that is not integrated yet", {
+    resume: stage("Clear the waiting condition once it is actually resolved; grants no confirmation"),
+    rework: stage("Return to the earliest affected stage; keeps done tasks and restores an archive that is not integrated yet", {
       required: ["stage", "reason", "approach"],
       help: {
         stage: { choices: ["requirement", "technical", "plan", "execution"], text: "Earliest affected stage, not later than the current one" },
@@ -279,7 +302,9 @@ export const commands = {
       notes: ["Clears confirmations from that stage on, the merge confirmation, closure results and waiting."],
       example: " --stage execution --reason '验收发现帮助缺少取值' --approach '追加 T4 补全帮助'",
     }),
-    verify: change("Record overall verification after every task is done; moves the Change to close", {
+  },
+  close: {
+    verify: close("Record overall verification after every task is done; moves the Change to close", {
       required: ["result", "summary"],
       optional: ["availability-note"],
       help: {
@@ -288,7 +313,7 @@ export const commands = {
       },
       example: " --result passed --summary 'npm test 全部通过，独立评审无遗留问题'",
     }),
-    accept: change("Record closure acceptance (stage close)", {
+    accept: close("Record closure acceptance (stage close)", {
       required: ["mode", "summary", "source"],
       optional: ["availability-note"],
       help: {
@@ -297,7 +322,7 @@ export const commands = {
       },
       example: " --mode user --summary '用户验收通过' --source '验收通过，合入 develop'",
     }),
-    specs: change("Record the Specs sync result after acceptance", {
+    specs: close("Record the Specs sync result after acceptance", {
       required: ["result", "summary"],
       help: {
         result: { choices: ["synced", "not_needed"], text: "synced after updating Specs, or not_needed" },
@@ -305,7 +330,7 @@ export const commands = {
       },
       example: " --result synced --summary 'change-workflow 更新统一命令入口'",
     }),
-    archive: change("Move the Change to docs/project/archive/<date>-<id> and mark it completed (not on the integration branch)", {
+    archive: close("Move the Change to docs/project/archive/<date>-<id> and mark it completed (not on the integration branch)", {
       required: ["date", "summary"],
       optional: ["availability-note"],
       help: {
@@ -314,15 +339,6 @@ export const commands = {
       },
       notes: ["Then commit, push and run integration preflight."],
       example: " --date 2026-01-31 --summary '验收通过，Specs 已同步'",
-    }),
-    cancel: change("Cancel an active Change; stage, tasks, documents and code are kept and the branch is frozen", {
-      required: ["reason"],
-      example: " --reason '需求已由其他 Change 覆盖'",
-    }),
-    "previews-set": change("Replace the prototype previews linked to the Change (requirement to execution)", {
-      required: ["file"],
-      help: { file: { value: "file", text: "JSON file holding the PreviewEntry array; a relative path resolves against --repo" } },
-      example: " --file /tmp/previews.json",
     }),
   },
   workspace: {
@@ -486,6 +502,11 @@ export const commands = {
     }),
     recover: publication("Roll back an interrupted multi-file registration to its previous files; stops on newer edits or commits", {
       notes: ["Rerun register or upload afterwards; recover does not complete the registration."],
+    }),
+    previews: previewsCommand("Replace the prototype previews linked to the Change (requirement to execution)", {
+      required: ["file"],
+      help: { file: { value: "file", text: "JSON file holding the PreviewEntry array; a relative path resolves against --repo" } },
+      example: " --file /tmp/previews.json",
     }),
   },
 };

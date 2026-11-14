@@ -63,7 +63,7 @@ test("archiving fixes a shared Git prototype before concurrent collaboration cha
   f.commit();
   const command = [
     resolve(".agents/skills/spec-trail/cli.mjs"),
-    "change",
+    "close",
     "archive",
     "--repo",
     f.author,
@@ -232,7 +232,7 @@ test("archive, merge, verified cleanup, cold diff/preview and legacy cache retir
       process.execPath,
       [
         resolve(".agents/skills/spec-trail/cli.mjs"),
-        "change",
+        "close",
         "archive",
         "--repo",
         f.author,

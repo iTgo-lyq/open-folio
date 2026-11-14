@@ -166,7 +166,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
   const env = await githubCli(f, f.pullRequests);
   assert.match(
     f.cli(
-      "change",
+      "stage",
       f.child,
       "child",
       "rework",
@@ -209,7 +209,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     0,
     env,
   );
-  f.cli("change", second, "second", "execute", [], 0, env);
+  f.cli("stage", second, "second", "execute", [], 0, env);
   const secondRecord = {
     ...completedChange("second", "feature/second"),
     parent: "parent",
@@ -246,7 +246,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
   );
   for (const phase of ["technical", "plan"])
     f.cli(
-      "change",
+      "stage",
       f.parent,
       "parent",
       "confirm",
@@ -254,9 +254,9 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
       0,
       env,
     );
-  f.cli("change", f.parent, "parent", "execute", [], 0, env);
+  f.cli("stage", f.parent, "parent", "execute", [], 0, env);
   f.cli(
-    "change",
+    "close",
     f.parent,
     "parent",
     "verify",
@@ -265,7 +265,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     env,
   );
   f.cli(
-    "change",
+    "close",
     f.parent,
     "parent",
     "accept",
@@ -274,7 +274,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     env,
   );
   f.cli(
-    "change",
+    "close",
     f.parent,
     "parent",
     "specs",
@@ -283,7 +283,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     env,
   );
   f.cli(
-    "change",
+    "close",
     f.parent,
     "parent",
     "archive",

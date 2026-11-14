@@ -343,7 +343,7 @@ export async function runChange(command, opts) {
     const unblocked = () =>
       assert(
         !state.waitingFor,
-        "Clear the actual waiting condition, then use resume",
+        "Clear the actual waiting condition, then use stage resume",
       );
     const requireDocs = () => {
       for (const name of state.size === "small"
@@ -476,7 +476,7 @@ export async function runChange(command, opts) {
     const recordStep = (key, result, extra = {}) => {
       assert(
         !state.closure[key],
-        `${key} already recorded; use rework for a new cycle`,
+        `${key} already recorded; use stage rework for a new cycle`,
       );
       const previous = state.closure[steps[steps.indexOf(key) - 1]];
       if (key !== "verification") {
@@ -838,7 +838,7 @@ export async function runChange(command, opts) {
         );
         assert(
           !state.confirmations[phase],
-          "Confirmation already recorded; use rework first",
+          "Confirmation already recorded; use stage rework first",
         );
         const summary = need("summary");
         assert(
@@ -905,7 +905,7 @@ export async function runChange(command, opts) {
           if (command === "task-remove") {
             delete state.tasks[taskId];
           } else {
-            assert(opts.title !== undefined || opts.branch !== undefined, "task-update requires --title or --branch");
+            assert(opts.title !== undefined || opts.branch !== undefined, "task update requires --title or --branch");
             const task = state.tasks[taskId];
             if (opts.title !== undefined) task.title = need("title");
             if (opts.branch === "none") delete task.branch;
@@ -1305,7 +1305,7 @@ export async function runChange(command, opts) {
     }
     result.next =
       archiveDir
-        ? `Commit and push the archived source, then run node .agents/skills/spec-trail/cli.mjs integration preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use rework for corrections before integration.`
+        ? `Commit and push the archived source, then run node .agents/skills/spec-trail/cli.mjs integration preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use stage rework for corrections before integration.`
         : "Review the local diff, commit and push. A local command is not a published workflow fact.";
     return { output: result };
   } finally {

@@ -77,7 +77,10 @@ function fixture(t: import("node:test").TestContext) {
     expected = 0,
     id = "sample",
     cwd = repo,
-  ) => run("change", cmd, opts, expected, id, cwd);
+  ) => {
+    const [group, command] = cmd.split(" ");
+    return run(group, command, opts, expected, id, cwd);
+  };
   const workspace = (
     cmd: string,
     opts: string[] = [],
@@ -86,8 +89,8 @@ function fixture(t: import("node:test").TestContext) {
     cwd = repo,
   ) => run("workspace", cmd, opts, expected, id, cwd);
   const planning = (id = "sample") => {
-    state("create", ["--title", "Test goal", "--size", "small"], 0, id);
-    state("task-add", ["--title", "Implement"], 0, id);
+    state("change create", ["--title", "Test goal", "--size", "small"], 0, id);
+    state("task add", ["--title", "Implement"], 0, id);
     put(`docs/project/changes/${id}/requirement.md`, "# Requirement\n");
     commit();
   };
@@ -126,7 +129,7 @@ test("planning stays on develop; shared registration is idempotent and routes st
   f.planning();
   f.planning("other");
   const main = at(f.remote, "rev-parse", "main");
-  assert.match(f.state("execute", [], 1), /Handoff/);
+  assert.match(f.state("stage execute", [], 1), /Handoff/);
   const before = at(f.repo, "rev-parse", "HEAD");
   f.workspace("handoff", ["--path", f.work, "--dry-run"]);
   assert(!existsSync(f.work));
@@ -142,17 +145,17 @@ test("planning stays on develop; shared registration is idempotent and routes st
     "docs/project/changes/sample/change.json",
   );
   assert.equal(f.handoff().commit, result.commit);
-  f.state("execute", [], 0, "sample", f.work);
+  f.state("stage execute", [], 0, "sample", f.work);
   f.commit(f.work);
-  assert.equal(f.state("show").state.stage, "execution"); // push updates the shared tracking ref
+  assert.equal(f.state("change show").state.stage, "execution"); // push updates the shared tracking ref
   f.workspace("prepare");
-  assert.equal(f.state("show").state.stage, "execution");
+  assert.equal(f.state("change show").state.stage, "execution");
   assert.match(
-    f.state("retitle", ["--title", "Wrong writer"], 1),
+    f.state("change retitle", ["--title", "Wrong writer"], 1),
     /inherited entries/,
   );
   assert.match(
-    f.state("retitle", ["--title", "Wrong writer"], 1, "other", f.work),
+    f.state("change retitle", ["--title", "Wrong writer"], 1, "other", f.work),
     /inherited entries/,
   );
   assert.equal(at(f.remote, "rev-parse", "main"), main);
@@ -173,11 +176,11 @@ test("predeclared targets stay writable planning until explicit handoff publishe
     }),
   );
   f.commit();
-  assert.equal(f.state("show").state.branch, "feature/future");
+  assert.equal(f.state("change show").state.branch, "feature/future");
   assert.equal(f.workspace("locate").branch, "develop");
   assert.equal(f.workspace("locate").worktree, null);
   assert.equal(f.workspace("locate").planningWorkspace, f.repo);
-  f.state("clarification-ask", [
+  f.state("clarify ask", [
     "--round",
     "1",
     "--text",
@@ -185,15 +188,15 @@ test("predeclared targets stay writable planning until explicit handoff publishe
     "--recommendation",
     "Keep it focused",
   ]);
-  f.state("retitle", ["--title", "Still a deferred requirement"]);
+  f.state("change retitle", ["--title", "Still a deferred requirement"]);
   const updated = JSON.parse(readFileSync(join(f.repo, path), "utf8"));
   assert.equal(updated.waitingFor.kind, "pause");
   assert.equal(updated.branch, "feature/future");
   assert(!existsSync(f.work));
   assert.match(f.workspace("prepare", [], 1), /handoff/);
   assert.match(f.handoff(1), /pause|waiting condition/);
-  f.state("resume");
-  f.state("task-add", ["--title", "Implement after resuming"]);
+  f.state("stage resume");
+  f.state("task add", ["--title", "Implement after resuming"]);
   f.commit();
   const before = at(f.repo, "rev-parse", "HEAD");
   const result = f.handoff();
@@ -201,19 +204,19 @@ test("predeclared targets stay writable planning until explicit handoff publishe
   assert.equal(at(f.work, "rev-parse", "HEAD"), before); // No empty registration commit.
   assert.equal(at(f.remote, "rev-parse", "feature/future"), before);
   assert.match(
-    f.state("retitle", ["--title", "Wrong writer"], 1),
+    f.state("change retitle", ["--title", "Wrong writer"], 1),
     /inherited entries/,
   );
 });
 test("predeclared parent and child allow central clarification but require real parent handoff before child execution", (t) => {
   const f = fixture(t);
   f.state(
-    "create",
+    "change create",
     ["--title", "Whole", "--size", "xlarge", "--children", "sample"],
     0,
     "whole",
   );
-  f.state("create", [
+  f.state("change create", [
     "--title",
     "Part",
     "--size",
@@ -235,10 +238,10 @@ test("predeclared parent and child allow central clarification but require real 
     f.put(`docs/project/changes/${id}/requirement.md`, `# ${id}`);
   }
   f.commit();
-  assert.equal(f.state("show").state.branch, "feature/sample");
+  assert.equal(f.state("change show").state.branch, "feature/sample");
   assert.equal(f.workspace("locate").branch, "develop");
   assert.equal(f.workspace("locate").worktree, null);
-  f.state("clarification-ask", [
+  f.state("clarify ask", [
     "--round",
     "1",
     "--text",
@@ -246,7 +249,7 @@ test("predeclared parent and child allow central clarification but require real 
     "--recommendation",
     "Keep it focused",
   ]);
-  f.state("retitle", ["--title", "Still planning the child"]);
+  f.state("change retitle", ["--title", "Still planning the child"]);
   const state = JSON.parse(
     readFileSync(
       join(f.repo, "docs/project/changes/sample/change.json"),
@@ -255,8 +258,8 @@ test("predeclared parent and child allow central clarification but require real 
   );
   assert.equal(state.waitingFor.kind, "pause");
   assert.equal(state.title, "Still planning the child");
-  f.state("resume");
-  f.state("task-add", ["--title", "Implement after parent handoff"]);
+  f.state("stage resume");
+  f.state("task add", ["--title", "Implement after parent handoff"]);
   f.commit();
   assert.match(f.handoff(1), /parent has not actually been handed off/);
   assert(!existsSync(f.work));
@@ -266,13 +269,13 @@ test("predeclared parent and child allow central clarification but require real 
   const parent = JSON.parse(readFileSync(join(f.repo, parentPath), "utf8"));
   f.put(parentPath, JSON.stringify({ ...parent, parent: "sample" }));
   f.commit();
-  assert.match(f.state("show", [], 1), /parent is missing or nested/);
+  assert.match(f.state("change show", [], 1), /parent is missing or nested/);
   assert.match(f.workspace("locate", [], 1), /parent is missing or nested/);
 });
 for (const size of ["small", "medium", "large", "xlarge"]) {
   test(`${size} hands off after requirements and keeps execution gates`, (t) => {
     const f = fixture(t);
-    f.state("create", [
+    f.state("change create", [
       "--title",
       "Continue in work branch",
       "--size",
@@ -281,7 +284,7 @@ for (const size of ["small", "medium", "large", "xlarge"]) {
     ]);
     if (size === "xlarge")
       f.state(
-        "create",
+        "change create",
         ["--title", "Child delivery", "--size", "small", "--parent", "sample"],
         0,
         "child",
@@ -295,19 +298,19 @@ for (const size of ["small", "medium", "large", "xlarge"]) {
     assert(!existsSync(f.work));
     const confirm = (phase: string, cwd = f.repo) =>
       f.state(
-        "confirm",
+        "stage confirm",
         ["--phase", phase, "--summary", "Scope", "--source", "Fixture"],
         0,
         "sample",
         cwd,
       );
     if (size !== "small") confirm("requirement");
-    f.state("wait", ["--kind", "pause", "--summary", "Explicit pause"]);
+    f.state("stage wait", ["--kind", "pause", "--summary", "Explicit pause"]);
     f.commit();
     assert.match(f.handoff(1), /Resolve the pause/);
     assert(!existsSync(f.work));
     assert(!at(f.repo, "show-ref", "--heads").includes("change/sample"));
-    f.state("resume");
+    f.state("stage resume");
     f.commit();
     const before = at(f.repo, "rev-parse", "HEAD");
     f.workspace("handoff", ["--path", f.work, "--dry-run"]);
@@ -318,13 +321,13 @@ for (const size of ["small", "medium", "large", "xlarge"]) {
       !existsSync(join(f.work, "docs/project/changes/sample/technical.md")),
     );
     assert(!existsSync(join(f.work, "docs/project/changes/sample/plan.md")));
-    assert.deepEqual(f.state("show", [], 0, "sample", f.work).state.tasks, {});
+    assert.deepEqual(f.state("change show", [], 0, "sample", f.work).state.tasks, {});
     assert.equal(
-      f.state("show", [], 0, "sample", f.work).state.confirmations.plan,
+      f.state("change show", [], 0, "sample", f.work).state.confirmations.plan,
       undefined,
     );
     assert.match(
-      f.state("execute", [], 1, "sample", f.work),
+      f.state("stage execute", [], 1, "sample", f.work),
       size === "small"
         ? /Define tasks before execution/
         : /Missing technical.md/,
@@ -336,21 +339,21 @@ for (const size of ["small", "medium", "large", "xlarge"]) {
         f.work,
       );
       assert.match(
-        f.state("execute", [], 1, "sample", f.work),
+        f.state("stage execute", [], 1, "sample", f.work),
         /Missing plan.md/,
       );
       f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
     }
     if (size !== "xlarge")
-      f.state("task-add", ["--title", "Implement"], 0, "sample", f.work);
+      f.state("task add", ["--title", "Implement"], 0, "sample", f.work);
     if (size !== "small") {
       assert.match(
-        f.state("execute", [], 1, "sample", f.work),
+        f.state("stage execute", [], 1, "sample", f.work),
         /Missing technical confirmation/,
       );
       confirm("technical", f.work);
       assert.match(
-        f.state("execute", [], 1, "sample", f.work),
+        f.state("stage execute", [], 1, "sample", f.work),
         /Missing plan confirmation/,
       );
       confirm("plan", f.work);
@@ -361,14 +364,14 @@ for (const size of ["small", "medium", "large", "xlarge"]) {
     );
     assert(!existsSync(join(f.repo, "docs/project/changes/sample/plan.md")));
     if (size === "small")
-      assert.deepEqual(f.state("show").state.confirmations, {});
+      assert.deepEqual(f.state("change show").state.confirmations, {});
     else
-      assert.equal(f.state("show").state.confirmations.plan.summary, "Scope");
-    f.state("execute", [], 0, "sample", f.work);
+      assert.equal(f.state("change show").state.confirmations.plan.summary, "Scope");
+    f.state("stage execute", [], 0, "sample", f.work);
     if (size === "xlarge")
       assert.match(
         f.state(
-          "verify",
+          "close verify",
           ["--result", "passed", "--summary", "Check children"],
           1,
           "sample",
@@ -381,7 +384,7 @@ for (const size of ["small", "medium", "large", "xlarge"]) {
 test("requirement handoff permits pending delivery dependencies but execution still checks them", (t) => {
   const f = fixture(t);
   f.planning("upstream");
-  f.state("create", [
+  f.state("change create", [
     "--title",
     "Dependent plan",
     "--size",
@@ -390,7 +393,7 @@ test("requirement handoff permits pending delivery dependencies but execution st
     "upstream",
   ]);
   f.put("docs/project/changes/sample/requirement.md", "# Requirement\n");
-  f.state("confirm", [
+  f.state("stage confirm", [
     "--phase",
     "requirement",
     "--summary",
@@ -398,19 +401,19 @@ test("requirement handoff permits pending delivery dependencies but execution st
     "--source",
     "Fixture",
   ]);
-  f.state("wait", ["--kind", "dependency", "--summary", "Wait for upstream"]);
+  f.state("stage wait", ["--kind", "dependency", "--summary", "Wait for upstream"]);
   f.commit();
   f.handoff();
   assert.equal(
-    f.state("show", [], 0, "sample", f.work).state.waitingFor.kind,
+    f.state("change show", [], 0, "sample", f.work).state.waitingFor.kind,
     "dependency",
   );
   f.put("docs/project/changes/sample/technical.md", "# Technical\n", f.work);
   f.put("docs/project/changes/sample/plan.md", "# Plan\n", f.work);
-  f.state("task-add", ["--title", "Implement"], 0, "sample", f.work);
+  f.state("task add", ["--title", "Implement"], 0, "sample", f.work);
   for (const phase of ["technical", "plan"])
     f.state(
-      "confirm",
+      "stage confirm",
       ["--phase", phase, "--summary", "Scope", "--source", "Fixture"],
       0,
       "sample",
@@ -418,11 +421,11 @@ test("requirement handoff permits pending delivery dependencies but execution st
     );
   f.commit(f.work);
   assert.match(
-    f.state("execute", [], 1, "sample", f.work),
+    f.state("stage execute", [], 1, "sample", f.work),
     /waiting condition/,
   );
-  f.state("resume", [], 0, "sample", f.work);
-  assert.match(f.state("execute", [], 1, "sample", f.work), /closed|archived/);
+  f.state("stage resume", [], 0, "sample", f.work);
+  assert.match(f.state("stage execute", [], 1, "sample", f.work), /closed|archived/);
 });
 test("target push failure and registration refusal preserve public routing and retry safely", (t) => {
   const f = fixture(t);
@@ -455,7 +458,7 @@ test("target push failure and registration refusal preserve public routing and r
     at(f.remote, "rev-parse", "develop"),
     at(f.remote, "rev-parse", "change/sample"),
   );
-  assert.equal(f.state("show", [], 0, "other").state.branch, "develop");
+  assert.equal(f.state("change show", [], 0, "other").state.branch, "develop");
 });
 test("same Change edited during interrupted handoff is not overwritten", (t) => {
   const f = fixture(t);
@@ -463,10 +466,10 @@ test("same Change edited during interrupted handoff is not overwritten", (t) => 
   const allow = f.reject("develop");
   f.handoff(1);
   allow();
-  f.state("retitle", ["--title", "Changed requirements"]);
+  f.state("change retitle", ["--title", "Changed requirements"]);
   f.commit();
   assert.match(f.handoff(1), /current planning input/);
-  assert.equal(f.state("show").state.title, "Changed requirements");
+  assert.equal(f.state("change show").state.title, "Changed requirements");
 });
 test("failed commit is recoverable, unrelated dirty worktree and main index are preserved", (t) => {
   const f = fixture(t);
@@ -534,12 +537,12 @@ test("shared registration permits archived delivery merge without deleting other
   f.planning("other");
   const s = (cmd: string, opts: string[] = []) =>
     f.state(cmd, opts, 0, "sample", f.work);
-  s("execute");
-  s("task-start", ["--task", "T1"]);
-  s("task-complete", ["--task", "T1", "--verification", "Fixture verified"]);
+  s("stage execute");
+  s("task start", ["--task", "T1"]);
+  s("task complete", ["--task", "T1", "--verification", "Fixture verified"]);
   f.commit(f.work);
-  s("verify", ["--result", "passed", "--summary", "Verified"]);
-  s("accept", [
+  s("close verify", ["--result", "passed", "--summary", "Verified"]);
+  s("close accept", [
     "--mode",
     "agent",
     "--summary",
@@ -547,8 +550,8 @@ test("shared registration permits archived delivery merge without deleting other
     "--source",
     "Fixture evidence",
   ]);
-  s("specs", ["--result", "not_needed", "--summary", "No lasting change"]);
-  s("archive", ["--date", "2026-10-18", "--summary", "Archived"]);
+  s("close specs", ["--result", "not_needed", "--summary", "No lasting change"]);
+  s("close archive", ["--date", "2026-10-18", "--summary", "Archived"]);
   f.commit(f.work);
   at(f.work, "fetch", "origin", "develop");
   at(f.work, "merge", "--no-edit", "origin/develop");
@@ -559,8 +562,8 @@ test("shared registration permits archived delivery merge without deleting other
   const found = f.workspace("locate");
   assert.equal(found.branch, "develop");
   assert.equal(found.writable, false);
-  assert.equal(f.state("show").state.status, "completed");
-  assert.equal(f.state("show", [], 0, "other").state.status, "active");
+  assert.equal(f.state("change show").state.status, "completed");
+  assert.equal(f.state("change show", [], 0, "other").state.status, "active");
   assert(!existsSync(join(f.repo, "docs/project/changes/sample")));
 });
 
@@ -622,11 +625,11 @@ test("parent closure checks the live registered child ref rather than a deleted 
   const f = fixture(t);
   f.planning();
   f.handoff();
-  f.state("cancel", ["--reason", "No longer needed"], 0, "sample", f.work);
+  f.state("change cancel", ["--reason", "No longer needed"], 0, "sample", f.work);
   f.commit(f.work);
   const parent = (command: string, opts: string[] = [], expected = 0) =>
     f.state(command, opts, expected, "parent");
-  parent("create", [
+  parent("change create", [
     "--title",
     "Parent",
     "--size",
@@ -637,7 +640,7 @@ test("parent closure checks the live registered child ref rather than a deleted 
   for (const name of ["requirement", "technical", "plan"])
     f.put(`docs/project/changes/parent/${name}.md`, `# ${name}`);
   for (const phase of ["requirement", "technical", "plan"])
-    parent("confirm", [
+    parent("stage confirm", [
       "--phase",
       phase,
       "--summary",
@@ -645,14 +648,14 @@ test("parent closure checks the live registered child ref rather than a deleted 
       "--source",
       "Fixture instruction",
     ]);
-  parent("execute");
+  parent("stage execute");
   f.commit();
   at(f.repo, "push", "origin", "--delete", "change/sample");
   assert.match(
-    parent("verify", ["--result", "passed", "--summary", "Verify children"], 1),
+    parent("close verify", ["--result", "passed", "--summary", "Verify children"], 1),
     /Remote branch is missing/,
   );
-  assert.equal(parent("show").state.stage, "execution");
+  assert.equal(parent("change show").state.stage, "execution");
 });
 
 test("xlarge parents move to a closing branch after child delivery and cannot archive on collaboration", async (t) => {
@@ -666,7 +669,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
     expected = 0,
     cwd = f.repo,
   ) => f.state(command, options, expected, "parent", cwd);
-  parent("create", [
+  parent("change create", [
     "--title",
     "Parent",
     "--size",
@@ -676,7 +679,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
   ]);
   for (const phase of ["requirement", "technical", "plan"]) {
     f.put(`docs/project/changes/parent/${phase}.md`, "# Parent delivery");
-    parent("confirm", [
+    parent("stage confirm", [
       "--phase",
       phase,
       "--summary",
@@ -685,9 +688,9 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
       "Fixture confirmation",
     ]);
   }
-  parent("execute");
-  parent("verify", ["--result", "passed", "--summary", "Children integrated"]);
-  parent("accept", [
+  parent("stage execute");
+  parent("close verify", ["--result", "passed", "--summary", "Children integrated"]);
+  parent("close accept", [
     "--mode",
     "user",
     "--summary",
@@ -695,7 +698,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
     "--source",
     "Fixture acceptance",
   ]);
-  parent("specs", [
+  parent("close specs", [
     "--result",
     "not_needed",
     "--summary",
@@ -704,7 +707,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
   f.commit();
   assert.match(
     parent(
-      "archive",
+      "close archive",
       ["--date", "2026-10-18", "--summary", "Parent delivery"],
       1,
     ),
@@ -713,7 +716,7 @@ test("xlarge parents move to a closing branch after child delivery and cannot ar
   const path = join(f.root, "parent");
   f.workspace("handoff", ["--path", path], 0, "parent");
   parent(
-    "archive",
+    "close archive",
     ["--date", "2026-10-18", "--summary", "Parent delivery"],
     0,
     path,
