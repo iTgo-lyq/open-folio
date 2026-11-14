@@ -97,7 +97,7 @@ test("view selection and saving work in memory with revision checks", async () =
 });
 
 test("bindings select the new Token and never reuse removed identifiers", async () => {
-  resetMock("empty");
+  resetMock("empty", "connections");
   const add = () =>
     api("/api/connections", {
       method: "POST",

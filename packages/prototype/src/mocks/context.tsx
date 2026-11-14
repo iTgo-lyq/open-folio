@@ -33,7 +33,14 @@ export function FragmentProvider({
   });
   const [message, notice] = useState("");
   const cache = useMemo(() => new ReadingCache(), []);
-  const data = useMemo(() => makeWorkbench(scene === "empty"), [scene]);
+  // 与业务一致：首次读取尚无快照；分享页空态即不可读。
+  const data = useMemo(
+    () =>
+      scene === "loading" || (sharing && scene === "empty")
+        ? null
+        : makeWorkbench(scene === "empty"),
+    [scene, sharing],
+  );
   const nav = useCallback(
     (patch: Record<string, string | null>) => {
       if (patch.m && patch.m !== module) {

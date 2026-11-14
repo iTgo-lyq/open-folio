@@ -3,9 +3,11 @@ import { createRoot } from "react-dom/client";
 import "@open-folio/ui/styles.css";
 import "../../../src/app/globals.css";
 import "./fragment.css";
+import { LoaderCircle } from "lucide-react";
+import { Button } from "@open-folio/ui";
 import { Shell } from "../../../src/components/shell";
-import { PublicShell } from "../../../src/components/public-shell";
 import { Empty } from "../../../src/components/document";
+import shellStyles from "../../../src/components/shell.module.css";
 import { FragmentProvider, useWorkspace } from "./mocks/context";
 import { PersonalProvider } from "./mocks/personal-context";
 import { resetMock } from "./mocks/api";
@@ -27,6 +29,7 @@ const sceneNames: Record<string, string> = {
   login: "登录 / 注册",
   unavailable: "不存在 / 已撤回",
 };
+// Workspace 未导出页面主体，这里按其读取占位和同步失败横幅轻量还原。
 export function WorkbenchFrame({
   module,
   children,
@@ -34,39 +37,47 @@ export function WorkbenchFrame({
   module: Fragment["module"];
   children: ReactNode;
 }) {
-  const { q } = useWorkspace();
+  const { q, data, error, refresh, nav } = useWorkspace();
+  const reading = ["specs", "changes", "prototypes"].includes(module);
   return (
-    <Shell module={module} focusedPreview={!!q.prototype}>
-      {children}
+    <Shell
+      module={module}
+      focusedPreview={!!q.prototype}
+      banners={
+        reading &&
+        error && (
+          <div className={shellStyles.banner} data-tone="error" role="alert">
+            <span className={shellStyles.grow}>{error}</span>
+            <Button size="sm" variant="ghost" onClick={() => void refresh()}>
+              重试
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => nav({ m: "connections" })}
+            >
+              当前凭据
+            </Button>
+          </div>
+        )
+      }
+    >
+      {!reading || data ? (
+        children
+      ) : (
+        <div className={shellStyles.legacy}>
+          <Empty
+            title="正在打开工作台…"
+            icon={<LoaderCircle className={shellStyles.spin} />}
+          />
+        </div>
+      )}
     </Shell>
-  );
-}
-export function ReadingState({
-  scene,
-  children,
-}: {
-  scene: string;
-  children: ReactNode;
-}) {
-  return scene === "loading" || scene === "error" || scene === "empty" ? (
-    <PublicShell title="只读材料">
-      <Empty
-        title={
-          scene === "loading"
-            ? "正在读取…"
-            : scene === "error"
-              ? "演示读取失败，请切换正常场景重试。"
-              : "暂无内容"
-        }
-      />
-    </PublicShell>
-  ) : (
-    children
   );
 }
 function Scene({ fragment, scene }: { fragment: Fragment; scene: string }) {
   useState(() => {
-    resetMock(scene);
+    resetMock(scene, fragment.module);
   });
   return (
     <PersonalProvider scene={scene}>

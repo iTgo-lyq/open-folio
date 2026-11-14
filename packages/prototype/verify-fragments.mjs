@@ -161,7 +161,7 @@ try {
             await expect(frame.getByText(/演示.*失败/).first()).toBeVisible();
           if (scene === "loading")
             await expect(
-              frame.getByText(/正在(发现仓库|读取)/).first(),
+              frame.getByText(/正在(发现仓库|读取分享|打开工作台)/).first(),
             ).toBeVisible();
           if (scene === "login")
             await expect(
@@ -179,7 +179,11 @@ try {
                   ? "还没有绑定 Token"
                   : entry.id === "quiet-prototypes"
                     ? "这个仓库还没有原型"
-                    : "暂无内容";
+                    : entry.id === "quiet-specs"
+                      ? "这里还没有已实现的 Specs"
+                      : entry.id === "quiet-share"
+                        ? "内容不存在或暂不可读"
+                        : "暂无你创建的 Change";
             await expect(frame.getByText(text, { exact: true })).toBeVisible();
           }
         }

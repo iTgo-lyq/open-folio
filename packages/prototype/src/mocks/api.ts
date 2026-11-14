@@ -22,7 +22,7 @@ let session = initialSession();
 let views = defaultRepositoryViews();
 let scene = "default";
 let nextToken = 2;
-export function resetMock(next: string) {
+export function resetMock(next: string, module = "") {
   scene = next;
   session = initialSession();
   views = defaultRepositoryViews();
@@ -34,7 +34,8 @@ export function resetMock(next: string) {
       connected: false,
       workspace: undefined,
     };
-  if (next === "empty")
+  // 未绑定 Token 时业务只显示个人页；阅读模块的空态保持连接、仅清空数据。
+  if (next === "empty" && ["home", "connections"].includes(module))
     session = {
       ...session,
       connections: [],

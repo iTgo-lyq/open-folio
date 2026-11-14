@@ -1,14 +1,12 @@
 import Specs from "../../../../src/components/specs";
-import { mount, WorkbenchFrame, ReadingState } from "../fragment";
+import { mount, WorkbenchFrame } from "../fragment";
 mount({
   title: "Specs 阅读片段",
   module: "specs",
   source: "Specs / Reader / ReadingDocument",
-  render: (scene) => (
+  render: () => (
     <WorkbenchFrame module="specs">
-      <ReadingState scene={scene}>
-        <Specs />
-      </ReadingState>
+      <Specs />
     </WorkbenchFrame>
   ),
 });
