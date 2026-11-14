@@ -62,6 +62,7 @@ function sourceIdentity(catalog, id) {
   const route = catalog.routes.find(route => route.id === id);
   assert(route && !route.errors.length, 'A valid central Change entry is required to identify its source');
   const record = catalog.entries.find(record => record.id === id);
+  assert(record.state.status !== "cancelled", "A cancelled Change has no delivery to integrate or clean up");
   const branch = route.kind === 'archive' ? record.state.branch : route.branch;
   sourceBranch(catalog,branch);
   return {route,record,branch};
@@ -135,7 +136,8 @@ export async function verify(repo, id, readPullRequests = githubPullRequests) {
 
 function dependencies(catalog, branch, id) {
   assert(!catalog.routes.some(route => route.errors.length), 'Invalid central routing prevents safe source cleanup');
-  assert(!catalog.routes.some(route => route.id !== id && route.kind !== 'archive' && route.branch === branch), 'Another live/cancelled Change still depends on the source branch');
+  assert(!catalog.entries.some(entry => entry.id !== id && entry.state?.branch === branch &&
+    (!entry.archived || entry.state.status === "cancelled")), 'Another live/cancelled Change still depends on the source branch');
 }
 
 function treeReady(repo, branch, idleWorktree) {

@@ -33,6 +33,7 @@ import {
   parentBranch,
   parentArchive,
   sourceOwnership,
+  matchesCancellation,
   resolvePlanningRoute,
   planningRecord,
 } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
@@ -1031,6 +1032,15 @@ export class GitReader {
           const entry = sourceRecords(integrationBranch).find(
             (row) => row.id === route.id,
           );
+          const workRecord = sourceRecords(name).find((row) => row.id === route.id);
+          if (
+            target &&
+            [entry?.state?.status, workRecord?.state?.status].includes("cancelled") &&
+            (ownership !== "owned" || !matchesCancellation(entry?.state, workRecord))
+          ) {
+            route.errors.push("协作分支的取消标记与工作分支归档不一致。");
+            continue;
+          }
           const historicalOwnership = trackingCommit
             ? sourceOwnership(
                 (await catalogAt(trackingCommit, true, route.id)).records.map(
@@ -1098,6 +1108,7 @@ export class GitReader {
         const centralChild = sourceRecords(integrationBranch).find(
           (row) => row.id === route.id,
         )?.state;
+        if (centralChild?.status === "cancelled") continue;
         if (
           parentRoute?.kind === "planning" &&
           planningRecord(centralChild) &&

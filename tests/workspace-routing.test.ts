@@ -124,6 +124,76 @@ function fixture(t: import("node:test").TestContext) {
     reject,
   };
 }
+
+test("retained cancellation publishes the archive before marking the collaboration record", (t) => {
+  const f = fixture(t);
+  f.planning();
+  f.handoff();
+  const path = "docs/project/changes/sample/change.json";
+  const hooks = join(f.root, "hooks");
+  mkdirSync(hooks);
+  writeFileSync(join(hooks, "pre-commit"),
+    `#!/bin/sh\nexec "${process.execPath}" "${cli}" setup pre-commit >/dev/null\n`,
+    { mode: 0o755 });
+  at(f.repo, "config", "core.hooksPath", hooks);
+  assert.match(f.state("change cancel", ["--mode", "mark"], 1), /Push the cancelled archive/);
+  f.state("stage execute", [], 0, "sample", f.work);
+  f.state("task start", ["--task", "T1"], 0, "sample", f.work);
+  f.put("work.txt", "Actual work", f.work);
+  f.commit(f.work);
+  const retained = f.state("change cancel", [
+    "--mode", "keep", "--date", "2026-11-15", "--reason", "Stop work",
+  ], 0, "sample", f.work);
+  assert.match(f.state("change cancel", ["--mode", "mark"], 1), /Push the cancelled archive/);
+  assert.equal(retained.path, "docs/project/archive/2026-11-15-sample/change.json");
+  assert.equal(retained.state.tasks.T1.status, "doing");
+  f.commit(f.work);
+  const marker = f.state("change cancel", ["--mode", "mark"]);
+  assert.deepEqual(marker.state.cancellation, retained.state.cancellation);
+  assert.equal(marker.state.stage, "requirement");
+  f.commit();
+  const shown = f.state("change show");
+  assert.equal(shown.path, retained.path);
+  assert.equal(shown.state.stage, "execution");
+  assert.equal(shown.state.tasks.T1.status, "doing");
+  assert.equal(at(f.remote, "show", "change/sample:work.txt"), "Actual work");
+  assert.equal(JSON.parse(at(f.remote, "show", `develop:${path}`)).status, "cancelled");
+  assert.equal(f.workspace("locate").writable, false);
+  assert.match(f.state("stage rework", [
+    "--stage", "requirement", "--reason", "Resume", "--approach", "Reopen",
+  ], 1, "sample", f.work), /frozen/);
+
+  f.planning("another");
+  at(f.repo, "worktree", "remove", f.work);
+  at(f.repo, "branch", "-D", "change/sample");
+  at(f.repo, "push", "origin", "--delete", "change/sample");
+  assert.match(f.workspace("handoff", ["--branch", "change/sample", "--dry-run"], 1, "another"),
+    /belongs to a cancelled Change/);
+  assert.match(f.state("change show", [], 1), /registered branch|missing|not match/);
+});
+
+test("deletion removes the collaboration entry without archiving or touching unrelated changes", (t) => {
+  const f = fixture(t);
+  f.planning();
+  f.planning("other");
+  const path = "docs/project/changes/sample";
+  f.put(`${path}/local.md`, "Uncommitted");
+  assert.match(f.state("change cancel", ["--mode", "delete"], 1), /uncommitted/);
+  rmSync(join(f.repo, path, "local.md"));
+  f.handoff();
+  assert.match(f.state("change cancel", ["--mode", "delete"], 1), /Remove the verified Change branch/);
+  at(f.repo, "worktree", "remove", f.work);
+  at(f.repo, "branch", "-D", "change/sample");
+  at(f.repo, "push", "origin", "--delete", "change/sample");
+  f.state("change cancel", ["--mode", "delete", "--dry-run"]);
+  assert.ok(existsSync(join(f.repo, path, "change.json")));
+  f.state("change cancel", ["--mode", "delete"]);
+  f.commit();
+  assert.equal(at(f.remote, "ls-tree", "develop", "--", path), "");
+  assert.equal(at(f.remote, "ls-tree", "develop", "--", "docs/project/archive"), "");
+  assert.ok(existsSync(join(f.repo, "docs/project/changes/other/change.json")));
+});
+
 test("planning stays on develop; shared registration is idempotent and routes stale copies to work", (t) => {
   const f = fixture(t);
   f.planning();
@@ -625,7 +695,8 @@ test("parent closure checks the live registered child ref rather than a deleted 
   const f = fixture(t);
   f.planning();
   f.handoff();
-  f.state("change cancel", ["--reason", "No longer needed"], 0, "sample", f.work);
+  f.state("change cancel", ["--mode", "keep", "--date", "2026-11-15",
+    "--reason", "No longer needed"], 0, "sample", f.work);
   f.commit(f.work);
   const parent = (command: string, opts: string[] = [], expected = 0) =>
     f.state(command, opts, expected, "parent");

@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "交付删除和归档留存两种取消路径",
-      "status": "todo"
+      "status": "done",
+      "verification": "应用 468 项、Skill 21 项、取消详情浏览器 1 项通过，准备检查、类型检查与生产构建通过。现存取消 Change 已迁移并核实。",
+      "commitTitle": "change-cancellation-retention T1: implement cancellation retention"
     }
   },
   "closure": {},

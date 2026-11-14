@@ -62,6 +62,32 @@ test("delivery overrides cannot replace CI archive or integration evidence", asy
   );
 });
 
+test("a release can carry collaboration cancellation history without listing it as a delivery", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.merge();
+  const directory = "docs/project/archive/2026-11-15-planned";
+  await f.put(`${directory}/change.json`, JSON.stringify({
+    ...completedChange("planned"),
+    branch: "develop",
+    status: "cancelled",
+    stage: "requirement",
+    tasks: {},
+    closure: {},
+    cancellation: { at: "2026-11-15T01:00:00.000Z", reason: "No longer needed" },
+  }));
+  f.commit();
+  const release = await checkPullRequest(f.git, event(f, "main", releaseBody));
+  assert.deepEqual(release.changes, ["example"]);
+  f.git(["checkout", "-b", "release/modified-cancellation"]);
+  await f.put(`${directory}/requirement.md`, "# Changed after cancellation");
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", releaseBody)),
+    /modified its cancelled archive/,
+  );
+});
+
 test("PR archive check accepts its completed archive and leaves inherited planning and Git untouched", async () => {
   const f = await integrationFixture();
   try {
@@ -548,14 +574,19 @@ for (const completed of [true, false]) {
       await f.put(live, JSON.stringify(active));
       f.commit();
       f.git(["checkout", "-b", child.branch]);
+      f.git(["rm", live]);
+      const cancelled = {
+        ...active,
+        status: "cancelled",
+        cancellation: { at: confirmed.at, reason: "No longer needed" },
+      };
       await f.put(
-        live,
-        JSON.stringify({
-          ...active,
-          status: "cancelled",
-          cancellation: { at: confirmed.at, reason: "No longer needed" },
-        }),
+        `docs/project/archive/2026-10-18-${child.id}/change.json`,
+        JSON.stringify(cancelled),
       );
+      f.commit();
+      f.git(["checkout", "develop"]);
+      await f.put(live, JSON.stringify(cancelled));
       f.commit();
       f.git(["checkout", f.branch]);
     }

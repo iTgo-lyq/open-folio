@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { recordsAt } from '../core/repository.mjs';
 import { validateChange, validateWorkflow } from '../core/state-schema.mjs';
-import { closedRecord, validBranchName, parentBranch } from '../core/routing.mjs';
+import { cancelledArchive, closedRecord, matchesCancellation, validBranchName, parentBranch } from '../core/routing.mjs';
 import { changePullRequests, deliveryPullRequests, integrationEvidence } from '../core/integration-records.mjs';
 import { githubPullRequests } from '../core/github-prs.mjs';
 
@@ -88,12 +88,22 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
       for (const id of record.state.children ?? []) {
         const rows = records.filter(row => row.id === id), child = rows[0];
         assert(rows.length === 1 && !child.error && child.state?.parent === record.state.id, `Child ${id}: missing or invalid parent relationship`);
+        if (child.archived && child.state.branch === config.integrationBranch &&
+            cancelledArchive(child.state) && !validateChange(child.state).length) {
+          const entry = central.find(row => row.path === child.path);
+          assert(entry && matchesCancellation(entry.state, child) &&
+            git(['rev-parse',`${centralTip}:${child.directory}`]) ===
+            git(['rev-parse',`${pr.head.sha}:${child.directory}`]),
+            `Child ${id}: publish the cancelled archive on the collaboration branch first`);
+          continue;
+        }
         if (!child.archived) {
           const entry = central.find(row => row.id === id);
-          assert(entry?.state?.branch === child.state.branch, `Child ${id}: invalid cancellation source`);
+          assert(entry?.state?.status === 'cancelled' && entry.state.branch === child.state.branch,
+            `Child ${id}: invalid cancellation source`);
           const cancelled = recordsAt({git},`refs/remotes/origin/${child.state.branch}`,id);
           assert(cancelled.length === 1 && !cancelled[0].error && !validateChange(cancelled[0].state).length &&
-            cancelled[0].state.status === 'cancelled' && cancelled[0].state.parent === record.state.id,
+            matchesCancellation(entry.state, cancelled[0]) && cancelled[0].state.parent === record.state.id,
             `Child ${id}: must be completed or cancelled`);
           continue;
         }
@@ -127,10 +137,19 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
   const allowed = added.map(row => `${row.directory.replace(/\/$/, '')}/`);
   for (const path of git(['diff', '--name-only', '--no-renames', '-z', pr.base.sha, pr.head.sha, '--', 'docs/project/archive/']).split('\0').filter(Boolean))
     assert(allowed.some(prefix => path.startsWith(prefix)), `${path}: released archives are read-only`);
-  const includes = added.map(row => row.id);
+  const includes = [];
   const integrationTip = git(['rev-parse', '--verify', `refs/remotes/origin/${config.integrationBranch}^{commit}`]);
-  for (const id of includes) {
+  for (const row of added) {
+    const {id, state, directory} = row;
+    if (state?.branch === config.integrationBranch &&
+        cancelledArchive(state) && !validateChange(state).length) {
+      assert(git(['rev-parse', `${pr.head.sha}:${directory}`]) ===
+        git(['rev-parse', `${integrationTip}:${directory}`]),
+      `Change ${id}: release candidate modified its cancelled archive`);
+      continue;
+    }
     const record = archive(records, id);
+    includes.push(id);
     const parent = record.state.parent ? records.find(row => row.id === record.state.parent)?.state : null;
     const integration = await evidence(record.state,parent,integrationTip);
     assert(integration.status === 'found', `Change ${id}: release requires verified integration history`);

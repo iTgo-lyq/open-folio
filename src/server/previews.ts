@@ -15,7 +15,7 @@ import {
   previewsSchema,
 } from "./schema.ts";
 import { integrationFor } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
-import { closedRecord } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
+import { cancelledArchive, closedRecord } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import { entryPath } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 import { htmlIssues } from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
 import { AppError } from "./errors.ts";
@@ -241,7 +241,7 @@ export async function resolvePreview(
   const route = latest.routes.find((route) => route.id === changeId);
   if (!route || route.errors.length)
     return fail("未找到可判定的 Change 主来源，请先核对已推送分支。");
-  const central = route.kind === "archive";
+  const central = route.kind === "archive" && candidate?.state?.status !== "cancelled";
   const integration = central
     ? integrationFor(latest.integrations, changeId)
     : undefined;
@@ -314,7 +314,7 @@ export async function resolvePreview(
           stateFiles[0].path !== `${integration.archivePath}/change.json`)
       )
         return fail("合并提交中的归档路径不一致。");
-      if (!closedRecord(state, stateFiles[0].path.slice(0, -12)))
+      if (!closedRecord(state, stateFiles[0].path.slice(0, -12)) && !cancelledArchive(state))
         return fail("交付归档的关闭状态或目录不一致。");
       descriptor.pinned = true;
     }

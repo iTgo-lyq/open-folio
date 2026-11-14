@@ -317,16 +317,16 @@ test("follow-up registration requires a published closed predecessor and stays i
   assert.equal(readFileSync(f.path(), "utf8"), before);
   f.create("small", "pending", ["--parent", "unfinished-child"]);
   f.create("small", "cancelled-child", ["--parent", "valid-parent"]);
-  f.run("change cancel", ["--reason", "取消不影响已关闭父项"], 0, "cancelled-child");
+  f.run("change cancel", ["--mode", "keep", "--date", "2026-11-15", "--reason", "取消不影响已关闭父项"], 0, "cancelled-child");
   f.create("small", "invalid-cancelled", [
     "--parent",
     "invalid-cancelled-parent",
   ]);
-  f.run("change cancel", ["--reason", "取消"], 0, "invalid-cancelled");
+  const invalid = f.run("change cancel", ["--mode", "keep", "--date", "2026-11-15", "--reason", "取消"], 0, "invalid-cancelled");
   writeFileSync(
-    f.path("invalid-cancelled"),
+    join(f.root, invalid.path),
     JSON.stringify({
-      ...f.state("invalid-cancelled"),
+      ...invalid.state,
       closure: { verification: { ...confirmation, result: "passed" } },
     }),
   );
@@ -891,11 +891,19 @@ test("retry only repairs an uncommitted done task; waiting, blocking, failed ver
     "--approach",
     "Reconsider",
   ]);
-  f.run("change cancel", ["--reason", "User cancelled"]);
-  const before = readFileSync(f.path(), "utf8");
+  f.run("change cancel", ["--reason", "User cancelled"], 1);
+  const cancelled = f.run("change cancel", [
+    "--mode", "keep", "--date", "2026-11-15", "--reason", "User cancelled",
+  ]);
+  const archived = join(f.root, cancelled.path);
+  assert.ok(!existsSync(f.path()));
+  assert.equal(cancelled.state.status, "cancelled");
+  assert.equal(cancelled.state.stage, "requirement");
+  assert.ok(!cancelled.state.waitingFor);
+  const before = readFileSync(archived, "utf8");
   f.run("stage resume", [], 1);
   f.run("change create", ["--title", "Other", "--size", "small"], 1, "other");
-  assert.equal(readFileSync(f.path(), "utf8"), before);
+  assert.equal(readFileSync(archived, "utf8"), before);
 });
 
 test("archive collision and symlink inputs do not overwrite files", (t) => {

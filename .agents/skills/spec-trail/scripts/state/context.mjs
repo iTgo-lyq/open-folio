@@ -88,7 +88,8 @@ export function locate(opts, { refresh }) {
   const repo = repository(root);
   const catalog = collaborationCatalog(repo, { refresh, local: repo.branch === repo.config.integrationBranch });
   const route = catalog?.routes.find((entry) => entry.id === id);
-  if (route?.kind === "target") routedRecord(repo, catalog, id, { refresh });
+  if (route?.kind === "target" && !["delete", "mark"].includes(opts.mode))
+    routedRecord(repo, catalog, id, { refresh });
   return {
     opts, need, id, cwd, git, root, safe, records, repo, catalog, route,
     matches: records().filter((r) => r.state.id === id),
@@ -102,9 +103,9 @@ export function locate(opts, { refresh }) {
  * the command reopen an archive that is not integrated; `after(ctx)` runs
  * once the invariants hold.
  */
-export function stateCommand(summary, { run, initial, restore = false, after, dryRun = true, required = [], optional = [], help, notes, example = "" }) {
+export function stateCommand(summary, { run, initial, restore = false, collaboration = false, after, dryRun = true, required = [], optional = [], help, notes, example = "" }) {
   return define(
-    (opts, name) => runState({ name, run, initial, restore, after }, opts),
+    (opts, name) => runState({ name, run, initial, restore, collaboration, after }, opts),
     {
       summary,
       required: ["change", ...required],
@@ -135,6 +136,8 @@ async function open(ctx, spec) {
   const creating = !!spec.initial;
   const branch = git(["symbolic-ref", "--short", "HEAD"]);
   const config = readJson(safe("docs/project/workflow.json"));
+  const central = spec.collaboration && ["mark", "delete"].includes(ctx.opts.mode);
+  assert(!central || branch === config.integrationBranch, "Use the collaboration branch for this cancellation step");
   assert(!validateWorkflow(config).length, "Invalid workflow.json");
   assert(config.releaseBranch !== branch, "Use the Change branch, not a protected branch");
   const all = ctx.records();
@@ -142,7 +145,7 @@ async function open(ctx, spec) {
   if (route) {
     assert(!route.errors.length, route.errors.join("; "));
     assert(
-      route.branch === branch && route.kind !== "archive",
+      (central || route.branch === branch) && route.kind !== "archive",
       `Use the registered Change branch ${route.branch}; inherited entries are read-only`,
     );
   } else assert(branch === config.integrationBranch, "Register this Change on the collaboration branch before writing it");
@@ -152,7 +155,7 @@ async function open(ctx, spec) {
   }
   assert(
     branch === config.integrationBranch ||
-      !all.some((r) => !r.archived && r.state.branch === branch && r.state.status === "cancelled"),
+      !all.some((r) => r.state.branch === branch && r.state.status === "cancelled"),
     "This branch contains a cancelled Change and is frozen",
   );
   const found = all.filter((r) => r.state.id === id);
@@ -167,7 +170,7 @@ async function open(ctx, spec) {
   const state = (ctx.state = creating ? spec.initial(ctx) : JSON.parse(original));
   assert(!validateChange(state).length, `Invalid input Change: ${validateChange(state).join("; ")}`);
   assert(
-    state.branch === branch || (route?.kind === "planning" && route.branch === branch && state.branch === route.ownerBranch),
+    central || state.branch === branch || (route?.kind === "planning" && route.branch === branch && state.branch === route.ownerBranch),
     `Switch to the Change branch ${state.branch}`,
   );
   if (restoring) {
@@ -196,7 +199,7 @@ export function checkInvariants({ id, state, branch, config }) {
   const errors = validateChange(state);
   assert(!errors.length, errors.join("; "));
   assert(
-    branch !== config.integrationBranch || state.size === "xlarge" || !["execution", "close"].includes(state.stage),
+    branch !== config.integrationBranch || state.status === "cancelled" || state.size === "xlarge" || !["execution", "close"].includes(state.stage),
     "Handoff this Change to its own worktree before implementation",
   );
   assert(
@@ -211,6 +214,18 @@ export function checkInvariants({ id, state, branch, config }) {
   else assert(!state.children?.length, "Only xlarge can have children");
 }
 
+export function archiveDestination({ safe, id }, date) {
+  assert(
+    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      Number.isFinite(Date.parse(`${date}T00:00:00Z`)) &&
+      new Date(`${date}T00:00:00Z`).toISOString().startsWith(date),
+    "Use a valid YYYY-MM-DD date in the user timezone",
+  );
+  const directory = safe(`docs/project/archive/${date}-${id}`);
+  assert(!existsSync(directory), "Archive destination already exists");
+  return directory;
+}
+
 // Write the new state atomically through a temporary file. Archive and restore
 // move the whole directory; a task retry also repairs the staged copy.
 function write(ctx) {
@@ -219,7 +234,7 @@ function write(ctx) {
     command: name,
     dryRun: opts["dry-run"],
     path: relative(root, archiveDir ? join(archiveDir, "change.json") : restoring ? join(liveDir, "change.json") : file),
-    state,
+    ...(ctx.deleteChange ? { deleted: true } : { state }),
     ...(availability.length ? { availability } : {}),
   };
   if (opts["dry-run"]) return result;
@@ -227,6 +242,12 @@ function write(ctx) {
     original === null ? !existsSync(file) : readFileSync(file, "utf8") === original,
     "Change changed concurrently; retry after inspecting",
   );
+  if (ctx.deleteChange) {
+    assert(git(["symbolic-ref", "--short", "HEAD"]) === ctx.branch, "Branch changed during the operation");
+    git(["rm", "-r", "--", relative(root, liveDir)]);
+    result.next = "Commit and push the deleted collaboration entry.";
+    return result;
+  }
   if (original === null) mkdirSync(liveDir, { recursive: true });
   const temporary = join(dirname(file), `.change-${randomUUID()}.tmp`);
   const copiedFiles = [],
@@ -296,7 +317,11 @@ function write(ctx) {
   } finally {
     rmSync(temporary, { force: true });
   }
-  result.next = archiveDir
+  result.next = archiveDir && state.status === "cancelled"
+    ? ctx.branch === ctx.config.integrationBranch
+      ? "Commit and push the cancelled archive on the collaboration branch."
+      : "Commit and push the cancelled archive, then use change cancel --mode mark on the collaboration branch."
+    : archiveDir
     ? `Commit and push the archived source, then run node .agents/skills/spec-trail/cli.mjs integration preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use stage rework for corrections before integration.`
     : "Review the local diff, commit and push. A local command is not a published workflow fact.";
   return result;
