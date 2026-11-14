@@ -1,0 +1,64 @@
+html,
+body,
+#prototype-root {
+  height: 100%;
+}
+#prototype-root {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+.prototype-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--of-border);
+  background: var(--of-bg-subtle);
+}
+.prototype-toolbar strong {
+  font-size: 13px;
+}
+.prototype-toolbar small {
+  color: var(--of-text-2);
+}
+.prototype-toolbar select {
+  max-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--of-border-strong);
+  border-radius: 6px;
+  background: var(--of-bg-surface);
+}
+.prototype-surface {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+.prototype-surface > :first-child {
+  height: 100%;
+  min-height: 0;
+}
+.prototype-notice {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  margin: 0;
+  padding: 12px;
+  background: var(--of-bg-raised);
+  border: 1px solid var(--of-border);
+  border-radius: 8px;
+  z-index: 100;
+}
+@media (max-width: 600px) {
+  .prototype-toolbar {
+    padding: 8px;
+    gap: 6px 12px;
+  }
+  .prototype-toolbar strong,
+  .prototype-toolbar small {
+    width: 100%;
+  }
+}

@@ -69,7 +69,7 @@ GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验�
 
 本仓库的原型包通过 custom 适配器发布至 Cloudflare R2。源码保存在 Git，dist 与桶级 S3 凭据不提交；凭据由发布机器环境提供。适配器以 requestId 固定对象路径，使用条件创建并核对重复请求的既有字节，拒绝覆盖不同内容；全部文件公开 GET 的内容和类型验证通过后，才输出可登记的成功结果。
 
-原型 HTML 与 PC Web、iPad、Mobile 截图一起发布，当前清单与 Change 记录固定 hosted 地址、源码提交和摘要。失败不替换引用。R2 已引用版本长期保留，发布与配置说明见[原型包 README](../../../../../packages/prototype/README.md)。
+原型 HTML 与 PC Web、iPad、Mobile 截图一起发布，当前清单与 Change 记录固定 hosted 地址、源码提交和摘要。失败不替换引用。R2 保留当前各分支（含已归档 Change）引用的版本；获授权清理时可删除只被历史提交或旧公开版本引用的版本，不保证这些旧地址仍可访问。发布与配置说明见[原型包 README](../../../../../packages/prototype/README.md)。
 
 ## 总览、详情与二级预览
 

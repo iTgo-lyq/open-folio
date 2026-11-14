@@ -1,44 +1,107 @@
-import { readFile, readdir, realpath, mkdir, writeFile, lstat } from 'node:fs/promises';
-import { dirname, join, relative, resolve, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-const root = await realpath(dirname(fileURLToPath(import.meta.url)));
-const mime = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
-async function read(path) {
-  const actual = await realpath(path), rel = relative(root, actual);
-  if (rel.startsWith('..') || rel.startsWith('/')) throw Error('资源必须在当前原型包内');
-  return readFile(actual);
+import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { build } from "vite";
+import react from "@vitejs/plugin-react";
+import { htmlIssues } from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
+
+const root = dirname(fileURLToPath(import.meta.url));
+const repository = resolve(root, "../..");
+const manifest = JSON.parse(
+  await readFile(join(root, "prototype.json"), "utf8"),
+);
+const boundaries = new Map(
+  ["context.tsx", "personal-context.tsx", "api.ts", "prototype-frame.tsx"].map(
+    (name) => [
+      join(repository, "src/components", name),
+      join(root, "src/mocks", name),
+    ],
+  ),
+);
+const boundaryPlugin = {
+  name: "prototype-boundaries",
+  enforce: "pre",
+  async resolveId(source, importer) {
+    if (source === "server-only" || source.startsWith("node:"))
+      throw Error(`原型不得引用服务端模块：${source}`);
+    const resolved = await this.resolve(source, importer, { skipSelf: true });
+    if (!resolved) return null;
+    if (resolved.id.startsWith(join(repository, "src/server") + "/"))
+      throw Error(`原型不得引用服务端实现：${resolved.id}`);
+    return boundaries.get(resolved.id) ?? null;
+  },
+};
+
+const entries = await Promise.all(
+  manifest.entries.map(async (entry) => {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id))
+      throw Error(`无效入口：${entry.id}`);
+    const source = await realpath(resolve(repository, entry.sourcePath));
+    if (!source.startsWith(join(root, "src") + "/"))
+      throw Error(`入口必须在原型包内：${entry.sourcePath}`);
+    return { ...entry, source };
+  }),
+);
+if (
+  !entries.length ||
+  new Set(entries.map((entry) => entry.id)).size !== entries.length
+)
+  throw Error("原型清单为空或包含重复入口");
+
+const output = join(root, "dist");
+await rm(output, { recursive: true, force: true });
+for (const entry of entries) {
+  const result = await build({
+    configFile: false,
+    root,
+    base: "./",
+    publicDir: false,
+    plugins: [boundaryPlugin, react()],
+    resolve: { alias: { "@": join(repository, "src") } },
+    define: { "process.env.NODE_ENV": '"production"' },
+    build: {
+      write: false,
+      sourcemap: false,
+      cssCodeSplit: false,
+      lib: {
+        entry: entry.source,
+        name: "PrototypeFragment",
+        formats: ["iife"],
+      },
+      rolldownOptions: {
+        onwarn(warning, warn) {
+          if (warning.code !== "MODULE_LEVEL_DIRECTIVE") warn(warning);
+        },
+      },
+    },
+  });
+  const files = (Array.isArray(result) ? result : [result]).flatMap(
+    (item) => item.output,
+  );
+  const javascript = files
+    .filter((file) => file.type === "chunk")
+    .map((file) => file.code)
+    .join("\n");
+  const css = files
+    .filter((file) => file.type === "asset" && file.fileName.endsWith(".css"))
+    .map((file) => file.source)
+    .join("\n");
+  if (
+    files.some(
+      (file) => file.type === "asset" && !file.fileName.endsWith(".css"),
+    )
+  )
+    throw Error(`${entry.id} 包含未内联资源`);
+  const title = entry.title.replace(
+    /[<>&"]/g,
+    (character) => `&#${character.charCodeAt(0)};`,
+  );
+  const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${css.replace(/<\/style/gi, "<\\/style")}</style></head><body><div id="prototype-root"></div><script>${javascript.replace(/<\/script/gi, "<\\/script")}</script></body></html>`;
+  const issues = htmlIssues(html);
+  if (issues.length) throw Error(`${entry.id}: ${issues.join("; ")}`);
+  await mkdir(join(output, entry.id), { recursive: true });
+  await writeFile(join(output, entry.id, "index.html"), html);
+  console.log(
+    `${entry.id}: ${relative(repository, entry.source)} → self-contained HTML`,
+  );
 }
-async function expand(path, parents = []) {
-  const absolute = resolve(path);
-  if (parents.includes(absolute) || parents.length > 20) throw Error('循环或过深的 include');
-  let text = (await read(absolute)).toString();
-  const matches = [...text.matchAll(/\{\{(include|data):([^}]+)\}\}/g)];
-  for (const [token, kind, value] of matches) {
-    const target = resolve(dirname(absolute), value.trim());
-    let replacement;
-    if (kind === 'include') replacement = await expand(target, [...parents, absolute]);
-    else {
-      const type = mime[extname(target).toLowerCase()];
-      if (!type) throw Error(`不支持内联素材类型：${target}`);
-      replacement = `data:${type};base64,${(await read(target)).toString('base64')}`;
-    }
-    text = text.replace(token, () => replacement);
-  }
-  return text;
-}
-let count = 0;
-for (const file of await readdir(join(root, 'src/pages'))) {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*\.html$/.test(file)) continue;
-  const output = join(root, 'dist', file.slice(0, -5));
-  const html = await expand(join(root, 'src/pages', file));
-  await mkdir(output, { recursive: true });
-  const actual = await realpath(output);
-  if (relative(root, actual).startsWith('..')) throw Error('输出目录不能越过原型包');
-  const target = join(output, 'index.html');
-  const prior = await lstat(target).catch(e => { if(e.code === 'ENOENT') return null; throw e; });
-  if(prior && (!prior.isFile() || prior.isSymbolicLink())) throw Error('输出入口不能是符号链接或特殊文件');
-  await writeFile(target, html);
-  count++;
-}
-if (!count) throw Error('src/pages 下没有可导出的 HTML 入口');
-console.log(`Exported ${count} self-contained preview(s).`);
