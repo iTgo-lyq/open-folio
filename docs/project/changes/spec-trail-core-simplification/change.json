@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "spec-trail-core-simplification",
-  "title": "精简 SpecTrail 主 Skill 与日常 CLI",
+  "title": "精简 SpecTrail 主 Skill 与 CLI，原型改为复用业务代码的页面片段",
   "size": "medium",
   "status": "active",
   "stage": "requirement",
