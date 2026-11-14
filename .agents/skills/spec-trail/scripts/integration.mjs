@@ -1,14 +1,14 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync, rmSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { hostname } from 'node:os';
-import { repository, collaborationCatalog, routedRecord, deliveryTarget, recordsAt, revision, remoteBranch, fetchBranch } from './repository.mjs';
-import { closedRecord, validBranchName } from './routing.mjs';
-import { validateChange } from './state-schema.mjs';
-import { validChangeId } from './integration-records.mjs';
-import { changeDelivery, githubPullRequests } from './github-prs.mjs';
-import { entryPath } from '../prototype/scripts/contract.mjs';
-import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
+import { repository, collaborationCatalog, routedRecord, deliveryTarget, recordsAt, revision, remoteBranch, fetchBranch } from './core/repository.mjs';
+import { closedRecord, validBranchName } from './core/routing.mjs';
+import { validateChange } from './core/state-schema.mjs';
+import { validChangeId } from './core/integration-records.mjs';
+import { changeDelivery, githubPullRequests } from './core/github-prs.mjs';
+import { verifyArchivedPreviews } from '../prototype/scripts/hooks.mjs';
+import { withStateLock } from './core/lock.mjs';
+import { define } from './define.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const at = (path, args) => execFileSync('git', ['-C', path, '--literal-pathspecs', ...args], {
@@ -18,15 +18,6 @@ const ancestor = (repo, before, after) => {
   try { repo.git(['merge-base','--is-ancestor',before,after]); return true; } catch (error) { if (error.status === 1) return false; throw error; }
 };
 
-// Shared namespace with state/workspace commands; keep it until async scans finish.
-export async function withRepositoryLock(repo, operation) {
-  const path = join(repo.common, 'spec-trail-state.lock');
-  mkdirSync(path);
-  try {
-    writeFileSync(join(path,'owner.json'), JSON.stringify({pid:process.pid,hostname:hostname(),root:repo.root,startedAt:new Date().toISOString()}));
-    return await operation();
-  } finally { rmSync(path, {recursive:true,force:true}); }
-}
 
 function worktrees(repo) {
   return repo.git(['worktree','list','--porcelain','-z']).split('\0\0').filter(Boolean).map(block => {
@@ -53,7 +44,7 @@ function checkSubmoduleRemoval(path, gitdir) {
   if (statSync(modules,{throwIfNoEntry:false})?.isDirectory()) evidence.push(`submodule Git data at ${JSON.stringify(modules)}`);
   assert(!evidence.length, `Git refuses non-forced removal of source worktree ${JSON.stringify(path)} with ${evidence.join(' and ')}. ` +
     'Check submodule files, local-only commits and stashes. Obtain explicit user confirmation before running git worktree remove --force manually, then retry cleanup. ' +
-    'See references/integration.md (清理 → 含子模块的 worktree).');
+    'See SKILL.md (合码与集成 → 清理 → 含子模块的 worktree).');
 }
 
 function archived(repo, commit, id) {
@@ -65,19 +56,6 @@ function archived(repo, commit, id) {
 
 function sourceBranch(catalog, branch) {
   assert(validBranchName(branch) && branch !== catalog.branch && catalog.config.releaseBranch !== branch, 'The source cannot be the integration or release branch');
-}
-
-function previewObjects(repo, record, commit, configuration) {
-  for (const preview of record.state.previews ?? []) {
-    if(!preview.artifact.source)assert(revision(repo, preview.artifact.sourceCommit), `Prototype source object is unavailable: ${preview.id}`);
-    verifyPrototypeSource(repo.root,preview.artifact.sourceCommit,preview.id,preview.artifact.source,{revision:commit});
-    if (preview.artifact.type === 'git') {
-      const path = entryPath(preview,configuration,record.directory);
-      assert(path?.startsWith(record.directory + '/previews/'), `Prototype path is outside the archived snapshot: ${preview.id}`);
-      const row = repo.git(['ls-tree',commit,'--',path]);
-      assert(/^(100644|100755) blob [a-f0-9]+\t/.test(row), `Prototype HTML is unavailable: ${preview.id}`);
-    }
-  }
 }
 
 function sourceIdentity(catalog, id) {
@@ -117,7 +95,7 @@ function source(repo, catalog, id) {
   const commit = local ?? fetchBranch(repo, branch);
   const record = archived(repo,commit,id);
   assert(record.state.branch === branch, 'Archive ownership does not match the registered source');
-  previewObjects(repo,record,commit,catalog.config.prototype);
+  verifyArchivedPreviews(repo,record,commit,catalog.config.prototype);
   for (const tree of worktrees(repo).filter(tree => tree.branch === branch)) {
     visibleIndex(tree.path);
     assert(!tree.locked && !tree.prunable && !at(tree.path,['status','--porcelain','--untracked-files=all']), 'Source worktree is unavailable, locked or has unsaved files');
@@ -184,7 +162,7 @@ function treeReady(repo, branch, idleWorktree) {
  */
 export async function cleanup(repo, id, options = {}) {
   assert(validChangeId(id), 'Invalid Change id');
-  return withRepositoryLock(repo, async () => {
+  return withStateLock(repo.common, repo.root, async () => {
     const catalog = collaborationCatalog(repo, {refresh:true});
     const {route,branch,record} = sourceIdentity(catalog,id);
     const target = route.kind === 'archive' ? catalog : deliveryTarget(repo,catalog,record.state,{refresh:true});
@@ -230,16 +208,39 @@ export async function cleanup(repo, id, options = {}) {
   });
 }
 
-export async function runIntegration(command, values) {
-  const repo = repository(values.repo);
-  const id = values.change;
-  if (command === "preflight") return { output: await preflight(repo, id) };
-  if (command === "verify") return { output: await verify(repo, id) };
-
-  const output = await cleanup(repo, id, {
-    idleWorktree: values["idle-worktree"],
-    verifiedCommit: values["verified-commit"],
+const integration = (operation, summary, { required = [], optional = [], help, notes, example = "" } = {}) =>
+  define((values) => operation(repository(values.repo), values.change, values), {
+    summary, required: ["change", ...required], optional: [...optional, "repo"], help, notes, example: `--change example${example}`,
   });
-  const incomplete = Object.values(output.cleanup).some(item => item.status !== "cleaned");
-  return { output, exitCode: incomplete ? 2 : 0 };
-}
+
+export const commands = {
+  preflight: integration(
+    async (repo, id) => ({ output: await preflight(repo, id) }),
+    "After pushing the archive, check the source, delivery target and open pull request before review or merge",
+  ),
+  verify: integration(
+    async (repo, id) => ({ output: await verify(repo, id) }),
+    "Confirm the merged pull request commit is in the target history and the source is included",
+  ),
+  cleanup: integration(
+    async (repo, id, values) => {
+      const output = await cleanup(repo, id, { idleWorktree: values["idle-worktree"], verifiedCommit: values["verified-commit"] });
+      const incomplete = Object.values(output.cleanup).some((item) => item.status !== "cleaned");
+      return { output, exitCode: incomplete ? 2 : 0 };
+    },
+    "Delete the merged source branch and idle worktree after the delivery is verified",
+    {
+      required: ["verified-commit"],
+      optional: ["idle-worktree"],
+      help: {
+        "verified-commit": {
+          value: "full-sha",
+          text: "Full 40- or 64-hex delivery commit you verified; it must be in the remote target history and contain every source tip",
+        },
+        "idle-worktree": { value: "dir", text: "Source worktree you confirmed is no longer in use; omit when there is none" },
+      },
+      notes: ["Exit code 2 when cleanup is incomplete; the JSON lists each item's status."],
+      example: ' --verified-commit "$(git rev-parse origin/develop)" --idle-worktree ../project-worktrees/example',
+    },
+  ),
+};

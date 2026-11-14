@@ -1,4 +1,4 @@
-import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { integrationFixture } from "./integration-fixture.ts";

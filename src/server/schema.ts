@@ -10,11 +10,11 @@ import {
   validateTypes,
   validateUrgency,
   validateCollaborators,
-} from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import {
   validBranchName,
   workflowRoutingIssues,
-} from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import {
   validatePreviews,
   validatePrototype,
@@ -221,7 +221,6 @@ const workflowFields = z
     schemaVersion: z.literal(3),
     integrationBranch: branchName,
     releaseBranch: branchName,
-    checkForUpdates: z.boolean().optional(),
     prototype: z.unknown().optional(),
     openfolioUrl: z
       .custom<string | null>((v) => v === null || serviceUrl(v))

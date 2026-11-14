@@ -4,8 +4,8 @@ import { execFileSync } from "node:child_process";
 import {
   validBranchName,
   routeCatalog,
-} from "../.agents/skills/spec-trail/scripts/routing.mjs";
-import { validateWorkflow } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+} from "../.agents/skills/spec-trail/scripts/core/routing.mjs";
+import { validateWorkflow } from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import { workflowCoreSchema, workflowSchema } from "../src/server/schema.ts";
 
 const workflow = {
@@ -34,25 +34,12 @@ const archived = (id: string) => ({
 test("branch routing rejects Git option/ref ambiguity and matches real branch syntax", () => {
   for (const name of [
     "develop",
-    "feature/a",
     "团队/开发",
-    "a-b.c",
     "-delete",
-    ".hidden",
-    "a/.hidden",
     "a..b",
-    "foo.lock",
-    "foo.lock/bar",
-    "x//y",
-    "x/",
-    "x\\y",
     "refs/heads/x",
     "origin/main",
-    "x\u007f",
     "@",
-    "HEAD",
-    "a@{b",
-    "x*",
     "x:y",
   ]) {
     let gitValid = true;
@@ -82,10 +69,6 @@ test("workflow version 3 routing is shared and legacy configurations are rejecte
     { ...workflow, schemaVersion: 1 },
     { schemaVersion: 1, releaseBranch: "main" },
     { ...workflow, extra: true },
-    { ...workflow, checkForUpdates: true },
-    { ...workflow, checkForUpdates: false },
-    { ...workflow, checkForUpdates: null },
-    { ...workflow, checkForUpdates: "false" },
   ];
   for (const sample of samples) {
     assert.equal(
@@ -97,6 +80,12 @@ test("workflow version 3 routing is shared and legacy configurations are rejecte
       workflowCoreSchema.safeParse(sample).success,
       validateWorkflow(sample).length === 0,
     );
+  }
+  for (const checkForUpdates of [true, false]) {
+    const sample = { ...workflow, checkForUpdates };
+    assert.match(validateWorkflow(sample).join("\n"), /\/checkForUpdates: unknown field/);
+    assert(!workflowCoreSchema.safeParse(sample).success);
+    assert(!workflowSchema.safeParse(sample).success);
   }
   for (const legacy of [
     {

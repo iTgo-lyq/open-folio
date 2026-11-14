@@ -10,7 +10,7 @@
 
 首次使用从目标 Git 项目中的安装开始，再在 Agent 对话中接入项目，随后说明第一项改动和验收期待。完整安装环境推荐 Git、Node.js 24 或更新版本，以及 Codex 或 Claude Code。
 
-技能从 `iTgo-lyq/open-folio` 的 `.agents/skills/spec-trail/` 安装，版本与 MIT 许可证随源码维护。安装选项支持 Codex 与 Claude Code。Claude Code 的复制安装同时选择 `universal claude-code`，生成现有脚本需要的项目共享 `.agents/skills/spec-trail/` 和客户端 `.claude/skills/spec-trail/` 入口。公开 README 和站点命令保持一致。从旧独立仓库安装的用户重新执行新仓库安装命令以切换来源。
+技能从 `iTgo-lyq/open-folio` 的 `.agents/skills/spec-trail/` 安装，版本随源码维护。安装选项支持 Codex 与 Claude Code。Claude Code 的复制安装同时选择 `universal claude-code`，生成现有脚本需要的项目共享 `.agents/skills/spec-trail/` 和客户端 `.claude/skills/spec-trail/` 入口。公开 README 和站点命令保持一致。从旧独立仓库安装的用户重新执行新仓库安装命令以切换来源。
 
 ## 操作与可读性
 

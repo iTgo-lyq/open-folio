@@ -1,7 +1,6 @@
 ---
 name: document-diagrams
 description: 编写文档时，若涉及较复杂的组件关系、处理流程、状态流转或数据表达，可依据当前项目材料选择适合的图形补充 SVG 图表。也用于明确的绘图请求。
-license: MIT
 ---
 
 # Document Diagrams

@@ -12,7 +12,7 @@ import { join, dirname, resolve, relative, matchesGlob } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { validateWorkflow } from "../../scripts/state-schema.mjs";
+import { validateWorkflow } from "../../scripts/core/state-schema.mjs";
 import { withLock, checkedPath } from "./publishing.mjs";
 import { discoverUpload } from "./openfolio-client.mjs";
 import {

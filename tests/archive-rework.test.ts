@@ -12,7 +12,7 @@ const restore = (repo: string, env = process.env) =>
       process.execPath,
       [
         cli,
-        "change",
+        "stage",
         "rework",
         "--repo",
         repo,

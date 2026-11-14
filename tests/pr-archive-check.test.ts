@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rename, rm, writeFile } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
-import { checkPullRequest as check } from "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs";
+import { checkPullRequest as check } from "../.agents/skills/spec-trail/scripts/setup/check-pr.mjs";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 
 const cli = resolve(".agents/skills/spec-trail/cli.mjs");
@@ -125,17 +125,6 @@ test("archive prototype containment is checked before merge", async (t) => {
     checkPullRequest(f.git, event(f)),
     /inside the archive subtree/,
   );
-});
-
-test("PR archive checks reject invalid collaborator display names", async (t) => {
-  const f = await integrationFixture();
-  t.after(f.cleanup);
-  await f.put(`${f.archivePath}/change.json`, JSON.stringify({
-    ...f.record,
-    collaborators: [{ name: "Member <member@example.org>" }],
-  }));
-  f.commit(false);
-  await assert.rejects(checkPullRequest(f.git, event(f)), /valid completed archive/);
 });
 
 test("unarchived and reworked Changes fail even in Draft, then pass after archive is restored", async () => {

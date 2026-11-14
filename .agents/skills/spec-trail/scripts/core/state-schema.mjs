@@ -240,7 +240,7 @@ function tasks(value, path, errors) {
   }
 }
 
-import * as prototypeContract from "../prototype/scripts/contract.mjs";
+import * as prototypeContract from "../../prototype/scripts/contract.mjs";
 const prototypeRule = (value, path, errors) =>
   errors.push(...prototypeContract.validatePrototype(value, path));
 const previewsRule = (value, path, errors) =>
@@ -252,7 +252,6 @@ const workflow = object(
     prototype: prototypeRule,
     openfolioUrl: () => {}, // Validated together with the hosting choice below.
     releaseBranch: branch,
-    checkForUpdates: oneOf(true, false),
   },
   ["schemaVersion", "integrationBranch", "releaseBranch"],
 );

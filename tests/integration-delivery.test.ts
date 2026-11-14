@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { writeFile, readFile, rm, mkdir } from "node:fs/promises";
 import { integrationFixture } from "./integration-fixture.ts";
-import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 import {
   verify,
   cleanup,
@@ -369,7 +369,7 @@ test("cleanup retains initialized or deinitialized submodule worktrees and expla
           );
           assert.match(
             retained.cleanup.worktree.reason,
-            /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*references\/integration\.md/,
+            /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*SKILL\.md \(合码与集成 → 清理 → 含子模块的 worktree\)/,
           );
           assert.deepEqual(
             Object.values(retained.cleanup).map(

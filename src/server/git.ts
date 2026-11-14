@@ -35,8 +35,8 @@ import {
   sourceOwnership,
   resolvePlanningRoute,
   planningRecord,
-} from "../../.agents/skills/spec-trail/scripts/routing.mjs";
-import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
+import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 const exec = promisify(execFile);
 const submoduleReads = new Map<string, Promise<void>>();
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");

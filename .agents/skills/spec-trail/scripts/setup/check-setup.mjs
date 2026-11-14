@@ -4,19 +4,30 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const skillPath = ".agents/skills/spec-trail";
-const validatorPath = `${skillPath}/setup/scripts/pre-commit.mjs`;
-const dependenciesPath = `${skillPath}/setup/scripts/script-dependencies.mjs`;
 const cliPath = `${skillPath}/cli.mjs`;
-const commandsPath = `${skillPath}/scripts/cli-commands.mjs`;
-const schemaPath = `${skillPath}/scripts/state-schema.mjs`;
-const routingPath = `${skillPath}/scripts/routing.mjs`;
-const contractPath = `${skillPath}/prototype/scripts/contract.mjs`;
-const sourcePath = `${skillPath}/prototype/scripts/source.mjs`;
-const localSourcePath = `${skillPath}/prototype/scripts/local-source.mjs`;
+const registryPath = `${skillPath}/scripts/commands.mjs`;
+const setupPath = `${skillPath}/scripts/setup/commands.mjs`;
+const validatorPath = `${skillPath}/scripts/setup/pre-commit.mjs`;
+const schemaPath = `${skillPath}/scripts/core/state-schema.mjs`;
+// Files the commit hook runs: the CLI entry, the setup group and the validator's imports.
+const resourcePaths = [
+  cliPath,
+  registryPath,
+  `${skillPath}/scripts/define.mjs`,
+  setupPath,
+  validatorPath,
+  `${skillPath}/scripts/setup/script-dependencies.mjs`,
+  schemaPath,
+  `${skillPath}/scripts/core/routing.mjs`,
+  `${skillPath}/prototype/scripts/hooks.mjs`,
+  `${skillPath}/prototype/scripts/contract.mjs`,
+  `${skillPath}/prototype/scripts/source.mjs`,
+  `${skillPath}/prototype/scripts/local-source.mjs`,
+];
 const workflowPath = "docs/project/workflow.json";
 const command = `node "$(git rev-parse --show-toplevel)/${cliPath}" setup pre-commit >/dev/null`;
 
-export async function runSetupCheck(_command, { repo = "." }) {
+export async function runSetupCheck({ repo = "." }) {
   if (Number(process.versions.node.split(".")[0]) < 20)
     throw Error("Node.js 20 or newer is required.");
   const cwd = resolve(repo);
@@ -29,7 +40,7 @@ export async function runSetupCheck(_command, { repo = "." }) {
     throw Error("Choose a repository with a working tree.");
   const root = git(["rev-parse", "--show-toplevel"]);
   const issues = [];
-  const resources = [cliPath, commandsPath, validatorPath, dependenciesPath, schemaPath, routingPath, contractPath, sourcePath, localSourcePath].map(
+  const resources = resourcePaths.map(
     (path) => {
       try {
         if (!statSync(join(root, path)).isFile()) throw Error("must be a file");
@@ -57,15 +68,12 @@ export async function runSetupCheck(_command, { repo = "." }) {
     },
   );
   let schema;
+  // Importing the validator also loads every module it depends on.
   for (const [path, names, type = "function"] of [
-    [commandsPath, ["commands", "groups"], "object"],
+    [registryPath, ["groups"], "object"],
+    [setupPath, ["commands"], "object"],
     [validatorPath, ["runPreCommit"]],
-    [dependenciesPath, ["externalScriptDependencies"]],
     [schemaPath, ["validateWorkflow", "validateChange"]],
-    [routingPath, ["validBranchName", "routeCatalog"]],
-    [contractPath, ["entryPath", "validatePrototype", "validatePreviews"]],
-    [sourcePath, ['packageSource','withinPackage']],
-    [localSourcePath, ['localPackage','verifyPrototypeSource']],
   ]) {
     const resource = resources.find((resource) => resource.path === path);
     if (resource.status !== "ready") continue;

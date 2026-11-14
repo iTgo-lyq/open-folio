@@ -16,7 +16,6 @@ import {
   realpathSync,
 } from "node:fs";
 import { dirname, join, resolve, relative } from "node:path";
-import { hostname } from "node:os";
 import {
   validateManifest,
   validatePreviews,
@@ -30,7 +29,8 @@ import {
 import {
   validateChange,
   validateWorkflow,
-} from "../../scripts/state-schema.mjs";
+} from "../../scripts/core/state-schema.mjs";
+import { withStateLock } from "../../scripts/core/lock.mjs";
 import { htmlIssues } from "./html.mjs";
 import { localPackage, sourceManifest, packageManifest, assertSourceEntry, assertCheckout, verifyOwnerSource, verifyPrototypeSource } from './local-source.mjs';
 import { moduleUrl, treeRows } from './source.mjs';
@@ -165,24 +165,10 @@ function paths(root) {
   };
 }
 export function withLock(root, fn) {
-  const { lock } = paths(root);
-  try {
-    mkdirSync(lock);
-  } catch (error) {
-    if (error.code === "EEXIST")
-      throw Error(
-        `Another state operation holds ${lock}. Inspect owner.json (if present), the owning process and worktree; only remove a confirmed stale lock, then run node .agents/skills/spec-trail/cli.mjs prototype recover. Never remove an active or unverified lock.`,
-      );
-    throw error;
-  }
-  try {
-    writeFileSync(join(lock, "owner.json"), json({
-      pid: process.pid, hostname: hostname(), root: realpathSync(root), startedAt: new Date().toISOString(),
-    }), { flag: "wx", mode: 0o600 });
-    return fn();
-  } finally {
-    rmSync(lock, { recursive: true });
-  }
+  const common = git(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  return withStateLock(common, realpathSync(root), fn, {
+    hint: "Then run node .agents/skills/spec-trail/cli.mjs prototype recover. Never remove an active or unverified lock.",
+  });
 }
 function withLocks(roots, fn) {
   const ordered=[...new Set(roots.map(root=>realpathSync(root)))].sort((a,b)=>paths(a).lock.localeCompare(paths(b).lock));

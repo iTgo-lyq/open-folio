@@ -5,7 +5,7 @@ description: SpecTrail 原型协作：选择 OpenFolio 或自建托管、Git 兜
 
 # SpecTrail Prototype
 
-每项目一个原型包，默认 `packages/prototype`。项目维护源码、mock 和构建，静态产物交给所选服务或 Git。UI 组件库的独立预览不自动进入项目原型清单。下文脚本涉及的配置、清单和 Change 引用写入遵循[主 skill 的状态操作入口](../SKILL.md#状态操作入口)。
+每项目一个原型包，默认 `packages/prototype`。项目维护源码、mock 和构建，静态产物交给所选服务或 Git。UI 组件库的独立预览不自动进入项目原型清单。下文脚本涉及的配置、清单和 Change 引用写入遵循[主 skill 的写入状态](../SKILL.md#写入状态)。
 
 ## 接入与设计
 
@@ -94,13 +94,13 @@ node .agents/skills/spec-trail/cli.mjs prototype register --request /tmp/request
 
 成功结果包含 schemaVersion:1、status:published、原 requestId/sourceCommit/digest、固定 version 及 entries；每项是 id/url，可提供 thumbnails 数组（device/url；固定 PNG/WebP）。失败返回 status:failed、requestId、code、message、retryable。宿主先完整上传再原子发布，重复请求返回同版本，绝不覆盖旧版本字节；失败不替换引用，也不自动提交 dist。
 
-登记命令校验结果后一起更新当前 artifact 与可选 Change previews；无 --change 可只更新当前清单。多文件更新中断后运行 `node .agents/skills/spec-trail/cli.mjs prototype recover`，遇到新用户编辑停止恢复，不覆盖。若进程异常退出遗留 Git common-dir 下的 `spec-trail-state.lock`，命令不会抢占锁：先读取其中的 owner.json（PID、主机、工作区、开始时间），核实对应主机上的进程已结束、仓库无其他状态操作并检查工作区及事务日志，再清理已确认失效的锁目录，重新运行 recover。没有 owner.json 的共享锁也必须先核实持锁进程；无法确认时保留锁与日志。不要删除事务日志来绕过恢复。随后提交推送；引用进入集成分支后更新预发布总览，不必等待发布分支发布。Change 保留自己的显示信息、视口、固定地址和构建源码 commit，不跟随当前清单变化。预览引用使用无凭据、无 query 的 HTTP/HTTPS，可用 hash 路由；上传地址只保存在 workflow，不放进预览引用或成功日志。
+登记命令校验结果后一起更新当前 artifact 与可选 Change previews；无 --change 可只更新当前清单。需要直接替换 Change 关联的预览时运行 `node .agents/skills/spec-trail/cli.mjs prototype previews --change change-id --file /tmp/previews.json`，文件只含 PreviewEntry 数组，其余状态保留；新增或更新要求原型已启用，停用后仍可删除旧关联。多文件更新中断后运行 `node .agents/skills/spec-trail/cli.mjs prototype recover`，遇到新用户编辑停止恢复，不覆盖。若进程异常退出遗留 Git common-dir 下的 `spec-trail-state.lock`，命令不会抢占锁：先读取其中的 owner.json（PID、主机、工作区、开始时间），核实对应主机上的进程已结束、仓库无其他状态操作并检查工作区及事务日志，再清理已确认失效的锁目录，重新运行 recover。没有 owner.json 的共享锁也必须先核实持锁进程；无法确认时保留锁与日志。不要删除事务日志来绕过恢复。随后提交推送；引用进入集成分支后更新预发布总览，不必等待发布分支发布。Change 保留自己的显示信息、视口、固定地址和构建源码 commit，不跟随当前清单变化。预览引用使用无凭据、无 query 的 HTTP/HTTPS，可用 hash 路由；上传地址只保存在 workflow，不放进预览引用或成功日志。
 
 宿主负责保留被历史引用的版本。Git 标签仅保留记录和源码，不能代替外部存储的保留承诺。
 
 OpenFolio 上传失败可原请求重试；上传成功但本地登记失败时，使用保存的 request/result 重试 register。成功后提交引用；临时协议文件放仓库外，普通 dist 不提交。
 
-引用提交推送后，按[分享链接](../references/sharing.md)直接提供定位此原型的 Change 阅读链接。
+引用提交推送后，按[分享链接](../SKILL.md#分享链接)直接提供定位此原型的 Change 阅读链接。
 
 ## 嵌入与验证
 
@@ -127,6 +127,6 @@ node .agents/skills/spec-trail/cli.mjs prototype register --git-entry orders --c
 
 ## 归档
 
-主 skill 完成验证、验收与 Specs 同步后提交归档，再按[集成与清理命令](../references/integration.md)形成合并提交 M。归档命令将 Git 原型固定到本 Change 的 previews 快照目录，保留 sourceCommit；共享目录引用先复制，路径冲突则停止。已合入 Change 从 M 定位固定原型；Git HTML 读取归档快照，hosted 保留原版本、地址、摘要、截图和 sourceCommit。未合入来源仍固定到已推送 SHA。
+主 skill 完成验证、验收与 Specs 同步后提交归档，再按[集成与清理命令](../SKILL.md#pr-合入)形成合并提交 M。归档命令将 Git 原型固定到本 Change 的 previews 快照目录，保留 sourceCommit；共享目录引用先复制，路径冲突则停止。已合入 Change 从 M 定位固定原型；Git HTML 读取归档快照，hosted 保留原版本、地址、摘要、截图和 sourceCommit。未合入来源仍固定到已推送 SHA。
 
-不创建保留标签，不改写已归档引用；旧归档没有有效 M 时留空，不用标签或显式 revision 回退。清理来源前验证 Git 文件、源码对象与托管产物可用性；已准备的公开版本独立保留。旧标签退出按集成命令中的切换顺序执行。
+不创建保留标签，不改写已归档引用；旧归档没有有效 M 时留空，不用标签或显式 revision 回退。清理来源前验证 Git 文件、源码对象与托管产物可用性；已准备的公开版本独立保留。

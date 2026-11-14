@@ -11,7 +11,7 @@ npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-code --copy -y
 ```
 
-完整用法与许可见 [SpecTrail 安装指南](docs/spec-trail.md)，[产品介绍站](https://spec-trail.pages.dev/)的源码和发布方式见 [website/README.md](website/README.md)。技能不再通过另一个仓库同步发布。
+完整用法见 [SpecTrail 安装指南](docs/spec-trail.md)，[产品介绍站](https://spec-trail.pages.dev/)的源码和发布方式见 [website/README.md](website/README.md)。技能不再通过另一个仓库同步发布。
 
 ## 启动与个人连接
 
@@ -110,7 +110,7 @@ Change 的「分享」生成并复制 `/s/<id>` 短链接，任何人可打开�
 
 网页分享左上角的现有空间名可点击返回该仓库的 Changes 空间，不增加返回按钮。进入空间需要接收者自己的登录和仓库连接，分享链接不授予其他工程内容的读取权限。
 
-Agent 在材料提交推送后直接提供分享链接，使用 `docs/project/workflow.json` 的 `openfolioUrl` 作为服务根地址。可执行 `node .agents/skills/spec-trail/cli.mjs share link --change <id> --document technical.md`，原型使用 `--preview <id>`；脚本只在本地生成地址，不验证接口或等待工作台同步，用户进入网页后由页面刷新获取内容。未配置服务地址时提供仓库材料链接，无需分享账号配置，详见[Skill 分享说明](.agents/skills/spec-trail/references/sharing.md)。
+Agent 在材料提交推送后直接提供分享链接，使用 `docs/project/workflow.json` 的 `openfolioUrl` 作为服务根地址。可执行 `node .agents/skills/spec-trail/cli.mjs share link --change <id> --document technical.md`，原型使用 `--preview <id>`；脚本只在本地生成地址，不验证接口或等待工作台同步，用户进入网页后由页面刷新获取内容。未配置服务地址时提供仓库材料链接，无需分享账号配置，详见[Skill 分享说明](.agents/skills/spec-trail/SKILL.md#分享链接)。
 
 原型链接全部公开。已授权用户先准备不可变版本，再分享 `/preview/<publicationId>`；匿名 HTML、截图和元数据只读已发布文件，绝不触发远端 Git 或 API。退出、token 撤销或后续停用仓库原型不删除已经公开的版本。未知版本返回未就绪，部署者主动撤回后为 410。公开原型不包含工程正文、连接或上传秘密；外部托管服务负责自己固定 URL 的持续可用性。
 
@@ -166,7 +166,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 图表可保存为文档附近的 SVG 文件，再用 `![图表说明](./assets/architecture.svg)` 引用，也可通过普通 Markdown 链接打开图片查看器。SVG 需为 UTF-8、XML 1.0，根元素声明 `xmlns="http://www.w3.org/2000/svg"`，不含 DTD 或处理指令；建议设置 `viewBox` 并内置样式。文本、箭头、渐变和内部引用可以显示，脚本、外部字体与其他外部资源被隔离策略阻止。直接粘贴到 Markdown 的 `<svg>` 标签不会渲染。
 
-旧标签切换使用 [SpecTrail 集成与清理命令](.agents/skills/spec-trail/references/integration.md)：先更新并验证服务，再按精确清单删除 `spec-trail/archive-v2/*`。缓存刷新在写锁内删除旧私有引用并清理失效快照；不回填历史映射，不处理公开版本或用户数据。
+缓存刷新在写锁内删除旧私有引用并清理失效快照；不回填历史映射，不处理公开版本或用户数据。
 
 ## 原型与内置托管
 
@@ -192,7 +192,7 @@ node .agents/skills/spec-trail/cli.mjs prototype configure --hosting openfolio -
 
 `packages/ui` 导出共享组件与主题，业务组合在 `src/components`。运行 `npm run ui:dev` 查看组件，包约定见 [UI README](packages/ui/README.md)。本仓库原型发布步骤见[原型包 README](packages/prototype/README.md)。
 
-Agent 使用 SpecTrail [语义命令](.agents/skills/spec-trail/references/state-commands.md) 更新 Change，工作台保持只读。
+Agent 使用 SpecTrail [语义命令](.agents/skills/spec-trail/SKILL.md#语义命令) 更新 Change，工作台保持只读。
 
 ```bash
 npm test

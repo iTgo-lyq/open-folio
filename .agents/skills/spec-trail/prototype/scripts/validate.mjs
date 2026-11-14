@@ -17,7 +17,7 @@ import { htmlIssues } from "./html.mjs";
 import { prototypePermissions } from "./permissions.mjs";
 import { localPackage, assertCheckout } from './local-source.mjs';
 import { inPackage } from './source.mjs';
-export async function runPrototypeValidation(_command, o) {
+export async function runPrototypeValidation(o) {
   let browser, server;
   try {
     const root = await realpath(resolve(o.repo ?? ".")),
