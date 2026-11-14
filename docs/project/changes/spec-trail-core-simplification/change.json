@@ -26,7 +26,8 @@
   "tasks": {
     "T1": {
       "title": "整理主 Skill 与接入入口",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照 496077d、02ad8a8、dcd8b1c，核对主 Skill 和接入声明、许可文件与描述；Skill 21 项、setup check、介绍站构建与检查通过。"
     },
     "T2": {
       "title": "CLI 分层帮助与命令分组",
