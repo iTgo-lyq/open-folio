@@ -20,3 +20,5 @@ npm run test:e2e -- tests/browser/changes.spec.ts -g 'cancelled and invalid'
 ## 验收评审整改
 
 R2–R4 的变更及复验见[评审记录](review.md)。预览和发布检查的两个复现用例均在修复前失败，修复后通过。预览、PR 检查、归档返工与发布归档的定向回归共 46 项通过。
+
+全量应用测试 469 项、Skill 测试 21 项通过。类型检查、生产构建、接入检查与介绍站静态校验通过。
