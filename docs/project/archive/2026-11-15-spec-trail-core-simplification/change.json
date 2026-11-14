@@ -3,7 +3,7 @@
   "id": "spec-trail-core-simplification",
   "title": "精简 SpecTrail 主 Skill 与 CLI，原型改为复用业务代码的页面片段",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/spec-trail-core-simplification",
   "confirmations": {
@@ -60,6 +60,23 @@
       "result": "passed",
       "at": "2026-11-14T19:59:53.004Z",
       "summary": "需求逐项核对完成，应用 464 项、Skill 21 项、原型包 16 项、托管浏览器 2 项，以及类型、接入、链接和介绍站检查通过。按用户要求免除独立评审。详见 execution.md。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-14T19:59:59.520Z",
+      "summary": "用户要求将当前交付归档并合入 develop。",
+      "source": "本次任务比较特殊，不需要review了，技术方案与计划稍微补一下。最后归档合入吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-14T20:00:04.130Z",
+      "summary": "同步 change-workflow、project-knowledge/prototype-preview、product-introduction 三份 Specs。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-14T20:00:07.786Z",
+      "summary": "归档已验收的 Skill、CLI 与原型工作流变更。",
+      "path": "docs/project/archive/2026-11-15-spec-trail-core-simplification"
     }
   },
   "types": [
