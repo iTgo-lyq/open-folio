@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-trail-core-simplification",
+  "title": "精简 SpecTrail 主 Skill 与日常 CLI",
+  "size": "medium",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {},
+  "closure": {},
+  "types": [
+    "工程",
+    "体验"
+  ]
+}
