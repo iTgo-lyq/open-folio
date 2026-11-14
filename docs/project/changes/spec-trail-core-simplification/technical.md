@@ -22,6 +22,17 @@
 - 构建沿用业务仓库的工具链，只约定产物：托管为 `dist/<id>/index.html`，Git 兜底为 `preview/<id>/index.html`。`prototype accept` 只生成包文件并保持 pending，`prototype enable` 要求有 build 脚本。
 - 原型与实现共用代码后，删除逐项样式比对的还原验收，改为执行与关闭时的原型核对。
 
+## 关键取舍
+
+以下取舍均由用户在实施过程中决定：
+
+- 主 Skill 只拆出执行与交付一份说明。规划和执行是两个大阶段，执行后可能返工修改需求，规划规则常驻主文件，返工时随时可用。
+- 不保留旧命令名和兼容别名；版本检查与 maintenance 组删除，版本号手动维护。
+- 原型保留独立包与 Git 兜底，不推荐脚手架；清单 `kind` 取值不改，`page`、`component` 都表示业务页面片段。
+- 原型与实现共用业务代码后，不再单独做逐项样式比对。
+- 脚本依赖检查只在本仓库修改 Skill 时有意义，改由 Skill 测试承担。
+- 远端遗留的旧归档标签删除，它指向的提交仍在 `develop` 和 `main` 上。
+
 ## 兼容与影响
 
 - 旧命令名不保留别名，`maintenance` 组和版本检查删除；`checkForUpdates` 在 CLI、hook 和工作台都按未知字段拒绝。`workspace locate` 的输出把 `session` 改为 `next`。
