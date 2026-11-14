@@ -102,7 +102,7 @@ interface PreviewEntry {
   artifact: { type: "git"; path: string; sourceCommit: string } | {
     type: "hosted"; version: string; url: string; sourceCommit: string; digest: string;
     thumbnails?: { device?: "pc-web" | "ipad" | "mobile"; url: string }[];
-  }; // 固定产物引用，详细契约见原型子 skill
+  }; // 固定产物引用，详细契约见原型说明
   kind: "page" | "component";
   devices?: ("pc-web" | "ipad" | "mobile")[]; // page 必填
   viewport?: { width: number; height: number }; // component 与 devices 二选一
@@ -288,7 +288,7 @@ cli close verify --change example --result passed --summary '实际整体验证�
 
 核对当前规模所需的上游确认仍适用于正文；缺少有效确认时停在最早需处理的阶段。
 
-进入 execution 前先按[依赖](#依赖)检查；有原型的实现还须先通过[用户原型验收](./prototype/SKILL.md#原型验收)。确认要求和 JSON 更新如下：
+进入 execution 前先按[依赖](#依赖)检查；有原型的实现还须先通过[用户原型验收](./references/prototype/prototype.md#原型验收)。确认要求和 JSON 更新如下：
 
 | 当前阶段 | 完成条件与后续更新 |
 | --- | --- |
@@ -430,7 +430,7 @@ medium 及以上基于已确认需求、项目规则和 Research 编写 Technica
 
 ### 原型接入
 
-涉及产品 UI 的 Change，先读 `workflow.json.prototype` 与现有用户选择：缺失时可提议并征求同意；disabled 不重复提议或启用追踪；pending 先完成接入；enabled 复用项目唯一原型包。同意接入后按 [Prototype 子 skill](./prototype/SKILL.md) 初始化，拒绝接入则记录 disabled。已启用时按子 skill 的 UI 规模规则决定询问或先绘制原型；构建、托管、当前清单与固定引用沿用其约定，原型专用上传地址按子 skill 约定保存到 workflow。子模块原型按[原型子 skill](./prototype/SKILL.md#子模块中的原型包)接入。
+涉及产品 UI 的 Change，先读 `workflow.json.prototype` 与现有用户选择：缺失时可提议并征求同意；disabled 不重复提议或启用追踪；pending 先完成接入；enabled 复用项目唯一原型包。同意接入后按[原型说明](./references/prototype/prototype.md)初始化，拒绝接入则记录 disabled。已启用时按其中的 UI 影响范围规则决定询问或先绘制原型；片段、构建、托管、当前清单与固定引用沿用其约定，原型专用上传地址按其约定保存到 workflow。子模块原型按[原型说明](./references/prototype/prototype.md#子模块中的原型包)接入。
 
 ### 技术问询
 
@@ -517,7 +517,7 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 1. 按默认编号串行或 Plan 显式安排选择就绪任务，用 `task start` 将任务设为 `doing`。
 2. 复用项目模式，完成最小可验证交付并保持中间版本可运行；运行与改动相称的测试、类型检查、构建和必要交互验证；无新变化或疑点时不重复已有成功检查。
-3. 对照 Requirement、Technical 与任务验收核对交付；有用户确认原型的 UI 实现，按[原型还原验收](./prototype/SKILL.md#开发后的原型还原验收)核对本任务范围。将摘要写 `verification`；较长证据按任务编号写 Execution，记录范围、命令、结果和未验证限制。
+3. 对照 Requirement、Technical 与任务验收核对交付；有用户确认原型的 UI 实现，按[原型还原验收](./references/prototype/prototype.md#开发后的原型还原验收)核对本任务范围。将摘要写 `verification`；较长证据按任务编号写 Execution，记录范围、命令、结果和未验证限制。
 4. 验证通过后，用 `task complete` 记录真实验证，将实现与 `done` 记录一起提交推送，成功后才算完成。提交失败时用 `task retry` 恢复为 `doing`，它会清除验证摘要，修复后重新 `task complete`；推送失败按[检查点](#检查点)处理。
 
 同一分支串行推进，当前任务的实现或状态检查点提交成功后，可切换到其他就绪任务；并行实施使用[任务分支](#任务分支)与隔离工作区。未完成任务保留 `doing` / `blocked`，可提交真实状态与证据；可运行的中间实现需先调整成独立交付。所有任务完成后按[阶段表](#阶段表)进入 close。`commitTitle` 建议用 `<id> T<n>:` 开头，不为记录提交 hash 另造提交。
@@ -540,7 +540,7 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 核对确认仍有效、Plan 与 JSON 一致、任务均已验证并提交推送、无未解释阻塞；运行与改动相称的整体验证，覆盖需求、验收、必要失败路径及边界，记录实际证据。xlarge 父 Change 要求全部子项完成或取消，已完成子项的 PR 交付已在父分支核实可用。
 
-有用户确认原型的 UI 实现，按[原型还原验收](./prototype/SKILL.md#开发后的原型还原验收)核对证据及差异处理结果，验收报告区分已通过项、已批准差异、未解决项和未验证项。
+有用户确认原型的 UI 实现，按[原型还原验收](./references/prototype/prototype.md#开发后的原型还原验收)核对证据及差异处理结果，验收报告区分已通过项、已批准差异、未解决项和未验证项。
 
 | 规模 | 评审要求 |
 | --- | --- |

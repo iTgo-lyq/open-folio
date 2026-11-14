@@ -6,7 +6,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { htmlIssues, sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
+import { htmlIssues, sandboxCsp } from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const entries = {

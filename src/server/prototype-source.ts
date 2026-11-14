@@ -1,6 +1,6 @@
 import type { GitReader } from "./git.ts";
 import type { PrototypeSource } from "../lib/model.ts";
-import { packageSource } from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
+import { packageSource } from "../../.agents/skills/spec-trail/scripts/prototype/source.mjs";
 import { AppError } from "./errors.ts";
 export async function resolvePackage(
   reader: GitReader,

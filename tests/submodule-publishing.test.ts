@@ -10,13 +10,13 @@ import {
   register,
   recover,
   withLock,
-} from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
-import { publishToDirectory } from "../.agents/skills/spec-trail/prototype/examples/filesystem-host.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
+import { publishToDirectory } from "../.agents/skills/spec-trail/references/prototype/examples/filesystem-host.mjs";
 import {
   localPackage,
   sourceManifest,
   assertSourceEntry,
-} from "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/local-source.mjs";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { preflight } from "../.agents/skills/spec-trail/scripts/integration.mjs";
 import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
@@ -507,7 +507,7 @@ test("submodule adoption preserves parent workspaces and existing frontend confi
     JSON.stringify({ name: "parent", private: true, workspaces: ["backend"] }),
   );
   for (const [path, body] of [
-    ["package.json", JSON.stringify({ name: "prototype", private: true })],
+    ["package.json", JSON.stringify({ name: "prototype", private: true, scripts: { build: "vite build" } })],
     ["AGENTS.md", "# custom rules"],
     ["DESIGN.md", "# custom design"],
   ])
@@ -698,7 +698,7 @@ test("associating unchanged frontend sources still requires staging the new cata
     .previews[0];
   assert.equal(ref.artifact.source.catalogCommit, b);
   const { verifyPrototypeSource } = await import(
-    "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs"
+    "../.agents/skills/spec-trail/scripts/prototype/local-source.mjs"
   );
   verifyPrototypeSource(
     f.author,
@@ -746,7 +746,7 @@ test("single-repository interrupted registration refuses recovery after its cata
     before = await readFile(join(f.child, path), "utf8"),
     after = before + "\n";
   const script = new URL(
-    "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
+    "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs",
     import.meta.url,
   ).href;
   const crashed = spawnSync(process.execPath, [

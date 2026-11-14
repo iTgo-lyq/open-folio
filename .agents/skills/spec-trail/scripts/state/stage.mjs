@@ -1,7 +1,7 @@
 // stage group: confirmations, entering execution, waiting and rework.
 import { existsSync } from "node:fs";
 import { relative } from "node:path";
-import { restorePreviews } from "../../prototype/scripts/hooks.mjs";
+import { restorePreviews } from "../prototype/hooks.mjs";
 import { assert, stages, stateCommand, stateNotes } from "./context.mjs";
 import { requireConfirmations, requireDelivered, requireDocs, requireStage, requireTaskOrder, unblocked } from "./guards.mjs";
 

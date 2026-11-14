@@ -2,7 +2,7 @@
 
 import { execFileSync } from "node:child_process";
 import { validateChange, validateWorkflow } from "../core/state-schema.mjs";
-import { stagedPrototypeIssues } from "../../prototype/scripts/hooks.mjs";
+import { stagedPrototypeIssues } from "../prototype/hooks.mjs";
 import { changeLocation, sourceOwnership, planningRecord } from "../core/routing.mjs";
 import { externalScriptDependencies } from "./script-dependencies.mjs";
 

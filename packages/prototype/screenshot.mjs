@@ -7,7 +7,7 @@ import { DEVICE_VIEWPORTS } from "../../src/lib/preview-viewport.ts";
 import {
   htmlIssues,
   sandboxCsp,
-} from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
 
 const { values } = parseArgs({
   options: {

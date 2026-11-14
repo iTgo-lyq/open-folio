@@ -6,8 +6,8 @@ import {
   validateRequest,
   artifactDigest,
   validateResult,
-} from "../scripts/publishing.mjs";
-import { hostedUrl } from "../scripts/contract.mjs";
+} from "../../../scripts/prototype/publishing.mjs";
+import { hostedUrl } from "../../../scripts/prototype/contract.mjs";
 export function publishToDirectory(request, storageDirectory, baseUrl) {
   validateRequest(request);
   if (!hostedUrl(baseUrl) || new URL(baseUrl).hash)

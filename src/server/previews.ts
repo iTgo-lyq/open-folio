@@ -16,8 +16,8 @@ import {
 } from "./schema.ts";
 import { integrationFor } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 import { closedRecord } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
-import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
-import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
+import { entryPath } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
+import { htmlIssues } from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
 import { AppError } from "./errors.ts";
 import { resolvePackage } from "./prototype-source.ts";
 import {
@@ -25,8 +25,8 @@ import {
   withinPackage,
   treeRows,
   sameRepository,
-} from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
-import { validateManifest } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/source.mjs";
+import { validateManifest } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
   const branch = data.integrationBranch;
   const doc = data.documents.find(

@@ -1,9 +1,9 @@
-// prototype group, documented in prototype/SKILL.md. Implementations load on
+// prototype group, documented in references/prototype/prototype.md. Implementations load on
 // demand so the help also works where prototype commands cannot run.
 import { resolve } from "node:path";
-import { define } from "../../scripts/define.mjs";
-import { assert, readJson, stateCommand } from "../../scripts/state/context.mjs";
-import { requireStage } from "../../scripts/state/guards.mjs";
+import { define } from "../define.mjs";
+import { assert, readJson, stateCommand } from "../state/context.mjs";
+import { requireStage } from "../state/guards.mjs";
 import { checkPreviews } from "./hooks.mjs";
 
 const shared = {
@@ -28,6 +28,7 @@ const prototypeSetup = (command, summary, example) =>
     },
     notes: [
       "accept, decline, enable and configure share these options and save any hosting options given.",
+      "accept stays pending until package.json has a build script; then run enable.",
       "--design applies to accept; --package applies to accept, enable and a first configure; decline only records disabled.",
     ],
     example,
@@ -40,13 +41,13 @@ const publication = (command, summary, { required = [], optional = [], help, not
 export const commands = {
   accept: prototypeSetup(
     "accept",
-    "Initialize an empty or missing prototype package (or check an existing one) and enable it",
+    "Create the package files (no build) in an empty or missing directory, or check an existing package and enable it",
     "--package packages/prototype --hosting git",
   ),
   decline: prototypeSetup("decline", "Disable prototype tracking; existing files are kept"),
   enable: prototypeSetup(
     "enable",
-    "Re-validate a pending or enabled package (package.json, AGENTS.md, DESIGN.md, prototype.json or Git previews) and enable it",
+    "Re-validate a pending or enabled package (package.json with a build script, AGENTS.md, DESIGN.md, prototype.json or Git previews) and enable it",
   ),
   configure: prototypeSetup(
     "configure",

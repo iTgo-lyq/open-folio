@@ -22,6 +22,6 @@ export const groups = {
     summary: "Prototype package, publishing, validation and Change previews",
     hidden: true,
     minNode: 24,
-    load: () => import("../prototype/scripts/commands.mjs"),
+    load: () => import("./prototype/commands.mjs"),
   },
 };

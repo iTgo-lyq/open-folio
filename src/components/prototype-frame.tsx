@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, type ComponentProps } from "react";
-import { prototypePermissions } from "../../.agents/skills/spec-trail/prototype/scripts/permissions.mjs";
+import { prototypePermissions } from "../../.agents/skills/spec-trail/scripts/prototype/permissions.mjs";
 
 export function PrototypeFrame(props: ComponentProps<"iframe">) {
   const [allow, setAllow] = useState<string>();

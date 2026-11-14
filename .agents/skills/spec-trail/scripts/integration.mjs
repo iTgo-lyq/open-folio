@@ -6,7 +6,7 @@ import { closedRecord, validBranchName } from './core/routing.mjs';
 import { validateChange } from './core/state-schema.mjs';
 import { validChangeId } from './core/integration-records.mjs';
 import { changeDelivery, githubPullRequests } from './core/github-prs.mjs';
-import { verifyArchivedPreviews } from '../prototype/scripts/hooks.mjs';
+import { verifyArchivedPreviews } from './prototype/hooks.mjs';
 import { withStateLock } from './core/lock.mjs';
 import { define } from './define.mjs';
 

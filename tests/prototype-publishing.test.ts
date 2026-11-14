@@ -4,7 +4,7 @@ import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { createServer } from "node:http";
-import { uploadToOpenFolio } from "../.agents/skills/spec-trail/prototype/scripts/openfolio-client.mjs";
+import { uploadToOpenFolio } from "../.agents/skills/spec-trail/scripts/prototype/openfolio-client.mjs";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -16,13 +16,13 @@ import {
   checkedPath,
   withLock,
   validateResult,
-} from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
 import {
   validateArtifact,
   validateManifest,
   validatePreviews,
-} from "../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
-import { publishToDirectory } from "../.agents/skills/spec-trail/prototype/examples/filesystem-host.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
+import { publishToDirectory } from "../.agents/skills/spec-trail/references/prototype/examples/filesystem-host.mjs";
 const current = {
   id: "screen",
   title: "页面",
@@ -496,7 +496,7 @@ test("crashed publication retains lock evidence and recovers only after verified
   const lock = join(f.common, "spec-trail-state.lock");
   const journal = join(f.common, "spec-trail-prototype-transaction.json");
   const moduleUrl = new URL(
-    "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
+    "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs",
     import.meta.url,
   ).href;
   const crashed = spawnSync(process.execPath, [

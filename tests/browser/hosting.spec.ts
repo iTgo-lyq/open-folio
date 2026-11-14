@@ -8,8 +8,8 @@ import {
   digestPrefix,
   encodeUploadHeader,
   uploadType,
-} from "../../.agents/skills/spec-trail/prototype/scripts/upload-protocol.mjs";
-import { requestIdentity } from "../../.agents/skills/spec-trail/prototype/scripts/publication-contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/upload-protocol.mjs";
+import { requestIdentity } from "../../.agents/skills/spec-trail/scripts/prototype/publication-contract.mjs";
 
 test("built-in public assets load modules, styles and images on same and other origins without capability restrictions", async ({
   page,
@@ -194,6 +194,22 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
       "/api/prototype-uploads/",
     );
     expect(workflow.openfolioUrl).toBe(baseURL);
+    // accept leaves the build to the project; stand in for its multi-page output.
+    const welcome = "<!doctype html><h1>Welcome</h1>";
+    await f.put(
+      "packages/prototype/package.json",
+      JSON.stringify({ name: "prototype", private: true, scripts: { build: "node build.mjs" } }),
+    );
+    await f.put(
+      "packages/prototype/prototype.json",
+      JSON.stringify({
+        schemaVersion: 1,
+        entries: [{ id: "welcome", title: "Welcome", sourcePath: "packages/prototype/src/welcome.html", kind: "page", devices: ["pc-web"] }],
+      }),
+    );
+    await f.put("packages/prototype/src/welcome.html", welcome);
+    await f.put("packages/prototype/dist/welcome/index.html", welcome);
+    run("enable", []);
     f.git(["checkout", "-b", "change/cli-upload"]);
     await f.put(
       "docs/project/changes/cli-upload/change.json",

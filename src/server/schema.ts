@@ -20,7 +20,7 @@ import {
   validatePrototype,
   serviceUrl,
   workflowHostingIssues,
-} from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 export const previewsSchema = z.custom<PreviewEntry[]>(
   (v) => !validatePreviews(v).length,
   "原型关联格式不合法",

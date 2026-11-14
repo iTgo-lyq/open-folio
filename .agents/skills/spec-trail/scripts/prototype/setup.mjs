@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 import {
-  cp,
   mkdir,
   readFile,
   writeFile,
@@ -8,11 +7,10 @@ import {
   realpath,
   readdir,
 } from "node:fs/promises";
-import { join, dirname, resolve, relative, matchesGlob } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve, relative, matchesGlob } from "node:path";
 import { readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { validateWorkflow } from "../../scripts/core/state-schema.mjs";
+import { validateWorkflow } from "../core/state-schema.mjs";
 import { withLock, checkedPath } from "./publishing.mjs";
 import { discoverUpload } from "./openfolio-client.mjs";
 import {
@@ -115,55 +113,28 @@ export async function runPrototypeSetup(command, options) {
       const existing = await exists(pkg);
       const contents = existing ? await readdir(pkg) : [];
       if (!contents.length) {
+        // The build follows the project's own toolchain, so only the package files are created.
         await mkdir(pkg, { recursive: true });
-        const scaffold = fileURLToPath(
-          new URL("../assets/package", import.meta.url),
-        );
-        for (const name of await readdir(scaffold))
-          await cp(join(scaffold, name), join(pkg, name), {
-            recursive: true,
-            force: false,
-            errorOnExist: true,
-          });
-        await writeFile(
-          join(pkg, "package.json"),
-          JSON.stringify(
-            {
-              name: "prototype",
-              private: true,
-              type: "module",
-              scripts: { build: `node build.mjs${hosting && hosting.provider !== "git" ? " --hosted" : ""}` },
-            },
-            null,
-            2,
-          ) + "\n",
-          { flag: "wx" },
-        );
-        await writeFile(
-          join(pkg, ".gitignore"),
-          "node_modules/\ndist/\n.cache/\n*.log\n*.map\n",
-          { flag: "wx" },
-        );
-        execFileSync(process.execPath, [join(pkg, "build.mjs"), ...(hosting && hosting.provider !== "git" ? ["--hosted"] : [])], {
-          cwd: pkg,
-          stdio: ["inherit", 2, 2],
-        });
-        if (hosting && hosting.provider !== "git")
-          await writeFile(join(pkg, "prototype.json"), JSON.stringify({ schemaVersion: 1, entries: [{ id: "welcome", title: "Welcome", sourcePath: `${location}/src/pages/welcome.html`, kind: "page", devices: ["pc-web"] }] }, null, 2) + "\n", { flag: "wx" });
+        for (const [file, body] of [
+          ["package.json", { name: "prototype", private: true, type: "module" }],
+          [".gitignore", "node_modules/\ndist/\n.cache/\n*.log\n*.map\n"],
+          ["prototype.json", { schemaVersion: 1, entries: [] }],
+        ])
+          await writeFile(join(pkg, file), typeof body === "string" ? body : JSON.stringify(body, null, 2) + "\n", { flag: "wx" });
       } else if (!(await exists(join(pkg, "package.json")))?.isFile())
         throw Error(
-          "Existing directory preserved; provide package.json and self-contained preview output before prototype enable.",
+          "Existing directory preserved; provide package.json with a build script before prototype enable.",
         );
       for (const [file, body] of [
         [
           "AGENTS.md",
-          "# Prototype package\n\nFollow the project AGENTS.md and DESIGN.md. Reuse shared components and tokens. Keep mock data local. The host builds and publishes static previews. Maintain current entries in prototype.json and immutable references in change.json.previews. Git preview/<id>/index.html is an explicit self-contained fallback. Reuse one package; prototypes remain optional.\n",
+          await readFile(new URL("../../references/prototype/assets/AGENTS.template.md", import.meta.url), "utf8"),
         ],
         [
           "DESIGN.md",
           design
             ? `# Design source\n\nFollow [the project design standard](${relative(pkg, join(root, design)).split("\\").join("/")}). Record only prototype-specific exceptions here; keep the source authoritative.\n`
-            : await readFile(new URL("../assets/DESIGN.template.md", import.meta.url), "utf8"),
+            : await readFile(new URL("../../references/prototype/assets/DESIGN.template.md", import.meta.url), "utf8"),
         ],
       ])
         if (!(await exists(join(pkg, file))))
@@ -271,6 +242,11 @@ export async function runPrototypeSetup(command, options) {
         : value.workspaces.packages;
       if (!target.includes(location)) target.push(location);
       await writeFile(rootPackage, JSON.stringify(value, null, 2) + "\n");
+    }
+    if (typeof packageJson.scripts?.build !== "string") {
+      const next = "Add a build script using the project's toolchain that outputs one static page per entry, then run prototype enable.";
+      if (command === "accept") return { output: { status: "pending", packagePath: location, next } };
+      throw Error(`Prototype package has no build script. ${next}`);
     }
     await persist({ status: "enabled", packagePath: location });
     return { output: { status: "enabled", packagePath: location, entries: count } };

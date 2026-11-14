@@ -31,10 +31,10 @@ const resourcePaths = [
   "scripts/setup/script-dependencies.mjs",
   "scripts/core/state-schema.mjs",
   "scripts/core/routing.mjs",
-  "prototype/scripts/hooks.mjs",
-  "prototype/scripts/contract.mjs",
-  "prototype/scripts/source.mjs",
-  "prototype/scripts/local-source.mjs",
+  "scripts/prototype/hooks.mjs",
+  "scripts/prototype/contract.mjs",
+  "scripts/prototype/source.mjs",
+  "scripts/prototype/local-source.mjs",
 ];
 const checkCommand =
   'node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup pre-commit >/dev/null';
@@ -674,7 +674,7 @@ test("setup rejects broken script syntax and unusable shared modules", (t) => {
   s.provision(repo);
   s.write(
     repo,
-    ".agents/skills/spec-trail/prototype/scripts/contract.mjs",
+    ".agents/skills/spec-trail/scripts/prototype/contract.mjs",
     "export const entryPath = () => null;\n",
   );
   s.write(repo, "docs/project/changes/feature/change.json", {

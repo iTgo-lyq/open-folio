@@ -19,10 +19,10 @@ const resourcePaths = [
   `${skillPath}/scripts/setup/script-dependencies.mjs`,
   schemaPath,
   `${skillPath}/scripts/core/routing.mjs`,
-  `${skillPath}/prototype/scripts/hooks.mjs`,
-  `${skillPath}/prototype/scripts/contract.mjs`,
-  `${skillPath}/prototype/scripts/source.mjs`,
-  `${skillPath}/prototype/scripts/local-source.mjs`,
+  `${skillPath}/scripts/prototype/hooks.mjs`,
+  `${skillPath}/scripts/prototype/contract.mjs`,
+  `${skillPath}/scripts/prototype/source.mjs`,
+  `${skillPath}/scripts/prototype/local-source.mjs`,
 ];
 const workflowPath = "docs/project/workflow.json";
 const command = `node "$(git rev-parse --show-toplevel)/${cliPath}" setup pre-commit >/dev/null`;

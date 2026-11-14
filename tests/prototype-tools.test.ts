@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, writeFile, rm, symlink } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rm, symlink } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { resolve, join } from "node:path";
+import { dirname, resolve, join } from "node:path";
 import { fixture } from "./fixture.ts";
 const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 const run = (repo: string, command: string, args: string[] = []) =>
@@ -13,8 +13,15 @@ const run = (repo: string, command: string, args: string[] = []) =>
   );
 const config = async (repo: string) =>
   JSON.parse(await readFile(join(repo, "docs/project/workflow.json"), "utf8"));
+// accept leaves the build to the project's toolchain; stand in for its script.
+const wireBuild = async (repo: string) => {
+  const file = join(repo, "packages/prototype/package.json");
+  const value = JSON.parse(await readFile(file, "utf8"));
+  await writeFile(file, JSON.stringify({ ...value, scripts: { build: "node build.mjs" } }));
+};
+const preview = "packages/prototype/preview/welcome/index.html";
 
-test("setup persists refusal, initializes one package, reuses design and preserves user edits", async (t) => {
+test("setup persists refusal, waits for the project build, reuses design and preserves user edits", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   await f.put(
@@ -30,20 +37,24 @@ test("setup persists refusal, initializes one package, reuses design and preserv
   assert.deepEqual((await config(f.author)).prototype, { status: "disabled" });
   let result = run(f.author, "accept", ["--design", "docs/design.md"]);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual((await config(f.author)).prototype, {
-    status: "enabled",
-    packagePath: "packages/prototype",
-  });
+  assert.equal(JSON.parse(result.stdout).status, "pending");
   const pkg = join(f.author, "packages/prototype");
   const design = await readFile(join(pkg, "DESIGN.md"), "utf8");
   assert.match(design, /\.\.\/\.\.\/docs\/design.md/);
+  assert.match(run(f.author, "enable").stderr, /no build script/);
   await writeFile(
     join(pkg, "AGENTS.md"),
     "Keep my project-specific instructions\n",
   );
   await writeFile(join(pkg, "DESIGN.md"), "# My reviewed design rules\n");
+  await wireBuild(f.author);
+  await f.put(preview, "<!doctype html><h1>Welcome</h1>");
   result = run(f.author, "accept");
   assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual((await config(f.author)).prototype, {
+    status: "enabled",
+    packagePath: "packages/prototype",
+  });
   assert.equal(
     await readFile(join(pkg, "AGENTS.md"), "utf8"),
     "Keep my project-specific instructions\n",
@@ -66,7 +77,7 @@ test("setup persists refusal, initializes one package, reuses design and preserv
   assert.equal(result.status, 0, result.stderr);
 });
 
-test("failed adoption remains pending and output symlink cannot overwrite outside files", async (t) => {
+test("failed adoption remains pending and symlinked previews are rejected", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   await f.put("packages/prototype/notes.md", "existing project\n");
@@ -82,32 +93,25 @@ test("failed adoption remains pending and output symlink cannot overwrite outsid
   );
   await rm(join(f.author, "packages/prototype"), { recursive: true });
   assert.equal(run(f.author, "accept").status, 0);
-  const target = join(
-    f.author,
-    "packages/prototype/preview/welcome/index.html",
-  );
-  await rm(target);
-  const outside = join(f.root, "outside.txt");
-  await writeFile(outside, "untouched");
-  await symlink(outside, target);
-  const build = spawnSync(
-    process.execPath,
-    [join(f.author, "packages/prototype/build.mjs")],
-    { encoding: "utf8" },
-  );
-  assert.equal(build.status, 1);
-  assert.equal(await readFile(outside, "utf8"), "untouched");
-  assert.equal(run(f.author, "validate").status, 1);
+  await wireBuild(f.author);
+  await mkdir(dirname(join(f.author, preview)), { recursive: true });
+  const outside = join(f.root, "outside.html");
+  await writeFile(outside, "<!doctype html><h1>Outside</h1>");
+  await symlink(outside, join(f.author, preview));
+  assert.equal(run(f.author, "enable").status, 1);
+  assert.equal((await config(f.author)).prototype.status, "pending");
 });
 
 test("browser export validation permits runtime storage, requests and workers", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   assert.equal(run(f.author, "accept").status, 0);
+  await wireBuild(f.author);
   await f.put(
-    "packages/prototype/preview/welcome/index.html",
+    preview,
     '<!doctype html><h1>Interactive export</h1><script>localStorage.setItem("prototype", "ok"); fetch(location.href); const worker = new Worker(URL.createObjectURL(new Blob(["postMessage(1)"]))); worker.onmessage = () => worker.terminate();</script>',
   );
+  assert.equal(run(f.author, "enable").status, 0);
   assert.equal(run(f.author, "validate").status, 0); // Static checks are deliberately not a runtime guarantee.
   const result = run(f.author, "validate", [
     "--browser",
@@ -129,6 +133,7 @@ test("pnpm workspace integration respects matching exclusions while preserving u
     await readFile(join(f.author, "pnpm-workspace.yaml"), "utf8"),
     yaml,
   );
+  await wireBuild(f.author);
   assert.equal(run(f.author, "enable").status, 0);
   await f.put(
     "pnpm-workspace.yaml",
@@ -141,33 +146,7 @@ test("pnpm workspace integration respects matching exclusions while preserving u
   assert.equal(run(f.author, "enable").status, 0);
 });
 
-test("shared source inlining preserves JavaScript replacement strings verbatim", async (t) => {
-  const f = await fixture();
-  t.after(f.cleanup);
-  assert.equal(run(f.author, "accept").status, 0);
-  const source = "window.render = 'abc'.replace(/b/g, '[$&]');";
-  await f.put("packages/prototype/src/shared/replace.js", source);
-  await f.put(
-    "packages/prototype/src/pages/replace.html",
-    "<!doctype html><html><script>{{include:../shared/replace.js}}</script></html>",
-  );
-  const result = spawnSync(
-    process.execPath,
-    [join(f.author, "packages/prototype/build.mjs")],
-    { encoding: "utf8" },
-  );
-  assert.equal(result.status, 0, result.stderr);
-  const output = await readFile(
-    join(f.author, "packages/prototype/preview/replace/index.html"),
-    "utf8",
-  );
-  const { runInNewContext } = await import("node:vm");
-  const context = { window: { render: "" } };
-  runInNewContext(/<script>([\s\S]*?)<\/script>/.exec(output)![1], context);
-  assert.equal(context.window.render, "a[b]c");
-});
-
-test("hosting choices persist through setup and disable, hosted scaffolds build dist, invalid changes preserve workflow", async (t) => {
+test("hosting choices persist through setup and disable, invalid changes preserve workflow", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   let result = run(f.author, "accept", [
@@ -182,13 +161,6 @@ test("hosting choices persist through setup and disable, hosted scaffolds build 
   const workflow = await config(f.author);
   assert.equal(workflow.openfolioUrl, "http://localhost:10681");
   assert.equal(workflow.prototype.hosting.provider, "openfolio");
-  assert.match(
-    await readFile(
-      join(f.author, "packages/prototype/dist/welcome/index.html"),
-      "utf8",
-    ),
-    /<!doctype html>/i,
-  );
   const packageBefore = await readFile(
     join(f.author, "packages/prototype/package.json"),
     "utf8",

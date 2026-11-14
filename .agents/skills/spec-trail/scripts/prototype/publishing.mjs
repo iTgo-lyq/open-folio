@@ -29,8 +29,8 @@ import {
 import {
   validateChange,
   validateWorkflow,
-} from "../../scripts/core/state-schema.mjs";
-import { withStateLock } from "../../scripts/core/lock.mjs";
+} from "../core/state-schema.mjs";
+import { withStateLock } from "../core/lock.mjs";
 import { htmlIssues } from "./html.mjs";
 import { localPackage, sourceManifest, packageManifest, assertSourceEntry, assertCheckout, verifyOwnerSource, verifyPrototypeSource } from './local-source.mjs';
 import { moduleUrl, treeRows } from './source.mjs';

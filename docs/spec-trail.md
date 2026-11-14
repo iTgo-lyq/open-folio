@@ -28,13 +28,13 @@ npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-c
 
 ## 环境要求
 
-原型包可放在 Git submodule，前端先独立发布并提交清单，无需另接入 SpecTrail；主仓库最后一次提交 gitlink 与 Change 关联，并固定追溯前端源码。命令、恢复与校验见[原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
+原型包可放在 Git submodule，前端先独立发布并提交清单，无需另接入 SpecTrail；主仓库最后一次提交 gitlink 与 Change 关联，并固定追溯前端源码。命令、恢复与校验见[原型说明](../.agents/skills/spec-trail/references/prototype/prototype.md#子模块中的原型包)。
 
 - Git。
 - Node.js 20+ 用于状态命令和接入校验；使用原型功能时需要 Node.js 24+，建议统一使用 Node.js 24 或更新版本。
 - 能读取本地 Skill 文件、运行命令并操作 Git 的编码 Agent。
 
-状态和接入脚本只使用 Node.js 内置模块。可选的原型浏览器验证使用业务项目中的 Playwright，详见原型子 skill。
+状态和接入脚本只使用 Node.js 内置模块。可选的原型浏览器验证使用业务项目中的 Playwright，详见原型说明。
 
 ## 开始使用
 
@@ -61,7 +61,7 @@ Agent 会按任务规模整理文档、确认必要的决策并推进 Change。�
 | 状态操作   | `change.json` 的语义命令及共享字段校验                                                        |
 | 接入检查   | 只读环境检查，以及业务项目现有 hook 的接入指导                                                |
 | 关闭与归档 | 验证、验收、Specs 同步和完整 Change 历史；通过关联 PR 集成到 develop，再按用户要求发布到 main |
-| 可选原型   | 宿主构建与托管、集成分支当前清单、Change 固定版本引用，以及 Git 单 HTML 兜底                  |
+| 可选原型   | 复用业务组件的业务页面片段，按业务技术栈多页面静态构建；托管、当前清单、Change 固定版本与 Git 单 HTML 兜底 |
 
 业务项目中的文档结构：
 
@@ -96,7 +96,7 @@ docs/project/
 
 `references/setup` 和 `prototype` 是随主 skill 分发的子目录，主工作流按需读取。
 
-完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[接入说明](../.agents/skills/spec-trail/references/setup/setup.md) 和 [原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
+完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[接入说明](../.agents/skills/spec-trail/references/setup/setup.md) 和 [原型说明](../.agents/skills/spec-trail/references/prototype/prototype.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
 
 ## 维护与验证
 

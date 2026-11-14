@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -56,7 +56,7 @@ test("CLI help and argument errors work outside a Git project", async t => {
   }
 });
 
-test("prototype scaffold logs stay out of the JSON result", {
+test("prototype accept waits for the project's build, then pages publish", {
   skip: Number(process.versions.node.split(".")[0]) < 24,
 }, t => {
   const cwd = mkdtempSync(join(tmpdir(), "spec-trail-prototype-cli-"));
@@ -75,15 +75,23 @@ test("prototype scaffold logs stay out of the JSON result", {
   const run = (...args) => {
     const result = spawnSync(process.execPath, [cli, "prototype", ...args], { cwd, encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
-    return { output: JSON.parse(result.stdout), diagnostics: result.stderr };
+    return JSON.parse(result.stdout);
   };
-  const configured = run("accept", "--hosting", "custom");
-  assert.equal(configured.output.status, "enabled");
-  assert.match(configured.diagnostics, /Exported 1 self-contained preview/);
-  const preview = join(cwd, "packages/prototype/preview/welcome");
-  mkdirSync(preview, { recursive: true });
-  writeFileSync(join(preview, "index.html"), readFileSync(join(cwd, "packages/prototype/dist/welcome/index.html")));
-  assert.deepEqual(run("validate").output, { entries: 1, mode: "static" });
+  const pkg = join(cwd, "packages/prototype");
+  assert.equal(run("accept", "--hosting", "custom").status, "pending");
+  assert.deepEqual(JSON.parse(readFileSync(join(pkg, "prototype.json"), "utf8")).entries, []);
+  // Stand in for the project's own multi-page build.
+  const page = "<!doctype html><h1>Welcome</h1>";
+  writeFileSync(join(pkg, "package.json"), JSON.stringify({ name: "prototype", private: true, scripts: { build: "node build.mjs" } }));
+  writeFileSync(join(pkg, "prototype.json"), JSON.stringify({ schemaVersion: 1, entries: [
+    { id: "welcome", title: "Welcome", sourcePath: "packages/prototype/src/welcome.html", kind: "page", devices: ["pc-web"] },
+  ] }));
+  for (const file of ["src/welcome.html", "preview/welcome/index.html", "dist/welcome/index.html"]) {
+    mkdirSync(dirname(join(pkg, file)), { recursive: true });
+    writeFileSync(join(pkg, file), page);
+  }
+  assert.equal(run("enable").status, "enabled");
+  assert.deepEqual(run("validate"), { entries: 1, mode: "static" });
   git("add", ".");
   git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-m", "Prototype");
 
@@ -93,7 +101,7 @@ test("prototype scaffold logs stay out of the JSON result", {
   const request = join(outside, "request.json");
   writeFileSync(entries, JSON.stringify([{ id: "welcome", entryPath: "welcome/index.html" }]));
   const prepared = run("prepare", "--directory", "packages/prototype/dist", "--entries", entries,
-    "--repository", "https://example.org/team/project.git", "--out", request).output;
+    "--repository", "https://example.org/team/project.git", "--out", request);
   assert.equal(prepared.path, request);
   assert.equal(prepared.requestId, JSON.parse(readFileSync(request, "utf8")).requestId);
 });

@@ -1,7 +1,7 @@
 // close group: overall verification, acceptance, Specs sync and archive, in order.
 import { existsSync } from "node:fs";
 import { relative } from "node:path";
-import { pinPreviews } from "../../prototype/scripts/hooks.mjs";
+import { pinPreviews } from "../prototype/hooks.mjs";
 import { assert, stateCommand, stateNotes } from "./context.mjs";
 import { requireConfirmations, requireDelivered, requireDocs, requireStage, requireTaskOrder, unblocked } from "./guards.mjs";
 
