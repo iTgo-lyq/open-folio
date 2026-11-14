@@ -36,7 +36,8 @@
     },
     "T3": {
       "title": "CLI 代码结构与测试收敛",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照 dcd8b1c 及后续提交；应用 464 项、Skill 21 项、定向工作流与原型 84 项通过，类型检查通过。"
     },
     "T4": {
       "title": "原型改为业务页面片段",
