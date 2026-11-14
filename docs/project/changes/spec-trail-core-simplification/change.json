@@ -4,7 +4,7 @@
   "title": "精简 SpecTrail 主 Skill 与 CLI，原型改为复用业务代码的页面片段",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "change/spec-trail-core-simplification",
   "confirmations": {
     "requirement": {
