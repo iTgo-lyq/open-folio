@@ -22,9 +22,11 @@
 
 Vite 在原型构建中替换 context、personal-context、api、PrototypeFrame 等数据/资源边界。类型引用仍取真实模块，mock 提供虚构仓库、人员、文档、预览与账号；未知请求明确报错，不回退到真实服务。请求和 Token 操作只修改内存，刷新恢复初始数据。
 
-既有组件中的直接 localStorage/sessionStorage 调用由原型启动层的内存 Storage 替代；公开画布直接操作 history 的行为同样在原型内隔离。嵌套预览使用包内虚构页面的 srcDoc、缩略图使用 data URL，不加载真实原型或第三方资源。构建拒绝服务端/Node 模块进入客户端。业务源码及持久数据格式不变。
+既有组件中的直接 localStorage/sessionStorage 调用由原型启动层的内存 Storage 替代；公开画布直接操作 history 的行为同样在原型内隔离。现有截图 CSP 禁止嵌套 iframe，故预览资源边界用同文档内的虚构交互占位替代，缩略图使用 data URL，不加载真实原型或第三方资源；业务画布的设备、旋转、缩放仍直接复用。构建拒绝服务端/Node 模块进入客户端。业务源码及持久数据格式不变。
 
 每个入口提供轻量评审栏，切换主题与适用场景，并注明 mock 和复用组件。场景变化重置该片段的内存状态，不实现跨入口应用导航。壳层导航仅演示选择，不拼装完整工作台。
+
+表单的原生导航在截图沙箱中被禁用。原型启动层将提交按钮/输入框 Enter 转发为本地可取消 submit 事件，先运行 reportValidity，再由既有业务 onSubmit 完成校验和 mock 请求；不增加 allow-forms，不放宽 CSP。
 
 ## 构建与兼容
 

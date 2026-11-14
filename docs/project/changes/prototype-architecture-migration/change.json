@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "prototype-architecture-migration",
   "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
-  "size": "medium",
+  "size": "large",
   "status": "active",
   "stage": "execution",
   "branch": "change/prototype-architecture-migration",
