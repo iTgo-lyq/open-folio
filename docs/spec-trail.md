@@ -14,7 +14,7 @@ SpecTrail 是一套 Agent Skill，用 Git 和 `docs/project/` 管理需求、技
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 ```
 
-安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`references/setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。使用 `node .agents/skills/spec-trail/cli.mjs --help` 查看命令组，`<group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。项目接入命令见[接入说明](../.agents/skills/spec-trail/references/setup/setup.md)。操作结果默认输出 JSON。
+安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`references/` 下的说明和共享脚本一起安装，并可随项目提交。使用 `node .agents/skills/spec-trail/cli.mjs --help` 查看命令组，`<group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。项目接入命令见[接入说明](../.agents/skills/spec-trail/references/setup/setup.md)。操作结果默认输出 JSON。
 
 也可以为其他支持 Agent Skills 的客户端安装，例如：
 
@@ -82,21 +82,21 @@ docs/project/
 ├── SKILL.md
 ├── cli.mjs
 ├── references/
+│   ├── delivery/delivery.md
+│   ├── prototype/
+│   │   ├── prototype.md
+│   │   ├── examples/
+│   │   └── assets/
 │   └── setup/
 │       ├── setup.md
 │       └── assets/
 ├── scripts/
-├── tests/
-└── prototype/
-    ├── SKILL.md
-    ├── scripts/
-    ├── examples/
-    └── assets/
+└── tests/
 ```
 
-`references/setup` 和 `prototype` 是随主 skill 分发的子目录，主工作流按需读取。
+主 skill 覆盖接收任务、规划与返工，`references/` 下的说明随主 skill 分发、按需读取：执行与交付在进入 execution 后读，原型在涉及产品 UI 时读，接入只在接入时读。
 
-完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[接入说明](../.agents/skills/spec-trail/references/setup/setup.md) 和 [原型说明](../.agents/skills/spec-trail/references/prototype/prototype.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
+完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[执行与交付](../.agents/skills/spec-trail/references/delivery/delivery.md)、[接入说明](../.agents/skills/spec-trail/references/setup/setup.md) 和 [原型说明](../.agents/skills/spec-trail/references/prototype/prototype.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
 
 ## 维护与验证
 

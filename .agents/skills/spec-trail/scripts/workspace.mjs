@@ -330,7 +330,7 @@ function handoff(repo, id, options) {
       note:
         local && local !== record.commit
           ? "Local commits preserved; inspect ahead/behind and working changes before continuing"
-          : "Existing registration reused; verify the execution session before writing",
+          : "Existing registration reused; verify the worktree branch and state before writing",
     };
   }
   ready(
@@ -478,7 +478,7 @@ function handoff(repo, id, options) {
         catalog.branch,
         verified.commit,
       ),
-      next: "Open or continue a session bound to this worktree; verify its actual cwd and branch, then use node .agents/skills/spec-trail/cli.mjs stage execute",
+      next: "Continue in this worktree: verify its branch and state, then run node .agents/skills/spec-trail/cli.mjs stage execute once the required confirmations are recorded",
     };
   }
 }
@@ -539,10 +539,9 @@ function locate(repo, id, refresh = false) {
       branch: repo.branch,
       detached: repo.branch === null,
     },
-    session: {
-      binding: "unverified",
-      action: planning ? 'continue-planning' : tree ? "continue-or-open" : "prepare-worktree",
-      prompt: planning ? `继续在 ${catalog.branch} 澄清 Change ${id}；当前尚未实际移交，保留暂缓意图。明确启动后使用 handoff，不自动创建执行工作区。` : `继续 Change ${id}。在 ${tree?.path ?? defaultPath(repo, id)} 打开或复用绑定该工作区的会话，先核对实际 cwd、仓库 common-dir 和分支 ${record.branch}；从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文。比较本地与 ${record.commit} 的差异后按未完成任务继续。创建工作区或 shell cd 不代表会话已绑定。`,
+    next: {
+      action: planning ? 'continue-planning' : tree ? "continue" : "prepare-worktree",
+      prompt: planning ? `继续在 ${catalog.branch} 澄清 Change ${id}；当前尚未实际移交，保留暂缓意图。明确启动后使用 handoff，不自动创建执行工作区。` : `继续 Change ${id}：在 ${tree?.path ?? defaultPath(repo, id)} 中核对分支 ${record.branch}，从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文；比较本地与 ${record.commit} 的差异后按未完成任务继续。`,
     },
   };
 }

@@ -7,6 +7,8 @@ description: 管控项目需求澄清、技术方案、计划、执行、验收�
 
 文中 `cli …` 均指 `node .agents/skills/spec-trail/cli.mjs …`。
 
+本文覆盖接收任务、规划（创建、需求、提问、技术方案、计划）与返工。进入 execution 后读[执行与交付](./references/delivery/delivery.md)，它覆盖任务实施、关闭、合入与正式发布；涉及产品 UI 时读[原型说明](./references/prototype/prototype.md)。
+
 ## 接到任务时
 
 用户派发任务时，先检查分支、工作区和相关 Change。
@@ -34,7 +36,7 @@ description: 管控项目需求澄清、技术方案、计划、执行、验收�
 | 位置（相对 `docs/project/`） | 职责 |
 | --- | --- |
 | `workflow.json` | 集成分支、发布分支与项目配置 |
-| `specs/<capability-path>/spec.md` | 当前已实现、验证且仍有效的产品能力与核心技术方案；内容范围见[Specs 同步](#specs-同步) |
+| `specs/<capability-path>/spec.md` | 当前已实现、验证且仍有效的产品能力与核心技术方案；内容范围见[Specs 同步](./references/delivery/delivery.md#specs-同步) |
 | `changes/<id>/` | 尚未归档的 Change，含正文、状态和证据；取消的 Change 也保留在这里 |
 | `archive/YYYY-MM-DD-<id>/` | 已完成关闭的完整 Change，作为只读历史保存 |
 
@@ -56,7 +58,7 @@ description: 管控项目需求澄清、技术方案、计划、执行、验收�
 
 medium 及以上 Change 涉及数据结构、时序流程等明显变化时，建议按变更模块分别评估配图，并放入相关需求或技术方案。图片保存到所属文档旁的 `assets/` 目录，以 Markdown 相对图片链接引用。
 
-归档后尚未集成的 Change 可用 `stage rework` 恢复返修，见[返修](#返修)。已集成归档的正文、状态与证据保持只读；后续需求或返修创建新 Change。历史勘误仅限用户明确要求，在所属分支做最小人工修正，以独立提交说明原因，不改写已推送 Git 历史。
+归档后尚未集成的 Change 可用 `stage rework` 恢复返修，见[合入前返修](./references/delivery/delivery.md#合入前返修)。已集成归档的正文、状态与证据保持只读；后续需求或返修创建新 Change。历史勘误仅限用户明确要求，在所属分支做最小人工修正，以独立提交说明原因，不改写已推送 Git 历史。
 
 ### 规模
 
@@ -96,18 +98,6 @@ interface PrototypeConfig {
   packagePath?: string; // 每项目一个包
   hosting?: { provider: "openfolio" | "custom" | "git"; uploadUrl?: string };
 }
-interface PreviewEntry {
-  id: string;
-  title: string;
-  artifact: { type: "git"; path: string; sourceCommit: string } | {
-    type: "hosted"; version: string; url: string; sourceCommit: string; digest: string;
-    thumbnails?: { device?: "pc-web" | "ipad" | "mobile"; url: string }[];
-  }; // 固定产物引用，详细契约见原型说明
-  kind: "page" | "component";
-  devices?: ("pc-web" | "ipad" | "mobile")[]; // page 必填
-  viewport?: { width: number; height: number }; // component 与 devices 二选一
-}
-
 interface Confirmation {
   at: ISODateTime;
   summary: string; // 阶段内容简述，优先 20–40 字符
@@ -150,7 +140,7 @@ interface ChangeState {
   stage: "requirement" | "technical" | "plan" | "execution" | "close";
   branch: string; // 新规划优先填集成分支；移交默认 change/<id>
   clarifications?: Record<`Q${number}`, Clarification>; // 实际问过的问题
-  previews?: PreviewEntry[]; // 记录本次固定交付；项目当前清单位于原型包 prototype.json
+  previews?: object[]; // 本次固定交付的原型引用，契约见原型说明；项目当前清单位于原型包 prototype.json
   dependsOn?: string[]; // 前置 Change id；全部满足后执行，xlarge 父 Change 不填
   followUpOf?: string; // 同仓库已归档的直接前序，仅表示延续交付，不是执行依赖
   followUpTitle?: string; // 后继声明的独立分组标题，概括共同目标；后续成员默认继承
@@ -160,11 +150,7 @@ interface ChangeState {
     requirement?: Confirmation;
     technical?: Confirmation;
     plan?: Confirmation;
-    merge?: Confirmation & {
-      sourceCommit?: string; // 提交 hash
-      targetCommit?: string;
-      baseCommit?: string;
-    };
+    merge?: Confirmation & { sourceCommit?: string; targetCommit?: string; baseCommit?: string };
   };
   tasks: Record<`T${number}`, ChangeTask>; // T1、T2……
   waitingFor?: {
@@ -193,18 +179,18 @@ interface ChangeState {
 
 ### 移交
 
-新 Change 在集成分支整理需求，branch 指向自身；移交前的规划继续直接提交集成分支。需求文档提交并按规模确认后，从最新交付目标（子项为父分支，其余为集成分支）移交到独立工作分支（默认 `change/<id>`）、worktree 和会话，不等待技术方案、Plan、任务或依赖交付。
+新 Change 在集成分支整理需求，branch 指向自身；移交前的规划继续直接提交集成分支。需求文档提交并按规模确认后，从最新交付目标（子项为父分支，其余为集成分支）移交到独立工作分支（默认 `change/<id>`）和 worktree，不等待技术方案、Plan、任务或依赖交付。
 
 ```bash
 cli workspace handoff --change example --dry-run
 cli workspace handoff --change example
 ```
 
-移交不授予阶段确认、不进入 execution。原型、技术方案、Plan 和实现均在所属工作区推进，Draft PR 按[PR 合入](#pr-合入)创建。移交后须在目标会话核验，获所需确认后运行 `stage execute`。
+移交不授予阶段确认、不进入 execution。原型、技术方案、Plan 和实现都在该 worktree 中继续，Draft PR 按[Draft PR](#draft-pr) 创建。
 
-已移交 Change 的修改误写到集成分支时，保留现场，核对归属后迁往正确工作区，不清空其他会话的修改。
+已移交 Change 的修改误写到集成分支时，保留现场，核对归属后迁往正确工作区，不清空不属于本 Change 的修改。
 
-### 工作区与会话
+### 工作区
 
 新 worktree 默认放在主工作区同级的 `<项目名>-worktrees/<工作区名>`，Change 工作区名默认使用 id：
 
@@ -224,7 +210,7 @@ cli workspace prepare --change example --dry-run
 cli workspace prepare --change example
 ```
 
-开始实现前定向同步集成分支与所需工作分支，核对实际 cwd、分支和仓库身份。不能把子 agent、shell cd、创建 worktree 或模拟客户端调用当作已迁移当前会话。客户端支持准确指定已有 worktree 时，优先复用已有执行会话，否则创建绑定它的新会话；交接只传路径、id、分支与从持久化记录恢复的步骤。若当前工具不暴露准确绑定/创建能力，向用户提供工作区路径和输出的续接提示，人工打开后核验实际 cwd、common-dir、分支和未推送差异。同一 worktree 的多个写入会话需协调。
+在 worktree 中继续前，定向同步集成分支与所需工作分支，核对实际工作目录、分支和仓库身份。同一 worktree 有多个写入方时需协调。
 
 ### 并行
 
@@ -236,7 +222,7 @@ cli workspace prepare --change example
 
 ### 定位 Change
 
-先读取当前仓库 `docs/project/workflow.json`，从集成分支的 changes/archive 按 id 定位 Change。查询进度必须按 `change.json.branch` 核对对应工作分支的最新已推送状态；本地缺少 ref 时定向查询并拉取远端。子项已合入父分支时优先读父分支归档；有效的集中 completed 归档直接作为只读历史并保留历史 branch，其余集中记录仅用于定位。通过 Git worktree 登记定位本地执行工作区。`show` 使用集中入口，只有在所属分支才展示未推送的本地状态。
+用 `change show` 读取 Change：它从集成分支按 id 定位，按 `branch` 读取所属工作分支的已推送状态，子项已合入父分支时读父分支归档；只有在所属分支才展示未推送的本地状态。本地缺少 ref 时定向拉取远端；本地工作区用 `workspace locate` 定位。
 
 ### 核对状态
 
@@ -256,7 +242,7 @@ cli workspace prepare --change example
 
 ### 语义命令
 
-分支移交与工作区定位见[移交](#移交)与[工作区与会话](#工作区与会话)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用语义命令 `cli <group> <command> --change <id>`，按职责分为 change、clarify、task、stage、close 五组。`cli --help` 列出命令组，`cli <group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。
+分支移交与工作区定位见[移交](#移交)与[工作区](#工作区)，其中 handoff 仅负责 branch 登记；其余常规 `change.json` 创建和修改使用语义命令 `cli <group> <command> --change <id>`，按职责分为 change、clarify、task、stage、close 五组。`cli --help` 列出命令组，`cli <group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。
 
 脚本负责前置检查和失效状态清理；Agent 负责实际确认、验证证据、正文一致性与提交推送。进程异常退出可能遗留状态锁；确认持锁进程已结束、核对工作区后才能清理。
 
@@ -280,25 +266,25 @@ cli task complete --change example --task T1 --verification '实际验证命令�
 cli close verify --change example --result passed --summary '实际整体验证与评审结论'
 ```
 
-按[验收](#验收)规则决定自验收或 `stage wait --kind confirmation`。人工验收通过后用 `stage resume` 清除等待；`close accept` 记录真实依据，完成 Specs 同步后执行 `close specs`，再 `close archive`。
+按[验收](./references/delivery/delivery.md#验收)规则决定自验收或 `stage wait --kind confirmation`。人工验收通过后用 `stage resume` 清除等待；`close accept` 记录真实依据，完成 Specs 同步后执行 `close specs`，再 `close archive`。
 
 ## 阶段推进
 
 ### 阶段表
 
-核对当前规模所需的上游确认仍适用于正文；缺少有效确认时停在最早需处理的阶段。
+核对当前规模所需的上游确认仍适用于正文；缺少有效确认时停在最早需处理的阶段。用户确认后用 `stage confirm` 记录，进入 execution 用 `stage execute`。
 
-进入 execution 前先按[依赖](#依赖)检查；有原型的实现还须先通过[用户原型验收](./references/prototype/prototype.md#原型验收)。确认要求和 JSON 更新如下：
-
-| 当前阶段 | 完成条件与后续更新 |
+| 当前阶段 | 完成条件 |
 | --- | --- |
-| requirement，small | 创建前确认的方向未变，需求、方案要点及验收已写入并推送后移交；任务就绪后进入 execution，不记录需求、技术、计划确认 |
-| requirement，其余规模 | 用户确认完整目标、范围和验收；记录 `confirmations.requirement`，进入 technical，推送后移交 |
-| technical，medium / xlarge | Technical 与 Plan 一起确认，xlarge 的 Plan 为子 Change 拆分；同时记录 `technical`、`plan` 确认，进入 execution |
-| technical，large | 用户确认方案与必要契约；记录 `confirmations.technical`，进入 plan |
-| plan，large | 用户确认整体计划；记录 `confirmations.plan`，进入 execution，无需逐任务审批 |
-| execution | 所有任务验证、提交并推送；xlarge 为所有子 Change 完成或取消；进入 close |
-| close | 按[关闭](#关闭)四步完成验收、Specs 同步与归档 |
+| requirement，small | 创建前确认的方向未变，需求、方案要点及验收已写入并推送；移交，任务就绪后进入 execution，不记录阶段确认 |
+| requirement，其余规模 | 用户确认完整目标、范围和验收，推送后移交 |
+| technical，medium / xlarge | 用户一起确认 Technical 与 Plan，xlarge 的 Plan 为子 Change 拆分 |
+| technical，large | 用户确认方案与必要契约 |
+| plan，large | 用户确认整体计划，无需逐任务审批 |
+| execution | 按[执行与交付](./references/delivery/delivery.md#执行)完成全部任务；xlarge 为所有子 Change 完成或取消 |
+| close | 按[执行与交付](./references/delivery/delivery.md#关闭)完成整体验证、验收、Specs 同步与归档 |
+
+`stage execute` 检查文档、确认、任务、依赖和单分支规则。有原型时，还须先通过[原型验收](./references/prototype/prototype.md#原型验收)，这一项由 Agent 把关。
 
 ### 确认
 
@@ -312,15 +298,15 @@ cli close verify --change example --result passed --summary '实际整体验证�
 
 ### 返工
 
-返工修订原正文，并按[写入状态](#写入状态)更新 JSON，不另建返工文档；`rework` 记录当前或最近一轮的时间、原因与处理方式，回到最早受影响阶段：
+回到最早受影响的阶段修订原正文，不另建返工文档。用 `stage rework` 记录原因与处理方式；它清除该阶段起的确认、合码确认、关闭结果和等待项，保留已完成任务。
 
-| 变化 | 确认和任务处理 |
-| --- | --- |
-| 需求实质变化 | 移除失效的 requirement、technical、plan 确认 |
-| 关键技术方案变化 | 保留有效需求确认，移除失效的 technical、plan 确认 |
-| 已确认范围内的实现修正 | 保留有效确认，修改未完成任务或追加返修任务；执行中回到 execution，尚在规划时留在对应规划阶段 |
+| 变化 | 回到 | 处理 |
+| --- | --- | --- |
+| 需求实质变化 | requirement | 按[需求](#需求)修订并重新确认，技术方案与计划随之复核 |
+| 关键技术方案变化 | technical | 保留需求确认，按[技术方案](#技术方案)修订并重新确认方案与计划 |
+| 已确认范围内的实现修正 | execution，规划中则留在当前阶段 | 保留确认，修改未完成任务或追加返修任务 |
 
-返工时按[范围与规模调整](#范围与规模调整)复核实际影响。实现或行为变化后重新执行验证、验收及后续关闭步骤。用户新指令明确确认的部分可直接记录，文字澄清不自动使确认失效；已归档交付按[归档只读约定](#change-文件与状态)处理。
+返工时按[范围与规模调整](#范围与规模调整)复核实际影响。实现或行为变化后重新执行验证、验收及后续关闭步骤。用户新指令明确确认的部分可直接记录，文字澄清不自动使确认失效。归档后尚未合入的 Change 同样用 `stage rework` 恢复，见[执行与交付](./references/delivery/delivery.md#合入前返修)；已合入的修正新建 Change。
 
 ## 创建
 
@@ -360,7 +346,7 @@ Git 材料历史未覆盖实际参与者时，可用 `collaborators` 补充协�
 
 聚焦用户明确目标，以最小功能变更满足需求。隐含需求先以问题说明必要性和新增范围，经用户确认后再纳入需求、验收与计划。目标或范围变化时，执行[范围与规模调整](#范围与规模调整)。
 
-读取对话、指定材料、相关 Specs 与活跃 Changes，从目标附近的项目规则、代码、配置、依赖和测试调查现状。产品问题只追问会改变目标、范围、行为或验收的取舍。技术未知项只有在无法通过仓库、一手资料、只读外部状态或必要实验查明，无法可靠推理且实现或验证必需时，才说明缺失内容、影响和建议，向责任人澄清。其他事实继续调查，推断注明依据，未决项说明影响。
+读取对话、指定材料、相关 Specs 与活跃 Changes，从目标附近的项目规则、代码、配置、依赖和测试调查现状。需要用户取舍的问题按[提问](#提问)处理；其他事实继续调查，推断注明依据，未决项说明影响。
 
 会话中说明目标、待确认内容、关键假设和限制。small 简述需求、方案与验收后按阶段表执行；其余规模先确认完整需求。
 
@@ -377,9 +363,21 @@ Requirement 只保留影响目标、范围、行为或验收的结论与必要�
 
 当前 Change 产生的外部文档在 Requirement 相关内容处登记链接、用途、目标读者和同步状态；同用途资源优先复用，仓库文档仍为内容来源。外部文档的创建、更新、分享、权限调整和通知均按已有授权执行，不由“同步文档”推导额外授权。
 
-### 分轮澄清
+## 提问
 
-将相关决策组织成**决策树**：每项决策向下连接依赖它的决策，围绕本次目标追问至达成共同理解。**frontier（就绪问题）**是前置已明确、现在可以回答而无需猜测其他答案的全部决策；已有结论直接复用，不重问已确认结论，需求澄清只展开影响目标、范围、行为或验收的分支。技术方案复用本节机制，提问范围见[技术问询](#技术问询)。
+需求澄清与技术问询共用本章规则，范围与额度分开计算。**事实由 Agent 查，需要用户取舍的决策由用户定。**
+
+### 提问范围
+
+- **需求**：只追问会改变目标、范围、行为或验收的产品取舍。
+- **技术**：Agent 先依据已确认需求、项目约定和调查证据形成推荐方案，常规选型与局部实现自行决定；只问确需用户或责任人取舍的体验、数据处理、兼容迁移、成本运维、安全边界或核心可行性问题。说明选择带来的实际差异、推荐理由和主要代价，避免让用户只凭框架、算法或数据库名称选方案；例如询问是否接受迁移期间短暂停用写入时，同时说明推荐方式及影响。
+- **未知事实**：只有无法通过仓库、一手资料、只读外部状态或必要实验查明，无法可靠推理且实现或验证必需时，才说明缺失内容、影响和建议，向责任人澄清；不影响架构、安全、契约或可行性的任务内局部细节可留待执行。
+
+每题按首次提问所要决定的内容归入需求或技术，只消耗一类额度，不按当前阶段归类。
+
+### 分轮
+
+将相关决策组织成**决策树**：每项决策向下连接依赖它的决策，围绕本次目标追问至达成共同理解。**frontier（就绪问题）**是前置已明确、现在可以回答而无需猜测其他答案的全部决策；已有结论直接复用，不重问已确认结论，只展开影响本次取舍的分支。
 
 按轮处理 frontier：预算内将全部就绪问题集中提出；超过本轮额度时优先询问影响最大的，其余保留。逐题编号，给推荐及简短理由，然后等待回答。沿用以下格式：
 
@@ -397,9 +395,11 @@ Requirement 只保留影响目标、范围、行为或验收的结论与必要�
 
 每轮回答都重塑决策树：已明确的决策推动 frontier 向外展开，重新计算后再问下一轮。同轮问题不能依赖本轮尚未回答的问题；依赖项留到后续轮次。部分回答只解锁相关分支，未答项保留，推荐和沉默均不算同意；用户可明确选择“全部按推荐，Q2 改为……”。
 
-**事实由 Agent 查，需要用户取舍的决策由用户定。** frontier 需要环境事实时，自行调查；独立调查有并行收益且工具可用时派子 Agent。进行中的调查属于未决前置，只暂缓依赖它的问题，继续询问其他就绪问题。
+frontier 需要环境事实时自行调查；独立调查有并行收益且工具可用时派子 Agent。进行中的调查属于未决前置，只暂缓依赖它的问题，继续询问其他就绪问题。
 
-单个 Change 的需求澄清与技术问询使用各自独立的额度，两类互不扣减，不设共用总额度；需求澄清用满不影响技术剩余额度：
+### 额度与收敛
+
+需求澄清与技术问询使用各自独立的额度，两类互不扣减，不设共用总额度：
 
 | 规模 | 需求最多轮数 | 需求每轮最多问题 | 需求问题总上限 | 技术最多轮数 | 技术每轮最多问题 | 技术问题总上限 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -416,17 +416,17 @@ Requirement 只保留影响目标、范围、行为或验收的结论与必要�
 
 用 `clarify ask / answer / withdraw` 保存需求与技术阶段实际提过的问题、推荐和用户最终有效回答，便于回溯遗漏与澄清偏差，不记录用户思考过程。创建时补录创建前问答，`round` 在整个 Change 中递增，同轮共享，不随阶段重启；明确更正覆盖原答案，含糊冲突先澄清再更新。实质改变需求或关键方案按返工处理。问答不代替阶段确认。
 
-每题按首次提问所要决定的内容归入需求或技术，只消耗一类额度，不按当前阶段归类。每轮将需求结论写回 Requirement，技术结论写回 Technical（small 写入 Requirement 的方案要点），在对应取舍处注明问题类别并引用 Q 编号；未答或撤回问题也保留类别与引用，跨文档引用、回答引发需求返工均不改变原题归属。较长调查证据放 Research，不复制完整访谈。
+每轮将需求结论写回 Requirement，技术结论写回 Technical（small 写入 Requirement 的方案要点），在对应取舍处注明问题类别并引用 Q 编号；未答或撤回问题也保留类别与引用，跨文档引用、回答引发需求返工均不改变原题归属。较长调查证据放 Research，不复制完整访谈。
 
 分别取两类 Q 记录统计题数、每轮题数和不同 `round` 的数量，不以 `round` 最大值代替已用轮数。同轮含两类问题时，各自计一轮及本类题数，不重复计题。例如 medium 的需求问题已用 round 1、2，首次技术问题记录 round 3，仍只使用技术第 1 轮。继续会话先读问答与正文，重建决策树和各自剩余额度；命令保存已发生事实，预算在发问前由 Agent 执行，不因超额而漏记。
 
 ## 技术方案
 
-对每项需求要点，权衡实现成本与长期架构健康，优先复用、保持简单。先查明技术事实；无法自主决定的实质取舍，以问题给出选项、推荐及主要代价，请用户决定。
+对每项需求要点，权衡实现成本与长期架构健康，优先复用、保持简单。先查明技术事实；无法自主决定的实质取舍按[提问](#提问)请用户决定。
 
-medium 及以上基于已确认需求、项目规则和 Research 编写 Technical；small 的方案留在 Requirement。技术澄清与规划阶段只修改文档，不提前修改正式交付代码。
+medium 及以上基于已确认需求、项目规则和 Research 编写 Technical；small 的方案留在 Requirement。技术澄清与规划阶段只修改文档，不提前修改正式交付代码；原型按[原型说明](./references/prototype/prototype.md#原型包与业务代码)修改业务代码除外。
 
-技术未知项遵循[需求](#需求)的提问边界；不影响架构、安全、契约或可行性的任务内局部细节可留待执行。凭证只记录引用、交付与注入方式、环境与权限范围、负责人、就绪及轮换约定，不索要或写入秘密值。
+凭证只记录引用、交付与注入方式、环境与权限范围、负责人、就绪及轮换约定，不索要或写入秘密值。
 
 ### 原型接入
 
@@ -436,11 +436,9 @@ medium 及以上基于已确认需求、项目规则和 Research 编写 Technica
 
 技术问询同时帮助用户理解本次实现重点。每轮先用简短说明串起“如何实现目标、主要复用或新增什么机制、对使用和维护有什么影响”，只介绍理解当前取舍所需的重点；后续轮次补充新信息，不重复完整方案。使用用户能理解的结果与影响解释必要术语，不展开内部代码细节。没有需要用户决定的问题时，也给出实现重点说明，然后按原阶段规则推进；说明本身不占问题额度，也不新增确认步骤，不把它改成理解测验。
 
-Agent 先依据已确认需求、项目约定和调查证据形成推荐方案，常规选型与局部实现自行决定。仅将确需用户或责任人取舍、影响体验、数据处理、兼容迁移、成本运维、安全边界或核心可行性的问题放入 frontier；可自行查明的事实继续调查。每题沿用 Q 编号与推荐格式，说明选择带来的实际差异、推荐理由和主要代价，避免让用户只凭框架、算法或数据库名称选方案。例如询问是否接受迁移期间短暂停用写入，同时说明推荐方式及影响。
-
 **数据模型不兼容升级必须由用户取舍。** 先查明并说明受影响的数据与使用方式、可行处理选项及主要代价，询问用户是否接受不兼容、旧数据如何处理，再确定方案。直接接受不兼容是有效选项，按实际需要比较重建、一次性迁移或保留兼容，不默认要求向后兼容，不为假设性的兼容需要擅自加入兼容层、双版本读写或自动迁移等防御性机制。只落实用户选择所需的处理；未明确的取舍阻塞相关方案定稿与实施，不能以推荐或沉默代替回答。small 的方案要点同样适用。
 
-复用[分轮澄清](#分轮澄清)的依赖展开、额度与收敛规则，每轮只问前置已明确的必要问题，收到回答后更新方案及 frontier。回答改变目标、范围、行为或验收时回到 Requirement 按返工规则处理；仅补齐技术证据或在已确认需求内选择实现方式时，继续完善 Technical。
+收到回答后更新方案及 frontier。回答改变目标、范围、行为或验收时回到 Requirement 按[返工](#返工)处理；仅补齐技术证据或在已确认需求内选择实现方式时，继续完善 Technical。
 
 ### 就绪条件
 
@@ -509,80 +507,9 @@ Plan 引用 Requirement 与 Technical，说明交付目标、任务与整体验�
 
 任务在 Change 分支提交为 `done` 后冻结，返修追加新任务；此前可以修改、拆分、删除或重排。返修在 Plan 和 Execution 中关联原任务，不覆盖历史验证结论。
 
-## 执行
+### Draft PR
 
-开始前按[核对状态](#核对状态)核对状态与有效确认，读取本任务相关的 Requirement、Technical、Plan、Execution、Specs 和项目规则；满足[阶段表](#阶段表)的执行条件后再实施。
-
-### 单任务循环
-
-1. 按默认编号串行或 Plan 显式安排选择就绪任务，用 `task start` 将任务设为 `doing`。
-2. 复用项目模式，完成最小可验证交付并保持中间版本可运行；运行与改动相称的测试、类型检查、构建和必要交互验证；无新变化或疑点时不重复已有成功检查。
-3. 对照 Requirement、Technical 与任务验收核对交付；有用户确认原型的 UI 实现，按[原型还原验收](./references/prototype/prototype.md#开发后的原型还原验收)核对本任务范围。将摘要写 `verification`；较长证据按任务编号写 Execution，记录范围、命令、结果和未验证限制。
-4. 验证通过后，用 `task complete` 记录真实验证，将实现与 `done` 记录一起提交推送，成功后才算完成。提交失败时用 `task retry` 恢复为 `doing`，它会清除验证摘要，修复后重新 `task complete`；推送失败按[检查点](#检查点)处理。
-
-同一分支串行推进，当前任务的实现或状态检查点提交成功后，可切换到其他就绪任务；并行实施使用[任务分支](#任务分支)与隔离工作区。未完成任务保留 `doing` / `blocked`，可提交真实状态与证据；可运行的中间实现需先调整成独立交付。所有任务完成后按[阶段表](#阶段表)进入 close。`commitTitle` 建议用 `<id> T<n>:` 开头，不为记录提交 hash 另造提交。
-
-### 阻塞
-
-发现技术缺口时停止受影响实施，设置 `blocked`，在 `reason` 写证据与解除条件；继续调查，其他不依赖未确认行为或契约的任务可继续。
-
-### 任务分支
-
-只在有并行收益且实现边界不重叠时使用，一个任务至多一个分支：在 Change 分支把任务设为 `doing` 并填写 `branch: task/<id>/T<n>`，提交推送后，从包含前置交付的 Change 分支创建任务分支。
-
-任务分支可有多个提交；验证后普通 merge 回 Change 分支，在合回提交中更新 `done` 与验证摘要，再推送。冲突或涉及其他任务的调整在 Change 分支处理，实质冲突按[冲突处理](#冲突处理)记录。
-
-## 关闭
-
-按 **整体验证 → 验收 → Specs 同步 → 归档提交** 顺序执行。`closure` 各步按实际结果填写，未完成不预填成功。归档交付统一由合并提交保存边界；原型沿用该提交。
-
-### 整体验证
-
-核对确认仍有效、Plan 与 JSON 一致、任务均已验证并提交推送、无未解释阻塞；运行与改动相称的整体验证，覆盖需求、验收、必要失败路径及边界，记录实际证据。xlarge 父 Change 要求全部子项完成或取消，已完成子项的 PR 交付已在父分支核实可用。
-
-有用户确认原型的 UI 实现，按[原型还原验收](./references/prototype/prototype.md#开发后的原型还原验收)核对证据及差异处理结果，验收报告区分已通过项、已批准差异、未解决项和未验证项。
-
-| 规模 | 评审要求 |
-| --- | --- |
-| small | Agent 自查 |
-| medium | 默认独立评审，用户可免除 |
-| large | 必须独立评审，用户可亲自评审代替 |
-| xlarge | 父 Change 核对整体目标与跨子 Change 集成，不重复子 Change 评审 |
-
-独立评审与实现上下文隔离（如 subagent），覆盖整个差异、需求与验收对应及测试证据；在 `closure.verification.summary` 记录评审方式，需跟踪的问题写 Review。
-
-通过记 `verification.result: passed`，按下述验收规则继续；需等待用户时设置 confirmation 等待并提交推送。失败记 `failed`，按最早受影响阶段返工。
-
-### 验收
-
-small 默认自验收后归档；用户要求人工验收或人工验收提出问题后，该 Change 后续均须用户确认，并在 Requirement 保留此要求。其余规模人工验收。
-
-自验收时逐项核对 Requirement 与交付证据，无未解决验收项后用 `close accept --mode agent` 记录通过，摘要注明“Agent 自验收”及依据。
-
-向用户提供实现摘要、验收对应结果、验证证据和已知限制。用户实际验收或明确要求将当前交付归档、合入指定目标分支后，用 `close accept --mode user` 记录 `acceptance.result: accepted`，摘要引用原话或附 `source`。Agent 自查、测试通过和事先“做完就行”的笼统指示不等于用户验收。
-
-请求用户确认验收或合入集成分支时，必须提示合入集成分支（如 `dev` / `develop`）即视为验收通过，变更可随下次发布进入正式环境。
-
-等待人工验收时原范围内的调整继续在原 Change 按[返工](#返工)规则处理。
-
-### Specs 同步
-
-Specs 以任意深度的稳定业务能力树组织，完整相对路径是能力身份，每段使用小写 kebab-case；含 `spec.md` 的路径代表能力，其余是命名空间。父级写共同行为和边界，子级写细节；不按页面、技术层或源码目录机械拆分。核心技术方案写在其约束的能力下，跨能力方案可用独立路径；移动或重命名时同步引用。
-
-以最终验收实现为准，重读当前 Specs，结合 Requirement 中新增、修改、删除的行为与长期核心方案，按能力路径合并；small 的方案取自 Requirement，其余取自 Technical：
-
-- 只描述已实现、验证且仍有效的产品行为，以及架构、共享契约、数据模型、安全边界等长期约束；未来目标留在 Change。
-- 用当前时态，不放 Delta、任务状态、评审过程或变更日志。普通技术修正、重构、性能调优、实现细节和恢复既有行为的缺陷修复不写入 Specs。
-- 涉及 API、数据或共享契约时核对对应文档；发现冲突或实现不一致时停止归档。
-- 仅纠正文档对当前实现的错误描述或补录既有行为时可直接改 Spec；改变实现则通过 Change。新项目首次 Change 关闭时才产生第一批已实现 Specs。
-
-同步后记 `specs.result: synced` 和影响范围；无需变更时记 `not_needed` 并说明理由。
-
-### 归档
-
-归档前同步交付目标并验证，必须按[归档前提交整理](#归档前提交整理)检查提交历史并核对追踪信息。前三步成功且证据仍适用后，用 `close archive` 将完整目录移动到 `docs/project/archive/YYYY-MM-DD-<id>/`，将 Specs、最终 JSON 和目录移动一起提交推送。
-
-Change 的实际实现须归档并通过预检后，才可合入交付目标；归档推送后按[PR 合入](#pr-合入)交付，再按[清理](#清理)处理来源。
+Plan 在工作分支写完并推送后，通过平台工具创建或复用同仓库 Draft PR，子项目标为父项 branch，其余为 integrationBranch，不等待计划确认。small 无 Plan，在移交并推送真实执行状态后、实施前创建。正文说明范围与验证，不携带机器标记；合入见[执行与交付](./references/delivery/delivery.md#pr-合入)。
 
 ## 取消
 
@@ -598,9 +525,9 @@ Change 的实际实现须归档并通过预检后，才可合入交付目标；�
 
 ### 依赖
 
-small / medium / large 用 `dependsOn` 声明同仓库的前置 Change，在 Requirement 说明用途，与 `parent / children` 独立。声明时目标必须已建立并推送。
+small / medium / large 用 `change depends` 声明同仓库的前置 Change，在 Requirement 说明用途，与 `parent / children` 独立。
 
-进入 execution 并开始实现前，所有前置 Change 都须满足：**已完成关闭、归档并推送，且所需交付已在当前分支可用**。默认等上游合入交付目标后同步；同父子项从父分支取得已合入交付，不必等待父项整体集成或正式发布。阶段状态从集中入口解析；集成交付仍需核对，归档存在不代表代码未被回滚。
+进入 execution 前，前置 Change 须已关闭归档，且所需交付已在当前分支可用，`stage execute` 会检查。默认等上游合入交付目标后同步；同父子项从父分支取得已合入交付，不必等待父项整体集成或正式发布。归档存在不代表代码未被回滚，集成交付仍需核对。
 
 依赖未满足时可继续调查、澄清和规划；准备执行时仍未满足，保留当前阶段和有效确认，设置 dependency 等待，说明缺少的交付和解除条件。解除等待后保留 `dependsOn`；调整依赖时同步用途说明，涉及目标或关键方案变化时按返工规则处理。
 
@@ -624,107 +551,13 @@ active Change 可用 `follow-up --target none` 移除关联；更换前序后按
 
 子状态只写自身 JSON；调整拆分同步父 Plan 与 `children`，整体目标或架构变化回到父项相应阶段。全部子项完成或取消，已完成交付在父分支核实并通过整体验收后，父项携所属子项归档整体合入集成分支。子项合入父分支即结束原 Change，后续修正使用后继 Change。
 
-## 合码与集成
-
-### 合码方向
-
-合码本身不创建新 Change，仅处理同一 Git 仓库内分支或 worktree。
-
-| 方向 | 方式与条件 |
-| --- | --- |
-| 任务分支 → Change 分支 | 普通 merge，不 squash；任务已验证，合回后更新任务状态 |
-| 集成分支 → Change 分支 | 在独立 worktree 内 merge；Change 分支未取消 |
-| 子 Change → 父分支 | 归档后通过已有 PR 普通 merge，保留子项交付边界 |
-| 独立 Change / xlarge 父分支 → 集成分支 | 归档后通过已有 PR 普通 merge；父项携所属子项整体交付 |
-| 集成分支 → 发布分支 | 用户要求正式发布后提交 PR，普通 merge 保留历史与规划文档 |
-| 发布分支 → 集成分支 | 回流独立修复时使用 `--no-ff`，保留集成分支 first-parent 历史 |
-
-先只读核实仓库、源目标分支、worktree、workflow 分支职责、两侧提交、merge base、工作区与相关 Change / Specs，定向 fetch 后以中心仓库提交为准。用 diff、log 和可用的 merge-tree 评估文本与语义冲突，不在含用户修改的工作区试合并。默认集成保留其他 Change 的规划目录，已归档内容保持只读。
-
-### 合并方式检查
-
-代创建、更新、合并 Change 或发布 PR/MR，以及配置自动合并时，核对仓库/目标分支规则、本次选项及自动合并/队列的实际方式，显式使用普通 merge 并取消本次 squash。平台允许 squash 或使用普通 merge 自动合并不构成受阻；无法使用普通 merge 或核实实际方式时报告受阻，不擅改全局规则或直推绕过。本地预检和 CI 不代替此项平台检查。
-
-### 冲突处理
-
-有大量冲突、行为分歧或共享契约变化时，在尚未归档 Change 的 `merge-technical.md` 记录确切源 / 目标 / base 提交、需保留的行为、冲突决策、顺序、失败恢复和验证方法。只对新决策请求确认，用 `confirmations.merge` 记录时间摘要，可附三侧提交。实质改变需求或方案时按返工规则更新原文；新的实现修正追加任务。
-
-先在 Change 工作区同步交付目标、解决冲突并验证，再归档推送。
-
-### PR 合入
-
-Plan 在工作分支写完并推送后，通过平台工具创建或复用同仓库 Draft PR，子项目标为父项 branch，其余为 integrationBranch，不等待计划确认。small 无 Plan，在移交并推送真实执行状态后、实施前创建。正文说明范围与验证，不携带机器标记。交付时更新同一 PR 的标题、说明与验证证据。未归档时归档 CI 失败是预期门禁，不绕过。
-
-归档推送后执行：
-
-```bash
-cli integration preflight --change example
-```
-
-预检通过后将已有 Draft 转为可审阅；缺失时补建。未归档不得合入，已接入的归档 CI 须通过。先做[合并方式检查](#合并方式检查)；已有授权且检查通过后普通 merge，并传入预期源 SHA，允许平台生成默认合并消息；未授权时先准备可审阅 PR，再请求最终授权，创建 PR 不授权合并 PR。源或目标推进后重新预检并核对 CI 与受影响验证。只允许 squash/rebase 或平台合并受阻时报告受阻，不回退直推。
-
-合入响应未知、排队或受理时先查平台 PR 状态与远端 Git，不能据此宣称成功。合入后核实：
-
-```bash
-cli integration verify --change example
-```
-
-PR 以同仓库、登记来源分支和实际目标关联，定位双亲合并提交 M，整体 diff 为 `git diff M^1 M`。正式合入统一以关联 PR 已合并且其合并提交属于实际目标历史核实；另以远端目标包含来源提交确认代码纳入。父项的 M 表示整体交付，各子项保留自己的 M；进入父分支与进入项目集成历史分别核实。证据留在 PR / Git / CI。本地 PR 核实使用已登录的 `gh` 读取 origin 对应仓库，需 Pull requests: read 权限。
-
-### 返修
-
-归档尚未集成时，先核实 PR 未合入、取消已有自动合并并按需转为 Draft，再用 `cli stage rework --stage execution --reason ... --approach ...` 恢复原 Change，追加返修任务。已集成后的修正建立新 Change。
-
-### 清理
-
-核实远端目标已包含来源且项目交付验证后，在干净的目标工作区同步并验证；子项合入父分支只验证父分支。移出待删 worktree，确认其客户端会话、后台任务和服务不再写入，再执行：
-
-```bash
-cli integration cleanup --repo /path/to/primary --change example --verified-commit <已验证的交付提交> --idle-worktree /path/to/source
-```
-
-`--idle-worktree` 记录实际占用核对，不是新增用户审批；无 source worktree 时可省略。
-
-保护新增提交、活动或取消入口及主工作区；归档保留历史 branch，不为已完成历史强制保留工作分支。assume-unchanged / skip-worktree 标记须先解除并检查文件。无保留价值的来源 worktree 默认删除，无需再确认：主动清除可重建依赖、构建产物、无用临时文件及已核实有副本的配置，再重试，不例行备份、不强制绕过检查。
-
-若因独有成果、配置、数据、占用或无法核实安全性而决定保留，简述具体原因并询问用户是否保留；答复前暂留。用户选择删除时，按授权保存或丢弃相关内容，再完成清理。
-
-退出码 2 表示清理有遗留，合入事实仍成立；处理后重跑同一命令继续清理。合入与逐对象清理结果分别说明。
-
-#### 含子模块的 worktree
-
-Git 会拒绝非强制删除仍有子模块检出或残留子模块 Git 数据的 worktree。即使执行过 `git submodule deinit`，worktree 的 Git 管理目录下仍可能留有 `modules/`。cleanup 遇到这两种情况会保留来源，并在 `reason` 中列出检出路径或 Git 数据位置。只有 gitlink、从未初始化的 worktree 可走常规清理。
-
-1. 在目标工作区运行上述 cleanup，确认交付、来源、文件与占用等常规检查均已通过，并核对输出中的来源路径和子模块数据位置。逐个检查子模块及嵌套子模块。用 `git -C "$submodule" rev-parse --absolute-git-dir` 定位已检出子模块的 Git 数据，用 `git -C "$source" rev-parse --absolute-git-dir` 定位来源 worktree 的管理目录，并检查其中 `modules/` 下已反初始化的仓库。
-2. 对仍有检出的子模块，先检查 `git ls-files -v` 中的 `S` 和小写标记，再用 `git status --porcelain --untracked-files=all --ignored=matching --ignore-submodules=none` 检查暂存、未暂存、未跟踪和忽略文件。对每个 Git 目录运行 `git --git-dir="$module_gitdir" stash list` 和 `git --git-dir="$module_gitdir" for-each-ref refs/heads`，并核对 detached HEAD。刷新对应的远端引用并核实它们仍存在，用 `git merge-base --is-ancestor` 确认各本地 tip 均已纳入远端历史。检查是否还有其他 worktree 依赖这些 Git 数据。发现独有提交、stash、文件或无法核实的状态时，先保留来源并报告原因，妥善保存相关数据后再复查。
-3. 检查全部通过后，向用户说明将删除的确切 worktree 路径、子模块和随 worktree 一起删除的 Git 数据，请求明确确认。确认后重新核实路径、分支 tip、空闲状态和上述检查，再从目标工作区人工执行 `git worktree remove --force -- "$source"`。该例外仅用于 Git 的子模块限制，cleanup 本身仍使用非强制删除。
-4. 确认 worktree 已从 `git worktree list` 消失，重跑同一条 cleanup 命令完成分支清理。先前已经删除的远端分支会标为已完成。
-
-### 正式发布
-
-仅在用户明确要求正式版本时执行；归档不授予发布分支发布授权。读取 integrationBranch / releaseBranch 和项目版本约定，固定发布目标基线与候选提交，核对实际 diff、已集成 Change、关联 PR 和验证记录。默认以集成分支提交 PR；需要冻结候选时才建短期发布准备分支。
-
-操作发布 PR/MR 时，先执行[合并方式检查](#合并方式检查)。
-
-版本或范围尚未明确时，按项目约定提出有依据的候选。创建或更新同一发布 PR，正文集中说明：
-
-- 版本号及本次发布范围。
-- 面向使用者的功能、修复和必要升级影响，省略空分类。
-- 实际包含的 Change / PR，以及验证结果与已知限制。
-
-提交标题仅作线索，不代替内容整理。候选改变时更新说明和验证；实质修复先经 Change 集成。正文不要求 SpecTrail 标记。无新增归档的维护发布同样允许。
-
-版本沿用项目约定，在已有项目版本文件或 Git tag 中维护，不额外创建 CHANGELOG.md、GitHub Release 或版本清单副本；部署沿用项目约定。
-
-准备 PR 不等于授权合并。清单只列已归档并完成项目集成的 Change；集成分支中的规划、分支登记记录随发布保留，不因对应 Change 在其他分支实施而剔除。沿用会话授权，以普通 merge 保留历史；核对预期源 SHA。候选推进后重查范围与 CI，合并失败或结果未知先核实，不回退直推。确认实际合并提交已在 releaseBranch 后报告合入；PR、服务部署分别说明，不把规划文档或 PR 合入当作功能上线。
-
 ## 提交与推送
 
 ### 检查点
 
 使用工作流推进 Change 即包含 Change / 任务分支上的提交推送。文档形成可审阅版本、收到确认、阶段调整、阻塞、任务完成、取消和归档都及时形成检查点，本轮结束前提交。同轮相关正文与状态一起提交，只暂存相关文件，不做空提交、不跳过 hooks；默认以 `git commit --only -m '<说明>' -- docs/project/changes/<id>` 限定提交范围，避免夹带其他会话的暂存内容。
 
-每个检查点提交后立即推送同名分支，请求审阅或阶段确认前相关文档应已推送；创建前简短确认除外。普通推送非快进时保留现场，在独立工作区整合远端；推送失败时如实报告未同步。除[同阶段小补充](#同阶段小补充)与[归档前提交整理](#归档前提交整理)例外，不改写已推送提交，未推送的本地提交可 rebase。
+每个检查点提交后立即推送同名分支，请求审阅或阶段确认前相关文档应已推送；创建前简短确认除外。普通推送非快进时保留现场，在独立工作区整合远端；推送失败时如实报告未同步。除[同阶段小补充](#同阶段小补充)与[归档前提交整理](./references/delivery/delivery.md#归档前提交整理)例外，不改写已推送提交，未推送的本地提交可 rebase。
 
 完成操作后说明实际结果、位置、验证及提交推送状态；关闭时报告 Specs 范围与归档提交，取消时说明代码保留、分支冻结与取消记录。未完成、未验收或未推送时不宣称完成。
 
@@ -750,13 +583,3 @@ cli share link --change change-id --preview preview-id
 3. 远端变化导致拒绝时，取消 amend，仅将本次增量普通提交、同步并推送。若 HEAD 仍为本次 amend 且无后续本地修改，可 `git reset --soft <old-sha>` 后普通提交；否则保留现场核对。同步须合并增量，不用旧文件覆盖远端内容。
 
 响应未知时先查远端是否已包含 amend，再决定回退或重推。不满足 amend 条件时追加普通提交。改用普通提交时，必须在会话中说明具体原因。
-
-### 归档前提交整理
-
-归档前必须检查本 Change 短期工作/任务分支的提交历史，判断是否有值得压缩的提交，例如试错、纯格式调整或反复修测试。将值得压缩且可安全改写的提交按交付内容合并，保留有效交付与流程检查点。
-
-不改写他人依赖的历史、集成/发布分支、已合入提交及移交、取消、归档、合并或固定原型边界。保留原始提交与远端 tip。已推送时沿用[同阶段小补充](#同阶段小补充)的单次固定 SHA lease 规则，远端变化即停止改写。
-
-整理前后核对最终内容、Change 文档与状态、任务定位及 PR 源目标分支；追踪缺失按原始证据补齐，保留真实确认、验收、验证与时间，无法恢复则暂停归档。内容有变重新验证，推送后复查 CI；交付仍使用普通 merge。
-
-归档时必须在会话中简要汇报实际合并了哪些提交及合并依据。保留了待整理的提交，或本次没有整理时，必须结合检查结果说明具体原因。

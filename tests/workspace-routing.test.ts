@@ -505,8 +505,8 @@ test("locate from detached or other worktree reports divergence and never resets
   found = f.workspace("locate");
   assert.equal(found.current.detached, true);
   assert.equal(found.worktree, f.work);
-  assert.equal(found.session.binding, "unverified");
-  assert.match(found.session.prompt, /实际 cwd/);
+  assert.equal(found.next.action, "continue");
+  assert.match(found.next.prompt, new RegExp(`核对分支 ${found.branch}`));
   at(f.work, "checkout", "--detach");
   found = f.workspace("locate");
   assert.equal(found.worktree, null);
