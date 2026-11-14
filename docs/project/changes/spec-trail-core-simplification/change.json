@@ -46,7 +46,8 @@
     },
     "T5": {
       "title": "脚本依赖检查移到 Skill 测试",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照 b1b2be0；Skill 全脚本依赖扫描与识别用例通过，核对 pre-commit 和 setup check 已移除依赖扫描，setup check 就绪。"
     },
     "T6": {
       "title": "按阶段拆分主 Skill",
