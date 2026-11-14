@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "以静态业务片段替代七组手写原型",
-      "status": "doing"
+      "status": "done",
+      "verification": "根及原型类型检查、七入口构建通过；23 项包内与 16 项协议测试通过；56 组视口/主题、11 条交互、21 张标准图、独立静态访问和 prepare 通过；独立评审 R1–R5 无遗留。",
+      "commitTitle": "prototype-architecture-migration T1: reuse business components in static fragments"
     }
   },
   "closure": {},
