@@ -14,8 +14,8 @@ import {
   identity,
   previewsSchema,
 } from "./schema.ts";
-import { integrationFor } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { closedRecord } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import { integrationFor } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import { closedRecord } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
 import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
 import { AppError } from "./errors.ts";

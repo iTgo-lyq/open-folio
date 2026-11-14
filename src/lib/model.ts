@@ -2,8 +2,8 @@ export type {
   IntegrationIndex,
   IntegrationRecord,
   IntegrationResult,
-} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import type { IntegrationIndex } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import type { IntegrationIndex } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 export type Diagnostic = {
   code: string;
   message: string;

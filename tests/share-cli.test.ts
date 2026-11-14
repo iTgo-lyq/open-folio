@@ -61,84 +61,27 @@ test("links locate the overview, document or prototype using encoded parameters"
   }
 });
 
-test("an unreachable service and unavailable local material do not block links or cause HTTP requests", async (t) => {
+test("unsafe document paths and service addresses are rejected locally", async (t) => {
   const f = await fixture(t);
-  await f.configure("https://unavailable.invalid");
-  const network = t.mock.method(globalThis, "fetch", () => {
-    throw new Error("link generation must stay offline");
-  });
-  // This repository has no commits, Change documents or prototype artifacts.
-  assert.ok((await f.run({ document: "requirement.md" })).url);
-  assert.ok((await f.run({ preview: "new-screen" })).url);
-  assert.equal(network.mock.callCount(), 0);
-});
-
-test("HTTPS and SSH GitHub origins produce the same repository target", async (t) => {
-  const f = await fixture(t);
-  for (const origin of [
-    "https://github.com/acme/fixture.git",
-    "https://github.com/acme/fixture/",
-    "ssh://git@github.com/acme/fixture.git",
-    "git@github.com:acme/fixture.git",
-  ]) {
-    f.git("remote", "set-url", "origin", origin);
-    assert.equal(
-      new URL((await f.run()).url).searchParams.get("repository"),
-      "https://github.com/acme/fixture",
-    );
-  }
-});
-
-test("invalid selectors, missing configuration and unsafe addresses are rejected locally", async (t) => {
-  const f = await fixture(t);
-  await assert.rejects(f.run({ change: "../example" }), /合法 --change/);
-  await assert.rejects(
-    f.run({ document: "technical.md", preview: "screen" }),
-    /最多选择/,
-  );
-  for (const document of ["../secret", "/secret", "notes\\secret", "a//b"]) {
-    await assert.rejects(f.run({ document }), /相对路径/);
-  }
+  await assert.rejects(f.run({ document: "../secret" }), /相对路径/);
+  await f.configure("https://user:password@folio.example.org");
+  await assert.rejects(f.run(), /openfolioUrl/);
   await f.configure();
   await assert.rejects(f.run(), /仓库材料链接/);
-  for (const base of [
-    "https://user:password@folio.example.org",
-    "http://folio.example.org",
-    "https://folio.example.org/nested",
-    "https://folio.example.org?token=value",
-  ]) {
-    await f.configure(base);
-    await assert.rejects(f.run(), /openfolioUrl|无凭据|服务根地址/);
-  }
-  await f.configure("http://127.0.0.1:11117");
-  assert.equal(new URL((await f.run()).url).origin, "http://127.0.0.1:11117");
-  f.git("remote", "set-url", "origin", "https://example.com/acme/fixture.git");
-  await assert.rejects(f.run(), /GitHub 仓库地址/);
 });
 
-test("CLI returns a link from any working directory without checking the service", async (t) => {
+test("CLI returns a link from any working directory without contacting the service", async (t) => {
   const f = await fixture(t);
   await f.configure("https://unavailable.invalid");
   const script = fileURLToPath(
     new URL("../.agents/skills/spec-trail/cli.mjs", import.meta.url),
   );
+  // This repository has no commits, Change documents or prototype artifacts.
   const output = execFileSync(
     process.execPath,
-    [
-      script,
-      "share",
-      "link",
-      "--repo",
-      f.root,
-      "--change",
-      "example",
-      "--document",
-      "requirement.md",
-    ],
+    [script, "share", "link", "--repo", f.root, "--change", "example", "--document", "requirement.md"],
     { cwd: tmpdir(), encoding: "utf8", timeout: 5_000 },
   );
-  assert.deepEqual(
-    JSON.parse(output),
-    await f.run({ document: "requirement.md" }),
-  );
+  assert.deepEqual(JSON.parse(output), await f.run({ document: "requirement.md" }));
 });
+

@@ -8,7 +8,7 @@ import type {
 import { primaryRecord } from "../lib/model.ts";
 import { indexChanges } from "./changes.ts";
 import type { GitReader } from "./git.ts";
-import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 
 /** Inspect only known Changes; the release branch does not discover new entries. */
 export async function collectReleaseArchives(

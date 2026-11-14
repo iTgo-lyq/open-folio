@@ -6,7 +6,7 @@ import { prepare, register, checkedPath, artifactDigest } from "./publishing.mjs
 import { validateRequest, validateResult } from "./publication-contract.mjs";
 import { encodeUploadHeader, uploadType } from "./upload-protocol.mjs";
 import { serviceUrl } from "./contract.mjs";
-import { validateWorkflow } from "../../scripts/state-schema.mjs";
+import { validateWorkflow } from "../../scripts/core/state-schema.mjs";
 
 const read = (path) => {
   const text = readFileSync(path, "utf8");

@@ -40,7 +40,7 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 ## 准备检查
 
 1. 核对上述配置与分支准备。没有 remote 时说明登记的是本地约定，尚无共享入口或服务端保护。
-   统一入口通过 `setup pre-commit` 调用暂存区校验，依赖同一 skill 内的 `scripts/state-schema.mjs`、`scripts/routing.mjs` 与 `prototype/scripts/contract.mjs`；缺少文件时补齐 skill 交付，不复制校验逻辑到业务 hook。
+   统一入口通过 `setup pre-commit` 调用暂存区校验，依赖同一 skill 内 `setup check` 列出的脚本；缺少文件时补齐 skill 交付，不复制校验逻辑到业务 hook。
 2. 从任意目录运行：
 
    ```bash
@@ -107,7 +107,7 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 
 - 状态结构只检查暂存区中本次新增、修改的 `docs/project/workflow.json`、`docs/project/changes/<id>/change.json` 和 `docs/project/archive/<date>-<id>/change.json`。重命名按目标文件检查，删除和未改动的历史文件不作结构检查。
 - 集成分支的普通提交若涉及 `docs/project/changes/<id>/` 下任何文件（含新增、删除及重命名来源），以 HEAD 中的 active Change 和本地命名/跟踪分支的实际所属记录判定移交；有归属证据时拒绝整个提交，提示分支及已登记 worktree。仅预填名称、目标没有所属记录且集中记录仍为有效规划时放行。实际目标仍在需求阶段也不能集中修改；同次改写或删除 change.json 不绕过检查。未移交规划、首次移交登记、工作/任务分支及正常合并继续沿原有校验；不涉及 Change 文档的提交不作实现归属推断。hook 不联网，缓存跟踪记录不冒充实时远端验证。
-- 共享主 skill 的 `scripts/state-schema.mjs`，按主 skill 的 TypeScript 声明检查必需字段、类型、枚举、非空文本、带时区的有效时间、任务编号、未知字段及数组重复项，包含 `dependsOn`。
+- 共享主 skill 的 `scripts/core/state-schema.mjs`，按主 skill 的 TypeScript 声明检查必需字段、类型、枚举、非空文本、带时区的有效时间、任务编号、未知字段及数组重复项，包含 `dependsOn`。
 - 只保留明确的字段关联：`blocked` 任务需要 `reason`，`cancelled` Change 需要 `cancellation`。
 - `workflow.json` 的 `schemaVersion` 为 `3`，必填合法且不同的 `integrationBranch` 和 `releaseBranch`。Change 记录的 `schemaVersion` 为 `1`。
 - 原型跨文件检查仅针对当前分支所属 live Change；继承副本仍检查本次暂存的完整 JSON 结构，其远端原型不要求在本地存在。hook 不 fetch、不跟随远端入口。

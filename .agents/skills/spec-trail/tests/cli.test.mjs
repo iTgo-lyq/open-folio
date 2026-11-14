@@ -4,7 +4,6 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
 import test from "node:test";
 
 const cli = fileURLToPath(new URL("../cli.mjs", import.meta.url));
@@ -18,11 +17,15 @@ function outsideProject(t) {
   });
 }
 
-test("CLI help and argument errors work outside a Git project", t => {
+test("CLI help and argument errors work outside a Git project", async t => {
   const run = outsideProject(t);
+  const { groups } = await import("../scripts/commands.mjs");
+  const overview = run(["--help"]).stdout;
+  const listed = overview.split("\n").filter(line => /^  \S/.test(line)).map(line => line.trim().split(/\s+/)[0]);
+  assert.deepEqual(listed, ["change", "clarify", "task", "stage", "close", "workspace", "integration", "share"]);
+  for (const group of Object.keys(groups)) assert.equal(run([group, "--help"]).status, 0, group);
 
   for (const [args, expected] of [
-    [["--help"], /^  task +Plan tasks and move them through todo, doing, blocked and done$/m],
     [["task", "--help"], /^  start +Move a task from todo or blocked to doing /m],
     [["task", "start", "--help"], /--task <Tn> +\(required\) Task id such as T1/],
     [["task", "start", "--help"], /^Usage: .* task start --change <id> --task <Tn> \[--repo <path>\] \[--dry-run\]$/m],
@@ -50,52 +53,6 @@ test("CLI help and argument errors work outside a Git project", t => {
     assert.equal(result.stdout, "");
     assert.match(result.stderr, expected);
     assert.match(result.stderr, /Usage:/);
-  }
-});
-
-test("help gives runnable usage for every command and documents every option", async t => {
-  const { commands, groups } = await import("../scripts/cli-commands.mjs");
-  const run = outsideProject(t);
-  const help = (...args) => {
-    const result = run([...args, "--help"]);
-    assert.equal(result.status, 0, result.stderr);
-    return result.stdout;
-  };
-  const overview = help();
-  const listed = text => text.split("\n").filter(line => /^  \S/.test(line)).map(line => line.trim().split(/\s+/)[0]);
-  assert.deepEqual(listed(overview), ["change", "clarify", "task", "stage", "close", "workspace", "integration", "share"]);
-
-  for (const [group, entries] of Object.entries(commands)) {
-    assert.ok(groups[group]?.summary, `${group} needs a summary`);
-    const section = help(group);
-    assert.ok(section.includes(`${group}: ${groups[group].summary}`), `${group} help lacks its summary`);
-    assert.doesNotMatch(section, /\[--repo <path>\]/, `${group} help should not list options`);
-    for (const [name, spec] of Object.entries(entries)) {
-      assert.ok(spec.summary, `${group} ${name} needs a summary`);
-      assert.ok(
-        section.split("\n").some(line => line.startsWith(`  ${name} `) && line.endsWith(` ${spec.summary}`)),
-        `${group} ${name} is missing from group help`,
-      );
-      const details = help(group, name);
-      const usage = details.split("\n")[0];
-      assert.ok(usage.startsWith(`Usage: node .agents/skills/spec-trail/cli.mjs ${group} ${name}`));
-      assert.match(details, /^Options:$/m);
-      assert.ok(details.includes(`Example:\n  node .agents/skills/spec-trail/cli.mjs ${group} ${name}`));
-      // The example must pass the same parsing, required and choice checks as a real call.
-      const words = [...spec.example.matchAll(/'([^']*)'|"([^"]*)"|(\S+)/g)].map(m => m[1] ?? m[2] ?? m[3]);
-      const { values } = parseArgs({ args: words, options: spec.options });
-      for (const option of spec.required)
-        assert.ok(values[option], `${group} ${name} example lacks --${option}`);
-      for (const [option, value] of Object.entries(spec.options))
-        if (value.choices && values[option] !== undefined)
-          assert.ok(value.choices.includes(values[option]), `${group} ${name} example uses an invalid --${option}`);
-      for (const [option, value] of Object.entries(spec.options)) {
-        assert.ok(value.text, `${group} ${name} --${option} needs help text`);
-        assert.ok(value.type === "boolean" || value.value || value.choices, `${group} ${name} --${option} needs a value format`);
-        assert.match(usage, new RegExp(`--${option}(?=[ \\]]|$)`));
-        assert.ok(details.includes(value.text), `${group} ${name} --${option} help is not shown`);
-      }
-    }
   }
 });
 

@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { recordsAt } from './repository.mjs';
-import { validateChange, validateWorkflow } from './state-schema.mjs';
-import { closedRecord, validBranchName, parentBranch } from './routing.mjs';
-import { changePullRequests, deliveryPullRequests, integrationEvidence } from './integration-records.mjs';
-import { githubPullRequests } from './github-prs.mjs';
+import { recordsAt } from '../core/repository.mjs';
+import { validateChange, validateWorkflow } from '../core/state-schema.mjs';
+import { closedRecord, validBranchName, parentBranch } from '../core/routing.mjs';
+import { changePullRequests, deliveryPullRequests, integrationEvidence } from '../core/integration-records.mjs';
+import { githubPullRequests } from '../core/github-prs.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const sha = value => typeof value === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(value);
@@ -145,7 +145,7 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
   return {kind:'release', changes:includes, source:pr.head.sha};
 }
 
-export async function runCheckPullRequest(_command, values) {
+export async function runCheckPullRequest(values) {
   const eventPath = values.event ?? process.env.GITHUB_EVENT_PATH;
   assert(eventPath, 'Provide --event <PR event JSON> or GITHUB_EVENT_PATH');
   const git = args => execFileSync('git', ['-C', resolve(values.repo ?? "."), '--literal-pathspecs', ...args], {

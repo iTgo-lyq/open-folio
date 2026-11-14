@@ -1,10 +1,10 @@
-import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
+import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { completedChange, integrationFixture } from "./integration-fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
 import { changeSchema } from "../src/server/schema.ts";
-import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+import { validateChange } from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import {
   collectDelivery,
   type DeliveryReader,

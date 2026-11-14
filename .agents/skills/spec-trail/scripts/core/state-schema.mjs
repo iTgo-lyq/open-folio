@@ -240,7 +240,7 @@ function tasks(value, path, errors) {
   }
 }
 
-import * as prototypeContract from "../prototype/scripts/contract.mjs";
+import * as prototypeContract from "../../prototype/scripts/contract.mjs";
 const prototypeRule = (value, path, errors) =>
   errors.push(...prototypeContract.validatePrototype(value, path));
 const previewsRule = (value, path, errors) =>

@@ -1,9 +1,9 @@
-import { repository, recordsAt, revision } from "./repository.mjs";
-import { validBranchName, closedRecord } from "./routing.mjs";
-import { validateChange } from "./state-schema.mjs";
+import { repository, recordsAt, revision } from "../core/repository.mjs";
+import { validBranchName, closedRecord } from "../core/routing.mjs";
+import { validateChange } from "../core/state-schema.mjs";
 
 // Read only known local/tracking refs. No fetching, branch enumeration or writes.
-export function runPreviewRouting(_command, values) {
+export function runPreviewRouting(values) {
   const repo = repository(values.repo);
   const baseline =
     values.baseline ?? repo.config.integrationBranch;

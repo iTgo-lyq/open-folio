@@ -6,7 +6,7 @@ import { readFile, writeFile, readdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fixture } from "./fixture.ts";
 import { completedChange } from "./integration-fixture.ts";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 import {
   verify,
   cleanup,

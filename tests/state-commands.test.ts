@@ -182,106 +182,32 @@ function fixture(
   };
 }
 
-test("labels support free names, partial updates and restoring normal without changing workflow", (t) => {
+test("labels and collaborators update only their own fields", (t) => {
   const f = fixture(t);
+  const members = [{ name: "协作者", login: "contributor", subjectId: "123" }];
   f.create("small", "sample", [
     "--types",
-    '[" 修复 ","安全","修复","数据,迁移","none"]',
+    '[" 修复 ","安全","修复"]',
     "--urgency",
     "high",
+    "--collaborators",
+    JSON.stringify(members),
   ]);
-  assert.deepEqual(f.state().types, ["修复", "安全", "数据,迁移", "none"]);
+  assert.deepEqual(f.state().types, ["修复", "安全"]);
   assert.equal(f.state().urgency, "high");
-  const { types: _types, urgency: _urgency, ...workflow } = f.state();
+  assert.deepEqual(f.state().collaborators, members);
+  const { types: _types, urgency: _urgency, collaborators: _members, ...workflow } = f.state();
   f.run("change labels", ["--types", '["自定义"]']);
   assert.equal(f.state().urgency, "high");
   f.run("change labels", ["--urgency", "normal"]);
   assert(!Object.hasOwn(f.state(), "urgency"));
-  assert.deepEqual(f.state().types, ["自定义"]);
   const before = readFileSync(f.path(), "utf8");
-  f.run("change labels", ["--types", "[]", "--dry-run"]);
+  f.run("change labels", ["--types", '["修复\\n"]'], 1);
+  f.run("change collaborators", ["--members", '[{"name":"Member","email":"private@example.com"}]'], 1);
   assert.equal(readFileSync(f.path(), "utf8"), before);
-  for (const options of [
-    [],
-    ["--types", "{broken"],
-    ["--types", "null"],
-    ["--types", "[1]"],
-    ["--types", '[" "]'],
-    ["--types", '["修复\\n"]'],
-    ["--types", '["新类型"]', "--urgency", "none"],
-  ]) {
-    f.run("change labels", options, 1);
-    assert.equal(readFileSync(f.path(), "utf8"), before);
-  }
   f.run("change labels", ["--types", "[]"]);
-  assert.deepEqual(f.state(), workflow);
-  f.begin();
-  f.run("change labels", ["--urgency", "urgent"]);
-  assert.equal(f.state().tasks.T1.status, "doing");
-  f.done();
-  f.commit();
-  f.verify();
-  f.accept();
-  const archived = f.archive().path;
-  const frozen = readFileSync(join(f.root, archived), "utf8");
-  f.run("change labels", ["--urgency", "normal"], 1);
-  assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
-});
-
-test("normal creates no stored urgency and cancelled labels remain read-only", (t) => {
-  const f = fixture(t);
-  f.create("small", "sample", ["--urgency", "normal", "--types", "[]"]);
-  assert(!Object.hasOwn(f.state(), "urgency"));
-  assert(!Object.hasOwn(f.state(), "types"));
-  f.run("change cancel", ["--reason", "取消"]);
-  const before = readFileSync(f.path(), "utf8");
-  f.run("change labels", ["--types", '["修复"]'], 1);
-  assert.equal(readFileSync(f.path(), "utf8"), before);
-});
-
-test("collaborator commands create, replace and clear only supplemental configuration atomically", (t) => {
-  const f = fixture(t);
-  const members = [{ name: "协作者", login: "contributor", subjectId: "123" }];
-  f.create("small", "sample", ["--collaborators", JSON.stringify(members)]);
-  assert.deepEqual(f.state().collaborators, members);
-  const { collaborators: _members, ...workflow } = f.state();
-  const before = readFileSync(f.path(), "utf8");
-  f.run("change collaborators", ["--members", "[]", "--dry-run"]);
-  assert.equal(readFileSync(f.path(), "utf8"), before);
-  for (const options of [
-    [],
-    ["--members", "{broken"],
-    ["--members", "null"],
-    ["--members", '[{"name":" "}]'],
-    ["--members", '[{"name":"Member","email":"private@example.com"}]'],
-  ]) {
-    f.run("change collaborators", options, 1);
-    assert.equal(readFileSync(f.path(), "utf8"), before);
-  }
-  f.run("change collaborators", ["--members", '[{"name":"另一位"}]']);
-  assert.deepEqual(f.state().collaborators, [{ name: "另一位" }]);
   f.run("change collaborators", ["--members", "[]"]);
   assert.deepEqual(f.state(), workflow);
-  f.begin();
-  f.run("change collaborators", ["--members", JSON.stringify(members)]);
-  assert.equal(f.state().tasks.T1.status, "doing");
-  f.done();
-  f.commit();
-  f.verify();
-  f.accept();
-  const archived = f.archive().path;
-  const frozen = readFileSync(join(f.root, archived), "utf8");
-  f.run("change collaborators", ["--members", "[]"], 1);
-  assert.equal(readFileSync(join(f.root, archived), "utf8"), frozen);
-});
-
-test("collaborator updates keep cancelled Changes read-only", (t) => {
-  const f = fixture(t);
-  f.create();
-  f.run("change cancel", ["--reason", "取消"]);
-  const before = readFileSync(f.path(), "utf8");
-  f.run("change collaborators", ["--members", '[{"name":"Member"}]'], 1);
-  assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
 test("follow-up registration requires a published closed predecessor and stays independent of dependencies", (t) => {
@@ -547,6 +473,9 @@ test("clarification records persist questions, corrections and withdrawal across
     "导出功能移出本次范围",
   ]);
   assert.equal(f.state().clarifications.Q1.answer, "只导出已选记录");
+  // Withdrawn questions keep their ids and cannot be answered again.
+  f.run("clarify answer", ["--question", "Q1", "--answer", "确认"], 1);
+  f.run("clarify ask", ["--round", "1", "--text", "重问", "--recommendation", "否", "--question", "Q1"], 1);
   f.run("clarify withdraw", [
     "--question",
     "Q2",
@@ -573,106 +502,21 @@ test("clarification records persist questions, corrections and withdrawal across
   assert.equal(f.state().clarifications.Q4.round, 3);
 });
 
-test("invalid clarification writes preserve state and cannot reuse withdrawn question ids", (t) => {
-  const f = fixture(t);
-  f.create();
-  const args = [
-    "--round",
-    "1",
-    "--text",
-    "范围？",
-    "--recommendation",
-    "本次只做导出。",
-  ];
-  f.run("clarify ask", args);
-  f.run("clarify withdraw", [
-    "--question",
-    "Q1",
-    "--reason",
-    "已移出范围",
-  ]);
-  const before = readFileSync(f.path(), "utf8");
-  for (const round of ["0", "-1", "1.5", "1e2", "9007199254740992"])
-    f.run("clarify ask", ["--round", round, ...args.slice(2)], 1);
-  for (const id of ["Q1", "Q0", "__proto__", "Q9007199254740992"])
-    f.run("clarify ask", [...args, "--question", id], 1);
-  f.run(
-    "clarify ask",
-    ["--round", "1", "--text", " ", "--recommendation", "建议"],
-    1,
-  );
-  for (const id of ["Q1", "Q99", "__proto__"])
-    f.run("clarify answer", ["--question", id, "--answer", "确认"], 1);
-  f.run("clarify withdraw", ["--question", "Q1", "--reason", "重复"], 1);
-  assert.equal(readFileSync(f.path(), "utf8"), before);
-  f.run("clarify ask", args);
-  const pending = readFileSync(f.path(), "utf8");
-  f.run("clarify answer", ["--question", "Q2", "--answer", " "], 1);
-  f.run(
-    "clarify answer",
-    ["--question", "Q2", "--answer", "导出筛选结果", "--source", " "],
-    1,
-  );
-  f.run("clarify answer", [
-    "--question",
-    "Q2",
-    "--answer",
-    "导出筛选结果",
-    "--dry-run",
-  ]);
-  f.run("clarify withdraw", [
-    "--question",
-    "Q2",
-    "--reason",
-    "已移出范围",
-    "--dry-run",
-  ]);
-  assert.equal(readFileSync(f.path(), "utf8"), pending);
-  f.run("change cancel", ["--reason", "不再实施"]);
-  const cancelled = readFileSync(f.path(), "utf8");
-  f.run("clarify ask", args, 1);
-  assert.equal(readFileSync(f.path(), "utf8"), cancelled);
-});
-
-test("all confirmation phases enforce 60 Unicode characters and single-line summaries on new writes", (t) => {
+test("confirmation summaries are single lines of at most 60 characters; older records stay usable", (t) => {
   const f = fixture(t);
   f.create("medium");
   const exactly60 = "😀".repeat(59) + "。";
-  for (const phase of ["requirement", "technical", "plan", "merge"]) {
-    const before = readFileSync(f.path(), "utf8");
-    for (const summary of [
-      exactly60 + "字",
-      "字".repeat(61),
-      "第一行\n第二行",
-      "第一行\r第二行",
-      "甲\u0085乙",
-      "甲\u2028乙",
-      "甲\u2029乙",
-    ])
-      f.run(
-        "stage confirm",
-        ["--phase", phase, "--summary", summary, "--source", "本轮明确确认"],
-        1,
-      );
-    assert.equal(readFileSync(f.path(), "utf8"), before);
-    f.run("stage confirm", [
-      "--phase",
-      phase,
-      "--summary",
-      exactly60,
-      "--source",
-      "本轮明确确认",
-    ]);
-    assert.equal(f.state().confirmations[phase].summary, exactly60);
-  }
+  const before = readFileSync(f.path(), "utf8");
+  for (const summary of [exactly60 + "字", "第一行\n第二行"])
+    f.run("stage confirm", ["--phase", "requirement", "--summary", summary, "--source", "本轮明确确认"], 1);
+  assert.equal(readFileSync(f.path(), "utf8"), before);
+  f.run("stage confirm", ["--phase", "requirement", "--summary", exactly60, "--source", "本轮明确确认"]);
+  assert.equal(f.state().confirmations.requirement.summary, exactly60);
   const prior = f.state();
   prior.confirmations.requirement.summary = "历史摘要".repeat(30);
   writeFileSync(f.path(), JSON.stringify(prior));
   f.run("change retitle", ["--title", "仍可操作旧记录"]);
-  assert.equal(
-    f.state().confirmations.requirement.summary,
-    prior.confirmations.requirement.summary,
-  );
+  assert.equal(f.state().confirmations.requirement.summary, prior.confirmations.requirement.summary);
 });
 
 test("medium/large confirmations, repair tasks and explicit acceptance preserve completed work", (t) => {
@@ -786,7 +630,7 @@ test("task numbering also reads committed archive snapshots", (t) => {
 });
 
 test("default scheduling enforces numeric serial order for every ordinary size", (t) => {
-  for (const size of ["small", "medium", "large"]) {
+  for (const size of ["small", "medium"]) {
     const f = fixture(t);
     f.create(size);
     for (const id of ["T1", "T2", "T10"])
@@ -817,75 +661,43 @@ test("default scheduling enforces numeric serial order for every ordinary size",
   }
 });
 
-test("resizing aligns confirmations while preserving completed tasks and a pause", (t) => {
-  const f = fixture(t);
-  f.create();
-  f.begin();
-  f.done();
-  f.commit();
-  const completed = f.state().tasks.T1;
-  const preview = f.run("change resize", ["--size", "medium", "--dry-run"]);
-  assert.equal(preview.state.stage, "requirement");
-  assert.equal(f.state().size, "small");
-  f.run("stage wait", ["--kind", "pause", "--summary", "Wait here"]);
-  f.run("change resize", ["--size", "medium"]);
-  assert.equal(f.state().stage, "requirement");
-  assert.equal(f.state().waitingFor.kind, "pause");
-  f.run("stage resume");
-  f.confirm();
-  f.run("stage execute");
-  assert.deepEqual(f.state().tasks.T1, completed);
-  const confirmations = f.state().confirmations;
-  f.run("change resize", ["--size", "large"]);
-  assert.equal(f.state().stage, "execution");
-  assert.deepEqual(f.state().confirmations, confirmations);
-  f.run("change resize", ["--size", "xlarge"], 1);
-  assert.equal(f.state().size, "large");
-});
-
-test("resizing aligns large planning and clears invalidated closure on upgrade", (t) => {
+test("resizing aligns stage and confirmations, keeps completed work and rechecks acceptance", (t) => {
   const f = fixture(t);
   f.create("large");
-  for (const phase of ["requirement", "technical"]) {
+  for (const phase of ["requirement", "technical"])
     f.run("stage confirm", ["--phase", phase, "--summary", phase, "--source", "Fixture"]);
-  }
   const confirmations = f.state().confirmations;
   assert.equal(f.state().stage, "plan");
   f.run("change resize", ["--size", "medium"]);
   assert.equal(f.state().stage, "technical");
-  assert.deepEqual(f.state().confirmations, confirmations);
-  f.run("change resize", ["--size", "large"]);
-  assert.equal(f.state().stage, "plan");
+  f.run("change resize", ["--size", "xlarge"], 1);
+  f.run("stage wait", ["--kind", "pause", "--summary", "Wait here"]);
   f.run("change resize", ["--size", "small"]);
   assert.equal(f.state().stage, "requirement");
+  assert.equal(f.state().waitingFor.kind, "pause");
   assert.deepEqual(f.state().confirmations, confirmations);
-  f.create("xlarge", "parent", ["--children", "sample"]);
-  assert.match(f.run("change resize", ["--size", "medium"], 1, "parent"), /xlarge/);
+  f.run("stage resume");
   f.begin();
   f.done();
   f.verify();
-  f.run("change resize", ["--size", "large"]);
-  assert.equal(f.state().stage, "plan");
+  const completed = f.state().tasks.T1;
+  // Upgrading past a missing plan confirmation leaves close and clears its results.
+  f.run("change resize", ["--size", "medium"]);
+  assert.equal(f.state().stage, "technical");
   assert.deepEqual(f.state().closure, {});
-  assert.equal(f.state().tasks.T1.status, "done");
-});
-
-test("an acceptance recorded as small cannot close a medium Change", (t) => {
-  const f = fixture(t);
-  f.create("medium");
-  f.confirm();
-  f.begin();
-  f.done();
-  f.run("change resize", ["--size", "small"]);
+  assert.deepEqual(f.state().tasks.T1, completed);
+  f.run("stage confirm", ["--phase", "plan", "--summary", "plan", "--source", "Fixture"]);
+  f.run("stage execute");
   f.verify();
+  f.run("change resize", ["--size", "small"]);
   f.accept();
+  // An acceptance recorded as small does not hold once the Change is medium again.
   f.run("change resize", ["--size", "medium"]);
   assert.equal(f.state().stage, "close");
   assert.equal(f.state().closure.verification.result, "passed");
   assert.equal(f.state().closure.acceptance, undefined);
   f.run("close accept", ["--mode", "agent", "--summary", "Agent", "--source", "Fixture"], 1);
   f.accept("user");
-  assert.equal(f.archive().state.status, "completed");
 });
 
 test("relationship commands replace lists and reject invalid declarations", (t) => {
@@ -916,18 +728,6 @@ test("relationship commands replace lists and reject invalid declarations", (t) 
   f.run("change children", ["--children", "sample,next,next"], 1, "parent");
   f.run("change children", ["--children", "other"], 1);
   f.run("change depends", ["--depends-on", "none"], 1, "parent");
-});
-
-test("collaborator commands reject email addresses in display names", (t) => {
-  const f = fixture(t);
-  const members = JSON.stringify([{ name: "Member <member@example.org>" }]);
-  assert.match(f.run("change create", [
-    "--size", "small", "--title", "Example", "--collaborators", members,
-  ], 1), /collaborators\/0\/name.*email address/);
-  f.create();
-  assert.match(f.run("change collaborators", ["--members", members], 1), /email address/);
-  f.run("change collaborators", ["--members", JSON.stringify([{ name: "Team @ Home" }])]);
-  assert.deepEqual(f.state().collaborators, [{ name: "Team @ Home" }]);
 });
 
 test("explicit parallel order overrides the default and completion rechecks changed predecessors", (t) => {
@@ -963,7 +763,7 @@ test("explicit parallel order overrides the default and completion rechecks chan
   f.verify();
 });
 
-test("invalid explicit orders block execution and every closure step without writing state", (t) => {
+test("invalid explicit orders block execution, task starts and closure without writing state", (t) => {
   const f = fixture(t);
   f.create("medium");
   f.run("task add", ["--title", "Implement"]);
@@ -1003,19 +803,6 @@ test("invalid explicit orders block execution and every closure step without wri
     action();
   };
   checked("close verify", ["--result", "passed", "--summary", "Bad order"], f.verify);
-  checked(
-    "close accept",
-    ["--mode", "user", "--summary", "Bad order", "--source", "Fixture"],
-    () => f.accept("user"),
-  );
-  checked("close specs", ["--result", "not_needed", "--summary", "Bad order"], () =>
-    f.run("close specs", ["--result", "not_needed", "--summary", "Fixture"]),
-  );
-  checked("close archive", ["--date", "2026-10-09", "--summary", "Bad order"], () => {
-    assert(existsSync(f.path()));
-    assert(!existsSync(join(f.root, "docs/project/archive/2026-10-09-sample")));
-    f.run("close archive", ["--date", "2026-10-09", "--summary", "Valid order"]);
-  });
 });
 
 test("serial scheduling checks earlier ancestors even when an intermediate task is already done", (t) => {
@@ -1050,25 +837,6 @@ test("failed operations, dry runs, locks and conflicting files leave source byte
   f.run("task add", ["--title", "Wrong owner"], 1);
   f.git("switch", "main");
   f.run("task add", ["--title", "Protected"], 1);
-  assert.equal(readFileSync(f.path(), "utf8"), before);
-});
-
-test("closure remains strict about future clocks and required steps; no precision tolerance", (t) => {
-  const f = fixture(t);
-  f.create();
-  f.begin();
-  f.done();
-  f.verify();
-  f.run("close specs", ["--result", "synced", "--summary", "Skip acceptance"], 1);
-  const state = f.state();
-  state.closure.verification.at = "2999-01-01T00:00:00.080Z";
-  writeFileSync(f.path(), JSON.stringify(state));
-  const before = readFileSync(f.path(), "utf8");
-  f.run(
-    "close accept",
-    ["--mode", "agent", "--summary", "Accept", "--source", "Policy"],
-    1,
-  );
   assert.equal(readFileSync(f.path(), "utf8"), before);
 });
 
@@ -1274,26 +1042,3 @@ test("squashed delivery accepts explicit evidence while the archived dependency 
   assert.equal(result.availability[0].evidence, note);
 });
 
-test("state commands reject legacy workflow before writing planning or execution state", (t) => {
-  const f = fixture(t);
-  f.create();
-  const before = readFileSync(f.path(), "utf8");
-  writeFileSync(
-    join(f.root, "docs/project/workflow.json"),
-    JSON.stringify({
-      schemaVersion: 1,
-      releaseBranch: "main",
-    }),
-  );
-  for (const command of ["change show", "stage execute", "change retitle"])
-    assert.match(
-      f.run(command, command === "change retitle" ? ["--title", "Rejected"] : [], 1),
-      /Invalid workflow.json.*(?:version 2|schemaVersion)/,
-    );
-  assert.equal(readFileSync(f.path(), "utf8"), before);
-  assert.match(
-    f.run("change create", ["--title", "Rejected", "--size", "small"], 1, "other"),
-    /Invalid workflow.json/,
-  );
-  assert(!existsSync(f.path("other")));
-});

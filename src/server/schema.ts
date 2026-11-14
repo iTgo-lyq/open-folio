@@ -10,11 +10,11 @@ import {
   validateTypes,
   validateUrgency,
   validateCollaborators,
-} from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import {
   validBranchName,
   workflowRoutingIssues,
-} from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import {
   validatePreviews,
   validatePrototype,

@@ -6,7 +6,7 @@ import { resolve, join } from "node:path";
 import {
   validateChange,
   validateWorkflow,
-} from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+} from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import {
   changeSchema,
   prototypeSchema,

@@ -1,12 +1,11 @@
 import { parseArgs } from "node:util";
-import { commands, groups } from "./scripts/cli-commands.mjs";
+import { groups } from "./scripts/commands.mjs";
 
 const invocation = "node .agents/skills/spec-trail/cli.mjs";
 const [group, command, ...args] = process.argv.slice(2);
-const groupCommands = Object.hasOwn(commands, group) ? commands[group] : undefined;
-const definition = groupCommands && Object.hasOwn(groupCommands, command)
-  ? groupCommands[command]
-  : undefined;
+const entry = Object.hasOwn(groups, group) ? groups[group] : undefined;
+const module = entry && (await entry.load());
+const definition = module && Object.hasOwn(module.commands, command) ? module.commands[command] : undefined;
 
 const flag = (name, option) =>
   option.type === "boolean" ? `--${name}` : `--${name} <${option.choices?.join("|") ?? option.value}>`;
@@ -24,9 +23,14 @@ const table = rows => {
   return rows.map(([name, text]) => `  ${name.padEnd(width)}${text}`);
 };
 
+const groupNotes = () => [
+  ...(module.notes ?? []),
+  ...(entry.minNode ? [`Requires Node.js ${entry.minNode} or newer.`] : []),
+];
+
 // The overview lists groups, a group lists its commands, and only a command shows options and an example.
 function usage() {
-  if (!groupCommands)
+  if (!module)
     return [
       `Usage: ${invocation} <group> <command> [options]`,
       "",
@@ -36,18 +40,18 @@ function usage() {
       "Use <group> --help to list its commands, and <group> <command> --help for options and an example.",
       "",
       "Groups:",
-      ...table(Object.keys(commands).filter(name => !groups[name].hidden).map(name => [name, groups[name].summary])),
+      ...table(Object.entries(groups).filter(([, { hidden }]) => !hidden).map(([name, { summary }]) => [name, summary])),
     ].join("\n");
   if (!definition)
     return [
       `Usage: ${invocation} ${group} <command> [options]`,
       "Use <command> --help for options and an example.",
       "",
-      `${group}: ${groups[group].summary}`,
-      ...(groups[group].notes ?? []).map(note => `  ${note}`),
+      `${group}: ${entry.summary}`,
+      ...groupNotes().map(note => `  ${note}`),
       "",
       "Commands:",
-      ...table(Object.entries(commands[group]).map(([name, spec]) => [name, spec.summary])),
+      ...table(Object.entries(module.commands).map(([name, spec]) => [name, spec.summary])),
     ].join("\n");
 
   const rows = Object.entries(definition.options).map(([name, option]) => [
@@ -56,7 +60,7 @@ function usage() {
       .filter(Boolean).join(" "),
   ]);
   rows.push(["--help", "Show this help"]);
-  const notes = [...(groups[group].notes ?? []), ...definition.notes];
+  const notes = [...groupNotes(), ...definition.notes];
   return [
     `Usage: ${invocation} ${group} ${synopsis(command, definition)}`,
     "",
@@ -73,7 +77,7 @@ function usage() {
 
 function parseCommand() {
   if (group === undefined || (group === "--help" && command === undefined)) return;
-  if (!groupCommands) throw Error(`Unknown command group: ${group}`);
+  if (!module) throw Error(`Unknown command group: ${group}`);
   if (command === undefined || (command === "--help" && !args.length)) return;
   if (!definition) throw Error(`Unknown command: ${group} ${command}`);
   const { values } = parseArgs({
@@ -106,10 +110,9 @@ async function main() {
     return;
   }
   try {
-    const { minNode } = groups[group];
-    if (minNode && Number(process.versions.node.split(".")[0]) < minNode)
-      throw Error(`Node.js ${minNode} or newer is required for ${group} commands.`);
-    const { output, exitCode = 0 } = await definition.run(command, options);
+    if (entry.minNode && Number(process.versions.node.split(".")[0]) < entry.minNode)
+      throw Error(`Node.js ${entry.minNode} or newer is required for ${group} commands.`);
+    const { output, exitCode = 0 } = await definition.run(options, `${group} ${command}`);
     process.stdout.write(JSON.stringify(output, null, 2) + "\n");
     process.exitCode = exitCode;
   } catch (error) {

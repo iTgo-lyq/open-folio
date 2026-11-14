@@ -77,13 +77,13 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
   const f = await xlargeFixture();
   t.after(f.cleanup);
   const { repository } = await import(
-    "../.agents/skills/spec-trail/scripts/repository.mjs"
+    "../.agents/skills/spec-trail/scripts/core/repository.mjs"
   );
   const { preflight, verify, cleanup } = await import(
     "../.agents/skills/spec-trail/scripts/integration.mjs"
   );
   const { checkPullRequest } = await import(
-    "../.agents/skills/spec-trail/scripts/check-pr.mjs"
+    "../.agents/skills/spec-trail/scripts/setup/check-pr.mjs"
   );
   const { githubCli } = await import("./github-cli-fixture.ts");
   const { completedChange } = await import("./integration-fixture.ts");

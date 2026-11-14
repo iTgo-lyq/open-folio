@@ -1,5 +1,5 @@
 import { verify } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";

@@ -19,7 +19,7 @@ import {
 } from "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { preflight } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 test("declared source and dependencies inside preview are never exempted as generated output", async (t) => {
   const f = await submoduleFixture();

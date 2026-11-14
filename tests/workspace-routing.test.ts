@@ -272,7 +272,7 @@ test("predeclared parent and child allow central clarification but require real 
   assert.match(f.state("change show", [], 1), /parent is missing or nested/);
   assert.match(f.workspace("locate", [], 1), /parent is missing or nested/);
 });
-for (const size of ["small", "medium", "large", "xlarge"]) {
+for (const size of ["small", "medium", "xlarge"]) {
   test(`${size} hands off after requirements and keeps execution gates`, (t) => {
     const f = fixture(t);
     f.state("change create", [

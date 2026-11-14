@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { writeFile, readFile, rm, mkdir } from "node:fs/promises";
 import { integrationFixture } from "./integration-fixture.ts";
-import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { inspectIntegration } from "../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 import {
   verify,
   cleanup,
