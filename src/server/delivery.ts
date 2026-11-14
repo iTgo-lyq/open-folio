@@ -14,13 +14,13 @@ import {
   deliveryPullRequests,
   integrationEvidence,
   type IntegrationResult,
-} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 import {
   PullRequestCache,
   type DeliveryReader,
   type CatalogItem,
 } from "./pull-requests.ts";
-import { parentBranch } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+import { parentBranch } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import type { ReleaseArchive } from "../lib/model.ts";
 export type { DeliveryReader } from "./pull-requests.ts";
 

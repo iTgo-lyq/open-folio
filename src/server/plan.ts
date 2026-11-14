@@ -1,7 +1,7 @@
 import type { ChangeState, TaskGraph } from "../lib/model.ts";
-import { parseTaskOrder } from "../../.agents/skills/spec-trail/scripts/task-order.mjs";
+import { parseTaskOrder } from "../../.agents/skills/spec-trail/scripts/core/task-order.mjs";
 
-export { cyclicNodes } from "../../.agents/skills/spec-trail/scripts/task-order.mjs";
+export { cyclicNodes } from "../../.agents/skills/spec-trail/scripts/core/task-order.mjs";
 
 export function parsePlan(
   state: ChangeState,

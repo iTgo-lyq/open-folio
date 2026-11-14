@@ -17,13 +17,13 @@ import { identity } from "./schema.ts";
 import {
   validateManifest,
   currentPreview,
-} from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 import { AppError } from "./errors.ts";
 import { resolvePackage } from "./prototype-source.ts";
 import {
   inPackage,
   withinPackage,
-} from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/source.mjs";
 
 export async function readCurrentPrototype(
   reader: GitReader,

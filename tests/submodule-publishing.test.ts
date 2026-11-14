@@ -10,16 +10,16 @@ import {
   register,
   recover,
   withLock,
-} from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
-import { publishToDirectory } from "../.agents/skills/spec-trail/prototype/examples/filesystem-host.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
+import { publishToDirectory } from "../.agents/skills/spec-trail/references/prototype/examples/filesystem-host.mjs";
 import {
   localPackage,
   sourceManifest,
   assertSourceEntry,
-} from "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/local-source.mjs";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { preflight } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 test("declared source and dependencies inside preview are never exempted as generated output", async (t) => {
   const f = await submoduleFixture();
@@ -377,8 +377,7 @@ for (const directory of ["packages/prototype", ""])
             process.execPath,
             [
               resolve(".agents/skills/spec-trail/cli.mjs"),
-              "change",
-              name,
+              ...name.split(" "),
               "--change",
               id,
               "--repo",
@@ -397,29 +396,29 @@ for (const directory of ["packages/prototype", ""])
               .previews,
           ),
         );
-        command("previews-set", ["--file", retained]);
-        command("task-add", ["--title", "Deliver fixed prototype"]);
+        command("prototype previews", ["--file", retained]);
+        command("task add", ["--title", "Deliver fixed prototype"]);
         await f.put(
           `${statePath.slice(0, -12)}/requirement.md`,
           "# Fixed child delivery",
         );
         f.commit();
-        command("execute");
-        command("task-start", ["--task", "T1"]);
-        command("task-complete", [
+        command("stage execute");
+        command("task start", ["--task", "T1"]);
+        command("task complete", [
           "--task",
           "T1",
           "--verification",
           "fixture verified",
         ]);
         f.commit();
-        command("verify", [
+        command("close verify", [
           "--result",
           "passed",
           "--summary",
           "fixture verified",
         ]);
-        command("accept", [
+        command("close accept", [
           "--mode",
           "agent",
           "--summary",
@@ -427,8 +426,8 @@ for (const directory of ["packages/prototype", ""])
           "--source",
           "fixture verification",
         ]);
-        command("specs", ["--result", "not_needed", "--summary", "fixture"]);
-        command("archive", [
+        command("close specs", ["--result", "not_needed", "--summary", "fixture"]);
+        command("close archive", [
           "--date",
           "2026-10-29",
           "--summary",
@@ -508,7 +507,7 @@ test("submodule adoption preserves parent workspaces and existing frontend confi
     JSON.stringify({ name: "parent", private: true, workspaces: ["backend"] }),
   );
   for (const [path, body] of [
-    ["package.json", JSON.stringify({ name: "prototype", private: true })],
+    ["package.json", JSON.stringify({ name: "prototype", private: true, scripts: { build: "vite build" } })],
     ["AGENTS.md", "# custom rules"],
     ["DESIGN.md", "# custom design"],
   ])
@@ -699,7 +698,7 @@ test("associating unchanged frontend sources still requires staging the new cata
     .previews[0];
   assert.equal(ref.artifact.source.catalogCommit, b);
   const { verifyPrototypeSource } = await import(
-    "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs"
+    "../.agents/skills/spec-trail/scripts/prototype/local-source.mjs"
   );
   verifyPrototypeSource(
     f.author,
@@ -747,7 +746,7 @@ test("single-repository interrupted registration refuses recovery after its cata
     before = await readFile(join(f.child, path), "utf8"),
     after = before + "\n";
   const script = new URL(
-    "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
+    "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs",
     import.meta.url,
   ).href;
   const crashed = spawnSync(process.execPath, [

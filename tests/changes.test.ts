@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { rm, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
-import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+import { validateChange } from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import { changeSchema } from "../src/server/schema.ts";
 import { parsePlan, cyclicNodes } from "../src/server/plan.ts";
 import {

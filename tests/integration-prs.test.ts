@@ -6,10 +6,10 @@ import {
   changePullRequests,
   integrationEvidence,
   inspectIntegration,
-} from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { githubPullRequests } from "../.agents/skills/spec-trail/scripts/github-prs.mjs";
+} from "../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import { githubPullRequests } from "../.agents/skills/spec-trail/scripts/core/github-prs.mjs";
 import { verify } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 
 test("only a uniquely associated merged PR proves delivery; messages and wrong identities do not", async (t) => {
   const f = await integrationFixture();

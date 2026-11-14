@@ -14,7 +14,7 @@ import { join } from "node:path";
 import {
   moduleUrl,
   moduleAddress,
-} from "../.agents/skills/spec-trail/prototype/scripts/source.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/source.mjs";
 for (const directory of ["packages/prototype", ""])
   test(`submodule ${directory || "root"} catalog reads the recorded commit, never child HEAD`, async (t) => {
     const f = await submoduleFixture(directory);

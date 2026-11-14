@@ -6,15 +6,11 @@ import { readFile, writeFile, readdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fixture } from "./fixture.ts";
 import { completedChange } from "./integration-fixture.ts";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 import {
   verify,
   cleanup,
 } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import {
-  inventory,
-  retire,
-} from "../.agents/skills/spec-trail/scripts/retire-archive-tags.mjs";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 
 test("archiving fixes a shared Git prototype before concurrent collaboration changes", async (t) => {
@@ -67,7 +63,7 @@ test("archiving fixes a shared Git prototype before concurrent collaboration cha
   f.commit();
   const command = [
     resolve(".agents/skills/spec-trail/cli.mjs"),
-    "change",
+    "close",
     "archive",
     "--repo",
     f.author,
@@ -183,7 +179,7 @@ syncBuiltinESMExports();
   assert.doesNotMatch(preview.html!, /CONCURRENT/);
 });
 
-test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/cache retirement form one complete delivery", async (t) => {
+test("archive, merge, verified cleanup, cold diff/preview and legacy cache retirement form one complete delivery", async (t) => {
   const f = await fixture();
   t.after(f.cleanup);
   const id = "complete-delivery",
@@ -236,7 +232,7 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
       process.execPath,
       [
         resolve(".agents/skills/spec-trail/cli.mjs"),
-        "change",
+        "close",
         "archive",
         "--repo",
         f.author,
@@ -274,35 +270,6 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
   });
   for (const value of Object.values(cleaned.cleanup))
     assert.equal((value as { status: string }).status, "cleaned");
-  f.git(["tag", "spec-trail/archive-v2/old-light"]);
-  f.git(["tag", "-a", "spec-trail/archive-v2/old-annotated", "-m", "old"]);
-  f.git(["tag", "release-keep"]);
-  f.git(["push", "origin", "--tags"]);
-  const cli = resolve(".agents/skills/spec-trail/cli.mjs");
-  const manifest = join(f.root, "tag-inventory.json");
-  const run = (command: string, ...options: string[]) =>
-    JSON.parse(
-      execFileSync(
-        process.execPath,
-        [
-          cli,
-          "maintenance",
-          command,
-          "--repo",
-          f.author,
-          "--manifest",
-          manifest,
-          ...options,
-        ],
-        { encoding: "utf8" },
-      ),
-    );
-  const plan = run("archive-tags-list");
-  assert.equal(plan.refs.length, 2);
-  await assert.rejects(retire(repo, plan), /Deploy and verify/);
-  assert.equal(run("archive-tags-delete", "--service-ready").complete, true);
-  assert.equal((await retire(repo, plan, true)).complete, true);
-  assert.ok(f.git(["ls-remote", "origin", "refs/tags/release-keep"]));
   const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
   const reader = await f.store.integration(f.project, id, snapshot.id),
     files = await reader.files();
@@ -365,62 +332,5 @@ test("archive, merge, verified cleanup, cold diff/preview and exact legacy tag/c
         .preview(f.project, id, undefined, DEFAULT_LIMITS, undefined, "page")
     ).html!,
     /Complete delivery/,
-  );
-});
-
-test("tag retirement retains concurrent ref changes and partial failures for a safe retry", async (t) => {
-  const f = await fixture();
-  t.after(f.cleanup);
-  f.git(["tag", "spec-trail/archive-v2/raced"]);
-  f.git(["tag", "spec-trail/archive-v2/denied"]);
-  f.git(["push", "origin", "--tags"]);
-  const repo = repository(f.author),
-    plan = inventory(repo),
-    before = f.git(["rev-parse", "HEAD"]);
-  await f.put("next.txt", "next");
-  const next = f.commit();
-  f.git(["tag", "-f", "spec-trail/archive-v2/raced", next]);
-  f.git(["push", "--force", "origin", "refs/tags/spec-trail/archive-v2/raced"]);
-  const git = repo.git;
-  repo.git = (args) => {
-    if (
-      args[0] === "push" &&
-      args.at(-1) === ":refs/tags/spec-trail/archive-v2/denied"
-    )
-      throw Error("Permission denied");
-    return git(args);
-  };
-  const result = await retire(repo, plan, true);
-  assert.equal(result.complete, false);
-  assert.equal(
-    result.results.find((item: { ref: string; remote: { status: string } }) =>
-      item.ref.endsWith("/raced"),
-    )?.remote.status,
-    "retained",
-  );
-  assert.equal(
-    result.results.find((item: { ref: string; remote: { status: string } }) =>
-      item.ref.endsWith("/denied"),
-    )?.remote.status,
-    "failed",
-  );
-  assert.equal(
-    f.git(["rev-parse", "refs/tags/spec-trail/archive-v2/denied"]),
-    before,
-  );
-  repo.git = git;
-  assert.equal((await retire(repo, inventory(repo), true)).complete, true);
-  await assert.rejects(
-    retire(
-      repo,
-      {
-        ...plan,
-        refs: [
-          { ref: "refs/tags/release-keep", remote: before, local: before },
-        ],
-      },
-      true,
-    ),
-    /Invalid/,
   );
 });

@@ -14,7 +14,7 @@ SpecTrail 是一套 Agent Skill，用 Git 和 `docs/project/` 管理需求、技
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 ```
 
-安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。Agent 通过 `node .agents/skills/spec-trail/cli.mjs --help` 一次查看全部命令的用途与完整用法，命令后加 `--help` 查看参数说明与示例；操作结果默认输出 JSON。
+安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`references/` 下的说明和共享脚本一起安装，并可随项目提交。使用 `node .agents/skills/spec-trail/cli.mjs --help` 查看命令组，`<group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。项目接入命令见[接入说明](../.agents/skills/spec-trail/references/setup/setup.md)。操作结果默认输出 JSON。
 
 也可以为其他支持 Agent Skills 的客户端安装，例如：
 
@@ -26,23 +26,15 @@ npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-c
 
 安装后确认项目内 `.agents/skills/spec-trail/` 包含完整目录，其他客户端的入口由安装器管理。工作流由 Agent 执行，脚本校验流程状态、原型发布引用和 Git 兜底产物。
 
-若此前从独立的 `iTgo-lyq/spec-trail` 仓库安装，先重新执行上面的 `skills add iTgo-lyq/open-folio` 命令，切换安装来源；随后再使用下方更新命令。
-
-更新项目内安装：
-
-```bash
-npx skills update spec-trail -p -y
-```
-
 ## 环境要求
 
-原型包可放在 Git submodule，前端先独立发布并提交清单，无需另接入 SpecTrail；主仓库最后一次提交 gitlink 与 Change 关联，并固定追溯前端源码。命令、恢复与校验见[原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md#子模块中的原型包)。
+原型包可放在 Git submodule，前端先独立发布并提交清单，无需另接入 SpecTrail；主仓库最后一次提交 gitlink 与 Change 关联，并固定追溯前端源码。命令、恢复与校验见[原型说明](../.agents/skills/spec-trail/references/prototype/prototype.md#子模块中的原型包)。
 
 - Git。
 - Node.js 20+ 用于状态命令和接入校验；使用原型功能时需要 Node.js 24+，建议统一使用 Node.js 24 或更新版本。
 - 能读取本地 Skill 文件、运行命令并操作 Git 的编码 Agent。
 
-状态和接入脚本只使用 Node.js 内置模块。可选的原型浏览器验证使用业务项目中的 Playwright，详见原型子 skill。
+状态和接入脚本只使用 Node.js 内置模块。可选的原型浏览器验证使用业务项目中的 Playwright，详见原型说明。
 
 ## 开始使用
 
@@ -58,7 +50,7 @@ npx skills update spec-trail -p -y
 使用 $spec-trail 实现导出功能，先整理需求和验收条件。
 ```
 
-Agent 会按任务规模整理文档、确认必要的决策并推进 Change。状态修改使用随 skill 提供的语义命令；直接查看命令说明请读 [state-commands.md](../.agents/skills/spec-trail/references/state-commands.md)。
+Agent 会按任务规模整理文档、确认必要的决策并推进 Change。状态修改使用随 skill 提供的语义命令；直接查看命令说明请运行 `node .agents/skills/spec-trail/cli.mjs --help`。
 
 ## 工作流
 
@@ -69,7 +61,7 @@ Agent 会按任务规模整理文档、确认必要的决策并推进 Change。�
 | 状态操作   | `change.json` 的语义命令及共享字段校验                                                        |
 | 接入检查   | 只读环境检查，以及业务项目现有 hook 的接入指导                                                |
 | 关闭与归档 | 验证、验收、Specs 同步和完整 Change 历史；通过关联 PR 集成到 develop，再按用户要求发布到 main |
-| 可选原型   | 宿主构建与托管、集成分支当前清单、Change 固定版本引用，以及 Git 单 HTML 兜底                  |
+| 可选原型   | 复用业务组件的业务页面片段，按业务技术栈多页面静态构建；托管、当前清单、Change 固定版本与 Git 单 HTML 兜底 |
 
 业务项目中的文档结构：
 
@@ -88,37 +80,32 @@ docs/project/
 ```text
 .agents/skills/spec-trail/
 ├── SKILL.md
-├── LICENSE
 ├── cli.mjs
 ├── references/
+│   ├── delivery/delivery.md
+│   ├── prototype/
+│   │   ├── prototype.md
+│   │   ├── examples/
+│   │   └── assets/
+│   └── setup/
+│       ├── setup.md
+│       └── assets/
 ├── scripts/
-├── setup/
-│   ├── SKILL.md
-│   ├── scripts/
-│   └── tests/
-└── prototype/
-    ├── SKILL.md
-    ├── scripts/
-    ├── examples/
-    └── assets/
+└── tests/
 ```
 
-`setup` 和 `prototype` 是随主 skill 分发的子目录，主工作流按需读取。
+主 skill 覆盖接收任务、规划与返工，`references/` 下的说明随主 skill 分发、按需读取：执行与交付在进入 execution 后读，原型在涉及产品 UI 时读，接入只在接入时读。
 
-完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[接入子 skill](../.agents/skills/spec-trail/setup/SKILL.md) 和 [原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
+完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[执行与交付](../.agents/skills/spec-trail/references/delivery/delivery.md)、[接入说明](../.agents/skills/spec-trail/references/setup/setup.md) 和 [原型说明](../.agents/skills/spec-trail/references/prototype/prototype.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
 
 ## 维护与验证
 
 修改 skill 时保留整个分发包及其相对引用。在本仓库根目录运行现有接入和提交校验测试：
 
 ```bash
-node --test .agents/skills/spec-trail/setup/tests/setup.test.mjs
+node --test .agents/skills/spec-trail/tests/setup.test.mjs
 ```
 
 这个测试集验证接入检查、提交 hook、状态字段、暂存区、部分提交、clone 和 worktree。它不代表所有 Agent 工作流或原型交互都已完成端到端验证。
 
 问题与改进建议请提交到 [GitHub Issues](https://github.com/iTgo-lyq/open-folio/issues)。
-
-## License
-
-[MIT](../.agents/skills/spec-trail/LICENSE) © 2026 iTgo。

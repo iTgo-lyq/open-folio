@@ -1,7 +1,7 @@
 import type { BrowserServer } from "playwright";
 import { tmpdir } from "node:os";
 import { AppError } from "./errors.ts";
-import { sandboxCsp } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
+import { sandboxCsp } from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
 
 export type ThumbnailViewport = { width: number; height: number };
 export type ThumbnailSource = string | { url: string };

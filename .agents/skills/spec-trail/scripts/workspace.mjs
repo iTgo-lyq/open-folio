@@ -21,9 +21,11 @@ import {
   remoteBranch,
   fetchBranch,
   deliveryTarget,
-} from "./repository.mjs";
-import { closedRecord, validBranchName, planningRecord } from "./routing.mjs";
-import { validateChange } from "./state-schema.mjs";
+} from "./core/repository.mjs";
+import { closedRecord, validBranchName, planningRecord } from "./core/routing.mjs";
+import { validateChange } from "./core/state-schema.mjs";
+import { withStateLock } from "./core/lock.mjs";
+import { define } from "./define.mjs";
 
 const assert = (value, message) => {
   if (!value) throw Error(message);
@@ -328,7 +330,7 @@ function handoff(repo, id, options) {
       note:
         local && local !== record.commit
           ? "Local commits preserved; inspect ahead/behind and working changes before continuing"
-          : "Existing registration reused; verify the execution session before writing",
+          : "Existing registration reused; verify the worktree branch and state before writing",
     };
   }
   ready(
@@ -476,7 +478,7 @@ function handoff(repo, id, options) {
         catalog.branch,
         verified.commit,
       ),
-      next: "Open or continue a session bound to this worktree; verify its actual cwd and branch, then use node .agents/skills/spec-trail/cli.mjs change execute",
+      next: "Continue in this worktree: verify its branch and state, then run node .agents/skills/spec-trail/cli.mjs stage execute once the required confirmations are recorded",
     };
   }
 }
@@ -537,10 +539,9 @@ function locate(repo, id, refresh = false) {
       branch: repo.branch,
       detached: repo.branch === null,
     },
-    session: {
-      binding: "unverified",
-      action: planning ? 'continue-planning' : tree ? "continue-or-open" : "prepare-worktree",
-      prompt: planning ? `继续在 ${catalog.branch} 澄清 Change ${id}；当前尚未实际移交，保留暂缓意图。明确启动后使用 handoff，不自动创建执行工作区。` : `继续 Change ${id}。在 ${tree?.path ?? defaultPath(repo, id)} 打开或复用绑定该工作区的会话，先核对实际 cwd、仓库 common-dir 和分支 ${record.branch}；从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文。比较本地与 ${record.commit} 的差异后按未完成任务继续。创建工作区或 shell cd 不代表会话已绑定。`,
+    next: {
+      action: planning ? 'continue-planning' : tree ? "continue" : "prepare-worktree",
+      prompt: planning ? `继续在 ${catalog.branch} 澄清 Change ${id}；当前尚未实际移交，保留暂缓意图。明确启动后使用 handoff，不自动创建执行工作区。` : `继续 Change ${id}：在 ${tree?.path ?? defaultPath(repo, id)} 中核对分支 ${record.branch}，从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文；比较本地与 ${record.commit} 的差异后按未完成任务继续。`,
     },
   };
 }
@@ -571,31 +572,34 @@ function prepare(repo, id, options) {
   return { ...locate(repo, id), command: "prepare", reused: tree.reused };
 }
 
-export function runWorkspace(command, values) {
-  assert(
-    typeof values.change === "string" &&
-      /^[a-z0-9]+(-[a-z0-9]+)*$/.test(values.change),
-    "--change requires a valid Change id",
-  );
-  const repo = repository(values.repo);
-  if (command === "locate") {
-    return { output: locate(repo, values.change) };
-  }
-  const operation = command === "handoff" ? handoff : prepare;
-  const lock = join(repo.common, "spec-trail-state.lock");
-  if (values["dry-run"]) {
-    return { output: operation(repo, values.change, values) };
-  }
-  try {
-    mkdirSync(lock);
-  } catch {
-    throw Error(
-      `Another state operation holds ${lock}; inspect it before retrying`,
+function run(operation, { lock = true } = {}) {
+  return (values) => {
+    assert(
+      typeof values.change === "string" && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(values.change),
+      "--change requires a valid Change id",
     );
-  }
-  try {
-    return { output: operation(repo, values.change, values) };
-  } finally {
-    rmSync(lock, { recursive: true, force: true });
-  }
+    const repo = repository(values.repo);
+    if (!lock || values["dry-run"]) return { output: operation(repo, values.change, values) };
+    return { output: withStateLock(repo.common, repo.root, () => operation(repo, values.change, values)) };
+  };
 }
+const workspace = (operation, summary, { optional = [], booleans = [], help, notes, lock } = {}) =>
+  define(run(operation, { lock }), { summary, required: ["change"], optional: [...optional, "repo"], booleans, help, notes, example: "--change example" });
+
+export const commands = {
+  locate: workspace((repo, id) => locate(repo, id), "Report the registered branch, source commit, freshness and local worktree from local refs (read-only, no fetch)", { lock: false }),
+  prepare: workspace(prepare, "Fetch the integration and registered work branches, then reuse or create the Change worktree", {
+    optional: ["path"],
+    booleans: ["dry-run"],
+    help: { path: { value: "dir", text: "Worktree path (default: <project>-worktrees/<id> beside the primary worktree)" } },
+  }),
+  handoff: workspace(handoff, "Register the work branch and its worktree after the Requirement is committed (and confirmed unless small)", {
+    optional: ["branch", "path", "availability-note"],
+    booleans: ["dry-run"],
+    help: {
+      branch: { value: "name", text: "Work branch (default: the branch pre-filled in change.json, else change/<id>)" },
+      path: { value: "dir", text: "Worktree path (default: <project>-worktrees/<id> beside the primary worktree)" },
+    },
+    notes: ["Pushes the target branch and the registration; safe to rerun after a failure."],
+  }),
+};

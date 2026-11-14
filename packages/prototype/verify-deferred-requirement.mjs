@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
-import { htmlIssues, sandboxCsp } from '../../.agents/skills/spec-trail/prototype/scripts/html.mjs';
+import { htmlIssues, sandboxCsp } from '../../.agents/skills/spec-trail/scripts/prototype/html.mjs';
 const html = await readFile(new URL('dist/quiet-changes/index.html', import.meta.url), 'utf8');
 assert.deepEqual(htmlIssues(html), []);
 const server = createServer((req,res) => {

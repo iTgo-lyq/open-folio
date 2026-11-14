@@ -25,8 +25,8 @@ import {
   digestPrefix,
   uploadMagic,
   uploadType,
-} from "../.agents/skills/spec-trail/prototype/scripts/upload-protocol.mjs";
-import { requestIdentity } from "../.agents/skills/spec-trail/prototype/scripts/publication-contract.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/upload-protocol.mjs";
+import { requestIdentity } from "../.agents/skills/spec-trail/scripts/prototype/publication-contract.mjs";
 
 async function setup(t: TestContext) {
   const root = await mkdtemp(join(tmpdir(), "folio-hosting-"));

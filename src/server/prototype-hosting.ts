@@ -14,14 +14,14 @@ import { dirname, extname, join } from "node:path";
 import { dataDirectory } from "./config.ts";
 import { privateSecret, requireAdmin } from "./access.ts";
 import { AppError, publicError } from "./errors.ts";
-import { safePath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+import { safePath } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 import {
   digestPrefix,
   uploadType,
   uploadMagic,
   maxHeaderBytes,
   validateUpload,
-} from "../../.agents/skills/spec-trail/prototype/scripts/upload-protocol.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/upload-protocol.mjs";
 
 type Publication = {
   request: {

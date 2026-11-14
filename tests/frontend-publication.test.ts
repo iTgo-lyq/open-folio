@@ -8,14 +8,14 @@ import { submoduleFixture } from "./submodule-fixture.ts";
 import {
   prepare,
   register,
-} from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
-import { uploadToOpenFolio } from "../.agents/skills/spec-trail/prototype/scripts/openfolio-client.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
+import { uploadToOpenFolio } from "../.agents/skills/spec-trail/scripts/prototype/openfolio-client.mjs";
 import {
   requestIdentity,
   validateRequest,
   resultArtifact,
-} from "../.agents/skills/spec-trail/prototype/scripts/publication-contract.mjs";
-import { validateArtifact } from "../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publication-contract.mjs";
+import { validateArtifact } from "../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 
 test("scoped publication identities include package paths and preserve legacy request IDs", () => {
   const request = {

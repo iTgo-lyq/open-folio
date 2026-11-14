@@ -6,11 +6,11 @@
 
 - Skill 是默认使用入口：给 Codex、Claude Code 等编码 Agent 提供仓库内工作流，用 Git 保存需求、方案、任务、验证和验收记录。
 - OpenFolio 工作台是可选的独立部署服务，供用户只读已提交推送的工程记录。介绍页说明获得实例地址、注册账号、连接自己的 GitHub token 与仓库读取权限等使用前提，并提供真实界面截图和公开源码部署入口。
-- 原型管理是随 Skill 分发的可选部分，使用示例数据演示页面与组件设计，维护项目当前入口和 Change 固定版本。页面提供公开交互示例与启用提示词，版本管理和托管细节位于进阶部分。
+- 原型管理是随 Skill 分发的可选部分，使用示例数据演示复用业务组件的页面片段，维护项目当前入口和 Change 固定版本。页面提供公开交互示例与启用提示词，版本管理和托管细节位于进阶部分。
 
 首次使用从目标 Git 项目中的安装开始，再在 Agent 对话中接入项目，随后说明第一项改动和验收期待。完整安装环境推荐 Git、Node.js 24 或更新版本，以及 Codex 或 Claude Code。
 
-技能从 `iTgo-lyq/open-folio` 的 `.agents/skills/spec-trail/` 安装，版本与 MIT 许可证随源码维护。安装选项支持 Codex 与 Claude Code。Claude Code 的复制安装同时选择 `universal claude-code`，生成现有脚本需要的项目共享 `.agents/skills/spec-trail/` 和客户端 `.claude/skills/spec-trail/` 入口。公开 README 和站点命令保持一致。从旧独立仓库安装的用户重新执行新仓库安装命令以切换来源。
+技能从 `iTgo-lyq/open-folio` 的 `.agents/skills/spec-trail/` 安装，版本随源码维护。安装选项支持 Codex 与 Claude Code。Claude Code 的复制安装同时选择 `universal claude-code`，生成现有脚本需要的项目共享 `.agents/skills/spec-trail/` 和客户端 `.claude/skills/spec-trail/` 入口。公开 README 和站点命令保持一致。从旧独立仓库安装的用户重新执行新仓库安装命令以切换来源。
 
 ## 操作与可读性
 

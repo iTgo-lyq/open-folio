@@ -13,9 +13,9 @@ import {
   artifactDigest,
   validateRequest,
   validateResult,
-} from "../../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
-import { hostedUrl } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
-import { digestPrefix } from "../../.agents/skills/spec-trail/prototype/scripts/upload-protocol.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
+import { hostedUrl } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
+import { digestPrefix } from "../../.agents/skills/spec-trail/scripts/prototype/upload-protocol.mjs";
 
 const mime = {
   ".html": "text/html; charset=utf-8",

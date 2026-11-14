@@ -1,12 +1,11 @@
 import { parseArgs } from "node:util";
-import { commands, groups } from "./scripts/cli-commands.mjs";
+import { groups } from "./scripts/commands.mjs";
 
 const invocation = "node .agents/skills/spec-trail/cli.mjs";
 const [group, command, ...args] = process.argv.slice(2);
-const groupCommands = Object.hasOwn(commands, group) ? commands[group] : undefined;
-const definition = groupCommands && Object.hasOwn(groupCommands, command)
-  ? groupCommands[command]
-  : undefined;
+const entry = Object.hasOwn(groups, group) ? groups[group] : undefined;
+const module = entry && (await entry.load());
+const definition = module && Object.hasOwn(module.commands, command) ? module.commands[command] : undefined;
 
 const flag = (name, option) =>
   option.type === "boolean" ? `--${name}` : `--${name} <${option.choices?.join("|") ?? option.value}>`;
@@ -19,35 +18,40 @@ function synopsis(name, { options, required }) {
   })].join(" ");
 }
 
-// Every level prints runnable usage lines; deeper levels add notes, option details and an example.
-function groupSection(name, details) {
-  const lines = [`${name}: ${groups[name].summary}`];
-  if (details) lines.push(...(groups[name].notes ?? []).map(note => `  ${note}`));
-  for (const [entry, spec] of Object.entries(commands[name])) {
-    if (details) lines.push("");
-    lines.push(`  ${synopsis(entry, spec)}`, `      ${spec.summary}`);
-    if (details) lines.push(...spec.notes.map(note => `      ${note}`));
-  }
-  return lines;
-}
+const table = rows => {
+  const width = Math.max(...rows.map(([name]) => name.length)) + 2;
+  return rows.map(([name, text]) => `  ${name.padEnd(width)}${text}`);
+};
 
+const groupNotes = () => [
+  ...(module.notes ?? []),
+  ...(entry.minNode ? [`Requires Node.js ${entry.minNode} or newer.`] : []),
+];
+
+// The overview lists groups, a group lists its commands, and only a command shows options and an example.
 function usage() {
-  if (!groupCommands)
+  if (!module)
     return [
       `Usage: ${invocation} <group> <command> [options]`,
       "",
       "Each operation prints one JSON value to stdout; help is text and diagnostics go to stderr.",
-      "Exit codes: 0 success, 1 usage error or failed check, 2 incomplete cleanup or tag deletion.",
-      "Options take --name value or --name=value. Prototype commands need Node.js 24+, the others Node.js 20+.",
-      "Use <group> --help for notes on each command, and <group> <command> --help for option details and an example.",
-      ...Object.keys(commands).flatMap(name => ["", ...groupSection(name, false)]),
+      "Exit codes: 0 success, 1 usage error or failed check, 2 incomplete cleanup.",
+      "Options take --name value or --name=value. Commands need Node.js 20+ unless their group says otherwise.",
+      "Use <group> --help to list its commands, and <group> <command> --help for options and an example.",
+      "",
+      "Groups:",
+      ...table(Object.entries(groups).filter(([, { hidden }]) => !hidden).map(([name, { summary }]) => [name, summary])),
     ].join("\n");
   if (!definition)
     return [
       `Usage: ${invocation} ${group} <command> [options]`,
-      "Use <command> --help for option details and an example.",
+      "Use <command> --help for options and an example.",
       "",
-      ...groupSection(group, true),
+      `${group}: ${entry.summary}`,
+      ...groupNotes().map(note => `  ${note}`),
+      "",
+      "Commands:",
+      ...table(Object.entries(module.commands).map(([name, spec]) => [name, spec.summary])),
     ].join("\n");
 
   const rows = Object.entries(definition.options).map(([name, option]) => [
@@ -56,15 +60,14 @@ function usage() {
       .filter(Boolean).join(" "),
   ]);
   rows.push(["--help", "Show this help"]);
-  const width = Math.max(...rows.map(([name]) => name.length)) + 2;
-  const notes = [...(groups[group].notes ?? []), ...definition.notes];
+  const notes = [...groupNotes(), ...definition.notes];
   return [
     `Usage: ${invocation} ${group} ${synopsis(command, definition)}`,
     "",
     definition.summary,
     "",
     "Options:",
-    ...rows.map(([name, text]) => `  ${name.padEnd(width)}${text}`),
+    ...table(rows),
     ...(notes.length ? ["", "Notes:", ...notes.map(note => `  ${note}`)] : []),
     "",
     "Example:",
@@ -74,7 +77,7 @@ function usage() {
 
 function parseCommand() {
   if (group === undefined || (group === "--help" && command === undefined)) return;
-  if (!groupCommands) throw Error(`Unknown command group: ${group}`);
+  if (!module) throw Error(`Unknown command group: ${group}`);
   if (command === undefined || (command === "--help" && !args.length)) return;
   if (!definition) throw Error(`Unknown command: ${group} ${command}`);
   const { values } = parseArgs({
@@ -107,9 +110,9 @@ async function main() {
     return;
   }
   try {
-    if (group === "prototype" && Number(process.versions.node.split(".")[0]) < 24)
-      throw Error("Node.js 24 or newer is required for prototype commands.");
-    const { output, exitCode = 0 } = await definition.run(command, options);
+    if (entry.minNode && Number(process.versions.node.split(".")[0]) < entry.minNode)
+      throw Error(`Node.js ${entry.minNode} or newer is required for ${group} commands.`);
+    const { output, exitCode = 0 } = await definition.run(options, `${group} ${command}`);
     process.stdout.write(JSON.stringify(output, null, 2) + "\n");
     process.exitCode = exitCode;
   } catch (error) {
