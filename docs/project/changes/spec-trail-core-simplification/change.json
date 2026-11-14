@@ -41,7 +41,8 @@
     },
     "T4": {
       "title": "原型改为业务页面片段",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照 a04f27e；通过空目录接入、缺少 build 拒绝、发布登记、Git 兜底、归档和子模块测试，原型包 16 项、托管浏览器 2 项通过。"
     },
     "T5": {
       "title": "脚本依赖检查移到 Skill 测试",
