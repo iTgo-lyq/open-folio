@@ -4,19 +4,29 @@
   "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "change/prototype-architecture-migration",
   "confirmations": {
     "requirement": {
       "at": "2026-11-14T20:20:20.062Z",
       "summary": "七组原型复用业务组件与内存数据，保持静态访问和历史引用",
       "source": "接手 prototype-architecture-migration。按 SpecTrail 从 develop 移交并推进，把 packages/prototype 迁为直接复用业务组件、使用 mock 数据的静态页面片段。我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
+    },
+    "technical": {
+      "at": "2026-11-14T20:22:57.008Z",
+      "summary": "直接引用业务组件，Vite 内联构建并在数据边界注入内存 mock",
+      "source": "我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
+    },
+    "plan": {
+      "at": "2026-11-14T20:23:01.054Z",
+      "summary": "一次迁移七组入口与验证链路，保留历史引用后交人工验收",
+      "source": "我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
     }
   },
   "tasks": {
     "T1": {
       "title": "以静态业务片段替代七组手写原型",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
