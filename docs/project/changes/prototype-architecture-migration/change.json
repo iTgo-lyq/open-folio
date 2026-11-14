@@ -4,7 +4,7 @@
   "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/prototype-architecture-migration",
   "confirmations": {
     "requirement": {
@@ -35,24 +35,22 @@
       "status": "done",
       "verification": "七页及21张缩略图已上传登记，28对象公开字节一致；21组设备/场景及真实Change预览、分享、会话清理通过；删除9个无引用版本130对象；独立评审通过，默认总览卡片待合入后核验。",
       "commitTitle": "prototype-architecture-migration T2: verify published fragments and record acceptance boundary"
+    },
+    "T3": {
+      "title": "按业务状态还原片段并重新发布七组原型",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-11-14T22:41:27.975Z",
-      "summary": "T1实现验证与独立评审通过；T2七页21图发布、公开浏览器、真实Change预览与会话清理通过，9个无引用版本已清理。默认总览仍待用户验收合入后切换并检查卡片。"
-    }
-  },
+  "closure": {},
   "followUpOf": "spec-trail-core-simplification",
   "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
   "types": [
     "重构"
   ],
   "rework": {
-    "at": "2026-11-14T22:25:48.994Z",
-    "reason": "用户要求直接上传并替换当前原型，不再要求保留旧架构和专属数据",
-    "approach": "沿用已验证实现，追加 T2 发布七入口与缩略图并替换引用；仍等待代码验收，未切换的有效引用不提前删除"
+    "at": "2026-11-14T23:30:39.019Z",
+    "reason": "评审发现工作台与分享片段的加载/失败/空态为包内手写占位，清理记录将仅当前分支无引用误写为无有效引用",
+    "approach": "追加 T3 按业务状态还原片段并重新发布，修正清理记录与后续清理说明；不考虑历史数据兼容"
   },
   "previews": [
     {
@@ -272,9 +270,5 @@
         ]
       }
     }
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "新制品已发布且本Change在线可验收；等待用户代码验收及合入develop授权，合入后切换默认总览并复核卡片。"
-  }
+  ]
 }
