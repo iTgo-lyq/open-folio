@@ -1,6 +1,6 @@
-import { repository, recordsAt, revision } from "../../scripts/repository.mjs";
-import { validBranchName, closedRecord } from "../../scripts/routing.mjs";
-import { validateChange } from "../../scripts/state-schema.mjs";
+import { repository, recordsAt, revision } from "./repository.mjs";
+import { validBranchName, closedRecord } from "./routing.mjs";
+import { validateChange } from "./state-schema.mjs";
 
 // Read only known local/tracking refs. No fetching, branch enumeration or writes.
 export function runPreviewRouting(_command, values) {

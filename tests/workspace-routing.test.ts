@@ -42,7 +42,6 @@ function fixture(t: import("node:test").TestContext) {
       schemaVersion: 3,
       integrationBranch: "develop",
       releaseBranch: "main",
-      checkForUpdates: false,
     }),
   );
   const commit = (cwd = repo) => {

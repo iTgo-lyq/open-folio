@@ -53,7 +53,7 @@ function checkSubmoduleRemoval(path, gitdir) {
   if (statSync(modules,{throwIfNoEntry:false})?.isDirectory()) evidence.push(`submodule Git data at ${JSON.stringify(modules)}`);
   assert(!evidence.length, `Git refuses non-forced removal of source worktree ${JSON.stringify(path)} with ${evidence.join(' and ')}. ` +
     'Check submodule files, local-only commits and stashes. Obtain explicit user confirmation before running git worktree remove --force manually, then retry cleanup. ' +
-    'See references/integration.md (清理 → 含子模块的 worktree).');
+    'See SKILL.md (合码与集成 → 清理 → 含子模块的 worktree).');
 }
 
 function archived(repo, commit, id) {

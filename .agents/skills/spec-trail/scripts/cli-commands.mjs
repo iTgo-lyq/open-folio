@@ -45,14 +45,14 @@ function define(run, {
   };
 }
 
-const change = (summary, { required = [], optional = [], help, notes, example = "" } = {}) => define(
+const change = (summary, { required = [], optional = [], help, notes, example = "", dryRun = true } = {}) => define(
   async (command, values) => (await import("./change.mjs")).runChange(command, values),
   {
     summary,
     required: ["change", ...required],
     optional: [...optional, "repo"],
-    booleans: ["dry-run"],
-    help: { "dry-run": { text: `${shared["dry-run"].text}; also skips the skill update check` }, ...help },
+    booleans: dryRun ? ["dry-run"] : [],
+    help,
     notes,
     example: `--change example${example}`,
   },
@@ -115,7 +115,6 @@ export const groups = {
     notes: [
       "Plan on the integration branch; after handoff, run on the registered work branch.",
       "Commands change only local files (archive and rework move the Change directory, task-retry updates the staged change.json) and never commit or push.",
-      "A successful command (or show) may add skillUpdate to the JSON when a newer skill is published.",
     ],
   },
   workspace: { summary: "Work branch registration and Change worktrees" },
@@ -172,7 +171,7 @@ export const commands = {
       help: { target: { value: "id|none", text: "Archived direct predecessor id, or none to remove the link and its group title" } },
       example: " --target earlier-change",
     }),
-    show: change("Read the metadata of an active or archived Change from its registered source (read-only)"),
+    show: change("Read the metadata of an active or archived Change from its registered source (read-only)", { dryRun: false }),
     retitle: change("Change the display title of an active Change on its owning branch; id, stage, tasks and confirmations are kept", {
       required: ["title"],
       example: " --title '支持账号切换并保留各自工作台'",
@@ -401,7 +400,7 @@ export const commands = {
   },
   setup: {
     check: define(
-      async (command, values) => (await import("../setup/scripts/check-setup.mjs")).runSetupCheck(command, values),
+      async (command, values) => (await import("./check-setup.mjs")).runSetupCheck(command, values),
       {
         summary: "Read-only readiness check of workflow, branches, validator resources and hook entry; exit 1 when not ready",
         optional: ["repo"],
@@ -409,7 +408,7 @@ export const commands = {
       },
     ),
     "preview-routing": define(
-      async (command, values) => (await import("../setup/scripts/preview-routing.mjs")).runPreviewRouting(command, values),
+      async (command, values) => (await import("./preview-routing.mjs")).runPreviewRouting(command, values),
       {
         summary: "Read-only preview of Change routing from a baseline, registered worktrees and given work branches (no network)",
         optional: ["baseline", "repo"],
@@ -422,7 +421,7 @@ export const commands = {
       },
     ),
     "pre-commit": define(
-      async (command, values) => (await import("../setup/scripts/pre-commit.mjs")).runPreCommit(command, values),
+      async (command, values) => (await import("./pre-commit.mjs")).runPreCommit(command, values),
       {
         summary: "Validate staged SpecTrail state files in the index Git commits (honors GIT_INDEX_FILE); exit 1 rejects the commit",
         optional: ["repo"],
@@ -431,7 +430,7 @@ export const commands = {
       },
     ),
     "check-pr": define(
-      async (command, values) => (await import("../setup/scripts/check-pr.mjs")).runCheckPullRequest(command, values),
+      async (command, values) => (await import("./check-pr.mjs")).runCheckPullRequest(command, values),
       {
         summary: "Require valid completed archives for a pull request (archive CI)",
         optional: ["event", "repo"],

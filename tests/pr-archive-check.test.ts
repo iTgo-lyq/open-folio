@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rename, rm, writeFile } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
-import { checkPullRequest as check } from "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs";
+import { checkPullRequest as check } from "../.agents/skills/spec-trail/scripts/check-pr.mjs";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 
 const cli = resolve(".agents/skills/spec-trail/cli.mjs");

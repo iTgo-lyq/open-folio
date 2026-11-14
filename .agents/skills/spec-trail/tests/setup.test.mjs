@@ -19,14 +19,14 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 const checker = fileURLToPath(
-  new URL("../../cli.mjs", import.meta.url),
+  new URL("../cli.mjs", import.meta.url),
 );
-const skill = fileURLToPath(new URL("../../", import.meta.url));
+const skill = fileURLToPath(new URL("../", import.meta.url));
 const resourcePaths = [
   "cli.mjs",
   "scripts/cli-commands.mjs",
-  "setup/scripts/pre-commit.mjs",
-  "setup/scripts/script-dependencies.mjs",
+  "scripts/pre-commit.mjs",
+  "scripts/script-dependencies.mjs",
   "scripts/state-schema.mjs",
   "scripts/routing.mjs",
   "prototype/scripts/contract.mjs",
@@ -777,7 +777,7 @@ test("setup rejects broken script syntax and unusable shared modules", (t) => {
   s.provision(repo);
   s.write(
     repo,
-    ".agents/skills/spec-trail/setup/scripts/pre-commit.mjs",
+    ".agents/skills/spec-trail/scripts/pre-commit.mjs",
     "const = broken;\n",
   );
   const before = s.snapshot(repo);

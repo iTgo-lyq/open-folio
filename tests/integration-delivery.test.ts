@@ -369,7 +369,7 @@ test("cleanup retains initialized or deinitialized submodule worktrees and expla
           );
           assert.match(
             retained.cleanup.worktree.reason,
-            /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*references\/integration\.md/,
+            /local-only commits and stashes.*explicit user confirmation.*retry cleanup.*SKILL\.md \(合码与集成 → 清理 → 含子模块的 worktree\)/,
           );
           assert.deepEqual(
             Object.values(retained.cleanup).map(

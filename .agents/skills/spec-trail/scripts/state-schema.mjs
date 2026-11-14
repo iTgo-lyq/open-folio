@@ -252,7 +252,6 @@ const workflow = object(
     prototype: prototypeRule,
     openfolioUrl: () => {}, // Validated together with the hosting choice below.
     releaseBranch: branch,
-    checkForUpdates: oneOf(true, false),
   },
   ["schemaVersion", "integrationBranch", "releaseBranch"],
 );

@@ -2,11 +2,11 @@
 
 import { execFileSync } from "node:child_process";
 import { isDeepStrictEqual } from "node:util";
-import * as prototypeContract from "../../prototype/scripts/contract.mjs";
-import { validateChange, validateWorkflow } from "../../scripts/state-schema.mjs";
-import { localPackage, gitObject, verifyPrototypeSource, verifyOwnerSource } from "../../prototype/scripts/local-source.mjs";
-import { inPackage, withinPackage, treeRows, moduleAddress } from "../../prototype/scripts/source.mjs";
-import { changeLocation, sourceOwnership, planningRecord } from "../../scripts/routing.mjs";
+import * as prototypeContract from "../prototype/scripts/contract.mjs";
+import { validateChange, validateWorkflow } from "./state-schema.mjs";
+import { localPackage, gitObject, verifyPrototypeSource, verifyOwnerSource } from "../prototype/scripts/local-source.mjs";
+import { inPackage, withinPackage, treeRows, moduleAddress } from "../prototype/scripts/source.mjs";
+import { changeLocation, sourceOwnership, planningRecord } from "./routing.mjs";
 import { externalScriptDependencies } from "./script-dependencies.mjs";
 
 export function runPreCommit(_command, { repo = "." }) {

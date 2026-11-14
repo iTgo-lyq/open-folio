@@ -14,7 +14,7 @@ SpecTrail 是一套 Agent Skill，用 Git 和 `docs/project/` 管理需求、技
 npx skills add iTgo-lyq/open-folio --skill spec-trail --agent codex --copy -y
 ```
 
-安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。Agent 通过 `node .agents/skills/spec-trail/cli.mjs --help` 一次查看全部命令的用途与完整用法，命令后加 `--help` 查看参数说明与示例；操作结果默认输出 JSON。
+安装位置为项目内的 `.agents/skills/spec-trail/`。主 skill、`references/setup/`、`prototype/` 和共享脚本一起安装，并可随项目提交。使用 `node .agents/skills/spec-trail/cli.mjs --help` 查看命令组，`<group> --help` 列出组内命令，命令后加 `--help` 查看参数说明与示例。项目接入命令见[接入说明](../.agents/skills/spec-trail/references/setup/setup.md)。操作结果默认输出 JSON。
 
 也可以为其他支持 Agent Skills 的客户端安装，例如：
 
@@ -25,14 +25,6 @@ npx skills add iTgo-lyq/open-folio --skill spec-trail --agent universal claude-c
 它会同时生成共享 Skill 目录 `.agents/skills/spec-trail`（统一 CLI 从这里调用）和 Claude Code 入口 `.claude/skills/spec-trail`。
 
 安装后确认项目内 `.agents/skills/spec-trail/` 包含完整目录，其他客户端的入口由安装器管理。工作流由 Agent 执行，脚本校验流程状态、原型发布引用和 Git 兜底产物。
-
-若此前从独立的 `iTgo-lyq/spec-trail` 仓库安装，先重新执行上面的 `skills add iTgo-lyq/open-folio` 命令，切换安装来源；随后再使用下方更新命令。
-
-更新项目内安装：
-
-```bash
-npx skills update spec-trail -p -y
-```
 
 ## 环境要求
 
@@ -58,7 +50,7 @@ npx skills update spec-trail -p -y
 使用 $spec-trail 实现导出功能，先整理需求和验收条件。
 ```
 
-Agent 会按任务规模整理文档、确认必要的决策并推进 Change。状态修改使用随 skill 提供的语义命令；直接查看命令说明请读 [state-commands.md](../.agents/skills/spec-trail/references/state-commands.md)。
+Agent 会按任务规模整理文档、确认必要的决策并推进 Change。状态修改使用随 skill 提供的语义命令；直接查看命令说明请运行 `node .agents/skills/spec-trail/cli.mjs --help`。
 
 ## 工作流
 
@@ -88,14 +80,13 @@ docs/project/
 ```text
 .agents/skills/spec-trail/
 ├── SKILL.md
-├── LICENSE
 ├── cli.mjs
 ├── references/
+│   └── setup/
+│       ├── setup.md
+│       └── assets/
 ├── scripts/
-├── setup/
-│   ├── SKILL.md
-│   ├── scripts/
-│   └── tests/
+├── tests/
 └── prototype/
     ├── SKILL.md
     ├── scripts/
@@ -103,22 +94,18 @@ docs/project/
     └── assets/
 ```
 
-`setup` 和 `prototype` 是随主 skill 分发的子目录，主工作流按需读取。
+`references/setup` 和 `prototype` 是随主 skill 分发的子目录，主工作流按需读取。
 
-完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[接入子 skill](../.agents/skills/spec-trail/setup/SKILL.md) 和 [原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
+完整规则以 [主 skill](../.agents/skills/spec-trail/SKILL.md)、[接入说明](../.agents/skills/spec-trail/references/setup/setup.md) 和 [原型子 skill](../.agents/skills/spec-trail/prototype/SKILL.md) 为准。Skill 指令当前使用中文；工作流支持单个 Git 仓库及同仓库的分支和 worktree。
 
 ## 维护与验证
 
 修改 skill 时保留整个分发包及其相对引用。在本仓库根目录运行现有接入和提交校验测试：
 
 ```bash
-node --test .agents/skills/spec-trail/setup/tests/setup.test.mjs
+node --test .agents/skills/spec-trail/tests/setup.test.mjs
 ```
 
 这个测试集验证接入检查、提交 hook、状态字段、暂存区、部分提交、clone 和 worktree。它不代表所有 Agent 工作流或原型交互都已完成端到端验证。
 
 问题与改进建议请提交到 [GitHub Issues](https://github.com/iTgo-lyq/open-folio/issues)。
-
-## License
-
-[MIT](../.agents/skills/spec-trail/LICENSE) © 2026 iTgo。

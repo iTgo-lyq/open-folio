@@ -1,23 +1,23 @@
----
-name: spec-trail-setup
-description: 首次或更新接入 SpecTrail 时，配置集成分支和发布分支，准备主工作区，检查环境并接通提交校验。常规 Change 推进使用主 SpecTrail skill。
----
-
 # 接入 SpecTrail
 
-SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业务项目的 Agent 根据项目现有流程完成 hook 接入，SpecTrail 不规定 hook 目录或管理工具。Change 创建与状态更新遵循[主 skill 的状态操作入口](../SKILL.md#状态操作入口)。
+接入时配置集成分支和发布分支，准备主工作区，检查环境并接通提交校验。常规 Change 推进回到主 skill。
+
+SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业务项目的 Agent 根据项目现有流程完成 hook 接入，SpecTrail 不规定 hook 目录或管理工具。Change 创建与状态更新遵循[主 skill 的写入状态](../../SKILL.md#写入状态)。
 
 校验使用 Node.js 20+、Git 和 Node.js 内置模块，无需第三方依赖。分支配置、skill 中的校验脚本及业务方维护的接入文件随仓库交付；本机 Git 配置不提交。只在 `.git/hooks` 写本机入口不算完成可共享接入。
+
+本文命令中 `<skill-dir>` 指主 skill 目录；setup 检查可在目标仓库外运行，所以不沿用主 skill 的 `cli` 简写。
+
+运行 `node <skill-dir>/cli.mjs setup --help` 查看接入命令。
 
 ## 先配置分支与工作区
 
 创建 Change 前完成以下接入，沿用用户已有明确选择，不重复询问：
 
-1. 核对仓库、remote、托管默认分支和实际权限/保护规则。集成分支名称优先沿用项目选择，推荐 `develop`，承担集中讨论与持续交付，接收已完成 Change；发布分支（推荐 `main`）作为正式版本基线，仅在用户主动要求时提交发布 PR，保留提交历史与规划文档。两个分支必填且不同。Change 交付与正式发布默认通过 PR，移交前的规划和分支登记仍直接提交集成分支；不自动撤销平台保护。工作台及 CLI 核实 PR 需要 Pull requests: read 权限；本地 CLI 使用已登录的 gh，发布检查模板通过 GH_TOKEN 传入只读 GITHUB_TOKEN。
+1. 核对仓库、remote、托管默认分支和实际权限/保护规则，不自动撤销平台保护。两个分支必填且不同，职责见[分支角色](../../SKILL.md#分支角色)：集成分支名称优先沿用项目选择，推荐 `develop`；发布分支推荐 `main`。工作台及 CLI 核实 PR 需要 Pull requests: read 权限；本地 CLI 使用已登录的 gh，发布检查模板通过 GH_TOKEN 传入只读 GITHUB_TOKEN。
 2. 在 `docs/project/workflow.json` 保存 `schemaVersion: 3`、`integrationBranch` 和非空 `releaseBranch`，保留原型及服务配置。已有同名集成分支先检查用途与内容；缺失时在接入授权内从核对过的基线准备，不覆盖分支。新仓库先提交接入文件才能建立分支引用。
-3. 主工作区使用 workflow.json 配置的集成分支（develop 只是推荐名），用于规划和发现，不随任务切分支；执行在独立工作分支/worktree。默认路径为主工作区同级的 `<项目名>-worktrees/<工作区名>`，项目名取主工作区目录名，Change 默认用 id。已有工作区优先复用，显式路径按用户约定；切换前检查脏文件、已有 worktree 和会话，不搬动未提交现场。构建与长期服务沿用项目约定，主工作区可以继续承担这些用途，不因接入而迁走服务或另建服务 checkout。
-4. 将配置与校验器提交到所选集成分支。OpenFolio 自动发现初次尝试推荐名称 develop；自定义名称通过「用仓库地址检查」填写并保存，须与该分支 workflow.json.integrationBranch 一致。后续发现沿用保存的选择，阅读链接和最近仓库偏好保留实际分支。本地 CLI 使用当前工作树配置。后台不读取默认分支配置；发布分支暂不可读只影响发布状态；无需为接入发布到发布分支。缺少有效协作配置时提示 Setup，不回退到其他分支或全量扫描。
-5. 旧项目从已知 Change、已有 worktree 和明确提供的分支登记入口，保留工作分支和完整 JSON；不引入新的引用文件或历史状态镜像，不为迁移扫描全部分支。报告覆盖依据和未解决项，不声称已自动发现所有未知工作。
+3. 主工作区使用 workflow.json 配置的集成分支，路径与命名按[工作区与会话](../../SKILL.md#工作区与会话)。已有工作区优先复用，显式路径按用户约定；切换前检查脏文件、已有 worktree 和会话，不搬动未提交现场。构建与长期服务沿用项目约定，主工作区可以继续承担这些用途，不因接入而迁走服务或另建服务 checkout。
+4. 将配置与校验器提交到所选集成分支。OpenFolio 自动发现初次尝试推荐名称 develop；自定义名称通过「用仓库地址检查」填写并保存，须与该分支 workflow.json.integrationBranch 一致。后续发现沿用保存的选择，阅读链接和最近仓库偏好保留实际分支。本地 CLI 使用当前工作树配置。后台不读取默认分支配置；发布分支暂不可读只影响发布状态；无需为接入发布到发布分支。缺少有效协作配置时提示接入，不回退到其他分支或全量扫描。
 
 示例（名称以用户已有配置为准）：
 
@@ -25,13 +25,13 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 { "schemaVersion": 3, "integrationBranch": "develop", "releaseBranch": "main" }
 ```
 
-首次接入须明确提醒：**不要开启自动 squash；Change 和发布 PR/MR 均须普通 merge。** 按[合并方式检查](../references/integration.md#合并方式检查)核对平台默认、强制及自动合并策略，无法核实时报告限制，合并前解决；后续代操作时复查。
+首次接入须明确提醒：**不要开启自动 squash；Change 和发布 PR/MR 均须普通 merge。** 按[合并方式检查](../../SKILL.md#合并方式检查)核对平台默认、强制及自动合并策略，无法核实时报告限制，合并前解决；后续代操作时复查。
 
 ## 准备检查
 
 1. 核对上述配置与分支准备。没有 remote 时说明登记的是本地约定，尚无共享入口或服务端保护。
    统一入口通过 `setup pre-commit` 调用暂存区校验，依赖同一 skill 内的 `scripts/state-schema.mjs`、`scripts/routing.mjs` 与 `prototype/scripts/contract.mjs`；缺少文件时补齐 skill 交付，不复制校验逻辑到业务 hook。
-2. 从任意目录运行，`<skill-dir>` 指主 skill 目录：
+2. 从任意目录运行：
 
    ```bash
    node <skill-dir>/cli.mjs setup check --repo <repo-dir>
@@ -39,23 +39,23 @@ SpecTrail 提供校验脚本、调用命令和只读 setup 检查。用户或业
 
    检查器只读取目标仓库，不创建或复制文件、不修改 Git 配置、不执行业务 hook。JSON 输出 `readiness`、资源/配置问题、集成分支的已知引用、默认合入目标、调用命令和 Git 入口信息；退出码 0 表示本地准备就绪，1 表示需修正。已知本地或远程跟踪引用不证明远端仍存在；Agent 另用精确 ref 查询核实远端与平台权限。`remotePermissions` 和 `hook.status` 为 `unverified`，检查成功不代表权限与 hook 已验证。
 
-## 已配置项目的入口检查
+## 已有 Change 的接入预览
 
-先完成 workflow v3 配置；旧版配置不会被校验器或流程命令接受。只读预览使用当前仓库配置、指定基线（省略时为集成分支）、Git worktree 登记与明确给出的工作分支：
+完成工作流配置后，可从指定基线（默认集成分支）、已登记的 worktree 和明确提供的工作分支预览 Change 归属：
 
 ```bash
 node <skill-dir>/cli.mjs setup preview-routing --repo <repo-dir> --work-branch change/example
 ```
 
-work-branch 可重复提供。脚本不联网、不扫描全部分支、不改 Git 引用/暂存区/工作文件；输出覆盖依据、每个来源提交与新鲜度、接入建议和冲突。先定向 fetch 所需引用，再复跑；本地与 tracking ref 不同、同 ID 多个主张、归档/活动冲突、缺失目标均需核对。未被列出的远端工作不会被自动发现，不把只读预览称为迁移完成。
+`--work-branch` 可重复提供。预览只读取已知的本地和远端跟踪引用，输出覆盖范围、来源提交、新鲜度、接入建议和冲突。先定向 fetch 所需引用，再运行预览并核对冲突。
 
 普通 Change 已在基线进入实现或关闭时，先确认并准备独立工作分支；不能把执行状态留在集中规划分支。仅在工作分支出现的完成归档须连同交付集成后再作为集中历史，不能只复制归档就声称交付已集成。
 
-在已配置当前协议的隔离候选中核对 skill/校验器。从预览的固定提交与目录引入已知 Change 的原始记录，保留工作分支；不要为入口生成另一套状态，也不要复制执行进度。新规划按主 skill 的 create 命令建立。现有活动分支合码时先核对 live/archive 是否并存及登记提交祖先关系，不机械删除其他活动记录。执行本机 Setup、实际 hook 与目标读取验证后，将候选发布到集成分支；主工作区只在干净且分支用途已核对时切换。发布分支仅按用户主动要求发布，不作为接入前置。
+在隔离工作区从预览的固定提交与目录登记 Change，保留工作分支与原始记录。新规划按主 skill 的 create 命令建立。现有活动分支合码时先核对 live/archive 是否并存及登记提交祖先关系，不机械删除其他活动记录。验证 hook 和集成入口后，将候选推送到集成分支；主工作区只在干净且分支用途已核对时切换。
 
 ## 可选绘图 skill
 
-首次或更新接入时，从当前 Agent 的 skill 列表或全局 skill 目录核对已有安装，并沿用当前会话中的明确选择。尚未安装且尚未明确选择时，询问用户是否全局安装 `document-diagrams`，用于后续需求和技术方案中的文档绘图：
+接入时，从当前 Agent 的 skill 列表或全局 skill 目录核对已有安装，并沿用当前会话中的明确选择。尚未安装且尚未明确选择时，询问用户是否全局安装 `document-diagrams`，用于后续需求和技术方案中的文档绘图：
 
 > 是否安装 document-diagrams 绘图 skill？它会安装到全局 skill 目录，方便后续需求和技术方案绘图；不安装也可以继续接入 SpecTrail。
 
@@ -65,7 +65,7 @@ work-branch 可重复提供。脚本不联网、不扫描全部分支、不改 G
 npx --yes skills add iTgo-lyq/document-diagrams --skill document-diagrams --global
 ```
 
-`--yes` 只用于命令执行，不替代用户的安装授权。已安装时不重复安装或升级；当前会话已有明确答复时沿用，不重复询问。用户拒绝、暂未答复或安装失败时，继续基础接入，实际需要绘图时再处理；失败如实报告。本步骤由 Agent 交互执行，不加入只读 setup 检查器，也不新增项目配置字段。
+`--yes` 只用于命令执行，不替代用户的安装授权。已安装时跳过。用户拒绝、暂未答复或安装失败时，继续基础接入，实际需要绘图时再处理；失败如实报告。本步骤由 Agent 交互执行，不加入只读 setup 检查器，也不新增项目配置字段。
 
 ## 业务方接入与验证
 
@@ -83,7 +83,7 @@ node "$(git rev-parse --show-toplevel)/.agents/skills/spec-trail/cli.mjs" setup 
 
 Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新克隆沿业务项目既有启用方式接入。同仓库 worktree 默认共用 Git 配置，入口应调用当前工作区的校验脚本。更换管理方式后重新核对实际入口与执行效果。
 
-将接入文件和配置提交，并按已有授权与 remote 配置推送。报告持久化位置、业务启用方式、准备检查、实际 hook 验证及提交推送状态；未验证时明确说明。项目 README 只保留项目目标，SpecTrail 的接入规则维护在本 skill。
+将接入文件和配置提交，并按已有授权与 remote 配置推送。报告持久化位置、业务启用方式、准备检查、实际 hook 验证及提交推送状态；未验证时明确说明。项目 README 只保留项目目标，SpecTrail 的接入规则维护在本文档。
 
 ## 推荐接入 PR CI
 
@@ -99,11 +99,11 @@ Git clone 传递接入文件和校验脚本，不传递本机 Git 配置；新�
 - 集成分支的普通提交若涉及 `docs/project/changes/<id>/` 下任何文件（含新增、删除及重命名来源），以 HEAD 中的 active Change 和本地命名/跟踪分支的实际所属记录判定移交；有归属证据时拒绝整个提交，提示分支及已登记 worktree。仅预填名称、目标没有所属记录且集中记录仍为有效规划时放行。实际目标仍在需求阶段也不能集中修改；同次改写或删除 change.json 不绕过检查。未移交规划、首次移交登记、工作/任务分支及正常合并继续沿原有校验；不涉及 Change 文档的提交不作实现归属推断。hook 不联网，缓存跟踪记录不冒充实时远端验证。
 - 共享主 skill 的 `scripts/state-schema.mjs`，按主 skill 的 TypeScript 声明检查必需字段、类型、枚举、非空文本、带时区的有效时间、任务编号、未知字段及数组重复项，包含 `dependsOn`。
 - 只保留明确的字段关联：`blocked` 任务需要 `reason`，`cancelled` Change 需要 `cancellation`。
-- workflow 只接受 schemaVersion 3，必填合法且不同的 integrationBranch / releaseBranch。Change 记录的 schemaVersion 仍为 1，与 workflow 版本独立。
+- `workflow.json` 的 `schemaVersion` 为 `3`，必填合法且不同的 `integrationBranch` 和 `releaseBranch`。Change 记录的 `schemaVersion` 为 `1`。
 - 原型跨文件检查仅针对当前分支所属 live Change；继承副本仍检查本次暂存的完整 JSON 结构，其远端原型不要求在本地存在。hook 不 fetch、不跟随远端入口。
 - 读取 Git 本次实际提交的暂存区版本，保留 `GIT_INDEX_FILE`。失败输出文件、字段和原因并阻止提交；不修改文件或暂存区。
 - 确认是否有效、依赖是否满足、任务是否真正完成以及合码条件由 Agent 按主工作流判断。hook 不解析 Markdown 正文，不联网，也不增加归档或合码门禁。
 
 更新规则时只修改 skill 中的校验脚本并提交对应更新，使规则与主 skill 的类型声明保持一致；hook 保持对该脚本的调用。
 
-修改校验规则或 setup 检查后运行 `node --test <skill-dir>/setup/tests/setup.test.mjs`，覆盖只读检查、业务方显式接入、字段规则、暂存区、部分提交、clone 和 worktree。
+修改校验规则或 setup 检查后运行 `node --test <skill-dir>/tests/setup.test.mjs`，覆盖只读检查、业务方显式接入、字段规则、暂存区、部分提交、clone 和 worktree。

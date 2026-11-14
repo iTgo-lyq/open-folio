@@ -27,7 +27,6 @@ import { verifyPrototypeSource } from '../prototype/scripts/local-source.mjs';
 import { parseTaskOrder, unfinishedPredecessors } from "./task-order.mjs";
 import { changeLocation, closedRecord } from "./routing.mjs";
 import { changeIntegration } from "./github-prs.mjs";
-import { checkForUpdates } from "./update-check.mjs";
 import {
   repository,
   collaborationCatalog,
@@ -92,7 +91,7 @@ function stageAfterResize(state, size) {
   return stage;
 }
 
-async function change(command, opts) {
+export async function runChange(command, opts) {
   const need = (key) => {
     assert(
       typeof opts[key] === "string" && opts[key].trim(),
@@ -192,7 +191,7 @@ async function change(command, opts) {
       };
     } else
       output = { ...routedRecord(repo, catalog, id), source: "pushed-record" };
-    return { output, repo, skipUpdate: opts["dry-run"] };
+    return { output };
   }
   assert(
     matches.length <= 1,
@@ -1209,7 +1208,7 @@ async function change(command, opts) {
       ...(availability.length ? { availability } : {}),
     };
     if (opts["dry-run"]) {
-      return { output: result, repo, skipUpdate: true };
+      return { output: result };
     }
     assert(
       original === null
@@ -1308,14 +1307,8 @@ async function change(command, opts) {
       archiveDir
         ? `Commit and push the archived source, then run node .agents/skills/spec-trail/cli.mjs integration preflight --change ${state.id}; create/reuse its PR and verify the remote merge before cleanup. Use rework for corrections before integration.`
         : "Review the local diff, commit and push. A local command is not a published workflow fact.";
-    return { output: result, repo };
+    return { output: result };
   } finally {
     rmSync(lock, { recursive: true });
   }
-}
-
-export async function runChange(command, options) {
-  const { output, repo, skipUpdate } = await change(command, options);
-  const update = skipUpdate ? undefined : await checkForUpdates(repo);
-  return { output: update ? { ...output, skillUpdate: update } : output };
 }

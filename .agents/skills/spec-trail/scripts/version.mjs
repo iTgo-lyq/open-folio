@@ -26,15 +26,6 @@ export function readVersion(file) {
   return value;
 }
 
-export function compareVersions(left, right) {
-  const a = parseVersion(left),
-    b = parseVersion(right);
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1;
-  }
-  return 0;
-}
-
 export function nextVersion(current) {
   if (current === null) return "0.1.0";
   const parts = parseVersion(current);

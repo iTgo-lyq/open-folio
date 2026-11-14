@@ -62,7 +62,6 @@ export async function xlargeFixture(integrationBranch = "develop") {
       schemaVersion: 3,
       integrationBranch,
       releaseBranch: "main",
-      checkForUpdates: false,
     }),
   );
   const state = (id: string) => ({

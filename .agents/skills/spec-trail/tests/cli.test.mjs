@@ -22,9 +22,10 @@ test("CLI help and argument errors work outside a Git project", t => {
   const run = outsideProject(t);
 
   for (const [args, expected] of [
-    [["--help"], /^  create --change <id> --title <text> --size <small\|medium\|large\|xlarge> /m],
-    [["change", "--help"], /^  task-start --change <id> --task <Tn> \[--repo <path>\] \[--dry-run\]$/m],
+    [["--help"], /^  change +Change state in docs\/project\/changes\/<id>\/change\.json$/m],
+    [["change", "--help"], /^  task-start +Move a task from todo or blocked to doing /m],
     [["change", "task-start", "--help"], /--task <Tn> +\(required\) Task id such as T1/],
+    [["change", "task-start", "--help"], /^Usage: .* change task-start --change <id> --task <Tn> \[--repo <path>\] \[--dry-run\]$/m],
     [["maintenance", "archive-tags-delete", "--help"], /--manifest <file> --service-ready \[--repo <path>\]/],
   ]) {
     const result = run(args);
@@ -61,15 +62,23 @@ test("help gives runnable usage for every command and documents every option", a
     return result.stdout;
   };
   const overview = help();
+  const listed = text => text.split("\n").filter(line => /^  \S/.test(line)).map(line => line.trim().split(/\s+/)[0]);
+  assert.deepEqual(listed(overview), Object.keys(commands).filter(group => group !== "setup"));
 
   for (const [group, entries] of Object.entries(commands)) {
     assert.ok(groups[group]?.summary, `${group} needs a summary`);
-    const section = help(group).split("\n");
+    const section = help(group);
+    assert.ok(section.includes(`${group}: ${groups[group].summary}`), `${group} help lacks its summary`);
+    assert.doesNotMatch(section, /\[--repo <path>\]/, `${group} help should not list options`);
     for (const [name, spec] of Object.entries(entries)) {
       assert.ok(spec.summary, `${group} ${name} needs a summary`);
-      const usage = section.find(line => line.startsWith(`  ${name} `));
-      assert.ok(usage && overview.includes(`${usage}\n      ${spec.summary}`), `${group} ${name} is missing from the overview`);
+      assert.ok(
+        section.split("\n").some(line => line.startsWith(`  ${name} `) && line.endsWith(` ${spec.summary}`)),
+        `${group} ${name} is missing from group help`,
+      );
       const details = help(group, name);
+      const usage = details.split("\n")[0];
+      assert.ok(usage.startsWith(`Usage: node .agents/skills/spec-trail/cli.mjs ${group} ${name}`));
       assert.match(details, /^Options:$/m);
       assert.ok(details.includes(`Example:\n  node .agents/skills/spec-trail/cli.mjs ${group} ${name}`));
       // The example must pass the same parsing, required and choice checks as a real call.

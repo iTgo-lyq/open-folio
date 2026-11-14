@@ -83,7 +83,7 @@ test("child PRs, sibling dependencies, parent closure and cleanup use the actual
     "../.agents/skills/spec-trail/scripts/integration.mjs"
   );
   const { checkPullRequest } = await import(
-    "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs"
+    "../.agents/skills/spec-trail/scripts/check-pr.mjs"
   );
   const { githubCli } = await import("./github-cli-fixture.ts");
   const { completedChange } = await import("./integration-fixture.ts");

@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { recordsAt } from '../../scripts/repository.mjs';
-import { validateChange, validateWorkflow } from '../../scripts/state-schema.mjs';
-import { closedRecord, validBranchName, parentBranch } from '../../scripts/routing.mjs';
-import { changePullRequests, deliveryPullRequests, integrationEvidence } from '../../scripts/integration-records.mjs';
-import { githubPullRequests } from '../../scripts/github-prs.mjs';
+import { recordsAt } from './repository.mjs';
+import { validateChange, validateWorkflow } from './state-schema.mjs';
+import { closedRecord, validBranchName, parentBranch } from './routing.mjs';
+import { changePullRequests, deliveryPullRequests, integrationEvidence } from './integration-records.mjs';
+import { githubPullRequests } from './github-prs.mjs';
 
 const assert = (value, message) => { if (!value) throw Error(message); };
 const sha = value => typeof value === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(value);

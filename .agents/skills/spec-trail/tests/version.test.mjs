@@ -4,20 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
-  compareVersions,
   nextVersion,
   parseVersion,
   readVersion,
 } from "../scripts/version.mjs";
 
-test("release versions compare numerically and advance only the patch component", () => {
+test("release versions advance only the patch component", () => {
   assert.equal(nextVersion(null), "0.1.0");
   assert.equal(nextVersion("0.1.9"), "0.1.10");
   assert.equal(nextVersion("2.3.4"), "2.3.5");
-  assert.equal(compareVersions("0.1.10", "0.1.9"), 1);
-  assert.equal(compareVersions("1.0.0", "0.99.999"), 1);
-  assert.equal(compareVersions("1.2.3", "1.2.3"), 0);
-  assert.equal(compareVersions("0.1.0", "0.2.0"), -1);
   for (const invalid of [
     "v1.2.3",
     "01.2.3",

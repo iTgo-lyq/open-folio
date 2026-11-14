@@ -19,18 +19,12 @@ function synopsis(name, { options, required }) {
   })].join(" ");
 }
 
-// Every level prints runnable usage lines; deeper levels add notes, option details and an example.
-function groupSection(name, details) {
-  const lines = [`${name}: ${groups[name].summary}`];
-  if (details) lines.push(...(groups[name].notes ?? []).map(note => `  ${note}`));
-  for (const [entry, spec] of Object.entries(commands[name])) {
-    if (details) lines.push("");
-    lines.push(`  ${synopsis(entry, spec)}`, `      ${spec.summary}`);
-    if (details) lines.push(...spec.notes.map(note => `      ${note}`));
-  }
-  return lines;
-}
+const table = rows => {
+  const width = Math.max(...rows.map(([name]) => name.length)) + 2;
+  return rows.map(([name, text]) => `  ${name.padEnd(width)}${text}`);
+};
 
+// The overview lists groups, a group lists its commands, and only a command shows options and an example.
 function usage() {
   if (!groupCommands)
     return [
@@ -39,15 +33,21 @@ function usage() {
       "Each operation prints one JSON value to stdout; help is text and diagnostics go to stderr.",
       "Exit codes: 0 success, 1 usage error or failed check, 2 incomplete cleanup or tag deletion.",
       "Options take --name value or --name=value. Prototype commands need Node.js 24+, the others Node.js 20+.",
-      "Use <group> --help for notes on each command, and <group> <command> --help for option details and an example.",
-      ...Object.keys(commands).flatMap(name => ["", ...groupSection(name, false)]),
+      "Use <group> --help to list its commands, and <group> <command> --help for options and an example.",
+      "",
+      "Groups:",
+      ...table(Object.keys(commands).filter(name => name !== "setup").map(name => [name, groups[name].summary])),
     ].join("\n");
   if (!definition)
     return [
       `Usage: ${invocation} ${group} <command> [options]`,
-      "Use <command> --help for option details and an example.",
+      "Use <command> --help for options and an example.",
       "",
-      ...groupSection(group, true),
+      `${group}: ${groups[group].summary}`,
+      ...(groups[group].notes ?? []).map(note => `  ${note}`),
+      "",
+      "Commands:",
+      ...table(Object.entries(commands[group]).map(([name, spec]) => [name, spec.summary])),
     ].join("\n");
 
   const rows = Object.entries(definition.options).map(([name, option]) => [
@@ -56,7 +56,6 @@ function usage() {
       .filter(Boolean).join(" "),
   ]);
   rows.push(["--help", "Show this help"]);
-  const width = Math.max(...rows.map(([name]) => name.length)) + 2;
   const notes = [...(groups[group].notes ?? []), ...definition.notes];
   return [
     `Usage: ${invocation} ${group} ${synopsis(command, definition)}`,
@@ -64,7 +63,7 @@ function usage() {
     definition.summary,
     "",
     "Options:",
-    ...rows.map(([name, text]) => `  ${name.padEnd(width)}${text}`),
+    ...table(rows),
     ...(notes.length ? ["", "Notes:", ...notes.map(note => `  ${note}`)] : []),
     "",
     "Example:",

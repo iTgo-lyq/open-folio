@@ -43,7 +43,6 @@ function fixture(
       schemaVersion: 3,
       integrationBranch,
       releaseBranch: "main",
-      checkForUpdates: false,
     }),
   );
   git("add", ".");

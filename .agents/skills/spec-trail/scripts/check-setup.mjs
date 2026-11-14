@@ -4,8 +4,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const skillPath = ".agents/skills/spec-trail";
-const validatorPath = `${skillPath}/setup/scripts/pre-commit.mjs`;
-const dependenciesPath = `${skillPath}/setup/scripts/script-dependencies.mjs`;
+const validatorPath = `${skillPath}/scripts/pre-commit.mjs`;
+const dependenciesPath = `${skillPath}/scripts/script-dependencies.mjs`;
 const cliPath = `${skillPath}/cli.mjs`;
 const commandsPath = `${skillPath}/scripts/cli-commands.mjs`;
 const schemaPath = `${skillPath}/scripts/state-schema.mjs`;
