@@ -143,6 +143,8 @@ export async function checkPullRequest(git, event, readPullRequests = githubPull
     const {id, state, directory} = row;
     if (state?.branch === config.integrationBranch &&
         cancelledArchive(state) && !validateChange(state).length) {
+      assert(!row.error && state.id === id,
+        `Change ${id}: cancelled archive id does not match its directory`);
       assert(git(['rev-parse', `${pr.head.sha}:${directory}`]) ===
         git(['rev-parse', `${integrationTip}:${directory}`]),
       `Change ${id}: release candidate modified its cancelled archive`);

@@ -67,15 +67,19 @@ test("a release can carry collaboration cancellation history without listing it 
   t.after(f.cleanup);
   f.merge();
   const directory = "docs/project/archive/2026-11-15-planned";
-  await f.put(`${directory}/change.json`, JSON.stringify({
+  const cancelled = {
     ...completedChange("planned"),
     branch: "develop",
     status: "cancelled",
     stage: "requirement",
     tasks: {},
     closure: {},
-    cancellation: { at: "2026-11-15T01:00:00.000Z", reason: "No longer needed" },
-  }));
+    cancellation: {
+      at: "2026-11-15T01:00:00.000Z",
+      reason: "No longer needed",
+    },
+  };
+  await f.put(`${directory}/change.json`, JSON.stringify(cancelled));
   f.commit();
   const release = await checkPullRequest(f.git, event(f, "main", releaseBody));
   assert.deepEqual(release.changes, ["example"]);
@@ -85,6 +89,16 @@ test("a release can carry collaboration cancellation history without listing it 
   await assert.rejects(
     checkPullRequest(f.git, event(f, "main", releaseBody)),
     /modified its cancelled archive/,
+  );
+  f.git(["checkout", "develop"]);
+  await f.put(
+    `${directory}/change.json`,
+    JSON.stringify({ ...cancelled, id: "different-id" }),
+  );
+  f.commit();
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", releaseBody)),
+    /cancelled archive id does not match its directory/,
   );
 });
 

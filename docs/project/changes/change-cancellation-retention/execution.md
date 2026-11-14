@@ -16,3 +16,7 @@ npm run typecheck
 npm run build
 npm run test:e2e -- tests/browser/changes.spec.ts -g 'cancelled and invalid'
 ```
+
+## 验收评审整改
+
+R2–R4 的变更及复验见[评审记录](review.md)。预览和发布检查的两个复现用例均在修复前失败，修复后通过。预览、PR 检查、归档返工与发布归档的定向回归共 46 项通过。

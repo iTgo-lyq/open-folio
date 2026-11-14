@@ -16,7 +16,9 @@
     },
     "T2": {
       "title": "修复取消预览与发布检查并澄清归档说明",
-      "status": "doing"
+      "status": "done",
+      "verification": "R2、R3 复现后修复，定向回归 46 项、Skill 21 项、生产构建、接入与网站检查通过，R4 文档和命令帮助已核对。",
+      "commitTitle": "change-cancellation-retention T2: address review feedback"
     }
   },
   "closure": {},

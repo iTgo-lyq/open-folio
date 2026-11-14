@@ -241,11 +241,14 @@ export async function resolvePreview(
   const route = latest.routes.find((route) => route.id === changeId);
   if (!route || route.errors.length)
     return fail("未找到可判定的 Change 主来源，请先核对已推送分支。");
-  const central = route.kind === "archive" && candidate?.state?.status !== "cancelled";
-  const integration = central
+  const latestGroup = latest.changes.find((group) => group.id === changeId);
+  const latestState = latestGroup && primaryRecord(latestGroup)?.state;
+  const completedArchive =
+    route.kind === "archive" && latestState?.status !== "cancelled";
+  const integration = completedArchive
     ? integrationFor(latest.integrations, changeId)
     : undefined;
-  if (central) {
+  if (completedArchive) {
     if (integration?.status !== "found")
       return fail(
         integration?.status === "missing"
@@ -309,7 +312,7 @@ export async function resolvePreview(
       return fail("这个 Change 还没有关联原型。", false);
     if (stateFiles[0].path.startsWith("docs/project/archive/")) {
       if (
-        central &&
+        completedArchive &&
         (integration?.status !== "found" ||
           stateFiles[0].path !== `${integration.archivePath}/change.json`)
       )
