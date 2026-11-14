@@ -4,9 +4,15 @@
   "title": "精简 SpecTrail 主 Skill 与 CLI，原型改为复用业务代码的页面片段",
   "size": "medium",
   "status": "active",
-  "stage": "requirement",
+  "stage": "technical",
   "branch": "develop",
-  "confirmations": {},
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-14T18:31:01.147Z",
+      "summary": "精简主 Skill 与 CLI，原型改为复用业务代码的页面片段。",
+      "source": "确认需求，可以移交。"
+    }
+  },
   "tasks": {},
   "closure": {},
   "types": [
