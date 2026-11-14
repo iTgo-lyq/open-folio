@@ -1,6 +1,6 @@
 # 原型构建与 R2 发布
 
-当前清单维护七组 `quiet-*` 业务页面片段，依据见 [DESIGN.md](DESIGN.md)。包内 TSX 入口直接引用 `src/components`，使用内存 mock，不启动 Next、后端或应用路由。`npm run build --workspace prototype` 使用仓库已有的 React/Vite/CSS Modules 技术栈，按清单输出自包含 `dist/<id>/index.html`；构建清理旧 dist，但不会上传或改动清单，dist 不提交。历史 Change 固定引用及已发布字节继续保留。
+当前清单维护七组 `quiet-*` 业务页面片段，依据见 [DESIGN.md](DESIGN.md)。包内 TSX 入口直接引用 `src/components`，使用内存 mock，不启动 Next、后端或应用路由。`npm run build --workspace prototype` 使用仓库已有的 React/Vite/CSS Modules 技术栈，按清单输出自包含 `dist/<id>/index.html`；构建清理旧 dist，但不会上传或改动清单，dist 不提交。不保留旧手写工作台、专属数据或兼容层。
 
 ## 七组业务片段
 
@@ -14,7 +14,9 @@
 
 验证：`npm run typecheck --workspace prototype`、`npm run build --workspace prototype`、`npm test --workspace prototype`、`npm run verify --workspace prototype`。浏览器检查使用仅授予 `allow-scripts` 的 iframe 与项目 CSP，覆盖七入口 × 两主题 × 1440/834/390/320px 及主要交互，截图输出到 Git 忽略的 `artifacts/prototype-fragments/`。静态访问可在仓库根目录运行 `python3 -m http.server 10684 --bind 127.0.0.1 --directory packages/prototype/dist`，打开 `/quiet-home/index.html` 等入口；无需 `.env`。
 
-当前清单的 artifact 在新版本实际发布登记前仍指向旧固定设计，不能当作新 TSX 构建的线上验收证据。发布七组入口时直接使用干净的 `dist` 和 `publish-quiet-entries.json`，不要在 dist 内嵌套复制 release 目录。发布前提交源码；只有获得公开上传授权并验证成功后，才通过 SpecTrail 登记新固定引用。
+发布七组入口时直接使用干净的 `dist` 和 `publish-quiet-entries.json`，不要在 dist 内嵌套复制 release 目录。发布前提交源码；只有获得公开上传授权并验证成功后，才通过 SpecTrail 登记新固定引用。清单 artifact 的源码提交和摘要标识实际发布内容，不以本地构建代替线上证据。
+
+获授权替换旧原型时，新版本验证成功后更新引用，不覆盖旧 immutable URL 的字节。旧架构数据不迁移、不备份；删除旧制品前核对已推送分支、标签及 Change，仍被未切换入口使用的对象不提前删除。Git 历史、归档正文和真实工作台数据不属于该清理范围。
 
 ## 首次配置
 

@@ -4,7 +4,7 @@
     {
       "id": "quiet-home",
       "title": "我的仓库与侧栏片段",
-      "description": "直接复用 Shell、PersonalHome；虚构仓库与内存偏好。明暗主题、桌面/平板/手机。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 Shell、PersonalHome；虚构仓库与内存偏好。明暗主题、桌面/平板/手机。",
       "sourcePath": "packages/prototype/src/pages/quiet-home.tsx",
       "kind": "page",
       "devices": [
@@ -37,7 +37,7 @@
     {
       "id": "quiet-specs",
       "title": "Specs 阅读片段",
-      "description": "直接复用 Specs、Reader 与正文组件；目录、阅读设置、相关 Change，数据仅在内存。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 Specs、Reader 与正文组件；目录、阅读设置、相关 Change，数据仅在内存。",
       "sourcePath": "packages/prototype/src/pages/quiet-specs.tsx",
       "kind": "page",
       "devices": [
@@ -70,7 +70,7 @@
     {
       "id": "quiet-changes",
       "title": "Changes 列表与材料片段",
-      "description": "直接复用 Changes、ChangeDirectory、ChangeReading 和视图管理；等待、受阻、暂缓与材料，内存 mock。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 Changes、ChangeDirectory、ChangeReading 和视图管理；等待、受阻、暂缓与材料，内存 mock。",
       "sourcePath": "packages/prototype/src/pages/quiet-changes.tsx",
       "kind": "page",
       "devices": [
@@ -103,7 +103,7 @@
     {
       "id": "quiet-prototypes",
       "title": "原型总览与画布片段",
-      "description": "直接复用 Prototypes、ChangePreviews；缩略图与画布资源由包内 mock 替代。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 Prototypes、ChangePreviews；缩略图与画布资源由包内 mock 替代。",
       "sourcePath": "packages/prototype/src/pages/quiet-prototypes.tsx",
       "kind": "page",
       "devices": [
@@ -136,7 +136,7 @@
     {
       "id": "quiet-credentials",
       "title": "账号与 Token 片段",
-      "description": "直接复用 AccountSettings、AccountLogin；虚构登录、注册、Token 与设备操作，不访问真实服务。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 AccountSettings、AccountLogin；虚构登录、注册、Token 与设备操作，不访问真实服务。",
       "sourcePath": "packages/prototype/src/pages/quiet-credentials.tsx",
       "kind": "page",
       "devices": [
@@ -169,7 +169,7 @@
     {
       "id": "quiet-public",
       "title": "匿名公开画布片段",
-      "description": "直接复用 PublicPreviewView、PublicPreviewUnavailable；设备、旋转、不可用状态，内部资源为 mock。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 PublicPreviewView、PublicPreviewUnavailable；设备、旋转、不可用状态，内部资源为 mock。",
       "sourcePath": "packages/prototype/src/pages/quiet-public.tsx",
       "kind": "page",
       "devices": [
@@ -202,7 +202,7 @@
     {
       "id": "quiet-share",
       "title": "Change 分享阅读片段",
-      "description": "直接复用 PublicShell、ChangeReading；材料目录、正文和内嵌原型，不启动分享认证。artifact 保留上次发布，新源码需构建查看。",
+      "description": "直接复用 PublicShell、ChangeReading；材料目录、正文和内嵌原型，不启动分享认证。",
       "sourcePath": "packages/prototype/src/pages/quiet-share.tsx",
       "kind": "page",
       "devices": [

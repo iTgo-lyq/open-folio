@@ -4,23 +4,23 @@
   "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
   "size": "large",
   "status": "active",
-  "stage": "close",
+  "stage": "execution",
   "branch": "change/prototype-architecture-migration",
   "confirmations": {
     "requirement": {
-      "at": "2026-11-14T20:20:20.062Z",
-      "summary": "七组原型复用业务组件与内存数据，保持静态访问和历史引用",
-      "source": "接手 prototype-architecture-migration。按 SpecTrail 从 develop 移交并推进，把 packages/prototype 迁为直接复用业务组件、使用 mock 数据的静态页面片段。我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
+      "at": "2026-11-14T22:27:00.935Z",
+      "summary": "七组业务片段直接发布并替换旧引用，清理无有效引用的旧原型数据",
+      "source": "直接上传制品替换现在的原型，不用保留旧架构和相关的数据。沿用此前自主决定方案、步骤、提交推送并停在人工验收的授权。"
     },
     "technical": {
-      "at": "2026-11-14T20:22:57.008Z",
-      "summary": "直接引用业务组件，Vite 内联构建并在数据边界注入内存 mock",
-      "source": "我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
+      "at": "2026-11-14T22:27:04.552Z",
+      "summary": "沿用内存 mock 与固定版本 R2 发布，替换引用并避免旧缓存混用",
+      "source": "直接上传制品替换现在的原型，不用保留旧架构和相关的数据。沿用此前自主决定方案、步骤、提交推送并停在人工验收的授权。"
     },
     "plan": {
-      "at": "2026-11-14T20:23:01.054Z",
-      "summary": "一次迁移七组入口与验证链路，保留历史引用后交人工验收",
-      "source": "我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
+      "at": "2026-11-14T22:27:08.261Z",
+      "summary": "复用已验证片段，上传七页与设备缩略图后交人工验收",
+      "source": "直接上传制品替换现在的原型，不用保留旧架构和相关的数据。沿用此前自主决定方案、步骤、提交推送并停在人工验收的授权。"
     }
   },
   "tasks": {
@@ -29,22 +29,21 @@
       "status": "done",
       "verification": "根及原型类型检查、七入口构建通过；23 项包内与 16 项协议测试通过；56 组视口/主题、11 条交互、21 张标准图、独立静态访问和 prepare 通过；独立评审 R1–R5 无遗留。",
       "commitTitle": "prototype-architecture-migration T1: reuse business components in static fragments"
+    },
+    "T2": {
+      "title": "发布七组静态片段并替换旧原型引用",
+      "status": "doing"
     }
   },
-  "closure": {
-    "verification": {
-      "result": "passed",
-      "at": "2026-11-14T20:56:39.894Z",
-      "summary": "类型、构建、23+16 测试、56 组矩阵、11 条交互、21 张缩略图及 prepare 均通过；独立 subagent 评审与复验无遗留。跨域/真实认证由 mock 隔离，未公开发布。"
-    }
-  },
+  "closure": {},
   "followUpOf": "spec-trail-core-simplification",
   "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
   "types": [
     "重构"
   ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户验收七组静态业务片段；尚未归档、合入 develop 或公开上传，验收材料与本机预览见 execution.md。"
+  "rework": {
+    "at": "2026-11-14T22:25:48.994Z",
+    "reason": "用户要求直接上传并替换当前原型，不再要求保留旧架构和专属数据",
+    "approach": "沿用已验证实现，追加 T2 发布七入口与缩略图并替换引用；仍等待代码验收，未切换的有效引用不提前删除"
   }
 }
