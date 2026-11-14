@@ -4,7 +4,7 @@
   "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
   "size": "large",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/prototype-architecture-migration",
   "confirmations": {
     "requirement": {
@@ -31,10 +31,20 @@
       "commitTitle": "prototype-architecture-migration T1: reuse business components in static fragments"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T20:56:39.894Z",
+      "summary": "类型、构建、23+16 测试、56 组矩阵、11 条交互、21 张缩略图及 prepare 均通过；独立 subagent 评审与复验无遗留。跨域/真实认证由 mock 隔离，未公开发布。"
+    }
+  },
   "followUpOf": "spec-trail-core-simplification",
   "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
   "types": [
     "重构"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户验收七组静态业务片段；尚未归档、合入 develop 或公开上传，验收材料与本机预览见 execution.md。"
+  }
 }
