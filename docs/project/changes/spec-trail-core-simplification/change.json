@@ -51,7 +51,8 @@
     },
     "T6": {
       "title": "按阶段拆分主 Skill",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照 00caa75；核对主 Skill 的阶段入口、共享提问、返工与 worktree 指引，146 个 Markdown 本地引用和介绍站检查通过。"
     }
   },
   "closure": {},
