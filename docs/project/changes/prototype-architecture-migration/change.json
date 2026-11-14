@@ -45,5 +45,224 @@
     "at": "2026-11-14T22:25:48.994Z",
     "reason": "用户要求直接上传并替换当前原型，不再要求保留旧架构和专属数据",
     "approach": "沿用已验证实现，追加 T2 发布七入口与缩略图并替换引用；仍等待代码验收，未切换的有效引用不提前删除"
-  }
+  },
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "Changes 列表与材料片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-changes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-credentials",
+      "title": "账号与 Token 片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-credentials/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-home",
+      "title": "我的仓库与侧栏片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-home/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-prototypes",
+      "title": "原型总览与画布片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-prototypes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-public",
+      "title": "匿名公开画布片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-public/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-share",
+      "title": "Change 分享阅读片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-share/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-specs",
+      "title": "Specs 阅读片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/index.html",
+        "sourceCommit": "98841e01bb25fb85f2468923c64e35fbe443c19c",
+        "digest": "sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8/quiet-specs/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
 }

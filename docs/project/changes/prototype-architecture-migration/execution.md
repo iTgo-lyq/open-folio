@@ -54,3 +54,21 @@ python3 -m http.server 10684 --bind 127.0.0.1 --directory packages/prototype/dis
 本机已通过独立 tmux 会话 `openfolio-prototype-migration` 启动上述静态服务器，仅监听 127.0.0.1:10684；已运行时无需重复启动。它不占用常驻服务的 11117 端口、`.next` 或数据目录。
 
 打开 `http://127.0.0.1:10684/quiet-home/index.html`；其余六个 id 见包 README。无需 `.env`、真实登录或 Token；凭据表单只接受 `demo-lin / demo12345` 和 `demo / demo-work`。截图在 `artifacts/prototype-fragments/`；标准缩略图在各 `dist/<id>/` 中。
+
+## T2：发布七组静态片段并替换旧原型引用
+
+### 公开发布
+
+用户追加授权直接上传制品替换旧原型，不保留旧架构和专属数据。以下发布事实取代 T1 交付时“尚未公开上传”的限制，T1 的实现与验证记录不改写。
+
+在干净提交 `98841e01bb25fb85f2468923c64e35fbe443c19c` 重新执行七入口构建和标准截图，生成 7 个 HTML 与 21 张设备图片。使用主工作区环境配置在内存中注入发布凭据，未复制或输出秘密；既有 `publishToR2` 对 28 个对象完成条件上传、匿名读取、Content-Type 和字节一致性校验。
+
+发布版本为 `3dd6ccb80a617dea779edf058713091bfb5a815e5ee9bb3bf7ce4ed9c34922a8`，摘要为 `sha256:5ec214913a1b347a78ef62037bcaa9bdb8257045fe0fdf555f665d5bd126f4f6`。`prototype register` 同时替换七项当前 artifact 和本 Change previews，所有入口包含 PC Web、iPad、手机三项缩略图。协议请求和结果保存在仓库外的 `/tmp/openfolio-prototype-release-{request,result}.json`。
+
+### 旧数据清理
+
+扫描中心仓库全部 11 个分支 tip；远端无标签。按这些版本的 `docs/project` 与 `packages/prototype` 中固定对象地址核对引用，排除新发布版本后，识别并删除 9 个无有效引用的旧版本，共 130 个对象、16,457,381 字节。删除响应无错误，并逐版本列举确认对象数为零，没有创建备份。
+
+删除版本：`0b61fa94`、`176f00ab`、`68649130`、`74d75e67`、`96c1740f`、`bc283d75`、`ccc20ad1`、`e60b41dc`、`f4d4d9ff`。本机清单与删除结果位于 `/tmp/openfolio-prototype-cleanup-report.json`。
+
+`develop` 当前仍引用 `06e078ce` 和 `b79cf450`，其他分支/Change 也有独立固定引用，这些对象未提前删除。旧手写架构、专属 mock 与资源已从本 Change 源码移除，不提供兼容层；未改写历史归档、Git 历史或真实账号及工作台数据。
