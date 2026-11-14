@@ -1,7 +1,7 @@
 // A follow-up continues an archived delivery. Its chain of predecessors must
 // be valid published history, but it is not an execution prerequisite.
 import { dirname } from "node:path";
-import { closedRecord } from "../core/routing.mjs";
+import { cancelledArchive, closedRecord } from "../core/routing.mjs";
 import { routedRecord } from "../core/repository.mjs";
 import { parseTaskOrder } from "../core/task-order.mjs";
 import { assert } from "./context.mjs";
@@ -73,7 +73,7 @@ function followUpTitles({ id, repo, catalog, git, opts }, target) {
         /* Missing Plan is checked below. */
       }
       valid(["valid", "not-applicable"].includes(parseTaskOrder(prior, plan).status));
-    } else valid(!record.archived);
+    } else valid(prior.status === "cancelled" ? record.archived && cancelledArchive(prior) : !record.archived);
     records.set(priorId, record);
     return record;
   };

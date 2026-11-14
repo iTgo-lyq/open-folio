@@ -24,6 +24,7 @@ import {
 } from "./schema.ts";
 import { cyclicNodes, parsePlan } from "./plan.ts";
 import { inspectMarkdown, resolveDocumentLink } from "../lib/markdown.ts";
+import { cancelledArchive } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 const issue = (code: string, message: string, path?: string): Diagnostic => ({
   code,
   message,
@@ -130,8 +131,8 @@ function semantics(c: ChangeCandidate, liveIds: Set<string>) {
         "LIVE_DIRECTORY_REMAINS",
         "该分支仍保留原 Change 目录，不满足归档条件。",
       );
-  } else if (c.archived)
-    add("ARCHIVE_STATUS", "归档目录内的记录未声明完成。", "/status");
+  } else if (c.archived && !cancelledArchive(s))
+    add("ARCHIVE_STATUS", "归档目录缺少有效的完成或取消记录。", "/status");
   c.validCompleted =
     s.status === "completed" &&
     !c.diagnostics.some((d) => d.severity === "error");
@@ -384,7 +385,7 @@ export async function indexChanges(
       (c) =>
         !c.diagnostics.some((d) => d.code === "DIRECTORY_ID") &&
         (route.kind === "archive"
-          ? c.archived && c.validCompleted
+          ? c.archived && (c.validCompleted || cancelledArchive(c.state))
           : c.owner === c.branch ||
             (route.kind === "planning" && c.owner === route.ownerBranch)),
     );

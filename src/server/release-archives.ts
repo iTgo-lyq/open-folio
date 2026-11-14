@@ -6,6 +6,7 @@ import type {
   ReleaseArchive,
 } from "../lib/model.ts";
 import { primaryRecord } from "../lib/model.ts";
+import { cancelledArchive } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import { indexChanges } from "./changes.ts";
 import type { GitReader } from "./git.ts";
 import { INTEGRATION_VERSION } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
@@ -162,7 +163,10 @@ export async function collectReleaseArchives(
     );
   }
   const result: Record<string, ReleaseArchive> = Object.fromEntries(
-    current.map((group) => [
+    current.filter((group) => {
+      const candidate = primaryRecord(group);
+      return !cancelledArchive(candidate?.state) || candidate?.diagnostics.some(issue => issue.severity === "error");
+    }).map((group) => [
       group.id,
       primaryRecord(group)?.validCompleted
         ? { status: "found" }

@@ -214,7 +214,7 @@ function syncPlanningWorktree(repo, branch, commit) {
   }
 }
 
-function handoffChild(repo, catalog, record, branch, path, options) {
+function handoffChild(repo, catalog, record, branch, path, options, remote) {
   const target = deliveryTarget(repo, catalog, record.state, {refresh: !options['dry-run']});
   assert(target.parent.status === 'active', 'The parent must be active before child handoff');
   assert(branch !== target.branch, 'A child needs its own work branch');
@@ -224,8 +224,6 @@ function handoffChild(repo, catalog, record, branch, path, options) {
       sourceCommit:target.commit, targetBranch:target.branch,
       publishOrder:[branch, catalog.branch], note:'Only the planning registration is published to the integration branch'};
   }
-  const remote = remoteBranch(repo, branch);
-  if (remote) fetchBranch(repo, branch);
   const candidate = revision(repo, `refs/heads/${branch}`) ?? (remote && revision(repo, `refs/remotes/origin/${branch}`));
   const existing = ownedWorktree(repo, branch);
   assert(!existing || clean(existing.path), 'Child worktree has unsaved changes; inspect before retrying');
@@ -296,6 +294,17 @@ function handoff(repo, id, options) {
       catalog.config.releaseBranch !== branch,
     "Choose an independent, non-protected work branch",
   );
+  const cancelled = (entries) => entries.some(row =>
+    row.state?.branch === branch && row.state.status === "cancelled");
+  assert(!cancelled(catalog.entries), `Work branch ${branch} belongs to a cancelled Change`);
+  const refs = [revision(repo, `refs/heads/${branch}`),
+    revision(repo, `refs/remotes/origin/${branch}`)];
+  const remote = remoteBranch(repo, branch);
+  if (remote && !options["dry-run"]) refs.push(fetchBranch(repo, branch));
+  if (remote && options["dry-run"])
+    assert(refs.includes(remote), "Fetch the work branch before dry-run");
+  assert(!refs.some(ref => ref && cancelled(recordsAt(repo, ref))),
+    `Work branch ${branch} belongs to a cancelled Change`);
   if (record.branch !== catalog.branch) {
     assert(
       !options.branch || options.branch === record.branch,
@@ -340,9 +349,7 @@ function handoff(repo, id, options) {
     options["availability-note"],
     !options["dry-run"],
   );
-  if (record.state.parent) return handoffChild(repo, catalog, record, branch, path, options);
-  const remote = remoteBranch(repo, branch);
-  if (remote && !options["dry-run"]) fetchBranch(repo, branch);
+  if (record.state.parent) return handoffChild(repo, catalog, record, branch, path, options, remote);
   const local = revision(repo, `refs/heads/${branch}`);
   const candidate =
     local ?? (remote ? revision(repo, `refs/remotes/origin/${branch}`) : null);
@@ -539,7 +546,10 @@ function locate(repo, id, refresh = false) {
       branch: repo.branch,
       detached: repo.branch === null,
     },
-    next: {
+    next: record.state.status === "cancelled" ? {
+      action: "read-only",
+      prompt: `在 ${record.branch} 的 ${record.path} 阅读取消记录。`,
+    } : {
       action: planning ? 'continue-planning' : tree ? "continue" : "prepare-worktree",
       prompt: planning ? `继续在 ${catalog.branch} 澄清 Change ${id}；当前尚未实际移交，保留暂缓意图。明确启动后使用 handoff，不自动创建执行工作区。` : `继续 Change ${id}：在 ${tree?.path ?? defaultPath(repo, id)} 中核对分支 ${record.branch}，从 ${catalog.branch} 的 ${record.entryPath} 重新定位，再读取 ${record.path} 及相关正文；比较本地与 ${record.commit} 的差异后按未完成任务继续。`,
     },

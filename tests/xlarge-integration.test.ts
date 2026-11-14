@@ -397,18 +397,15 @@ test("custom integration branch preserves the parent target and rejects cancelle
   await writeFile(path, JSON.stringify({ ...original, children: ["second"] }));
   f.commitAt(f.parent);
   assert.match(f.handoff([], 1), /parent|relationship/);
-  await writeFile(
-    path,
-    JSON.stringify({
-      ...original,
-      status: "cancelled",
-      cancellation: { at: "2026-10-27T00:00:00.000Z", reason: "Fixture" },
-    }),
-  );
-  f.commitAt(f.parent);
-  assert.match(f.handoff([], 1), /active|cancelled/);
   await writeFile(path, JSON.stringify(original));
   f.commitAt(f.parent);
-  assert.equal(f.handoff().targetBranch, "feature/whole");
+  assert.equal(f.handoff(["--dry-run"]).targetBranch, "feature/whole");
+  f.cli("change", f.parent, "parent", "cancel", [
+    "--mode", "keep", "--date", "2026-10-27", "--reason", "Fixture",
+  ]);
+  f.commitAt(f.parent);
   assert.throws(() => f.git(["show", "origin/staging:parent-feature.txt"]));
+  f.cli("change", f.author, "parent", "cancel", ["--mode", "mark"]);
+  f.commit();
+  assert.match(f.handoff([], 1), /active|cancelled/);
 });
