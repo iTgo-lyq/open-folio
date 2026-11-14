@@ -3,8 +3,8 @@
   "id": "prototype-architecture-migration",
   "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
   "size": "large",
-  "status": "active",
-  "stage": "execution",
+  "status": "completed",
+  "stage": "close",
   "branch": "change/prototype-architecture-migration",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,30 @@
       "commitTitle": "prototype-architecture-migration T3: restore business loading and failure states"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T23:48:40.167Z",
+      "summary": "T1–T3全部完成；同步develop后类型检查、构建、23+16项测试、56组视口/主题与全部场景及11条交互通过；612bd014七页21图公开字节一致、validate --browser通过。独立subagent评审T1(R1–R5)、T2发布、T3(R9/R10)及验收前评审R6–R8，均已处理或记录。默认总览合入后核对。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-14T23:48:48.140Z",
+      "summary": "用户明确要求完成优化后归档并合入 develop；验收口径为合入后新 Change 与新版原型标签页正常，不考虑历史数据兼容。",
+      "source": "我只管最终归档合入 dev 后，后续新的 change 和 新版原型tab页内容都保持正常即可。不要过分做兼容。文档的修修补补允许。现在由你来继续推进。完成优化、归档、合入把。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-14T23:48:56.787Z",
+      "summary": "project-knowledge/prototype-preview：本仓库 R2 只保留当前分支（含已归档 Change）引用的版本，授权清理不保证历史地址可用；片段式原型包要求已在该能力中。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-14T23:49:07.732Z",
+      "summary": "七组 quiet-* 原型迁为复用业务组件的静态片段，发布 612bd014 并替换当前清单与 Change 引用；用户要求归档合入，Specs 同步 prototype-preview R2 保留约定。",
+      "path": "docs/project/archive/2026-11-15-prototype-architecture-migration"
+    }
+  },
   "followUpOf": "spec-trail-core-simplification",
   "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
   "types": [
