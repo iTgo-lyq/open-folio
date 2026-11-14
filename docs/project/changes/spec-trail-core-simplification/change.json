@@ -31,7 +31,8 @@
     },
     "T2": {
       "title": "CLI 分层帮助与命令分组",
-      "status": "todo"
+      "status": "done",
+      "verification": "对照 496077d、02ad8a8、e9e7f16，核对八个可见分组和三层帮助；CLI 帮助、状态命令和 CLI/工作台旧字段拒绝用例通过。"
     },
     "T3": {
       "title": "CLI 代码结构与测试收敛",
