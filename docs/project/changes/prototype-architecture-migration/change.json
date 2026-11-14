@@ -13,7 +13,12 @@
       "source": "接手 prototype-architecture-migration。按 SpecTrail 从 develop 移交并推进，把 packages/prototype 迁为直接复用业务组件、使用 mock 数据的静态页面片段。我授权你自主决定技术方案和执行步骤，直接完成实现、验证并提交推送，停在等我验收。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "以静态业务片段替代七组手写原型",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "followUpOf": "spec-trail-core-simplification",
   "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
