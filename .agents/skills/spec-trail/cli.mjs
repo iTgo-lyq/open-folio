@@ -31,7 +31,7 @@ function usage() {
       `Usage: ${invocation} <group> <command> [options]`,
       "",
       "Each operation prints one JSON value to stdout; help is text and diagnostics go to stderr.",
-      "Exit codes: 0 success, 1 usage error or failed check, 2 incomplete cleanup or tag deletion.",
+      "Exit codes: 0 success, 1 usage error or failed check, 2 incomplete cleanup.",
       "Options take --name value or --name=value. Prototype commands need Node.js 24+, the others Node.js 20+.",
       "Use <group> --help to list its commands, and <group> <command> --help for options and an example.",
       "",

@@ -26,7 +26,6 @@ test("CLI help and argument errors work outside a Git project", t => {
     [["change", "--help"], /^  task-start +Move a task from todo or blocked to doing /m],
     [["change", "task-start", "--help"], /--task <Tn> +\(required\) Task id such as T1/],
     [["change", "task-start", "--help"], /^Usage: .* change task-start --change <id> --task <Tn> \[--repo <path>\] \[--dry-run\]$/m],
-    [["maintenance", "archive-tags-delete", "--help"], /--manifest <file> --service-ready \[--repo <path>\]/],
   ]) {
     const result = run(args);
     assert.equal(result.status, 0, result.stderr);
@@ -41,7 +40,6 @@ test("CLI help and argument errors work outside a Git project", t => {
     [["change", "show", "--typo"], /Unknown option/],
     [["change", "show", "--change", "example", "extra"], /Unexpected argument/],
     [["change", "task-start", "--change", "example"], /--task is required/],
-    [["maintenance", "archive-tags-delete", "--manifest", "missing.json"], /--service-ready is required/],
     [["change", "verify", "--change", "example", "--result", "maybe", "--summary", "done"], /--result must be one of: passed, failed/],
     [["prototype", "configure", "--hosting", "s3"], /--hosting must be one of: openfolio, custom, git/],
   ]) {

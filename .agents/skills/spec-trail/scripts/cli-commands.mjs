@@ -86,28 +86,6 @@ const publication = (summary, { required = [], optional = [], help, notes, examp
   async (command, values) => (await import("../prototype/scripts/publish.mjs")).runPrototypePublication(command, values),
   { summary, required, optional: [...optional, "repo"], help, notes, example },
 );
-const archiveTags = (summary, deleting) => define(
-  async (command, values) => (await import("./retire-archive-tags.mjs")).runArchiveTags(command, values),
-  {
-    summary,
-    required: deleting ? ["manifest", "service-ready"] : ["manifest"],
-    optional: ["repo"],
-    ...(deleting
-      ? {
-          booleans: ["service-ready"],
-          help: {
-            manifest: { value: "file", text: "Manifest written by archive-tags-list" },
-            "service-ready": { text: "Confirm the deployed reader is verified and old archive writers have stopped" },
-          },
-          notes: ["Exit code 2 when some tags could not be deleted; the JSON lists each tag's result."],
-          example: "--manifest /tmp/archive-tags.json --service-ready",
-        }
-      : {
-          help: { manifest: { value: "file", text: "Manifest file to create; must not exist yet" } },
-          example: "--manifest /tmp/archive-tags.json",
-        }),
-  },
-);
 
 export const groups = {
   change: {
@@ -125,7 +103,6 @@ export const groups = {
     summary: "Prototype package, publishing and validation",
     notes: ["Requires Node.js 24 or newer."],
   },
-  maintenance: { summary: "SpecTrail release and archive tag maintenance" },
 };
 
 export const commands = {
@@ -510,18 +487,5 @@ export const commands = {
     recover: publication("Roll back an interrupted multi-file registration to its previous files; stops on newer edits or commits", {
       notes: ["Rerun register or upload afterwards; recover does not complete the registration."],
     }),
-  },
-  maintenance: {
-    "version-next": define(async (_command, values) => {
-      const { nextVersion, readVersion } = await import("./version.mjs");
-      return { output: { version: nextVersion(readVersion(values.file)) } };
-    }, {
-      summary: "Compute the next patch version from a version.json",
-      required: ["file"],
-      help: { file: { value: "file", text: "version.json to read, e.g. .agents/skills/spec-trail/version.json" } },
-      example: "--file .agents/skills/spec-trail/version.json",
-    }),
-    "archive-tags-list": archiveTags("Write the inventory of legacy archive tags to a manifest", false),
-    "archive-tags-delete": archiveTags("Delete the legacy archive tags listed in a manifest", true),
   },
 };
