@@ -4,7 +4,7 @@
   "title": "精简 SpecTrail 主 Skill 与 CLI，原型改为复用业务代码的页面片段",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/spec-trail-core-simplification",
   "confirmations": {
     "requirement": {
@@ -55,7 +55,13 @@
       "verification": "对照 00caa75；核对主 Skill 的阶段入口、共享提问、返工与 worktree 指引，146 个 Markdown 本地引用和介绍站检查通过。"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T19:59:53.004Z",
+      "summary": "需求逐项核对完成，应用 464 项、Skill 21 项、原型包 16 项、托管浏览器 2 项，以及类型、接入、链接和介绍站检查通过。按用户要求免除独立评审。详见 execution.md。"
+    }
+  },
   "types": [
     "工程",
     "体验"
