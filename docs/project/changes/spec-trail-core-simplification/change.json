@@ -13,7 +13,32 @@
       "source": "确认需求，可以移交。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "整理主 Skill 与接入入口",
+      "status": "todo"
+    },
+    "T2": {
+      "title": "CLI 分层帮助与命令分组",
+      "status": "todo"
+    },
+    "T3": {
+      "title": "CLI 代码结构与测试收敛",
+      "status": "todo"
+    },
+    "T4": {
+      "title": "原型改为业务页面片段",
+      "status": "todo"
+    },
+    "T5": {
+      "title": "脚本依赖检查移到 Skill 测试",
+      "status": "todo"
+    },
+    "T6": {
+      "title": "按阶段拆分主 Skill",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "工程",
