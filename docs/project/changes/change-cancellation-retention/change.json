@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "change-cancellation-retention",
+  "title": "取消 Change 时可选择删除或归档留存",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "交付删除和归档留存两种取消路径",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "types": [
+    "流程"
+  ]
+}
