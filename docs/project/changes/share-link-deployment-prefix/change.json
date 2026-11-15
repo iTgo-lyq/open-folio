@@ -10,7 +10,9 @@
   "tasks": {
     "T1": {
       "title": "保留分享链接的部署前缀并验证兼容性",
-      "status": "doing"
+      "status": "done",
+      "verification": "分享 CLI 和 SpecTrail 共 26 项测试通过，覆盖根地址、子路径两种尾斜杠形式、三类材料、非法地址和离线 CLI。脚本语法及 diff 检查通过。",
+      "commitTitle": "share-link-deployment-prefix T1: preserve the share URL base path"
     }
   },
   "closure": {},
