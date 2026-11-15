@@ -6,10 +6,10 @@ import {
   changePullRequests,
   integrationEvidence,
   inspectIntegration,
-} from "../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { githubPullRequests } from "../.agents/skills/spec-trail/scripts/github-prs.mjs";
+} from "../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import { githubPullRequests } from "../.agents/skills/spec-trail/scripts/core/github-prs.mjs";
 import { verify } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 
 test("only a uniquely associated merged PR proves delivery; messages and wrong identities do not", async (t) => {
   const f = await integrationFixture();
@@ -31,14 +31,18 @@ test("only a uniquely associated merged PR proves delivery; messages and wrong i
   for (const patch of [
     { state: "closed" as const },
     { state: "open" as const },
-    { body: "Mention SpecTrail-Change: example" },
-    { body: "PR\n\nSpecTrail-Change: example\nSpecTrail-Change: example" },
     { head: { ...pr.head, repositoryId: "2" } },
     { head: { ...pr.head, branch: "other" } },
     { base: { ...pr.base, repositoryId: "2" } },
     { base: { ...pr.base, branch: "main" } },
   ])
     assert.equal((await resolve([{ ...pr, ...patch }])).status, "missing");
+  for (const body of [
+    "Delivery",
+    "Mention SpecTrail-Change: other",
+    "PR\n\nSpecTrail-Change: example\nSpecTrail-Change: example",
+  ])
+    assert.equal((await resolve([{ ...pr, body }])).status, "found");
   assert.equal((await resolve([pr, { ...pr, number: 2 }])).status, "invalid");
   assert.equal(
     (await resolve([{ ...pr, mergeCommit: null }])).status,

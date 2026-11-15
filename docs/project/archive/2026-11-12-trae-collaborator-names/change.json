@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "trae-collaborator-names",
+  "title": "按邮箱识别 TRAE 提交的协作者",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/trae-collaborator-names",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "用提交邮箱修正 TRAE 作者显示并刷新旧快照",
+      "status": "done",
+      "verification": "10 项 Git 作者与协作者回归、类型检查、变更文件格式检查及生产构建通过",
+      "commitTitle": "trae-collaborator-names T1: display TRAE authors by email prefix"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-12T14:26:46.358Z",
+      "summary": "Agent 自查差异，10 项作者回归、类型检查、格式检查和生产构建均通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-12T14:26:52.204Z",
+      "summary": "Agent 自验收：Git 历史复现 TRAE 署名修正、同邮箱归并、分享投影和旧快照重建",
+      "source": "requirement.md 与 tests/change-creation-order.test.ts"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-12T14:26:56.491Z",
+      "summary": "同步 Change 跟踪规范中的 TRAE 署名规则及邮箱可见范围"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-12T14:27:00.525Z",
+      "summary": "TRAE 署名修正已验证，Specs 已同步",
+      "path": "docs/project/archive/2026-11-12-trae-collaborator-names"
+    }
+  },
+  "followUpOf": "change-collaborators",
+  "types": [
+    "修复"
+  ]
+}

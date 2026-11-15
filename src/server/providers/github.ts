@@ -328,7 +328,7 @@ export class GitHubProvider implements RepositoryProvider {
     const params = new URLSearchParams({ per_page: "100", page: String(page) });
     if (!query.commit) {
       params.set("state", "all");
-      params.set("sort", "created");
+      params.set("sort", "updated");
       params.set("direction", "desc");
       if (query.base) params.set("base", query.base);
       if (query.head)

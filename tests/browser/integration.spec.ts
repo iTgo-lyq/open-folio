@@ -1,6 +1,18 @@
 import { test, expect, repositoryQuery, openMaterial } from "./connected";
 
 const route = `/?${repositoryQuery}&m=changes&c=integration-demo&ct=integration`;
+
+test("an obsolete file deep link returns to the merged file list", async ({
+  page,
+}) => {
+  await page.goto(`${route}&cf=${"0".repeat(64)}&cv=diff`);
+  await expect(
+    page.getByRole("navigation", { name: "合入文件" }),
+  ).toBeVisible();
+  await expect(page).not.toHaveURL(/[?&](cf|cv)=/);
+  await expect(page).toHaveURL(/c=integration-demo&ct=integration/);
+});
+
 test("integrated diff survives source deletion and supports file links, history, keyboard and narrow viewports", async ({
   page,
   request,

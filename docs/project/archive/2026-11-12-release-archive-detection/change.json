@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "release-archive-detection",
+  "title": "按发布分支归档识别已合入 Change",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/release-archive-detection",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-12T10:20:22.027Z",
+      "summary": "移除PR标记并按正常协作约束优化完整冷重建",
+      "source": "用户明确要求去掉SpecTrail-Change，并给出单发布分支、当前有效归档、一次历史追溯和千级冷启动实测要求。"
+    },
+    "technical": {
+      "at": "2026-11-12T10:20:25.706Z",
+      "summary": "批量读取当前对象并按ID一次追溯发布历史",
+      "source": "执行用户指定设计原则：不重验历史归档，按发布提交复用计算，比较GitHub成本并评估先列表后历史。"
+    },
+    "plan": {
+      "at": "2026-11-12T10:20:29.594Z",
+      "summary": "先记录基线再简化链路并验证千级冷启动",
+      "source": "用户要求先梳理算法和成本，再完成实现、测试和性能验证。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "实现发布归档识别、历史PR溯源与已归档分类",
+      "status": "done",
+      "verification": "npm test 446项、浏览器归档回归2项、类型检查、生产构建通过；独立评审无未解决问题。",
+      "commitTitle": "release-archive-detection T1: derive release state from archive snapshots"
+    },
+    "T2": {
+      "title": "从发布提交识别项目版本",
+      "status": "done",
+      "verification": "常见静态文件与精确tag推断、历史版本固定、持久正负缓存、超限和符号链接降级等25项回归通过，独立评审无遗留问题。",
+      "commitTitle": "release-archive-detection T2: infer release versions from files and tags"
+    },
+    "T3": {
+      "title": "去除PR标记并优化完整冷重建",
+      "status": "done",
+      "verification": "全量461项、缓存及权限31项、浏览器13项通过；独立评审99项及容量边界复验通过；千级冷重建与真实GitHub成本已实测记录。",
+      "commitTitle": "release-archive-detection T3: batch release history reconstruction"
+    },
+    "T4": {
+      "title": "修复评审发现的稳定性与降级问题",
+      "status": "done",
+      "verification": "复核46项通过，类型检查与生产构建通过；R9和R10问题关闭，千级证据沿用T3并明确网络限制。",
+      "commitTitle": "release-archive-detection T4: stabilize reconstruction and cache publication"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-12T12:07:18.150Z",
+      "summary": "独立评审与归档前复核问题均已关闭，46项回归、类型及构建通过，冷重建证据见Performance。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-12T12:07:23.854Z",
+      "summary": "用户要求复核优化合理后直接归档，复核通过。",
+      "source": "用户原话：刚刚另一个 agent 又 review 优化了一下。你看看是不是都合理。没问题就归档吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-12T12:09:09.871Z",
+      "summary": "同步change-workflow与project-knowledge及change-tracking的去标记、归档事实、历史追溯和缓存契约。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-12T12:09:13.547Z",
+      "summary": "用户授权复核后归档，T1至T4交付与评审通过，Specs已同步。",
+      "path": "docs/project/archive/2026-11-12-release-archive-detection"
+    }
+  },
+  "types": [
+    "修复"
+  ],
+  "rework": {
+    "at": "2026-11-12T11:44:00.261Z",
+    "reason": "代码评审发现进程崩溃、单亲提交解析与降级范围等问题",
+    "approach": "在已确认范围内追加T4修复可复现缺陷与快照抖动，极端规模场景记录为已知限制"
+  }
+}

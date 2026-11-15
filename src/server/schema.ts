@@ -10,17 +10,17 @@ import {
   validateTypes,
   validateUrgency,
   validateCollaborators,
-} from "../../.agents/skills/spec-trail/scripts/state-schema.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import {
   validBranchName,
   workflowRoutingIssues,
-} from "../../.agents/skills/spec-trail/scripts/routing.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 import {
   validatePreviews,
   validatePrototype,
   serviceUrl,
   workflowHostingIssues,
-} from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 export const previewsSchema = z.custom<PreviewEntry[]>(
   (v) => !validatePreviews(v).length,
   "原型关联格式不合法",
@@ -221,7 +221,6 @@ const workflowFields = z
     schemaVersion: z.literal(3),
     integrationBranch: branchName,
     releaseBranch: branchName,
-    checkForUpdates: z.boolean().optional(),
     prototype: z.unknown().optional(),
     openfolioUrl: z
       .custom<string | null>((v) => v === null || serviceUrl(v))

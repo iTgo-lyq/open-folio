@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Button } from "../../packages/ui/src/index";
 import "../../packages/ui/src/styles.css";
-import { connectPreview } from "../../.agents/skills/spec-trail/prototype/scripts/bridge.mjs";
+import { connectPreview } from "../../.agents/skills/spec-trail/scripts/prototype/bridge.mjs";
 function Example() {
   const [count, setCount] = useState(0);
   useEffect(() => {

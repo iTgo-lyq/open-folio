@@ -14,10 +14,10 @@ import {
   identity,
   previewsSchema,
 } from "./schema.ts";
-import { integrationFor } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import { closedRecord } from "../../.agents/skills/spec-trail/scripts/routing.mjs";
-import { entryPath } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
-import { htmlIssues } from "../../.agents/skills/spec-trail/prototype/scripts/html.mjs";
+import { integrationFor } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import { cancelledArchive, closedRecord } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
+import { entryPath } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
+import { htmlIssues } from "../../.agents/skills/spec-trail/scripts/prototype/html.mjs";
 import { AppError } from "./errors.ts";
 import { resolvePackage } from "./prototype-source.ts";
 import {
@@ -25,8 +25,8 @@ import {
   withinPackage,
   treeRows,
   sameRepository,
-} from "../../.agents/skills/spec-trail/prototype/scripts/source.mjs";
-import { validateManifest } from "../../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/source.mjs";
+import { validateManifest } from "../../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
 export function prototypePolicy(data: Collected): Snapshot["prototype"] {
   const branch = data.integrationBranch;
   const doc = data.documents.find(
@@ -241,11 +241,14 @@ export async function resolvePreview(
   const route = latest.routes.find((route) => route.id === changeId);
   if (!route || route.errors.length)
     return fail("未找到可判定的 Change 主来源，请先核对已推送分支。");
-  const central = route.kind === "archive";
-  const integration = central
+  const latestGroup = latest.changes.find((group) => group.id === changeId);
+  const latestState = latestGroup && primaryRecord(latestGroup)?.state;
+  const completedArchive =
+    route.kind === "archive" && latestState?.status !== "cancelled";
+  const integration = completedArchive
     ? integrationFor(latest.integrations, changeId)
     : undefined;
-  if (central) {
+  if (completedArchive) {
     if (integration?.status !== "found")
       return fail(
         integration?.status === "missing"
@@ -309,12 +312,12 @@ export async function resolvePreview(
       return fail("这个 Change 还没有关联原型。", false);
     if (stateFiles[0].path.startsWith("docs/project/archive/")) {
       if (
-        central &&
+        completedArchive &&
         (integration?.status !== "found" ||
           stateFiles[0].path !== `${integration.archivePath}/change.json`)
       )
         return fail("合并提交中的归档路径不一致。");
-      if (!closedRecord(state, stateFiles[0].path.slice(0, -12)))
+      if (!closedRecord(state, stateFiles[0].path.slice(0, -12)) && !cancelledArchive(state))
         return fail("交付归档的关闭状态或目录不一致。");
       descriptor.pinned = true;
     }

@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { rm, rename, mkdir, symlink } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fixture } from "./fixture.ts";
 import { DEFAULT_LIMITS, primaryRecord } from "../src/lib/model.ts";
 const confirmedAt = "2026-10-03T01:50:00+08:00";
@@ -99,6 +100,70 @@ test("previews use pushed immutable commits, retain historical reads beyond docu
   const disabled = await preview(f, f.revision);
   assert.equal(disabled.html, undefined);
   assert.equal(disabled.descriptor.policy.status, "disabled");
+});
+
+test("a cancelled planning Change serves its preview from current and historical snapshots", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  await f.put("docs/project/workflow.json", JSON.stringify(workflow));
+  await f.put(`${entry.artifact.path}/index.html`, html("before cancellation"));
+  const sourceCommit = f.commit();
+  await f.put(
+    changePath,
+    JSON.stringify({
+      ...state,
+      branch: "develop",
+      stage: "requirement",
+      tasks: {},
+      previews: [{ ...entry, artifact: { ...entry.artifact, sourceCommit } }],
+    }),
+  );
+  const revision = f.commit();
+  const before = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  execFileSync(
+    process.execPath,
+    [
+      resolve(".agents/skills/spec-trail/cli.mjs"),
+      "change",
+      "cancel",
+      "--change",
+      state.id,
+      "--mode",
+      "keep",
+      "--date",
+      "2026-11-15",
+      "--reason",
+      "Fixture cancellation",
+    ],
+    { cwd: f.author },
+  );
+  const archived = f.commit();
+  await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  for (const [version, snapshot, expected, pinned] of [
+    [undefined, undefined, archived, true],
+    [undefined, before.id, revision, false],
+    [revision, undefined, revision, false],
+  ] as const) {
+    const result = await f.store.preview(
+      f.project,
+      state.id,
+      version,
+      DEFAULT_LIMITS,
+      snapshot,
+      entry.id,
+    );
+    assert.equal(
+      result.descriptor.revision,
+      expected,
+      result.descriptor.message,
+    );
+    assert.equal(result.descriptor.pinned, pinned);
+    assert.equal(
+      result.descriptor.entries[0]?.artifact?.sourceCommit,
+      sourceCommit,
+    );
+    assert.match(result.html!, /before cancellation/);
+  }
 });
 
 test("integrated archive uses its merge after source deletion and cold rebuild, preserving current prototype policy", async (t) => {

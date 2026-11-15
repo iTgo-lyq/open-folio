@@ -4,6 +4,7 @@ import type {
   ChangeGroup,
   ChangeState,
   Diagnostic,
+  DocumentRef,
   Relation,
 } from "../lib/model.ts";
 import { primaryRecord } from "../lib/model.ts";
@@ -23,13 +24,14 @@ import {
 } from "./schema.ts";
 import { cyclicNodes, parsePlan } from "./plan.ts";
 import { inspectMarkdown, resolveDocumentLink } from "../lib/markdown.ts";
+import { cancelledArchive } from "../../.agents/skills/spec-trail/scripts/core/routing.mjs";
 const issue = (code: string, message: string, path?: string): Diagnostic => ({
   code,
   message,
   path,
   severity: "error",
 });
-function semantics(c: ChangeCandidate, data: Collected) {
+function semantics(c: ChangeCandidate, liveIds: Set<string>) {
   const s = c.state!;
   const add = (code: string, message: string, field = "") =>
     c.diagnostics.push(
@@ -124,19 +126,13 @@ function semantics(c: ChangeCandidate, data: Collected) {
         "完成声明未对应当前归档目录。",
         "/closure/archive/path",
       );
-    if (
-      data.documents.some(
-        (d) =>
-          d.branch === c.branch &&
-          d.path.startsWith(`docs/project/changes/${s.id}/`),
-      )
-    )
+    if (liveIds.has(`${c.branch}:${s.id}`))
       add(
         "LIVE_DIRECTORY_REMAINS",
         "该分支仍保留原 Change 目录，不满足归档条件。",
       );
-  } else if (c.archived)
-    add("ARCHIVE_STATUS", "归档目录内的记录未声明完成。", "/status");
+  } else if (c.archived && !cancelledArchive(s))
+    add("ARCHIVE_STATUS", "归档目录缺少有效的完成或取消记录。", "/status");
   c.validCompleted =
     s.status === "completed" &&
     !c.diagnostics.some((d) => d.severity === "error");
@@ -148,7 +144,27 @@ export async function indexChanges(
     "ancestor" | "changeCreations" | "changeParticipants"
   >,
   signal?: AbortSignal,
+  archiveValidationOnly = false,
 ): Promise<ChangeGroup[]> {
+  const routes = new Map(data.routes.map((route) => [route.id, route]));
+  const directories = new Map<string, DocumentRef[]>();
+  const liveIds = new Set<string>();
+  const specPaths = new Set(
+    data.documents
+      .filter((doc) => doc.branch === data.integrationBranch)
+      .map((doc) => doc.path),
+  );
+  for (const doc of data.documents) {
+    const location = /^(docs\/project\/(changes|archive)\/([^/]+))\//.exec(
+      doc.path,
+    );
+    if (!location) continue;
+    const key = `${doc.branch}:${location[1]}`;
+    const rows = directories.get(key) ?? [];
+    rows.push(doc);
+    directories.set(key, rows);
+    if (location[2] === "changes") liveIds.add(`${doc.branch}:${location[3]}`);
+  }
   const groups = new Map<string, ChangeGroup>(
     data.routes.map((route) => [
       route.id,
@@ -180,7 +196,7 @@ export async function indexChanges(
     const directory = doc.path.slice(0, -"/change.json".length),
       fallbackId =
         m[1] === "archive" ? m[2].replace(/^\d{4}-\d{2}-\d{2}-/, "") : m[2];
-    const route = data.routes.find((r) => r.id === fallbackId);
+    const route = routes.get(fallbackId);
     if (!route || doc.branch !== route.branch || route.errors.length) continue;
     let raw: unknown;
     const diagnostics: Diagnostic[] = [...doc.diagnostics];
@@ -282,9 +298,7 @@ export async function indexChanges(
           ),
         );
     const state = parsed.success ? parsed.data : null;
-    const refs = data.documents.filter(
-      (d) => d.branch === doc.branch && d.path.startsWith(`${directory}/`),
-    );
+    const refs = directories.get(`${doc.branch}:${directory}`) ?? [];
     const plan = refs.find(
       (d) => d.path === `${directory}/plan.md` && d.readable,
     );
@@ -315,10 +329,12 @@ export async function indexChanges(
       relatedSpecs: [],
       specReferences: [],
     };
-    if (state) semantics(c, data);
+    if (state) semantics(c, liveIds);
     // Only explicit references associate Specs; title similarity never does.
     const linked = new Set<string>();
-    for (const d of refs.filter((d) => d.kind === "markdown" && d.readable)) {
+    for (const d of archiveValidationOnly
+      ? []
+      : refs.filter((d) => d.kind === "markdown" && d.readable)) {
       const body = data.blobs.get(d.blob)!.toString();
       const paths = inspectMarkdown(body).links.flatMap((link) => {
         const r = resolveDocumentLink(d.path, link.url);
@@ -334,9 +350,7 @@ export async function indexChanges(
       );
       for (const { path, line } of paths)
         if (
-          data.documents.some(
-            (ref) => ref.branch === data.integrationBranch && ref.path === path,
-          ) &&
+          specPaths.has(path) &&
           /^docs\/project\/specs\/.+\/spec.md$/.test(path)
         ) {
           const specId = path.slice(
@@ -366,12 +380,12 @@ export async function indexChanges(
     groups.get(id)!.candidates.push(c);
   }
   for (const g of groups.values()) {
-    const route = data.routes.find((r) => r.id === g.id)!;
+    const route = routes.get(g.id)!;
     const owns = g.candidates.filter(
       (c) =>
         !c.diagnostics.some((d) => d.code === "DIRECTORY_ID") &&
         (route.kind === "archive"
-          ? c.archived && c.validCompleted
+          ? c.archived && (c.validCompleted || cancelledArchive(c.state))
           : c.owner === c.branch ||
             (route.kind === "planning" && c.owner === route.ownerBranch)),
     );
@@ -409,6 +423,9 @@ export async function indexChanges(
       ...(s.parent ? [["parent", s.parent] as [Relation["kind"], string]] : []),
     ];
     for (const [kind, target] of links) {
+      // Published archives retain checks provable within this snapshot, but
+      // do not depend on the availability of external working branches.
+      if (archiveValidationOnly && !groups.has(target)) continue;
       const other = groups.get(target),
         t = other ? primaryRecord(other) : null,
         pendingCreation =
@@ -526,6 +543,7 @@ export async function indexChanges(
       c.validCompleted = false;
     }
   }
+  if (archiveValidationOnly) return [...groups.values()];
   for (const g of groups.values()) {
     const c = primaryRecord(g);
     for (const r of g.relations) {
@@ -586,10 +604,16 @@ export function changeCreator(
   name: string,
   email: string,
 ): ChangeCreator | undefined {
-  const match = GITHUB_NOREPLY.exec(email.trim());
+  const address = email.trim();
+  const match = GITHUB_NOREPLY.exec(address);
   const login = match?.[2],
     subjectId = match?.[1];
-  const display = name.trim() || login;
+  const authorName = name.trim();
+  const emailName =
+    authorName.toUpperCase() === "TRAE"
+      ? (login ?? /^([^@\s<>]+)@[^@\s<>]+$/.exec(address)?.[1])
+      : undefined;
+  const display = emailName ?? (authorName || login);
   if (!display) return undefined;
   return login
     ? { name: display, login, ...(subjectId ? { subjectId } : {}) }

@@ -11,9 +11,14 @@ async function traced() {
   const f = await fixture(),
     calls: string[][] = [];
   class Reader extends GitReader {
-    override run(args: string[], signal?: AbortSignal, limit?: number) {
+    override run(
+      args: string[],
+      signal?: AbortSignal,
+      limit?: number,
+      input?: string | Buffer,
+    ) {
       calls.push(args);
-      return super.run(args, signal, limit);
+      return super.run(args, signal, limit, input);
     }
   }
   const makeStore = () =>
@@ -44,7 +49,13 @@ async function traced() {
     calls,
     makeStore,
     store: makeStore(),
-    scans: () => calls.filter((a) => a[0] === "ls-tree" && a[1] === "-rz"),
+    scans: () =>
+      calls.filter(
+        (a) =>
+          a[0] === "ls-tree" &&
+          a[1] === "-rlz" &&
+          !a.includes("docs/project/workflow.json"),
+      ),
   };
 }
 
@@ -99,7 +110,8 @@ test("restart and unchanged refs reuse the complete snapshot; only changed branc
   assert.equal(same.id, first.id);
   assert.equal(same.capturedAt, first.capturedAt);
   assert(!f.calls.some((a) => ["ls-tree", "cat-file"].includes(a[0])));
-  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 4);
+  // Release and registered sources share an advertisement; collaboration is still rechecked.
+  assert.equal(f.calls.filter((a) => a[0] === "ls-remote").length, 3);
   assert(!f.calls.some((a) => a[0] === "fetch"));
 
   await f.put(
@@ -179,7 +191,7 @@ test("default branch changes preserve the configured collaboration scope, and ol
   f.calls.length = 0;
   const upgraded = await f.makeStore().refresh(f.project, DEFAULT_LIMITS);
   assert.notEqual(upgraded.id, next.id);
-  assert.equal(f.scans().length, 1);
+  assert.equal(f.scans().length, 2); // Current collaboration and release catalogs.
   await assert.rejects(
     f.store.refresh(f.project, { ...DEFAULT_LIMITS, documents: 1 }),
     { code: "SOURCE_LIMIT" },

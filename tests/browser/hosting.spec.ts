@@ -8,8 +8,8 @@ import {
   digestPrefix,
   encodeUploadHeader,
   uploadType,
-} from "../../.agents/skills/spec-trail/prototype/scripts/upload-protocol.mjs";
-import { requestIdentity } from "../../.agents/skills/spec-trail/prototype/scripts/publication-contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/upload-protocol.mjs";
+import { requestIdentity } from "../../.agents/skills/spec-trail/scripts/prototype/publication-contract.mjs";
 
 test("built-in public assets load modules, styles and images on same and other origins without capability restrictions", async ({
   page,
@@ -161,14 +161,16 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
     storageState: { cookies: [], origins: [] },
   });
   try {
-    const run = (script: string, args: string[]) =>
+    const run = (command: string, args: string[]) =>
       execFileSync(
         process.execPath,
         [
-          resolve(`.agents/skills/spec-trail/prototype/scripts/${script}`),
-          ...(script === "publish.mjs"
-            ? [args[0], "--repo", f.author, ...args.slice(1)]
-            : ["--repo", f.author, ...args]),
+          resolve(".agents/skills/spec-trail/cli.mjs"),
+          "prototype",
+          command,
+          "--repo",
+          f.author,
+          ...args,
         ],
         {
           encoding: "utf8",
@@ -178,8 +180,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
           },
         },
       );
-    run("setup.mjs", [
-      "--accept",
+    run("accept", [
       "--hosting",
       "openfolio",
       "--openfolio-url",
@@ -193,6 +194,22 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
       "/api/prototype-uploads/",
     );
     expect(workflow.openfolioUrl).toBe(baseURL);
+    // accept leaves the build to the project; stand in for its multi-page output.
+    const welcome = "<!doctype html><h1>Welcome</h1>";
+    await f.put(
+      "packages/prototype/package.json",
+      JSON.stringify({ name: "prototype", private: true, scripts: { build: "node build.mjs" } }),
+    );
+    await f.put(
+      "packages/prototype/prototype.json",
+      JSON.stringify({
+        schemaVersion: 1,
+        entries: [{ id: "welcome", title: "Welcome", sourcePath: "packages/prototype/src/welcome.html", kind: "page", devices: ["pc-web"] }],
+      }),
+    );
+    await f.put("packages/prototype/src/welcome.html", welcome);
+    await f.put("packages/prototype/dist/welcome/index.html", welcome);
+    run("enable", []);
     f.git(["checkout", "-b", "change/cli-upload"]);
     await f.put(
       "docs/project/changes/cli-upload/change.json",
@@ -217,8 +234,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
       entries,
       JSON.stringify([{ id: "welcome", entryPath: "welcome/index.html" }]),
     );
-    run("publish.mjs", [
-      "prepare",
+    run("prepare", [
       "--directory",
       "packages/prototype/dist",
       "--entries",
@@ -228,8 +244,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
       "--out",
       request,
     ]);
-    const output = run("publish.mjs", [
-      "upload",
+    const output = run("upload", [
       "--request",
       request,
       "--result",
@@ -239,6 +254,7 @@ test("skill CLI configures hosting, uploads a build and registers immutable curr
     ]);
     expect(output).not.toContain(workflow.prototype.hosting.uploadUrl);
     const published = JSON.parse(await readFile(result, "utf8"));
+    expect(JSON.parse(output)).toEqual(published);
     const manifest = JSON.parse(
       await readFile(
         join(f.author, "packages/prototype/prototype.json"),

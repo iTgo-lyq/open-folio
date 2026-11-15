@@ -1,16 +1,22 @@
 # 原型构建与 R2 发布
 
-当前原型清单只维护七组 `quiet-*` 设计，设计依据见 [DESIGN.md](DESIGN.md)。源码入 Git，`npm run build --workspace prototype` 输出各自的自包含 `dist/<id>/index.html`；构建不会上传或改动清单，dist 不提交。过时入口已从当前源码和总览移除；历史 Change 固定引用及已发布字节继续保留。
+当前清单维护七组 `quiet-*` 业务页面片段，依据见 [DESIGN.md](DESIGN.md)。包内 TSX 入口直接引用 `src/components`，使用内存 mock，不启动 Next、后端或应用路由。`npm run build --workspace prototype` 使用仓库已有的 React/Vite/CSS Modules 技术栈，按清单输出自包含 `dist/<id>/index.html`；构建清理旧 dist，但不会上传或改动清单，dist 不提交。不保留旧手写工作台、专属数据或兼容层。
 
-## 工作台新设计（七组入口）
+## 七组业务片段
 
-`quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 分别对应我的仓库与侧栏、Specs 阅读、Changes 列表与详情、原型总览与画布、账号与 Token、匿名公开原型、Change 分享阅读。源码位于 `src/shared/quiet-workbench/`，按模块拆为多个脚本，由各入口 HTML 内联。
+`quiet-home`、`quiet-specs`、`quiet-changes`、`quiet-prototypes`、`quiet-credentials`、`quiet-public`、`quiet-share` 分别对应我的仓库与侧栏、Specs 阅读、Changes 列表与详情、原型总览与画布、账号与 Token、匿名公开原型、Change 分享阅读。源码位于 `src/pages/<id>.tsx`，数据/请求/资源边界位于 `src/mocks`。构建替换只作用于原型，不改业务模块或导出。
 
-所有仓库、人员、时间和工程材料均为虚构，状态只在内存中。顶部评审细条可切换页面、场景（加载、失败、离线、无权限、登录过期及各页面特有状态）与主题；右侧“评审设置”可切换强调色（陶土为方案，墨色与上一版蓝色作对照）、预览网站与应用图标并演示减少动态效果，均不属于产品。标志与图标源文件为 `src/assets/openfolio-mark.svg`、`openfolio-icon.svg`。示例账号 `lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`。hash 可直达，例如 `#/changes/offline-map-regions/technical?theme=dark`、`#/changes?side=collapsed`、`#/changes?accent=ink`、`#/share/offline-map-regions?scene=sync-failed`。点击 Logo 或按 ⌘\ / Ctrl+\ 收起侧栏为悬浮胶囊。
+所有仓库、人员和工程材料均为虚构。顶部评审栏切换该片段适用的场景与明暗主题。示例账号 `demo-lin` / `demo12345`，添加 Token 时输入 `demo` 或 `demo-work`；不要输入真实信息。交互、剪贴板、localStorage/sessionStorage 均在原型内存中模拟，刷新或切换场景重置。其他模块导航只提示另开入口；不再提供整应用 hash 路由或旧视觉方案开关。
 
-验证：先 `npm run build --workspace prototype`，再 `node packages/prototype/verify-quiet-workbench.mjs`。检查使用仅授予 `allow-scripts` 的 iframe 与项目 CSP，覆盖七个入口 × 两套主题 × 四档宽度及主要交互；结果和截图输出到 Git 忽略的 `artifacts/quiet-workbench/`。正式卡片截图继续使用本包 screenshot 命令。
+截图沙箱不允许原生表单导航。启动层将提交按钮和输入框 Enter 转发为可取消的本地 submit 事件，保留浏览器字段校验与业务 onSubmit；请求仍经过内存 API，不增加 `allow-forms` 或放宽 CSP。
 
-只发布这七组入口时，将 `dist/quiet-*/` 及其截图复制到 `dist/quiet-release/quiet-*/`，以 `dist/quiet-release` 为产物目录、`publish-quiet-entries.json` 为入口清单。发布前提交源码；固定引用通过 SpecTrail 发布登记命令更新。
+画布外层复用 `Prototypes`、`ChangePreviews`、`PublicPreviewView`，内部 `PrototypeFrame` 替换为包内虚构交互占位，不加载外部页面，以兼容现有截图 CSP 的 `frame-src 'none'`。分享入口组合 `PublicShell` 和 `ChangeReading`，不启动认证和分享解析。跨域嵌入、真实权限、后端和发布握手不是这些 mock 片段的验证范围。
+
+验证：`npm run typecheck --workspace prototype`、`npm run build --workspace prototype`、`npm test --workspace prototype`、`npm run verify --workspace prototype`。浏览器检查使用仅授予 `allow-scripts` 的 iframe 与项目 CSP，覆盖七入口 × 两主题 × 1440/834/390/320px 及主要交互，截图输出到 Git 忽略的 `artifacts/prototype-fragments/`。静态访问可在仓库根目录运行 `python3 -m http.server 10684 --bind 127.0.0.1 --directory packages/prototype/dist`，打开 `/quiet-home/index.html` 等入口；无需 `.env`。
+
+发布七组入口时直接使用干净的 `dist` 和 `publish-quiet-entries.json`，不要在 dist 内嵌套复制 release 目录。发布前提交源码；只有获得公开上传授权并验证成功后，才通过 SpecTrail 登记新固定引用。清单 artifact 的源码提交和摘要标识实际发布内容，不以本地构建代替线上证据。
+
+获授权替换旧原型时，新版本验证成功后更新引用，不覆盖旧 immutable URL 的字节。旧架构数据不迁移、不备份；删除旧制品前核对已推送分支、标签及 Change，仍被未切换入口使用的对象不提前删除。Git 历史、归档正文和真实工作台数据不属于该清理范围。
 
 ## 首次配置
 
@@ -31,7 +37,7 @@ npm ci
 npm run build --workspace prototype
 # 对本次发布的每个页面执行截图；示例替换为实际入口。
 npm run screenshot --workspace prototype -- --entry dist/quiet-home/index.html
-node .agents/skills/spec-trail/prototype/scripts/publish.mjs prepare \
+node .agents/skills/spec-trail/cli.mjs prototype prepare \
   --directory packages/prototype/dist \
   --entries packages/prototype/publish-quiet-entries.json \
   --repository https://github.com/iTgo-lyq/open-folio \
@@ -45,11 +51,11 @@ node packages/prototype/publish-r2.mjs \
 上传成功后，再执行以下登记；失败时保留已有配置和引用，原请求可重试：
 
 ```bash
-node .agents/skills/spec-trail/prototype/scripts/setup.mjs --configure --hosting custom
-node .agents/skills/spec-trail/prototype/scripts/publish.mjs register \
+node .agents/skills/spec-trail/cli.mjs prototype configure --hosting custom
+node .agents/skills/spec-trail/cli.mjs prototype register \
   --request /tmp/open-folio-r2-request.json --result /tmp/open-folio-r2-result.json \
   --change your-change-id
-node .agents/skills/spec-trail/prototype/scripts/validate.mjs --browser
+node .agents/skills/spec-trail/cli.mjs prototype validate --browser
 ```
 
 固定引用包含源码提交、内容摘要和公开 URL。登记后验证各设备交互，再提交清单、workflow 与新 Change；引用推送至配置的协作分支后更新项目总览。上传失败不切换 Git 兜底，也不覆盖历史引用。
@@ -82,18 +88,6 @@ npm run screenshot --workspace prototype -- --entry dist/quiet-home/index.html -
 
 ## Changes 动态视图预览
 
-`quiet-changes` 已更新为默认“我的”、个人视图 tab、管理齿轮和状态多选。进入管理面板可添加（继承当前筛选/显示）、编辑、排序、显隐与删除；编辑完成后需在管理面板统一确认。主列表临时调整支持恢复、显式保存或另存。评审场景可切换已有个人视图、取消数量 0 和保存失败（首次失败、重试成功）。所有配置仅在内存中，页面重开恢复示例，不连接真实账号。
+`quiet-changes` 直接复用当前业务的个人视图管理、筛选/显示、协作者列表与详情阅读。初始“我的”包含虚构创建者的进行中 Change，其中有等待确认、受阻和暂缓示例；已完成、已归档、已取消可从状态页签查看。进入“管理视图”编辑名称或条件，“完成编辑”后仍需在管理面板“确认”；“取消”丢弃草稿。所有配置仅在内存中。
 
-验证 `npm run build --workspace prototype && node packages/prototype/verify-change-views.mjs`。只发布此入口时，用 `dist/quiet-changes` 作为产物目录，入口清单为 `[{"id":"quiet-changes","entryPath":"index.html"}]`；保留其他六组已有固定引用。
-
-## 暂缓需求预览
-
-`quiet-changes/index.html#/changes?scene=deferred` 展示全部进行中 Change，包含“从历史行程生成模板”的暂缓示例。列表按处理状态单独分组；在“显示”中切换看板，保留处理状态分组，也可切换按阶段。点击示例查看暂缓原因、恢复条件与澄清记录；任务为空，后续材料未产生。详情直达 `#/changes/templates-from-history`。
-
-验证：构建后运行 `node packages/prototype/verify-deferred-requirement.mjs`，复用常驻 Chrome CDP，仅创建并关闭本次标签页；覆盖浅深主题和桌面、平板、手机、320px，截图与检查结果位于 `artifacts/deferred-requirement/`。
-
-## Changes 协作者展示预览
-
-`quiet-changes/index.html#/changes` 默认以“协作者”替代“创建者”列，创建者固定排在第一位；列表与看板最多显示三个头像，剩余人数用 `+N` 收拢。点击头像组可查看完整名单、用户名与创建者/参与推进身份，长名单在弹层内滚动，Escape 或关闭按钮返回触发位置。“显示 → 显示列 → 创建者”可恢复独立列，并随个人视图保存。
-
-默认“我的”视图包含 2、4、12 人示例，切换进行中可查看单人及其他组合。所有人员与参与记录均为虚构，原型不会改变“我的”及创建者筛选的现有语义，也不实现真实协作者数据采集。
+聚焦验证：构建后运行 `npm run verify --workspace prototype -- --entry quiet-changes`；只复测交互可加 `--interactions-only`。浏览器由脚本独立启动和关闭，不连接用户 Chrome 或真实账号。只发布此入口时，用 `dist/quiet-changes` 作为产物目录，入口清单为 `[{"id":"quiet-changes","entryPath":"index.html"}]`，保留其他六组已有固定引用。

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "change-cancellation-retention",
+  "title": "取消 Change 时可选择删除或归档留存",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/change-cancellation-retention",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "交付删除和归档留存两种取消路径",
+      "status": "done",
+      "verification": "应用 468 项、Skill 21 项、取消详情浏览器 1 项通过，准备检查、类型检查与生产构建通过。现存取消 Change 已迁移并核实。",
+      "commitTitle": "change-cancellation-retention T1: implement cancellation retention"
+    },
+    "T2": {
+      "title": "修复取消预览与发布检查并澄清归档说明",
+      "status": "done",
+      "verification": "R2、R3 复现后修复，定向回归 46 项、Skill 21 项、生产构建、接入与网站检查通过，R4 文档和命令帮助已核对。",
+      "commitTitle": "change-cancellation-retention T2: address review feedback"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T23:17:44.558Z",
+      "summary": "R2–R4 已整改并复验，应用 469 项、Skill 21 项、类型检查、构建和介绍站静态校验通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-14T23:20:01.940Z",
+      "summary": "用户确认整改交付，要求归档并合入 develop。",
+      "source": "归档合入吧"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-14T23:20:58.291Z",
+      "summary": "同步取消与留存、工作台来源及取消归档的原型读取。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-14T23:21:02.078Z",
+      "summary": "归档已验收的取消流程与评审整改。",
+      "path": "docs/project/archive/2026-11-15-change-cancellation-retention"
+    }
+  },
+  "types": [
+    "流程"
+  ],
+  "rework": {
+    "at": "2026-11-14T23:14:14.223Z",
+    "reason": "验收评审指出取消预览、发布目录身份和归档说明问题",
+    "approach": "按 R2–R4 修正并补充回归验证"
+  }
+}

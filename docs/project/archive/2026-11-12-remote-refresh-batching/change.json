@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "remote-refresh-batching",
+  "title": "批量获取远端分支并缩短冷刷新等待",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/remote-refresh-batching",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "批量获取分支并并发补齐远端历史",
+      "status": "done",
+      "verification": "定向38项与新增6项通过；全量470项仅旧调用次数预期失败，修正后相关11项复验通过；typecheck/build/格式检查通过；6轮独立真实冷启动对照详见Performance。",
+      "commitTitle": "remote-refresh-batching T1: batch remote refs and overlap pull request reads"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-12T13:36:19.369Z",
+      "summary": "Agent 自查通过；批量读取、异步时序、权限及取消回归通过，类型与生产构建通过；6轮真实冷启动对照见Performance。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-12T13:36:23.656Z",
+      "summary": "Agent 自验收通过：逐项满足批量、并发、缓存和失败边界要求，110个发布归档冷测完整，实际收益与限制已记录。",
+      "source": "Requirement验收、Execution测试证据及Performance六轮真实网络测量；small默认自验收。"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-12T13:36:27.618Z",
+      "summary": "核对项目访问与Change跟踪Specs；仅优化内部Git批量读取和PR请求调度，产品行为、共享契约、权限与持久格式不变。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-12T13:36:31.631Z",
+      "summary": "完成批量远端获取与PR并发补齐，回归及真实冷测通过；保留两项有效流程/实现提交，无试错提交需压缩。",
+      "path": "docs/project/archive/2026-11-12-remote-refresh-batching"
+    }
+  },
+  "followUpOf": "release-archive-detection",
+  "types": [
+    "性能"
+  ]
+}

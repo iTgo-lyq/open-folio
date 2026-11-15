@@ -246,6 +246,111 @@ test("new body and snapshot replace the visible document together", async ({
   }
 });
 
+test("a removed Spec returns to its nearest parent and replaces the stale address", async ({
+  page,
+  request,
+  personal,
+}) => {
+  await page.goto(`/?${repositoryQuery}&m=specs&s=delivery%2Fhistory%2Frecord`);
+  await expect(page.getByRole("heading", { name: "交付记录" })).toBeVisible();
+  await page.getByRole("link", { name: "访问与来源", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "访问与来源" })).toBeVisible();
+  await page.getByRole("link", { name: "项目读取", exact: true }).click();
+  await expect(page).toHaveURL(/anchor=/);
+  const historyLength = await page.evaluate(() => window.history.length);
+  try {
+    const changed = await request.post("/_fixture/control", {
+      data: { removeAccessSpec: true, expireRefresh: personal.id },
+    });
+    expect(changed.ok()).toBe(true);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.getByRole("heading", { name: "工程协作" })).toBeVisible();
+    await expect(page).toHaveURL(/[?&]s=platform(?:&|$)/);
+    await expect(page).not.toHaveURL(/anchor=|platform%2Faccess/);
+    expect(await page.evaluate(() => window.history.length)).toBe(
+      historyLength,
+    );
+    await page.goBack();
+    await expect(page.getByRole("heading", { name: "工程协作" })).toBeVisible();
+    await page.goto(`/?${repositoryQuery}&m=specs&s=platform%2Faccess`);
+    await expect(page).toHaveURL(/[?&]s=platform(?:&|$)/);
+    await expect(page.getByRole("heading", { name: "工程协作" })).toBeVisible();
+  } finally {
+    await request.post("/_fixture/control", { data: { restoreMain: true } });
+  }
+});
+
+test("manual refresh falls back from a removed Change document, then from the removed Change", async ({
+  page,
+  request,
+}) => {
+  await page.goto(
+    `/?${repositoryQuery}&m=changes&scope=active&c=document-reader&ct=file%3Aresearch.md`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "阅读体验调查" }),
+  ).toBeVisible();
+  try {
+    const removedDocument = await request.post("/_fixture/control", {
+      data: { removeResearch: true },
+    });
+    expect(removedDocument.ok()).toBe(true);
+    await refreshCentral(page);
+    await expect(page).toHaveURL(/c=document-reader.*ct=overview/);
+    await expect(
+      page.getByRole("heading", { name: "让工程文档成为清晰的阅读体验" }),
+    ).toBeVisible();
+
+    const removedChange = await request.post("/_fixture/control", {
+      data: { removeReaderChange: true },
+    });
+    expect(removedChange.ok()).toBe(true);
+    await refreshCentral(page);
+    await expect(
+      page.getByRole("region", { name: "Change 列表" }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]scope=active(?:&|$)/);
+    await expect(page).not.toHaveURL(/[?&](c|ct)=/);
+  } finally {
+    await request.post("/_fixture/control", {
+      data: { restoreMain: true, restoreReader: true },
+    });
+  }
+});
+
+test("a removed current prototype returns to the gallery and its fixed link still opens", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const catalog = await (await request.get(personal.url("prototypes"))).json();
+  const path = `/?${repositoryQuery}&m=prototypes`;
+  await page.goto(path);
+  await page.getByRole("button", { name: "预览订单列表", exact: true }).click();
+  const preview = page
+    .frameLocator('iframe[title="原型：订单列表"]')
+    .getByRole("heading", { name: "订单列表原型" });
+  await expect(preview).toBeVisible();
+  await expect(page).not.toHaveURL(/revision=/);
+  try {
+    const changed = await request.post("/_fixture/control", {
+      data: { removeOrdersPrototype: true, expireRefresh: personal.id },
+    });
+    expect(changed.ok()).toBe(true);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(
+      page.getByRole("region", { name: "项目原型总览" }),
+    ).toBeVisible();
+    await expect(page).not.toHaveURL(/[?&](prototype|preview)=/);
+    await page.goto(
+      `${path}&prototype=orders&preview=orders&revision=${catalog.revision}`,
+    );
+    await expect(preview).toBeVisible();
+  } finally {
+    await request.post("/_fixture/control", { data: { restoreMain: true } });
+  }
+});
+
 test("directory refresh failure keeps the existing repository list", async ({
   page,
 }) => {

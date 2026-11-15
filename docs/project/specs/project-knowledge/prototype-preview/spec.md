@@ -4,7 +4,11 @@ OpenFolio 在[项目知识工作台](../spec.md)提供独立「原型」模块�
 
 ## 可选协作与当前清单
 
-每项目维护一个原型包，默认 packages/prototype，复用项目设计规范与组件库。源码可使用 HTML、React 或其他宿主工具，演示使用局部状态与 mock，不依赖真实业务后端。UI 组件库的独立预览不自动进入项目原型清单。
+每项目维护一个原型包，默认 packages/prototype，复用项目设计规范与组件库。原型的输出单位是业务页面片段，例如页面框架、业务大表单、列表区或详情抽屉，范围由 Change 影响的界面决定；原子组件归组件库预览，不自动进入项目原型清单，原型也不实现完整应用。
+
+本次 Change 要新增或修改的界面在原型阶段直接写进业务代码，原型入口引用它，既有业务组件直接复用。原型包按源码路径或业务仓库已有的别名跨包引用，业务仓库不为原型新增导出、入口或配置。mock 放在数据边界：数据优先经 props 传入，组件内部取数时由原型构建替换数据请求、路由与服务端模块，后端未就绪时同样用 mock；演示只使用内存状态，不依赖真实业务后端。引用既有代码需要大改业务仓库时在原型包内轻量实现。原型阶段的业务代码允许简陋，进入实现后按正式标准重新优化；实现保持用户确认原型的布局、状态与关键交互，不再单独做逐项样式比对。
+
+构建沿用业务仓库的技术栈与配置，SpecTrail 不提供脚手架。原型包的 build 脚本按多页面静态构建输出，每个清单入口一个静态页：托管为 dist/<id>/index.html，资源使用相对路径；Git 兜底为 preview/<id>/index.html。
 
 docs/project/workflow.json 的 prototype 记录选择：缺失为未选择，disabled 为拒绝接入，pending 为接入未完成，enabled 为可用。拒绝接入后不重复提议或新增关联；已有明确同意直接沿用，初始化失败保留现场。已启用时按 UI 影响范围判断：小型变化先询问是否绘制，较长时间未回复可说明后跳过；大范围变化必须在实现前绘制或更新原型并提供预览。
 
@@ -12,28 +16,30 @@ workflow 的可选 openfolioUrl 保存 OpenFolio 服务 HTTP/HTTPS 地址，null
 
 托管方式尚未选择时，skill 先询问自建 OpenFolio 实例，再询问三种方式并保存选择；已有会话或配置选择直接复用，仅补该方式必需信息。setup 原子保存配置，保留不相关字段及启停前后的托管选择；接入决定的历史由 Git 保存。
 
+accept 不安装框架、不生成构建，也不覆盖已有文件：空目录只生成 private 的 package.json、.gitignore、空清单、AGENTS.md 与 DESIGN.md，登记到根工作区后保持 pending。项目补上 build 脚本后由 enable 完成接入；enable 要求 package.json 为 private 且有 build 脚本，并校验 AGENTS.md、DESIGN.md 及清单或 Git 兜底产物。
+
 原型包 DESIGN.md 记录项目设计依据、视觉方向、色彩角色与数值、字阶、布局断点、组件及交互约定。初始化可引用已有权威规范，没有时提供中立模板和简短编写指南，绘制前依据现有产品补全；不覆盖用户已有文件，不把新设计提案描述为现有事实。
 
 工作台目录与公开版本准备从已推送集成分支的最新成功快照读取 workflow.json 的开关与包配置。固定提交提供原型记录、清单和产物，按当前配置校验与读取；当前配置无效、停用或无法读取时明确失败。已准备的公开版本独立于此开关继续可读。
 
-包内 prototype.json 是当前总览唯一清单，只读取 workflow.json 指定的集成分支，其他分支不扫描当前清单。清单保存在持久快照中；集成分支提交及读取规则未变化时复用有效清单，页面后台发现新快照后自动更新总览。schemaVersion 为 1，entries 按稳定 id 声明 title、可选 description、sourcePath、kind、适配和可选 artifact。源码路径位于原型包内，id 在项目内唯一。页面声明 pc-web/ipad/mobile 中非空、去重的设备集合；组件在设备集合和 1–4096 CSS px 的整数 viewport 中二选一。无 artifact 表示尚未交付，不从 Change 历史推算当前版本。
+包内 prototype.json 是当前总览唯一清单，只读取 workflow.json 指定的集成分支，其他分支不扫描当前清单。清单保存在持久快照中；集成分支提交及读取规则未变化时复用有效清单，页面后台发现新快照后自动更新总览。schemaVersion 为 1，entries 按稳定 id 声明 title、可选 description、sourcePath、kind、适配和可选 artifact。sourcePath 指向原型包内的入口源码，id 在项目内唯一并与构建产物目录一致。kind 只区分展示方式，page 与 component 都是业务页面片段。页面声明 pc-web/ipad/mobile 中非空、去重的设备集合；组件在设备集合和 1–4096 CSS px 的整数 viewport 中二选一。无 artifact 表示尚未交付，不从 Change 历史推算当前版本。
 
-Git 保存源码和描述，普通 dist 默认忽略。删除集成分支清单项即从总览移除，不删除历史交付和已公开版本；其他工作分支或仅上传未登记的产物不改变总览。源码、主题变化不强制重发参考原型。
+Git 保存源码和描述，普通 dist 默认忽略。删除集成分支清单项即从总览移除，不删除历史交付和已公开版本；其他工作分支或仅上传未登记的产物不改变总览。源码、引用的业务组件或主题变化不强制重发参考原型。
 
 ## 固定产物与宿主发布
 
 artifact 区分两种交付：
 
-- hosted：记录固定 version、HTTP/HTTPS url、sourceCommit、digest，以及可选设备截图引用。项目自行构建并上传到 OpenFolio 或自建静态托管，支持 React 等多文件产物。
+- hosted：记录固定 version、HTTP/HTTPS url、sourceCommit、digest，以及可选设备截图引用。项目自行构建并上传到 OpenFolio 或自建静态托管，支持多文件产物。
 - git：记录 path 与 sourceCommit。显式选择兜底时，当前单 HTML 留在包内 preview/id，Change 另保存 previews/id/index.html；归档移动快照并更新路径；仍引用共享目录的入口先复制到本 Change 的 previews/<id>，目标不同则停止。sourceCommit 保持构建来源，不替换为合并提交；后续当前产物更新不覆盖旧 Change。
 
 Change 的 previews 保留自己的入口标题、类型、适配及固定 artifact；项目当前清单与 Change 可引用同一次发布。当前清单后续更新不改变 Change 的固定交付，已归档记录只读。源码提交可用于追溯构建来源。
 
 发布工具 prepare 生成包含仓库、源码提交、目录、内容摘要、入口及 requestId 的请求。独立原型包模式另含 packagePath 并纳入请求身份；缺省时保持既有请求身份算法。宿主负责构建、上传和结果，成功结果回传对应 requestId/sourceCommit/digest、固定版本及各入口 URL；失败结果包含 code、message 和 retryable。宿主完整上传后原子发布，重复请求返回同版本，旧版本内容不可覆盖，历史引用版本由宿主负责保留。
 
-OpenFolio 方式由内置 upload 命令读取 workflow 地址，独立前端模式从显式参数或环境读取服务与上传地址，上传产物、校验并保存结果，再登记引用；上传成功但本地登记失败可使用保存的 request/result 重试 register。自建托管继续由项目适配器完成上传。新建 hosted 包默认输出 dist，可指定其他产物目录；已有包保留原构建命令。
+OpenFolio 方式由内置 upload 命令读取 workflow 地址，独立前端模式从显式参数或环境读取服务与上传地址，上传产物、校验并保存结果，再登记引用；上传成功但本地登记失败可使用保存的 request/result 重试 register。自建托管继续由项目适配器完成上传。托管产物默认位于 dist，发布时可指定其他产物目录。
 
-register 校验成功结果后更新当前清单及可选 Change 引用；发布失败保留旧引用，不自动转为 Git 兜底。共享仓库锁、事务日志和原文比对保护多文件登记，recover 遇到后续用户编辑会停止；异常退出遗留锁须核实持有进程已结束后处理。协议、调用和恢复细节见[原型协作 skill](../../../../../.agents/skills/spec-trail/prototype/SKILL.md)。
+register 校验成功结果后更新当前清单及可选 Change 引用；发布失败保留旧引用，不自动转为 Git 兜底。共享仓库锁、事务日志和原文比对保护多文件登记，recover 遇到后续用户编辑会停止；异常退出遗留锁须核实持有进程已结束后处理。协议、调用和恢复细节见[原型说明](../../../../../.agents/skills/spec-trail/references/prototype/prototype.md)。
 
 预览引用使用无凭据、无 query 的 HTTP/HTTPS，可包含 hash 路由；不包含临时签名 URL、上传密钥或令牌。专用上传地址作为上传凭据保存在 workflow，可提交供仓库成员使用，不复制到 artifact、截图地址或成功日志。staged hook 校验暂存配置、引用及 Git 产物；静态校验不能代替浏览器交互验证。
 
@@ -63,7 +69,7 @@ GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验�
 
 本仓库的原型包通过 custom 适配器发布至 Cloudflare R2。源码保存在 Git，dist 与桶级 S3 凭据不提交；凭据由发布机器环境提供。适配器以 requestId 固定对象路径，使用条件创建并核对重复请求的既有字节，拒绝覆盖不同内容；全部文件公开 GET 的内容和类型验证通过后，才输出可登记的成功结果。
 
-原型 HTML 与 PC Web、iPad、Mobile 截图一起发布，当前清单与 Change 记录固定 hosted 地址、源码提交和摘要。失败不替换引用。R2 已引用版本长期保留，发布与配置说明见[原型包 README](../../../../../packages/prototype/README.md)。
+原型 HTML 与 PC Web、iPad、Mobile 截图一起发布，当前清单与 Change 记录固定 hosted 地址、源码提交和摘要。失败不替换引用。R2 保留当前各分支（含已归档 Change）引用的版本；获授权清理时可删除只被历史提交或旧公开版本引用的版本，不保证这些旧地址仍可访问。发布与配置说明见[原型包 README](../../../../../packages/prototype/README.md)。
 
 ## 总览、详情与二级预览
 
@@ -80,6 +86,8 @@ GET/HEAD /prototype-assets/version/path 公开读取已发布文件，不校验�
 ## 固定链接与归档保留
 
 当前原型准备固定到集成分支清单提交，要求该提交属于已推送集成分支的历史；总览仍读取最新清单，不提供历史浏览入口。活动及已归档但尚未合入的 Change 通过自身登记分支中已推送的固定提交准备原型，无需先合入集成分支。
+
+取消留存的原型从所属分支读取。当前入口使用取消归档，取消前的快照或显式提交继续读取对应版本，仍按当前配置和登记分支的可达性校验。
 
 准备时固定完整 revision；Git 按该提交读取，hosted 使用记录中的固定地址。当前开关、来源可达性和入口范围每次检查，本人仓库权限沿用[个人访问](../access/spec.md)的周期复验；新增公开版本在发布前即时检查，复用已发布版本不重复远端鉴权。已合入 Change 从[合入变更](../change-tracking/spec.md#合入变更)的唯一有效 M 读取归档 previews，显式 revision 也必须等于 M。Git HTML 位于 M 的归档快照内；hosted 的 version、url、digest、thumbnails 与 sourceCommit 保持原值。来源分支及标签删除后仍可准备和分享，外部产物仍由宿主保留。
 
@@ -105,7 +113,7 @@ Change 公开阅读页沿用该 Change 的固定产物引用、设备尺寸、�
 
 ## Git 兜底与离线截图
 
-Git 兜底入口是 UTF-8 自包含 index.html，脚本、样式及 mock 内联，图片/字体用 data URL。构建资源必须内联，普通 Vite dist 不等于单文件兜底，宿主负责必要的内联构建；交互时的存储、请求、Worker 等浏览器能力与托管原型一致。
+Git 兜底入口是 UTF-8 自包含 index.html，脚本、样式及 mock 内联，图片/字体用 data URL。构建资源必须内联，业务工具链的普通多文件产物不等于单文件兜底，原型包的构建负责必要的内联；交互时的存储、请求、Worker 等浏览器能力与托管原型一致。
 
 Git 公开版本准备只读取已登记入口和固定提交，拒绝任意文件路径、符号链接、LFS、超限或非法产物；最终 HTML 包含固定的就绪、脚本错误与 CSP 诊断桥，摘要覆盖最终字节。无 previews 的 Change 正常显示尚未关联。交互预览不附加能力限制；脚本及安全策略诊断按当前 iframe 的真实来源和加载标识核对消息。公开响应使用 `public, no-cache, must-revalidate`，并校验文件摘要与撤回标记；已发布字节保持不变，不因渲染器更新而覆盖。
 

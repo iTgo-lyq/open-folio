@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { rm, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
-import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+import { validateChange } from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import { changeSchema } from "../src/server/schema.ts";
 import { parsePlan, cyclicNodes } from "../src/server/plan.ts";
 import {
@@ -32,6 +32,51 @@ export function state(
   };
 }
 const confirmation = { at, summary: "已确认" };
+
+test("cancelled history uses the owning branch's archive and remains separate from deliveries", async (t) => {
+  const f = await fixture();
+  t.after(f.cleanup);
+  const cancellation = { at, reason: "停止工作" };
+  const statePath = "docs/project/changes/stopped/change.json";
+  const archive = "docs/project/archive/2026-11-15-stopped";
+  await f.put(statePath, JSON.stringify(state("stopped", {
+    stage: "requirement", tasks: {}, status: "cancelled", cancellation,
+  })));
+  await f.put("docs/project/archive/2026-11-15-planned/change.json", JSON.stringify(
+    state("planned", {
+      branch: "develop", stage: "requirement", tasks: {}, status: "cancelled", cancellation,
+    }),
+  ));
+  f.commit();
+  f.git(["checkout", "-b", "change/stopped"]);
+  f.git(["rm", statePath]);
+  await f.put(`${archive}/change.json`, JSON.stringify(state("stopped", {
+    status: "cancelled", cancellation, tasks: { T1: { title: "真实工作", status: "doing" } },
+  })));
+  await f.put(`${archive}/execution.md`, "# 工作分支证据");
+  f.commit();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  for (const [id, branch] of [["stopped", "change/stopped"], ["planned", "develop"]]) {
+    const group = snapshot.changes.find(group => group.id === id)!;
+    assert.deepEqual(group.diagnostics, []);
+    const record = primaryRecord(group)!;
+    assert.equal(record.branch, branch);
+    assert.equal(record.state?.status, "cancelled");
+    assert.equal(record.archived, true);
+    assert.equal(record.validCompleted, false);
+    if (id === "stopped") {
+      assert.equal(record.state?.tasks.T1.status, "doing");
+      assert.ok(snapshot.documents.some(doc => doc.branch === branch &&
+        doc.path === `${archive}/execution.md`));
+    }
+  }
+  f.git(["push", "origin", "--delete", "change/stopped"]);
+  const refreshed = await f.store.refresh(f.project, DEFAULT_LIMITS);
+  const stopped = refreshed.changes.find(group => group.id === "stopped")!;
+  assert.equal(stopped.primary, null);
+  assert.match(stopped.diagnostics[0].message, /远端工作分支/);
+});
+
 const confirmations = {
   requirement: confirmation,
   technical: confirmation,
@@ -189,6 +234,7 @@ test("supplemental collaborator configuration has the same strict contract in ho
   for (const collaborators of [
     [],
     [{ name: "参与者" }],
+    [{ name: "Team @ Home" }],
     [{ name: "Known", login: "known-login", subjectId: "123" }],
     [{ name: "Number only", subjectId: "123" }],
   ]) {
@@ -208,6 +254,7 @@ test("supplemental collaborator configuration has the same strict contract in ho
     [{ name: " Name" }],
     [{ name: "Name\n" }],
     [{ name: "Name\u2028line" }],
+    [{ name: "Name <private@example.com>" }],
     [{ name: "Name", login: "bad/login" }],
     [{ name: "Name", login: "" }],
     [{ name: "Name", subjectId: 123 }],
@@ -230,7 +277,7 @@ test("invalid label fields are isolated without revoking completion or dependenc
       {
         types: ["修复", "自定义"],
         urgency: "invalid",
-        collaborators: [{ name: "Invalid", email: "private@example.com" }],
+        collaborators: [{ name: "Invalid <private@example.com>" }],
       },
     ],
     ["consumer", { dependsOn: ["prior"], types: [" "], urgency: "high" }],
@@ -724,10 +771,8 @@ test("size routes preserve confirmations, closure order and explicit Spec refere
   await putState("small", { confirmations });
   await putState("medium", { size: "medium", stage: "plan", confirmations });
   await putState("large", { size: "large" });
-  await putState("cancelled", {
-    status: "cancelled",
-    cancellation: { at, reason: "需求取消" },
-  });
+  const cancellation = { at, reason: "需求取消" };
+  const cancelled = state("cancelled", { branch: "develop", status: "cancelled", cancellation });
   await putState("early-close", {
     stage: "close",
     closure: { acceptance: { result: "accepted", at, summary: "次序错误" } },
@@ -739,12 +784,15 @@ test("size routes preserve confirmations, closure order and explicit Spec refere
   f.commit();
   await f.register(
     Object.fromEntries(
-      ["small", "medium", "large", "cancelled", "early-close"].map((id) => [
+      ["small", "medium", "large", "early-close"].map((id) => [
         id,
         "change/routes",
       ]),
     ),
   );
+  f.git(["checkout", "develop"]);
+  await f.put("docs/project/archive/2026-10-02-cancelled/change.json", JSON.stringify(cancelled));
+  f.commit();
   const snap = await f.store.refresh(f.project, DEFAULT_LIMITS),
     record = (id: string) =>
       primaryRecord(snap.changes.find((g) => g.id === id)!)!;

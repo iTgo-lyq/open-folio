@@ -24,8 +24,30 @@ test(
   { timeout: 60000 },
   async (t) => {
     const root = await mkdtemp(join(tmpdir(), "openfolio-service-test-"));
+    // A private tmux server keeps the fixture out of the developer's sessions, whose
+    // server may run in another network namespace. Its socket path must stay short.
+    const sockets = await mkdtemp("/tmp/oft-");
+    const env: NodeJS.ProcessEnv = { ...process.env, TMUX_TMPDIR: sockets };
+    delete env.TMUX;
     const session = `folio-test-${process.pid}-${randomBytes(4).toString("hex")}`;
     const reserve = createServer();
+    t.after(async () => {
+      await execute(
+        process.execPath,
+        [join(root, "scripts/service.mjs"), "stop"],
+        { cwd: tmpdir(), env },
+      ).catch(() => {});
+      await execute("tmux", ["kill-server"], { env }).catch(() => {});
+      reserve.close();
+      await rm(root, { recursive: true, force: true });
+      await rm(sockets, { recursive: true, force: true });
+    });
+    // Like a shared server, it outlives the service session and so reaps stopped supervisors.
+    await execute(
+      "tmux",
+      ["-f", "/dev/null", "start-server", ";", "set-option", "-s", "exit-empty", "off"],
+      { env },
+    );
     await new Promise<void>((resolve) =>
       reserve.listen(0, "127.0.0.1", resolve),
     );
@@ -67,17 +89,11 @@ test(
       const result = await execute(
         process.execPath,
         [join(root, "scripts/service.mjs"), command],
-        { cwd: tmpdir(), timeout: 40000 },
+        { cwd: tmpdir(), env, timeout: 40000 },
       );
       assert.ok(!result.stdout.includes("fixture-private-token"));
       return JSON.parse(result.stdout);
     };
-    t.after(async () => {
-      await call("stop").catch(() => {});
-      await execute("tmux", ["kill-session", "-t", session]).catch(() => {});
-      reserve.close();
-      await rm(root, { recursive: true, force: true });
-    });
     assert.equal((await call("status")).state, "stopped");
     const running = await call("update");
     assert.equal(running.state, "running");

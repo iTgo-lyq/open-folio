@@ -10,18 +10,17 @@ import {
   register,
   recover,
   withLock,
-} from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
-import { publishToDirectory } from "../.agents/skills/spec-trail/prototype/examples/filesystem-host.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
+import { publishToDirectory } from "../.agents/skills/spec-trail/references/prototype/examples/filesystem-host.mjs";
 import {
   localPackage,
   sourceManifest,
   assertSourceEntry,
-} from "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/local-source.mjs";
 import { DEFAULT_LIMITS } from "../src/lib/model.ts";
 import { preflight } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
-const hook = resolve(".agents/skills/spec-trail/setup/scripts/pre-commit.js");
-const setup = resolve(".agents/skills/spec-trail/prototype/scripts/setup.mjs");
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 test("declared source and dependencies inside preview are never exempted as generated output", async (t) => {
   const f = await submoduleFixture();
   t.after(f.cleanup);
@@ -69,7 +68,10 @@ test("unrelated submodule mapping edits do not require the prototype submodule t
   f.git(["add", ".gitmodules"]);
   f.git(["update-index", "--add", "--cacheinfo", `160000,${f.a},backend`]);
   const run = () =>
-    spawnSync(process.execPath, [hook], { cwd: f.author, encoding: "utf8" });
+    spawnSync(process.execPath, [cli, "setup", "pre-commit"], {
+      cwd: f.author,
+      encoding: "utf8",
+    });
   let checked = run();
   assert.equal(checked.status, 0, checked.stderr);
   f.git([
@@ -104,7 +106,7 @@ test("linked worktree hook reads child objects and the parent commit index", asy
   await mkdir(hooks);
   await writeFile(
     join(hooks, "pre-commit"),
-    '#!/bin/sh\nexec "$SPECTRAIL_TEST_NODE" "$SPECTRAIL_TEST_HOOK"\n',
+    '#!/bin/sh\nexec "$SPECTRAIL_TEST_NODE" "$SPECTRAIL_TEST_CLI" setup pre-commit\n',
     { mode: 0o755 },
   );
   f.git(["config", "core.hooksPath", hooks], linked);
@@ -115,7 +117,7 @@ test("linked worktree hook reads child objects and the parent commit index", asy
       env: {
         ...process.env,
         SPECTRAIL_TEST_NODE: process.execPath,
-        SPECTRAIL_TEST_HOOK: hook,
+        SPECTRAIL_TEST_CLI: cli,
       },
     });
 
@@ -251,7 +253,9 @@ for (const directory of ["packages/prototype", ""])
       const validated = spawnSync(
         process.execPath,
         [
-          resolve(".agents/skills/spec-trail/prototype/scripts/validate.mjs"),
+          cli,
+          "prototype",
+          "validate",
           "--repo",
           f.child,
           "--package",
@@ -278,10 +282,14 @@ for (const directory of ["packages/prototype", ""])
         { index: true },
       );
       assert.equal(staged.revision, child);
-      const checked = spawnSync(process.execPath, [hook], {
-        cwd: f.author,
-        encoding: "utf8",
-      });
+      const checked = spawnSync(
+        process.execPath,
+        [cli, "setup", "pre-commit"],
+        {
+          cwd: f.author,
+          encoding: "utf8",
+        },
+      );
       assert.equal(checked.status, 0, checked.stderr);
       f.commit();
       assert.equal(f.git(["rev-list", "--count", `${parent}..HEAD`]), "1");
@@ -368,8 +376,8 @@ for (const directory of ["packages/prototype", ""])
           const result = spawnSync(
             process.execPath,
             [
-              resolve(".agents/skills/spec-trail/scripts/change.mjs"),
-              name,
+              resolve(".agents/skills/spec-trail/cli.mjs"),
+              ...name.split(" "),
               "--change",
               id,
               "--repo",
@@ -388,29 +396,29 @@ for (const directory of ["packages/prototype", ""])
               .previews,
           ),
         );
-        command("previews-set", ["--file", retained]);
-        command("task-add", ["--title", "Deliver fixed prototype"]);
+        command("prototype previews", ["--file", retained]);
+        command("task add", ["--title", "Deliver fixed prototype"]);
         await f.put(
           `${statePath.slice(0, -12)}/requirement.md`,
           "# Fixed child delivery",
         );
         f.commit();
-        command("execute");
-        command("task-start", ["--task", "T1"]);
-        command("task-complete", [
+        command("stage execute");
+        command("task start", ["--task", "T1"]);
+        command("task complete", [
           "--task",
           "T1",
           "--verification",
           "fixture verified",
         ]);
         f.commit();
-        command("verify", [
+        command("close verify", [
           "--result",
           "passed",
           "--summary",
           "fixture verified",
         ]);
-        command("accept", [
+        command("close accept", [
           "--mode",
           "agent",
           "--summary",
@@ -418,8 +426,8 @@ for (const directory of ["packages/prototype", ""])
           "--source",
           "fixture verification",
         ]);
-        command("specs", ["--result", "not_needed", "--summary", "fixture"]);
-        command("archive", [
+        command("close specs", ["--result", "not_needed", "--summary", "fixture"]);
+        command("close archive", [
           "--date",
           "2026-10-29",
           "--summary",
@@ -465,7 +473,10 @@ test("index validation uses staged gitlink even when checkout points at a differ
   f.git(["add", "frontend"]);
   f.childGit(["checkout", a]);
   const run = () =>
-    spawnSync(process.execPath, [hook], { cwd: f.author, encoding: "utf8" });
+    spawnSync(process.execPath, [cli, "setup", "pre-commit"], {
+      cwd: f.author,
+      encoding: "utf8",
+    });
   assert.notEqual(run().status, 0);
   assert.equal(
     localPackage(f.author, f.revision, "frontend/packages/prototype", {
@@ -496,7 +507,7 @@ test("submodule adoption preserves parent workspaces and existing frontend confi
     JSON.stringify({ name: "parent", private: true, workspaces: ["backend"] }),
   );
   for (const [path, body] of [
-    ["package.json", JSON.stringify({ name: "prototype", private: true })],
+    ["package.json", JSON.stringify({ name: "prototype", private: true, scripts: { build: "vite build" } })],
     ["AGENTS.md", "# custom rules"],
     ["DESIGN.md", "# custom design"],
   ])
@@ -506,7 +517,7 @@ test("submodule adoption preserves parent workspaces and existing frontend confi
   const before = await readFile(join(f.author, "package.json"), "utf8");
   const result = spawnSync(
     process.execPath,
-    [setup, "--enable", "--repo", f.author],
+    [cli, "prototype", "enable", "--repo", f.author],
     { encoding: "utf8" },
   );
   assert.equal(result.status, 0, result.stderr);
@@ -636,7 +647,7 @@ test("association rejects dirty catalogs, mismatched source identities and commi
   // A staged gitlink without the published source in its history must fail,
   // even while the checkout still contains that publication.
   f.git(["update-index", "--cacheinfo", `160000,${f.a},frontend`]);
-  const checked = spawnSync(process.execPath, [hook], {
+  const checked = spawnSync(process.execPath, [cli, "setup", "pre-commit"], {
     cwd: f.author,
     encoding: "utf8",
   });
@@ -660,7 +671,10 @@ test("associating unchanged frontend sources still requires staging the new cata
   associate(f.author, { change: id });
   f.git(["add", "docs/project"]);
   const run = () =>
-    spawnSync(process.execPath, [hook], { cwd: f.author, encoding: "utf8" });
+    spawnSync(process.execPath, [cli, "setup", "pre-commit"], {
+      cwd: f.author,
+      encoding: "utf8",
+    });
   assert.notEqual(run().status, 0);
   assert.match(run().stderr, /暂存 gitlink/);
   f.git(["add", "frontend"]);
@@ -684,7 +698,7 @@ test("associating unchanged frontend sources still requires staging the new cata
     .previews[0];
   assert.equal(ref.artifact.source.catalogCommit, b);
   const { verifyPrototypeSource } = await import(
-    "../.agents/skills/spec-trail/prototype/scripts/local-source.mjs"
+    "../.agents/skills/spec-trail/scripts/prototype/local-source.mjs"
   );
   verifyPrototypeSource(
     f.author,
@@ -732,7 +746,7 @@ test("single-repository interrupted registration refuses recovery after its cata
     before = await readFile(join(f.child, path), "utf8"),
     after = before + "\n";
   const script = new URL(
-    "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
+    "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs",
     import.meta.url,
   ).href;
   const crashed = spawnSync(process.execPath, [
@@ -879,7 +893,7 @@ test("nested frontend publication commits inner and outer catalogs before one fi
   assert.equal(source.submodulePath, "frontend/inner");
   assert.equal(source.catalogCommit, b);
   f.git(["add", "."]);
-  const checked = spawnSync(process.execPath, [hook], {
+  const checked = spawnSync(process.execPath, [cli, "setup", "pre-commit"], {
     cwd: f.author,
     encoding: "utf8",
   });

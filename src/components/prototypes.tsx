@@ -304,7 +304,6 @@ function PrototypeCard({
       ...clearPreview,
       prototype: item.id,
       preview: item.id,
-      revision,
       device: device ?? null,
     });
   const hasThumbnail = !!item.artifact;
@@ -621,7 +620,6 @@ function PrototypeDetailBody({
               ...clearPreview,
               prototype: item.id,
               preview: item.id,
-              revision,
               device: device ?? null,
             })
           }

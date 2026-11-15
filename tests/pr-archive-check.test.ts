@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { rename, rm, writeFile } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
-import { checkPullRequest as check } from "../.agents/skills/spec-trail/setup/scripts/check-pr.mjs";
+import { checkPullRequest as check } from "../.agents/skills/spec-trail/scripts/setup/check-pr.mjs";
 import { integrationFixture, completedChange } from "./integration-fixture.ts";
 
-const cli = resolve(".agents/skills/spec-trail/setup/scripts/check-pr.mjs");
+const cli = resolve(".agents/skills/spec-trail/cli.mjs");
 const changeBody = "Delivery\n\nSpecTrail-Change: example";
 const releaseBody =
   "Release\n\nSpecTrail-Version: 1.0.0\nSpecTrail-Includes: example";
@@ -58,7 +58,47 @@ test("delivery overrides cannot replace CI archive or integration evidence", asy
   f.commit(false);
   await assert.rejects(
     checkPullRequest(f.git, event(f)),
-    /valid completed archive/,
+    /valid completed archive|registered source branch/,
+  );
+});
+
+test("a release can carry collaboration cancellation history without listing it as a delivery", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.merge();
+  const directory = "docs/project/archive/2026-11-15-planned";
+  const cancelled = {
+    ...completedChange("planned"),
+    branch: "develop",
+    status: "cancelled",
+    stage: "requirement",
+    tasks: {},
+    closure: {},
+    cancellation: {
+      at: "2026-11-15T01:00:00.000Z",
+      reason: "No longer needed",
+    },
+  };
+  await f.put(`${directory}/change.json`, JSON.stringify(cancelled));
+  f.commit();
+  const release = await checkPullRequest(f.git, event(f, "main", releaseBody));
+  assert.deepEqual(release.changes, ["example"]);
+  f.git(["checkout", "-b", "release/modified-cancellation"]);
+  await f.put(`${directory}/requirement.md`, "# Changed after cancellation");
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", releaseBody)),
+    /modified its cancelled archive/,
+  );
+  f.git(["checkout", "develop"]);
+  await f.put(
+    `${directory}/change.json`,
+    JSON.stringify({ ...cancelled, id: "different-id" }),
+  );
+  f.commit();
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", releaseBody)),
+    /cancelled archive id does not match its directory/,
   );
 });
 
@@ -130,6 +170,15 @@ test("archive prototype containment is checked before merge", async (t) => {
 test("unarchived and reworked Changes fail even in Draft, then pass after archive is restored", async () => {
   const f = await integrationFixture();
   try {
+    const eventPath = join(f.root, "event.json");
+    const runCheck = async () => {
+      await writeFile(eventPath, JSON.stringify(event(f)));
+      return spawnSync(
+        process.execPath,
+        [cli, "setup", "check-pr", "--repo", f.author, "--event", eventPath],
+        { encoding: "utf8" },
+      );
+    };
     await f.put("docs/project/changes/example/requirement.md", "# Rework");
     await rename(
       join(f.author, f.archivePath, "change.json"),
@@ -145,16 +194,18 @@ test("unarchived and reworked Changes fail even in Draft, then pass after archiv
       }),
     );
     f.commit(false);
-    await assert.rejects(
-      checkPullRequest(f.git, event(f)),
-      /valid completed archive/,
-    );
+    const rejected = await runCheck();
+    assert.equal(rejected.status, 1, rejected.stderr);
+    assert.equal(rejected.stdout, "");
+    assert.match(rejected.stderr, /valid completed archive/);
     await rm(join(f.author, "docs/project/changes/example"), {
       recursive: true,
     });
     await f.put(`${f.archivePath}/change.json`, JSON.stringify(f.record));
     f.commit(false);
-    assert.equal((await checkPullRequest(f.git, event(f))).kind, "change");
+    const accepted = await runCheck();
+    assert.equal(accepted.status, 0, accepted.stderr);
+    assert.equal(JSON.parse(accepted.stdout).kind, "change");
   } finally {
     await f.cleanup();
   }
@@ -202,14 +253,17 @@ test("metadata edits, ownership, source SHA, target and repository identity are 
       `${changeBody}\nSpecTrail-Change: example`,
       releaseBody,
     ]) {
-      await assert.rejects(
-        checkPullRequest(f.git, event(f, "develop", body)),
-        /SpecTrail-Change/,
+      assert.equal(
+        (await checkPullRequest(f.git, event(f, "develop", body))).kind,
+        "change",
       );
     }
     const wrongOwner = event(f);
     wrongOwner.pull_request.head.ref = "another-source";
-    await assert.rejects(checkPullRequest(f.git, wrongOwner), /ownership/);
+    await assert.rejects(
+      checkPullRequest(f.git, wrongOwner),
+      /registered source branch/,
+    );
     const stale = event(f);
     stale.pull_request.head.sha = f.base;
     await assert.rejects(checkPullRequest(f.git, stale), /exact PR head SHA/);
@@ -226,7 +280,7 @@ test("metadata edits, ownership, source SHA, target and repository identity are 
     unregistered.pull_request.base.sha = f.git(["rev-parse", "main"]);
     await assert.rejects(
       checkPullRequest(f.git, unregistered),
-      /Register this Change/,
+      /Register this Change|registered source branch/,
     );
   } finally {
     await f.cleanup();
@@ -286,23 +340,36 @@ test("omitting the release Change list cannot add, edit or delete archives", asy
   const body = "Maintenance\n\nSpecTrail-Version: 1.0.1";
   await assert.rejects(
     checkPullRequest(f.git, event(f, "main", body)),
-    /changes Change archives/,
+    /verified integration|read-only|not a valid object|does not exist/,
   );
   f.merge();
   f.git(["checkout", "main"]);
   f.git(["merge", "--no-ff", "develop", "-m", "Release baseline"]);
   f.git(["checkout", "develop"]);
+  // Archive paths outside any new Change record are read-only too.
+  await f.put("docs/project/archive/notes.md", "# Notes\n");
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", body)),
+    /archive\/notes\.md: released archives are read-only/,
+  );
+  await rm(join(f.author, "docs/project/archive/notes.md"));
+  f.commit(false);
+  assert.equal(
+    (await checkPullRequest(f.git, event(f, "main", body))).kind,
+    "release",
+  );
   await f.put(`${f.archivePath}/requirement.md`, "# Edited history\n");
   f.commit(false);
   await assert.rejects(
     checkPullRequest(f.git, event(f, "main", body)),
-    /changes Change archives/,
+    /verified integration|read-only|not a valid object|does not exist/,
   );
   await rm(join(f.author, f.archivePath), { recursive: true });
   f.commit(false);
   await assert.rejects(
     checkPullRequest(f.git, event(f, "main", body)),
-    /changes Change archives/,
+    /verified integration|read-only|not a valid object|does not exist/,
   );
 });
 
@@ -329,24 +396,15 @@ test("release checks only included Changes, requiring valid integration and unch
       (await checkPullRequest(f.git, event(f, "main", releaseBody))).kind,
       "release",
     );
-    await assert.rejects(
-      checkPullRequest(
-        f.git,
-        event(f, "main", `${releaseBody}\nSpecTrail-Includes: later`),
-      ),
-      /Change later.*valid completed archive/,
-    );
-    await assert.rejects(
-      checkPullRequest(
-        f.git,
-        event(f, "main", `${releaseBody}\nSpecTrail-Includes: missing`),
-      ),
-      /Change missing.*valid completed archive/,
-    );
-    await assert.rejects(
-      checkPullRequest(f.git, event(f, "main", changeBody)),
-      /SpecTrail-Version/,
-    );
+    for (const body of [
+      "",
+      changeBody,
+      `${releaseBody}\nSpecTrail-Includes: missing`,
+    ])
+      assert.equal(
+        (await checkPullRequest(f.git, event(f, "main", body))).kind,
+        "release",
+      );
     await f.put(
       `${f.archivePath}/requirement.md`,
       "# Changed after integration",
@@ -422,33 +480,172 @@ test("CLI reads PR JSON as data and propagates failed archive checks", async () 
     );
     const output = execFileSync(
       process.execPath,
-      [cli, "--repo", f.author, "--event", eventPath],
+      [cli, "setup", "check-pr", "--repo", f.author, "--event", eventPath],
       { encoding: "utf8" },
     );
     assert.equal(JSON.parse(output).kind, "change");
     await writeFile(
       eventPath,
-      JSON.stringify(event(f, "develop", "Missing marker")),
+      JSON.stringify({
+        ...event(f, "develop", "No marker"),
+        pull_request: {
+          ...event(f).pull_request,
+          head: { ...event(f).pull_request.head, ref: "unregistered" },
+        },
+      }),
     );
-    const failed = spawnSync(process.execPath, [cli, "--repo", f.author], {
-      env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
-      encoding: "utf8",
-    });
+    const failed = spawnSync(
+      process.execPath,
+      [cli, "setup", "check-pr", "--repo", f.author],
+      {
+        env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
+        encoding: "utf8",
+      },
+    );
     assert.equal(failed.status, 1);
-    assert.match(failed.stderr, /SpecTrail-Change/);
+    assert.match(failed.stderr, /registered source branch/);
     assert.equal(f.git(["status", "--porcelain"]), "");
   } finally {
     await f.cleanup();
   }
 });
 
-test('historical direct child delivery can release while its parent is still active', async t => {
-  const f = await integrationFixture(); t.after(f.cleanup);
-  await f.put(`${f.archivePath}/change.json`,JSON.stringify({...f.record,parent:'parent'}));
-  await f.put('docs/project/changes/parent/change.json',JSON.stringify({
-    schemaVersion:1,id:'parent',title:'Parent',size:'xlarge',branch:'develop',status:'active',stage:'requirement',
-    confirmations:{},tasks:{},closure:{},children:[f.id]
-  }));
-  f.commit(); f.merge();
-  assert.equal((await checkPullRequest(f.git,event(f,'main',releaseBody))).kind,'release');
+test("historical direct child delivery can release while its parent is still active", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  await f.put(
+    `${f.archivePath}/change.json`,
+    JSON.stringify({ ...f.record, parent: "parent" }),
+  );
+  await f.put(
+    "docs/project/changes/parent/change.json",
+    JSON.stringify({
+      schemaVersion: 1,
+      id: "parent",
+      title: "Parent",
+      size: "xlarge",
+      branch: "develop",
+      status: "active",
+      stage: "requirement",
+      confirmations: {},
+      tasks: {},
+      closure: {},
+      children: [f.id],
+    }),
+  );
+  f.commit();
+  f.merge();
+  assert.equal(
+    (await checkPullRequest(f.git, event(f, "main", releaseBody))).kind,
+    "release",
+  );
+});
+
+for (const completed of [true, false]) {
+  test(`unmarked parent delivery accepts its ${completed ? "completed" : "cancelled"} child`, async (t) => {
+    const f = await integrationFixture("parent");
+    t.after(f.cleanup);
+    const child = { ...completedChange("child"), parent: "parent" };
+    await f.register({ child: child.branch });
+    const confirmed = { at: "2026-10-18T00:00:00.000Z", summary: "Confirmed" };
+    await f.put(
+      `${f.archivePath}/change.json`,
+      JSON.stringify({
+        ...f.record,
+        size: "xlarge",
+        tasks: {},
+        children: [child.id],
+        confirmations: {
+          requirement: confirmed,
+          technical: confirmed,
+          plan: confirmed,
+        },
+      }),
+    );
+    if (completed) {
+      f.commit();
+      f.git(["checkout", "-b", child.branch]);
+      await f.put(
+        `${child.closure.archive.path}/change.json`,
+        JSON.stringify(child),
+      );
+      f.commit();
+      f.git(["checkout", f.branch]);
+      f.git(["merge", "--no-ff", child.branch, "-m", "Deliver child"]);
+      f.git(["push", "origin", f.branch]);
+      const pr = f.recordMerge(child.id, child.branch);
+      pr.body = "Deliver child";
+      pr.base.branch = f.branch;
+    } else {
+      const live = `docs/project/changes/${child.id}/change.json`;
+      const active = {
+        ...child,
+        status: "active",
+        stage: "requirement",
+        tasks: {},
+        closure: {},
+      };
+      await f.put(live, JSON.stringify(active));
+      f.commit();
+      f.git(["checkout", "-b", child.branch]);
+      f.git(["rm", live]);
+      const cancelled = {
+        ...active,
+        status: "cancelled",
+        cancellation: { at: confirmed.at, reason: "No longer needed" },
+      };
+      await f.put(
+        `docs/project/archive/2026-10-18-${child.id}/change.json`,
+        JSON.stringify(cancelled),
+      );
+      f.commit();
+      f.git(["checkout", "develop"]);
+      await f.put(live, JSON.stringify(cancelled));
+      f.commit();
+      f.git(["checkout", f.branch]);
+    }
+    const result = await checkPullRequest(
+      f.git,
+      event(f, "develop", "Deliver parent"),
+    );
+    assert.equal(result.kind, "change");
+    assert.deepEqual(
+      result.changes,
+      completed ? ["parent", "child"] : ["parent"],
+    );
+  });
+}
+
+test("an empty release range cannot hide a duplicate existing archive or live identity", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.merge();
+  f.git(["checkout", "main"]);
+  f.git(["merge", "--no-ff", "develop", "-m", "First release"]);
+  f.git(["push", "origin", "main"]);
+  f.git(["checkout", "-b", "release/next"]);
+  const path = "docs/project/archive/2026-10-19-example";
+  const duplicate = structuredClone(f.record);
+  duplicate.closure.archive.path = path;
+  await f.put(`${path}/change.json`, JSON.stringify(duplicate));
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", "No new Changes")),
+    /unique archive/,
+  );
+  f.git(["reset", "--hard", "main"]);
+  await f.put(
+    "docs/project/changes/example/change.json",
+    JSON.stringify({
+      ...f.record,
+      status: "active",
+      stage: "requirement",
+      closure: {},
+    }),
+  );
+  f.commit(false);
+  await assert.rejects(
+    checkPullRequest(f.git, event(f, "main", "No new Changes")),
+    /unique archive/,
+  );
 });

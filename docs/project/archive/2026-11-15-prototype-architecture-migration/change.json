@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-architecture-migration",
+  "title": "将 OpenFolio 原型迁移为复用业务代码的页面片段",
+  "size": "large",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/prototype-architecture-migration",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-14T22:27:00.935Z",
+      "summary": "七组业务片段直接发布并替换旧引用，清理无有效引用的旧原型数据",
+      "source": "直接上传制品替换现在的原型，不用保留旧架构和相关的数据。沿用此前自主决定方案、步骤、提交推送并停在人工验收的授权。"
+    },
+    "technical": {
+      "at": "2026-11-14T22:27:04.552Z",
+      "summary": "沿用内存 mock 与固定版本 R2 发布，替换引用并避免旧缓存混用",
+      "source": "直接上传制品替换现在的原型，不用保留旧架构和相关的数据。沿用此前自主决定方案、步骤、提交推送并停在人工验收的授权。"
+    },
+    "plan": {
+      "at": "2026-11-14T22:27:08.261Z",
+      "summary": "复用已验证片段，上传七页与设备缩略图后交人工验收",
+      "source": "直接上传制品替换现在的原型，不用保留旧架构和相关的数据。沿用此前自主决定方案、步骤、提交推送并停在人工验收的授权。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "以静态业务片段替代七组手写原型",
+      "status": "done",
+      "verification": "根及原型类型检查、七入口构建通过；23 项包内与 16 项协议测试通过；56 组视口/主题、11 条交互、21 张标准图、独立静态访问和 prepare 通过；独立评审 R1–R5 无遗留。",
+      "commitTitle": "prototype-architecture-migration T1: reuse business components in static fragments"
+    },
+    "T2": {
+      "title": "发布七组静态片段并替换旧原型引用",
+      "status": "done",
+      "verification": "七页及21张缩略图已上传登记，28对象公开字节一致；21组设备/场景及真实Change预览、分享、会话清理通过；删除9个无引用版本130对象；独立评审通过，默认总览卡片待合入后核验。",
+      "commitTitle": "prototype-architecture-migration T2: verify published fragments and record acceptance boundary"
+    },
+    "T3": {
+      "title": "按业务状态还原片段并重新发布七组原型",
+      "status": "done",
+      "verification": "原型与根类型检查、七入口构建、23项包内与16项协议测试、56组视口/主题及全部场景与11条交互通过；独立评审R9/R10已修复复测；从66e3df6重发612bd014，28对象公开字节一致，validate与--browser通过。",
+      "commitTitle": "prototype-architecture-migration T3: restore business loading and failure states"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T23:48:40.167Z",
+      "summary": "T1–T3全部完成；同步develop后类型检查、构建、23+16项测试、56组视口/主题与全部场景及11条交互通过；612bd014七页21图公开字节一致、validate --browser通过。独立subagent评审T1(R1–R5)、T2发布、T3(R9/R10)及验收前评审R6–R8，均已处理或记录。默认总览合入后核对。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-14T23:48:48.140Z",
+      "summary": "用户明确要求完成优化后归档并合入 develop；验收口径为合入后新 Change 与新版原型标签页正常，不考虑历史数据兼容。",
+      "source": "我只管最终归档合入 dev 后，后续新的 change 和 新版原型tab页内容都保持正常即可。不要过分做兼容。文档的修修补补允许。现在由你来继续推进。完成优化、归档、合入把。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-14T23:48:56.787Z",
+      "summary": "project-knowledge/prototype-preview：本仓库 R2 只保留当前分支（含已归档 Change）引用的版本，授权清理不保证历史地址可用；片段式原型包要求已在该能力中。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-14T23:49:07.732Z",
+      "summary": "七组 quiet-* 原型迁为复用业务组件的静态片段，发布 612bd014 并替换当前清单与 Change 引用；用户要求归档合入，Specs 同步 prototype-preview R2 保留约定。",
+      "path": "docs/project/archive/2026-11-15-prototype-architecture-migration"
+    }
+  },
+  "followUpOf": "spec-trail-core-simplification",
+  "followUpTitle": "SpecTrail 原型制作流程与 OpenFolio 迁移",
+  "types": [
+    "重构"
+  ],
+  "rework": {
+    "at": "2026-11-14T23:30:39.019Z",
+    "reason": "评审发现工作台与分享片段的加载/失败/空态为包内手写占位，清理记录将仅当前分支无引用误写为无有效引用",
+    "approach": "追加 T3 按业务状态还原片段并重新发布，修正清理记录与后续清理说明；不考虑历史数据兼容"
+  },
+  "previews": [
+    {
+      "id": "quiet-changes",
+      "title": "Changes 列表与材料片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-changes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-credentials",
+      "title": "账号与 Token 片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-credentials/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-home",
+      "title": "我的仓库与侧栏片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-home/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-prototypes",
+      "title": "原型总览与画布片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-prototypes/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-public",
+      "title": "匿名公开画布片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-public/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-share",
+      "title": "Change 分享阅读片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-share/mobile.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quiet-specs",
+      "title": "Specs 阅读片段",
+      "kind": "page",
+      "devices": [
+        "pc-web",
+        "ipad",
+        "mobile"
+      ],
+      "artifact": {
+        "type": "hosted",
+        "version": "612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0",
+        "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/index.html",
+        "sourceCommit": "66e3df641cad246d72bad114d1e7c2f1350a2544",
+        "digest": "sha256:ed99cdfb3206ca9db134e89ade754ef038a19efb4ec5c34df5d094c52d920d8b",
+        "thumbnails": [
+          {
+            "device": "pc-web",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/pc-web.png"
+          },
+          {
+            "device": "ipad",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/ipad.png"
+          },
+          {
+            "device": "mobile",
+            "url": "https://pub-cc623a99ce8e4606a3491cc2d4b4436c.r2.dev/open-folio/612bd014ad580e63d0c4303e87acbec726fe8f32bd1fe37fcef5da8800266ff0/quiet-specs/mobile.png"
+          }
+        ]
+      }
+    }
+  ]
+}

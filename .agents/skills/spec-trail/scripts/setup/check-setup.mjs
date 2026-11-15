@@ -1,0 +1,168 @@
+import { execFileSync, spawnSync } from "node:child_process";
+import { readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+const skillPath = ".agents/skills/spec-trail";
+const cliPath = `${skillPath}/cli.mjs`;
+const registryPath = `${skillPath}/scripts/commands.mjs`;
+const setupPath = `${skillPath}/scripts/setup/commands.mjs`;
+const validatorPath = `${skillPath}/scripts/setup/pre-commit.mjs`;
+const schemaPath = `${skillPath}/scripts/core/state-schema.mjs`;
+// Files the commit hook runs: the CLI entry, the setup group and the validator's imports.
+const resourcePaths = [
+  cliPath,
+  registryPath,
+  `${skillPath}/scripts/define.mjs`,
+  setupPath,
+  validatorPath,
+  schemaPath,
+  `${skillPath}/scripts/core/routing.mjs`,
+  `${skillPath}/scripts/prototype/hooks.mjs`,
+  `${skillPath}/scripts/prototype/contract.mjs`,
+  `${skillPath}/scripts/prototype/source.mjs`,
+  `${skillPath}/scripts/prototype/local-source.mjs`,
+];
+const workflowPath = "docs/project/workflow.json";
+const command = `node "$(git rev-parse --show-toplevel)/${cliPath}" setup pre-commit >/dev/null`;
+
+export async function runSetupCheck({ repo = "." }) {
+  if (Number(process.versions.node.split(".")[0]) < 20)
+    throw Error("Node.js 20 or newer is required.");
+  const cwd = resolve(repo);
+  const git = (args) =>
+    execFileSync("git", ["-C", cwd, ...args], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  if (git(["rev-parse", "--is-bare-repository"]) === "true")
+    throw Error("Choose a repository with a working tree.");
+  const root = git(["rev-parse", "--show-toplevel"]);
+  const issues = [];
+  const resources = resourcePaths.map(
+    (path) => {
+      try {
+        if (!statSync(join(root, path)).isFile()) throw Error("must be a file");
+        const check = spawnSync(
+          process.execPath,
+          ["--check", join(root, path)],
+          {
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "pipe"],
+          },
+        );
+        if (check.error || check.status !== 0)
+          throw Error(
+            check.error?.message ||
+              check.stderr.trim() ||
+              "syntax check failed",
+          );
+        return { path, status: "ready" };
+      } catch (error) {
+        issues.push(
+          `${path}: ${error.code === "ENOENT" ? "missing file" : error.message}`,
+        );
+        return { path, status: "not_ready" };
+      }
+    },
+  );
+  let schema;
+  // Importing the validator also loads every module it depends on.
+  for (const [path, names, type = "function"] of [
+    [registryPath, ["groups"], "object"],
+    [setupPath, ["commands"], "object"],
+    [validatorPath, ["runPreCommit"]],
+    [schemaPath, ["validateWorkflow", "validateChange"]],
+  ]) {
+    const resource = resources.find((resource) => resource.path === path);
+    if (resource.status !== "ready") continue;
+    try {
+      const module = await import(pathToFileURL(join(root, path)).href);
+      for (const name of names)
+        if (typeof module[name] !== type)
+          throw Error(`must export ${name} as type ${type}`);
+      if (path === schemaPath) schema = module;
+    } catch (error) {
+      resource.status = "not_ready";
+      issues.push(`${path}: ${error.message}`);
+    }
+  }
+  const workflow = { path: workflowPath, status: "not_ready" };
+  let integration;
+  try {
+    const value = JSON.parse(readFileSync(join(root, workflowPath), "utf8"));
+    if (schema) {
+      const errors = schema.validateWorkflow(value);
+      issues.push(...errors.map((error) => `${workflowPath}: ${error}`));
+      if (!errors.length) {
+        const refs = [
+          `refs/heads/${value.integrationBranch}`,
+          `refs/remotes/origin/${value.integrationBranch}`,
+        ];
+        const available = refs.filter((ref) => {
+          try {
+            git(["show-ref", "--verify", ref]);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        integration = {
+          branch: value.integrationBranch,
+          defaultMergeTarget: value.integrationBranch,
+          releaseBranch: value.releaseBranch,
+          knownRefs: available,
+          remotePermissions: "unverified",
+        };
+        if (!available.length)
+          issues.push(
+            `${workflowPath}: prepare integration branch ${value.integrationBranch} before starting Changes`,
+          );
+        else workflow.status = "ready";
+      }
+    }
+  } catch (error) {
+    issues.push(
+      `${workflowPath}: ${error.code === "ENOENT" ? "missing file" : error.message}`,
+    );
+  }
+  const config = spawnSync(
+    "git",
+    ["-C", root, "config", "--get", "core.hooksPath"],
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  if (config.error || ![0, 1].includes(config.status))
+    throw Error(
+      config.error?.message ||
+        config.stderr.trim() ||
+        "Could not read core.hooksPath.",
+    );
+  // The Git entry can delegate to another file. Only execution evidence verifies integration.
+  const hook = {
+    status: "unverified",
+    configuredPath: config.status === 0 ? config.stdout.trim() : null,
+    gitEntryPath: git([
+      "rev-parse",
+      "--path-format=absolute",
+      "--git-path",
+      "hooks/pre-commit",
+    ]),
+  };
+  return {
+    output: {
+      repository: root,
+      environment: { node: process.versions.node, git: git(["--version"]) },
+      readiness: issues.length ? "not_ready" : "ready",
+      resources,
+      workflow,
+      integration,
+      hook,
+      command,
+      issues,
+    },
+    exitCode: issues.length ? 1 : 0,
+  };
+}

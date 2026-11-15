@@ -10,7 +10,7 @@ import type {
   IntegrationFiles,
   IntegrationDiff,
 } from "@/lib/integration";
-import { api, useWorkspace } from "./context";
+import { api, ApiError, useWorkspace } from "./context";
 import { Empty, ErrorNotice } from "./document";
 
 const statuses: Record<string, string> = {
@@ -37,7 +37,7 @@ const fileLabel = (file: IntegrationFile) =>
     .filter(Boolean)
     .join(" · ");
 export function ChangeIntegration({ id }: { id: string }) {
-  const { data, q, nav, readUrl, notice, refresh } = useWorkspace();
+  const { data, q, nav, readUrl, notice, refresh, sharing } = useWorkspace();
   const url = readUrl(
     `changes/${encodeURIComponent(id)}/integration?snapshot=${data!.id}`,
   );
@@ -96,6 +96,7 @@ export function ChangeIntegration({ id }: { id: string }) {
     key: string;
     value?: IntegrationDiff;
     error?: string;
+    code?: string;
   }>({ key: "" });
   useEffect(() => {
     if (!selected || summary?.record.status !== "found") return;
@@ -110,12 +111,25 @@ export function ChangeIntegration({ id }: { id: string }) {
         if (!controller.signal.aborted) setDiff({ key: fileKey, value });
       })
       .catch((error) => {
-        if (!controller.signal.aborted)
-          setDiff({ key: fileKey, error: error.message });
+        if (controller.signal.aborted) return;
+        setDiff({
+          key: fileKey,
+          error: error.message,
+          ...(error instanceof ApiError ? { code: error.code } : {}),
+        });
       });
     return () => controller.abort();
   }, [fileKey, selected, summary?.record.status, readUrl, id, data?.id]);
   const fileDiff = diff.key === fileKey ? diff.value : undefined;
+  useEffect(() => {
+    if (
+      !sharing &&
+      q.cf &&
+      diff.key === fileKey &&
+      diff.code === "DIFF_FILE_NOT_FOUND"
+    )
+      nav({ cf: null, cv: null }, true);
+  }, [sharing, q.cf, diff.key, diff.code, fileKey, nav]);
   useEffect(() => {
     if (diffPanel.current) {
       diffPanel.current.scrollTop = 0;

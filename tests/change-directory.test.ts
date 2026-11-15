@@ -273,6 +273,15 @@ test("released records are archived; multi-state filters share classification an
   shipped.candidates[0].validCompleted = false;
   assert.equal(
     matchesDirectoryScope(shipped, "archived", delivery.shipped),
+    true,
+  );
+  shipped.primary = null;
+  assert.equal(
+    matchesDirectoryScope(shipped, "archived", delivery.shipped),
+    true,
+  );
+  assert.equal(
+    matchesDirectoryScope(shipped, "completed", delivery.shipped),
     false,
   );
 });

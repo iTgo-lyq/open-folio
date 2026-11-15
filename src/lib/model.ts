@@ -2,8 +2,8 @@ export type {
   IntegrationIndex,
   IntegrationRecord,
   IntegrationResult,
-} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
-import type { IntegrationIndex } from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
+import type { IntegrationIndex } from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 export type Diagnostic = {
   code: string;
   message: string;
@@ -283,7 +283,7 @@ export type Delivery = {
   stage?: "pendingIntegration" | "pendingRelease" | "releaseMerged" | "unknown";
   changePrs: PullRequest[];
   releasePrs: PullRequest[];
-  /** Earliest dated release PR verified against both release and integration history. */
+  /** Unique dated PR for the archive's first introduction on the release branch. */
   releaseMergedPrNumber?: number;
   diagnostics: string[];
   stale: boolean;
@@ -295,9 +295,29 @@ export type ReleaseSource = {
   commit: string | null;
   message?: string;
 };
+export type ReleaseArchive = {
+  status: "found" | "invalid" | "unavailable";
+  introduction?: string;
+  message?: string;
+};
+export type ReleaseVersion = {
+  status: "found" | "missing" | "ambiguous" | "unreadable" | "unavailable";
+  version?: string;
+};
+export type ReleaseVersionCache = {
+  files: Record<string, ReleaseVersion>;
+  tags?: {
+    checkedAt: number;
+    commits: string[];
+    versions: Record<string, ReleaseVersion>;
+  };
+};
 export type Snapshot = {
-  cacheSchemaVersion: 10;
+  cacheSchemaVersion: 11;
+  historyPending?: boolean;
   releaseSource?: ReleaseSource;
+  releaseArchives?: Record<string, ReleaseArchive>;
+  releaseVersions?: ReleaseVersionCache;
   deliveryByChange?: Record<string, Delivery>;
   integrations: IntegrationIndex;
   integrationBranch: string | null;

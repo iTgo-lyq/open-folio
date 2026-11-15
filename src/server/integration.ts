@@ -10,7 +10,7 @@ import type {
 import {
   integrationFor,
   validChangeId,
-} from "../../.agents/skills/spec-trail/scripts/integration-records.mjs";
+} from "../../.agents/skills/spec-trail/scripts/core/integration-records.mjs";
 import { GitReader, hash } from "./git.ts";
 import { AppError } from "./errors.ts";
 

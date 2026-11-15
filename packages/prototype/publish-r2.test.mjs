@@ -13,11 +13,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { artifactDigest } from "../../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
+import { artifactDigest } from "../../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
 import {
   requestIdentity,
   validateResult,
-} from "../../.agents/skills/spec-trail/prototype/scripts/publication-contract.mjs";
+} from "../../.agents/skills/spec-trail/scripts/prototype/publication-contract.mjs";
 import { publishToR2 } from "./publish-r2.mjs";
 
 const env = {

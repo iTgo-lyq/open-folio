@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "snapshot-rebuild-test",
+  "title": "同步快照重建测试的版本预期",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/snapshot-rebuild-test",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "比较重建快照与原有效快照的版本",
+      "status": "done",
+      "verification": "18 项缓存与作者识别回归通过，测试文件格式检查通过",
+      "commitTitle": "snapshot-rebuild-test T1: compare against the original valid cache schema"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-12T14:33:04.472Z",
+      "summary": "Agent 自查一处断言，18 项缓存与作者识别测试及格式检查通过"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-12T14:33:09.919Z",
+      "summary": "Agent 自验收：旧快照拒绝、原始字节保留及刷新重建均通过",
+      "source": "tests/store.test.ts 与测试输出"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-12T14:33:14.406Z",
+      "summary": "仅同步回归断言，产品行为和规范未变"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-12T14:33:18.088Z",
+      "summary": "快照重建版本断言已修正并验证",
+      "path": "docs/project/archive/2026-11-12-snapshot-rebuild-test"
+    }
+  },
+  "followUpOf": "trae-collaborator-names",
+  "types": [
+    "测试"
+  ]
+}

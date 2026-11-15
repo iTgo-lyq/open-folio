@@ -7,7 +7,7 @@ import {
   type ChangeState,
 } from "../src/lib/model.ts";
 import { changeSchema } from "../src/server/schema.ts";
-import { validateChange } from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+import { validateChange } from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 
 function group(
   id: string,

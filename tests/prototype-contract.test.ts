@@ -6,7 +6,7 @@ import { resolve, join } from "node:path";
 import {
   validateChange,
   validateWorkflow,
-} from "../.agents/skills/spec-trail/scripts/state-schema.mjs";
+} from "../.agents/skills/spec-trail/scripts/core/state-schema.mjs";
 import {
   changeSchema,
   prototypeSchema,
@@ -190,7 +190,7 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   const run = () =>
     spawnSync(
       process.execPath,
-      [resolve(".agents/skills/spec-trail/setup/scripts/pre-commit.js")],
+      [resolve(".agents/skills/spec-trail/cli.mjs"), "setup", "pre-commit"],
       { cwd: work, encoding: "utf8" },
     );
   const stage = () => git(["add", "."]);
@@ -221,7 +221,8 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
   const handoff = spawnSync(
     process.execPath,
     [
-      resolve(".agents/skills/spec-trail/scripts/workspace.mjs"),
+      resolve(".agents/skills/spec-trail/cli.mjs"),
+      "workspace",
       "handoff",
       "--repo",
       f.author,
@@ -233,11 +234,11 @@ test("hook checks staged entries, rejects deletion and symlinks, and permits ord
     { encoding: "utf8" },
   );
   assert.equal(handoff.status, 0, handoff.stderr);
-  for (const args of [["execute"], ["task-start", "--task", "T1"]]) {
+  for (const args of [["stage", "execute"], ["task", "start", "--task", "T1"]]) {
     const step = spawnSync(
       process.execPath,
       [
-        resolve(".agents/skills/spec-trail/scripts/change.mjs"),
+        resolve(".agents/skills/spec-trail/cli.mjs"),
         ...args,
         "--repo",
         work,

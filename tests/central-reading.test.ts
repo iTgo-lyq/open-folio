@@ -125,7 +125,12 @@ test("only registered sources are fetched, stale central status is ignored, and 
   const calls: string[][] = [];
   let changed = false;
   class Reader extends GitReader {
-    override async run(args: string[], signal?: AbortSignal, limit?: number) {
+    override async run(
+      args: string[],
+      signal?: AbortSignal,
+      limit?: number,
+      input?: string | Buffer,
+    ) {
       calls.push(args);
       if (!changed && args[0] === "ls-tree" && args.includes(first)) {
         changed = true;
@@ -138,7 +143,7 @@ test("only registered sources are fetched, stale central status is ignored, and 
         );
         f.commit();
       }
-      return super.run(args, signal, limit);
+      return super.run(args, signal, limit, input);
     }
   }
   const store = new SnapshotStore(
@@ -280,7 +285,12 @@ test("entry retarget during collection retries the catalog without publishing th
   await f.register({ example: "change/old" });
   let changed = false;
   class Reader extends GitReader {
-    override async run(args: string[], signal?: AbortSignal, limit?: number) {
+    override async run(
+      args: string[],
+      signal?: AbortSignal,
+      limit?: number,
+      input?: string | Buffer,
+    ) {
       if (
         !changed &&
         args[0] === "ls-remote" &&
@@ -298,7 +308,7 @@ test("entry retarget during collection retries the catalog without publishing th
         );
         f.commit();
       }
-      return super.run(args, signal, limit);
+      return super.run(args, signal, limit, input);
     }
   }
   const store = new SnapshotStore(

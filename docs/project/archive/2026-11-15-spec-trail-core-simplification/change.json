@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "spec-trail-core-simplification",
+  "title": "精简 SpecTrail 主 Skill 与 CLI，原型改为复用业务代码的页面片段",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/spec-trail-core-simplification",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-14T18:31:01.147Z",
+      "summary": "精简主 Skill 与 CLI，原型改为复用业务代码的页面片段。",
+      "source": "确认需求，可以移交。"
+    },
+    "technical": {
+      "at": "2026-11-14T19:53:30.990Z",
+      "summary": "按阶段拆分主 Skill，CLI 分组重构，原型复用业务代码。",
+      "source": "本次任务比较特殊，不需要review了，技术方案与计划稍微补一下。最后归档合入吧。"
+    },
+    "plan": {
+      "at": "2026-11-14T19:53:34.640Z",
+      "summary": "按 T1–T6 依次交付文档、CLI、原型与拆分。",
+      "source": "本次任务比较特殊，不需要review了，技术方案与计划稍微补一下。最后归档合入吧。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "整理主 Skill 与接入入口",
+      "status": "done",
+      "verification": "对照 496077d、02ad8a8、dcd8b1c，核对主 Skill 和接入声明、许可文件与描述；Skill 21 项、setup check、介绍站构建与检查通过。"
+    },
+    "T2": {
+      "title": "CLI 分层帮助与命令分组",
+      "status": "done",
+      "verification": "对照 496077d、02ad8a8、e9e7f16，核对八个可见分组和三层帮助；CLI 帮助、状态命令和 CLI/工作台旧字段拒绝用例通过。"
+    },
+    "T3": {
+      "title": "CLI 代码结构与测试收敛",
+      "status": "done",
+      "verification": "对照 dcd8b1c 及后续提交；应用 464 项、Skill 21 项、定向工作流与原型 84 项通过，类型检查通过。"
+    },
+    "T4": {
+      "title": "原型改为业务页面片段",
+      "status": "done",
+      "verification": "对照 a04f27e；通过空目录接入、缺少 build 拒绝、发布登记、Git 兜底、归档和子模块测试，原型包 16 项、托管浏览器 2 项通过。"
+    },
+    "T5": {
+      "title": "脚本依赖检查移到 Skill 测试",
+      "status": "done",
+      "verification": "对照 b1b2be0；Skill 全脚本依赖扫描与识别用例通过，核对 pre-commit 和 setup check 已移除依赖扫描，setup check 就绪。"
+    },
+    "T6": {
+      "title": "按阶段拆分主 Skill",
+      "status": "done",
+      "verification": "对照 00caa75；核对主 Skill 的阶段入口、共享提问、返工与 worktree 指引，146 个 Markdown 本地引用和介绍站检查通过。"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-14T19:59:53.004Z",
+      "summary": "需求逐项核对完成，应用 464 项、Skill 21 项、原型包 16 项、托管浏览器 2 项，以及类型、接入、链接和介绍站检查通过。按用户要求免除独立评审。详见 execution.md。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-14T19:59:59.520Z",
+      "summary": "用户要求将当前交付归档并合入 develop。",
+      "source": "本次任务比较特殊，不需要review了，技术方案与计划稍微补一下。最后归档合入吧。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-14T20:00:04.130Z",
+      "summary": "同步 change-workflow、project-knowledge/prototype-preview、product-introduction 三份 Specs。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-14T20:00:07.786Z",
+      "summary": "归档已验收的 Skill、CLI 与原型工作流变更。",
+      "path": "docs/project/archive/2026-11-15-spec-trail-core-simplification"
+    }
+  },
+  "types": [
+    "工程",
+    "体验"
+  ]
+}

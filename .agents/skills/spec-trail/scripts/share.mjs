@@ -1,6 +1,5 @@
-import { parseArgs } from "node:util";
-import { pathToFileURL } from "node:url";
-import { repository } from "./repository.mjs";
+import { repository } from "./core/repository.mjs";
+import { define } from "./define.mjs";
 
 const safeUrl = (value) => {
   const url = new URL(value);
@@ -77,23 +76,16 @@ export async function getShareLink({
   return { url: link.href };
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
-  try {
-    const { values } = parseArgs({
-      options: Object.fromEntries(
-        ["repo", "change", "document", "preview"].map((k) => [
-          k,
-          { type: "string" },
-        ]),
-      ),
-    });
-    const result = await getShareLink(values);
-    process.stdout.write(JSON.stringify(result, null, 2) + "\n");
-  } catch (error) {
-    process.stderr.write(error.message + "\n");
-    process.exitCode = 1;
-  }
-}
+export const commands = {
+  link: define(async (values) => ({ output: await getShareLink(values) }), {
+    summary: "Build an OpenFolio link to a Change overview, document or prototype from workflow.openfolioUrl (offline)",
+    required: ["change"],
+    optional: ["document", "preview", "repo"],
+    help: {
+      document: { value: "path", text: "Document path inside the Change directory, e.g. technical.md" },
+      preview: { value: "id", text: "Prototype entry id" },
+    },
+    notes: ["Choose at most one of --document and --preview; omit both for the overview."],
+    example: "--change example --document technical.md",
+  }),
+};

@@ -1,10 +1,10 @@
 import { verify } from "../.agents/skills/spec-trail/scripts/integration.mjs";
-import { repository } from "../.agents/skills/spec-trail/scripts/repository.mjs";
+import { repository } from "../.agents/skills/spec-trail/scripts/core/repository.mjs";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { createServer } from "node:http";
-import { uploadToOpenFolio } from "../.agents/skills/spec-trail/prototype/scripts/openfolio-client.mjs";
+import { uploadToOpenFolio } from "../.agents/skills/spec-trail/scripts/prototype/openfolio-client.mjs";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -16,13 +16,13 @@ import {
   checkedPath,
   withLock,
   validateResult,
-} from "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs";
 import {
   validateArtifact,
   validateManifest,
   validatePreviews,
-} from "../.agents/skills/spec-trail/prototype/scripts/contract.mjs";
-import { publishToDirectory } from "../.agents/skills/spec-trail/prototype/examples/filesystem-host.mjs";
+} from "../.agents/skills/spec-trail/scripts/prototype/contract.mjs";
+import { publishToDirectory } from "../.agents/skills/spec-trail/references/prototype/examples/filesystem-host.mjs";
 const current = {
   id: "screen",
   title: "页面",
@@ -63,8 +63,8 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
     assert.equal(result.status, 0, result.stderr);
   };
   const state = (name: string, args: string[] = []) =>
-    command(".agents/skills/spec-trail/scripts/change.mjs", [
-      name,
+    command(".agents/skills/spec-trail/cli.mjs", [
+      ...name.split(" "),
       "--change",
       "publish-demo",
       ...args,
@@ -88,15 +88,16 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   await f.put(current.sourcePath, "<!doctype html><button>ready</button>");
   await f.put(".gitignore", "packages/prototype/dist/\n");
   f.commit();
-  state("create", ["--title", "发布", "--size", "small"]);
-  state("task-add", ["--title", "发布"]);
+  state("change create", ["--title", "发布", "--size", "small"]);
+  state("task add", ["--title", "发布"]);
   await f.put(
     "docs/project/changes/publish-demo/requirement.md",
     "# Publication fixture\n",
   );
   f.commit();
   const work = join(f.root, "publish-work");
-  command(".agents/skills/spec-trail/scripts/workspace.mjs", [
+  command(".agents/skills/spec-trail/cli.mjs", [
+    "workspace",
     "handoff",
     "--change",
     "publish-demo",
@@ -105,8 +106,8 @@ async function publication(t: { after: (f: () => unknown) => unknown }) {
   ]);
   assert.equal(git(["branch", "--show-current"]), "develop");
   author = work;
-  state("execute");
-  state("task-start", ["--task", "T1"]);
+  state("stage execute");
+  state("task start", ["--task", "T1"]);
   f.commit();
   await f.put(
     "packages/prototype/dist/index.html",
@@ -424,7 +425,7 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
   };
   register(f.author, { request, result, change: "publish-demo" });
   f.git(["add", "."]);
-  run(".agents/skills/spec-trail/setup/scripts/pre-commit.js");
+  run(".agents/skills/spec-trail/cli.mjs", ["setup", "pre-commit"]);
   f.commit();
   await f.put(
     "packages/prototype/preview/screen/index.html",
@@ -436,17 +437,17 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "# Fixture delivery",
   );
   f.commit();
-  const stateScript = ".agents/skills/spec-trail/scripts/change.mjs";
+  const stateScript = ".agents/skills/spec-trail/cli.mjs";
   const command = (name: string, args: string[]) =>
-    run(stateScript, [name, "--change", "publish-demo", ...args]);
-  command("task-complete", [
+    run(stateScript, [...name.split(" "), "--change", "publish-demo", ...args]);
+  command("task complete", [
     "--task",
     "T1",
     "--verification",
     "fixture checks",
   ]);
-  command("verify", ["--result", "passed", "--summary", "fixture checks"]);
-  command("accept", [
+  command("close verify", ["--result", "passed", "--summary", "fixture checks"]);
+  command("close accept", [
     "--mode",
     "agent",
     "--summary",
@@ -454,8 +455,8 @@ test("staged hosted refs need no Git artifact and Git fallback survives semantic
     "--source",
     "fixture",
   ]);
-  command("specs", ["--result", "not_needed", "--summary", "fixture"]);
-  command("archive", ["--date", "2026-10-09", "--summary", "fixture"]);
+  command("close specs", ["--result", "not_needed", "--summary", "fixture"]);
+  command("close archive", ["--date", "2026-10-09", "--summary", "fixture"]);
   const archived = "docs/project/archive/2026-10-09-publish-demo";
   const state = JSON.parse(
     await readFile(join(f.author, archived, "change.json"), "utf8"),
@@ -495,7 +496,7 @@ test("crashed publication retains lock evidence and recovers only after verified
   const lock = join(f.common, "spec-trail-state.lock");
   const journal = join(f.common, "spec-trail-prototype-transaction.json");
   const moduleUrl = new URL(
-    "../.agents/skills/spec-trail/prototype/scripts/publishing.mjs",
+    "../.agents/skills/spec-trail/scripts/prototype/publishing.mjs",
     import.meta.url,
   ).href;
   const crashed = spawnSync(process.execPath, [

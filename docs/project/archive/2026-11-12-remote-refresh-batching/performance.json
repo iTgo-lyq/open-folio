@@ -1,0 +1,786 @@
+{
+  "measuredAt": "2026-11-12T13:30:12.835Z",
+  "branches": [
+    {
+      "name": "codex/prototype-favicon-refresh",
+      "commit": "162fa65abb323f388cbc52f7fece565e9a65b131"
+    },
+    {
+      "name": "codex/remote-refresh-batching",
+      "commit": "481db37bf568f18d1683e57f2f4c433f6185b804"
+    },
+    {
+      "name": "develop",
+      "commit": "62dd4eed490ae2970a84c77c454f52694a7e8482"
+    }
+  ],
+  "releaseSource": {
+    "branch": "main",
+    "commit": "faa3c9e612ea0616e985ae1542c8b66248688269"
+  },
+  "documents": 475,
+  "runs": [
+    {
+      "run": 1,
+      "kind": "baseline",
+      "listMs": 13146.976400999998,
+      "historyMs": 15231.490827999998,
+      "historyAfterListMs": 2084.514427,
+      "gitCalls": 140,
+      "gitNetworkCommands": 8,
+      "githubApiRequests": 3,
+      "githubApiElapsedSumMs": 2747.006612,
+      "gitNetworkElapsedSumMs": 10639.379345999998,
+      "changes": 113,
+      "archives": 110,
+      "implementationCommit": "62dd4eed490ae2970a84c77c454f52694a7e8482",
+      "productionDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startupAndBindingMs": 1381.841861,
+      "gitCallsByCommand": {
+        "init": 1,
+        "for-each-ref": 5,
+        "ls-remote": 4,
+        "fetch": 4,
+        "rev-parse": 5,
+        "ls-tree": 107,
+        "cat-file": 7,
+        "log": 6,
+        "rev-list": 1
+      },
+      "githubPrRequests": 1,
+      "setupApiRequests": 1,
+      "datedArchives": 32,
+      "unknownTimeArchives": 78,
+      "prCount": 61,
+      "networkEvents": [
+        {
+          "kind": "github-api",
+          "endpoint": "/user",
+          "startMs": 538.986604,
+          "bytes": 1249,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1374.812346,
+          "endMs": 1377.885206
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio",
+          "startMs": 1385.788366,
+          "bytes": 5186,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1902.5291,
+          "endMs": 1903.6591290000001
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/git/matching-refs/heads/develop",
+          "startMs": 1904.586594,
+          "bytes": 348,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2420.875265,
+          "endMs": 2421.522961
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 2439.087989,
+          "stdoutBytes": 60,
+          "endMs": 3410.863075
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 3415.074616,
+          "stdoutBytes": 0,
+          "endMs": 5626.539142
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 5711.91374,
+          "stdoutBytes": 57,
+          "endMs": 6680.244167999999
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 6684.0224929999995,
+          "stdoutBytes": 0,
+          "endMs": 8061.706918
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 8577.541737,
+          "stdoutBytes": 166,
+          "endMs": 9544.055344999999
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 9548.144585,
+          "stdoutBytes": 0,
+          "endMs": 11309.359994
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 11330.461894,
+          "stdoutBytes": 0,
+          "endMs": 12703.355685999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 12721.597119,
+          "stdoutBytes": 60,
+          "endMs": 13731.099191
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/pulls?per_page=100&page=1&state=all&sort=updated&direction=desc",
+          "startMs": 14826.582593,
+          "bytes": 997238,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 15760.226419999999,
+          "endMs": 16538.782075
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "kind": "optimized",
+      "listMs": 10415.028562,
+      "historyMs": 13314.376783,
+      "historyAfterListMs": 2899.348221,
+      "gitCalls": 133,
+      "gitNetworkCommands": 5,
+      "githubApiRequests": 3,
+      "githubApiElapsedSumMs": 13206.958372000001,
+      "gitNetworkElapsedSumMs": 7423.657479999998,
+      "changes": 113,
+      "archives": 110,
+      "implementationCommit": "481db37bf568f18d1683e57f2f4c433f6185b804",
+      "productionDiffSha256": "1282b56c71c0a4d5eb1aa8bdb9f3f631d5224fd0655215dbb62cba50dbf59396",
+      "startupAndBindingMs": 1316.652816,
+      "gitCallsByCommand": {
+        "init": 1,
+        "for-each-ref": 4,
+        "ls-remote": 3,
+        "fetch": 2,
+        "rev-parse": 2,
+        "ls-tree": 107,
+        "cat-file": 7,
+        "log": 6,
+        "rev-list": 1
+      },
+      "githubPrRequests": 1,
+      "setupApiRequests": 1,
+      "datedArchives": 32,
+      "unknownTimeArchives": 78,
+      "prCount": 61,
+      "networkEvents": [
+        {
+          "kind": "github-api",
+          "endpoint": "/user",
+          "startMs": 557.924995,
+          "bytes": 1249,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1309.769702,
+          "endMs": 1312.8468790000002
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio",
+          "startMs": 1320.789704,
+          "bytes": 5186,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1867.830079,
+          "endMs": 1869.2855920000002
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/git/matching-refs/heads/develop",
+          "startMs": 1870.36289,
+          "bytes": 348,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2862.554337,
+          "endMs": 2863.167676
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/pulls?per_page=100&page=1&state=all&sort=updated&direction=desc",
+          "startMs": 2870.264012,
+          "bytes": 997238,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 3626.837302,
+          "endMs": 14535.92171
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 2880.630716,
+          "stdoutBytes": 60,
+          "endMs": 3995.132304
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 3999.430319,
+          "stdoutBytes": 0,
+          "endMs": 6251.191884999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 6860.563169999999,
+          "stdoutBytes": 223,
+          "endMs": 7886.758209
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 7891.3899329999995,
+          "stdoutBytes": 0,
+          "endMs": 9885.259028999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 9914.331581,
+          "stdoutBytes": 60,
+          "endMs": 10951.661772
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "kind": "optimized",
+      "listMs": 10105.353146999998,
+      "historyMs": 10468.055875999999,
+      "historyAfterListMs": 362.70272900000055,
+      "gitCalls": 133,
+      "gitNetworkCommands": 5,
+      "githubApiRequests": 3,
+      "githubApiElapsedSumMs": 10271.639846,
+      "gitNetworkElapsedSumMs": 7581.199383999999,
+      "changes": 113,
+      "archives": 110,
+      "implementationCommit": "481db37bf568f18d1683e57f2f4c433f6185b804",
+      "productionDiffSha256": "1282b56c71c0a4d5eb1aa8bdb9f3f631d5224fd0655215dbb62cba50dbf59396",
+      "startupAndBindingMs": 1350.982523,
+      "gitCallsByCommand": {
+        "init": 1,
+        "for-each-ref": 4,
+        "ls-remote": 3,
+        "fetch": 2,
+        "rev-parse": 2,
+        "ls-tree": 107,
+        "cat-file": 7,
+        "log": 6,
+        "rev-list": 1
+      },
+      "githubPrRequests": 1,
+      "setupApiRequests": 1,
+      "datedArchives": 32,
+      "unknownTimeArchives": 78,
+      "prCount": 61,
+      "networkEvents": [
+        {
+          "kind": "github-api",
+          "endpoint": "/user",
+          "startMs": 574.019347,
+          "bytes": 1249,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1344.020481,
+          "endMs": 1347.1247569999998
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio",
+          "startMs": 1354.890482,
+          "bytes": 5186,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1884.611964,
+          "endMs": 1885.665307
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/git/matching-refs/heads/develop",
+          "startMs": 1886.5098369999998,
+          "bytes": 348,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2364.325766,
+          "endMs": 2364.9018929999997
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/pulls?per_page=100&page=1&state=all&sort=updated&direction=desc",
+          "startMs": 2372.460843,
+          "bytes": 997238,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 3087.643145,
+          "endMs": 11634.933808
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 2383.206162,
+          "stdoutBytes": 60,
+          "endMs": 3370.802727
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 3374.816458,
+          "stdoutBytes": 0,
+          "endMs": 5877.03226
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 6484.370836,
+          "stdoutBytes": 223,
+          "endMs": 7489.017839
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 7492.941862000001,
+          "stdoutBytes": 0,
+          "endMs": 9516.287253999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 9542.827999,
+          "stdoutBytes": 60,
+          "endMs": 10606.222620999999
+        }
+      ]
+    },
+    {
+      "run": 4,
+      "kind": "baseline",
+      "listMs": 15303.997676000003,
+      "historyMs": 25177.572832,
+      "historyAfterListMs": 9873.575155999999,
+      "gitCalls": 140,
+      "gitNetworkCommands": 8,
+      "githubApiRequests": 3,
+      "githubApiElapsedSumMs": 10536.680828999999,
+      "gitNetworkElapsedSumMs": 12811.641096000001,
+      "changes": 113,
+      "archives": 110,
+      "implementationCommit": "62dd4eed490ae2970a84c77c454f52694a7e8482",
+      "productionDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startupAndBindingMs": 1358.118024,
+      "gitCallsByCommand": {
+        "init": 1,
+        "for-each-ref": 5,
+        "ls-remote": 4,
+        "fetch": 4,
+        "rev-parse": 5,
+        "ls-tree": 107,
+        "cat-file": 7,
+        "log": 6,
+        "rev-list": 1
+      },
+      "githubPrRequests": 1,
+      "setupApiRequests": 1,
+      "datedArchives": 32,
+      "unknownTimeArchives": 78,
+      "prCount": 61,
+      "networkEvents": [
+        {
+          "kind": "github-api",
+          "endpoint": "/user",
+          "startMs": 532.598162,
+          "bytes": 1249,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1351.20775,
+          "endMs": 1354.360757
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio",
+          "startMs": 1361.84405,
+          "bytes": 5186,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1914.033031,
+          "endMs": 1915.130431
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/git/matching-refs/heads/develop",
+          "startMs": 1915.966573,
+          "bytes": 348,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2381.441254,
+          "endMs": 2382.105037
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 2397.644125,
+          "stdoutBytes": 60,
+          "endMs": 3450.1949339999996
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 3453.526908,
+          "stdoutBytes": 0,
+          "endMs": 5680.752262999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 5782.982448,
+          "stdoutBytes": 57,
+          "endMs": 8350.829437
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 8354.155201000001,
+          "stdoutBytes": 0,
+          "endMs": 9869.191604000001
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 10406.110525,
+          "stdoutBytes": 166,
+          "endMs": 11403.649659
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 11407.525914,
+          "stdoutBytes": 0,
+          "endMs": 13288.466322
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 13306.863964,
+          "stdoutBytes": 0,
+          "endMs": 14824.742576
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 14839.278552000002,
+          "stdoutBytes": 60,
+          "endMs": 15891.901938
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/pulls?per_page=100&page=1&state=all&sort=updated&direction=desc",
+          "startMs": 16935.868385,
+          "bytes": 997238,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 18324.799079,
+          "endMs": 26453.124369
+        }
+      ]
+    },
+    {
+      "run": 5,
+      "kind": "baseline",
+      "listMs": 15111.915979000001,
+      "historyMs": 17361.530549,
+      "historyAfterListMs": 2249.614569999998,
+      "gitCalls": 140,
+      "gitNetworkCommands": 8,
+      "githubApiRequests": 3,
+      "githubApiElapsedSumMs": 3058.93163,
+      "gitNetworkElapsedSumMs": 12502.368664999998,
+      "changes": 113,
+      "archives": 110,
+      "implementationCommit": "62dd4eed490ae2970a84c77c454f52694a7e8482",
+      "productionDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startupAndBindingMs": 1276.158538,
+      "gitCallsByCommand": {
+        "init": 1,
+        "for-each-ref": 5,
+        "ls-remote": 4,
+        "fetch": 4,
+        "rev-parse": 5,
+        "ls-tree": 107,
+        "cat-file": 7,
+        "log": 6,
+        "rev-list": 1
+      },
+      "githubPrRequests": 1,
+      "setupApiRequests": 1,
+      "datedArchives": 32,
+      "unknownTimeArchives": 78,
+      "prCount": 61,
+      "networkEvents": [
+        {
+          "kind": "github-api",
+          "endpoint": "/user",
+          "startMs": 529.529114,
+          "bytes": 1249,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1267.762428,
+          "endMs": 1270.807056
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio",
+          "startMs": 1280.117916,
+          "bytes": 5186,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1984.594507,
+          "endMs": 1985.699128
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/git/matching-refs/heads/develop",
+          "startMs": 1986.558171,
+          "bytes": 348,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2462.174958,
+          "endMs": 2462.807468
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 2479.306236,
+          "stdoutBytes": 60,
+          "endMs": 3506.6035
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 3510.550075,
+          "stdoutBytes": 0,
+          "endMs": 6234.794072000001
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 6314.8672480000005,
+          "stdoutBytes": 57,
+          "endMs": 7328.886951
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 7332.218719,
+          "stdoutBytes": 0,
+          "endMs": 8811.940177999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 9346.397245,
+          "stdoutBytes": 166,
+          "endMs": 10586.487401999999
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 10590.592383,
+          "stdoutBytes": 0,
+          "endMs": 13130.883714
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 13148.28984,
+          "stdoutBytes": 0,
+          "endMs": 14593.562039999999
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 14607.433691999999,
+          "stdoutBytes": 60,
+          "endMs": 15638.866246
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/pulls?per_page=100&page=1&state=all&sort=updated&direction=desc",
+          "startMs": 16681.302337,
+          "bytes": 997238,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 17533.354199,
+          "endMs": 18558.403458
+        }
+      ]
+    },
+    {
+      "run": 6,
+      "kind": "optimized",
+      "listMs": 11838.273251,
+      "historyMs": 14196.076265,
+      "historyAfterListMs": 2357.803013999999,
+      "gitCalls": 133,
+      "gitNetworkCommands": 5,
+      "githubApiRequests": 3,
+      "githubApiElapsedSumMs": 14092.660671000001,
+      "gitNetworkElapsedSumMs": 9191.060054000001,
+      "changes": 113,
+      "archives": 110,
+      "implementationCommit": "481db37bf568f18d1683e57f2f4c433f6185b804",
+      "productionDiffSha256": "1282b56c71c0a4d5eb1aa8bdb9f3f631d5224fd0655215dbb62cba50dbf59396",
+      "startupAndBindingMs": 1290.183012,
+      "gitCallsByCommand": {
+        "init": 1,
+        "for-each-ref": 4,
+        "ls-remote": 3,
+        "fetch": 2,
+        "rev-parse": 2,
+        "ls-tree": 107,
+        "cat-file": 7,
+        "log": 6,
+        "rev-list": 1
+      },
+      "githubPrRequests": 1,
+      "setupApiRequests": 1,
+      "datedArchives": 32,
+      "unknownTimeArchives": 78,
+      "prCount": 61,
+      "networkEvents": [
+        {
+          "kind": "github-api",
+          "endpoint": "/user",
+          "startMs": 541.121537,
+          "bytes": 1249,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1283.230444,
+          "endMs": 1286.267765
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio",
+          "startMs": 1294.062564,
+          "bytes": 5186,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 1814.163336,
+          "endMs": 1815.199189
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/git/matching-refs/heads/develop",
+          "startMs": 1816.042796,
+          "bytes": 348,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2321.566469,
+          "endMs": 2322.321868
+        },
+        {
+          "kind": "github-api",
+          "endpoint": "/repos/iTgo-lyq/open-folio/pulls?per_page=100&page=1&state=all&sort=updated&direction=desc",
+          "startMs": 2330.200211,
+          "bytes": 997238,
+          "conditional": false,
+          "status": 200,
+          "headersMs": 2997.488026,
+          "endMs": 15395.445185
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 2342.017728,
+          "stdoutBytes": 60,
+          "endMs": 3778.79536
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 3784.106696,
+          "stdoutBytes": 0,
+          "endMs": 7668.154813
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 8318.565284,
+          "stdoutBytes": 223,
+          "endMs": 9342.772193
+        },
+        {
+          "kind": "git",
+          "command": "fetch",
+          "network": true,
+          "startMs": 9347.483689,
+          "stdoutBytes": 0,
+          "endMs": 11179.749492
+        },
+        {
+          "kind": "git",
+          "command": "ls-remote",
+          "network": true,
+          "startMs": 11210.657112,
+          "stdoutBytes": 60,
+          "endMs": 12224.418705
+        }
+      ]
+    }
+  ]
+}
