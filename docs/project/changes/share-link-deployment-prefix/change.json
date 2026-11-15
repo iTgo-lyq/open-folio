@@ -4,13 +4,13 @@
   "title": "分享链接保留部署前缀",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/share-link-deployment-prefix",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "保留分享链接的部署前缀并验证兼容性",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
