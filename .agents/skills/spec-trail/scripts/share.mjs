@@ -60,11 +60,11 @@ export async function getShareLink({
   const repo = repository(cwd);
   if (!repo.config.openfolioUrl)
     throw new Error("尚未配置 workflow.openfolioUrl；请提供仓库材料链接。");
-  const base = safeUrl(repo.config.openfolioUrl);
-  if (base.search || base.hash || base.pathname !== "/")
-    throw new Error("openfolioUrl 须为服务根地址，不含 query 或 hash。");
+  const link = safeUrl(repo.config.openfolioUrl);
+  if (link.search || link.hash)
+    throw new Error("openfolioUrl 须为不含查询参数或片段的服务地址。");
   const remote = repositoryUrl(repo.git(["remote", "get-url", "origin"]));
-  const link = new URL("/share", base);
+  link.pathname = `${link.pathname.replace(/\/+$/, "")}/share`;
   link.search = new URLSearchParams({
     repository: remote,
     change,

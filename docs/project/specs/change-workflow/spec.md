@@ -175,7 +175,7 @@ SpecTrail 脚本引用只使用相对路径或 `node:` 内置模块。本仓库�
 
 ## 材料分享链接
 
-`docs/project/workflow.json` 的可选 `openfolioUrl` 保存服务根地址，沿用原型配置中的同一字段。服务入口须允许匿名访问且存在可读取目标仓库的已接入来源；不另设分享账号、密码或 Token。
+`docs/project/workflow.json` 的可选 `openfolioUrl` 保存服务地址，沿用原型配置中的同一字段。生成分享链接时将 `/share` 附加到部署前缀之后，兼容前缀末尾的斜杠。服务入口须允许匿名访问且存在可读取目标仓库的已接入来源；不另设分享账号、密码或 Token。
 
 材料提交推送后，Agent 直接提供对应 Change 材料链接，不验证工作台接口、远端正文或原型内容，不等待同步。可用零依赖 `share.mjs --change <id> --document <相对路径>` 或 `--preview <入口id>` 生成地址；省略材料参数分享概览。脚本只读取本地 origin 和 workflow，返回含仓库、集成分支、Change 及材料定位参数的 `url`，不附带服务分支或提交信息。
 
