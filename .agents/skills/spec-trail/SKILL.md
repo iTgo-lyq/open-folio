@@ -560,7 +560,7 @@ active Change 可用 `follow-up --target none` 移除关联；更换前序后按
 
 ### 分享链接
 
-材料提交推送后，使用 `workflow.openfolioUrl` 直接提供对应 Change 材料链接，不请求工作台接口、不验证内容或可访问性、不等待同步：
+材料提交推送后，使用 `workflow.openfolioUrl`（可含部署前缀）直接提供对应 Change 材料链接，不请求工作台接口、不验证内容或可访问性、不等待同步：
 
 ```bash
 cli share link --change change-id --document technical.md
