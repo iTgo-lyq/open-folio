@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "share-link-deployment-prefix",
+  "title": "分享链接保留部署前缀",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "保留分享链接的部署前缀并验证兼容性",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "direct-share-links",
+  "followUpTitle": "生成 Change 材料分享链接",
+  "types": [
+    "修复"
+  ]
+}
