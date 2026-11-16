@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "pending-pr-diff-preview",
+  "title": "在工作台预览待合入 PR 的文件差异",
+  "size": "medium",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/pending-pr-diff-preview",
+  "confirmations": {
+    "requirement": {
+      "at": "2026-11-16T13:37:59.982Z",
+      "summary": "在登录工作台预览待合入 PR 的差异，合入后自动切换。",
+      "source": "可以，按这个范围启动吧，先在登录后的工作台支持 PR 文件列表和 diff 预览，合入后自动切换到正式的合入差异。"
+    },
+    "technical": {
+      "at": "2026-11-16T13:43:21.985Z",
+      "summary": "复用快照与 Git 差异读取，在登录工作台预览开放 PR。",
+      "source": "技术方案和实施计划都确认，按这个方案开始实现吧。"
+    },
+    "plan": {
+      "at": "2026-11-16T13:43:25.730Z",
+      "summary": "交付 PR 预览与合入切换，验证刷新和仓库访问范围。",
+      "source": "技术方案和实施计划都确认，按这个方案开始实现吧。"
+    }
+  },
+  "tasks": {
+    "T1": {
+      "title": "在合入变更页预览待合入 PR 并自动切换正式差异",
+      "status": "done",
+      "verification": "Node 回归 472 项通过；浏览器覆盖登录预览、自动切换和公开入口；类型、构建及改动文件格式通过。",
+      "commitTitle": "pending-pr-diff-preview T1: preview open PR changes in the workbench"
+    },
+    "T2": {
+      "title": "自动换行时保持 diff 行号列宽一致",
+      "status": "done",
+      "verification": "6 项浏览器回归通过，320 至 1920 px 行号列宽一致；独立复验、类型及改动文件格式检查通过。",
+      "commitTitle": "pending-pr-diff-preview T2: preserve line number widths on wrap"
+    },
+    "T3": {
+      "title": "大 diff 正文默认折叠并支持按需加载",
+      "status": "done",
+      "verification": "15 项相关 Node 回归、7 项浏览器回归、独立复验、类型与改动文件格式检查通过。",
+      "commitTitle": "pending-pr-diff-preview T3: defer large file diffs by default"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-16T14:25:30.962Z",
+      "summary": "15 项相关 Node 回归、7 项浏览器回归、独立复验及生产构建通过；真实工作台 1321 行差异按需加载及测试会话清理通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-16T14:29:54.664Z",
+      "summary": "人工验收通过，确认 PR 差异预览、行号列宽与大差异按需加载。",
+      "source": "验收通过了，归档并合入 develop 吧，合入后更新常驻服务。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-16T14:29:58.490Z",
+      "summary": "同步 project-knowledge/change-tracking，记录工作台 PR 预览、正式差异切换、分享范围和大差异按需加载。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-16T14:30:02.072Z",
+      "summary": "人工验收通过并完成 Change 跟踪 Specs 同步，归档本次 PR 差异预览与差异查看优化。",
+      "path": "docs/project/archive/2026-11-16-pending-pr-diff-preview"
+    }
+  },
+  "types": [
+    "新功能"
+  ],
+  "rework": {
+    "at": "2026-11-16T14:19:37.064Z",
+    "reason": "验收要求大 diff 正文默认折叠，避免自动渲染大量内容",
+    "approach": "复用单文件 diff 读取，按行数和字节控制自动加载，保留手动加载和现有硬上限"
+  }
+}

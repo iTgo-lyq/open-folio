@@ -5,6 +5,7 @@ import type {
   IntegrationSummary,
   IntegrationFiles,
   IntegrationDiff,
+  PullRequestDiff,
   DiffLine,
 } from "../lib/integration.ts";
 import {
@@ -16,7 +17,9 @@ import { AppError } from "./errors.ts";
 
 const pageSize = 100,
   byteLimit = 1024 * 1024,
-  lineLimit = 10000;
+  lineLimit = 10000,
+  automaticByteLimit = 128 * 1024,
+  automaticLineLimit = 1000;
 const diffOptions = [
   "--no-ext-diff",
   "--no-textconv",
@@ -25,6 +28,7 @@ const diffOptions = [
   "-l1000",
 ];
 type Entry = { file: IntegrationFile; before: string; after: string };
+type Comparison = IntegrationRecord | PullRequestDiff;
 const invalid = () =>
   new AppError("INVALID_PARAMETER", "差异读取参数不属于当前快照。", 400);
 function displayPath(buffer: Buffer) {
@@ -60,10 +64,17 @@ export class IntegrationReader {
   private reader: GitReader;
   private snapshot: Snapshot;
   private id: string;
-  constructor(reader: GitReader, snapshot: Snapshot, id: string) {
+  private scope: "merged" | "workbench";
+  constructor(
+    reader: GitReader,
+    snapshot: Snapshot,
+    id: string,
+    scope: "merged" | "workbench" = "merged",
+  ) {
     this.reader = reader;
     this.snapshot = snapshot;
     this.id = id;
+    this.scope = scope;
     if (!validChangeId(id)) throw invalid();
     if (!snapshot.changes.some((change) => change.id === id))
       throw new AppError(
@@ -72,16 +83,52 @@ export class IntegrationReader {
         404,
       );
   }
-  private record() {
-    return integrationFor(this.snapshot.integrations, this.id);
+  private async record(): Promise<IntegrationSummary["record"]> {
+    const record = integrationFor(this.snapshot.integrations, this.id);
+    if (this.scope !== "workbench" || record.status !== "missing")
+      return record;
+
+    const delivery = this.snapshot.deliveryByChange?.[this.id];
+    if (!delivery) return record;
+    if (delivery.changePrsStale ?? delivery.stale)
+      return { status: "unavailable", message: "关联 PR 信息暂不可核实。" };
+    const open = delivery.changePrs.filter((pr) => pr.state === "open");
+    if (open.length > 1)
+      return {
+        status: "invalid",
+        message: "存在多个待合入的关联 Change PR，无法确定预览来源。",
+      };
+    const [pr] = open;
+    if (!pr) return record;
+
+    try {
+      const base = (
+        await this.reader.run(["merge-base", pr.base.commit, pr.head.commit])
+      )
+        .toString()
+        .trim();
+      if (/^[a-f0-9]{40,64}$/.test(base))
+        return {
+          status: "preview",
+          base,
+          commit: pr.head.commit,
+          pr: { number: pr.number, url: pr.url, draft: pr.draft },
+        };
+    } catch {
+      // The Git fetch and PR query can observe different remote versions.
+    }
+    return {
+      status: "unavailable",
+      message: "PR 的比较提交暂不可读取，请刷新工作台后重试。",
+    };
   }
-  private found(): IntegrationRecord {
-    const record = this.record();
-    if (record.status !== "found")
+  private async comparison(): Promise<Comparison> {
+    const record = await this.record();
+    if (record.status !== "found" && record.status !== "preview")
       throw new AppError("INTEGRATION_UNAVAILABLE", record.message, 409);
     return record;
   }
-  private async entries(record: IntegrationRecord): Promise<Entry[]> {
+  private async entries(record: Comparison): Promise<Entry[]> {
     // Both formats use NUL fields and exactly the same rename strategy.
     const raw = fields(
       await this.reader.run([
@@ -175,7 +222,7 @@ export class IntegrationReader {
     return entries;
   }
   async summary(): Promise<IntegrationSummary> {
-    const record = this.record();
+    const record = await this.record();
     const summary: IntegrationSummary = {
       record,
       integrationBranch:
@@ -183,11 +230,14 @@ export class IntegrationReader {
           ? (record.targetBranch ?? this.snapshot.integrationBranch)
           : this.snapshot.integrationBranch,
     };
-    if (record.status !== "found") return summary;
+    if (record.status !== "found" && record.status !== "preview")
+      return summary;
     const entries = await this.entries(record);
+    const base =
+      record.status === "preview" ? record.base : `${record.commit}^1`;
     return {
       ...summary,
-      command: `git diff --no-ext-diff --no-textconv ${record.commit}^1 ${record.commit}`,
+      command: `git diff --no-ext-diff --no-textconv ${base} ${record.commit}`,
       stats: {
         total: entries.length,
         added: entries.reduce((n, e) => n + (e.file.added ?? 0), 0),
@@ -200,7 +250,7 @@ export class IntegrationReader {
     };
   }
   async files(cursor?: string): Promise<IntegrationFiles> {
-    const record = this.found(),
+    const record = await this.comparison(),
       entries = await this.entries(record);
     const signature = hash(
       `${this.snapshot.id}\0${record.base}\0${record.commit}`,
@@ -227,16 +277,18 @@ export class IntegrationReader {
           : null,
     };
   }
-  async file(fileId: string): Promise<IntegrationDiff> {
+  async file(fileId: string, expanded = false): Promise<IntegrationDiff> {
     if (!/^[a-f0-9]{64}$/.test(fileId)) throw invalid();
-    const record = this.found(),
+    const record = await this.comparison(),
       entry = (await this.entries(record)).find(
         (entry) => entry.file.id === fileId,
       );
     if (!entry)
       throw new AppError(
         "DIFF_FILE_NOT_FOUND",
-        "文件不在本次合入变更中。",
+        record.status === "preview"
+          ? "文件不在当前 PR 差异中。"
+          : "文件不在本次合入变更中。",
         404,
       );
     const { file, before, after } = entry;
@@ -282,6 +334,15 @@ export class IntegrationReader {
       if (/^version https:\/\/git-lfs.github.com\/spec\/v1\r?\n/.test(text))
         return result("lfs", "这是 Git LFS 指针；不下载外部文件内容。");
     }
+    const deferred = result("deferred", "差异较大，已折叠");
+    const tooManyLines = result(
+      "limited",
+      "差异超过 10000 行展示上限，未完整展示。",
+    );
+    const changedLines = (file.added ?? 0) + (file.removed ?? 0);
+    if (changedLines > lineLimit) return tooManyLines;
+    const maxLines = expanded ? lineLimit : automaticLineLimit;
+    if (changedLines > maxLines) return deferred;
     // Compare the validated blobs, so raw/non-UTF-8 filenames never become shell or pathspec input.
     const empty =
       /^0+$/.test(before) || /^0+$/.test(after)
@@ -289,6 +350,10 @@ export class IntegrationReader {
             .toString()
             .trim()
         : "";
+    const maxBytes = expanded ? byteLimit : automaticByteLimit;
+    const oversizedPatch = expanded
+      ? result("limited", "差异超过 1 MiB 展示上限，未完整展示。")
+      : deferred;
     let patch: Buffer;
     try {
       patch = await this.reader.run(
@@ -304,15 +369,14 @@ export class IntegrationReader {
           "--",
         ],
         undefined,
-        byteLimit + 1,
+        maxBytes + 1,
       );
     } catch (error) {
       if (error instanceof AppError && error.code === "GIT_OUTPUT_LIMIT")
-        return result("limited", "差异超过 1 MiB 展示上限，未完整展示。");
+        return oversizedPatch;
       throw error;
     }
-    if (patch.length > byteLimit)
-      return result("limited", "差异超过 1 MiB 展示上限，未完整展示。");
+    if (patch.length > maxBytes) return oversizedPatch;
     const lines: DiffLine[] = [];
     let oldLine = 0,
       newLine = 0,
@@ -337,8 +401,7 @@ export class IntegrationReader {
         });
       else if (inHunk && text.startsWith("\\"))
         lines.push({ kind: "note", text });
-      if (lines.length > lineLimit)
-        return result("limited", "差异超过 10000 行展示上限，未完整展示。");
+      if (lines.length > maxLines) return expanded ? tooManyLines : deferred;
     }
     return lines.length
       ? { file, kind: "text", lines }

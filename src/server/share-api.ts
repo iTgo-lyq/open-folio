@@ -102,6 +102,7 @@ export async function sharedResponse(
             "integrationBranch",
             "snapshot",
             "cursor",
+            "expand",
             "load",
             "refresh",
           ].includes(k) &&
@@ -265,7 +266,7 @@ export async function sharedResponse(
               ? await integration.summary()
               : segments.length === 2
                 ? await integration.files(q.get("cursor") ?? undefined)
-                : await integration.file(segments[2]),
+                : await integration.file(segments[2], q.get("expand") === "1"),
           );
         } else if (
           segments[0] === "previews" &&

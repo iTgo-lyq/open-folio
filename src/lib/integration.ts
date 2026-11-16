@@ -1,4 +1,4 @@
-import type { IntegrationResult } from "./model.ts";
+import type { IntegrationResult, PullRequest } from "./model.ts";
 
 export type IntegrationFile = {
   id: string;
@@ -11,8 +11,14 @@ export type IntegrationFile = {
   added: number | null;
   removed: number | null;
 };
+export type PullRequestDiff = {
+  status: "preview";
+  base: string;
+  commit: string;
+  pr: Pick<PullRequest, "number" | "url" | "draft">;
+};
 export type IntegrationSummary = {
-  record: IntegrationResult;
+  record: IntegrationResult | PullRequestDiff;
   integrationBranch: string | null;
   command?: string;
   stats?: {
@@ -36,7 +42,13 @@ export type DiffLine = {
 };
 export type IntegrationDiff = {
   file: IntegrationFile;
-  kind: IntegrationFile["kind"] | "non-utf8" | "lfs" | "limited" | "empty";
+  kind:
+    | IntegrationFile["kind"]
+    | "non-utf8"
+    | "lfs"
+    | "limited"
+    | "deferred"
+    | "empty";
   message?: string;
   lines: DiffLine[];
 };

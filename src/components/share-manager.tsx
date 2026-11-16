@@ -96,6 +96,13 @@ export function ShareManager({ changeId }: { changeId: string }) {
     integrationBranch: data?.integrationBranch ?? undefined,
   };
   const location = new URLSearchParams(Object.entries(shareLocation(q)));
+  const shareIntegrationPage =
+    location.get("ct") === "integration" &&
+    data?.integrations.records[changeId]?.status !== "found";
+  if (shareIntegrationPage) {
+    location.delete("cf");
+    location.delete("cv");
+  }
   const key = `${shareParams(target)}&${location}`;
   useEffect(() => {
     if (!open || links?.key === key) return;
@@ -157,7 +164,9 @@ export function ShareManager({ changeId }: { changeId: string }) {
           </IconButton>
         </header>
         <p className={styles.description}>
-          链接保留当前阅读位置，长期有效，内容随已推送版本更新。
+          {shareIntegrationPage
+            ? "链接指向合入变更页，内容随正式合入记录更新。"
+            : "链接保留当前阅读位置，长期有效，内容随已推送版本更新。"}
         </p>
         {error && (
           <p role="alert">

@@ -127,13 +127,18 @@ export async function repositoryResponse(
               "合入差异必须使用指定快照中的固定提交。",
               400,
             );
-          const integration = await store.integration(p, segments[1], snapshot);
+          const integration = await store.integration(
+            p,
+            segments[1],
+            snapshot,
+            "workbench",
+          );
           return personalJson(
             segments.length === 3
               ? await integration.summary()
               : segments.length === 4
                 ? await integration.files(q.get("cursor") ?? undefined)
-                : await integration.file(segments[4]),
+                : await integration.file(segments[4], q.get("expand") === "1"),
           );
         }
         if (segments.length === 1 && segments[0] === "current-preview")

@@ -529,6 +529,11 @@
   gap: 5px;
   color: var(--of-success);
 }
+.integration-pr-link {
+  color: var(--of-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .integration-meta .integration-commit {
   height: 24px;
   margin: 0 -5px;
@@ -746,11 +751,9 @@
   padding: 0 8px;
   vertical-align: top;
 }
-.line-no {
-  width: calc(5ch + 14px);
-}
-.sign {
-  width: calc(2ch + 8px);
+/* 代码列吸收剩余空间，行号和符号列按内容宽度排列。 */
+.diff-table col:last-child {
+  width: 100%;
 }
 .diff-table .line-no,
 .diff-table .sign {
@@ -794,9 +797,6 @@
 }
 .diff-table tr:first-child td {
   border-top: 0;
-}
-.diff-content[data-wrap="true"] .diff-table {
-  table-layout: fixed;
 }
 .diff-content[data-wrap="true"] td:last-child {
   white-space: pre-wrap;
