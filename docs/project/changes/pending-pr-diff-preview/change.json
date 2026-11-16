@@ -32,7 +32,9 @@
     },
     "T2": {
       "title": "自动换行时保持 diff 行号列宽一致",
-      "status": "doing"
+      "status": "done",
+      "verification": "6 项浏览器回归通过，320 至 1920 px 行号列宽一致；独立复验、类型及改动文件格式检查通过。",
+      "commitTitle": "pending-pr-diff-preview T2: preserve line number widths on wrap"
     }
   },
   "closure": {},

@@ -241,6 +241,14 @@ test("diff panes stay aligned while long lines wrap and contents scroll independ
   const panel = page.getByRole("region", { name: "文件差异", exact: true });
   const content = page.getByRole("region", { name: "统一差异", exact: true });
   const wrap = panel.getByRole("button", { name: "自动换行" });
+  const lineNumberWidths = () =>
+    content
+      .getByRole("row")
+      .first()
+      .getByRole("cell", { name: /^[旧新]行号$/ })
+      .evaluateAll((cells) =>
+        cells.map((cell) => Math.round(cell.getBoundingClientRect().width)),
+      );
   await expect(page.getByRole("table")).toContainText(longLine);
   for (const width of [1440, 1920]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -259,8 +267,11 @@ test("diff panes stay aligned while long lines wrap and contents scroll independ
       expect(await content.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
       expect(await files.evaluate((el) => el.scrollTop)).toBe(0);
       expect((await wrap.boundingBox())!.y).toBe(toolbarY);
+      const widths = await lineNumberWidths();
+      expect(widths).toHaveLength(2);
       await wrap.click();
       await expect(wrap).toHaveAttribute("aria-pressed", "true");
+      expect(await lineNumberWidths()).toEqual(widths);
       expect(
         await content.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
       ).toBe(true);
@@ -274,7 +285,11 @@ test("diff panes stay aligned while long lines wrap and contents scroll independ
     await page.goto(route);
     await files.getByRole("button", { name: /integration-example.ts/ }).click();
     await expect(content.getByRole("table")).toBeVisible();
+    const widths = await lineNumberWidths();
+    expect(widths).toHaveLength(2);
     await wrap.click();
+    await expect(wrap).toHaveAttribute("aria-pressed", "true");
+    expect(await lineNumberWidths()).toEqual(widths);
     expect(
       await content.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
     ).toBe(true);
