@@ -13,9 +13,18 @@
       "source": "可以，按这个范围启动吧，先在登录后的工作台支持 PR 文件列表和 diff 预览，合入后自动切换到正式的合入差异。"
     }
   },
-  "tasks": {},
+  "tasks": {
+    "T1": {
+      "title": "在合入变更页预览待合入 PR 并自动切换正式差异",
+      "status": "todo"
+    }
+  },
   "closure": {},
   "types": [
     "新功能"
-  ]
+  ],
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待确认待合入 PR 差异预览的技术方案与计划"
+  }
 }
