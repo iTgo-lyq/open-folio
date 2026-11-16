@@ -4,7 +4,7 @@
   "title": "在工作台预览待合入 PR 的文件差异",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/pending-pr-diff-preview",
   "confirmations": {
     "requirement": {
@@ -43,7 +43,13 @@
       "commitTitle": "pending-pr-diff-preview T3: defer large file diffs by default"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-16T14:25:30.962Z",
+      "summary": "15 项相关 Node 回归、7 项浏览器回归、独立复验及生产构建通过；真实工作台 1321 行差异按需加载及测试会话清理通过。"
+    }
+  },
   "types": [
     "新功能"
   ],
@@ -51,5 +57,9 @@
     "at": "2026-11-16T14:19:37.064Z",
     "reason": "验收要求大 diff 正文默认折叠，避免自动渲染大量内容",
     "approach": "复用单文件 diff 读取，按行数和字节控制自动加载，保留手动加载和现有硬上限"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户复验大差异按需加载及 PR 差异预览"
   }
 }
