@@ -3,7 +3,7 @@ import { materialClass } from "./material-styles";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import { ArrowLeft, Copy, GitMerge, WrapText, X } from "lucide-react";
-import { Button, IconButton, Tooltip } from "@open-folio/ui";
+import { Badge, Button, IconButton, Tooltip } from "@open-folio/ui";
 import type {
   IntegrationSummary,
   IntegrationFile,
@@ -63,6 +63,7 @@ export function ChangeIntegration({ id }: { id: string }) {
   const key = `${url}:${attempt}`;
   const summary = response.key === key ? response.summary : undefined;
   const page = response.key === key ? response.page : undefined;
+  const hasFileList = !!page;
   useEffect(() => {
     const controller = new AbortController();
     (async () => {
@@ -71,7 +72,8 @@ export function ChangeIntegration({ id }: { id: string }) {
           signal: controller.signal,
         });
         const page =
-          summary.record.status === "found"
+          summary.record.status === "found" ||
+          summary.record.status === "preview"
             ? await api<IntegrationFiles>(
                 readUrl(
                   `changes/${encodeURIComponent(id)}/integration/files?snapshot=${data!.id}`,
@@ -99,7 +101,7 @@ export function ChangeIntegration({ id }: { id: string }) {
     code?: string;
   }>({ key: "" });
   useEffect(() => {
-    if (!selected || summary?.record.status !== "found") return;
+    if (!selected || !hasFileList) return;
     const controller = new AbortController();
     api<IntegrationDiff>(
       readUrl(
@@ -119,7 +121,7 @@ export function ChangeIntegration({ id }: { id: string }) {
         });
       });
     return () => controller.abort();
-  }, [fileKey, selected, summary?.record.status, readUrl, id, data?.id]);
+  }, [fileKey, selected, hasFileList, readUrl, id, data?.id]);
   const fileDiff = diff.key === fileKey ? diff.value : undefined;
   useEffect(() => {
     if (
@@ -183,7 +185,7 @@ export function ChangeIntegration({ id }: { id: string }) {
   const error = response.key === key ? response.error : undefined;
   if (error)
     return (
-      <Empty title="暂时无法读取合入记录">
+      <Empty title="暂时无法读取变更差异">
         <p>{error}</p>
         <Button onClick={() => setAttempt((value) => value + 1)}>
           重新读取
@@ -193,20 +195,20 @@ export function ChangeIntegration({ id }: { id: string }) {
   if (!summary)
     return (
       <div role="status">
-        <Empty title="正在读取合入记录…">
+        <Empty title="正在读取变更差异…">
           <p>正在查找本次交付的固定版本。</p>
         </Empty>
       </div>
     );
   const record = summary.record;
-  if (record.status !== "found")
+  if (record.status !== "found" && record.status !== "preview")
     return (
       <Empty
         title={
           {
             missing: "暂无合入记录",
-            invalid: "合入记录存在异常",
-            unavailable: "暂时无法读取合入记录",
+            invalid: "差异来源存在异常",
+            unavailable: "暂时无法读取变更差异",
           }[record.status]
         }
       >
@@ -225,34 +227,58 @@ export function ChangeIntegration({ id }: { id: string }) {
   const file =
     fileDiff?.file ?? page?.files.find((file) => file.id === selected);
   const stats = summary.stats;
+  const preview = record.status === "preview";
+  const commitLabel = preview ? "PR 源提交" : "合入提交";
   return (
     <div className={materialClass("integration-view")}>
       <div className={materialClass("integration-meta")}>
-        <span className={materialClass("integration-record-status")}>
-          <GitMerge size={13} />
-          已合入 {summary.integrationBranch}
-        </span>
-        <span aria-hidden="true">·</span>
-        <time dateTime={record.committedAt}>
-          {new Date(record.committedAt).toLocaleString("zh-CN", {
-            dateStyle: "short",
-            timeStyle: "short",
-          })}
-        </time>
+        {preview ? (
+          <>
+            <Badge tone="info">{record.pr.draft ? "Draft PR" : "待合入"}</Badge>
+            <a
+              className={materialClass("integration-pr-link")}
+              href={record.pr.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              PR #{record.pr.number}
+            </a>
+          </>
+        ) : (
+          <>
+            <span className={materialClass("integration-record-status")}>
+              <GitMerge size={13} />
+              已合入 {summary.integrationBranch}
+            </span>
+            <span aria-hidden="true">·</span>
+            <time dateTime={record.committedAt}>
+              {new Date(record.committedAt).toLocaleString("zh-CN", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
+            </time>
+          </>
+        )}
         <span aria-hidden="true">·</span>
         <Button
           variant="text"
           size="sm"
           className={materialClass("integration-commit")}
           title={record.commit}
-          aria-label={`复制合入提交 ${record.commit.slice(0, 10)}`}
+          aria-label={`复制${commitLabel} ${record.commit.slice(0, 10)}`}
           onClick={() => void copy(record.commit)}
         >
           <code>{record.commit.slice(0, 10)}</code>
           <Copy />
         </Button>
         <span aria-hidden="true">·</span>
-        <Tooltip content="固定合入版本，包含代码、文档与归档移动；差异以本次合入前后为边界。">
+        <Tooltip
+          content={
+            preview
+              ? "比较 PR 源提交与其和目标分支的共同祖先。"
+              : "固定合入版本，包含代码、文档与归档移动；差异以本次合入前后为边界。"
+          }
+        >
           <span className={materialClass("integration-scope")} tabIndex={0}>
             只读
           </span>
@@ -264,7 +290,7 @@ export function ChangeIntegration({ id }: { id: string }) {
       >
         <nav
           className={materialClass("diff-files")}
-          aria-label="合入文件"
+          aria-label={preview ? "PR 文件" : "合入文件"}
           ref={list}
         >
           <div className={materialClass("diff-file-heading")}>
@@ -359,7 +385,11 @@ export function ChangeIntegration({ id }: { id: string }) {
             <div className={materialClass("diff-file-summary")}>
               <strong>
                 {file?.path.split("/").at(-1) ??
-                  (selected ? "读取文件…" : "本次合入没有文件变化")}
+                  (selected
+                    ? "读取文件…"
+                    : preview
+                      ? "当前 PR 没有文件变化"
+                      : "本次合入没有文件变化")}
               </strong>
               {file && (
                 <p>
@@ -414,7 +444,11 @@ export function ChangeIntegration({ id }: { id: string }) {
             ) : fileDiff ? (
               fileDiff.kind !== "text" ? (
                 <Empty title={fileDiff.message ?? "无法展示文本差异"}>
-                  <p>文件仍包含在本次合入的完整变更中。</p>
+                  <p>
+                    {preview
+                      ? "文件仍包含在当前 PR 的变更中。"
+                      : "文件仍包含在本次合入的完整变更中。"}
+                  </p>
                 </Empty>
               ) : (
                 <table

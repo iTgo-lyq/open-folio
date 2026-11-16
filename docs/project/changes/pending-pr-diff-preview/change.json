@@ -26,7 +26,9 @@
   "tasks": {
     "T1": {
       "title": "在合入变更页预览待合入 PR 并自动切换正式差异",
-      "status": "doing"
+      "status": "done",
+      "verification": "Node 回归 472 项通过；浏览器覆盖登录预览、自动切换和公开入口；类型、构建及改动文件格式通过。",
+      "commitTitle": "pending-pr-diff-preview T1: preview open PR changes in the workbench"
     }
   },
   "closure": {},

@@ -529,6 +529,11 @@
   gap: 5px;
   color: var(--of-success);
 }
+.integration-pr-link {
+  color: var(--of-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .integration-meta .integration-commit {
   height: 24px;
   margin: 0 -5px;

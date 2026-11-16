@@ -372,6 +372,88 @@ test("PR-only refreshes update snapshots, preserve close/reopen history and rech
   });
 });
 
+test("workbench diff uses the PR merge base and follows snapshot changes until official integration", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  f.git(["checkout", "develop"]);
+  await f.put("target-only.txt", "develop only\n");
+  const target = f.commit();
+  const r = remote();
+  const context = { ...f.context, delivery: r.reader };
+  const opened = {
+    ...pr(),
+    draft: true,
+    base: { ...pr().base, commit: target },
+    head: { ...pr().head, commit: f.source },
+  };
+  const reader = async () => {
+    const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, context);
+    return f.store.integration(f.project, f.id, snapshot.id, "workbench");
+  };
+  r.set([opened]);
+  const first = await reader();
+  const summary = await first.summary();
+  assert.deepEqual(summary.record, {
+    status: "preview",
+    base: f.base,
+    commit: f.source,
+    pr: { number: opened.number, url: opened.url, draft: true },
+  });
+  const oldFiles = (await first.files()).files;
+  assert.ok(!oldFiles.some((file) => file.path === "target-only.txt"));
+  const feature = oldFiles.find((file) => file.path === "feature.txt")!;
+  assert.ok(
+    (await first.file(feature.id)).lines.some(
+      (line) => line.text === "delivered",
+    ),
+  );
+
+  f.git(["checkout", f.branch]);
+  await f.put("feature.txt", "revised before merge\n");
+  const head = f.commit();
+  const updated = {
+    ...opened,
+    draft: false,
+    head: { ...opened.head, commit: head },
+  };
+  r.set([updated]);
+  const next = await reader();
+  const currentFeature = (await next.files()).files.find(
+    (file) => file.path === "feature.txt",
+  )!;
+  assert.ok(
+    (await next.file(currentFeature.id)).lines.some(
+      (line) => line.text === "revised before merge",
+    ),
+  );
+  await assert.rejects(next.file(feature.id), { code: "DIFF_FILE_NOT_FOUND" });
+  assert.deepEqual((await first.summary()).record, summary.record);
+
+  r.set([{ ...updated, state: "closed" }]);
+  assert.equal((await (await reader()).summary()).record.status, "missing");
+  r.set([updated, { ...updated, number: 2 }]);
+  assert.match(
+    JSON.stringify((await (await reader()).summary()).record),
+    /多个待合入/,
+  );
+  r.set([{ ...updated, head: { ...updated.head, commit: oid("f") } }]);
+  assert.equal((await (await reader()).summary()).record.status, "unavailable");
+  r.fail(new ProviderError("PR_READ_DENIED", "需要 Pull requests: read", 403));
+  assert.equal((await (await reader()).summary()).record.status, "unavailable");
+  r.fail();
+
+  const commit = f.merge();
+  r.set([{ ...updated, state: "merged", mergeCommit: commit }]);
+  const merged = await reader();
+  const record = (await merged.summary()).record;
+  assert.equal(record.status, "found");
+  assert.equal(record.commit, commit);
+  assert.equal(record.base, target);
+  await assert.rejects(merged.file(currentFeature.id), {
+    code: "DIFF_FILE_NOT_FOUND",
+  });
+});
+
 test("release archives survive deleted sources and PR body changes; PR claims alone do not prove release", async (t) => {
   const f = await integrationFixture();
   t.after(f.cleanup);

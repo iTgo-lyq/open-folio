@@ -1,6 +1,102 @@
-import { test, expect, repositoryQuery, openMaterial } from "./connected";
+import {
+  test,
+  expect,
+  repositoryQuery,
+  openMaterial,
+  origin,
+} from "./connected";
+import { sharedReadUrl } from "../../src/lib/share-link.ts";
 
 const route = `/?${repositoryQuery}&m=changes&c=integration-demo&ct=integration`;
+
+test("the workbench previews a Draft PR privately and shows the official diff after automatic refresh", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const setPr = (integrationPr: "draft" | "merged") =>
+    request.post("/_fixture/control", {
+      data: { integrationPr, expireRefresh: personal.id },
+    });
+  expect((await setPr("draft")).ok()).toBe(true);
+  let restored = false;
+  try {
+    await page.clock.install();
+    const checked = page.waitForResponse(
+      (response) =>
+        response.url().includes("/refresh?automatic=1") && response.ok(),
+    );
+    await page.goto(route);
+    await checked;
+    const link = page.getByRole("link", { name: "PR #1", exact: true });
+    await expect(link).toHaveAttribute("href", /\/pull\/1$/);
+    await expect(page.getByText("Draft PR", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /integration-example.ts/ }).click();
+    await expect(page.getByRole("table")).toContainText(
+      "export const delivered = true;",
+    );
+    await page.screenshot({ path: "artifacts/integration-pr-preview.png" });
+
+    const selected = new URL(page.url()).searchParams.get("cf");
+    expect(selected).toMatch(/^[a-f0-9]{64}$/);
+    await page.getByRole("button", { name: "分享", exact: true }).click();
+    const openShare = page.getByRole("link", { name: "打开分享页" });
+    await expect(openShare).toHaveAttribute("href", /^\/s\//);
+    const shareLink = (await openShare.getAttribute("href"))!;
+    await page.getByRole("button", { name: "关闭分享链接" }).click();
+    const share = (path: string) =>
+      fetch(
+        `${origin}${sharedReadUrl(
+          {
+            repository: "https://github.com/acme/fixture",
+            change: "integration-demo",
+            integrationBranch: "develop",
+          },
+          path,
+        )}`,
+      );
+    const shared = await share("change?refresh=1");
+    expect(shared.status).toBe(200);
+    const { snapshotId } = await shared.json();
+    const publicDiff = (path: string) =>
+      share(`integration${path}?snapshot=${snapshotId}`);
+    const summary = await publicDiff("");
+    expect(summary.status).toBe(200);
+    expect((await summary.json()).record.status).toBe("missing");
+    expect((await publicDiff("/files")).status).toBe(409);
+    expect((await publicDiff(`/files/${selected}`)).status).toBe(409);
+    expect(
+      (await share(`integration?snapshot=${snapshotId}&scope=workbench`))
+        .status,
+    ).toBe(400);
+
+    expect((await setPr("merged")).ok()).toBe(true);
+    restored = true;
+    await page.clock.fastForward(60_000);
+    await expect(
+      page.getByText("已合入 develop", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "合入文件" }),
+    ).toBeVisible();
+    await expect(link).toHaveCount(0);
+    await expect(page).not.toHaveURL(/[?&](cf|cv)=/);
+    await expect(page).toHaveURL(/c=integration-demo&ct=integration/);
+    await page.getByRole("button", { name: /integration-example.ts/ }).click();
+    await expect(page.getByRole("table")).toContainText(
+      "export const delivered = true;",
+    );
+    await page.goto(shareLink);
+    await expect(
+      page.getByRole("navigation", { name: "合入文件" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("二进制文件，无法展示文本差异。", { exact: true }),
+    ).toBeVisible();
+  } finally {
+    if (!restored) expect((await setPr("merged")).ok()).toBe(true);
+  }
+});
 
 test("an obsolete file deep link returns to the merged file list", async ({
   page,
