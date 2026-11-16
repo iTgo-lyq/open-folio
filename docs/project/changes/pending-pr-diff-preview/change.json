@@ -4,7 +4,7 @@
   "title": "在工作台预览待合入 PR 的文件差异",
   "size": "medium",
   "status": "active",
-  "stage": "execution",
+  "stage": "close",
   "branch": "change/pending-pr-diff-preview",
   "confirmations": {
     "requirement": {
@@ -37,7 +37,13 @@
       "commitTitle": "pending-pr-diff-preview T2: preserve line number widths on wrap"
     }
   },
-  "closure": {},
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-16T14:17:51.341Z",
+      "summary": "复验 6 项浏览器回归、类型及生产构建通过。独立评审覆盖七位行号和跨列 hunk。真实 PR #74 桌面与窄屏列宽稳定，测试会话清理通过。"
+    }
+  },
   "types": [
     "新功能"
   ],
@@ -45,5 +51,9 @@
     "at": "2026-11-16T14:13:03.493Z",
     "reason": "验收发现开启自动换行后行号列明显变宽",
     "approach": "统一换行前后的列宽约束，并用浏览器回归测量新旧行号列"
+  },
+  "waitingFor": {
+    "kind": "confirmation",
+    "summary": "等待用户复验自动换行时行号列宽及 PR 差异预览"
   }
 }
