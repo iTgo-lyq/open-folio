@@ -3,7 +3,7 @@
   "id": "pending-pr-diff-preview",
   "title": "在工作台预览待合入 PR 的文件差异",
   "size": "medium",
-  "status": "active",
+  "status": "completed",
   "stage": "close",
   "branch": "change/pending-pr-diff-preview",
   "confirmations": {
@@ -48,6 +48,23 @@
       "result": "passed",
       "at": "2026-11-16T14:25:30.962Z",
       "summary": "15 项相关 Node 回归、7 项浏览器回归、独立复验及生产构建通过；真实工作台 1321 行差异按需加载及测试会话清理通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-16T14:29:54.664Z",
+      "summary": "人工验收通过，确认 PR 差异预览、行号列宽与大差异按需加载。",
+      "source": "验收通过了，归档并合入 develop 吧，合入后更新常驻服务。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-16T14:29:58.490Z",
+      "summary": "同步 project-knowledge/change-tracking，记录工作台 PR 预览、正式差异切换、分享范围和大差异按需加载。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-16T14:30:02.072Z",
+      "summary": "人工验收通过并完成 Change 跟踪 Specs 同步，归档本次 PR 差异预览与差异查看优化。",
+      "path": "docs/project/archive/2026-11-16-pending-pr-diff-preview"
     }
   },
   "types": [
@@ -57,9 +74,5 @@
     "at": "2026-11-16T14:19:37.064Z",
     "reason": "验收要求大 diff 正文默认折叠，避免自动渲染大量内容",
     "approach": "复用单文件 diff 读取，按行数和字节控制自动加载，保留手动加载和现有硬上限"
-  },
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待用户复验大差异按需加载及 PR 差异预览"
   }
 }
