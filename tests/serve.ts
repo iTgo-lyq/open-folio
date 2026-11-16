@@ -166,6 +166,10 @@ repositoryPermissions(sessions).now = () => Date.now() + permissionOffset;
 const key = repositoryKey(repository);
 const originalCollaboration = f.git(["rev-parse", "develop"]);
 const originalReader = f.git(["rev-parse", "change/document-reader"]);
+const integrationPrIndex = f.pullRequests.findIndex(
+  (pr) => pr.head.branch === "change/integration-demo",
+);
+const integrationPr = f.pullRequests[integrationPrIndex];
 f.git(["checkout", "-b", "team/integration", "develop"]);
 const customWorkflow = JSON.parse(
   f.git(["show", "develop:docs/project/workflow.json"]),
@@ -208,6 +212,31 @@ const server = createServer(async (req, res) => {
           repository.archived = false;
         }
         if (input.archived !== undefined) repository.archived = input.archived;
+        if (input.integrationPr === "draft") {
+          const { base, head } = integrationPr;
+          f.git(["push", "origin", `${head.commit}:refs/heads/${head.branch}`]);
+          f.git([
+            "push",
+            "--force",
+            "origin",
+            `${base.commit}:refs/heads/develop`,
+          ]);
+          f.pullRequests[integrationPrIndex] = {
+            ...integrationPr,
+            state: "open",
+            draft: true,
+            mergeCommit: null,
+          };
+        }
+        if (input.integrationPr === "merged") {
+          f.git([
+            "push",
+            "origin",
+            `${originalCollaboration}:refs/heads/develop`,
+          ]);
+          f.git(["push", "origin", "--delete", integrationPr.head.branch]);
+          f.pullRequests[integrationPrIndex] = integrationPr;
+        }
         if (input.revoke) {
           valid.delete(input.revoke);
           git.allowed.delete(`reader:${input.revoke}`);

@@ -26,6 +26,7 @@ export async function seedIntegration(f: Awaited<ReturnType<typeof fixture>>) {
   );
   await f.put("assets/integration-example.bin", Buffer.from([0, 1, 2, 3]));
   await f.put("assets/integration-large.html", "x".repeat(1024 * 1024 + 1));
+  await f.put("src/integration-many-lines.txt", "review line\n".repeat(1050));
   f.commit();
   f.git(["checkout", "develop"]);
   f.git([

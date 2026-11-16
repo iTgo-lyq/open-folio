@@ -677,11 +677,17 @@ export class SnapshotStore {
     const source = snapshotId ? await this.snapshot(p, snapshotId) : latest;
     return prototypeCatalog(source, latest.prototype);
   }
-  async integration(p: ProjectConfig, id: string, snapshotId: string) {
+  async integration(
+    p: ProjectConfig,
+    id: string,
+    snapshotId: string,
+    scope: "merged" | "workbench" = "merged",
+  ) {
     return new IntegrationReader(
       this.readerFactory(join(this.directory(), "git"), p),
       await this.snapshot(p, snapshotId),
       id,
+      scope,
     );
   }
   async currentPreview(
