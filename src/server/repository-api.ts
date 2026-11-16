@@ -138,7 +138,7 @@ export async function repositoryResponse(
               ? await integration.summary()
               : segments.length === 4
                 ? await integration.files(q.get("cursor") ?? undefined)
-                : await integration.file(segments[4]),
+                : await integration.file(segments[4], q.get("expand") === "1"),
           );
         }
         if (segments.length === 1 && segments[0] === "current-preview")

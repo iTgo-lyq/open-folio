@@ -123,6 +123,62 @@ test("file pagination binds cursors to the complete snapshot and commit pair", a
   );
 });
 
+test("large patches return a placeholder until requested and still enforce hard limits", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  const lines = Array.from({ length: 1200 }, (_, index) => `line ${index}\n`);
+  f.git(["checkout", "develop"]);
+  await f.put("context.txt", lines.join(""));
+  await f.put("hard-bytes.txt", "o".repeat(600 * 1024));
+  f.commit();
+  f.git(["checkout", f.branch]);
+  f.git(["merge", "--no-edit", "develop"]);
+  await f.put(
+    "context.txt",
+    lines
+      .map((line, index) => (index % 6 ? line : `edited ${index}\n`))
+      .join(""),
+  );
+  await f.put("soft-lines.txt", "added\n".repeat(1100));
+  await f.put(
+    "non-utf8-many-lines.txt",
+    Buffer.from("é\n".repeat(1100), "latin1"),
+  );
+  await f.put("soft-bytes.txt", "x".repeat(129 * 1024));
+  await f.put("hard-bytes.txt", "n".repeat(600 * 1024));
+  await f.put("hard-lines.txt", "added\n".repeat(10001));
+  f.commit();
+  f.merge();
+  const snapshot = await f.store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  const reader = await f.store.integration(f.project, f.id, snapshot.id);
+  const { files } = await reader.files();
+  const find = (path: string) => files.find((file) => file.path === path)!;
+  const context = find("context.txt");
+  assert.ok(context.added! + context.removed! < 1000);
+  assert.equal(
+    (await reader.file(find("non-utf8-many-lines.txt").id)).kind,
+    "non-utf8",
+  );
+  for (const path of ["context.txt", "soft-lines.txt", "soft-bytes.txt"]) {
+    const { id } = find(path);
+    const deferred = await reader.file(id);
+    assert.equal(deferred.kind, "deferred", path);
+    assert.deepEqual(deferred.lines, []);
+    const expanded = await reader.file(id, true);
+    assert.equal(expanded.kind, "text", path);
+    assert.ok(
+      expanded.lines.some((line) => line.kind === "add"),
+      path,
+    );
+  }
+  const hardBytes = find("hard-bytes.txt").id;
+  assert.equal((await reader.file(hardBytes)).kind, "deferred");
+  assert.equal((await reader.file(hardBytes, true)).kind, "limited");
+  const hardLines = find("hard-lines.txt").id;
+  assert.equal((await reader.file(hardLines)).kind, "limited");
+  assert.equal((await reader.file(hardLines, true)).kind, "limited");
+});
+
 test("integration API requires snapshots, rechecks permissions and rejects foreign file IDs and selectors", async (t) => {
   const f = await repositoryFixture();
   t.after(f.cleanup);

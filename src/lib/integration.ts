@@ -42,7 +42,13 @@ export type DiffLine = {
 };
 export type IntegrationDiff = {
   file: IntegrationFile;
-  kind: IntegrationFile["kind"] | "non-utf8" | "lfs" | "limited" | "empty";
+  kind:
+    | IntegrationFile["kind"]
+    | "non-utf8"
+    | "lfs"
+    | "limited"
+    | "deferred"
+    | "empty";
   message?: string;
   lines: DiffLine[];
 };

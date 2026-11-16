@@ -66,6 +66,13 @@ test("the workbench previews a Draft PR privately and shows the official diff af
     expect((await publicDiff("/files")).status).toBe(409);
     expect((await publicDiff(`/files/${selected}`)).status).toBe(409);
     expect(
+      (
+        await share(
+          `integration/files/${selected}?snapshot=${snapshotId}&expand=1`,
+        )
+      ).status,
+    ).toBe(409);
+    expect(
       (await share(`integration?snapshot=${snapshotId}&scope=workbench`))
         .status,
     ).toBe(400);
@@ -107,6 +114,54 @@ test("an obsolete file deep link returns to the merged file list", async ({
   ).toBeVisible();
   await expect(page).not.toHaveURL(/[?&](cf|cv)=/);
   await expect(page).toHaveURL(/c=integration-demo&ct=integration/);
+});
+
+test("large diffs load only on request in the workbench and in public shares", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const work = await (await request.get(personal.url("workbench"))).json();
+  const { files } = await (
+    await request.get(
+      personal.url(
+        `changes/integration-demo/integration/files?snapshot=${work.id}`,
+      ),
+    )
+  ).json();
+  const { id } = files.find(
+    (file: { path: string }) => file.path === "src/integration-many-lines.txt",
+  );
+  const link = `/share?repository=https%3A%2F%2Fgithub.com%2Facme%2Ffixture&change=integration-demo&integrationBranch=develop&ct=integration`;
+  for (const target of [route, link]) {
+    await page.goto(`${target}&cf=${id}&cv=diff`);
+    const load = page.getByRole("button", { name: "加载差异", exact: true });
+    await expect(load).toBeVisible();
+    const table = page.getByRole("table", {
+      name: "src/integration-many-lines.txt 的统一差异",
+    });
+    await expect(table).toHaveCount(0);
+    await load.click();
+    await expect(table.getByRole("cell", { name: "新行号" }).last()).toHaveText(
+      "1050",
+    );
+    await page.getByRole("button", { name: /integration-example.ts/ }).click();
+    await expect(page.getByRole("table")).toContainText(
+      "export const delivered = true;",
+    );
+    await page
+      .getByRole("button", { name: /integration-many-lines.txt/ })
+      .click();
+    await expect(load).toBeVisible();
+    await expect(table).toHaveCount(0);
+    await load.click();
+    await expect(table.getByRole("cell", { name: "新行号" }).last()).toHaveText(
+      "1050",
+    );
+    await page.reload();
+    await expect(load).toBeVisible();
+    await expect(table).toHaveCount(0);
+  }
 });
 
 test("integrated diff survives source deletion and supports file links, history, keyboard and narrow viewports", async ({

@@ -93,7 +93,11 @@ export function ChangeIntegration({ id }: { id: string }) {
     };
   }, [key, url, readUrl, id, data?.id]);
   const selected = q.cf || page?.files[0]?.id;
-  const fileKey = `${key}:${selected}:${fileAttempt}`;
+  const selectionKey = `${key}:${selected}`;
+  const [expandedFile, setExpandedFile] = useState<string>();
+  const expanded = expandedFile === selectionKey;
+  const fileKey = `${selectionKey}:${expanded}:${fileAttempt}`;
+  useEffect(() => setExpandedFile(undefined), [selectionKey]);
   const [diff, setDiff] = useState<{
     key: string;
     value?: IntegrationDiff;
@@ -105,7 +109,7 @@ export function ChangeIntegration({ id }: { id: string }) {
     const controller = new AbortController();
     api<IntegrationDiff>(
       readUrl(
-        `changes/${encodeURIComponent(id)}/integration/files/${encodeURIComponent(selected)}?snapshot=${data!.id}`,
+        `changes/${encodeURIComponent(id)}/integration/files/${encodeURIComponent(selected)}?snapshot=${data!.id}${expanded ? "&expand=1" : ""}`,
       ),
       { signal: controller.signal },
     )
@@ -121,7 +125,7 @@ export function ChangeIntegration({ id }: { id: string }) {
         });
       });
     return () => controller.abort();
-  }, [fileKey, selected, hasFileList, readUrl, id, data?.id]);
+  }, [fileKey, selected, hasFileList, expanded, readUrl, id, data?.id]);
   const fileDiff = diff.key === fileKey ? diff.value : undefined;
   useEffect(() => {
     if (
@@ -439,6 +443,12 @@ export function ChangeIntegration({ id }: { id: string }) {
                 <p>{diff.error}</p>
                 <Button onClick={() => setFileAttempt((value) => value + 1)}>
                   重新读取
+                </Button>
+              </Empty>
+            ) : fileDiff?.kind === "deferred" ? (
+              <Empty title={fileDiff.message ?? "差异较大，已折叠"}>
+                <Button onClick={() => setExpandedFile(selectionKey)}>
+                  加载差异
                 </Button>
               </Empty>
             ) : fileDiff ? (

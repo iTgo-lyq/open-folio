@@ -38,7 +38,9 @@
     },
     "T3": {
       "title": "大 diff 正文默认折叠并支持按需加载",
-      "status": "doing"
+      "status": "done",
+      "verification": "15 项相关 Node 回归、7 项浏览器回归、独立复验、类型与改动文件格式检查通过。",
+      "commitTitle": "pending-pr-diff-preview T3: defer large file diffs by default"
     }
   },
   "closure": {},

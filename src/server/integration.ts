@@ -17,7 +17,9 @@ import { AppError } from "./errors.ts";
 
 const pageSize = 100,
   byteLimit = 1024 * 1024,
-  lineLimit = 10000;
+  lineLimit = 10000,
+  automaticByteLimit = 128 * 1024,
+  automaticLineLimit = 1000;
 const diffOptions = [
   "--no-ext-diff",
   "--no-textconv",
@@ -275,7 +277,7 @@ export class IntegrationReader {
           : null,
     };
   }
-  async file(fileId: string): Promise<IntegrationDiff> {
+  async file(fileId: string, expanded = false): Promise<IntegrationDiff> {
     if (!/^[a-f0-9]{64}$/.test(fileId)) throw invalid();
     const record = await this.comparison(),
       entry = (await this.entries(record)).find(
@@ -332,6 +334,15 @@ export class IntegrationReader {
       if (/^version https:\/\/git-lfs.github.com\/spec\/v1\r?\n/.test(text))
         return result("lfs", "这是 Git LFS 指针；不下载外部文件内容。");
     }
+    const deferred = result("deferred", "差异较大，已折叠");
+    const tooManyLines = result(
+      "limited",
+      "差异超过 10000 行展示上限，未完整展示。",
+    );
+    const changedLines = (file.added ?? 0) + (file.removed ?? 0);
+    if (changedLines > lineLimit) return tooManyLines;
+    const maxLines = expanded ? lineLimit : automaticLineLimit;
+    if (changedLines > maxLines) return deferred;
     // Compare the validated blobs, so raw/non-UTF-8 filenames never become shell or pathspec input.
     const empty =
       /^0+$/.test(before) || /^0+$/.test(after)
@@ -339,6 +350,10 @@ export class IntegrationReader {
             .toString()
             .trim()
         : "";
+    const maxBytes = expanded ? byteLimit : automaticByteLimit;
+    const oversizedPatch = expanded
+      ? result("limited", "差异超过 1 MiB 展示上限，未完整展示。")
+      : deferred;
     let patch: Buffer;
     try {
       patch = await this.reader.run(
@@ -354,15 +369,14 @@ export class IntegrationReader {
           "--",
         ],
         undefined,
-        byteLimit + 1,
+        maxBytes + 1,
       );
     } catch (error) {
       if (error instanceof AppError && error.code === "GIT_OUTPUT_LIMIT")
-        return result("limited", "差异超过 1 MiB 展示上限，未完整展示。");
+        return oversizedPatch;
       throw error;
     }
-    if (patch.length > byteLimit)
-      return result("limited", "差异超过 1 MiB 展示上限，未完整展示。");
+    if (patch.length > maxBytes) return oversizedPatch;
     const lines: DiffLine[] = [];
     let oldLine = 0,
       newLine = 0,
@@ -387,8 +401,7 @@ export class IntegrationReader {
         });
       else if (inHunk && text.startsWith("\\"))
         lines.push({ kind: "note", text });
-      if (lines.length > lineLimit)
-        return result("limited", "差异超过 10000 行展示上限，未完整展示。");
+      if (lines.length > maxLines) return expanded ? tooManyLines : deferred;
     }
     return lines.length
       ? { file, kind: "text", lines }
