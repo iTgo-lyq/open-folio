@@ -4,27 +4,33 @@
   "title": "在工作台预览待合入 PR 的文件差异",
   "size": "medium",
   "status": "active",
-  "stage": "technical",
+  "stage": "execution",
   "branch": "change/pending-pr-diff-preview",
   "confirmations": {
     "requirement": {
       "at": "2026-11-16T13:37:59.982Z",
       "summary": "在登录工作台预览待合入 PR 的差异，合入后自动切换。",
       "source": "可以，按这个范围启动吧，先在登录后的工作台支持 PR 文件列表和 diff 预览，合入后自动切换到正式的合入差异。"
+    },
+    "technical": {
+      "at": "2026-11-16T13:43:21.985Z",
+      "summary": "复用快照与 Git 差异读取，在登录工作台预览开放 PR。",
+      "source": "技术方案和实施计划都确认，按这个方案开始实现吧。"
+    },
+    "plan": {
+      "at": "2026-11-16T13:43:25.730Z",
+      "summary": "交付 PR 预览与合入切换，验证刷新和仓库访问范围。",
+      "source": "技术方案和实施计划都确认，按这个方案开始实现吧。"
     }
   },
   "tasks": {
     "T1": {
       "title": "在合入变更页预览待合入 PR 并自动切换正式差异",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
   "types": [
     "新功能"
-  ],
-  "waitingFor": {
-    "kind": "confirmation",
-    "summary": "等待确认待合入 PR 差异预览的技术方案与计划"
-  }
+  ]
 }
