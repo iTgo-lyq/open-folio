@@ -4,13 +4,13 @@
   "title": "缓存淘汰后保留已显示的原型截图",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/prototype-thumbnail-cache-eviction",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "保留缓存命中的截图准备结果并验证淘汰后的导航",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
