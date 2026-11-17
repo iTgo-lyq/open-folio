@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-batch-reachability",
+  "title": "隔离旧 PR 对批量合入记录读取的影响",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/integration-batch-reachability",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "按目标分支历史筛选批量合入记录并验证冷缓存刷新",
+      "status": "done",
+      "verification": "真实 Git 冷缓存回归通过，排除缺失和不可达的对象并保留两条旧 PR；正常归档差异可读，同一目标历史复用一次。npm test 474 项、类型检查及生产构建通过。",
+      "commitTitle": "integration-batch-reachability T1: batch only reachable PR merges"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-17T15:06:40.530Z",
+      "summary": "Agent 自查通过。冷缓存回归修复前失败、修复后通过；全量 474 项、类型检查和生产构建通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-17T15:06:44.338Z",
+      "summary": "Agent 自验收通过：正常合入差异、旧 PR 保留与目标分支历史复用均符合需求。",
+      "source": "冷缓存 Git 回归及子项交付、发布归档回归"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-17T15:06:48.056Z",
+      "summary": "恢复合入记录批量读取的既有行为，交付判定与接口沿用现有 Specs。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-17T15:06:52.341Z",
+      "summary": "归档已验收的旧 PR 批量隔离修复和验证记录。",
+      "path": "docs/project/archive/2026-11-17-integration-batch-reachability"
+    }
+  },
+  "followUpOf": "release-archive-detection",
+  "types": [
+    "修复"
+  ]
+}
