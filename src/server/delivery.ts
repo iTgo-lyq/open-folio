@@ -148,20 +148,33 @@ export async function collectDelivery(input: Input) {
     } else releaseError = errorMessage;
   }
 
-  const ownedBranches = new Set(
-    [...byId.values()].flatMap((candidate) =>
-      candidate?.state?.branch ? [candidate.state.branch] : [],
-    ),
-  );
-  await input.prepareIntegrations?.(
-    [...changeIndex].flatMap(([branch, prs]) =>
-      ownedBranches.has(branch)
-        ? prs.flatMap((pr) =>
-            pr.state === "merged" && pr.mergeCommit ? [pr.mergeCommit] : [],
-          )
-        : [],
-    ),
-  );
+  const branchTip = (branch: string | null) =>
+    branch === input.integrationBranch
+      ? input.integrationTip
+      : branch
+        ? (input.branchTips?.[branch] ?? null)
+        : null;
+  if (input.prepareIntegrations) {
+    const ownedBranches = new Set(
+      [...byId.values()].flatMap((candidate) =>
+        candidate?.state?.branch ? [candidate.state.branch] : [],
+      ),
+    );
+    const commits = new Set<string>();
+    for (const branch of ownedBranches) {
+      for (const pr of changeIndex.get(branch) ?? []) {
+        signal.throwIfAborted();
+        const commit = pr.mergeCommit;
+        if (pr.state !== "merged" || !commit || commits.has(commit)) continue;
+        // Archived children may still be reachable after their parent branch is deleted.
+        const tip = branchTip(pr.base.branch) ?? input.integrationTip;
+        if (tip && (await input.ancestor(commit, tip).catch(() => false)))
+          commits.add(commit);
+      }
+    }
+    signal.throwIfAborted();
+    await input.prepareIntegrations([...commits]);
+  }
   if (!input.integrationBranch) changeError = "集成分支尚未配置。";
   const integrations: IntegrationIndex = {
     version: INTEGRATION_VERSION,
@@ -229,12 +242,10 @@ export async function collectDelivery(input: Input) {
           ? merged[0].base.branch
           : (target?.branch ?? input.integrationBranch);
       const targetTip =
-        targetBranch === input.integrationBranch
+        branchTip(targetBranch) ??
+        (candidate?.archived && candidate.branch === input.integrationBranch
           ? input.integrationTip
-          : (input.branchTips?.[targetBranch!] ??
-            (candidate?.archived && candidate.branch === input.integrationBranch
-              ? input.integrationTip
-              : null));
+          : null);
       const evidence = changePrsStale
         ? {
             status: "unavailable" as const,

@@ -155,6 +155,60 @@ test("unreadable diff objects retain diagnostics without fabricating a diff", as
   }
 });
 
+test("cold refresh batches only merge commits reachable from their target", async (t) => {
+  const f = await integrationFixture();
+  t.after(f.cleanup);
+  await f.register({
+    missing: "change/missing",
+    detached: "change/detached",
+  });
+
+  f.git(["checkout", "main"]);
+  await f.put("release-only.txt", "Only on main\n");
+  const detached = f.commit();
+  const merge = f.merge();
+  const missingPr = f.recordMerge("missing", "change/missing", merge);
+  missingPr.mergeCommit = "f".repeat(40);
+  const detachedPr = f.recordMerge("detached", "change/detached", detached);
+
+  const batches: string[][] = [];
+  const histories: string[] = [];
+  class Reader extends GitReader {
+    override async run(...params: Parameters<GitReader["run"]>) {
+      const [args] = params;
+      if (args[0] === "log" && args.includes("--no-walk=unsorted"))
+        batches.push(args);
+      if (args[0] === "rev-list") histories.push(args[1]);
+      return super.run(...params);
+    }
+  }
+  const store = new SnapshotStore(
+    join(f.root, "cold-cache"),
+    (dir) => new Reader(dir, f.remote, "file"),
+    f.project.id,
+  );
+  const snapshot = await store.refresh(f.project, DEFAULT_LIMITS, f.context);
+  assert.equal(snapshot.releaseSource?.commit, detached);
+  assert.equal(snapshot.deliveryByChange?.[f.id].stage, "pendingRelease");
+  const diff = await store.integration(f.project, f.id, snapshot.id);
+  assert.equal((await diff.summary()).record.status, "found");
+  for (const [id, pr] of [
+    ["missing", missingPr],
+    ["detached", detachedPr],
+  ] as const) {
+    assert.equal(snapshot.deliveryByChange?.[id].stage, "unknown");
+    assert.equal(
+      snapshot.deliveryByChange?.[id].changePrs[0].number,
+      pr.number,
+    );
+  }
+  assert.equal(batches.length, 1);
+  assert.ok(batches[0].includes(merge));
+  assert.ok(!batches[0].includes(detached));
+  assert.ok(!batches[0].includes(missingPr.mergeCommit));
+  assert.deepEqual(histories, [merge]);
+});
+
 test("prototype-named Change ids use own records and duplicate PRs are ambiguous", async (t) => {
   const f = await integrationFixture("constructor");
   t.after(f.cleanup);
