@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-thumbnail-loading",
+  "title": "原型截图返回总览时即时显示",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/prototype-thumbnail-loading",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "直接加载固定截图并复用自动截图准备结果",
+      "status": "done",
+      "verification": "类型、格式、生产构建、473 项单测和 26 项浏览器用例通过。覆盖延迟 prepare、首缺失败重试、返回无闪动、设备切换和版本隔离。另 1 项窄屏无效链接提示失败已在未修改的 develop 同样复现。"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-17T09:05:33.116Z",
+      "summary": "自查缓存按身份、仓库、分支、入口与提交隔离；浏览器验证固定 URL、重试、同版复用与版本切换。窄屏无效链接提示为已复现的基线失败。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-17T09:06:03.132Z",
+      "summary": "Agent 自验收，已发布截图可在准备接口延迟时显示，自动截图可重试，同版本返回总览无加载提示闪现。",
+      "source": "Playwright 截图加载和版本切换回归"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-17T09:06:07.726Z",
+      "summary": "仅调整截图加载顺序及会话内复用，现有原型浏览契约适用。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-17T09:06:11.775Z",
+      "summary": "总览与详情直接显示固定截图，同版本复用自动截图准备结果，验证通过。",
+      "path": "docs/project/archive/2026-11-17-prototype-thumbnail-loading"
+    }
+  },
+  "types": [
+    "修复",
+    "性能"
+  ]
+}
