@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "integration-batch-reachability",
+  "title": "隔离旧 PR 对批量合入记录读取的影响",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "按目标分支历史筛选批量合入记录并验证冷缓存刷新",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "release-archive-detection",
+  "types": [
+    "修复"
+  ]
+}
