@@ -41,8 +41,14 @@ export function usePublication(
     [retry, setRetry] = useState(0);
   useEffect(() => {
     if (!entry || !enabled || !connection) return;
-    if (reusePrepared && revision && cache.get<PreparedPublication>(key))
+    const prepared =
+      reusePrepared && revision
+        ? cache.get<PreparedPublication>(key)
+        : undefined;
+    if (prepared) {
+      setResult({ key, cache, value: prepared });
       return;
+    }
     const controller = new AbortController();
     api<PreparedPublication>(path, {
       method: "POST",
