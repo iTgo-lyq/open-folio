@@ -6,6 +6,7 @@ import {
   repoKey,
   openSyncStatus,
 } from "./connected";
+import type { PrototypeCatalog } from "../../src/lib/prototypes";
 const path = `/?${repositoryQuery}&m=prototypes`;
 for (const scoped of [false, true])
   test(`submodule detail distinguishes ${scoped ? "frontend source" : "legacy parent baseline"} from the catalog commit`, async ({
@@ -165,13 +166,35 @@ test("a missing screenshot retries preparation and stays visible for the same ve
 }) => {
   const firstResponse = Promise.withResolvers<void>();
   const delayedResponse = Promise.withResolvers<void>();
+  const expandResponses = Promise.withResolvers<void>();
+  const extraEntries = 144;
+  const catalog: PrototypeCatalog = await (
+    await request.get(personal.url("prototypes"))
+  ).json();
+  const orders = catalog.items.find((item) => item.id === "orders")!;
+  catalog.items.push(
+    ...Array.from({ length: extraEntries }, (_, index) => ({
+      ...orders,
+      id: `cache-pressure-${index}`,
+      title: `额外原型 ${index + 1}`,
+    })),
+  );
+  const catalogRoute = "**/api/repositories/*/prototypes?*";
+  await page.route(catalogRoute, (route) => route.fulfill({ json: catalog }));
   let retryAllowed = false;
   let delayedAttempts = 0;
   let delay = false;
   await page.route(
     "**/api/repositories/*/previews/prepare?*",
     async (route) => {
-      if (route.request().postDataJSON().entry === "orders") {
+      const { entry } = route.request().postDataJSON();
+      if (entry.startsWith("cache-pressure-")) {
+        await expandResponses.promise;
+        return route.fulfill({
+          json: { publication: { id: entry }, url: `/preview/${entry}` },
+        });
+      }
+      if (entry === "orders") {
         if (!retryAllowed) {
           await firstResponse.promise;
           return route.fulfill({
@@ -243,6 +266,35 @@ test("a missing screenshot retries preparation and stays visible for the same ve
     await expect(tile.locator('[data-thumbnail-status="ready"]')).toBeVisible();
     expect(delayedAttempts).toBe(viewerAttempts);
 
+    const more = page.getByRole("button", { name: /^显示更多原型/ });
+    const cards = page.locator("[data-prototype-id]");
+    await expect(more).toBeVisible();
+    while (await more.isVisible()) {
+      const shown = await cards.count();
+      await more.click();
+      await expect.poll(() => cards.count()).toBeGreaterThan(shown);
+    }
+    // Finish more than 128 distinct preparations after the orders card hit
+    // the cache on remount, so its shared entry is evicted.
+    expandResponses.resolve();
+    await expect(
+      page
+        .locator('[data-prototype-id^="cache-pressure-"]')
+        .getByLabel("公开链接已准备"),
+    ).toHaveCount(extraEntries);
+    await page
+      .getByRole("button", { name: "查看原型详情：托管 React" })
+      .click();
+    await expect(details).toBeVisible();
+    await expect(tile.locator("[data-prototype-cover] img")).toHaveAttribute(
+      "src",
+      src!,
+    );
+    await expect(tile.locator('[data-thumbnail-status="ready"]')).toBeVisible();
+    await details.getByRole("button", { name: "关闭原型详情" }).click();
+    expect(delayedAttempts).toBe(viewerAttempts);
+
+    await page.unroute(catalogRoute);
     const changed = await request.post("/_fixture/control", {
       data: { advanceMain: true, expireRefresh: personal.id },
     });
@@ -260,6 +312,7 @@ test("a missing screenshot retries preparation and stays visible for the same ve
   } finally {
     firstResponse.resolve();
     delayedResponse.resolve();
+    expandResponses.resolve();
   }
 });
 
