@@ -5,7 +5,7 @@
   "size": "small",
   "status": "active",
   "stage": "requirement",
-  "branch": "develop",
+  "branch": "change/prototype-thumbnail-loading",
   "confirmations": {},
   "tasks": {
     "T1": {
