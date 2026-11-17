@@ -103,12 +103,10 @@ export function ChangePreviews({
     ) ??
     result?.entries.find((e) => e.available) ??
     result?.entries[0];
-  const publication = usePublication(
-    entry?.id,
-    result?.revision ?? undefined,
-    current ? undefined : change?.id,
-    !!entry?.available && !sharing,
-  );
+  const publication = usePublication(entry?.id, result?.revision ?? undefined, {
+    change: current ? undefined : change?.id,
+    enabled: !!entry?.available && !sharing,
+  });
   const chosenDevice = (
     entry?.devices?.includes(q.device as Device)
       ? q.device

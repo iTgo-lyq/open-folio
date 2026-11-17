@@ -1,69 +1,98 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { Device, PreviewArtifact } from "@/lib/model";
 import type { PublicPreview } from "@/server/public-previews";
 import { useWorkspace } from "./context";
 import { usePersonal } from "./personal-context";
 import { api } from "./api";
+
+type PreparedPublication = { publication: PublicPreview; url: string };
+
 export function usePublication(
   entry: string | undefined,
   revision: string | undefined,
-  change?: string,
-  enabled = true,
+  {
+    change,
+    enabled = true,
+    reusePrepared = false,
+  }: { change?: string; enabled?: boolean; reusePrepared?: boolean } = {},
 ) {
-  const { readUrl, q, data, projectId } = useWorkspace(),
-    personal = usePersonal();
-  const connection = personal?.connection,
-    epoch = personal?.epoch;
-  const key = `${connection?.id}:${connection?.revision}:${epoch}:${projectId}:${data?.integrationBranch}:${revision}:${change}:${entry}`;
+  const { readUrl, q, data, cache } = useWorkspace();
+  const connection = usePersonal()?.connection;
+  const path = readUrl("previews/prepare");
+  const integrationBranch = data?.integrationBranch ?? q.integrationBranch;
+  const key = JSON.stringify([
+    path,
+    integrationBranch,
+    revision,
+    change,
+    entry,
+  ]);
+  const cached =
+    reusePrepared && enabled && connection && revision
+      ? cache.get<PreparedPublication>(key)
+      : undefined;
   const [result, setResult] = useState<{
       key: string;
-      publication?: PublicPreview;
-      url?: string;
+      cache: typeof cache;
+      value?: PreparedPublication;
       error?: string;
-    }>({ key: "" }),
+    }>(),
     [retry, setRetry] = useState(0);
   useEffect(() => {
     if (!entry || !enabled || !connection) return;
+    if (reusePrepared && revision && cache.get<PreparedPublication>(key))
+      return;
     const controller = new AbortController();
-    api<{ publication: PublicPreview; url: string }>(
-      readUrl("previews/prepare"),
-      {
-        method: "POST",
-        signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          connectionId: connection.id,
-          integrationBranch: data?.integrationBranch ?? q.integrationBranch,
-          entry,
-          ...(revision ? { revision } : {}),
-          ...(change ? { change } : {}),
-          ...(data?.id ? { snapshot: data.id } : {}),
-          ...(q.repositoryId && q.fullName
-            ? { repositoryId: q.repositoryId, fullName: q.fullName }
-            : {}),
-        }),
-      },
-    )
+    api<PreparedPublication>(path, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        connectionId: connection.id,
+        integrationBranch,
+        entry,
+        ...(revision ? { revision } : {}),
+        ...(change ? { change } : {}),
+        ...(data?.id ? { snapshot: data.id } : {}),
+        ...(q.repositoryId && q.fullName
+          ? { repositoryId: q.repositoryId, fullName: q.fullName }
+          : {}),
+      }),
+    })
       .then((value) => {
-        if (!controller.signal.aborted) setResult({ key, ...value });
+        if (controller.signal.aborted) return;
+        if (revision && !change) cache.set(key, value);
+        setResult({ key, cache, value });
       })
       .catch((e) => {
-        if (!controller.signal.aborted) setResult({ key, error: e.message });
+        if (!controller.signal.aborted)
+          setResult({ key, cache, error: e.message });
       });
     return () => controller.abort();
-  }, [key, readUrl, enabled, retry]);
+  }, [cache, key, enabled, reusePrepared, retry]);
+  const current =
+    enabled && connection && result?.key === key && result.cache === cache
+      ? result
+      : undefined;
   return {
-    ...(result.key === key ? result : {}),
+    ...(cached ?? current?.value),
+    error: cached ? undefined : current?.error,
     retry: () => {
-      setResult({ key: "" });
+      setResult(undefined);
       setRetry((v) => v + 1);
     },
   };
 }
-export function publicationThumbnail(
+export function prototypeThumbnail(
+  artifact: PreviewArtifact | undefined,
   meta: PublicPreview | undefined,
-  device?: string,
+  device?: Device,
 ) {
+  if (artifact?.type === "hosted") {
+    const registered = artifact.thumbnails?.find((t) => t.device === device);
+    if (registered) return registered.url;
+  }
   if (!meta) return "";
   return (
     meta.thumbnails?.find((t) => t.device === device)?.url ??

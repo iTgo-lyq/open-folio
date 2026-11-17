@@ -73,7 +73,7 @@ for (const scoped of [false, true])
       .click();
     await expect(page.locator('iframe[title="原型：订单列表"]')).toBeVisible();
   });
-test("published hosted cards load the registered screenshot for every declared device", async ({
+test("published screenshots load in the gallery and details while preparation is delayed", async ({
   page,
   request,
   personal,
@@ -87,34 +87,68 @@ test("published hosted cards load the registered screenshot for every declared d
     ipad: 834,
     mobile: 390,
   };
-  await page.goto(path);
+  const prepare = Promise.withResolvers<void>();
+  let preparing = false;
+  await page.route(
+    "**/api/repositories/*/previews/prepare?*",
+    async (route) => {
+      if (route.request().postDataJSON().entry === "hosted") {
+        preparing = true;
+        await prepare.promise;
+      }
+      await route.continue();
+    },
+  );
   const tile = page.locator('[data-prototype-id="hosted"]');
-  for (const device of entry.devices) {
-    expect(
-      entry.artifact.thumbnails.some(
-        (item: { device: string }) => item.device === device,
-      ),
-    ).toBe(true);
-    await page
-      .getByRole("radio", {
-        name: { "pc-web": "PC Web", ipad: "iPad", mobile: "手机" }[
-          device as "pc-web" | "ipad" | "mobile"
-        ],
-        exact: true,
-      })
+  try {
+    await page.goto(path);
+    await expect.poll(() => preparing).toBe(true);
+    for (const device of entry.devices) {
+      const thumbnail = entry.artifact.thumbnails.find(
+        (item: { device: string; url: string }) => item.device === device,
+      );
+      await page
+        .getByRole("radio", {
+          name: { "pc-web": "PC Web", ipad: "iPad", mobile: "手机" }[
+            device as "pc-web" | "ipad" | "mobile"
+          ],
+          exact: true,
+        })
+        .click();
+      await tile.scrollIntoViewIfNeeded();
+      const screenshot = tile.getByRole("img", {
+        name: "托管 React的首屏截图",
+      });
+      await expect(screenshot).toHaveAttribute("src", thumbnail.url);
+      await expect
+        .poll(() =>
+          screenshot.evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth,
+          ),
+        )
+        .toBe(widths[device]);
+      await expect(
+        tile.locator('[data-thumbnail-status="ready"]'),
+      ).toBeVisible();
+    }
+    await tile
+      .getByRole("button", { name: "查看原型详情：托管 React" })
       .click();
-    await tile.scrollIntoViewIfNeeded();
-    const screenshot = tile.getByRole("img", { name: "托管 React的首屏截图" });
-    await expect(screenshot).toBeVisible();
-    await expect
-      .poll(() =>
-        screenshot.evaluate(
-          (img: HTMLImageElement) => img.complete && img.naturalWidth,
-        ),
-      )
-      .toBe(widths[device]);
-    await expect(tile.locator('[data-thumbnail-status="ready"]')).toBeVisible();
-    await expect(tile.getByText(/尚未提供截图|截图暂不可用/)).toHaveCount(0);
+    const details = page.getByRole("dialog");
+    await details.getByRole("radio", { name: "PC Web" }).click();
+    const screenshot = details.getByRole("img", { name: "托管 React的大图" });
+    await expect(screenshot).toHaveAttribute(
+      "src",
+      entry.artifact.thumbnails.find(
+        (item: { device: string }) => item.device === "pc-web",
+      ).url,
+    );
+    await expect(
+      details.locator('[data-thumbnail-status="ready"]'),
+    ).toBeVisible();
+    await details.getByRole("button", { name: "关闭原型详情" }).click();
+  } finally {
+    prepare.resolve();
   }
   await tile
     .getByRole("button", { name: "预览托管 React", exact: true })
@@ -122,6 +156,111 @@ test("published hosted cards load the registered screenshot for every declared d
   await expect(
     page.frameLocator('iframe[title="原型：托管 React"]').getByRole("heading"),
   ).toBeVisible();
+});
+
+test("a missing screenshot retries preparation and stays visible for the same version", async ({
+  page,
+  request,
+  personal,
+}) => {
+  const firstResponse = Promise.withResolvers<void>();
+  const delayedResponse = Promise.withResolvers<void>();
+  let retryAllowed = false;
+  let delayedAttempts = 0;
+  let delay = false;
+  await page.route(
+    "**/api/repositories/*/previews/prepare?*",
+    async (route) => {
+      if (route.request().postDataJSON().entry === "orders") {
+        if (!retryAllowed) {
+          await firstResponse.promise;
+          return route.fulfill({
+            status: 503,
+            json: {
+              error: { code: "THUMBNAIL_BUSY", message: "截图正在生成" },
+            },
+          });
+        }
+        if (delay) {
+          delayedAttempts++;
+          await delayedResponse.promise;
+        }
+      }
+      await route.continue();
+    },
+  );
+
+  try {
+    await page.goto(path);
+    const tile = page.locator('[data-prototype-id="orders"]');
+    await expect(tile.getByText("正在准备截图…")).toBeVisible();
+    firstResponse.resolve();
+    await expect(tile.getByText("截图暂不可用")).toBeVisible();
+    retryAllowed = true;
+    await tile.getByRole("button", { name: "重试截图" }).click();
+    const cover = tile.getByRole("img", { name: "订单列表的首屏截图" });
+    await expect(tile.locator('[data-thumbnail-status="ready"]')).toBeVisible();
+    const src = await cover.getAttribute("src");
+    expect(src).toMatch(/^\/api\/public-previews\/[^/]+\/pc-web\.jpg$/);
+
+    delay = true;
+    await tile.getByRole("button", { name: "查看原型详情：订单列表" }).click();
+    const details = page.getByRole("dialog");
+    await expect(
+      details.getByRole("img", { name: "订单列表的大图" }),
+    ).toHaveAttribute("src", src!);
+    await expect(
+      details.locator('[data-thumbnail-status="ready"]'),
+    ).toBeVisible();
+    expect(delayedAttempts).toBe(0);
+    await details.getByRole("button", { name: "关闭原型详情" }).click();
+
+    await tile.getByRole("button", { name: "预览订单列表" }).click();
+    const back = page.getByRole("button", { name: "返回原型总览" });
+    await expect(back).toBeVisible();
+    await expect.poll(() => delayedAttempts).toBeGreaterThan(0);
+    const viewerAttempts = delayedAttempts;
+    const loadingFlashes = await back.evaluate((button) => {
+      const flashes: string[] = [];
+      const tile = '[data-prototype-id="orders"]';
+      const observer = new MutationObserver(() => {
+        const status = document.querySelector(`${tile} [role="status"]`);
+        if (status) flashes.push(status.textContent);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      (button as HTMLButtonElement).click();
+      return new Promise<string[]>((resolve) => {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            observer.disconnect();
+            resolve(flashes);
+          }),
+        );
+      });
+    });
+    expect(loadingFlashes).toEqual([]);
+    await expect(cover).toHaveAttribute("src", src!);
+    await expect(tile.locator('[data-thumbnail-status="ready"]')).toBeVisible();
+    expect(delayedAttempts).toBe(viewerAttempts);
+
+    const changed = await request.post("/_fixture/control", {
+      data: { advanceMain: true, expireRefresh: personal.id },
+    });
+    expect(changed.ok()).toBe(true);
+    try {
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(
+        tile.getByRole("heading", { name: "自动更新后的原型", exact: true }),
+      ).toBeVisible();
+      await expect(tile.getByText("正在准备截图…")).toBeVisible();
+      await expect(tile.locator("[data-prototype-cover] img")).toHaveCount(0);
+    } finally {
+      await request.post("/_fixture/control", { data: { restoreMain: true } });
+    }
+  } finally {
+    firstResponse.resolve();
+    delayedResponse.resolve();
+  }
 });
 
 test("capsule tooltips stay above the prototype gallery", async ({ page }) => {
@@ -550,10 +689,12 @@ test("detail links handle reload, missing entries, image errors and narrow layou
   page,
 }) => {
   let fail = true;
-  await page.route("**/api/public-previews/*/component.jpg?*", (route) =>
-    fail
-      ? route.fulfill({ status: 503, body: "unavailable" })
-      : route.continue(),
+  await page.route(
+    /\/api\/public-previews\/[^/]+\/component\.jpg(?:\?|$)/,
+    (route) =>
+      fail
+        ? route.fulfill({ status: 503, body: "unavailable" })
+        : route.continue(),
   );
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto(path + "&pdetail=card");

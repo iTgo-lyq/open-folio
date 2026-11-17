@@ -1,5 +1,5 @@
 "use client";
-import { usePublication, publicationThumbnail } from "./publication";
+import { usePublication, prototypeThumbnail } from "./publication";
 import {
   Badge,
   Button,
@@ -292,13 +292,15 @@ function PrototypeCard({
 }) {
   const { nav, q, data } = useWorkspace();
   const { device, viewport } = previewViewport(item, q.pdevice);
-  const publication = usePublication(
-    item.id,
-    revision,
-    undefined,
-    !!item.artifact,
+  const publication = usePublication(item.id, revision, {
+    enabled: !!item.artifact,
+    reusePrepared: true,
+  });
+  const imageUrl = prototypeThumbnail(
+    item.artifact,
+    publication.publication,
+    device,
   );
-  const imageUrl = publicationThumbnail(publication.publication, device);
   const open = () =>
     nav({
       ...clearPreview,
@@ -386,6 +388,7 @@ function PrototypeThumbnail({
   prepareError?: string;
   retryPrepare?: () => void;
 }) {
+  const { cache } = useWorkspace();
   const root = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(large),
     [state, setState] = useState<{
@@ -394,11 +397,17 @@ function PrototypeThumbnail({
     }>({ key: "", status: "loading" }),
     [attempt, setAttempt] = useState(0);
   const imageKey = `${url}:${attempt}`;
-  const status = prepareError
-    ? "error"
-    : state.key === imageKey
-      ? state.status
-      : "loading";
+  const loadedKey = `thumbnail:${url}`;
+  // The browser still handles image caching and revalidation on remount.
+  const loadedBefore = !!url && attempt === 0 && cache.get<boolean>(loadedKey);
+  const status =
+    !url && prepareError
+      ? "error"
+      : state.key === imageKey
+        ? state.status
+        : "loading";
+  const showImage =
+    status === "ready" || (status === "loading" && loadedBefore);
   const setStatus = (status: "loading" | "ready" | "error") =>
     setState({ key: imageKey, status });
   useEffect(() => {
@@ -419,22 +428,36 @@ function PrototypeThumbnail({
     const timer = setTimeout(() => setStatus("error"), 12000);
     return () => clearTimeout(timer);
   }, [enabled, visible, status, imageKey]);
-  const screenshot = enabled && visible && url && status !== "error" && (
-    <img
-      key={imageKey}
-      src={`${url}${url.includes("?") ? "&" : "?"}attempt=${attempt}`}
-      alt={`${title}的${large ? "大图" : "首屏截图"}`}
-      referrerPolicy="no-referrer"
-      width={viewport.width}
-      height={viewport.height}
-      onLoad={() => setStatus("ready")}
-      onError={() => setStatus("error")}
-    />
-  );
+  const screenshot = enabled &&
+    (visible || loadedBefore) &&
+    url &&
+    status !== "error" && (
+      <img
+        key={imageKey}
+        src={
+          attempt
+            ? `${url}${url.includes("?") ? "&" : "?"}attempt=${attempt}`
+            : url
+        }
+        alt={`${title}的${large ? "大图" : "首屏截图"}`}
+        loading={visible ? "eager" : "lazy"}
+        referrerPolicy="no-referrer"
+        width={viewport.width}
+        height={viewport.height}
+        onLoad={() => {
+          cache.set(loadedKey, true);
+          setStatus("ready");
+        }}
+        onError={() => {
+          cache.set(loadedKey, false);
+          setStatus("error");
+        }}
+      />
+    );
   return (
     <div
       className={prototypeClass(
-        `prototype-thumbnail ${large ? "prototype-detail-image" : ""} ${status}`,
+        `prototype-thumbnail ${large ? "prototype-detail-image" : ""} ${showImage ? "ready" : status}`,
       )}
       style={
         large
@@ -456,7 +479,7 @@ function PrototypeThumbnail({
       ) : (
         screenshot
       )}
-      {(!enabled || status !== "ready") && (
+      {(!enabled || !showImage) && (
         <div
           className={prototypeClass("prototype-thumbnail-state")}
           role="status"
@@ -478,8 +501,8 @@ function PrototypeThumbnail({
               variant="text"
               onClick={() => {
                 setStatus("loading");
-                setAttempt((v) => v + 1);
-                retryPrepare?.();
+                if (url) setAttempt((v) => v + 1);
+                else retryPrepare?.();
               }}
             >
               重试截图
@@ -580,13 +603,15 @@ function PrototypeDetailBody({
   const { q, nav, data } = useWorkspace();
   const [selectedDevice, setSelectedDevice] = useState(q.pdevice);
   const { device, viewport } = previewViewport(item, selectedDevice);
-  const publication = usePublication(
-    item.id,
-    revision,
-    undefined,
-    !!item.artifact,
+  const publication = usePublication(item.id, revision, {
+    enabled: !!item.artifact,
+    reusePrepared: true,
+  });
+  const imageUrl = prototypeThumbnail(
+    item.artifact,
+    publication.publication,
+    device,
   );
-  const imageUrl = publicationThumbnail(publication.publication, device);
   const hasThumbnail = !!item.artifact;
   return (
     <>
