@@ -4,13 +4,13 @@
   "title": "原型截图返回总览时即时显示",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "change/prototype-thumbnail-loading",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "直接加载固定截图并复用自动截图准备结果",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
