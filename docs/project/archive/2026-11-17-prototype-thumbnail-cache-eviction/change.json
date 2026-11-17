@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "prototype-thumbnail-cache-eviction",
+  "title": "缓存淘汰后保留已显示的原型截图",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "change/prototype-thumbnail-cache-eviction",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "保留缓存命中的截图准备结果并验证淘汰后的导航",
+      "status": "done",
+      "verification": "旧实现下以 144 个准备结果淘汰条目后，打开详情会移除原卡片的图片。修复后同一回归通过，原截图继续显示且准备请求次数不变。473 项单测、5 项定向浏览器用例、类型检查和生产构建通过。",
+      "commitTitle": "prototype-thumbnail-cache-eviction T1: retain prepared screenshots after cache hits"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-17T09:51:01.347Z",
+      "summary": "自查确认缓存命中的结果沿用现有键、缓存身份和可读校验。473 项单测、15 项原型浏览器用例、类型检查和生产构建通过。全仓格式检查的 16 个告警与 develop 基线一致，改动文件通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-17T09:51:05.710Z",
+      "summary": "Agent 自验收，旧实现可复现淘汰后的图片消失，修复后打开详情仍保留原图，准备请求次数不变。",
+      "source": "Playwright 原型浏览器回归，使用隔离的夹具会话"
+    },
+    "specs": {
+      "result": "not_needed",
+      "at": "2026-11-17T09:51:09.637Z",
+      "summary": "恢复原有同版本截图复用行为，现行原型预览规范已覆盖。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-17T09:51:13.472Z",
+      "summary": "缓存命中的原型截图在共享条目被淘汰、总览因打开详情重渲染后仍保持显示。",
+      "path": "docs/project/archive/2026-11-17-prototype-thumbnail-cache-eviction"
+    }
+  },
+  "followUpOf": "prototype-thumbnail-loading",
+  "followUpTitle": "原型截图稳定显示"
+}
