@@ -436,9 +436,10 @@ export function register(root, { request, result, change, gitEntry, packagePath,
     return updates;
   });
 }
-/** @param {{change:string,entry?:string}} options */
+/** @param {{change:string,entry:string}} options */
 export function associate(root,options){
   const {change,entry:id}=options;
+  fail(typeof id==='string'&&id.trim(),'--entry is required');
   root=realpathSync(root);
   return withLock(root,()=>{
     fail(!existsSync(paths(root).journal),'Recover the unfinished prototype transaction first');
@@ -449,6 +450,8 @@ export function associate(root,options){
     fail(owner.mount,'Association requires a submodule prototype package');
     for(const repository of owner.roots.slice(1))fail(!git(repository.root,['status','--porcelain','--untracked-files=normal']),'Commit the frontend catalog and sources before association');
     const manifest=packageManifest(owner.source,owner.revision,owner.packagePath).manifest;
+    const entry=manifest.entries.find(entry=>entry.id===id);
+    fail(entry?.artifact,`No published prototype entry found for --entry ${JSON.stringify(id)}`);
     const known=sourceManifest(root,git(root,['rev-parse','HEAD'])).manifest.entries.map(entry=>entry.artifact);
     for(const folder of ['changes','archive']){
       const directory=checkedPath(root,`docs/project/${folder}`);
@@ -458,35 +461,30 @@ export function associate(root,options){
         if(existsSync(file))for(const entry of JSON.parse(readFileSync(file,'utf8')).previews??[])known.push(entry.artifact);
       }
     }
-    const selected=manifest.entries.filter(entry=>entry.artifact&&(!id||id===entry.id));
-    fail(selected.length,'No published prototype entry selected');
-    const updates=[],files=[];
-    for(const entry of selected){
-      const preview=currentPreview(entry),artifact=preview.artifact;
-      if(artifact.type==='hosted')for(const old of known)if(old?.type==='hosted'&&old.url===artifact.url)fail(old.digest===artifact.digest&&old.version===artifact.version,'Cannot overwrite a known immutable URL');
-      fail(withinPackage(entry.sourcePath,owner.packagePath),'Source must stay in the prototype package');
-      if(artifact.source){
-        verifyOwnerSource(owner,artifact.sourceCommit,entry.id,artifact.source);
-        const bindingCommit=git(root,['rev-parse','HEAD']);
-        const binding=localPackage(root,bindingCommit,workflow.prototype.packagePath);
-        fail(binding.mount===owner.mount&&binding.packagePath===owner.packagePath&&binding.links.at(-1)?.repository===owner.links.at(-1)?.repository,'Commit the submodule mapping as part of initial setup before associating a publication');
-        artifact.source={repository:artifact.source.repository,packagePath:artifact.source.packagePath,submodulePath:owner.mount,catalogCommit:owner.revision,bindingCommit};
-      }else verifyPrototypeSource(root,artifact.sourceCommit,entry.id);
-      if(artifact.type==='git'){
-        fail(artifact.path.startsWith(inPackage(owner.packagePath,'preview')+'/'),'Git artifact must stay in the prototype preview directory');
-        const path=artifact.path+'/index.html',row=treeRows(git(owner.source,['ls-tree','-lz',owner.revision,'--',path]))[0];
-        fail(row?.path===path&&['100644','100755'].includes(row.mode)&&row.bytes<=10*1024*1024,'Missing regular fixed Git HTML');
-        const html=execFileSync('git',['-C',owner.source,'cat-file','blob',row.oid],{stdio:['ignore','pipe','pipe'],maxBuffer:10*1024*1024+1024});
-        fail(!htmlIssues(new TextDecoder('utf-8',{fatal:true}).decode(html)).length,'Git fallback must be self-contained HTML');
-        artifact.path=`docs/project/changes/${change}/previews/${entry.id}`;
-        files.push({path:artifact.path+'/index.html',body:html});
-      }
-      updates.push(preview);
+    const files=[];
+    const preview=currentPreview(entry),artifact=preview.artifact;
+    if(artifact.type==='hosted')for(const old of known)if(old?.type==='hosted'&&old.url===artifact.url)fail(old.digest===artifact.digest&&old.version===artifact.version,'Cannot overwrite a known immutable URL');
+    fail(withinPackage(entry.sourcePath,owner.packagePath),'Source must stay in the prototype package');
+    if(artifact.source){
+      verifyOwnerSource(owner,artifact.sourceCommit,id,artifact.source);
+      const bindingCommit=git(root,['rev-parse','HEAD']);
+      const binding=localPackage(root,bindingCommit,workflow.prototype.packagePath);
+      fail(binding.mount===owner.mount&&binding.packagePath===owner.packagePath&&binding.links.at(-1)?.repository===owner.links.at(-1)?.repository,'Commit the submodule mapping as part of initial setup before associating a publication');
+      artifact.source={repository:artifact.source.repository,packagePath:artifact.source.packagePath,submodulePath:owner.mount,catalogCommit:owner.revision,bindingCommit};
+    }else verifyPrototypeSource(root,artifact.sourceCommit,id);
+    if(artifact.type==='git'){
+      fail(artifact.path.startsWith(inPackage(owner.packagePath,'preview')+'/'),'Git artifact must stay in the prototype preview directory');
+      const path=artifact.path+'/index.html',row=treeRows(git(owner.source,['ls-tree','-lz',owner.revision,'--',path]))[0];
+      fail(row?.path===path&&['100644','100755'].includes(row.mode)&&row.bytes<=10*1024*1024,'Missing regular fixed Git HTML');
+      const html=execFileSync('git',['-C',owner.source,'cat-file','blob',row.oid],{stdio:['ignore','pipe','pipe'],maxBuffer:10*1024*1024+1024});
+      fail(!htmlIssues(new TextDecoder('utf-8',{fatal:true}).decode(html)).length,'Git fallback must be self-contained HTML');
+      artifact.path=`docs/project/changes/${change}/previews/${id}`;
+      files.push({path:artifact.path+'/index.html',body:html});
     }
-    target.state.previews=[...(target.state.previews??[]).filter(p=>!updates.some(entry=>entry.id===p.id)),...updates];
+    target.state.previews=[...(target.state.previews??[]).filter(p=>p.id!==id),preview];
     fail(!validateChange(target.state).length,'Invalid Change association');
     files.push({path:target.path,body:json(target.state)});
     transaction(root,files);
-    return updates;
+    return [preview];
   });
 }

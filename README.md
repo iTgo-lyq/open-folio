@@ -170,7 +170,7 @@ Markdown 不执行 HTML、MDX 或脚本。内部链接限定于快照中的工�
 
 ## 原型与内置托管
 
-`prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `node .agents/skills/spec-trail/cli.mjs prototype associate` 关联 Change，最后一次提交 gitlink 与 Change。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/references/prototype/prototype.md#子模块中的原型包)。
+`prototype.packagePath` 支持子模块根目录或内部原型包，例如 `frontend/packages/prototype`。前端先独立发布并提交清单，主仓库通过 `node .agents/skills/spec-trail/cli.mjs prototype associate --change change-id --entry entry-id` 逐个关联本次交付的原型，最后一起提交 gitlink、Change 和 Git 快照。新引用明确记录前端仓库、包路径和源码提交，旧引用保持原语义。主项目按固定父提交的 `.gitmodules`/gitlink 读取，子分支推进不改变历史；子权限或固定对象不可用时明确提示。详细步骤见[子模块原型发布](.agents/skills/spec-trail/references/prototype/prototype.md#子模块中的原型包)。
 
 当前原型总览读取所选集成分支 `<packagePath>/prototype.json`，不从 Change 拼接列表；清单、开关和固定引用仍遵守仓库工作流。已完成交付的归档通过登记源分支对应 PR 的双亲合并提交 M 保存交付边界。“合入变更”页签读取 `git diff M^1 M`，历史原型也从 M 定位。核实合入后可清理交付来源分支和工作区。缺少有效交付关联时，diff 和原型留空，正文仍可读。取消归档及其原型从所属分支读取，已移交的工作分支继续保留。关闭开关只禁止后续准备，已经公开的产物仍可访问。
 

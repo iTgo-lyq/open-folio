@@ -566,6 +566,108 @@ test("two-repository recovery locks participants and stops at later edits or com
   assert.throws(() => recover(f.author), /newer repository commits/);
 });
 
+test("association requires one explicit published entry and preserves other previews", async (t) => {
+  const f = await submoduleFixture();
+  t.after(f.cleanup);
+  const id = "explicit-entry";
+  const changePath = `docs/project/changes/${id}`;
+  await f.register({ [id]: `change/${id}` });
+  f.git(["checkout", "-b", `change/${id}`]);
+
+  const details = {
+    ...f.entry,
+    id: "details",
+    title: "Details",
+    sourcePath: f.path("src/details.html"),
+    artifact: undefined,
+  };
+  const draft = {
+    ...details,
+    id: "draft",
+    title: "Draft",
+    sourcePath: f.path("src/draft.html"),
+  };
+  await f.childPut(details.sourcePath, "details source");
+  await f.childPut(draft.sourcePath, "draft source");
+  const html = "<!doctype html><body>fixed details</body>";
+  await f.childPut(f.path("preview/details/index.html"), html);
+  await f.childPut(
+    f.path("prototype.json"),
+    JSON.stringify({ schemaVersion: 1, entries: [f.entry, details, draft] }),
+  );
+  f.childCommit();
+
+  const run = (cwd: string, ...args: string[]) =>
+    spawnSync(process.execPath, [cli, "prototype", ...args], {
+      cwd,
+      encoding: "utf8",
+    });
+  for (const entry of ["screen", "details"]) {
+    const result = run(
+      f.child,
+      "register",
+      "--git-entry",
+      entry,
+      "--package",
+      "packages/prototype",
+      "--repository",
+      "https://example.test/team/frontend.git",
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(
+      JSON.parse(result.stdout).next,
+      /associate --change <change-id> --entry <entry-id>/,
+    );
+  }
+  f.childCommit();
+
+  const link = (...args: string[]) =>
+    run(f.author, "associate", "--change", id, ...args);
+  assert.match(link("--help").stdout, /--entry <id> +\(required\)/);
+  assert.throws(
+    () => associate(f.author, { change: id, entry: "" }),
+    /--entry is required/,
+  );
+  for (const [args, error] of [
+    [[], /--entry is required/],
+    [["--entry="], /--entry is required/],
+    [["--entry", "   "], /--entry is required/],
+    [["--entry", "missing"], /No published prototype entry.*"missing"/],
+    [["--entry", "draft"], /No published prototype entry.*"draft"/],
+  ] as const) {
+    const result = link(...args);
+    assert.equal(result.status, 1, result.stderr);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, error);
+    assert.equal(f.git(["status", "--porcelain", "--", changePath]), "");
+  }
+
+  const statePath = join(f.author, changePath, "change.json");
+  const previewIds = async () =>
+    JSON.parse(await readFile(statePath, "utf8")).previews.map(
+      (entry: { id: string }) => entry.id,
+    );
+  const detailsResult = link("--entry", "details");
+  assert.equal(detailsResult.status, 0, detailsResult.stderr);
+  assert.equal(JSON.parse(detailsResult.stdout).entries[0].id, "details");
+  assert.deepEqual(await previewIds(), ["details"]);
+  assert.equal(
+    await readFile(
+      join(f.author, changePath, "previews/details/index.html"),
+      "utf8",
+    ),
+    html,
+  );
+  await assert.rejects(
+    readFile(join(f.author, changePath, "previews/screen/index.html")),
+    { code: "ENOENT" },
+  );
+
+  const screenResult = link("--entry", "screen");
+  assert.equal(screenResult.status, 0, screenResult.stderr);
+  assert.deepEqual(await previewIds(), ["details", "screen"]);
+});
+
 test("association rejects dirty catalogs, mismatched source identities and commits outside the pinned history", async (t) => {
   const f = await submoduleFixture();
   t.after(f.cleanup);
@@ -592,7 +694,7 @@ test("association rejects dirty catalogs, mismatched source identities and commi
   const path = join(f.child, f.path("prototype.json")),
     published = await readFile(path, "utf8");
   assert.throws(
-    () => associate(f.author, { change: id }),
+    () => associate(f.author, { change: id, entry: "screen" }),
     /Commit the frontend catalog/,
   );
   assert.throws(
@@ -631,7 +733,10 @@ test("association rejects dirty catalogs, mismatched source identities and commi
     catalog.entries[0].artifact.sourceCommit = commit;
     await writeFile(path, JSON.stringify(catalog));
     f.childCommit();
-    assert.throws(() => associate(f.author, { change: id }), error);
+    assert.throws(
+      () => associate(f.author, { change: id, entry: "screen" }),
+      error,
+    );
     assert.equal(
       await readFile(
         join(f.author, `docs/project/changes/${id}/change.json`),
@@ -642,7 +747,7 @@ test("association rejects dirty catalogs, mismatched source identities and commi
   }
   await writeFile(path, published);
   f.childCommit();
-  associate(f.author, { change: id });
+  associate(f.author, { change: id, entry: "screen" });
   f.git(["add", "."]);
   // A staged gitlink without the published source in its history must fail,
   // even while the checkout still contains that publication.
@@ -668,7 +773,7 @@ test("associating unchanged frontend sources still requires staging the new cata
     repository: "https://example.test/team/frontend.git",
   });
   const b = f.childCommit();
-  associate(f.author, { change: id });
+  associate(f.author, { change: id, entry: "screen" });
   f.git(["add", "docs/project"]);
   const run = () =>
     spawnSync(process.execPath, [cli, "setup", "pre-commit"], {
@@ -808,7 +913,7 @@ test("association preserves parent fixed URLs when the frontend catalog no longe
     f.childCommit();
   };
   await publish("<!doctype html><body>first</body>", "first");
-  associate(f.author, { change: id });
+  associate(f.author, { change: id, entry: "screen" });
   f.commit();
   const before = await readFile(
     join(f.author, `docs/project/changes/${id}/change.json`),
@@ -825,7 +930,7 @@ test("association preserves parent fixed URLs when the frontend catalog no longe
     "second",
   );
   assert.throws(
-    () => associate(f.author, { change: id }),
+    () => associate(f.author, { change: id, entry: "screen" }),
     /known immutable URL/,
   );
   assert.equal(
@@ -879,11 +984,11 @@ test("nested frontend publication commits inner and outer catalogs before one fi
   f.git(["push", "origin", "HEAD:inner-publication"], inner);
   const b = f.git(["rev-parse", "HEAD"], inner);
   assert.throws(
-    () => associate(f.author, { change: id }),
+    () => associate(f.author, { change: id, entry: "screen" }),
     /Commit the frontend catalog/,
   );
   f.childCommit();
-  associate(f.author, { change: id });
+  associate(f.author, { change: id, entry: "screen" });
   const source = JSON.parse(
     await readFile(
       join(f.author, `docs/project/changes/${id}/change.json`),
