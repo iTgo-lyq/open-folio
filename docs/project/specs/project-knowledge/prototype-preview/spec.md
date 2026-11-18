@@ -47,7 +47,7 @@ register 校验成功结果后更新当前清单及可选 Change 引用；发布
 
 主仓库管理 SpecTrail、Change 和归档，prototype.packagePath 可指向已记录的 Git submodule 根目录或内部包，也支持沿配置路径经过嵌套 gitlink。清单的 sourcePath 和 Git artifact.path 相对所属子仓库根目录。主项目按固定父提交中的 .gitmodules 与逐层 gitlink 读取清单、源码及 Git 产物，不使用子分支最新提交或本地检出替代固定版本。接入复用前端工程、组件及构建，不向父包管理器登记子模块 workspace，子仓库无需另接入 SpecTrail。
 
-前端以 --package 独立提交干净源码 A、构建发布并登记，再提交/推送清单 B；根包用空包路径表示，命令使用 `.`。前端无需 workflow，不提前更新主仓库 gitlink，登记只写前端。主仓库 associate 读取已提交且干净的 B，关联固定引用并复制适用的 Git HTML 到 Change；最后一次父提交 P 同时更新 gitlink B、Change 与快照。嵌套子模块从内向外提交，工具不自动提交或推送。子模块映射须已按接入步骤提交，关联不回写子清单。
+前端以 --package 独立提交干净源码 A、构建发布并登记，再提交/推送清单 B；根包用空包路径表示，命令使用 `.`。前端无需 workflow，不提前更新主仓库 gitlink，登记只写前端。主仓库 `prototype associate` 读取已提交且干净的 B，每次必须通过 `--entry <id>` 指定一个已发布入口，关联该入口的固定引用并复制适用的 Git HTML 到 Change。多个入口逐个关联，最后一次父提交 P 同时更新 gitlink B、Change 与快照。嵌套子模块从内向外提交，工具不自动提交或推送。子模块映射须已按接入步骤提交，关联不回写子清单。
 
 新 artifact 的可选 source 记录 repository、packagePath，sourceCommit 属于前端源码 A。主仓库关联另补 submodulePath、catalogCommit=B 与 bindingCommit=关联前已有父提交 Q；当前清单的父绑定字段由实际固定 P/B 合成，不采信子清单自报的挂载信息。Q 必须属于父交付历史，先按 Q 的映射确定允许的仓库，再核对身份、A 为 B 的祖先及 A 的入口源码。没有 source 的旧引用继续将 sourceCommit 解释为父构建基线，不改写历史。目录迁移或分支变化后仍沿固定绑定追溯。
 

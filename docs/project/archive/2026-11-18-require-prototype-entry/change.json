@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "require-prototype-entry",
+  "title": "原型关联必须指定入口 ID",
+  "size": "small",
+  "status": "completed",
+  "stage": "close",
+  "branch": "codex/require-prototype-entry",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "强制指定单个原型入口并验证关联范围",
+      "status": "done",
+      "verification": "多入口回归验证缺失或无效 ID 时不写入，合法 ID 逐个关联并保留已有引用；完整测试、SpecTrail 测试及类型检查通过。"
+    }
+  },
+  "closure": {
+    "verification": {
+      "result": "passed",
+      "at": "2026-11-18T13:37:31.738Z",
+      "summary": "自查 CLI、关联逻辑和文档一致；475 项完整测试、21 项 SpecTrail 测试及类型检查通过。"
+    },
+    "acceptance": {
+      "result": "accepted",
+      "at": "2026-11-18T13:37:48.372Z",
+      "summary": "Agent 自验收，缺失、空白、未知或未发布 ID 均拒绝写入，合法 ID 逐个关联并保留前序引用。",
+      "source": "用户需求「entry 不该是可选」，以多入口本地 Git 回归作为自验收证据。"
+    },
+    "specs": {
+      "result": "synced",
+      "at": "2026-11-18T13:38:07.139Z",
+      "summary": "project-knowledge/prototype-preview 记录每次关联须明确指定一个已发布入口。"
+    },
+    "archive": {
+      "result": "done",
+      "at": "2026-11-18T13:38:10.994Z",
+      "summary": "必填入口参数、发布指引与多入口回归已验收并同步规格。",
+      "path": "docs/project/archive/2026-11-18-require-prototype-entry"
+    }
+  },
+  "followUpOf": "prototype-submodule-support",
+  "types": [
+    "修复"
+  ]
+}
