@@ -39,7 +39,15 @@ export async function runPrototypePublication(command, values) {
         ...(gitEntry ? { gitEntry } : { request, result: read(values.result) }),
       });
       const standalone = values.package !== undefined || Object.hasOwn(request ?? {}, "packagePath");
-      return { output: { registered: true, entries, ...(standalone && { next: "Commit the frontend catalog, then run prototype associate in the parent." }) } };
+      return {
+        output: {
+          registered: true,
+          entries,
+          ...(standalone && {
+            next: "Commit the frontend catalog, then run prototype associate --change <change-id> --entry <entry-id> in the parent for each entry the Change needs.",
+          }),
+        },
+      };
     }
     case "associate": {
       const entries = associate(root, { change: values.change, entry: values.entry });

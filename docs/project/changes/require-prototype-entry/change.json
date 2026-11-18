@@ -10,7 +10,8 @@
   "tasks": {
     "T1": {
       "title": "强制指定单个原型入口并验证关联范围",
-      "status": "doing"
+      "status": "done",
+      "verification": "多入口回归验证缺失或无效 ID 时不写入，合法 ID 逐个关联并保留已有引用；完整测试、SpecTrail 测试及类型检查通过。"
     }
   },
   "closure": {},
