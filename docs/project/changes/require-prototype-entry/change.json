@@ -4,13 +4,13 @@
   "title": "原型关联必须指定入口 ID",
   "size": "small",
   "status": "active",
-  "stage": "requirement",
+  "stage": "execution",
   "branch": "codex/require-prototype-entry",
   "confirmations": {},
   "tasks": {
     "T1": {
       "title": "强制指定单个原型入口并验证关联范围",
-      "status": "todo"
+      "status": "doing"
     }
   },
   "closure": {},
