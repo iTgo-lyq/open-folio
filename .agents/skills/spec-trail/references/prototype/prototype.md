@@ -124,7 +124,7 @@ node .agents/skills/spec-trail/cli.mjs prototype register --request /tmp/request
 
 - `packagePath` 相对主仓库，可指向子模块根目录或内部包，如 `frontend/packages/prototype`；清单的 `sourcePath`、Git `artifact.path` 相对子仓库根目录。复用前端工程，子仓库无需另接入 SpecTrail。
 - 前端先提交干净源码 A，再构建发布、登记并提交/推送清单 B。发布命令指定 `--repo 前端目录 --package packages/prototype`（根包用 `.`），directory/repository 属于前端；OpenFolio 上传另传 `--openfolio-url`、`--upload-url` 或 `OPENFOLIO_URL`/`OPENFOLIO_UPLOAD_URL`。前端登记不传 `--change`。
-- 主仓库执行 `node .agents/skills/spec-trail/cli.mjs prototype associate --repo 主仓库目录 --change change-id [--entry id]`，读取已提交 B，只写 Change 及 Git 快照；最后一次提交/推送 gitlink B、Change 和快照。嵌套模块先从内向外提交。新 artifact.source 记录仓库/包路径，sourceCommit 为 A。历史按固定 gitlink 追溯，不随子分支变化，无权限或缺版本明确提示。工具不代提交。
+- 主仓库执行 `node .agents/skills/spec-trail/cli.mjs prototype associate --repo 主仓库目录 --change change-id --entry entry-id`。必须指定 B 中一个已发布的入口 ID。需要关联多个入口时，每个 ID 执行一次，最后一起提交并推送 gitlink B、Change 和 Git 快照。嵌套模块先从内向外提交。新 artifact.source 记录仓库/包路径，sourceCommit 为 A。历史按固定 gitlink 追溯，不随子分支变化，无权限或缺版本明确提示。工具不代提交。
 - 发布登记与关联分别使用所在仓库的 `recover`，不跨库联合写入。
 
 ## 嵌入与验证

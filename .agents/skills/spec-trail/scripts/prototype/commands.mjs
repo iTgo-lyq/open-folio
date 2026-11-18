@@ -100,10 +100,10 @@ export const commands = {
     notes: ["Provide --git-entry, or both --request and --result."],
     example: "--request /tmp/request.json --result /tmp/result.json --change example",
   }),
-  associate: publication("associate", "In the parent repository, link committed frontend (submodule) prototype entries to a Change", {
-    required: ["change"],
-    optional: ["entry"],
-    help: { entry: { value: "id", text: "Associate only this entry (default: all current entries)" } },
+  associate: publication("associate", "In the parent repository, link one committed frontend (submodule) prototype entry to a Change", {
+    required: ["change", "entry"],
+    help: { entry: { value: "id", text: "Published entry id from the committed frontend prototype.json" } },
+    notes: ["Run once per intended entry ID, then commit the Change, snapshots and gitlink together."],
     example: "--change example --entry orders",
   }),
   recover: publication("recover", "Roll back an interrupted multi-file registration to its previous files; stops on newer edits or commits", {
