@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "require-prototype-entry",
+  "title": "原型关联必须指定入口 ID",
+  "size": "small",
+  "status": "active",
+  "stage": "requirement",
+  "branch": "develop",
+  "confirmations": {},
+  "tasks": {
+    "T1": {
+      "title": "强制指定单个原型入口并验证关联范围",
+      "status": "todo"
+    }
+  },
+  "closure": {},
+  "followUpOf": "prototype-submodule-support",
+  "types": [
+    "修复"
+  ]
+}
